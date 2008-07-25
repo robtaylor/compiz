@@ -1223,7 +1223,7 @@ resizeInitDisplay (CompPlugin  *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    rd = malloc (sizeof (ResizeDisplay));
+    rd = (ResizeDisplay *) malloc (sizeof (ResizeDisplay));
     if (!rd)
 	return FALSE;
 
@@ -1288,7 +1288,7 @@ resizeInitScreen (CompPlugin *p,
 
     RESIZE_DISPLAY (s->display);
 
-    rs = malloc (sizeof (ResizeScreen));
+    rs = (ResizeScreen *) malloc (sizeof (ResizeScreen));
     if (!rs)
 	return FALSE;
 
@@ -1395,7 +1395,7 @@ resizeGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (plugin, object, count));
 }
 
 static CompBool

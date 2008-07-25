@@ -184,7 +184,7 @@ moveInputFocusToOtherWindow (CompWindow *w)
 static Bool
 autoRaiseTimeout (void *closure)
 {
-    CompDisplay *display = closure;
+    CompDisplay *display = (CompDisplay *) closure;
     CompWindow  *w = findWindowAtDisplay (display, display->activeWindow);
 
     if (display->autoRaiseWindow == display->activeWindow ||
@@ -765,7 +765,7 @@ triggerEdgeEnter (CompDisplay     *d,
 
     if (delay > 0)
     {
-	delayedSettings = malloc (sizeof (CompDelayedEdgeSettings));
+	delayedSettings = (CompDelayedEdgeSettings *) malloc (sizeof (CompDelayedEdgeSettings));
 	if (delayedSettings)
 	{
 	    delayedSettings->d       = d;
@@ -1255,7 +1255,7 @@ handleEvent (CompDisplay *d,
 
 	    if (s->nExpose == s->sizeExpose)
 	    {
-		s->exposeRects = realloc (s->exposeRects,
+		s->exposeRects = (XRectangle *) realloc (s->exposeRects,
 					      (s->sizeExpose + more) *
 					      sizeof (XRectangle));
 		s->sizeExpose += more;
@@ -2234,7 +2234,7 @@ handleEvent (CompDisplay *d,
 		{
 		    if (w->nDamage == w->sizeDamage)
 		    {
-			w->damageRects = realloc (w->damageRects,
+			w->damageRects = (XRectangle *) realloc (w->damageRects,
 						  (w->sizeDamage + 1) *
 						  sizeof (XRectangle));
 			w->sizeDamage += 1;

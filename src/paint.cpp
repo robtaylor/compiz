@@ -177,7 +177,7 @@ paintBackground (CompScreen   *s,
 	s->backgroundLoaded = TRUE;
     }
 
-    data = malloc (sizeof (GLfloat) * nBox * 16);
+    data = (GLfloat *) malloc (sizeof (GLfloat) * nBox * 16);
     if (!data)
 	return;
 
@@ -643,7 +643,7 @@ moreWindowVertices (CompWindow *w,
     {
 	GLfloat *vertices;
 
-	vertices = realloc (w->vertices, sizeof (GLfloat) * newSize);
+	vertices = (GLfloat *) realloc (w->vertices, sizeof (GLfloat) * newSize);
 	if (!vertices)
 	    return FALSE;
 
@@ -662,7 +662,7 @@ moreWindowIndices (CompWindow *w,
     {
 	GLushort *indices;
 
-	indices = realloc (w->indices, sizeof (GLushort) * newSize);
+	indices = (GLushort *) realloc (w->indices, sizeof (GLushort) * newSize);
 	if (!indices)
 	    return FALSE;
 

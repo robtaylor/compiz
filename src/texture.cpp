@@ -102,11 +102,11 @@ imageToTexture (CompScreen   *screen,
 		GLenum       format,
 		GLenum       type)
 {
-    char *data;
-    int	 i;
-    GLint internalFormat;
+    char     *data;
+    unsigned int i;
+    GLint    internalFormat;
 
-    data = malloc (4 * width * height);
+    data = (char *) malloc (4 * width * height);
     if (!data)
 	return FALSE;
 
@@ -210,7 +210,7 @@ readImageToTexture (CompScreen   *screen,
 			    &width, &height, &image))
 	return FALSE;
 
-    status = imageBufferToTexture (screen, texture, image, width, height);
+    status = imageBufferToTexture (screen, texture, (char *)image, width, height);
 
     free (image);
 

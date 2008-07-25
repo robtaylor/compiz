@@ -186,7 +186,7 @@ setDesktopHints (CompScreen *s)
 
     size = s->nDesktop * 2 + s->nDesktop * 2 + s->nDesktop * 4 + 1;
 
-    data = malloc (sizeof (unsigned long) * size);
+    data = (unsigned long *) malloc (sizeof (unsigned long) * size);
     if (!data)
 	return;
 
@@ -306,7 +306,7 @@ updateOutputDevices (CompScreen	*s)
 
 	if (x1 < x2 && y1 < y2)
 	{
-	    o = realloc (output, sizeof (CompOutput) * (nOutput + 1));
+	    o = (CompOutput *) realloc (output, sizeof (CompOutput) * (nOutput + 1));
 	    if (o)
 	    {
 		o[nOutput].region.extents.x1 = x1;
@@ -323,7 +323,7 @@ updateOutputDevices (CompScreen	*s)
     /* make sure we have at least one output */
     if (!nOutput)
     {
-	output = malloc (sizeof (CompOutput));
+	output = (CompOutput *) malloc (sizeof (CompOutput));
 	if (!output)
 	    return;
 
@@ -338,7 +338,7 @@ updateOutputDevices (CompScreen	*s)
     /* set name, width, height and update rect pointers in all regions */
     for (i = 0; i < nOutput; i++)
     {
-	output[i].name = malloc (sizeof (char) * 10);
+	output[i].name = (char *) malloc (sizeof (char) * 10);
 	if (output[i].name)
 	    snprintf (output[i].name, 10, "Output %d", nOutput);
 
@@ -448,7 +448,7 @@ detectOutputDevices (CompScreen *s)
 	    int n = s->display->nScreenInfo;
 
 	    value.list.nValue = n;
-	    value.list.value  = malloc (sizeof (CompOptionValue) * n);
+	    value.list.value  = (CompOptionValue *) malloc (sizeof (CompOptionValue) * n);
 	    if (!value.list.value)
 		return;
 
@@ -466,7 +466,7 @@ detectOutputDevices (CompScreen *s)
 	else
 	{
 	    value.list.nValue = 1;
-	    value.list.value  = malloc (sizeof (CompOptionValue));
+	    value.list.value  = (CompOptionValue *) malloc (sizeof (CompOptionValue));
 	    if (!value.list.value)
 		return;
 
@@ -683,7 +683,7 @@ updateStartupFeedback (CompScreen *s)
 static Bool
 startupSequenceTimeout (void *data)
 {
-    CompScreen		*screen = data;
+    CompScreen		*screen = (CompScreen *) data;
     CompStartupSequence *s;
     struct timeval	now, active;
     double		elapsed;
@@ -712,7 +712,7 @@ addSequence (CompScreen        *screen,
 {
     CompStartupSequence *s;
 
-    s = malloc (sizeof (CompStartupSequence));
+    s = (CompStartupSequence *) malloc (sizeof (CompStartupSequence));
     if (!s)
 	return;
 
@@ -772,7 +772,7 @@ static void
 compScreenSnEvent (SnMonitorEvent *event,
 		   void           *userData)
 {
-    CompScreen	      *screen = userData;
+    CompScreen	      *screen = (CompScreen *) userData;
     SnStartupSequence *sequence;
 
     sequence = sn_monitor_event_get_startup_sequence (event);
@@ -1637,7 +1637,7 @@ addScreen (CompDisplay *display,
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     CompWindow		 *w;
 
-    s = malloc (sizeof (CompScreen));
+    s = (CompScreen *) malloc (sizeof (CompScreen));
     if (!s)
 	return FALSE;
 
@@ -1646,7 +1646,7 @@ addScreen (CompDisplay *display,
 
     if (display->screenPrivateLen)
     {
-	privates = malloc (display->screenPrivateLen * sizeof (CompPrivate));
+	privates = (CompPrivate *) malloc (display->screenPrivateLen * sizeof (CompPrivate));
 	if (!privates)
 	{
 	    free (s);
@@ -2544,7 +2544,7 @@ findTopLevelWindowAtScreen (CompScreen *s,
     if (w->attrib.override_redirect)
     {
 	/* likely a frame window */
-	if (w->attrib.class == InputOnly)
+	if (w->attrib.c_class == InputOnly)
 	{
 	    for (w = s->windows; w; w = w->next)
 		if (w->frame == id)
@@ -2700,7 +2700,7 @@ pushScreenGrab (CompScreen *s,
 
     if (s->grabSize <= s->maxGrab)
     {
-	s->grabs = realloc (s->grabs, sizeof (CompGrab) * (s->maxGrab + 1));
+	s->grabs = (CompGrab *) realloc (s->grabs, sizeof (CompGrab) * (s->maxGrab + 1));
 	if (!s->grabs)
 	    return 0;
 
@@ -2910,7 +2910,7 @@ addPassiveKeyGrab (CompScreen	  *s,
 	}
     }
 
-    keyGrab = realloc (s->keyGrab, sizeof (CompKeyGrab) * (s->nKeyGrab + 1));
+    keyGrab = (CompKeyGrab  *) realloc (s->keyGrab, sizeof (CompKeyGrab) * (s->nKeyGrab + 1));
     if (!keyGrab)
 	return FALSE;
 
@@ -2952,7 +2952,7 @@ removePassiveKeyGrab (CompScreen     *s,
 		     (s->nKeyGrab - (i + 1)) * sizeof (CompKeyGrab));
 
 	    s->nKeyGrab--;
-	    s->keyGrab = realloc (s->keyGrab,
+	    s->keyGrab = (CompKeyGrab  *) realloc (s->keyGrab,
 				  sizeof (CompKeyGrab) * s->nKeyGrab);
 
 	    if (!(mask & CompNoMask))
@@ -2995,7 +2995,7 @@ addPassiveButtonGrab (CompScreen        *s,
 	}
     }
 
-    buttonGrab = realloc (s->buttonGrab,
+    buttonGrab = (CompButtonGrab  *) realloc (s->buttonGrab,
 			  sizeof (CompButtonGrab) * (s->nButtonGrab + 1));
     if (!buttonGrab)
 	return FALSE;
@@ -3030,7 +3030,7 @@ removePassiveButtonGrab (CompScreen        *s,
 		     (s->nButtonGrab - (i + 1)) * sizeof (CompButtonGrab));
 
 	    s->nButtonGrab--;
-	    s->buttonGrab = realloc (s->buttonGrab,
+	    s->buttonGrab = (CompButtonGrab  *) realloc (s->buttonGrab,
 				     sizeof (CompButtonGrab) * s->nButtonGrab);
 	}
     }
@@ -3321,7 +3321,7 @@ updateClientListForScreen (CompScreen *s)
     {
 	CompWindow **list;
 
-	list = realloc (s->clientList,
+	list = (CompWindow **) realloc (s->clientList,
 			(sizeof (CompWindow *) + sizeof (Window) * 2) * n);
 	if (!list)
 	    return;
@@ -3617,7 +3617,7 @@ addGroupToScreen (CompScreen *s,
 {
     CompGroup *group;
 
-    group = malloc (sizeof (CompGroup));
+    group = (CompGroup *) malloc (sizeof (CompGroup));
     if (!group)
 	return NULL;
 
@@ -4180,7 +4180,7 @@ updateDefaultIcon (CompScreen *screen)
     if (!readImageFromFile (screen->display, file, &width, &height, &data))
 	return FALSE;
 
-    icon = malloc (sizeof (CompIcon) + width * height * sizeof (CARD32));
+    icon = (CompIcon *) malloc (sizeof (CompIcon) + width * height * sizeof (CARD32));
     if (!icon)
     {
 	free (data);

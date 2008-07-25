@@ -133,7 +133,7 @@ glibPrepare (CompDisplay  *display,
 	    if (gd->fds)
 		free (gd->fds);
 
-	    gd->fds = malloc ((sizeof (GPollFD) + sizeof (GLibWatch)) * nFds);
+	    gd->fds = (GPollFD *) malloc ((sizeof (GPollFD) + sizeof (GLibWatch)) * nFds);
 	    if (!gd->fds)
 	    {
 		nFds = 0;
@@ -195,7 +195,7 @@ glibInitDisplay (CompPlugin  *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    gd = malloc (sizeof (GLibDisplay));
+    gd = (GLibDisplay *) malloc (sizeof (GLibDisplay));
     if (!gd)
 	return FALSE;
 

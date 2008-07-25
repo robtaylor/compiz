@@ -157,7 +157,7 @@ matchAddOp (CompMatch	    *match,
     if (!match->nOp)
 	flags &= ~MATCH_OP_AND_MASK;
 
-    op = realloc (match->op, sizeof (CompMatchOp) * (match->nOp + 1));
+    op = (CompMatchOp *) realloc (match->op, sizeof (CompMatchOp) * (match->nOp + 1));
     if (!op)
 	return FALSE;
 
@@ -185,7 +185,7 @@ matchCopyOps (CompMatchOp *opDst,
 
 	switch (opSrc->type) {
 	case CompMatchOpTypeGroup:
-	    op = malloc (sizeof (CompMatchOp) * opSrc->group.nOp);
+	    op = (CompMatchOp *) malloc (sizeof (CompMatchOp) * opSrc->group.nOp);
 	    if (!op)
 	    {
 		matchFiniOps (first, count);
@@ -230,7 +230,7 @@ matchCopy (CompMatch *dst,
 {
     CompMatchOp *opDst;
 
-    opDst = malloc (sizeof (CompMatchOp) * src->nOp);
+    opDst = (CompMatchOp *) malloc (sizeof (CompMatchOp) * src->nOp);
     if (!opDst)
 	return FALSE;
 
@@ -253,7 +253,7 @@ matchAddGroup (CompMatch *match,
 {
     CompMatchOp *op, *opDst;
 
-    opDst = malloc (sizeof (CompMatchOp) * group->nOp);
+    opDst = (CompMatchOp *) malloc (sizeof (CompMatchOp) * group->nOp);
     if (!opDst)
 	return FALSE;
 
@@ -321,7 +321,7 @@ strndupValue (const char *str,
 {
     char *value;
 
-    value = malloc (sizeof (char) * (n + 1));
+    value = (char *) malloc (sizeof (char) * (n + 1));
     if (value)
     {
 	int i, j;
@@ -422,7 +422,7 @@ matchAddFromString (CompMatch  *match,
 
 	    length = j - i;
 
-	    value = malloc (sizeof (char) * (length + 1));
+	    value = (char *) malloc (sizeof (char) * (length + 1));
 	    if (value)
 	    {
 		CompMatch group;
@@ -486,7 +486,7 @@ matchOpsToString (CompMatchOp *op,
 	    group = matchOpsToString (op->group.op, op->group.nOp);
 	    if (group)
 	    {
-		value = malloc (sizeof (char) * (strlen (group) + 7));
+		value = (char *) malloc (sizeof (char) * (strlen (group) + 7));
 		if (value)
 		    sprintf (value, "%s%s(%s)%s", !str ? "" :
 			     ((op->any.flags & MATCH_OP_AND_MASK) ?
@@ -498,7 +498,7 @@ matchOpsToString (CompMatchOp *op,
 	    }
 	    break;
 	case CompMatchOpTypeExp:
-	    value = malloc (sizeof (char) * (strlen (op->exp.value) + 5));
+	    value = (char *) malloc (sizeof (char) * (strlen (op->exp.value) + 5));
 	    if (value)
 		sprintf (value, "%s%s%s%s", !str ? "" :
 			 ((op->any.flags & MATCH_OP_AND_MASK) ? "& " : "| "),
@@ -512,7 +512,7 @@ matchOpsToString (CompMatchOp *op,
 	    char *s;
 	    int  valueLength = strlen (value);
 
-	    s = malloc (sizeof (char) * (length + valueLength + 1));
+	    s = (char *) malloc (sizeof (char) * (length + valueLength + 1));
 	    if (s)
 	    {
 		if (str)
@@ -641,35 +641,35 @@ matchEval (CompMatch  *match,
 static Bool
 matchEvalTypeExp (CompDisplay *display,
 		  CompWindow  *window,
-		  CompPrivate private)
+		  CompPrivate c_private)
 {
-    return (private.uval & window->wmType);
+    return (c_private.uval & window->wmType);
 }
 
 static Bool
 matchEvalStateExp (CompDisplay *display,
 		   CompWindow  *window,
-		   CompPrivate private)
+		   CompPrivate c_private)
 {
-    return (private.uval & window->state);
+    return (c_private.uval & window->state);
 }
 
 static Bool
 matchEvalIdExp (CompDisplay *display,
 		CompWindow  *window,
-		CompPrivate private)
+		CompPrivate c_private)
 {
-    return (private.val == window->id);
+    return (c_private.val == window->id);
 }
 
 static Bool
 matchEvalOverrideRedirectExp (CompDisplay *display,
 			      CompWindow  *window,
-			      CompPrivate private)
+			      CompPrivate c_private)
 {
     Bool overrideRedirect = window->attrib.override_redirect;
-    return ((private.val == 1 && overrideRedirect) ||
-	    (private.val == 0 && !overrideRedirect));
+    return ((c_private.val == 1 && overrideRedirect) ||
+	    (c_private.val == 0 && !overrideRedirect));
 }
 
 void

@@ -60,7 +60,7 @@ setStringListProperty (SmcConn	  connection,
     prop.name = (char *) name;
     prop.type = SmLISTofARRAY8;
 
-    prop.vals = malloc (nValues * sizeof (SmPropValue));
+    prop.vals = (SmPropValue *) malloc (nValues * sizeof (SmPropValue));
     if (!prop.vals)
 	return;
 
@@ -87,7 +87,7 @@ setCloneRestartCommands (SmcConn connection)
 
     /* at maximum, we pass our old arguments + our new client id
        to the SM, so allocate for that case */
-    args = malloc ((programArgc + 2) * sizeof (char *));
+    args = (const char **) malloc ((programArgc + 2) * sizeof (char *));
     if (!args)
 	return;
 

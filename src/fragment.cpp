@@ -516,7 +516,7 @@ addFetchOffsetVariables (CompDataOp *op,
 
 	    newSize = oldSize + strlen (data);
 
-	    str = realloc (info->data, newSize + 1);
+	    str = (char *) realloc (info->data, newSize + 1);
 	    if (str)
 	    {
 		strcpy (str + oldSize, data);
@@ -538,7 +538,7 @@ addData (CompDataOp *op,
     int	      oldSize = strlen (info->data);
     int	      newSize = oldSize + strlen (op->data);
 
-    str = realloc (info->data, newSize + 1);
+    str = (char *) realloc (info->data, newSize + 1);
     if (str)
     {
 	strcpy (str + oldSize, op->data);
@@ -559,11 +559,11 @@ buildFragmentProgram (CompScreen     *s,
     FetchInfo    info;
     int		 i;
 
-    program = malloc (sizeof (CompProgram));
+    program = (CompProgram *) malloc (sizeof (CompProgram));
     if (!program)
 	return NULL;
 
-    functionList = malloc ((attrib->nFunction + 1) * sizeof (void *));
+    functionList = (CompFunction **) malloc ((attrib->nFunction + 1) * sizeof (void *));
     if (!functionList)
     {
 	free (program);
@@ -600,7 +600,7 @@ buildFragmentProgram (CompScreen     *s,
 	return NULL;
     }
 
-    program->signature = malloc (attrib->nFunction * sizeof (int));
+    program->signature = (int *) malloc (attrib->nFunction * sizeof (int));
     if (!program->signature)
     {
 	free (program);
@@ -692,7 +692,7 @@ createFunctionData (void)
 {
     CompFunctionData *data;
 
-    data = malloc (sizeof (CompFunctionData));
+    data = (CompFunctionData *) malloc (sizeof (CompFunctionData));
     if (!data)
 	return NULL;
 
@@ -781,7 +781,7 @@ copyData (CompHeaderOp *header,
     }
 
     /* allocate new memory that will fit all substitutions */
-    copy = malloc (strlen (data) + count * (strlen (prefix) + 1) + 1);
+    copy = (char *) malloc (strlen (data) + count * (strlen (prefix) + 1) + 1);
     if (!copy)
 	return NULL;
 
@@ -840,11 +840,11 @@ copyFunctionData (CompFunctionData	 *dst,
 {
     int i;
 
-    dst->header = malloc (src->nHeader * sizeof (CompHeaderOp));
+    dst->header = (CompHeaderOp *) malloc (src->nHeader * sizeof (CompHeaderOp));
     if (!dst->header)
 	return FALSE;
 
-    dst->body = malloc (src->nBody * sizeof (CompBodyOp));
+    dst->body = (CompBodyOp *) malloc (src->nBody * sizeof (CompBodyOp));
     if (!dst->body)
     {
 	free (dst->header);
@@ -939,7 +939,7 @@ addHeaderOpToFunctionData (CompFunctionData *data,
 	}
     }
 
-    header = realloc (data->header,
+    header = (CompHeaderOp *) realloc (data->header,
 		      (data->nHeader + 1) * sizeof (CompHeaderOp));
     if (!header)
 	return FALSE;
@@ -979,7 +979,7 @@ allocBodyOpInFunctionData (CompFunctionData *data)
 {
     CompBodyOp *body;
 
-    body = realloc (data->body, (data->nBody + 1) * sizeof (CompBodyOp));
+    body = (CompBodyOp *) realloc (data->body, (data->nBody + 1) * sizeof (CompBodyOp));
     if (!body)
 	return FALSE;
 
@@ -1044,7 +1044,7 @@ addDataOpToFunctionData (CompFunctionData *data,
     if (!allocBodyOpInFunctionData (data))
 	return FALSE;
 
-    fStr = malloc (size);
+    fStr = (char *) malloc (size);
     if (!fStr)
 	return FALSE;
 
@@ -1065,7 +1065,7 @@ addDataOpToFunctionData (CompFunctionData *data,
 	else              /* glibc 2.0 */
 	    size++;       /* one more than the old size */
 
-	tmp = realloc (fStr, size);
+	tmp = (char *) realloc (fStr, size);
 	if (!tmp)
 	{
 	    free (fStr);
@@ -1098,7 +1098,7 @@ addBlendOpToFunctionData (CompFunctionData *data,
     if (!allocBodyOpInFunctionData (data))
 	return FALSE;
 
-    fStr = malloc (size);
+    fStr = (char *) malloc (size);
     if (!fStr)
 	return FALSE;
 
@@ -1119,7 +1119,7 @@ addBlendOpToFunctionData (CompFunctionData *data,
 	else              /* glibc 2.0 */
 	    size++;       /* one more than the old size */
 
-	tmp = realloc (fStr, size);
+	tmp = (char *) realloc (fStr, size);
 	if (!tmp)
 	{
 	    free (fStr);
@@ -1157,7 +1157,7 @@ createFragmentFunction (CompScreen	 *s,
     {
 	if (!nameBuffer)
 	{
-	    nameBuffer = malloc (strlen (name) + 64);
+	    nameBuffer = (char *) malloc (strlen (name) + 64);
 	    if (!nameBuffer)
 		return 0;
 
@@ -1167,7 +1167,7 @@ createFragmentFunction (CompScreen	 *s,
 	sprintf (nameBuffer, "%s%d", name, i++);
     }
 
-    function = malloc (sizeof (CompFunction));
+    function = (CompFunction *) malloc (sizeof (CompFunction));
     if (!function)
     {
 	if (nameBuffer)

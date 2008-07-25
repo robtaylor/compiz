@@ -1683,7 +1683,7 @@ updateWindowStruts (CompWindow *w)
     unsigned long n, left;
     unsigned char *data;
     Bool	  hasOld, hasNew;
-    CompStruts    old, new;
+    CompStruts    old, c_new;
 
 #define MIN_EMPTY 76
 
@@ -1703,25 +1703,25 @@ updateWindowStruts (CompWindow *w)
 
     hasNew = FALSE;
 
-    new.left.x	    = 0;
-    new.left.y	    = 0;
-    new.left.width  = 0;
-    new.left.height = w->screen->height;
+    c_new.left.x	    = 0;
+    c_new.left.y	    = 0;
+    c_new.left.width  = 0;
+    c_new.left.height = w->screen->height;
 
-    new.right.x      = w->screen->width;
-    new.right.y      = 0;
-    new.right.width  = 0;
-    new.right.height = w->screen->height;
+    c_new.right.x      = w->screen->width;
+    c_new.right.y      = 0;
+    c_new.right.width  = 0;
+    c_new.right.height = w->screen->height;
 
-    new.top.x	   = 0;
-    new.top.y	   = 0;
-    new.top.width  = w->screen->width;
-    new.top.height = 0;
+    c_new.top.x	   = 0;
+    c_new.top.y	   = 0;
+    c_new.top.width  = w->screen->width;
+    c_new.top.height = 0;
 
-    new.bottom.x      = 0;
-    new.bottom.y      = w->screen->height;
-    new.bottom.width  = w->screen->width;
-    new.bottom.height = 0;
+    c_new.bottom.x      = 0;
+    c_new.bottom.y      = w->screen->height;
+    c_new.bottom.width  = w->screen->width;
+    c_new.bottom.height = 0;
 
     result = XGetWindowProperty (w->screen->display->display, w->id,
 				 w->screen->display->wmStrutPartialAtom,
@@ -1741,27 +1741,27 @@ updateWindowStruts (CompWindow *w)
 	    gap = w->screen->width - struts[0] - struts[1];
 	    gap -= MIN_EMPTY;
 
-	    new.left.width  = (int) struts[0] + MIN (0, gap / 2);
-	    new.right.width = (int) struts[1] + MIN (0, gap / 2);
+	    c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
+	    c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
 
 	    gap = w->screen->height - struts[2] - struts[3];
 	    gap -= MIN_EMPTY;
 
-	    new.top.height    = (int) struts[2] + MIN (0, gap / 2);
-	    new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
+	    c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
+	    c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
 
-	    new.right.x  = w->screen->width  - new.right.width;
-	    new.bottom.y = w->screen->height - new.bottom.height;
+	    c_new.right.x  = w->screen->width  - c_new.right.width;
+	    c_new.bottom.y = w->screen->height - c_new.bottom.height;
 
-	    new.left.y       = struts[4];
-	    new.left.height  = struts[5] - new.left.y + 1;
-	    new.right.y      = struts[6];
-	    new.right.height = struts[7] - new.right.y + 1;
+	    c_new.left.y       = struts[4];
+	    c_new.left.height  = struts[5] - c_new.left.y + 1;
+	    c_new.right.y      = struts[6];
+	    c_new.right.height = struts[7] - c_new.right.y + 1;
 
-	    new.top.x        = struts[8];
-	    new.top.width    = struts[9] - new.top.x + 1;
-	    new.bottom.x     = struts[10];
-	    new.bottom.width = struts[11] - new.bottom.x + 1;
+	    c_new.top.x        = struts[8];
+	    c_new.top.width    = struts[9] - c_new.top.x + 1;
+	    c_new.bottom.x     = struts[10];
+	    c_new.bottom.width = struts[11] - c_new.bottom.x + 1;
 	}
 
 	XFree (data);
@@ -1787,20 +1787,20 @@ updateWindowStruts (CompWindow *w)
 		gap = w->screen->width - struts[0] - struts[1];
 		gap -= MIN_EMPTY;
 
-		new.left.width  = (int) struts[0] + MIN (0, gap / 2);
-		new.right.width = (int) struts[1] + MIN (0, gap / 2);
+		c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
+		c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
 
 		gap = w->screen->height - struts[2] - struts[3];
 		gap -= MIN_EMPTY;
 
-		new.top.height    = (int) struts[2] + MIN (0, gap / 2);
-		new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
+		c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
+		c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
 
-		new.left.x  = 0;
-		new.right.x = w->screen->width - new.right.width;
+		c_new.left.x  = 0;
+		c_new.right.x = w->screen->width - c_new.right.width;
 
-		new.top.y    = 0;
-		new.bottom.y = w->screen->height - new.bottom.height;
+		c_new.top.y    = 0;
+		c_new.bottom.y = w->screen->height - c_new.bottom.height;
 	    }
 
 	    XFree (data);
@@ -1821,57 +1821,57 @@ updateWindowStruts (CompWindow *w)
 	    x2 = x1 + w->screen->display->screenInfo[i].width;
 	    y2 = y1 + w->screen->display->screenInfo[i].height;
 
-	    strutX1 = new.left.x;
-	    strutX2 = strutX1 + new.left.width;
+	    strutX1 = c_new.left.x;
+	    strutX2 = strutX1 + c_new.left.width;
 
 	    if (strutX2 > x1 && strutX2 <= x2)
 	    {
-		new.left.x     = x1;
-		new.left.width = strutX2 - x1;
+		c_new.left.x     = x1;
+		c_new.left.width = strutX2 - x1;
 	    }
 
-	    strutX1 = new.right.x;
-	    strutX2 = strutX1 + new.right.width;
+	    strutX1 = c_new.right.x;
+	    strutX2 = strutX1 + c_new.right.width;
 
 	    if (strutX1 > x1 && strutX1 <= x2)
 	    {
-		new.right.x     = strutX1;
-		new.right.width = x2 - strutX1;
+		c_new.right.x     = strutX1;
+		c_new.right.width = x2 - strutX1;
 	    }
 
-	    strutY1 = new.top.y;
-	    strutY2 = strutY1 + new.top.height;
+	    strutY1 = c_new.top.y;
+	    strutY2 = strutY1 + c_new.top.height;
 
 	    if (strutY2 > y1 && strutY2 <= y2)
 	    {
-		new.top.y      = y1;
-		new.top.height = strutY2 - y1;
+		c_new.top.y      = y1;
+		c_new.top.height = strutY2 - y1;
 	    }
 
-	    strutY1 = new.bottom.y;
-	    strutY2 = strutY1 + new.bottom.height;
+	    strutY1 = c_new.bottom.y;
+	    strutY2 = strutY1 + c_new.bottom.height;
 
 	    if (strutY1 > y1 && strutY1 <= y2)
 	    {
-		new.bottom.y      = strutY1;
-		new.bottom.height = y2 - strutY1;
+		c_new.bottom.y      = strutY1;
+		c_new.bottom.height = y2 - strutY1;
 	    }
 	}
     }
 
     if (hasOld != hasNew || (hasNew && hasOld &&
-			     memcmp (&new, &old, sizeof (CompStruts))))
+			     memcmp (&c_new, &old, sizeof (CompStruts))))
     {
 	if (hasNew)
 	{
 	    if (!w->struts)
 	    {
-		w->struts = malloc (sizeof (CompStruts));
+		w->struts = (CompStruts *) malloc (sizeof (CompStruts));
 		if (!w->struts)
 		    return FALSE;
 	    }
 
-	    *w->struts = new;
+	    *w->struts = c_new;
 	}
 	else
 	{
@@ -1896,7 +1896,7 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
     wa->depth		      = 0;
     wa->visual		      = NULL;
     wa->root		      = None;
-    wa->class		      = InputOnly;
+    wa->c_class		      = InputOnly;
     wa->bit_gravity	      = NorthWestGravity;
     wa->win_gravity	      = NorthWestGravity;
     wa->backing_store	      = NotUseful;
@@ -2039,7 +2039,7 @@ addWindow (CompScreen *screen,
 
     if (screen->windowPrivateLen)
     {
-	privates = malloc (screen->windowPrivateLen * sizeof (CompPrivate));
+	privates = (CompPrivate *) malloc (screen->windowPrivateLen * sizeof (CompPrivate));
 	if (!privates)
 	{
 	    destroyTexture (screen, w->texture);
@@ -2126,7 +2126,7 @@ addWindow (CompScreen *screen,
 
     EMPTY_REGION (w->region);
 
-    if (w->attrib.class != InputOnly)
+    if (w->attrib.c_class != InputOnly)
     {
 	REGION rect;
 
@@ -2432,7 +2432,7 @@ mapWindow (CompWindow *w)
     if (w->struts)
 	updateWorkareaForScreen (w->screen);
 
-    if (w->attrib.class == InputOnly)
+    if (w->attrib.c_class == InputOnly)
 	return;
 
     w->unmapRefCnt = 1;
@@ -2717,7 +2717,7 @@ initializeSyncCounter (CompWindow *w)
 static Bool
 syncWaitTimeout (void *closure)
 {
-    CompWindow *w = closure;
+    CompWindow *w = (CompWindow *) closure;
 
     w->syncWaitHandle = 0;
     handleSyncAlarm (w);
@@ -4282,7 +4282,7 @@ static void
 revealAncestors (CompWindow *w,
 		 void       *closure)
 {
-    CompWindow *transient = closure;
+    CompWindow *transient = (CompWindow *) closure;
 
     if (isAncestorTo (transient, w))
     {
@@ -4615,7 +4615,7 @@ static void
 minimizeTransients (CompWindow *w,
 		    void       *closure)
 {
-    CompWindow *ancestor = closure;
+    CompWindow *ancestor = (CompWindow *) closure;
 
     if (w->transientFor == ancestor->id ||
 	isGroupTransient (w, ancestor->clientLeader))
@@ -4644,7 +4644,7 @@ static void
 unminimizeTransients (CompWindow *w,
 		      void       *closure)
 {
-    CompWindow *ancestor = closure;
+    CompWindow *ancestor = (CompWindow *) closure;
 
     if (w->transientFor == ancestor->id ||
 	isGroupTransient (w, ancestor->clientLeader))
@@ -4975,12 +4975,12 @@ getWindowIcon (CompWindow *w,
 
 		if (iw && ih)
 		{
-		    icon = malloc (sizeof (CompIcon) +
+		    icon = (CompIcon *) malloc (sizeof (CompIcon) +
 				   iw * ih * sizeof (CARD32));
 		    if (!icon)
 			continue;
 
-		    pIcon = realloc (w->icon,
+		    pIcon = (CompIcon **) realloc (w->icon,
 				     sizeof (CompIcon *) * (w->nIcon + 1));
 		    if (!pIcon)
 		    {

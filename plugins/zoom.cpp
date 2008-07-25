@@ -973,7 +973,7 @@ zoomInitDisplay (CompPlugin  *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    zd = malloc (sizeof (ZoomDisplay));
+    zd = (ZoomDisplay *) malloc (sizeof (ZoomDisplay));
     if (!zd)
 	return FALSE;
 
@@ -1032,7 +1032,7 @@ zoomInitScreen (CompPlugin *p,
 
     ZOOM_DISPLAY (s->display);
 
-    zs = malloc (sizeof (ZoomScreen));
+    zs = (ZoomScreen *) malloc (sizeof (ZoomScreen));
     if (!zs)
 	return FALSE;
 
@@ -1129,7 +1129,7 @@ zoomGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (plugin, object, count));
 }
 
 static CompBool

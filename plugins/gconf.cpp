@@ -410,7 +410,7 @@ gconfReadOptionValue (CompObject      *object,
 
 	if (n)
 	{
-	    value->list.value = malloc (sizeof (CompOptionValue) * n);
+	    value->list.value = (CompOptionValue *) malloc (sizeof (CompOptionValue) * n);
 	    if (value->list.value)
 	    {
 		for (i = 0; i < n; i++)
@@ -721,7 +721,7 @@ gconfInitCore (CompPlugin *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    gc = malloc (sizeof (GConfCore));
+    gc = (GConfCore *) malloc (sizeof (GConfCore));
     if (!gc)
 	return FALSE;
 

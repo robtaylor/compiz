@@ -780,7 +780,7 @@ setAudibleBell (CompDisplay *display,
 static Bool
 pingTimeout (void *closure)
 {
-    CompDisplay *d = closure;
+    CompDisplay *d = (CompDisplay *) closure;
     CompScreen  *s;
     CompWindow  *w;
     XEvent      ev;
@@ -946,7 +946,7 @@ updatePlugins (CompDisplay *d)
 
     if (nPop)
     {
-	pop = malloc (sizeof (CompPlugin *) * nPop);
+	pop = (CompPlugin **) malloc (sizeof (CompPlugin *) * nPop);
 	if (!pop)
 	{
 	    (*core.setOptionForPlugin) (&d->base, "core", o->name, &d->plugin);
@@ -995,7 +995,7 @@ updatePlugins (CompDisplay *d)
 	{
 	    CompOptionValue *value;
 
-	    value = realloc (d->plugin.list.value, sizeof (CompOptionValue) *
+	    value = (CompOptionValue *) realloc (d->plugin.list.value, sizeof (CompOptionValue) *
 			     (d->plugin.list.nValue + 1));
 	    if (value)
 	    {
@@ -1055,7 +1055,7 @@ compAddTimeout (int	     minTime,
 {
     CompTimeout *timeout;
 
-    timeout = malloc (sizeof (CompTimeout));
+    timeout = (CompTimeout *) malloc (sizeof (CompTimeout));
     if (!timeout)
 	return 0;
 
@@ -1110,7 +1110,7 @@ compAddWatchFd (int	     fd,
 {
     CompWatchFd *watchFd;
 
-    watchFd = malloc (sizeof (CompWatchFd));
+    watchFd = (CompWatchFd *) malloc (sizeof (CompWatchFd));
     if (!watchFd)
 	return 0;
 
@@ -1127,7 +1127,7 @@ compAddWatchFd (int	     fd,
 
     core.nWatchFds++;
 
-    core.watchPollFds = realloc (core.watchPollFds,
+    core.watchPollFds = (struct pollfd *) realloc (core.watchPollFds,
 				 core.nWatchFds * sizeof (struct pollfd));
 
     core.watchPollFds[core.nWatchFds - 1].fd     = fd;
@@ -2002,13 +2002,13 @@ addDisplay (const char *name)
     int		xkbOpcode;
     int		firstScreen, lastScreen;
 
-    d = malloc (sizeof (CompDisplay));
+    d = (CompDisplay *) malloc (sizeof (CompDisplay));
     if (!d)
 	return FALSE;
 
     if (displayPrivateLen)
     {
-	privates = malloc (displayPrivateLen * sizeof (CompPrivate));
+	privates = (CompPrivate *) malloc (displayPrivateLen * sizeof (CompPrivate));
 	if (!privates)
 	{
 	    free (d);
@@ -2043,7 +2043,7 @@ addDisplay (const char *name)
 
     d->plugin.list.type   = CompOptionTypeString;
     d->plugin.list.nValue = 1;
-    d->plugin.list.value  = malloc (sizeof (CompOptionValue));
+    d->plugin.list.value  = (CompOptionValue *) malloc (sizeof (CompOptionValue));
 
     if (!d->plugin.list.value) {
 	free (d);
@@ -2075,7 +2075,7 @@ addDisplay (const char *name)
 	return FALSE;
     }
 
-    d->connection = XGetXCBConnection (dpy);
+    // d->connection = XGetXCBConnection (dpy);
 
     if (!compInitDisplayOptionsFromMetadata (d,
 					     &coreMetadata,
@@ -2984,7 +2984,7 @@ readImageFromFile (CompDisplay *display,
 	{
 	    char *path;
 
-	    path = malloc (strlen (home) + strlen (HOME_IMAGEDIR) + 2);
+	    path = (char *) malloc (strlen (home) + strlen (HOME_IMAGEDIR) + 2);
 	    if (path)
 	    {
 		sprintf (path, "%s/%s", home, HOME_IMAGEDIR);

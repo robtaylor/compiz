@@ -12,21 +12,21 @@ bin_PROGRAMS = compiz
 compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
-	main.c	   \
-	privates.c \
-	object.c   \
-	core.c	   \
-	texture.c  \
-	display.c  \
-	screen.c   \
-	window.c   \
-	event.c    \
-	paint.c	   \
-	option.c   \
-	plugin.c   \
-	session.c  \
-	fragment.c \
-	matrix.c   \
-	cursor.c   \
-	match.c    \
-	metadata.c
+	main.cpp	   \
+	privates.cpp \
+	object.cpp   \
+	core.cpp	   \
+	texture.cpp  \
+	display.cpp  \
+	screen.cpp   \
+	window.cpp   \
+	event.cpp    \
+	paint.cpp	   \
+	option.cpp   \
+	plugin.cpp   \
+	session.cpp  \
+	fragment.cpp \
+	matrix.cpp   \
+	cursor.cpp   \
+	match.cpp    \
+	metadata.cpp

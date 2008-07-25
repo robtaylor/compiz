@@ -323,7 +323,7 @@ compSetOptionList (CompOption      *option,
     {
 	CompOptionValue *v;
 
-	v = malloc (sizeof (CompOptionValue) * value->list.nValue);
+	v = (CompOptionValue *) malloc (sizeof (CompOptionValue) * value->list.nValue);
 	if (!v)
 	    return FALSE;
 
@@ -543,7 +543,7 @@ stringAppend (char	 *s,
     if (s)
 	len += strlen (s);
 
-    r = malloc (len + 1);
+    r = (char *) malloc (len + 1);
     if (r)
     {
 	if (s)

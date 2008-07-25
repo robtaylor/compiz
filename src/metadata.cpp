@@ -92,7 +92,7 @@ readXmlFile (const char	*path,
     if (path)
 	length += strlen (path) + 1;
 
-    file = malloc (length);
+    file = (char *) malloc (length);
     if (!file)
 	return NULL;
 
@@ -128,7 +128,7 @@ addMetadataFromFilename (CompMetadata *metadata,
     if (!doc)
 	return FALSE;
 
-    d = realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
+    d = (xmlDoc **) realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
     if (!d)
     {
 	xmlFreeDoc (doc);
@@ -153,7 +153,7 @@ compAddMetadataFromFile (CompMetadata *metadata,
     {
 	char *path;
 
-	path = malloc (strlen (home) + strlen (HOME_METADATADIR) + 2);
+	path = (char *) malloc (strlen (home) + strlen (HOME_METADATADIR) + 2);
 	if (path)
 	{
 	    sprintf (path, "%s/%s", home, HOME_METADATADIR);
@@ -190,7 +190,7 @@ compAddMetadataFromString (CompMetadata *metadata,
 	return FALSE;
     }
 
-    d = realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
+    d = (xmlDoc **) realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
     if (!d)
     {
 	xmlFreeDoc (doc);
@@ -220,7 +220,7 @@ compAddMetadataFromIO (CompMetadata	     *metadata,
 	return FALSE;
     }
 
-    d = realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
+    d = (xmlDoc **) realloc (metadata->doc, (metadata->nDoc + 1) * sizeof (xmlDoc *));
     if (!d)
     {
 	xmlFreeDoc (doc);
@@ -755,7 +755,7 @@ initListValue (CompDisplay	     *d,
 	if (xmlStrcmp (child->name, BAD_CAST "value"))
 	    continue;
 
-	value = realloc (v->list.value,
+	value = (CompOptionValue *) realloc (v->list.value,
 			 sizeof (CompOptionValue) * (v->list.nValue + 1));
 	if (value)
 	{

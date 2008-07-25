@@ -245,7 +245,7 @@ decorGetTexture (CompScreen *screen,
 	}
     }
 
-    texture = malloc (sizeof (DecorTexture));
+    texture = (DecorTexture *) malloc (sizeof (DecorTexture));
     if (!texture)
 	return NULL;
 
@@ -429,7 +429,7 @@ decorCreateDecoration (CompScreen *screen,
 
     nQuad = (n - BASE_PROP_SIZE) / QUAD_PROP_SIZE;
 
-    quad = malloc (sizeof (decor_quad_t) * nQuad);
+    quad = (decor_quad_t *) malloc (sizeof (decor_quad_t) * nQuad);
     if (!quad)
     {
 	XFree (data);
@@ -453,7 +453,7 @@ decorCreateDecoration (CompScreen *screen,
 	return NULL;
     }
 
-    decoration = malloc (sizeof (Decoration));
+    decoration = (Decoration *) malloc (sizeof (Decoration));
     if (!decoration)
     {
 	free (quad);
@@ -550,7 +550,7 @@ createWindowDecoration (Decoration *d)
 {
     WindowDecoration *wd;
 
-    wd = malloc (sizeof (WindowDecoration) +
+    wd = (WindowDecoration *) malloc (sizeof (WindowDecoration) +
 		 sizeof (ScaledQuad) * d->nQuad);
     if (!wd)
 	return NULL;
@@ -1361,7 +1361,7 @@ decorInitCore (CompPlugin *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    dc = malloc (sizeof (DecorCore));
+    dc = (DecorCore *) malloc (sizeof (DecorCore));
     if (!dc)
 	return FALSE;
 
@@ -1412,7 +1412,7 @@ decorInitDisplay (CompPlugin  *p,
 {
     DecorDisplay *dd;
 
-    dd = malloc (sizeof (DecorDisplay));
+    dd = (DecorDisplay *) malloc (sizeof (DecorDisplay));
     if (!dd)
 	return FALSE;
 
@@ -1479,7 +1479,7 @@ decorInitScreen (CompPlugin *p,
 
     DECOR_DISPLAY (s->display);
 
-    ds = malloc (sizeof (DecorScreen));
+    ds = (DecorScreen *) malloc (sizeof (DecorScreen));
     if (!ds)
 	return FALSE;
 
@@ -1543,7 +1543,7 @@ decorInitWindow (CompPlugin *p,
 
     DECOR_SCREEN (w->screen);
 
-    dw = malloc (sizeof (DecorWindow));
+    dw = (DecorWindow *) malloc (sizeof (DecorWindow));
     if (!dw)
 	return FALSE;
 
@@ -1623,7 +1623,7 @@ decorGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (plugin, object, count));
 }
 
 static CompBool

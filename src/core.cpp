@@ -253,7 +253,7 @@ addFileWatch (const char	    *path,
 {
     CompFileWatch *fileWatch;
 
-    fileWatch = malloc (sizeof (CompFileWatch));
+    fileWatch = (CompFileWatch *) malloc (sizeof (CompFileWatch));
     if (!fileWatch)
 	return 0;
 

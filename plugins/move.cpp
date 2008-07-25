@@ -826,7 +826,7 @@ moveInitDisplay (CompPlugin  *p,
     if (!checkPluginABI ("core", CORE_ABIVERSION))
 	return FALSE;
 
-    md = malloc (sizeof (MoveDisplay));
+    md = (MoveDisplay *) malloc (sizeof (MoveDisplay));
     if (!md)
 	return FALSE;
 
@@ -890,7 +890,7 @@ moveInitScreen (CompPlugin *p,
 
     MOVE_DISPLAY (s->display);
 
-    ms = malloc (sizeof (MoveScreen));
+    ms = (MoveScreen *) malloc (sizeof (MoveScreen));
     if (!ms)
 	return FALSE;
 
@@ -956,7 +956,7 @@ moveGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (plugin, object, count));
 }
 
 static CompBool

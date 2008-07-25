@@ -62,7 +62,7 @@ coreGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (plugin, object, count));
 }
 
 static Bool
@@ -124,7 +124,7 @@ cloaderListPlugins (const char *path,
     if (path)
 	return 0;
 
-    list = malloc (sizeof (char *));
+    list = (char **) malloc (sizeof (char *));
     if (!list)
 	return 0;
 
@@ -148,7 +148,7 @@ dlloaderLoadPlugin (CompPlugin *p,
     char *file;
     void *dlhand;
 
-    file = malloc ((path ? strlen (path) : 0) + strlen (name) + 8);
+    file = (char *) malloc ((path ? strlen (path) : 0) + strlen (name) + 8);
     if (!file)
 	return FALSE;
 
@@ -259,7 +259,7 @@ dlloaderListPlugins (const char *path,
     if (!nFile)
 	return cList;
 
-    list = realloc (cList, (j + nFile) * sizeof (char *));
+    list = (char **) realloc (cList, (j + nFile) * sizeof (char *));
     if (!list)
 	return cList;
 
@@ -267,7 +267,7 @@ dlloaderListPlugins (const char *path,
     {
 	length = strlen (nameList[i]->d_name);
 
-	name = malloc ((length - 5) * sizeof (char));
+	name = (char *) malloc ((length - 5) * sizeof (char));
 	if (name)
 	{
 	    strncpy (name, nameList[i]->d_name + 3, length - 6);
@@ -543,7 +543,7 @@ loadPlugin (const char *name)
     char       *home, *plugindir;
     Bool       status;
 
-    p = malloc (sizeof (CompPlugin));
+    p = (CompPlugin *) malloc (sizeof (CompPlugin));
     if (!p)
 	return 0;
 
@@ -555,7 +555,7 @@ loadPlugin (const char *name)
     home = getenv ("HOME");
     if (home)
     {
-	plugindir = malloc (strlen (home) + strlen (HOME_PLUGINDIR) + 3);
+	plugindir = (char *) malloc (strlen (home) + strlen (HOME_PLUGINDIR) + 3);
 	if (plugindir)
 	{
 	    sprintf (plugindir, "%s/%s", home, HOME_PLUGINDIR);
@@ -654,7 +654,7 @@ availablePlugins (int *n)
     home = getenv ("HOME");
     if (home)
     {
-	plugindir = malloc (strlen (home) + strlen (HOME_PLUGINDIR) + 3);
+	plugindir = (char *) malloc (strlen (home) + strlen (HOME_PLUGINDIR) + 3);
 	if (plugindir)
 	{
 	    sprintf (plugindir, "%s/%s", home, HOME_PLUGINDIR);
@@ -677,7 +677,7 @@ availablePlugins (int *n)
     if (!count)
 	return NULL;
 
-    list = malloc (count * sizeof (char *));
+    list = (char **) malloc (count * sizeof (char *));
     if (!list)
 	return NULL;
 

@@ -40,7 +40,7 @@ addCursor (CompScreen *s)
 {
     CompCursor *c;
 
-    c = malloc (sizeof (CompCursor));
+    c = (CompCursor *) malloc (sizeof (CompCursor));
     if (c)
     {
 	c->screen = s;
@@ -127,7 +127,7 @@ updateCursor (CompCursor    *c,
 	    if (!image)
 		return;
 
-	    cursorImage = malloc (sizeof (CompCursorImage));
+	    cursorImage = (CompCursorImage *) malloc (sizeof (CompCursorImage));
 	    if (!cursorImage)
 	    {
 		XFree (image);

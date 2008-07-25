@@ -385,7 +385,9 @@ typedef enum {
     CompBindingTypeKey        = 1 << 0,
     CompBindingTypeButton     = 1 << 1,
     CompBindingTypeEdgeButton = 1 << 2
-} CompBindingType;
+} CompBindingTypeEnum;
+
+typedef unsigned int CompBindingType;
 
 typedef enum {
     CompActionStateInitKey     = 1 <<  0,
@@ -401,7 +403,9 @@ typedef enum {
     CompActionStateCancel      = 1 << 10,
     CompActionStateAutoGrab    = 1 << 11,
     CompActionStateNoEdgeDelay = 1 << 12
-} CompActionState;
+} CompActionStateEnum;
+
+typedef unsigned int CompActionState;
 
 typedef enum {
     CompLogLevelFatal = 0,
@@ -1610,7 +1614,9 @@ paintCursor (CompCursor		 *cursor,
 typedef enum {
     COMP_TEXTURE_FILTER_FAST,
     COMP_TEXTURE_FILTER_GOOD
-} CompTextureFilter;
+} CompTextureFilterEnum;
+
+typedef int CompTextureFilter;
 
 struct _CompTexture {
     GLuint     name;

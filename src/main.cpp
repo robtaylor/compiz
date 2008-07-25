@@ -373,7 +373,7 @@ main (int argc, char **argv)
 
     if (refreshRateArg)
     {
-	ctx.refreshRateData = malloc (strlen (refreshRateArg) + 256);
+	ctx.refreshRateData = (char *) malloc (strlen (refreshRateArg) + 256);
 	if (ctx.refreshRateData)
 	    sprintf (ctx.refreshRateData,
 		     "<min>1</min><default>%s</default>",
@@ -387,7 +387,7 @@ main (int argc, char **argv)
 	for (i = 0; i < nPlugin; i++)
 	    size += strlen (plugin[i]) + 16;
 
-	ctx.pluginData = malloc (size);
+	ctx.pluginData = (char *) malloc (size);
 	if (ctx.pluginData)
 	{
 	    char *ptr = ctx.pluginData;
