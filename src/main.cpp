@@ -98,59 +98,6 @@ usage (void)
 	    programName);
 }
 
-void
-compLogMessage (CompDisplay *d,
-		const char   *componentName,
-		CompLogLevel level,
-		const char   *format,
-		...)
-{
-    va_list args;
-    char    message[2048];
-
-    va_start (args, format);
-
-    vsnprintf (message, 2048, format, args);
-
-    if (d)
-	(*d->logMessage) (d, componentName, level, message);
-    else
-	logMessage (d, componentName, level, message);
-
-    va_end (args);
-}
-
-void
-logMessage (CompDisplay	 *d,
-	    const char	 *componentName,
-	    CompLogLevel level,
-	    const char	 *message)
-{
-    fprintf (stderr, "%s (%s) - %s: %s\n",
-	      programName, componentName,
-	      logLevelToString (level), message);
-}
-
-const char *
-logLevelToString (CompLogLevel level)
-{
-    switch (level) {
-    case CompLogLevelFatal:
-	return "Fatal";
-    case CompLogLevelError:
-	return "Error";
-    case CompLogLevelWarn:
-	return "Warn";
-    case CompLogLevelInfo:
-	return "Info";
-    case CompLogLevelDebug:
-	return "Debug";
-    default:
-	break;
-    }
-
-    return "Unknown";
-}
 
 static void
 signalHandler (int sig)
@@ -425,21 +372,26 @@ main (int argc, char **argv)
 
     compAddMetadataFromFile (&coreMetadata, "core");
 
-    if (!initCore ())
+    core = new CompCore();
+
+    if (!core)
+	return 1;
+    
+    if (!core->init ())
 	return 1;
 
     if (!disableSm)
 	initSession (clientId);
 
-    if (!addDisplay (displayName))
+    if (!core->addDisplay (displayName))
 	return 1;
 
-    eventLoop ();
+    core->eventLoop ();
 
     if (!disableSm)
 	closeSession ();
 
-    finiCore ();
+    delete core;
     compFiniMetadata (&coreMetadata);
 
     xmlCleanupParser ();

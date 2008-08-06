@@ -24,10 +24,13 @@
  */
 
 #include <string.h>
+#include <sys/poll.h>
+#include <assert.h>
 
 #include <compiz-core.h>
+#include "privatecore.h"
 
-CompCore core;
+CompCore *core;
 
 static char *corePrivateIndices = 0;
 static int  corePrivateLen = 0;
@@ -38,11 +41,11 @@ reallocCorePrivate (int  size,
 {
     void *privates;
 
-    privates = realloc (core.base.privates, size * sizeof (CompPrivate));
+    privates = realloc (core->privates, size * sizeof (CompPrivate));
     if (!privates)
 	return FALSE;
 
-    core.base.privates = (CompPrivate *) privates;
+    core->privates = (CompPrivate *) privates;
 
     return TRUE;
 }
@@ -96,164 +99,183 @@ freeCorePrivateIndex (int index)
     compObjectFreePrivateIndex (NULL, COMP_OBJECT_TYPE_CORE, index);
 }
 
-static CompBool
-initCorePluginForObject (CompPlugin *p,
-			 CompObject *o)
+
+#define TIMEVALDIFF(tv1, tv2)						   \
+    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
+    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
+     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
+    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
+     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
+
+CompCore::CompCore ()
 {
-    return TRUE;
+    priv = new PrivateCore (this);
+    assert (priv);
+
+    compObjectInit (this, 0, COMP_OBJECT_TYPE_CORE);
 }
 
-static void
-finiCorePluginForObject (CompPlugin *p,
-			 CompObject *o)
+bool
+CompCore::init ()
 {
-}
+    WRAPABLE_INIT_HND(fileWatchAdded);
+    WRAPABLE_INIT_HND(fileWatchRemoved);
+    WRAPABLE_INIT_HND(initPluginForObject);
+    WRAPABLE_INIT_HND(finiPluginForObject);
+    WRAPABLE_INIT_HND(setOptionForPlugin);
+    WRAPABLE_INIT_HND(objectAdd);
+    WRAPABLE_INIT_HND(objectRemove);
+    WRAPABLE_INIT_HND(sessionEvent);
 
-static CompBool
-setOptionForPlugin (CompObject      *object,
-		    const char	    *plugin,
-		    const char	    *name,
-		    CompOptionValue *value)
-{
-    CompPlugin *p;
-
-    p = findActivePlugin (plugin);
-    if (p && p->vTable->setObjectOption)
-	return (*p->vTable->setObjectOption) (p, object, name, value);
-
-    return FALSE;
-}
-
-static void
-coreObjectAdd (CompObject *parent,
-	       CompObject *object)
-{
-    object->parent = parent;
-}
-
-static void
-coreObjectRemove (CompObject *parent,
-		  CompObject *object)
-{
-    object->parent = NULL;
-}
-
-static void
-fileWatchAdded (CompCore      *core,
-		CompFileWatch *fileWatch)
-{
-}
-
-static void
-fileWatchRemoved (CompCore      *core,
-		  CompFileWatch *fileWatch)
-{
-}
-
-CompBool
-initCore (void)
-{
-    CompPlugin *corePlugin;
-
-    compObjectInit (&core.base, 0, COMP_OBJECT_TYPE_CORE);
-
-    core.displays = NULL;
-
-    core.tmpRegion = XCreateRegion ();
-    if (!core.tmpRegion)
-	return FALSE;
-
-    core.outputRegion = XCreateRegion ();
-    if (!core.outputRegion)
-    {
-	XDestroyRegion (core.tmpRegion);
-	return FALSE;
-    }
-
-    core.fileWatch	     = NULL;
-    core.lastFileWatchHandle = 1;
-
-    core.timeouts	   = NULL;
-    core.lastTimeoutHandle = 1;
-
-    core.watchFds	   = NULL;
-    core.lastWatchFdHandle = 1;
-    core.watchPollFds	   = NULL;
-    core.nWatchFds	   = 0;
-
-    gettimeofday (&core.lastTimeout, 0);
-
-    core.initPluginForObject = initCorePluginForObject;
-    core.finiPluginForObject = finiCorePluginForObject;
-
-    core.setOptionForPlugin = setOptionForPlugin;
-
-    core.objectAdd    = coreObjectAdd;
-    core.objectRemove = coreObjectRemove;
-
-    core.fileWatchAdded   = fileWatchAdded;
-    core.fileWatchRemoved = fileWatchRemoved;
-
-    core.sessionEvent = sessionEvent;
-
-    corePlugin = loadPlugin ("core");
+    CompPlugin *corePlugin = loadPlugin ("core");
     if (!corePlugin)
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
 			"Couldn't load core plugin");
-	return FALSE;
+	return false;
     }
 
     if (!pushPlugin (corePlugin))
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
 			"Couldn't activate core plugin");
-	return FALSE;
+	return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-void
-finiCore (void)
+CompCore::~CompCore ()
 {
     CompPlugin *p;
 
-    while (core.displays)
-	removeDisplay (core.displays);
+    while (priv->displays)
+	removeDisplay (priv->displays);
 
-    if (core.watchPollFds)
-	free (core.watchPollFds);
+    if (priv->watchPollFds)
+	free (priv->watchPollFds);
 
     while ((p = popPlugin ()))
 	unloadPlugin (p);
 
-    XDestroyRegion (core.outputRegion);
-    XDestroyRegion (core.tmpRegion);
 }
 
-void
-addDisplayToCore (CompDisplay *d)
+CompDisplay *
+CompCore::displays()
 {
-    CompDisplay *prev;
+    return priv->displays;
+}
 
-    for (prev = core.displays; prev && prev->next; prev = prev->next);
+bool
+CompCore::addDisplay (const char *name)
+{
+
+    CompDisplay *prev;
+    CompDisplay *d = new CompDisplay();
+
+    if (!d)
+	return false;
+
+    for (prev = priv->displays; prev && prev->next; prev = prev->next);
 
     if (prev)
 	prev->next = d;
     else
-	core.displays = d;
+	priv->displays = d;
+
+    if (!d->init (name))
+    {
+	if (prev)
+	    prev->next = NULL;
+    	else
+	    priv->displays = NULL;
+	delete d;
+	return false;
+    }
+    return true;
 }
 
-CompFileWatchHandle
-addFileWatch (const char	    *path,
-	      int		    mask,
-	      FileWatchCallBackProc callBack,
-	      void		    *closure)
+void
+CompCore::removeDisplay (CompDisplay *d)
 {
-    CompFileWatch *fileWatch;
+    CompDisplay *p;
 
-    fileWatch = (CompFileWatch *) malloc (sizeof (CompFileWatch));
+    for (p = priv->displays; p; p = p->next)
+	if (p->next == d)
+	    break;
+
+    if (p)
+	p->next = d->next;
+    else
+	priv->displays = NULL;
+
+    delete d;
+}
+
+void
+CompCore::eventLoop ()
+{
+    struct timeval tv;
+    CompDisplay    *d;
+    CompTimeout    *t;
+    int		   time;
+
+    for (d = priv->displays; d; d = d->next)
+	d->setWatchFdHandle (addWatchFd (ConnectionNumber (d->dpy()),
+			     		 POLLIN, NULL, NULL));
+
+    for (;;)
+    {
+	if (restartSignal || shutDown)
+	    break;
+
+	for (d = priv->displays; d; d = d->next)
+	{
+	    d->processEvents ();
+	}
+
+	if (!priv->timeouts.empty())
+	{
+	    gettimeofday (&tv, 0);
+	    priv->handleTimeouts (&tv);
+
+	    if ((*priv->timeouts.begin())->minLeft > 0)
+	    {
+		std::list<CompTimeout *>::iterator it = priv->timeouts.begin();
+
+		t = (*it);
+		time = t->maxLeft;
+		while (it != priv->timeouts.end())
+		{
+		    t = (*it);
+		    if (t->minLeft <= time)
+			break;
+		    if (t->maxLeft < time)
+			time = t->maxLeft;
+		    it++;
+		}
+		priv->doPoll (time);
+	    }
+	}
+	else
+	{
+	    priv->doPoll (-1);
+	}
+    }
+
+    for (d = priv->displays; d; d = d->next)
+	removeWatchFd (d->getWatchFdHandle());
+}
+
+
+
+CompFileWatchHandle
+CompCore::addFileWatch (const char	      *path,
+			int		      mask,
+			FileWatchCallBackProc callBack,
+			void		      *closure)
+{
+    CompFileWatch *fileWatch = new CompFileWatch();
     if (!fileWatch)
 	return 0;
 
@@ -261,44 +283,361 @@ addFileWatch (const char	    *path,
     fileWatch->mask	= mask;
     fileWatch->callBack = callBack;
     fileWatch->closure  = closure;
-    fileWatch->handle   = core.lastFileWatchHandle++;
+    fileWatch->handle   = priv->lastFileWatchHandle++;
 
-    if (core.lastFileWatchHandle == MAXSHORT)
-	core.lastFileWatchHandle = 1;
+    if (priv->lastFileWatchHandle == MAXSHORT)
+	priv->lastFileWatchHandle = 1;
 
-    fileWatch->next = core.fileWatch;
-    core.fileWatch = fileWatch;
+    priv->fileWatch.push_front(fileWatch);
 
-    (*core.fileWatchAdded) (&core, fileWatch);
+    fileWatchAdded (fileWatch);
 
     return fileWatch->handle;
 }
 
 void
-removeFileWatch (CompFileWatchHandle handle)
+CompCore::removeFileWatch (CompFileWatchHandle handle)
 {
-    CompFileWatch *p = 0, *w;
+    std::list<CompFileWatch *>::iterator it;
+    CompFileWatch                        *w;
 
-    for (w = core.fileWatch; w; w = w->next)
-    {
-	if (w->handle == handle)
+    for (it = priv->fileWatch.begin(); it != priv->fileWatch.end(); it++)
+	if ((*it)->handle == handle)
 	    break;
 
-	p = w;
-    }
+    if (it == priv->fileWatch.end())
+	return;
 
-    if (w)
+    w = (*it);
+    priv->fileWatch.erase (it);
+
+    fileWatchRemoved (w);
+
+    delete w;
+}
+
+void
+PrivateCore::addTimeout (CompTimeout *timeout)
+{
+    std::list<CompTimeout *>::iterator it;
+
+    for (it = timeouts.begin(); it != timeouts.end(); it++)
     {
-	if (p)
-	    p->next = w->next;
-	else
-	    core.fileWatch = w->next;
-
-	(*core.fileWatchRemoved) (&core, w);
-
-	if (w->path)
-	    free (w->path);
-
-	free (w);
+	if (timeout->minTime < (*it)->minLeft)
+	    break;
     }
+
+    timeout->minLeft = timeout->minTime;
+    timeout->maxLeft = timeout->maxTime;
+
+    timeouts.insert (it, timeout);
+}
+
+CompTimeoutHandle
+CompCore::addTimeout (int	     minTime,
+		      int	     maxTime,
+		      CallBackProc   callBack,
+		      void	     *closure)
+{
+    CompTimeout *timeout = new CompTimeout();
+
+    if (!timeout)
+	return 0;
+
+    timeout->minTime  = minTime;
+    timeout->maxTime  = (maxTime >= minTime) ? maxTime : minTime;
+    timeout->callBack = callBack;
+    timeout->closure  = closure;
+    timeout->handle   = priv->lastTimeoutHandle++;
+
+    if (priv->lastTimeoutHandle == MAXSHORT)
+	priv->lastTimeoutHandle = 1;
+
+    priv->addTimeout (timeout);
+
+    return timeout->handle;
+}
+
+void *
+CompCore::removeTimeout (CompTimeoutHandle handle)
+{
+    std::list<CompTimeout *>::iterator it;
+    CompTimeout                        *t;
+    void                               *closure = NULL;
+
+    for (it = priv->timeouts.begin(); it != priv->timeouts.end(); it++)
+	if ((*it)->handle == handle)
+	    break;
+
+    if (it == priv->timeouts.end())
+	return NULL;
+
+    t = (*it);
+    priv->timeouts.erase (it);
+
+    closure = t->closure;
+
+    delete t;
+
+    return closure;
+}
+
+CompWatchFdHandle
+CompCore::addWatchFd (int	   fd,
+		      short int    events,
+		      CallBackProc callBack,
+		      void	   *closure)
+{
+    CompWatchFd *watchFd = new CompWatchFd();
+
+    if (!watchFd)
+	return 0;
+
+    watchFd->fd	      = fd;
+    watchFd->callBack = callBack;
+    watchFd->closure  = closure;
+    watchFd->handle   = priv->lastWatchFdHandle++;
+
+    if (priv->lastWatchFdHandle == MAXSHORT)
+	priv->lastWatchFdHandle = 1;
+
+    priv->watchFds.push_front (watchFd);
+
+    priv->nWatchFds++;
+
+    priv->watchPollFds = (struct pollfd *) realloc (priv->watchPollFds,
+			  priv->nWatchFds * sizeof (struct pollfd));
+
+    priv->watchPollFds[priv->nWatchFds - 1].fd     = fd;
+    priv->watchPollFds[priv->nWatchFds - 1].events = events;
+
+    return watchFd->handle;
+}
+
+void
+CompCore::removeWatchFd (CompWatchFdHandle handle)
+{
+    std::list<CompWatchFd *>::iterator it;
+    CompWatchFd                        *w;
+    int                                i;
+
+    for (it = priv->watchFds.begin(), i = priv->nWatchFds - 1;
+	 it != priv->watchFds.end(); it++, i--)
+	if ((*it)->handle == handle)
+	    break;
+
+    if (it == priv->watchFds.end())
+	return;
+
+    w = (*it);
+    priv->watchFds.erase (it);
+
+    priv->nWatchFds--;
+
+    if (i < priv->nWatchFds)
+	memmove (&priv->watchPollFds[i], &priv->watchPollFds[i + 1],
+		 (priv->nWatchFds - i) * sizeof (struct pollfd));
+
+    delete w;
+}
+
+short int
+PrivateCore::watchFdEvents (CompWatchFdHandle handle)
+{
+    std::list<CompWatchFd *>::iterator it;
+    int                                i;
+
+    for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
+	 it++, i--)
+	if ((*it)->handle == handle)
+	    return watchPollFds[i].revents;
+
+    return 0;
+}
+
+int
+PrivateCore::doPoll (int timeout)
+{
+    int rv;
+
+    rv = poll (watchPollFds, nWatchFds, timeout);
+    if (rv)
+    {
+	std::list<CompWatchFd *>::iterator it;
+	int                                i;
+
+	for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
+	    it++, i--)
+	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
+		(*(*it)->callBack) ((*it)->closure);
+    }
+
+    return rv;
+}
+
+void
+PrivateCore::handleTimeouts (struct timeval *tv)
+{
+    CompTimeout                        *t;
+    int		                       timeDiff;
+    std::list<CompTimeout *>::iterator it;
+
+    timeDiff = TIMEVALDIFF (tv, &lastTimeout);
+
+    /* handle clock rollback */
+    if (timeDiff < 0)
+	timeDiff = 0;
+
+    for (it = timeouts.begin(); it != timeouts.end(); it++)
+    {
+	t = (*it);
+	t->minLeft -= timeDiff;
+	t->maxLeft -= timeDiff;
+    }
+
+    while (timeouts.begin() != timeouts.end() &&
+	   (*timeouts.begin())->minLeft <= 0)
+    {
+	t = (*timeouts.begin());
+	timeouts.pop_front();
+
+	if ((*t->callBack) (t->closure))
+	{
+	    addTimeout (t);
+	}
+	else
+	{
+	    delete t;
+	}
+    }
+
+    lastTimeout = *tv;
+}
+
+
+void
+CompCore::fileWatchAdded (CompFileWatch *watch)
+    WRAPABLE_HND_FUNC(fileWatchAdded, watch)
+
+void
+CompCore::fileWatchRemoved (CompFileWatch *watch)
+    WRAPABLE_HND_FUNC(fileWatchRemoved, watch)
+
+bool
+CompCore::initPluginForObject (CompPlugin *plugin, CompObject *object)
+{
+    WRAPABLE_HND_FUNC_RETURN(bool, initPluginForObject, plugin, object)
+    return true;
+}
+
+void
+CompCore::finiPluginForObject (CompPlugin *plugin, CompObject *object)
+    WRAPABLE_HND_FUNC(finiPluginForObject, plugin, object)
+
+	
+bool
+CompCore::setOptionForPlugin (CompObject      *object,
+			      const char      *plugin,
+			      const char      *name,
+			      CompOptionValue *value)
+{
+    WRAPABLE_HND_FUNC_RETURN(bool, setOptionForPlugin,
+			     object, plugin, name, value)
+
+    CompPlugin *p = findActivePlugin (plugin);
+    if (p)
+	return p->vTable->setObjectOption (object, name, value);
+
+    return false;
+}
+
+void
+CompCore::objectAdd (CompObject *parent, CompObject *object)
+{
+    WRAPABLE_HND_FUNC(objectAdd, parent, object)
+    object->parent = parent;
+}
+
+void
+CompCore::objectRemove (CompObject *parent, CompObject *object)
+{
+    WRAPABLE_HND_FUNC(objectRemove, parent, object)
+    object->parent = NULL;
+}
+
+void
+CompCore::sessionEvent (CompSessionEvent event,
+			     CompOption       *arguments,
+			     unsigned int     nArguments)
+    WRAPABLE_HND_FUNC(sessionEvent, event, arguments, nArguments)
+
+CoreInterface::CoreInterface ()
+{
+    WRAPABLE_INIT_FUNC(fileWatchAdded);
+    WRAPABLE_INIT_FUNC(fileWatchRemoved);
+    WRAPABLE_INIT_FUNC(initPluginForObject);
+    WRAPABLE_INIT_FUNC(finiPluginForObject);
+    WRAPABLE_INIT_FUNC(setOptionForPlugin);
+    WRAPABLE_INIT_FUNC(objectAdd);
+    WRAPABLE_INIT_FUNC(objectRemove);
+    WRAPABLE_INIT_FUNC(sessionEvent);
+}
+
+void
+CoreInterface::fileWatchAdded (CompFileWatch *watch)
+    WRAPABLE_DEF_FUNC(fileWatchAdded, watch)
+
+void
+CoreInterface::fileWatchRemoved (CompFileWatch *watch)
+    WRAPABLE_DEF_FUNC(fileWatchRemoved, watch)
+
+bool
+CoreInterface::initPluginForObject (CompPlugin *plugin, CompObject *object)
+    WRAPABLE_DEF_FUNC_RETURN(initPluginForObject, plugin, object)
+
+void
+CoreInterface::finiPluginForObject (CompPlugin *plugin, CompObject *object)
+    WRAPABLE_DEF_FUNC(finiPluginForObject, plugin, object)
+
+	
+bool
+CoreInterface::setOptionForPlugin (CompObject      *object,
+				   const char      *plugin,
+				   const char	   *name,
+				   CompOptionValue *value)
+    WRAPABLE_DEF_FUNC_RETURN(setOptionForPlugin,
+			     object, plugin, name, value)
+
+void
+CoreInterface::objectAdd (CompObject *parent, CompObject *object)
+    WRAPABLE_DEF_FUNC(objectAdd, parent, object)
+
+void
+CoreInterface::objectRemove (CompObject *parent, CompObject *object)
+    WRAPABLE_DEF_FUNC(objectRemove, parent, object)
+
+void
+CoreInterface::sessionEvent (CompSessionEvent event,
+			     CompOption       *arguments,
+			     unsigned int     nArguments)
+    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments, nArguments)
+
+	
+PrivateCore::PrivateCore (CompCore *core) :
+    core (core),
+    displays (0),
+    fileWatch (0),
+    lastFileWatchHandle (1),
+    timeouts (0),
+    lastTimeoutHandle (1),
+    watchFds (0),
+    lastWatchFdHandle (1),
+    watchPollFds (0),
+    nWatchFds (0)
+{
+    gettimeofday (&lastTimeout, 0);
+}
+
+PrivateCore::~PrivateCore ()
+{
 }

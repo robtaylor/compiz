@@ -180,7 +180,7 @@ saveYourselfCallback (SmcConn	connection,
     args[3].name    = "fast";
     args[3].value.b = fast;
 
-    (*core.sessionEvent) (&core, CompSessionEventSaveYourself, args, 4);
+    core->sessionEvent (CompSessionEventSaveYourself, args, 4);
 
     setCloneRestartCommands (connection);
     setRestartStyle (connection, SmRestartImmediately);
@@ -192,7 +192,7 @@ static void
 dieCallback (SmcConn   connection,
 	     SmPointer clientData)
 {
-    (*core.sessionEvent) (&core, CompSessionEventDie, NULL, 0);
+    core->sessionEvent (CompSessionEventDie, NULL, 0);
 
     closeSession ();
     exit (0);
@@ -202,14 +202,14 @@ static void
 saveCompleteCallback (SmcConn	connection,
 		      SmPointer clientData)
 {
-    (*core.sessionEvent) (&core, CompSessionEventSaveComplete, NULL, 0);
+    core->sessionEvent (CompSessionEventSaveComplete, NULL, 0);
 }
 
 static void
 shutdownCancelledCallback (SmcConn   connection,
 			   SmPointer clientData)
 {
-    (*core.sessionEvent) (&core, CompSessionEventShutdownCancelled, NULL, 0);
+    core->sessionEvent (CompSessionEventShutdownCancelled, NULL, 0);
 }
 
 void
@@ -283,14 +283,6 @@ closeSession (void)
     }
 }
 
-void
-sessionEvent (CompCore         *c,
-	      CompSessionEvent event,
-	      CompOption       *arguments,
-	      unsigned int     nArguments)
-{
-}
-
 char *
 getSessionClientId (CompSessionClientIdType type)
 {
@@ -316,7 +308,7 @@ getSessionClientId (CompSessionClientIdType type)
  */
 
 /* This is called when data is available on an ICE connection. */
-static Bool
+static bool
 iceProcessMessages (void *data)
 {
     IceConn		     connection = (IceConn) data;
@@ -356,7 +348,7 @@ iceNewConnection (IceConn    connection,
 	       fcntl (IceConnectionNumber (connection),
 		      F_GETFD,0) | FD_CLOEXEC);
 
-	iceWatchFdHandle = compAddWatchFd (IceConnectionNumber (connection),
+	iceWatchFdHandle = core->addWatchFd (IceConnectionNumber (connection),
 					   POLLIN | POLLPRI | POLLHUP | POLLERR,
 					   iceProcessMessages, connection);
 
@@ -368,7 +360,7 @@ iceNewConnection (IceConn    connection,
 
 	if (iceConnected)
 	{
-	    compRemoveWatchFd (iceWatchFdHandle);
+	    core->removeWatchFd (iceWatchFdHandle);
 
 	    iceWatchFdHandle = 0;
 	    iceConnected = 0;

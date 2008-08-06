@@ -26,6 +26,7 @@
 #include <stdlib.h>
 
 #include <compiz-core.h>
+#include "privatescreen.h"
 
 static void
 setCursorMatrix (CompCursor *c)
@@ -36,20 +37,20 @@ setCursorMatrix (CompCursor *c)
 }
 
 void
-addCursor (CompScreen *s)
+CompScreen::addCursor ()
 {
     CompCursor *c;
 
     c = (CompCursor *) malloc (sizeof (CompCursor));
     if (c)
     {
-	c->screen = s;
+	c->screen = this;
 	c->image  = NULL;
 	c->x	  = 0;
 	c->y	  = 0;
 
-	c->next    = s->cursors;
-	s->cursors = c;
+	c->next    = priv->cursors;
+	priv->cursors = c;
 
 	updateCursor (c, 0, 0, 0);
 
@@ -57,12 +58,13 @@ addCursor (CompScreen *s)
     }
 }
 
-Bool
-damageCursorRect (CompCursor *c,
-		  Bool       initial,
-		  BoxPtr     rect)
+bool
+CompScreen::damageCursorRect (CompCursor *c,
+			      bool       initial,
+			      BoxPtr     rect)
 {
-    return FALSE;
+    WRAPABLE_HND_FUNC_RETURN(bool, damageCursorRect, c, initial, rect)
+    return false;
 }
 
 void
@@ -71,12 +73,12 @@ addCursorDamageRect (CompCursor *c,
 {
     REGION region;
 
-    if (c->screen->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
+    if (c->screen->damageMask () & COMP_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
     region.extents = *rect;
 
-    if (!(*c->screen->damageCursorRect) (c, FALSE, &region.extents))
+    if (!c->screen->damageCursorRect (c, false, &region.extents))
     {
 	region.extents.x1 += c->x;
 	region.extents.y1 += c->y;
@@ -86,7 +88,7 @@ addCursorDamageRect (CompCursor *c,
 	region.rects = &region.extents;
 	region.numRects = region.size = 1;
 
-	damageScreenRegion (c->screen, &region);
+	c->screen->damageRegion (&region);
     }
 }
 
@@ -95,7 +97,7 @@ addCursorDamage (CompCursor *c)
 {
     BoxRec box;
 
-    if (c->screen->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
+    if (c->screen->damageMask () & COMP_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
     box.x1 = 0;
@@ -117,10 +119,10 @@ updateCursor (CompCursor    *c,
     {
 	CompCursorImage *cursorImage;
 
-	cursorImage = findCursorImageAtScreen (c->screen, serial);
+	cursorImage = c->screen->findCursorImage (serial);
 	if (!cursorImage)
 	{
-	    Display	      *dpy = c->screen->display->display;
+	    Display	      *dpy = c->screen->display ()->dpy ();
 	    XFixesCursorImage *image;
 
 	    image = XFixesGetCursorImage (dpy);
@@ -158,8 +160,8 @@ updateCursor (CompCursor    *c,
 
 	    XFree (image);
 
-	    cursorImage->next = c->screen->cursorImages;
-	    c->screen->cursorImages = cursorImage;
+	    cursorImage->next = c->screen->cursorImages ();
+	    c->screen->cursorImages () = cursorImage;
 	}
 
 	if (c->image)

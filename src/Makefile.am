@@ -16,11 +16,11 @@ compiz_SOURCES =   \
 	privates.cpp \
 	object.cpp   \
 	core.cpp	   \
-	texture.cpp  \
 	display.cpp  \
 	screen.cpp   \
 	window.cpp   \
 	event.cpp    \
+	texture.cpp  \
 	paint.cpp	   \
 	option.cpp   \
 	plugin.cpp   \

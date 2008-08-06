@@ -28,43 +28,51 @@
 
 #include <compiz.h>
 
-COMPIZ_BEGIN_DECLS
 
-typedef CompBool (*InitPluginProc) (CompPlugin *plugin);
-typedef void (*FiniPluginProc) (CompPlugin *plugin);
+typedef bool (*InitPluginObjectProc) (CompObject *object);
+typedef void (*FiniPluginObjectProc) (CompObject *object);
 
-typedef CompMetadata *(*GetMetadataProc) (CompPlugin *plugin);
-
-typedef CompBool (*InitPluginObjectProc) (CompPlugin *plugin,
-					  CompObject *object);
-typedef void (*FiniPluginObjectProc) (CompPlugin  *plugin,
-				      CompObject *object);
-
-typedef CompOption *(*GetPluginObjectOptionsProc) (CompPlugin *plugin,
-						   CompObject *object,
+typedef CompOption *(*GetPluginObjectOptionsProc) (CompObject *object,
 						   int	      *count);
-typedef CompBool (*SetPluginObjectOptionProc) (CompPlugin      *plugin,
-					       CompObject      *object,
+typedef bool (*SetPluginObjectOptionProc) (CompObject      *object,
 					       const char      *name,
 					       CompOptionValue *value);
 
-typedef struct _CompPluginVTable {
-    const char *name;
+class CompPluginVTable {
 
-    GetMetadataProc getMetadata;
+    public:
+	virtual ~CompPluginVTable ();
+	
+	virtual const char * name () = 0;
 
-    InitPluginProc init;
-    FiniPluginProc fini;
+	virtual CompMetadata *
+	getMetadata ();
 
-    InitPluginObjectProc initObject;
-    FiniPluginObjectProc finiObject;
+	virtual bool
+	init () = 0;
 
-    GetPluginObjectOptionsProc getObjectOptions;
-    SetPluginObjectOptionProc  setObjectOption;
-} CompPluginVTable;
+	virtual void
+	fini () = 0;
+
+	virtual bool
+	initObject (CompObject *object);
+
+	virtual void
+	finiObject (CompObject *object);
+	
+	virtual CompOption *
+	getObjectOptions (CompObject *object, int *count);
+
+	virtual bool
+	setObjectOption (CompObject *object,
+			 const char *name,
+			 CompOptionValue *value);
+};
+
+COMPIZ_BEGIN_DECLS
 
 CompPluginVTable *
-getCompPluginInfo20070830 (void);
+getCompPluginInfo20080805 (void);
 
 COMPIZ_END_DECLS
 

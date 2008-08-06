@@ -145,14 +145,17 @@ INCLUDES =					\
 moduledir = $(plugindir)
 
 module_LTLIBRARIES =		\
-	$(libglib_module)	\
-	$(libgconf_module)	\
-	$(libkconfig_module)	\
-	libdecoration.la	\
-	libzoom.la		\
-	libmove.la		\
-	libresize.la		
-# 
+	libmove.la
+
+
+#module_LTLIBRARIES =		\
+#	$(libglib_module)	\
+#	$(libgconf_module)	\
+#	$(libkconfig_module)	\
+#	libdecoration.la	\
+#	libzoom.la		\
+#	libmove.la		\
+#	libresize.la		\
 # 	libwobbly.la		\
 # 	libfade.la		\
 # 	libminimize.la		\

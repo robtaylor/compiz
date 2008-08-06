@@ -597,8 +597,8 @@ initKeyValue (CompDisplay     *d,
     {
 	CompScreen *s;
 
-	for (s = d->screens; s; s = s->next)
-	    addScreenAction (s, &v->action);
+	for (s = d->screens (); s; s = s->next)
+	    s->addAction (&v->action);
     }
 }
 
@@ -634,8 +634,8 @@ initButtonValue (CompDisplay     *d,
     {
 	CompScreen *s;
 
-	for (s = d->screens; s; s = s->next)
-	    addScreenAction (s, &v->action);
+	for (s = d->screens (); s; s = s->next)
+	    s->addAction (&v->action);
     }
 }
 
@@ -675,8 +675,8 @@ initEdgeValue (CompDisplay     *d,
     {
 	CompScreen *s;
 
-	for (s = d->screens; s; s = s->next)
-	    addScreenAction (s, &v->action);
+	for (s = d->screens (); s; s = s->next)
+	    s->addAction (&v->action);
     }
 }
 
@@ -1106,7 +1106,7 @@ compInitScreenOptionFromMetadata (CompScreen   *s,
 
     sprintf (str, "/compiz/%s/screen//option[@name=\"%s\"]", m->path, name);
 
-    return initOptionFromMetadataPath (s->display, m, o, BAD_CAST str);
+    return initOptionFromMetadataPath (s->display (), m, o, BAD_CAST str);
 }
 
 static void
@@ -1123,7 +1123,7 @@ finiScreenOptionValue (CompScreen      *s,
     case CompOptionTypeEdge:
     case CompOptionTypeBell:
 	if (v->action.state & CompActionStateAutoGrab)
-	    removeScreenAction (s, &v->action);
+	    s->removeAction (&v->action);
 	break;
     case CompOptionTypeList:
 	for (i = 0; i < v->list.nValue; i++)
@@ -1219,8 +1219,8 @@ finiDisplayOptionValue (CompDisplay	*d,
     case CompOptionTypeEdge:
     case CompOptionTypeBell:
 	if (v->action.state & CompActionStateAutoGrab)
-	    for (s = d->screens; s; s = s->next)
-		removeScreenAction (s, &v->action);
+	    for (s = d->screens (); s; s = s->next)
+		s->removeAction (&v->action);
 	break;
     case CompOptionTypeList:
 	for (i = 0; i < v->list.nValue; i++)

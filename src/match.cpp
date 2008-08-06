@@ -27,6 +27,7 @@
 #include <string.h>
 
 #include <compiz-core.h>
+#include "privatedisplay.h"
 
 static void
 matchResetOps (CompDisplay *display,
@@ -563,7 +564,7 @@ matchUpdateOps (CompDisplay *display,
 	    matchUpdateOps (display, op->group.op, op->group.nOp);
 	    break;
 	case CompMatchOpTypeExp:
-	    (*display->matchInitExp) (display, &op->exp.e, op->exp.value);
+	    display->matchInitExp (&op->exp.e, op->exp.value);
 	    break;
 	}
 
@@ -643,7 +644,7 @@ matchEvalTypeExp (CompDisplay *display,
 		  CompWindow  *window,
 		  CompPrivate c_private)
 {
-    return (c_private.uval & window->wmType);
+    return (c_private.uval & window->wmType ());
 }
 
 static Bool
@@ -651,7 +652,7 @@ matchEvalStateExp (CompDisplay *display,
 		   CompWindow  *window,
 		   CompPrivate c_private)
 {
-    return (c_private.uval & window->state);
+    return (c_private.uval & window->state ());
 }
 
 static Bool
@@ -659,7 +660,7 @@ matchEvalIdExp (CompDisplay *display,
 		CompWindow  *window,
 		CompPrivate c_private)
 {
-    return (c_private.val == window->id);
+    return (c_private.val == window->id ());
 }
 
 static Bool
@@ -667,16 +668,16 @@ matchEvalOverrideRedirectExp (CompDisplay *display,
 			      CompWindow  *window,
 			      CompPrivate c_private)
 {
-    Bool overrideRedirect = window->attrib.override_redirect;
+    Bool overrideRedirect = window->attrib ().override_redirect;
     return ((c_private.val == 1 && overrideRedirect) ||
 	    (c_private.val == 0 && !overrideRedirect));
 }
 
 void
-matchInitExp (CompDisplay  *display,
-	      CompMatchExp *exp,
-	      const char   *value)
+CompDisplay::matchInitExp (CompMatchExp *exp, const char *value)
 {
+    WRAPABLE_HND_FUNC(matchInitExp, exp, value)
+
     if (strncmp (value, "xid=", 4) == 0)
     {
 	exp->eval     = matchEvalIdExp;
@@ -698,7 +699,7 @@ matchInitExp (CompDisplay  *display,
 	    value += 5;
 
 	exp->eval      = matchEvalTypeExp;
-	exp->priv.uval = windowTypeFromString (value);
+	exp->priv.uval = CompWindow::windowTypeFromString (value);
     }
 }
 
@@ -732,8 +733,10 @@ matchUpdateMatchOptions (CompOption *option,
 }
 
 void
-matchExpHandlerChanged (CompDisplay *display)
+CompDisplay::matchExpHandlerChanged ()
 {
+    WRAPABLE_HND_FUNC(matchExpHandlerChanged)
+
     CompOption *option;
     int	       nOption;
     CompPlugin *p;
@@ -742,32 +745,22 @@ matchExpHandlerChanged (CompDisplay *display)
 
     for (p = getPlugins (); p; p = p->next)
     {
-	if (!p->vTable->getObjectOptions)
-	    continue;
-
-	option = (*p->vTable->getObjectOptions) (p, &display->base, &nOption);
+	option = p->vTable->getObjectOptions (this, &nOption);
 	matchUpdateMatchOptions (option, nOption);
     }
 
-    for (s = display->screens; s; s = s->next)
+    for (s = priv->screens; s; s = s->next)
     {
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    if (!p->vTable->getObjectOptions)
-		continue;
-
-	    option = (*p->vTable->getObjectOptions) (p, &s->base, &nOption);
+	    option = p->vTable->getObjectOptions (s, &nOption);
 	    matchUpdateMatchOptions (option, nOption);
 	}
-
-	for (w = s->windows; w; w = w->next)
-	    updateWindowOpacity (w);
     }
 }
 
 void
-matchPropertyChanged (CompDisplay *display,
-		      CompWindow  *w)
+CompDisplay::matchPropertyChanged (CompWindow *w)
 {
-    updateWindowOpacity (w);
+    WRAPABLE_HND_FUNC(matchPropertyChanged, w)
 }

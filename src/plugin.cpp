@@ -33,43 +33,66 @@
 
 CompPlugin *plugins = 0;
 
-static Bool
-coreInit (CompPlugin *p)
+class CorePluginVTable : public CompPluginVTable
 {
-    return TRUE;
+    public:
+
+	const char *
+	name () { return "core"; };
+
+	CompMetadata *
+	getMetadata ();
+
+	virtual bool
+	init ();
+
+	virtual void
+	fini ();
+
+	CompOption *
+	getObjectOptions (CompObject *object, int *count);
+
+	bool
+	setObjectOption (CompObject *object,
+			 const char *name,
+			 CompOptionValue *value);
+};
+
+bool
+CorePluginVTable::init ()
+{
+    return true;
 }
 
-static void
-coreFini (CompPlugin *p)
+void
+CorePluginVTable::fini ()
 {
 }
 
-static CompMetadata *
-coreGetMetadata (CompPlugin *plugin)
+CompMetadata *
+CorePluginVTable::getMetadata ()
 {
     return &coreMetadata;
 }
 
-static CompOption *
-coreGetObjectOptions (CompPlugin *plugin,
-		      CompObject *object,
-		      int	 *count)
+CompOption *
+CorePluginVTable::getObjectOptions (CompObject *object,
+				    int	 *count)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
 	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) getDisplayOptions,
-	(GetPluginObjectOptionsProc) getScreenOptions
+	(GetPluginObjectOptionsProc) CompDisplay::getDisplayOptions,
+	(GetPluginObjectOptionsProc) CompScreen::getScreenOptions
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (object, count));
 }
 
-static Bool
-coreSetObjectOption (CompPlugin      *plugin,
-		     CompObject      *object,
-		     const char      *name,
-		     CompOptionValue *value)
+bool
+CorePluginVTable::setObjectOption (CompObject      *object,
+				   const char      *name,
+				   CompOptionValue *value)
 {
     static SetPluginObjectOptionProc dispTab[] = {
 	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
@@ -78,19 +101,12 @@ coreSetObjectOption (CompPlugin      *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
-		     (plugin, object, name, value));
+		     (object, name, value));
 }
 
-static CompPluginVTable coreVTable = {
-    "core",
-    coreGetMetadata,
-    coreInit,
-    coreFini,
-    0, /* InitObject */
-    0, /* FiniObject */
-    coreGetObjectOptions,
-    coreSetObjectOption
-};
+
+
+CorePluginVTable coreVTable;
 
 static Bool
 cloaderLoadPlugin (CompPlugin *p,
@@ -100,7 +116,7 @@ cloaderLoadPlugin (CompPlugin *p,
     if (path)
 	return FALSE;
 
-    if (strcmp (name, coreVTable.name))
+    if (strcmp (name, coreVTable.name ()))
 	return FALSE;
 
     p->vTable	      = &coreVTable;
@@ -128,7 +144,7 @@ cloaderListPlugins (const char *path,
     if (!list)
 	return 0;
 
-    *list = strdup (coreVTable.name);
+    *list = strdup (coreVTable.name ());
     if (!*list)
     {
 	free (list);
@@ -166,7 +182,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 	dlerror ();
 
 	getInfo = (PluginGetInfoProc)
-	    dlsym (dlhand, "getCompPluginInfo20070830");
+	    dlsym (dlhand, "getCompPluginInfo20080805");
 
 	error = dlerror ();
 	if (error)
@@ -364,14 +380,12 @@ initObjectTree (CompObject *object,
 
     pCtx->object = object;
 
-    if (p->vTable->initObject)
+
+    if (!p->vTable->initObject (object))
     {
-	if (!(*p->vTable->initObject) (p, object))
-	{
-	    compLogMessage (NULL, p->vTable->name, CompLogLevelError,
-			    "InitObject failed");
-	    return FALSE;
-	}
+	compLogMessage (NULL, p->vTable->name (), CompLogLevelError,
+			"InitObject failed");
+	return FALSE;
     }
 
     ctx.plugin = p;
@@ -382,18 +396,16 @@ initObjectTree (CompObject *object,
     {
 	compObjectForEachType (object, finiObjectsWithType, (void *) &ctx);
 
-	if (p->vTable->initObject && p->vTable->finiObject)
-	    (*p->vTable->finiObject) (p, object);
+	p->vTable->finiObject (object);
 
 	return FALSE;
     }
 
-    if (!(*core.initPluginForObject) (p, object))
+    if (!core->initPluginForObject (p, object))
     {
 	compObjectForEachType (object, finiObjectsWithType, (void *) &ctx);
 
-	if (p->vTable->initObject && p->vTable->finiObject)
-	    (*p->vTable->finiObject) (p, object);
+	p->vTable->finiObject (object);
 
 	return FALSE;
     }
@@ -418,10 +430,10 @@ finiObjectTree (CompObject *object,
 
     compObjectForEachType (object, finiObjectsWithType, (void *) &ctx);
 
-    if (p->vTable->initObject && p->vTable->finiObject)
-	(*p->vTable->finiObject) (p, object);
+ 
+    p->vTable->finiObject (object);
 
-    (*core.finiPluginForObject) (p, object);
+    core->finiPluginForObject (p, object);
 
     return TRUE;
 }
@@ -431,19 +443,19 @@ initPlugin (CompPlugin *p)
 {
     InitObjectContext ctx;
 
-    if (!(*p->vTable->init) (p))
+    if (!p->vTable->init ())
     {
 	compLogMessage (NULL, "core", CompLogLevelError,
-			"InitPlugin '%s' failed", p->vTable->name);
+			"InitPlugin '%s' failed", p->vTable->name ());
 	return FALSE;
     }
 
     ctx.plugin = p;
     ctx.object = NULL;
 
-    if (!initObjectTree (&core.base, (void *) &ctx))
+    if (!initObjectTree (core, (void *) &ctx))
     {
-	(*p->vTable->fini) (p);
+	p->vTable->fini ();
 	return FALSE;
     }
 
@@ -458,9 +470,9 @@ finiPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    finiObjectTree (&core.base, (void *) &ctx);
+    finiObjectTree (core, (void *) &ctx);
 
-    (*p->vTable->fini) (p);
+    p->vTable->fini ();
 }
 
 CompBool
@@ -522,7 +534,7 @@ findActivePlugin (const char *name)
 
     for (p = plugins; p; p = p->next)
     {
-	if (strcmp (p->vTable->name, name) == 0)
+	if (strcmp (p->vTable->name (), name) == 0)
 	    return p;
     }
 
@@ -584,11 +596,11 @@ loadPlugin (const char *name)
 Bool
 pushPlugin (CompPlugin *p)
 {
-    if (findActivePlugin (p->vTable->name))
+    if (findActivePlugin (p->vTable->name ()))
     {
 	compLogMessage (NULL, "core", CompLogLevelWarn,
 			"Plugin '%s' already active",
-			p->vTable->name);
+			p->vTable->name ());
 
 	return FALSE;
     }
@@ -599,7 +611,7 @@ pushPlugin (CompPlugin *p)
     if (!initPlugin (p))
     {
 	compLogMessage (NULL, "core", CompLogLevelError,
-			"Couldn't activate plugin '%s'", p->vTable->name);
+			"Couldn't activate plugin '%s'", p->vTable->name ());
 	plugins = p->next;
 
 	return FALSE;
@@ -721,11 +733,11 @@ getPluginABI (const char *name)
     CompOption	*option;
     int		nOption;
 
-    if (!p || !p->vTable->getObjectOptions)
+    if (!p)
 	return 0;
 
     /* MULTIDPYERROR: ABI options should be moved into core */
-    option = (*p->vTable->getObjectOptions) (p, &core.displays->base,
+    option = p->vTable->getObjectOptions (core->displays(),
 					     &nOption);
 
     return getIntOptionNamed (option, nOption, "abi", 0);
@@ -765,10 +777,10 @@ getPluginDisplayIndex (CompDisplay *d,
     CompOption	*option;
     int		nOption, value;
 
-    if (!p || !p->vTable->getObjectOptions)
+    if (!p)
 	return FALSE;
 
-    option = (*p->vTable->getObjectOptions) (p, &d->base, &nOption);
+    option = p->vTable->getObjectOptions (d, &nOption);
 
     value = getIntOptionNamed (option, nOption, "index", -1);
     if (value < 0)
@@ -777,4 +789,42 @@ getPluginDisplayIndex (CompDisplay *d,
     *index = value;
 
     return TRUE;
+}
+
+
+CompPluginVTable::~CompPluginVTable ()
+{
+}
+
+CompMetadata *
+CompPluginVTable::getMetadata ()
+{
+    return NULL;
+}
+
+
+bool
+CompPluginVTable::initObject (CompObject *object)
+{
+    return true;
+}
+
+void
+CompPluginVTable::finiObject (CompObject *object)
+{
+}
+	
+CompOption *
+CompPluginVTable::getObjectOptions (CompObject *object, int *count)
+{
+    (*count) = 0;
+    return NULL;
+}
+
+bool
+CompPluginVTable::setObjectOption (CompObject *object,
+				   const char *name,
+				   CompOptionValue *value)
+{
+    return false;
 }

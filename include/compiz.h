@@ -38,16 +38,18 @@ typedef int CompWatchFdHandle;
 
 typedef union _CompOptionValue CompOptionValue;
 
-typedef struct _CompObject   CompObject;
-typedef struct _CompCore     CompCore;
-typedef struct _CompDisplay  CompDisplay;
 typedef struct _CompMetadata CompMetadata;
 typedef struct _CompOption   CompOption;
 typedef struct _CompPlugin   CompPlugin;
-typedef struct _CompScreen   CompScreen;
-typedef struct _CompWindow   CompWindow;
 
-typedef CompBool (*CallBackProc) (void *closure);
+
+class CompCore;
+class CompDisplay;
+class CompScreen;
+class CompWindow;
+class CompObject;
+
+typedef bool (*CallBackProc) (void *closure);
 
 typedef enum {
     CompOptionTypeBool,
@@ -118,27 +120,6 @@ compSetOptionList (CompOption      *option,
 CompBool
 compSetOption (CompOption      *option,
 	       CompOptionValue *value);
-
-CompTimeoutHandle
-compAddTimeout (int	     minTime,
-		int	     maxTime,
-		CallBackProc callBack,
-		void	     *closure);
-
-void *
-compRemoveTimeout (CompTimeoutHandle handle);
-
-CompWatchFdHandle
-compAddWatchFd (int	     fd,
-		short int    events,
-		CallBackProc callBack,
-		void	     *closure);
-
-void
-compRemoveWatchFd (CompWatchFdHandle handle);
-
-short int
-compWatchFdEvents (CompWatchFdHandle handle);
 
 CompBool
 compInitMetadata (CompMetadata *metadata);

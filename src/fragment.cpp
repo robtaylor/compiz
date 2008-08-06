@@ -160,7 +160,7 @@ findFragmentFunction (CompScreen *s,
 {
     CompFunction *function;
 
-    for (function = s->fragmentFunctions; function; function = function->next)
+    for (function = s->fragmentFunctions (); function; function = function->next)
     {
 	if (function->id == id)
 	    return function;
@@ -175,7 +175,7 @@ findFragmentFunctionWithName (CompScreen *s,
 {
     CompFunction *function;
 
-    for (function = s->fragmentFunctions; function; function = function->next)
+    for (function = s->fragmentFunctions (); function; function = function->next)
     {
 	if (strcmp (function->name, name) == 0)
 	    return function;
@@ -192,7 +192,7 @@ findFragmentProgram (CompScreen *s,
     CompProgram *program;
     int		i;
 
-    for (program = s->fragmentPrograms; program; program = program->next)
+    for (program = s->fragmentPrograms (); program; program = program->next)
     {
 	if (nSignature != program->nSignature)
 	    continue;
@@ -671,8 +671,8 @@ getFragmentProgram (CompScreen	   *s,
 	program = buildFragmentProgram (s, attrib);
 	if (program)
 	{
-	    program->next = s->fragmentPrograms;
-	    s->fragmentPrograms = program;
+	    program->next = s->fragmentPrograms ();
+	    s->fragmentPrograms () = program;
 	}
     }
 
@@ -1140,7 +1140,7 @@ addBlendOpToFunctionData (CompFunctionData *data,
 static int
 allocFunctionId (CompScreen *s)
 {
-    return ++s->lastFunctionId;
+    return ++s->lastFunctionId ();
 }
 
 int
@@ -1190,8 +1190,8 @@ createFragmentFunction (CompScreen	 *s,
     function->mask = COMP_FUNCTION_ARB_MASK;
     function->id   = allocFunctionId (s);
 
-    function->next = s->fragmentFunctions;
-    s->fragmentFunctions = function;
+    function->next = s->fragmentFunctions ();
+    s->fragmentFunctions () = function;
 
     if (nameBuffer)
 	free (nameBuffer);
@@ -1207,7 +1207,7 @@ destroyFragmentFunction (CompScreen *s,
     CompProgram  *program, *prevProgram = NULL;
     int		 i;
 
-    for (function = s->fragmentFunctions; function; function = function->next)
+    for (function = s->fragmentFunctions (); function; function = function->next)
     {
 	if (function->id == id)
 	    break;
@@ -1218,7 +1218,7 @@ destroyFragmentFunction (CompScreen *s,
     if (!function)
 	return;
 
-    program = s->fragmentPrograms;
+    program = s->fragmentPrograms ();
     while (program)
     {
 	for (i = 0; i < program->nSignature; i++)
@@ -1234,7 +1234,7 @@ destroyFragmentFunction (CompScreen *s,
 	    if (prevProgram)
 		prevProgram->next = program->next;
 	    else
-		s->fragmentPrograms = program->next;
+		s->fragmentPrograms () = program->next;
 
 	    program = program->next;
 
@@ -1253,7 +1253,7 @@ destroyFragmentFunction (CompScreen *s,
     if (prevFunction)
 	prevFunction->next = function->next;
     else
-	s->fragmentFunctions = function->next;
+	s->fragmentFunctions () = function->next;
 
     finiFunctionData (&function->data[COMP_FUNCTION_TYPE_ARB]);
     free (function->name);
@@ -1275,7 +1275,7 @@ getSaturateFragmentFunction (CompScreen  *s,
     else
 	target = COMP_FETCH_TARGET_RECT;
 
-    if (!s->saturateFunction[target][param])
+    if (!s->getSaturateFunction (target, param))
     {
 	static const char *saturateData =
 	    "MUL temp, output, { 1.0, 1.0, 1.0, 0.0 };"
@@ -1314,14 +1314,14 @@ getSaturateFragmentFunction (CompScreen  *s,
 		return 0;
 	    }
 
-	    s->saturateFunction[target][param] =
+	    s->getSaturateFunction (target, param) =
 		createFragmentFunction (s, "__core_saturate", data);
 
 	    destroyFunctionData (data);
 	}
     }
 
-    return s->saturateFunction[target][param];
+    return s->getSaturateFunction (target, param);
 }
 
 int
@@ -1369,7 +1369,7 @@ initFragmentAttrib (FragmentAttrib	    *attrib,
     memset (attrib->function, 0, sizeof (attrib->function));
 }
 
-Bool
+bool
 enableFragmentAttrib (CompScreen     *s,
 		      FragmentAttrib *attrib,
 		      Bool	     *blending)
@@ -1378,12 +1378,12 @@ enableFragmentAttrib (CompScreen     *s,
     GLenum type;
     Bool   programBlending;
 
-    if (!s->fragmentProgram)
-	return FALSE;
+    if (!s->fragmentProgram ())
+	return false;
 
     name = getFragmentProgram (s, attrib, &type, &programBlending);
     if (!name)
-	return FALSE;
+	return false;
 
     *blending = !programBlending;
 
@@ -1391,7 +1391,7 @@ enableFragmentAttrib (CompScreen     *s,
 
     (*s->bindProgram) (type, name);
 
-    return TRUE;
+    return true;
 }
 
 void

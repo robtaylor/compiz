@@ -33,27 +33,30 @@
 #include <X11/extensions/Xfixes.h>
 
 #include <compiz-core.h>
+#include "privatedisplay.h"
+#include "privatescreen.h"
+#include "privatewindow.h"
 
 static Window xdndWindow = None;
 static Window edgeWindow = None;
 
-static void
-handleWindowDamageRect (CompWindow *w,
-			int	   x,
-			int	   y,
-			int	   width,
-			int	   height)
+void
+PrivateWindow::handleDamageRect (CompWindow *w,
+				 int	   x,
+				 int	   y,
+				 int	   width,
+				 int	   height)
 {
     REGION region;
-    Bool   initial = FALSE;
+    bool   initial = false;
 
-    if (!w->redirected || w->bindFailed)
+    if (!w->priv->redirected || w->priv->bindFailed)
 	return;
 
-    if (!w->damaged)
+    if (!w->priv->damaged)
     {
-	w->damaged = initial = TRUE;
-	w->invisible = WINDOW_INVISIBLE (w);
+	w->priv->damaged = initial = true;
+	w->priv->invisible = WINDOW_INVISIBLE (w->priv);
     }
 
     region.extents.x1 = x;
@@ -61,208 +64,150 @@ handleWindowDamageRect (CompWindow *w,
     region.extents.x2 = region.extents.x1 + width;
     region.extents.y2 = region.extents.y1 + height;
 
-    if (!(*w->screen->damageWindowRect) (w, initial, &region.extents))
+    if (!w->damageRect (initial, &region.extents))
     {
-	region.extents.x1 += w->attrib.x + w->attrib.border_width;
-	region.extents.y1 += w->attrib.y + w->attrib.border_width;
-	region.extents.x2 += w->attrib.x + w->attrib.border_width;
-	region.extents.y2 += w->attrib.y + w->attrib.border_width;
+	region.extents.x1 += w->priv->attrib.x + w->priv->attrib.border_width;
+	region.extents.y1 += w->priv->attrib.y + w->priv->attrib.border_width;
+	region.extents.x2 += w->priv->attrib.x + w->priv->attrib.border_width;
+	region.extents.y2 += w->priv->attrib.y + w->priv->attrib.border_width;
 
 	region.rects = &region.extents;
 	region.numRects = region.size = 1;
 
-	damageScreenRegion (w->screen, &region);
+	w->priv->screen->damageRegion (&region);
     }
 
     if (initial)
-	damageWindowOutputExtents (w);
+	w->damageOutputExtents ();
 }
 
-void
-handleSyncAlarm (CompWindow *w)
+bool
+CompWindow::handleSyncAlarm ()
 {
-    if (w->syncWait)
+    if (priv->syncWait)
     {
-	if (w->syncWaitHandle)
+	if (priv->syncWaitHandle)
 	{
-	    compRemoveTimeout (w->syncWaitHandle);
-	    w->syncWaitHandle = 0;
+	    core->removeTimeout (priv->syncWaitHandle);
+	    priv->syncWaitHandle = 0;
 	}
 
-	w->syncWait = FALSE;
+	priv->syncWait = FALSE;
 
-	if (resizeWindow (w,
-			  w->syncX, w->syncY,
-			  w->syncWidth, w->syncHeight,
-			  w->syncBorderWidth))
+	if (resize (priv->syncX, priv->syncY,
+		    priv->syncWidth, priv->syncHeight,
+		    priv->syncBorderWidth))
 	{
 	    XRectangle *rects;
 	    int	       nDamage;
 
-	    nDamage = w->nDamage;
-	    rects   = w->damageRects;
+	    nDamage = priv->nDamage;
+	    rects   = priv->damageRects;
 	    while (nDamage--)
 	    {
-		handleWindowDamageRect (w,
-					rects[nDamage].x,
-					rects[nDamage].y,
-					rects[nDamage].width,
-					rects[nDamage].height);
+		PrivateWindow::handleDamageRect (this,
+						 rects[nDamage].x,
+						 rects[nDamage].y,
+						 rects[nDamage].width,
+						 rects[nDamage].height);
 	    }
 
-	    w->nDamage = 0;
+	    priv->nDamage = 0;
 	}
 	else
 	{
 	    /* resizeWindow failing means that there is another pending
 	       resize and we must send a new sync request to the client */
-	    sendSyncRequest (w);
+	    sendSyncRequest ();
 	}
     }
+
+    priv->syncWaitHandle = 0;
+    return false;
 }
 
-static void
-moveInputFocusToOtherWindow (CompWindow *w)
-{
-    CompDisplay *display = w->screen->display;
 
-    if (w->id == display->activeWindow)
-    {
-	CompWindow *ancestor;
-
-	if (w->transientFor && w->transientFor != w->screen->root)
-	{
-	    ancestor = findWindowAtDisplay (display, w->transientFor);
-	    if (ancestor && !(ancestor->type & (CompWindowTypeDesktopMask |
-						CompWindowTypeDockMask)))
-	    {
-		moveInputFocusToWindow (ancestor);
-	    }
-	    else
-		focusDefaultWindow (w->screen);
-	}
-	else if (w->type & (CompWindowTypeDialogMask |
-			    CompWindowTypeModalDialogMask))
-	{
-	    CompWindow *a, *focus = NULL;
-
-	    for (a = w->screen->reverseWindows; a; a = a->prev)
-	    {
-		if (a->clientLeader == w->clientLeader)
-		{
-		    if ((*w->screen->focusWindow) (a))
-		    {
-			if (focus)
-			{
-			    if (a->type & (CompWindowTypeNormalMask |
-					   CompWindowTypeDialogMask |
-					   CompWindowTypeModalDialogMask))
-			    {
-				if (compareWindowActiveness (focus, a) < 0)
-				    focus = a;
-			    }
-			}
-			else
-			    focus = a;
-		    }
-		}
-	    }
-
-	    if (focus && !(focus->type & (CompWindowTypeDesktopMask |
-					  CompWindowTypeDockMask)))
-	    {
-		moveInputFocusToWindow (focus);
-	    }
-	    else
-		focusDefaultWindow (w->screen);
-	}
-	else
-	    focusDefaultWindow (w->screen);
-    }
-}
-
-static Bool
+static bool
 autoRaiseTimeout (void *closure)
 {
     CompDisplay *display = (CompDisplay *) closure;
-    CompWindow  *w = findWindowAtDisplay (display, display->activeWindow);
+    CompWindow  *w = display->findWindow (display->activeWindow ());
 
-    if (display->autoRaiseWindow == display->activeWindow ||
-	(w && (display->autoRaiseWindow == w->transientFor)))
+    if (display->autoRaiseWindow () == display->activeWindow () ||
+	(w && (display->autoRaiseWindow () == w->transientFor ())))
     {
-	w = findWindowAtDisplay (display, display->autoRaiseWindow);
+	w = display->findWindow (display->autoRaiseWindow ());
 	if (w)
-	    updateWindowAttributes (w, CompStackingUpdateModeNormal);
+	    w->updateAttributes (CompStackingUpdateModeNormal);
     }
 
-    return FALSE;
+    return false;
 }
 
 #define REAL_MOD_MASK (ShiftMask | ControlMask | Mod1Mask | Mod2Mask | \
 		       Mod3Mask | Mod4Mask | Mod5Mask | CompNoMask)
 
-static Bool
+static bool
 isCallBackBinding (CompOption	   *option,
 		   CompBindingType type,
 		   CompActionState state)
 {
     if (!isActionOption (option))
-	return FALSE;
+	return false;
 
     if (!(option->value.action.type & type))
-	return FALSE;
+	return false;
 
     if (!(option->value.action.state & state))
-	return FALSE;
+	return false;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 isInitiateBinding (CompOption	   *option,
 		   CompBindingType type,
 		   CompActionState state,
 		   CompAction	   **action)
 {
     if (!isCallBackBinding (option, type, state))
-	return FALSE;
+	return false;
 
     if (!option->value.action.initiate)
-	return FALSE;
+	return false;
 
     *action = &option->value.action;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 isTerminateBinding (CompOption	    *option,
 		    CompBindingType type,
 		    CompActionState state,
 		    CompAction      **action)
 {
     if (!isCallBackBinding (option, type, state))
-	return FALSE;
+	return false;
 
     if (!option->value.action.terminate)
-	return FALSE;
+	return false;
 
     *action = &option->value.action;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
-triggerButtonPressBindings (CompDisplay *d,
-			    CompOption  *option,
-			    int		nOption,
-			    XEvent	*event,
-			    CompOption  *argument,
-			    int		nArgument)
+bool
+PrivateDisplay::triggerButtonPressBindings (CompOption  *option,
+					    int		nOption,
+					    XEvent	*event,
+					    CompOption  *argument,
+					    int		nArgument)
 {
     CompActionState state = CompActionStateInitButton;
     CompAction	    *action;
-    unsigned int    modMask = REAL_MOD_MASK & ~d->ignoredModMask;
+    unsigned int    modMask = REAL_MOD_MASK & ~ignoredModMask;
     unsigned int    bindMods;
     unsigned int    edge = 0;
 
@@ -271,22 +216,22 @@ triggerButtonPressBindings (CompDisplay *d,
 	CompScreen   *s;
 	unsigned int i;
 
-	s = findScreenAtDisplay (d, event->xbutton.root);
+	s = display->findScreen (event->xbutton.root);
 	if (!s)
-	    return FALSE;
+	    return false;
 
 	if (event->xbutton.window != edgeWindow)
 	{
-	    if (!s->maxGrab || event->xbutton.window != s->root)
-		return FALSE;
+	    if (!s->maxGrab () || event->xbutton.window != s->root ())
+		return false;
 	}
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	{
-	    if (edgeWindow == s->screenEdge[i].id)
+	    if (edgeWindow == s->screenEdge (i).id)
 	    {
 		edge = 1 << i;
-		argument[1].value.i = d->activeWindow;
+		argument[1].value.i = display->activeWindow ();
 		break;
 	    }
 	}
@@ -298,12 +243,13 @@ triggerButtonPressBindings (CompDisplay *d,
 	{
 	    if (action->button.button == event->xbutton.button)
 	    {
-		bindMods = virtualToRealModMask (d, action->button.modifiers);
+		bindMods =
+		    display->virtualToRealModMask (action->button.modifiers);
 
 		if ((bindMods & modMask) == (event->xbutton.state & modMask))
-		    if ((*action->initiate) (d, action, state,
+		    if ((*action->initiate) (display, action, state,
 					     argument, nArgument))
-			return TRUE;
+			return true;
 	    }
 	}
 
@@ -315,15 +261,15 @@ triggerButtonPressBindings (CompDisplay *d,
 		if ((action->button.button == event->xbutton.button) &&
 		    (action->edgeMask & edge))
 		{
-		    bindMods = virtualToRealModMask (d,
-						     action->button.modifiers);
+		    bindMods =
+			display->virtualToRealModMask (action->button.modifiers);
 
 		    if ((bindMods & modMask) ==
 			(event->xbutton.state & modMask))
-			if ((*action->initiate) (d, action, state |
+			if ((*action->initiate) (display, action, state |
 						 CompActionStateInitEdge,
 						 argument, nArgument))
-			    return TRUE;
+			    return true;
 		}
 	    }
 	}
@@ -331,16 +277,15 @@ triggerButtonPressBindings (CompDisplay *d,
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-triggerButtonReleaseBindings (CompDisplay *d,
-			      CompOption  *option,
-			      int	  nOption,
-			      XEvent	  *event,
-			      CompOption  *argument,
-			      int	  nArgument)
+bool
+PrivateDisplay::triggerButtonReleaseBindings (CompOption *option,
+					      int        nOption,
+					      XEvent     *event,
+					      CompOption *argument,
+					      int        nArgument)
 {
     CompActionState state = CompActionStateTermButton;
     CompBindingType type  = CompBindingTypeButton | CompBindingTypeEdgeButton;
@@ -352,34 +297,33 @@ triggerButtonReleaseBindings (CompDisplay *d,
 	{
 	    if (action->button.button == event->xbutton.button)
 	    {
-		if ((*action->terminate) (d, action, state,
+		if ((*action->terminate) (display, action, state,
 					  argument, nArgument))
-		    return TRUE;
+		    return true;
 	    }
 	}
 
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-triggerKeyPressBindings (CompDisplay *d,
-			 CompOption  *option,
-			 int	     nOption,
-			 XEvent	     *event,
-			 CompOption  *argument,
-			 int	     nArgument)
+bool
+PrivateDisplay::triggerKeyPressBindings (CompOption  *option,
+					 int         nOption,
+					 XEvent      *event,
+					 CompOption  *argument,
+					 int         nArgument)
 {
     CompActionState state = 0;
     CompAction	    *action;
-    unsigned int    modMask = REAL_MOD_MASK & ~d->ignoredModMask;
+    unsigned int    modMask = REAL_MOD_MASK & ~ignoredModMask;
     unsigned int    bindMods;
 
-    if (event->xkey.keycode == d->escapeKeyCode)
+    if (event->xkey.keycode == escapeKeyCode)
 	state = CompActionStateCancel;
-    else if (event->xkey.keycode == d->returnKeyCode)
+    else if (event->xkey.keycode == returnKeyCode)
 	state = CompActionStateCommit;
 
     if (state)
@@ -392,7 +336,7 @@ triggerKeyPressBindings (CompDisplay *d,
 	    if (isActionOption (o))
 	    {
 		if (o->value.action.terminate)
-		    (*o->value.action.terminate) (d, &o->value.action,
+		    (*o->value.action.terminate) (display, &o->value.action,
 						  state, NULL, 0);
 	    }
 
@@ -400,7 +344,7 @@ triggerKeyPressBindings (CompDisplay *d,
 	}
 
 	if (state == CompActionStateCancel)
-	    return FALSE;
+	    return false;
     }
 
     state = CompActionStateInitKey;
@@ -408,61 +352,61 @@ triggerKeyPressBindings (CompDisplay *d,
     {
 	if (isInitiateBinding (option, CompBindingTypeKey, state, &action))
 	{
-	    bindMods = virtualToRealModMask (d, action->key.modifiers);
+	    bindMods = display->virtualToRealModMask (action->key.modifiers);
 
 	    if (action->key.keycode == event->xkey.keycode)
 	    {
 		if ((bindMods & modMask) == (event->xkey.state & modMask))
-		    if ((*action->initiate) (d, action, state,
+		    if ((*action->initiate) (display, action, state,
 					     argument, nArgument))
-			return TRUE;
+			return true;
 	    }
-	    else if (!d->xkbEvent && action->key.keycode == 0)
+	    else if (!xkbEvent && action->key.keycode == 0)
 	    {
 		if (bindMods == (event->xkey.state & modMask))
-		    if ((*action->initiate) (d, action, state,
+		    if ((*action->initiate) (display, action, state,
 					     argument, nArgument))
-			return TRUE;
+			return true;
 	    }
 	}
 
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-triggerKeyReleaseBindings (CompDisplay *d,
-			   CompOption  *option,
-			   int	       nOption,
-			   XEvent      *event,
-			   CompOption  *argument,
-			   int	       nArgument)
+bool
+PrivateDisplay::triggerKeyReleaseBindings (CompOption  *option,
+					   int         nOption,
+					   XEvent      *event,
+					   CompOption  *argument,
+					   int         nArgument)
 {
-    if (!d->xkbEvent)
+    if (!xkbEvent)
     {
 	CompActionState state = CompActionStateTermKey;
 	CompAction	*action;
-	unsigned int	modMask = REAL_MOD_MASK & ~d->ignoredModMask;
+	unsigned int	modMask = REAL_MOD_MASK & ~ignoredModMask;
 	unsigned int	bindMods;
 	unsigned int	mods;
 
-	mods = keycodeToModifiers (d, event->xkey.keycode);
+	mods = display->keycodeToModifiers (event->xkey.keycode);
 	if (mods == 0)
-	    return FALSE;
+	    return false;
 
 	while (nOption--)
 	{
 	    if (isTerminateBinding (option, CompBindingTypeKey, state, &action))
 	    {
-		bindMods = virtualToRealModMask (d, action->key.modifiers);
+		bindMods =
+		    display->virtualToRealModMask (action->key.modifiers);
 
 		if ((mods & modMask & bindMods) != bindMods)
 		{
-		    if ((*action->terminate) (d, action, state,
+		    if ((*action->terminate) (display, action, state,
 					      argument, nArgument))
-			return TRUE;
+			return true;
 		}
 	    }
 
@@ -470,20 +414,19 @@ triggerKeyReleaseBindings (CompDisplay *d,
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-triggerStateNotifyBindings (CompDisplay		*d,
-			    CompOption		*option,
-			    int			nOption,
-			    XkbStateNotifyEvent *event,
-			    CompOption		*argument,
-			    int			nArgument)
+bool
+PrivateDisplay::triggerStateNotifyBindings (CompOption         *option,
+					    int                 nOption,
+					    XkbStateNotifyEvent *event,
+					    CompOption          *argument,
+					    int                 nArgument)
 {
     CompActionState state;
     CompAction      *action;
-    unsigned int    modMask = REAL_MOD_MASK & ~d->ignoredModMask;
+    unsigned int    modMask = REAL_MOD_MASK & ~ignoredModMask;
     unsigned int    bindMods;
 
     if (event->event_type == KeyPress)
@@ -496,13 +439,14 @@ triggerStateNotifyBindings (CompDisplay		*d,
 	    {
 		if (action->key.keycode == 0)
 		{
-		    bindMods = virtualToRealModMask (d, action->key.modifiers);
+		    bindMods =
+			display->virtualToRealModMask (action->key.modifiers);
 
 		    if ((event->mods & modMask & bindMods) == bindMods)
 		    {
-			if ((*action->initiate) (d, action, state,
+			if ((*action->initiate) (display, action, state,
 						 argument, nArgument))
-			    return TRUE;
+			    return true;
 		    }
 		}
 	    }
@@ -518,13 +462,14 @@ triggerStateNotifyBindings (CompDisplay		*d,
 	{
 	    if (isTerminateBinding (option, CompBindingTypeKey, state, &action))
 	    {
-		bindMods = virtualToRealModMask (d, action->key.modifiers);
+		bindMods =
+		    display->virtualToRealModMask (action->key.modifiers);
 
 		if ((event->mods & modMask & bindMods) != bindMods)
 		{
-		    if ((*action->terminate) (d, action, state,
+		    if ((*action->terminate) (display, action, state,
 					      argument, nArgument))
-			return TRUE;
+			return true;
 		}
 	    }
 
@@ -532,33 +477,33 @@ triggerStateNotifyBindings (CompDisplay		*d,
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
+static bool
 isBellAction (CompOption      *option,
 	      CompActionState state,
 	      CompAction      **action)
 {
     if (option->type != CompOptionTypeAction &&
 	option->type != CompOptionTypeBell)
-	return FALSE;
+	return false;
 
     if (!option->value.action.bell)
-	return FALSE;
+	return false;
 
     if (!(option->value.action.state & state))
-	return FALSE;
+	return false;
 
     if (!option->value.action.initiate)
-	return FALSE;
+	return false;
 
     *action = &option->value.action;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 triggerBellNotifyBindings (CompDisplay *d,
 			   CompOption  *option,
 			   int	       nOption,
@@ -573,16 +518,16 @@ triggerBellNotifyBindings (CompDisplay *d,
 	if (isBellAction (option, state, &action))
 	{
 	    if ((*action->initiate) (d, action, state, argument, nArgument))
-		return TRUE;
+		return true;
 	}
 
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
+static bool
 isEdgeAction (CompOption      *option,
 	      CompActionState state,
 	      unsigned int    edge)
@@ -590,18 +535,18 @@ isEdgeAction (CompOption      *option,
     if (option->type != CompOptionTypeAction &&
 	option->type != CompOptionTypeButton &&
 	option->type != CompOptionTypeEdge)
-	return FALSE;
+	return false;
 
     if (!(option->value.action.edgeMask & edge))
-	return FALSE;
+	return false;
 
     if (!(option->value.action.state & state))
-	return FALSE;
+	return false;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 isEdgeEnterAction (CompOption      *option,
 		   CompActionState state,
 		   CompActionState delayState,
@@ -609,13 +554,13 @@ isEdgeEnterAction (CompOption      *option,
 		   CompAction      **action)
 {
     if (!isEdgeAction (option, state, edge))
-	return FALSE;
+	return false;
 
     if (option->value.action.type & CompBindingTypeEdgeButton)
-	return FALSE;
+	return false;
 
     if (!option->value.action.initiate)
-	return FALSE;
+	return false;
 
     if (delayState)
     {
@@ -624,34 +569,34 @@ isEdgeEnterAction (CompOption      *option,
 	{
 	    /* ignore edge actions which shouldn't be delayed when invoking
 	       undelayed edges (or vice versa) */
-	    return FALSE;
+	    return false;
 	}
     }
 
 
     *action = &option->value.action;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 isEdgeLeaveAction (CompOption      *option,
 		   CompActionState state,
 		   unsigned int    edge,
 		   CompAction      **action)
 {
     if (!isEdgeAction (option, state, edge))
-	return FALSE;
+	return false;
 
     if (!option->value.action.terminate)
-	return FALSE;
+	return false;
 
     *action = &option->value.action;
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 triggerEdgeEnterBindings (CompDisplay	  *d,
 			  CompOption	  *option,
 			  int		  nOption,
@@ -668,16 +613,16 @@ triggerEdgeEnterBindings (CompDisplay	  *d,
 	if (isEdgeEnterAction (option, state, delayState, edge, &action))
 	{
 	    if ((*action->initiate) (d, action, state, argument, nArgument))
-		return TRUE;
+		return true;
 	}
 
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
+static bool
 triggerEdgeLeaveBindings (CompDisplay	  *d,
 			  CompOption	  *option,
 			  int		  nOption,
@@ -693,16 +638,16 @@ triggerEdgeLeaveBindings (CompDisplay	  *d,
 	if (isEdgeLeaveAction (option, state, edge, &action))
 	{
 	    if ((*action->terminate) (d, action, state, argument, nArgument))
-		return TRUE;
+		return true;
 	}
 
 	option++;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
+static bool
 triggerAllEdgeEnterBindings (CompDisplay     *d,
 			     CompActionState state,
 			     CompActionState delayState,
@@ -716,22 +661,19 @@ triggerAllEdgeEnterBindings (CompDisplay     *d,
 
     for (p = getPlugins (); p; p = p->next)
     {
-	if (p->vTable->getObjectOptions)
+	option = p->vTable->getObjectOptions (d, &nOption);
+	if (triggerEdgeEnterBindings (d,
+				      option, nOption,
+				      state, delayState, edge,
+				      argument, nArgument))
 	{
-	    option = (*p->vTable->getObjectOptions) (p, &d->base, &nOption);
-	    if (triggerEdgeEnterBindings (d,
-					  option, nOption,
-					  state, delayState, edge,
-					  argument, nArgument))
-	    {
-		return TRUE;
-	    }
+	    return true;
 	}
     }
-    return FALSE;
+    return false;
 }
 
-static Bool
+static bool
 delayedEdgeTimeout (void *closure)
 {
     CompDelayedEdgeSettings *settings = (CompDelayedEdgeSettings *) closure;
@@ -745,30 +687,30 @@ delayedEdgeTimeout (void *closure)
 
     free (settings);
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-triggerEdgeEnter (CompDisplay     *d,
-		  unsigned int    edge,
-		  CompActionState state,
-		  CompOption      *argument,
-		  unsigned int    nArgument)
+bool
+PrivateDisplay::triggerEdgeEnter (unsigned int    edge,
+				  CompActionState state,
+				  CompOption      *argument,
+				  unsigned int    nArgument)
 {
     int                     delay;
     CompDelayedEdgeSettings *delayedSettings = NULL;
 
-    delay = d->opt[COMP_DISPLAY_OPTION_EDGE_DELAY].value.i;
+    delay = opt[COMP_DISPLAY_OPTION_EDGE_DELAY].value.i;
 
     if (nArgument > 7)
 	nArgument = 7;
 
     if (delay > 0)
     {
-	delayedSettings = (CompDelayedEdgeSettings *) malloc (sizeof (CompDelayedEdgeSettings));
+	delayedSettings = (CompDelayedEdgeSettings *)
+	    malloc (sizeof (CompDelayedEdgeSettings));
 	if (delayedSettings)
 	{
-	    delayedSettings->d       = d;
+	    delayedSettings->d       = display;
 	    delayedSettings->edge    = edge;
 	    delayedSettings->state   = state;
 	    delayedSettings->nOption = nArgument;
@@ -783,30 +725,29 @@ triggerEdgeEnter (CompDisplay     *d,
 	for (i = 0; i < nArgument; i++)
 	    delayedSettings->option[i] = argument[i];
 
-	d->edgeDelayHandle = compAddTimeout (delay, (float) delay * 1.2,
-					     delayedEdgeTimeout,
-					     delayedSettings);
+	edgeDelayHandle = core->addTimeout (delay, (float) delay * 1.2,
+					    delayedEdgeTimeout,
+					    delayedSettings);
 
 	delayState = CompActionStateNoEdgeDelay;
-	if (triggerAllEdgeEnterBindings (d, state, delayState,
+	if (triggerAllEdgeEnterBindings (display, state, delayState,
 					 edge, argument, nArgument))
-	    return TRUE;
+	    return true;
     }
     else
     {
-	if (triggerAllEdgeEnterBindings (d, state, 0, edge,
+	if (triggerAllEdgeEnterBindings (display, state, 0, edge,
 					 argument, nArgument))
-	    return TRUE;
+	    return true;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-handleActionEvent (CompDisplay *d,
-		   XEvent      *event)
+bool
+PrivateDisplay::handleActionEvent (XEvent *event)
 {
-    CompObject *obj = &d->base;
+    CompObject *obj = display;
     CompOption *option;
     int	       nOption;
     CompPlugin *p;
@@ -849,12 +790,9 @@ handleActionEvent (CompDisplay *d,
 
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    if (!p->vTable->getObjectOptions)
-		continue;
-
-	    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-	    if (triggerButtonPressBindings (d, option, nOption, event, o, 8))
-		return TRUE;
+	    option = p->vTable->getObjectOptions (obj, &nOption);
+	    if (triggerButtonPressBindings (option, nOption, event, o, 8))
+		return true;
 	}
 	break;
     case ButtonRelease:
@@ -875,17 +813,14 @@ handleActionEvent (CompDisplay *d,
 
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    if (!p->vTable->getObjectOptions)
-		continue;
-
-	    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-	    if (triggerButtonReleaseBindings (d, option, nOption, event, o, 8))
-		return TRUE;
+	    option = p->vTable->getObjectOptions (obj, &nOption);
+	    if (triggerButtonReleaseBindings (option, nOption, event, o, 8))
+		return true;
 	}
 	break;
     case KeyPress:
 	o[0].value.i = event->xkey.window;
-	o[1].value.i = d->activeWindow;
+	o[1].value.i = activeWindow;
 	o[2].value.i = event->xkey.state;
 	o[3].value.i = event->xkey.x_root;
 	o[4].value.i = event->xkey.y_root;
@@ -901,17 +836,14 @@ handleActionEvent (CompDisplay *d,
 
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    if (!p->vTable->getObjectOptions)
-		continue;
-
-	    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-	    if (triggerKeyPressBindings (d, option, nOption, event, o, 8))
-		return TRUE;
+	    option = p->vTable->getObjectOptions (obj, &nOption);
+	    if (triggerKeyPressBindings (option, nOption, event, o, 8))
+		return true;
 	}
 	break;
     case KeyRelease:
 	o[0].value.i = event->xkey.window;
-	o[1].value.i = d->activeWindow;
+	o[1].value.i = activeWindow;
 	o[2].value.i = event->xkey.state;
 	o[3].value.i = event->xkey.x_root;
 	o[4].value.i = event->xkey.y_root;
@@ -927,11 +859,9 @@ handleActionEvent (CompDisplay *d,
 
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    if (!p->vTable->getObjectOptions)
-		continue;
-	    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-	    if (triggerKeyReleaseBindings (d, option, nOption, event, o, 8))
-		return TRUE;
+	    option = p->vTable->getObjectOptions (obj, &nOption);
+	    if (triggerKeyReleaseBindings (option, nOption, event, o, 8))
+		return true;
 	}
 	break;
     case EnterNotify:
@@ -943,18 +873,18 @@ handleActionEvent (CompDisplay *d,
 	    unsigned int    edge, i;
 	    CompActionState state;
 
-	    s = findScreenAtDisplay (d, event->xcrossing.root);
+	    s = display->findScreen (event->xcrossing.root);
 	    if (!s)
-		return FALSE;
+		return false;
 
-	    if (d->edgeDelayHandle)
+	    if (edgeDelayHandle)
 	    {
 		void *closure;
 
-		closure = compRemoveTimeout (d->edgeDelayHandle);
+		closure = core->removeTimeout (edgeDelayHandle);
 		if (closure)
 		    free (closure);
-		d->edgeDelayHandle = 0;
+		edgeDelayHandle = 0;
 	    }
 
 	    if (edgeWindow && edgeWindow != event->xcrossing.window)
@@ -964,7 +894,7 @@ handleActionEvent (CompDisplay *d,
 
 		for (i = 0; i < SCREEN_EDGE_NUM; i++)
 		{
-		    if (edgeWindow == s->screenEdge[i].id)
+		    if (edgeWindow == s->screenEdge (i).id)
 		    {
 			edge = 1 << i;
 			break;
@@ -974,7 +904,7 @@ handleActionEvent (CompDisplay *d,
 		edgeWindow = None;
 
 		o[0].value.i = event->xcrossing.window;
-		o[1].value.i = d->activeWindow;
+		o[1].value.i = activeWindow;
 		o[2].value.i = event->xcrossing.state;
 		o[3].value.i = event->xcrossing.x_root;
 		o[4].value.i = event->xcrossing.y_root;
@@ -986,13 +916,10 @@ handleActionEvent (CompDisplay *d,
 
 		for (p = getPlugins (); p; p = p->next)
 		{
-		    if (!p->vTable->getObjectOptions)
-			continue;
-
-		    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-		    if (triggerEdgeLeaveBindings (d, option, nOption, state,
-						  edge, o, 7))
-			return TRUE;
+		    option = p->vTable->getObjectOptions (obj, &nOption);
+		    if (triggerEdgeLeaveBindings (display, option, nOption,
+						  state, edge, o, 7))
+			return true;
 		}
 	    }
 
@@ -1000,7 +927,7 @@ handleActionEvent (CompDisplay *d,
 
 	    for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	    {
-		if (event->xcrossing.window == s->screenEdge[i].id)
+		if (event->xcrossing.window == s->screenEdge (i).id)
 		{
 		    edge = 1 << i;
 		    break;
@@ -1014,7 +941,7 @@ handleActionEvent (CompDisplay *d,
 		edgeWindow = event->xcrossing.window;
 
 		o[0].value.i = event->xcrossing.window;
-		o[1].value.i = d->activeWindow;
+		o[1].value.i = activeWindow;
 		o[2].value.i = event->xcrossing.state;
 		o[3].value.i = event->xcrossing.x_root;
 		o[4].value.i = event->xcrossing.y_root;
@@ -1024,17 +951,17 @@ handleActionEvent (CompDisplay *d,
 		o[6].name    = "time";
 		o[6].value.i = event->xcrossing.time;
 
-		if (triggerEdgeEnter (d, edge, state, o, 7))
-		    return TRUE;
+		if (triggerEdgeEnter (edge, state, o, 7))
+		    return true;
 	    }
 	}
 	break;
     case ClientMessage:
-	if (event->xclient.message_type == d->xdndEnterAtom)
+	if (event->xclient.message_type == atoms.xdndEnter)
 	{
 	    xdndWindow = event->xclient.window;
 	}
-	else if (event->xclient.message_type == d->xdndLeaveAtom)
+	else if (event->xclient.message_type == atoms.xdndLeave)
 	{
 	    unsigned int    edge = 0;
 	    CompActionState state;
@@ -1044,18 +971,18 @@ handleActionEvent (CompDisplay *d,
 	    {
 		CompWindow *w;
 
-		w = findWindowAtDisplay (d, event->xclient.window);
+		w = display->findWindow (event->xclient.window);
 		if (w)
 		{
-		    CompScreen   *s = w->screen;
+		    CompScreen   *s = w->screen ();
 		    unsigned int i;
 
 		    for (i = 0; i < SCREEN_EDGE_NUM; i++)
 		    {
-			if (event->xclient.window == s->screenEdge[i].id)
+			if (event->xclient.window == s->screenEdge (i).id)
 			{
 			    edge = 1 << i;
-			    root = s->root;
+			    root = s->root ();
 			    break;
 			}
 		    }
@@ -1067,7 +994,7 @@ handleActionEvent (CompDisplay *d,
 		state = CompActionStateTermEdgeDnd;
 
 		o[0].value.i = event->xclient.window;
-		o[1].value.i = d->activeWindow;
+		o[1].value.i = activeWindow;
 		o[2].value.i = 0; /* fixme */
 		o[3].value.i = 0; /* fixme */
 		o[4].value.i = 0; /* fixme */
@@ -1075,17 +1002,14 @@ handleActionEvent (CompDisplay *d,
 
 		for (p = getPlugins (); p; p = p->next)
 		{
-		    if (!p->vTable->getObjectOptions)
-			continue;
-
-		    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-		    if (triggerEdgeLeaveBindings (d, option, nOption, state,
-						  edge, o, 6))
-			return TRUE;
+		    option = p->vTable->getObjectOptions (obj, &nOption);
+		    if (triggerEdgeLeaveBindings (display, option, nOption,
+						  state, edge, o, 6))
+			return true;
 		}
 	    }
 	}
-	else if (event->xclient.message_type == d->xdndPositionAtom)
+	else if (event->xclient.message_type == atoms.xdndPosition)
 	{
 	    unsigned int    edge = 0;
 	    CompActionState state;
@@ -1095,18 +1019,18 @@ handleActionEvent (CompDisplay *d,
 	    {
 		CompWindow *w;
 
-		w = findWindowAtDisplay (d, event->xclient.window);
+		w = display->findWindow (event->xclient.window);
 		if (w)
 		{
-		    CompScreen   *s = w->screen;
+		    CompScreen   *s = w->screen ();
 		    unsigned int i;
 
 		    for (i = 0; i < SCREEN_EDGE_NUM; i++)
 		    {
-			if (xdndWindow == s->screenEdge[i].id)
+			if (xdndWindow == s->screenEdge (i).id)
 			{
 			    edge = 1 << i;
-			    root = s->root;
+			    root = s->root ();
 			    break;
 			}
 		    }
@@ -1118,21 +1042,21 @@ handleActionEvent (CompDisplay *d,
 		state = CompActionStateInitEdgeDnd;
 
 		o[0].value.i = event->xclient.window;
-		o[1].value.i = d->activeWindow;
+		o[1].value.i = activeWindow;
 		o[2].value.i = 0; /* fixme */
 		o[3].value.i = event->xclient.data.l[2] >> 16;
 		o[4].value.i = event->xclient.data.l[2] & 0xffff;
 		o[5].value.i = root;
 
-		if (triggerEdgeEnter (d, edge, state, o, 6))
-		    return TRUE;
+		if (triggerEdgeEnter (edge, state, o, 6))
+		    return true;
 	    }
 
 	    xdndWindow = None;
 	}
 	break;
     default:
-	if (event->type == d->fixesEvent + XFixesCursorNotify)
+	if (event->type == fixesEvent + XFixesCursorNotify)
 	{
 	    /*
 	    XFixesCursorNotifyEvent *ce = (XFixesCursorNotifyEvent *) event;
@@ -1143,7 +1067,7 @@ handleActionEvent (CompDisplay *d,
 		updateCursor (cursor, ce->x, ce->y, ce->cursor_serial);
 	    */
 	}
-	else if (event->type == d->xkbEvent)
+	else if (event->type == xkbEvent)
 	{
 	    XkbAnyEvent *xkbEvent = (XkbAnyEvent *) event;
 
@@ -1151,8 +1075,8 @@ handleActionEvent (CompDisplay *d,
 	    {
 		XkbStateNotifyEvent *stateEvent = (XkbStateNotifyEvent *) event;
 
-		o[0].value.i = d->activeWindow;
-		o[1].value.i = d->activeWindow;
+		o[0].value.i = activeWindow;
+		o[1].value.i = activeWindow;
 		o[2].value.i = stateEvent->mods;
 
 		o[3].type    = CompOptionTypeInt;
@@ -1161,19 +1085,16 @@ handleActionEvent (CompDisplay *d,
 
 		for (p = getPlugins (); p; p = p->next)
 		{
-		    if (!p->vTable->getObjectOptions)
-			continue;
-
-		    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-		    if (triggerStateNotifyBindings (d, option, nOption,
+		    option = p->vTable->getObjectOptions (obj, &nOption);
+		    if (triggerStateNotifyBindings (option, nOption,
 						    stateEvent, o, 4))
-			return TRUE;
+			return true;
 		}
 	    }
 	    else if (xkbEvent->xkb_type == XkbBellNotify)
 	    {
-		o[0].value.i = d->activeWindow;
-		o[1].value.i = d->activeWindow;
+		o[0].value.i = activeWindow;
+		o[1].value.i = activeWindow;
 
 		o[2].type    = CompOptionTypeInt;
 		o[2].name    = "time";
@@ -1181,535 +1102,477 @@ handleActionEvent (CompDisplay *d,
 
 		for (p = getPlugins (); p; p = p->next)
 		{
-		    if (!p->vTable->getObjectOptions)
-			continue;
-
-		    option = (*p->vTable->getObjectOptions) (p, obj, &nOption);
-		    if (triggerBellNotifyBindings (d, option, nOption, o, 3))
-			return TRUE;
+		    option = p->vTable->getObjectOptions (obj, &nOption);
+		    if (triggerBellNotifyBindings (display, option,
+						   nOption, o, 3))
+			return true;
 		}
 	    }
 	}
 	break;
     }
 
-    return FALSE;
+    return false;
 }
 
 void
-handleCompizEvent (CompDisplay *d,
-		   const char  *pluginName,
-		   const char  *eventName,
-		   CompOption  *option,
-		   int         nOption)
+CompScreen::handleExposeEvent (XExposeEvent *event)
 {
+    if (priv->output == event->window)
+	return;
+
+    int more = event->count + 1;
+
+    if (priv->nExpose == priv->sizeExpose)
+    {
+	priv->exposeRects = (XRectangle *)
+	    realloc (priv->exposeRects, (priv->sizeExpose + more) *
+		     sizeof (XRectangle));
+	priv->sizeExpose += more;
+    }
+
+    priv->exposeRects[priv->nExpose].x      = event->x;
+    priv->exposeRects[priv->nExpose].y      = event->y;
+    priv->exposeRects[priv->nExpose].width  = event->width;
+    priv->exposeRects[priv->nExpose].height = event->height;
+    priv->nExpose++;
+
+    if (event->count == 0)
+    {
+	REGION rect;
+
+	rect.rects = &rect.extents;
+	rect.numRects = rect.size = 1;
+
+	while (priv->nExpose--)
+	{
+	    rect.extents.x1 = priv->exposeRects[priv->nExpose].x;
+	    rect.extents.y1 = priv->exposeRects[priv->nExpose].y;
+	    rect.extents.x2 = rect.extents.x1 +
+		priv->exposeRects[priv->nExpose].width;
+	    rect.extents.y2 = rect.extents.y1 +
+		priv->exposeRects[priv->nExpose].height;
+
+	    damageRegion (&rect);
+	}
+	priv->nExpose = 0;
+    }
 }
 
 void
-handleEvent (CompDisplay *d,
-	     XEvent      *event)
+CompDisplay::handleCompizEvent (const char  *plugin,
+				const char  *event,
+				CompOption  *option,
+				int         nOption)
+    WRAPABLE_HND_FUNC(handleCompizEvent, plugin, event, option, nOption)
+
+void
+CompDisplay::handleEvent (XEvent *event)
 {
+    WRAPABLE_HND_FUNC(handleEvent, event)
+
     CompScreen *s;
     CompWindow *w;
 
     switch (event->type) {
     case ButtonPress:
-	s = findScreenAtDisplay (d, event->xbutton.root);
+	s = findScreen (event->xbutton.root);
 	if (s)
-	    setCurrentOutput (s, outputDeviceForPoint (s,
-						       event->xbutton.x_root,
-						       event->xbutton.y_root));
+	    s->setCurrentOutput (
+		s->outputDeviceForPoint (event->xbutton.x_root,
+					 event->xbutton.y_root));
 	break;
     case MotionNotify:
-	s = findScreenAtDisplay (d, event->xmotion.root);
+	s = findScreen (event->xmotion.root);
 	if (s)
-	    setCurrentOutput (s, outputDeviceForPoint (s,
-						       event->xmotion.x_root,
-						       event->xmotion.y_root));
+	    s->setCurrentOutput (
+		s->outputDeviceForPoint (event->xmotion.x_root,
+					 event->xmotion.y_root));
 	break;
     case KeyPress:
-	w = findWindowAtDisplay (d, d->activeWindow);
+	w = findWindow (priv->activeWindow);
 	if (w)
-	    setCurrentOutput (w->screen, outputDeviceForWindow (w));
+	    w->screen ()->setCurrentOutput (w->outputDevice ());
     default:
 	break;
     }
 
-    if (handleActionEvent (d, event))
+    if (priv->handleActionEvent (event))
     {
-	if (!d->screens->maxGrab)
-	    XAllowEvents (d->display, AsyncPointer, event->xbutton.time);
+	if (!priv->screens->maxGrab ())
+	    XAllowEvents (priv->dpy, AsyncPointer, event->xbutton.time);
 
 	return;
     }
 
     switch (event->type) {
     case Expose:
-	for (s = d->screens; s; s = s->next)
-	    if (s->output == event->xexpose.window)
-		break;
-
-	if (s)
-	{
-	    int more = event->xexpose.count + 1;
-
-	    if (s->nExpose == s->sizeExpose)
-	    {
-		s->exposeRects = (XRectangle *) realloc (s->exposeRects,
-					      (s->sizeExpose + more) *
-					      sizeof (XRectangle));
-		s->sizeExpose += more;
-	    }
-
-	    s->exposeRects[s->nExpose].x      = event->xexpose.x;
-	    s->exposeRects[s->nExpose].y      = event->xexpose.y;
-	    s->exposeRects[s->nExpose].width  = event->xexpose.width;
-	    s->exposeRects[s->nExpose].height = event->xexpose.height;
-	    s->nExpose++;
-
-	    if (event->xexpose.count == 0)
-	    {
-		REGION rect;
-
-		rect.rects = &rect.extents;
-		rect.numRects = rect.size = 1;
-
-		while (s->nExpose--)
-		{
-		    rect.extents.x1 = s->exposeRects[s->nExpose].x;
-		    rect.extents.y1 = s->exposeRects[s->nExpose].y;
-		    rect.extents.x2 = rect.extents.x1 +
-			s->exposeRects[s->nExpose].width;
-		    rect.extents.y2 = rect.extents.y1 +
-			s->exposeRects[s->nExpose].height;
-
-		    damageScreenRegion (s, &rect);
-		}
-		s->nExpose = 0;
-	    }
-	}
+	for (s = priv->screens; s; s = s->next)
+	    s->handleExposeEvent (&event->xexpose);
 	break;
     case SelectionRequest:
-	handleSelectionRequest (d, event);
+	priv->handleSelectionRequest (event);
 	break;
     case SelectionClear:
-	handleSelectionClear (d, event);
+	priv->handleSelectionClear (event);
 	break;
     case ConfigureNotify:
-	w = findWindowAtDisplay (d, event->xconfigure.window);
+	w = findWindow (event->xconfigure.window);
 	if (w)
 	{
-	    configureWindow (w, &event->xconfigure);
+	    w->configure (&event->xconfigure);
 	}
 	else
 	{
-	    s = findScreenAtDisplay (d, event->xconfigure.window);
+	    s = findScreen (event->xconfigure.window);
 	    if (s)
-		configureScreen (s, &event->xconfigure);
+		s->configure (&event->xconfigure);
 	}
 	break;
     case CreateNotify:
-	s = findScreenAtDisplay (d, event->xcreatewindow.parent);
+	s = findScreen (event->xcreatewindow.parent);
 	if (s)
 	{
 	    /* The first time some client asks for the composite
 	     * overlay window, the X server creates it, which causes
 	     * an errorneous CreateNotify event.  We catch it and
 	     * ignore it. */
-	    if (s->overlay != event->xcreatewindow.window)
-		addWindow (s, event->xcreatewindow.window, getTopWindow (s));
+	    if (s->overlay () != event->xcreatewindow.window)
+		new CompWindow (s, event->xcreatewindow.window,
+				s->getTopWindow ());
 	}
 	break;
     case DestroyNotify:
-	w = findWindowAtDisplay (d, event->xdestroywindow.window);
+	w = findWindow (event->xdestroywindow.window);
 	if (w)
 	{
-	    moveInputFocusToOtherWindow (w);
-	    destroyWindow (w);
+	    w->moveInputFocusToOtherWindow ();
+	    w->destroy ();
 	}
 	break;
     case MapNotify:
-	w = findWindowAtDisplay (d, event->xmap.window);
+	w = findWindow (event->xmap.window);
 	if (w)
 	{
-	    if (!w->attrib.override_redirect)
-		w->managed = TRUE;
+	    if (!w->attrib ().override_redirect)
+		w->managed () = true;
 
 	    /* been shaded */
-	    if (w->height == 0)
+	    if (w->height () == 0)
 	    {
-		if (w->id == d->activeWindow)
-		    moveInputFocusToWindow (w);
+		if (w->id () == priv->activeWindow)
+		    w->moveInputFocusTo ();
 	    }
 
-	    mapWindow (w);
+	    w->map ();
 	}
 	break;
     case UnmapNotify:
-	w = findWindowAtDisplay (d, event->xunmap.window);
+	w = findWindow (event->xunmap.window);
 	if (w)
 	{
 	    /* Normal -> Iconic */
-	    if (w->pendingUnmaps)
+	    if (w->pendingUnmaps ())
 	    {
-		setWmState (d, IconicState, w->id);
-		w->pendingUnmaps--;
+		setWmState (IconicState, w->id ());
+		w->pendingUnmaps ()--;
 	    }
 	    else /* X -> Withdrawn */
 	    {
 		/* Iconic -> Withdrawn */
-		if (w->state & CompWindowStateHiddenMask)
+		if (w->state () & CompWindowStateHiddenMask)
 		{
-		    w->minimized = FALSE;
+		    w->minimized () = false;
 
-		    changeWindowState (w,
-				       w->state & ~CompWindowStateHiddenMask);
+		    w->changeState (w->state () & ~CompWindowStateHiddenMask);
 
-		    updateClientListForScreen (w->screen);
+		    w->screen () ->updateClientList ();
 		}
 
-		if (!w->attrib.override_redirect)
-		    setWmState (d, WithdrawnState, w->id);
+		if (!w->attrib ().override_redirect)
+		    setWmState (WithdrawnState, w->id ());
 
-		w->placed  = FALSE;
-		w->managed = FALSE;
+		w->placed  () = false;
+		w->managed () = false;
 	    }
 
-	    unmapWindow (w);
+	    w->unmap ();
 
-	    if (!w->shaded)
-		moveInputFocusToOtherWindow (w);
+	    if (!w->shaded ())
+		w->moveInputFocusToOtherWindow ();
 	}
 	break;
     case ReparentNotify:
-	w = findWindowAtDisplay (d, event->xreparent.window);
-	s = findScreenAtDisplay (d, event->xreparent.parent);
+	w = findWindow (event->xreparent.window);
+	s = findScreen (event->xreparent.parent);
 	if (s && !w)
 	{
-	    addWindow (s, event->xreparent.window, getTopWindow (s));
+	    new CompWindow (s, event->xreparent.window, s->getTopWindow ());
 	}
 	else if (w)
 	{
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive
 	       grabs. */
-	    XSelectInput (d->display, w->id, NoEventMask);
-	    XShapeSelectInput (d->display, w->id, NoEventMask);
-	    XUngrabButton (d->display, AnyButton, AnyModifier, w->id);
+	    XSelectInput (priv->dpy, w->id (), NoEventMask);
+	    XShapeSelectInput (priv->dpy, w->id (), NoEventMask);
+	    XUngrabButton (priv->dpy, AnyButton, AnyModifier, w->id ());
 
-	    moveInputFocusToOtherWindow (w);
+	    w->moveInputFocusToOtherWindow ();
 
-	    destroyWindow (w);
+	    w->destroy ();
 	}
 	break;
     case CirculateNotify:
-	w = findWindowAtDisplay (d, event->xcirculate.window);
+	w = findWindow (event->xcirculate.window);
 	if (w)
-	    circulateWindow (w, &event->xcirculate);
+	    w->circulate (&event->xcirculate);
 	break;
     case ButtonPress:
-	s = findScreenAtDisplay (d, event->xbutton.root);
+	s = findScreen (event->xbutton.root);
 	if (s)
 	{
 	    if (event->xbutton.button == Button1 ||
 		event->xbutton.button == Button2 ||
 		event->xbutton.button == Button3)
 	    {
-		w = findTopLevelWindowAtScreen (s, event->xbutton.window);
+		w = s->findTopLevelWindow (event->xbutton.window);
 		if (w)
 		{
-		    if (d->opt[COMP_DISPLAY_OPTION_RAISE_ON_CLICK].value.b)
-			updateWindowAttributes (w,
+		    if (priv->opt[COMP_DISPLAY_OPTION_RAISE_ON_CLICK].value.b)
+			w->updateAttributes (
 					CompStackingUpdateModeAboveFullscreen);
 
-		    if (w->id != d->activeWindow)
-			if (!(w->type & CompWindowTypeDockMask))
-			    moveInputFocusToWindow (w);
+		    if (w->id () != priv->activeWindow)
+			if (!(w->type () & CompWindowTypeDockMask))
+			    w->moveInputFocusTo ();
 		}
 	    }
 
-	    if (!s->maxGrab)
-		XAllowEvents (d->display, ReplayPointer, event->xbutton.time);
+	    if (!s->maxGrab ())
+		XAllowEvents (priv->dpy, ReplayPointer, event->xbutton.time);
 	}
 	break;
     case PropertyNotify:
-	if (event->xproperty.atom == d->winTypeAtom)
+	if (event->xproperty.atom == priv->atoms.winType)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
 		unsigned int type;
 
-		type = getWindowType (d, w->id);
+		type = getWindowType (w->id ());
 
-		if (type != w->wmType)
+		if (type != w->wmType ())
 		{
-		    if (w->attrib.map_state == IsViewable)
+		    if (w->attrib ().map_state == IsViewable)
 		    {
-			if (w->type == CompWindowTypeDesktopMask)
-			    w->screen->desktopWindowCount--;
+			if (w->type () == CompWindowTypeDesktopMask)
+			    w->screen ()->desktopWindowCount ()--;
 			else if (type == CompWindowTypeDesktopMask)
-			    w->screen->desktopWindowCount++;
+			    w->screen ()->desktopWindowCount ()++;
 		    }
 
-		    w->wmType = type;
+		    w->wmType () = type;
 
-		    recalcWindowType (w);
-		    recalcWindowActions (w);
-
-		    if (w->type & CompWindowTypeDesktopMask)
-			w->paint.opacity = OPAQUE;
+		    w->recalcType ();
+		    w->recalcActions ();
 
 		    if (type & (CompWindowTypeDockMask |
 				CompWindowTypeDesktopMask))
-			setDesktopForWindow (w, 0xffffffff);
+			w->setDesktop (0xffffffff);
 
-		    updateClientListForScreen (w->screen);
+		    w->screen ()->updateClientList ();
 
-		    (*d->matchPropertyChanged) (d, w);
+		    matchPropertyChanged (w);
 		}
 	    }
 	}
-	else if (event->xproperty.atom == d->winStateAtom)
+	else if (event->xproperty.atom == priv->atoms.winState)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w && !w->managed)
+	    w = findWindow (event->xproperty.window);
+	    if (w && !w->managed ())
 	    {
 		unsigned int state;
 
-		state = getWindowState (d, w->id);
-		state = constrainWindowState (state, w->actions);
+		state = getWindowState (w->id ());
+		state = CompWindow::constrainWindowState (state, w->actions ());
 
-		if (state != w->state)
+		if (state != w->state ())
 		{
-		    w->state = state;
+		    w->state () = state;
 
-		    recalcWindowType (w);
-		    recalcWindowActions (w);
+		    w->recalcType ();
+		    w->recalcActions ();
 
-		    if (w->type & CompWindowTypeDesktopMask)
-			w->paint.opacity = OPAQUE;
-
-		    (*d->matchPropertyChanged) (d, w);
+		    matchPropertyChanged (w);
 		}
 	    }
 	}
 	else if (event->xproperty.atom == XA_WM_NORMAL_HINTS)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		updateNormalHints (w);
-		recalcWindowActions (w);
+		w->updateNormalHints ();
+		w->recalcActions ();
 	    }
 	}
 	else if (event->xproperty.atom == XA_WM_HINTS)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		updateWmHints (w);
+		w->updateWmHints ();
 	}
 	else if (event->xproperty.atom == XA_WM_TRANSIENT_FOR)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		updateTransientHint (w);
-		recalcWindowActions (w);
+		w->updateTransientHint ();
+		w->recalcActions ();
 	    }
 	}
-	else if (event->xproperty.atom == d->wmClientLeaderAtom)
+	else if (event->xproperty.atom == priv->atoms.wmClientLeader)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->clientLeader = getClientLeader (w);
+		w->clientLeader () = w->getClientLeader ();
 	}
-	else if (event->xproperty.atom == d->wmIconGeometryAtom)
+	else if (event->xproperty.atom == priv->atoms.wmIconGeometry)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		updateIconGeometry (w);
+		w->updateIconGeometry ();
 	}
-	else if (event->xproperty.atom == d->winOpacityAtom)
+	else if (event->xproperty.atom == priv->atoms.winOpacity)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w && (w->type & CompWindowTypeDesktopMask) == 0)
-	    {
-		w->opacity	  = OPAQUE;
-		w->opacityPropSet =
-		    readWindowProp32 (d, w->id, d->winOpacityAtom, &w->opacity);
-
-		updateWindowOpacity (w);
-	    }
-	}
-	else if (event->xproperty.atom == d->winBrightnessAtom)
-	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-	    {
-		GLushort brightness;
-
-		brightness = getWindowProp32 (d, w->id,
-					      d->winBrightnessAtom,
-					      BRIGHT);
-		if (brightness != w->brightness)
-		{
-		    w->brightness = brightness;
-		    if (w->alive)
-		    {
-			w->paint.brightness = w->brightness;
-			addWindowDamage (w);
-		    }
-		}
-	    }
+		w->updateOpacity ();
 	}
-	else if (event->xproperty.atom == d->winSaturationAtom)
+	else if (event->xproperty.atom == priv->atoms.winBrightness)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w && w->screen->canDoSaturated)
-	    {
-		GLushort saturation;
-
-		saturation = getWindowProp32 (d, w->id,
-					      d->winSaturationAtom,
-					      COLOR);
-		if (saturation != w->saturation)
-		{
-		    w->saturation = saturation;
-		    if (w->alive)
-		    {
-			w->paint.saturation = w->saturation;
-			addWindowDamage (w);
-		    }
-		}
-	    }
+	    w = findWindow (event->xproperty.window);
+	    if (w)
+		w->updateBrightness ();
 	}
-	else if (event->xproperty.atom == d->xBackgroundAtom[0] ||
-		 event->xproperty.atom == d->xBackgroundAtom[1])
+	else if (event->xproperty.atom == priv->atoms.winSaturation)
 	{
-	    s = findScreenAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
+	    if (w)
+		w->updateSaturation ();
+	}
+	else if (event->xproperty.atom == priv->atoms.xBackground[0] ||
+		 event->xproperty.atom == priv->atoms.xBackground[1])
+	{
+	    s = findScreen (event->xproperty.window);
 	    if (s)
-	    {
-		finiTexture (s, &s->backgroundTexture);
-		initTexture (s, &s->backgroundTexture);
-
-		if (s->backgroundLoaded)
-		{
-		    s->backgroundLoaded = FALSE;
-		    damageScreen (s);
-		}
-	    }
+		s->updateBackground ();
 	}
-	else if (event->xproperty.atom == d->wmStrutAtom ||
-		 event->xproperty.atom == d->wmStrutPartialAtom)
+	else if (event->xproperty.atom == priv->atoms.wmStrut ||
+		 event->xproperty.atom == priv->atoms.wmStrutPartial)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		if (updateWindowStruts (w))
-		    updateWorkareaForScreen (w->screen);
+		if (w->updateStruts ())
+		    w->screen ()->updateWorkarea ();
 	    }
 	}
-	else if (event->xproperty.atom == d->mwmHintsAtom)
+	else if (event->xproperty.atom == priv->atoms.mwmHints)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-	    {
-		getMwmHints (d, w->id, &w->mwmFunc, &w->mwmDecor);
-
-		recalcWindowActions (w);
-	    }
+		w->updateMwmHints ();
 	}
-	else if (event->xproperty.atom == d->wmProtocolsAtom)
+	else if (event->xproperty.atom == priv->atoms.wmProtocols)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->protocols = getProtocols (d, w->id);
+		w->protocols () = getProtocols (w->id ());
 	}
-	else if (event->xproperty.atom == d->wmIconAtom)
+	else if (event->xproperty.atom == priv->atoms.wmIcon)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		freeWindowIcons (w);
+		w->freeIcons ();
 	}
-	else if (event->xproperty.atom == d->startupIdAtom)
+	else if (event->xproperty.atom == priv->atoms.startupId)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-	    {
-		if (w->startupId)
-		    free (w->startupId);
-
-		w->startupId = getStartupId (w);
-	    }
+		w->updateStartupId ();
 	}
 	else if (event->xproperty.atom == XA_WM_CLASS)
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
+	    w = findWindow (event->xproperty.window);
 	    if (w)
-		updateWindowClassHints (w);
+		w->updateClassHints ();
 	}
 	break;
     case MotionNotify:
 	break;
     case ClientMessage:
-	if (event->xclient.message_type == d->winActiveAtom)
+	if (event->xclient.message_type == priv->atoms.winActive)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		/* use focus stealing prevention if request came from an
 		   application (which means data.l[0] is 1 */
 		if (event->xclient.data.l[0] != 1 ||
-		    allowWindowFocus (w, 0, event->xclient.data.l[1]))
+		    w->allowWindowFocus (0, event->xclient.data.l[1]))
 		{
-		    (*w->screen->activateWindow) (w);
+		    w->activate ();
 		}
 	    }
 	}
-	else if (event->xclient.message_type == d->winOpacityAtom)
+	else if (event->xclient.message_type == priv->atoms.winOpacity)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
-	    if (w && (w->type & CompWindowTypeDesktopMask) == 0)
+	    w = findWindow (event->xclient.window);
+	    if (w && (w->type () & CompWindowTypeDesktopMask) == 0)
 	    {
 		GLushort opacity = event->xclient.data.l[0] >> 16;
 
-		setWindowProp32 (d, w->id, d->winOpacityAtom, opacity);
+		setWindowProp32 (w->id (), priv->atoms.winOpacity, opacity);
 	    }
 	}
-	else if (event->xclient.message_type == d->winBrightnessAtom)
+	else if (event->xclient.message_type == priv->atoms.winBrightness)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		GLushort brightness = event->xclient.data.l[0] >> 16;
 
-		setWindowProp32 (d, w->id, d->winBrightnessAtom, brightness);
+		setWindowProp32 (w->id (), priv->atoms.winBrightness,
+				 brightness);
 	    }
 	}
-	else if (event->xclient.message_type == d->winSaturationAtom)
+	else if (event->xclient.message_type == priv->atoms.winSaturation)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
-	    if (w && w->screen->canDoSaturated)
+	    w = findWindow (event->xclient.window);
+	    if (w)
 	    {
 		GLushort saturation = event->xclient.data.l[0] >> 16;
 
-		setWindowProp32 (d, w->id, d->winSaturationAtom, saturation);
+		setWindowProp32 (w->id (), priv->atoms.winSaturation,
+				 saturation);
 	    }
 	}
-	else if (event->xclient.message_type == d->winStateAtom)
+	else if (event->xclient.message_type == priv->atoms.winState)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		unsigned long wState, state;
 		int	      i;
 
-		wState = w->state;
+		wState = w->state ();
 
 		for (i = 1; i < 3; i++)
 		{
-		    state = windowStateMask (d, event->xclient.data.l[i]);
+		    state = windowStateMask (event->xclient.data.l[i]);
 		    if (state & ~CompWindowStateHiddenMask)
 		    {
 
@@ -1731,14 +1594,15 @@ handleEvent (CompDisplay *d,
 		    }
 		}
 
-		wState = constrainWindowState (wState, w->actions);
-		if (w->id == d->activeWindow)
+		wState = CompWindow::constrainWindowState (wState,
+							   w->actions ());
+		if (w->id () == priv->activeWindow)
 		    wState &= ~CompWindowStateDemandsAttentionMask;
 
-		if (wState != w->state)
+		if (wState != w->state ())
 		{
 		    CompStackingUpdateMode stackingUpdateMode;
-		    unsigned long          dState = wState ^ w->state;
+		    unsigned long          dState = wState ^ w->state ();
 
 		    stackingUpdateMode = CompStackingUpdateModeNone;
 
@@ -1751,69 +1615,46 @@ handleEvent (CompDisplay *d,
 				  CompWindowStateMaximizedVertMask))
 			stackingUpdateMode = CompStackingUpdateModeNormal;
 
-		    changeWindowState (w, wState);
+		    w->changeState (wState);
 
-		    updateWindowAttributes (w, stackingUpdateMode);
+		    w->updateAttributes (stackingUpdateMode);
 		}
 	    }
 	}
-	else if (event->xclient.message_type == d->wmProtocolsAtom)
+	else if (event->xclient.message_type == priv->atoms.wmProtocols)
 	{
-	    if (event->xclient.data.l[0] == d->wmPingAtom)
+	    if (event->xclient.data.l[0] == priv->atoms.wmPing)
 	    {
-		w = findWindowAtDisplay (d, event->xclient.data.l[2]);
+		w = findWindow (event->xclient.data.l[2]);
 		if (w)
-		{
-		    if (!w->alive)
-		    {
-			w->alive	    = TRUE;
-			w->paint.saturation = w->saturation;
-			w->paint.brightness = w->brightness;
-
-			if (w->lastCloseRequestTime)
-			{
-			    toolkitAction (w->screen,
-					   d->toolkitActionForceQuitDialogAtom,
-					   w->lastCloseRequestTime,
-					   w->id,
-					   FALSE,
-					   0,
-					   0);
-
-			    w->lastCloseRequestTime = 0;
-			}
-
-			addWindowDamage (w);
-		    }
-		    w->lastPong = d->lastPing;
-		}
+		    w->handlePing (priv->lastPing);
 	    }
 	}
-	else if (event->xclient.message_type == d->closeWindowAtom)
+	else if (event->xclient.message_type == priv->atoms.closeWindow)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
-		closeWindow (w, event->xclient.data.l[0]);
+		w->close (event->xclient.data.l[0]);
 	}
-	else if (event->xclient.message_type == d->desktopGeometryAtom)
+	else if (event->xclient.message_type == priv->atoms.desktopGeometry)
 	{
-	    s = findScreenAtDisplay (d, event->xclient.window);
+	    s = findScreen (event->xclient.window);
 	    if (s)
 	    {
 		CompOptionValue value;
 
-		value.i = event->xclient.data.l[0] / s->width;
+		value.i = event->xclient.data.l[0] / s->width ();
 
-		(*core.setOptionForPlugin) (&s->base, "core", "hsize", &value);
+		core->setOptionForPlugin (s, "core", "hsize", &value);
 
-		value.i = event->xclient.data.l[1] / s->height;
+		value.i = event->xclient.data.l[1] / s->height ();
 
-		(*core.setOptionForPlugin) (&s->base, "core", "vsize", &value);
+		core->setOptionForPlugin (s, "core", "vsize", &value);
 	    }
 	}
-	else if (event->xclient.message_type == d->moveResizeWindowAtom)
+	else if (event->xclient.message_type == priv->atoms.moveResizeWindow)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		unsigned int   xwcm = 0;
@@ -1848,12 +1689,12 @@ handleEvent (CompDisplay *d,
 
 		gravity = event->xclient.data.l[0] & 0xFF;
 
-		moveResizeWindow (w, &xwc, xwcm, gravity);
+		w->moveResize (&xwc, xwcm, gravity);
 	    }
 	}
-	else if (event->xclient.message_type == d->restackWindowAtom)
+	else if (event->xclient.message_type == priv->atoms.restackWindow)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		/* TODO: other stack modes than Above and Below */
@@ -1861,186 +1702,121 @@ handleEvent (CompDisplay *d,
 		{
 		    CompWindow *sibling;
 
-		    sibling = findWindowAtDisplay (d, event->xclient.data.l[1]);
+		    sibling = findWindow (event->xclient.data.l[1]);
 		    if (sibling)
 		    {
 			if (event->xclient.data.l[2] == Above)
-			    restackWindowAbove (w, sibling);
+			    w->restackAbove (sibling);
 			else if (event->xclient.data.l[2] == Below)
-			    restackWindowBelow (w, sibling);
+			    w->restackBelow (sibling);
 		    }
 		}
 		else
 		{
 		    if (event->xclient.data.l[2] == Above)
-			raiseWindow (w);
+			w->raise ();
 		    else if (event->xclient.data.l[2] == Below)
-			lowerWindow (w);
+			w->lower ();
 		}
 	    }
 	}
-	else if (event->xclient.message_type == d->wmChangeStateAtom)
+	else if (event->xclient.message_type == priv->atoms.wmChangeState)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
 		if (event->xclient.data.l[0] == IconicState)
 		{
-		    if (w->actions & CompWindowActionMinimizeMask)
-			minimizeWindow (w);
+		    if (w->actions () & CompWindowActionMinimizeMask)
+			w->minimize ();
 		}
 		else if (event->xclient.data.l[0] == NormalState)
-		    unminimizeWindow (w);
+		    w->unminimize ();
 	    }
 	}
-	else if (event->xclient.message_type == d->showingDesktopAtom)
+	else if (event->xclient.message_type == priv->atoms.showingDesktop)
 	{
-	    for (s = d->screens; s; s = s->next)
+	    for (s = priv->screens; s; s = s->next)
 	    {
-		if (event->xclient.window == s->root ||
+		if (event->xclient.window == s->root () ||
 		    event->xclient.window == None)
 		{
 		    if (event->xclient.data.l[0])
-			(*s->enterShowDesktopMode) (s);
+			s->enterShowDesktopMode ();
 		    else
-			(*s->leaveShowDesktopMode) (s, NULL);
+			s->leaveShowDesktopMode (NULL);
 		}
 	    }
 	}
-	else if (event->xclient.message_type == d->numberOfDesktopsAtom)
+	else if (event->xclient.message_type == priv->atoms.numberOfDesktops)
 	{
-	    s = findScreenAtDisplay (d, event->xclient.window);
+	    s = findScreen (event->xclient.window);
 	    if (s)
 	    {
 		CompOptionValue value;
 
 		value.i = event->xclient.data.l[0];
 
-		(*core.setOptionForPlugin) (&s->base,
-					    "core", "number_of_desktops",
-					    &value);
+		core->setOptionForPlugin (s, "core", "number_of_desktops",
+					  &value);
 	    }
 	}
-	else if (event->xclient.message_type == d->currentDesktopAtom)
+	else if (event->xclient.message_type == priv->atoms.currentDesktop)
 	{
-	    s = findScreenAtDisplay (d, event->xclient.window);
+	    s = findScreen (event->xclient.window);
 	    if (s)
-		setCurrentDesktop (s, event->xclient.data.l[0]);
+		s->setCurrentDesktop (event->xclient.data.l[0]);
 	}
-	else if (event->xclient.message_type == d->winDesktopAtom)
+	else if (event->xclient.message_type == priv->atoms.winDesktop)
 	{
-	    w = findWindowAtDisplay (d, event->xclient.window);
+	    w = findWindow (event->xclient.window);
 	    if (w)
-		setDesktopForWindow (w, event->xclient.data.l[0]);
+		w->setDesktop (event->xclient.data.l[0]);
 	}
 	break;
     case MappingNotify:
-	updateModifierMappings (d);
+	updateModifierMappings ();
 	break;
     case MapRequest:
-	w = findWindowAtDisplay (d, event->xmaprequest.window);
+	w = findWindow (event->xmaprequest.window);
 	if (w)
 	{
 	    XWindowAttributes attr;
-	    Bool              doMapProcessing = TRUE;
+	    bool              doMapProcessing = true;
 
 	    /* We should check the override_redirect flag here, because the
 	       client might have changed it while being unmapped. */
-	    if (XGetWindowAttributes (d->display, w->id, &attr))
+	    if (XGetWindowAttributes (priv->dpy, w->id (), &attr))
 	    {
-		if (w->attrib.override_redirect != attr.override_redirect)
+		if (w->attrib ().override_redirect != attr.override_redirect)
 		{
-		    w->attrib.override_redirect = attr.override_redirect;
-		    recalcWindowType (w);
-		    recalcWindowActions (w);
+		    w->attrib ().override_redirect = attr.override_redirect;
+		    w->recalcType ();
+		    w->recalcActions ();
 
-		    (*d->matchPropertyChanged) (d, w);
+		    matchPropertyChanged (w);
 		}
 	    }
 
-	    w->managed = TRUE;
+	    w->managed () = true;
 
-	    if (w->state & CompWindowStateHiddenMask)
-		if (!w->minimized && !w->inShowDesktopMode)
-		    doMapProcessing = FALSE;
+	    if (w->state () & CompWindowStateHiddenMask)
+		if (!w->minimized () && !w->inShowDesktopMode ())
+		    doMapProcessing = false;
 
 	    if (doMapProcessing)
-	    {
-		Bool                   allowFocus;
-		CompStackingUpdateMode stackingMode;
+		w->processMap ();
 
-		w->initialViewportX = w->screen->x;
-		w->initialViewportY = w->screen->y;
-
-		w->initialTimestampSet = FALSE;
-
-		applyStartupProperties (w->screen, w);
-
-		if (!w->placed)
-		{
-		    int            newX, newY;
-		    int            gravity = w->sizeHints.win_gravity;
-		    XWindowChanges xwc;
-		    unsigned int   xwcm;
-
-		    /* adjust for gravity */
-		    xwc.x      = w->serverX;
-		    xwc.y      = w->serverY;
-		    xwc.width  = w->serverWidth;
-		    xwc.height = w->serverHeight;
-
-		    xwcm = adjustConfigureRequestForGravity (w, &xwc,
-							     CWX | CWY,
-							     gravity);
-
-		    if ((*w->screen->placeWindow) (w, xwc.x, xwc.y,
-						   &newX, &newY))
-		    {
-			xwc.x = newX;
-			xwc.y = newY;
-			xwcm |= CWX | CWY;
-		    }
-
-		    if (xwcm)
-			configureXWindow (w, xwcm, &xwc);
-
-		    w->placed   = TRUE;
-		}
-
-		allowFocus = allowWindowFocus (w, NO_FOCUS_MASK, 0);
-
-		if (!allowFocus && (w->type & ~NO_FOCUS_MASK))
-		    stackingMode = CompStackingUpdateModeInitialMapDeniedFocus;
-		else
-		    stackingMode = CompStackingUpdateModeInitialMap;
-
-		updateWindowAttributes (w, stackingMode);
-
-		if (w->minimized)
-		    unminimizeWindow (w);
-
-		(*w->screen->leaveShowDesktopMode) (w->screen, w);
-
-		if (!(w->state & CompWindowStateHiddenMask))
-		{
-		    w->pendingMaps++;
-		    XMapWindow (d->display, w->id);
-		}
-
-		if (allowFocus)
-		    moveInputFocusToWindow (w);
-	    }
-
-	    setWindowProp (d, w->id, d->winDesktopAtom, w->desktop);
+	    setWindowProp (w->id (), priv->atoms.winDesktop, w->desktop ());
 	}
 	else
 	{
-	    XMapWindow (d->display, event->xmaprequest.window);
+	    XMapWindow (priv->dpy, event->xmaprequest.window);
 	}
 	break;
     case ConfigureRequest:
-	w = findWindowAtDisplay (d, event->xconfigurerequest.window);
-	if (w && w->managed)
+	w = findWindow (event->xconfigurerequest.window);
+	if (w && w->managed ())
 	{
 	    XWindowChanges xwc;
 
@@ -2052,7 +1828,7 @@ handleEvent (CompDisplay *d,
 	    xwc.height       = event->xconfigurerequest.height;
 	    xwc.border_width = event->xconfigurerequest.border_width;
 
-	    moveResizeWindow (w, &xwc, event->xconfigurerequest.value_mask, 0);
+	    w->moveResize (&xwc, event->xconfigurerequest.value_mask, 0);
 
 	    if (event->xconfigurerequest.value_mask & CWStackMode)
 	    {
@@ -2062,30 +1838,30 @@ handleEvent (CompDisplay *d,
 		if (event->xconfigurerequest.value_mask & CWSibling)
 		{
 		    above   = event->xconfigurerequest.above;
-		    sibling = findTopLevelWindowAtDisplay (d, above);
+		    sibling = findTopLevelWindow (above);
 		}
 
 		switch (event->xconfigurerequest.detail) {
 		case Above:
-		    if (allowWindowFocus (w, NO_FOCUS_MASK, 0))
+		    if (w->allowWindowFocus (NO_FOCUS_MASK, 0))
 		    {
 			if (above)
 			{
 			    if (sibling)
-				restackWindowAbove (w, sibling);
+				w->restackAbove (sibling);
 			}
 			else
-			    raiseWindow (w);
+			    w->raise ();
 		    }
 		    break;
 		case Below:
 		    if (above)
 		    {
 			if (sibling)
-			    restackWindowBelow (w, sibling);
+			    w->restackBelow (sibling);
 		    }
 		    else
-			lowerWindow (w);
+			w->lower ();
 		    break;
 		default:
 		    /* no handling of the TopIf, BottomIf, Opposite cases -
@@ -2109,9 +1885,9 @@ handleEvent (CompDisplay *d,
 	    xwc.border_width = event->xconfigurerequest.border_width;
 
 	    if (w)
-		configureXWindow (w, xwcm, &xwc);
+		w->configureXWindow (xwcm, &xwc);
 	    else
-		XConfigureWindow (d->display, event->xconfigurerequest.window,
+		XConfigureWindow (priv->dpy, event->xconfigurerequest.window,
 				  xwcm, &xwc);
 	}
 	break;
@@ -2120,31 +1896,31 @@ handleEvent (CompDisplay *d,
     case FocusIn:
 	if (event->xfocus.mode != NotifyGrab)
 	{
-	    w = findTopLevelWindowAtDisplay (d, event->xfocus.window);
-	    if (w && w->managed)
+	    w = findTopLevelWindow (event->xfocus.window);
+	    if (w && w->managed ())
 	    {
-		unsigned int state = w->state;
+		unsigned int state = w->state ();
 
-		if (w->id != d->activeWindow)
+		if (w->id () != priv->activeWindow)
 		{
-		    d->activeWindow = w->id;
-		    w->activeNum = w->screen->activeNum++;
+		    priv->activeWindow = w->id ();
+		    w->activeNum ()    = w->screen ()->activeNum ()++;
 
-		    addToCurrentActiveWindowHistory (w->screen, w->id);
+		    w->screen ()->addToCurrentActiveWindowHistory (w->id ());
 
-		    XChangeProperty (d->display, w->screen->root,
-				     d->winActiveAtom,
+		    XChangeProperty (priv->dpy , w->screen ()->root (),
+				     priv->atoms.winActive,
 				     XA_WINDOW, 32, PropModeReplace,
-				     (unsigned char *) &w->id, 1);
+				     (unsigned char *) &priv->activeWindow, 1);
 		}
 
 		state &= ~CompWindowStateDemandsAttentionMask;
-		changeWindowState (w, state);
+		w->changeState (state);
 	    }
 	}
 	break;
     case EnterNotify:
-	if (!d->screens->maxGrab		    &&
+	if (!priv->screens->maxGrab ()		    &&
 	    event->xcrossing.mode   != NotifyGrab   &&
 	    event->xcrossing.mode   != NotifyUngrab &&
 	    event->xcrossing.detail != NotifyInferior)
@@ -2152,50 +1928,50 @@ handleEvent (CompDisplay *d,
 	    Bool raise;
 	    int  delay;
 
-	    raise = d->opt[COMP_DISPLAY_OPTION_AUTORAISE].value.b;
-	    delay = d->opt[COMP_DISPLAY_OPTION_AUTORAISE_DELAY].value.i;
+	    raise = priv->opt[COMP_DISPLAY_OPTION_AUTORAISE].value.b;
+	    delay = priv->opt[COMP_DISPLAY_OPTION_AUTORAISE_DELAY].value.i;
 
-	    s = findScreenAtDisplay (d, event->xcrossing.root);
+	    s = findScreen (event->xcrossing.root);
 	    if (s)
 	    {
-		w = findTopLevelWindowAtScreen (s, event->xcrossing.window);
+		w = s->findTopLevelWindow (event->xcrossing.window);
 	    }
 	    else
 		w = NULL;
 
-	    if (w && w->id != d->below)
+	    if (w && w->id () != priv->below)
 	    {
-		d->below = w->id;
+		priv->below = w->id ();
 
-		if (!d->opt[COMP_DISPLAY_OPTION_CLICK_TO_FOCUS].value.b)
+		if (!priv->opt[COMP_DISPLAY_OPTION_CLICK_TO_FOCUS].value.b)
 		{
-		    if (d->autoRaiseHandle &&
-			d->autoRaiseWindow != w->id)
+		    if (priv->autoRaiseHandle &&
+			priv->autoRaiseWindow != w->id ())
 		    {
-			compRemoveTimeout (d->autoRaiseHandle);
-			d->autoRaiseHandle = 0;
+			core->removeTimeout (priv->autoRaiseHandle);
+			priv->autoRaiseHandle = 0;
 		    }
 
-		    if (w->type & ~(CompWindowTypeDockMask |
-				    CompWindowTypeDesktopMask))
+		    if (w->type () & ~(CompWindowTypeDockMask |
+				       CompWindowTypeDesktopMask))
 		    {
-			moveInputFocusToWindow (w);
+			w->moveInputFocusTo ();
 
 			if (raise)
 			{
 			    if (delay > 0)
 			    {
-				d->autoRaiseWindow = w->id;
-				d->autoRaiseHandle =
-				    compAddTimeout (delay, (float) delay * 1.2,
-						    autoRaiseTimeout, d);
+				priv->autoRaiseWindow = w->id ();
+				priv->autoRaiseHandle =
+				    core->addTimeout (delay, (float) delay * 1.2,
+						      autoRaiseTimeout, this);
 			    }
 			    else
 			    {
 				CompStackingUpdateMode mode =
 				    CompStackingUpdateModeNormal;
 
-				updateWindowAttributes (w, mode);
+				w->updateAttributes (mode);
 			    }
 			}
 		    }
@@ -2206,82 +1982,55 @@ handleEvent (CompDisplay *d,
     case LeaveNotify:
 	if (event->xcrossing.detail != NotifyInferior)
 	{
-	    if (event->xcrossing.window == d->below)
-		d->below = None;
+	    if (event->xcrossing.window == priv->below)
+		priv->below = None;
 	}
 	break;
     default:
-	if (event->type == d->damageEvent + XDamageNotify)
+	if (event->type == priv->damageEvent + XDamageNotify)
 	{
 	    XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
 
-	    if (lastDamagedWindow && de->drawable == lastDamagedWindow->id)
+	    if (lastDamagedWindow && de->drawable == lastDamagedWindow->id ())
 	    {
 		w = lastDamagedWindow;
 	    }
 	    else
 	    {
-		w = findWindowAtDisplay (d, de->drawable);
+		w = findWindow (de->drawable);
 		if (w)
 		    lastDamagedWindow = w;
 	    }
 
 	    if (w)
-	    {
-		w->texture->oldMipmaps = TRUE;
-
-		if (w->syncWait)
-		{
-		    if (w->nDamage == w->sizeDamage)
-		    {
-			w->damageRects = (XRectangle *) realloc (w->damageRects,
-						  (w->sizeDamage + 1) *
-						  sizeof (XRectangle));
-			w->sizeDamage += 1;
-		    }
-
-		    w->damageRects[w->nDamage].x      = de->area.x;
-		    w->damageRects[w->nDamage].y      = de->area.y;
-		    w->damageRects[w->nDamage].width  = de->area.width;
-		    w->damageRects[w->nDamage].height = de->area.height;
-		    w->nDamage++;
-		}
-		else
-		{
-		    handleWindowDamageRect (w,
-					    de->area.x,
-					    de->area.y,
-					    de->area.width,
-					    de->area.height);
-		}
-	    }
+		w->processDamage (de);
 	}
-	else if (d->shapeExtension &&
-		 event->type == d->shapeEvent + ShapeNotify)
+	else if (priv->shapeExtension &&
+		 event->type == priv->shapeEvent + ShapeNotify)
 	{
-	    w = findWindowAtDisplay (d, ((XShapeEvent *) event)->window);
+	    w = findWindow (((XShapeEvent *) event)->window);
 	    if (w)
 	    {
-		if (w->mapNum)
+		if (w->mapNum ())
 		{
-		    addWindowDamage (w);
-		    updateWindowRegion (w);
-		    addWindowDamage (w);
+		    w->addDamage ();
+		    w->updateRegion ();
+		    w->addDamage ();
 		}
 	    }
 	}
-	else if (d->randrExtension &&
-		 event->type == d->randrEvent + RRScreenChangeNotify)
+	else if (priv->randrExtension &&
+		 event->type == priv->randrEvent + RRScreenChangeNotify)
 	{
 	    XRRScreenChangeNotifyEvent *rre;
 
 	    rre = (XRRScreenChangeNotifyEvent *) event;
 
-	    s = findScreenAtDisplay (d, rre->root);
+	    s = findScreen (rre->root);
 	    if (s)
-		detectRefreshRateOfScreen (s);
+		s->detectRefreshRate ();
 	}
-	else if (event->type == d->syncEvent + XSyncAlarmNotify)
+	else if (event->type == priv->syncEvent + XSyncAlarmNotify)
 	{
 	    XSyncAlarmNotifyEvent *sa;
 
@@ -2289,13 +2038,13 @@ handleEvent (CompDisplay *d,
 
 	    w = NULL;
 
-	    for (s = d->screens; s; s = s->next)
-		for (w = s->windows; w; w = w->next)
-		    if (w->syncAlarm == sa->alarm)
+	    for (s = priv->screens; s; s = s->next)
+		for (w = s->windows (); w; w = w->next)
+		    if (w->syncAlarm () == sa->alarm)
 			break;
 
 	    if (w)
-		handleSyncAlarm (w);
+		w->handleSyncAlarm ();
 	}
 	break;
     }

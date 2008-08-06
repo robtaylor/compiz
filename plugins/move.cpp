@@ -33,6 +33,39 @@
 
 static CompMetadata moveMetadata;
 
+class MovePluginVTable : public CompPluginVTable
+{
+    public:
+
+	const char *
+	name () { return "move"; };
+
+	CompMetadata *
+	getMetadata ();
+
+	virtual bool
+	init ();
+
+	virtual void
+	fini ();
+
+	virtual bool
+	initObject (CompObject *object);
+
+	virtual void
+	finiObject (CompObject *object);
+
+	CompOption *
+	getObjectOptions (CompObject *object, int *count);
+
+	bool
+	setObjectOption (CompObject *object,
+			 const char *name,
+			 CompOptionValue *value);
+};
+
+
+
 struct _MoveKeys {
     char *name;
     int  dx;
@@ -61,54 +94,95 @@ static int displayPrivateIndex;
 #define MOVE_DISPLAY_OPTION_LAZY_POSITIONING  5
 #define MOVE_DISPLAY_OPTION_NUM		      6
 
-typedef struct _MoveDisplay {
-    int		    screenPrivateIndex;
-    HandleEventProc handleEvent;
+class MoveDisplay : public DisplayInterface {
 
-    CompOption opt[MOVE_DISPLAY_OPTION_NUM];
+    public:
+	MoveDisplay (CompDisplay *display) : display (display)
+	{
+	    display->add (this);
+	    DisplayInterface::setHandler (display);
+	};
 
-    CompWindow *w;
-    int	       savedX;
-    int	       savedY;
-    int	       x;
-    int	       y;
-    Region     region;
-    int        status;
-    KeyCode    key[NUM_KEYS];
+	void
+	handleEvent (XEvent *);
+	
 
-    int releaseButton;
+	CompDisplay *display;
+	int		    screenPrivateIndex;
+	
 
-    GLushort moveOpacity;
-} MoveDisplay;
+	CompOption opt[MOVE_DISPLAY_OPTION_NUM];
 
-typedef struct _MoveScreen {
-    PaintWindowProc paintWindow;
+	CompWindow *w;
+	int	       savedX;
+	int	       savedY;
+	int	       x;
+	int	       y;
+	Region     region;
+	int        status;
+	KeyCode    key[NUM_KEYS];
 
-    int grabIndex;
+	int releaseButton;
 
-    Cursor moveCursor;
+	GLushort moveOpacity;
+};
 
-    unsigned int origState;
 
-    int	snapOffY;
-    int	snapBackY;
-} MoveScreen;
+
+class MoveScreen {
+    public:
+	
+	MoveScreen (CompScreen *screen) : screen (screen) {};
+
+	int windowPrivateIndex;
+
+        CompScreen *screen;
+	int grabIndex;
+
+	Cursor moveCursor;
+
+	unsigned int origState;
+
+	int	snapOffY;
+	int	snapBackY;
+};
+
+class MoveWindow : public WindowInterface {
+    public:
+	MoveWindow (CompWindow *window) : window (window)
+	{
+	    window->add (this);
+	    WindowInterface::setHandler (window);
+	};
+
+	bool
+	paint (const WindowPaintAttrib *, const CompTransform *, Region,
+	       unsigned int);
+
+	CompWindow *window;
+};
 
 #define GET_MOVE_DISPLAY(d)					  \
-    ((MoveDisplay *) (d)->base.privates[displayPrivateIndex].ptr)
+    ((MoveDisplay *) (d)->privates[displayPrivateIndex].ptr)
 
 #define MOVE_DISPLAY(d)		           \
     MoveDisplay *md = GET_MOVE_DISPLAY (d)
 
 #define GET_MOVE_SCREEN(s, md)					      \
-    ((MoveScreen *) (s)->base.privates[(md)->screenPrivateIndex].ptr)
+    ((MoveScreen *) (s)->privates[(md)->screenPrivateIndex].ptr)
 
 #define MOVE_SCREEN(s)						        \
-    MoveScreen *ms = GET_MOVE_SCREEN (s, GET_MOVE_DISPLAY (s->display))
+    MoveScreen *ms = GET_MOVE_SCREEN (s, GET_MOVE_DISPLAY (s->display ()))
+
+#define GET_MOVE_WINDOW(w, ms)					      \
+    ((MoveWindow *) (w)->privates[(ms)->windowPrivateIndex].ptr)
+
+#define MOVE_WINDOW(w)						        \
+    MoveWindow *mw = GET_MOVE_WINDOW (w, GET_MOVE_SCREEN (w->screen (), GET_MOVE_DISPLAY (w->screen ()->display())))
 
 #define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
 
-static Bool
+static bool
 moveInitiate (CompDisplay     *d,
 	      CompAction      *action,
 	      CompActionState state,
@@ -122,36 +196,38 @@ moveInitiate (CompDisplay     *d,
 
     xid = getIntOptionNamed (option, nOption, "window", 0);
 
-    w = findWindowAtDisplay (d, xid);
-    if (w && (w->actions & CompWindowActionMoveMask))
+    w = d->findWindow (xid);
+    if (w && (w->actions () & CompWindowActionMoveMask))
     {
 	XRectangle   workArea;
 	unsigned int mods;
 	int          x, y, button;
 
-	MOVE_SCREEN (w->screen);
+	CompScreen *s = w->screen ();
+
+	MOVE_SCREEN (w->screen ());
 
 	mods = getIntOptionNamed (option, nOption, "modifiers", 0);
 
 	x = getIntOptionNamed (option, nOption, "x",
-			       w->attrib.x + (w->width / 2));
+			       w->attrib ().x + (w->width () / 2));
 	y = getIntOptionNamed (option, nOption, "y",
-			       w->attrib.y + (w->height / 2));
+			       w->attrib ().y + (w->height () / 2));
 
 	button = getIntOptionNamed (option, nOption, "button", -1);
 
-	if (otherScreenGrabExist (w->screen, "move", 0))
+	if (s->otherGrabExist ("move", 0))
 	    return FALSE;
 
 	if (md->w)
 	    return FALSE;
 
-	if (w->type & (CompWindowTypeDesktopMask |
+	if (w->type () & (CompWindowTypeDesktopMask |
 		       CompWindowTypeDockMask    |
 		       CompWindowTypeFullscreenMask))
 	    return FALSE;
 
-	if (w->attrib.override_redirect)
+	if (w->attrib ().override_redirect)
 	    return FALSE;
 
 	if (state & CompActionStateInitButton)
@@ -165,8 +241,8 @@ moveInitiate (CompDisplay     *d,
 
 	md->status = RectangleOut;
 
-	md->savedX = w->serverX;
-	md->savedY = w->serverY;
+	md->savedX = w->serverX ();
+	md->savedY = w->serverY ();
 
 	md->x = 0;
 	md->y = 0;
@@ -174,17 +250,16 @@ moveInitiate (CompDisplay     *d,
 	lastPointerX = x;
 	lastPointerY = y;
 
-	ms->origState = w->state;
+	ms->origState = w->state ();
 
-	getWorkareaForOutput (w->screen,
-			      outputDeviceForWindow (w),
-			      &workArea);
+	s->getWorkareaForOutput (w->outputDevice (),
+					&workArea);
 
-	ms->snapBackY = w->serverY - workArea.y;
+	ms->snapBackY = w->serverY () - workArea.y;
 	ms->snapOffY  = y - workArea.y;
 
 	if (!ms->grabIndex)
-	    ms->grabIndex = pushScreenGrab (w->screen, ms->moveCursor, "move");
+	    ms->grabIndex = s->pushGrab (ms->moveCursor, "move");
 
 	if (ms->grabIndex)
 	{
@@ -192,29 +267,28 @@ moveInitiate (CompDisplay     *d,
 
 	    md->releaseButton = button;
 
-	    (w->screen->windowGrabNotify) (w, x, y, mods,
-					   CompWindowGrabMoveMask |
-					   CompWindowGrabButtonMask);
+	    w->grabNotify (x, y, mods,CompWindowGrabMoveMask |
+			   CompWindowGrabButtonMask);
 
 	    if (state & CompActionStateInitKey)
 	    {
 		int xRoot, yRoot;
 
-		xRoot = w->attrib.x + (w->width  / 2);
-		yRoot = w->attrib.y + (w->height / 2);
+		xRoot = w->attrib ().x + (w->width () / 2);
+		yRoot = w->attrib ().y + (w->height () / 2);
 
-		warpPointer (w->screen, xRoot - pointerX, yRoot - pointerY);
+		s->warpPointer (xRoot - pointerX, yRoot - pointerY);
 	    }
 
 	    if (md->moveOpacity != OPAQUE)
-		addWindowDamage (w);
+		w->addDamage ();
 	}
     }
 
     return FALSE;
 }
 
-static Bool
+static bool
 moveTerminate (CompDisplay     *d,
 	       CompAction      *action,
 	       CompActionState state,
@@ -225,31 +299,30 @@ moveTerminate (CompDisplay     *d,
 
     if (md->w)
     {
-	MOVE_SCREEN (md->w->screen);
+	MOVE_SCREEN (md->w->screen ());
 
 	if (state & CompActionStateCancel)
-	    moveWindow (md->w,
-			md->savedX - md->w->attrib.x,
-			md->savedY - md->w->attrib.y,
+	    md->w->move (md->savedX - md->w->attrib ().x,
+			md->savedY - md->w->attrib ().y,
 			TRUE, FALSE);
 
-	syncWindowPosition (md->w);
+	md->w->syncPosition ();
 
 	/* update window attributes as window constraints may have
 	   changed - needed e.g. if a maximized window was moved
 	   to another output device */
-	updateWindowAttributes (md->w, CompStackingUpdateModeNone);
+	md->w->updateAttributes (CompStackingUpdateModeNone);
 
-	(md->w->screen->windowUngrabNotify) (md->w);
+	md->w->ungrabNotify ();
 
 	if (ms->grabIndex)
 	{
-	    removeScreenGrab (md->w->screen, ms->grabIndex, NULL);
+	    md->w->screen ()->removeGrab (ms->grabIndex, NULL);
 	    ms->grabIndex = 0;
 	}
 
 	if (md->moveOpacity != OPAQUE)
-	    addWindowDamage (md->w);
+	    md->w->addDamage ();
 
 	md->w             = 0;
 	md->releaseButton = 0;
@@ -282,33 +355,33 @@ moveGetYConstrainRegion (CompScreen *s)
     r.extents.x1 = MINSHORT;
     r.extents.y1 = 0;
     r.extents.x2 = 0;
-    r.extents.y2 = s->height;
+    r.extents.y2 = s->height ();
 
     XUnionRegion (&r, region, region);
 
-    r.extents.x1 = s->width;
+    r.extents.x1 = s->width ();
     r.extents.x2 = MAXSHORT;
 
     XUnionRegion (&r, region, region);
 
-    for (i = 0; i < s->nOutputDev; i++)
+    for (i = 0; i < s->nOutputDev (); i++)
     {
-	XUnionRegion (&s->outputDev[i].region, region, region);
+	XUnionRegion (&s->outputDev ()[i].region, region, region);
 
-	getWorkareaForOutput (s, i, &workArea);
-	extents = s->outputDev[i].region.extents;
+	s->getWorkareaForOutput (i, &workArea);
+	extents = s->outputDev ()[i].region.extents;
 
-	for (w = s->windows; w; w = w->next)
+	for (w = s->windows (); w; w = w->next)
 	{
-	    if (!w->mapNum)
+	    if (!w->mapNum ())
 		continue;
 
-	    if (w->struts)
+	    if (w->struts ())
 	    {
-		r.extents.x1 = w->struts->top.x;
-		r.extents.y1 = w->struts->top.y;
-		r.extents.x2 = r.extents.x1 + w->struts->top.width;
-		r.extents.y2 = r.extents.y1 + w->struts->top.height;
+		r.extents.x1 = w->struts ()->top.x;
+		r.extents.y1 = w->struts ()->top.y;
+		r.extents.x2 = r.extents.x1 + w->struts ()->top.width;
+		r.extents.y2 = r.extents.y1 + w->struts ()->top.height;
 
 		if (r.extents.x1 < extents.x1)
 		    r.extents.x1 = extents.x1;
@@ -325,10 +398,10 @@ moveGetYConstrainRegion (CompScreen *s)
 			XSubtractRegion (region, &r, region);
 		}
 
-		r.extents.x1 = w->struts->bottom.x;
-		r.extents.y1 = w->struts->bottom.y;
-		r.extents.x2 = r.extents.x1 + w->struts->bottom.width;
-		r.extents.y2 = r.extents.y1 + w->struts->bottom.height;
+		r.extents.x1 = w->struts ()->bottom.x;
+		r.extents.y1 = w->struts ()->bottom.y;
+		r.extents.x2 = r.extents.x1 + w->struts ()->bottom.width;
+		r.extents.y2 = r.extents.y1 + w->struts ()->bottom.height;
 
 		if (r.extents.x1 < extents.x1)
 		    r.extents.x1 = extents.x1;
@@ -360,24 +433,24 @@ moveHandleMotionEvent (CompScreen *s,
 
     if (ms->grabIndex)
     {
-	CompWindow *w;
 	int	   dx, dy;
 	int	   wX, wY;
 	int	   wWidth, wHeight;
+	CompWindow *w;
 
-	MOVE_DISPLAY (s->display);
+	MOVE_DISPLAY (s->display ());
 
 	w = md->w;
-
-	wX      = w->serverX;
-	wY      = w->serverY;
-	wWidth  = w->serverWidth  + w->serverBorderWidth * 2;
-	wHeight = w->serverHeight + w->serverBorderWidth * 2;
+	
+	wX      = w->serverX ();
+	wY      = w->serverY ();
+	wWidth  = w->serverWidth () + w->serverBorderWidth () * 2;
+	wHeight = w->serverHeight () + w->serverBorderWidth () * 2;
 
 	md->x += xRoot - lastPointerX;
 	md->y += yRoot - lastPointerY;
 
-	if (w->type & CompWindowTypeFullscreenMask)
+	if (w->type () & CompWindowTypeFullscreenMask)
 	{
 	    dx = dy = 0;
 	}
@@ -389,9 +462,7 @@ moveHandleMotionEvent (CompScreen *s,
 	    dx = md->x;
 	    dy = md->y;
 
-	    getWorkareaForOutput (s,
-				  outputDeviceForWindow (w),
-				  &workArea);
+	    s->getWorkareaForOutput (w->outputDevice (), &workArea);
 
 	    if (md->opt[MOVE_DISPLAY_OPTION_CONSTRAIN_Y].value.b)
 	    {
@@ -406,10 +477,10 @@ moveHandleMotionEvent (CompScreen *s,
 		    int x, y, width, height;
 		    int status;
 
-		    x	   = wX + dx - w->input.left;
-		    y	   = wY + dy - w->input.top;
-		    width  = wWidth + w->input.left + w->input.right;
-		    height = w->input.top ? w->input.top : 1;
+		    x	   = wX + dx - w->input ().left;
+		    y	   = wY + dy - w->input ().top;
+		    width  = wWidth + w->input ().left + w->input ().right;
+		    height = w->input ().top ? w->input ().top : 1;
 
 		    status = XRectInRegion (md->region, x, y, width, height);
 
@@ -427,7 +498,7 @@ moveHandleMotionEvent (CompScreen *s,
 			    if (xStatus != RectangleIn)
 				dx += (dx < 0) ? 1 : -1;
 
-			    x = wX + dx - w->input.left;
+			    x = wX + dx - w->input ().left;
 			}
 
 			while (dy && status != RectangleIn)
@@ -439,7 +510,7 @@ moveHandleMotionEvent (CompScreen *s,
 			    if (status != RectangleIn)
 				dy += (dy < 0) ? 1 : -1;
 
-			    y = wY + dy - w->input.top;
+			    y = wY + dy - w->input ().top;
 			}
 		    }
 		    else
@@ -451,25 +522,25 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (md->opt[MOVE_DISPLAY_OPTION_SNAPOFF_MAXIMIZED].value.b)
 	    {
-		if (w->state & CompWindowStateMaximizedVertMask)
+		if (w->state () & CompWindowStateMaximizedVertMask)
 		{
 		    if (abs ((yRoot - workArea.y) - ms->snapOffY) >= SNAP_OFF)
 		    {
-			if (!otherScreenGrabExist (s, "move", 0))
+			if (!s->otherGrabExist ("move", 0))
 			{
-			    int width = w->serverWidth;
+			    int width = w->serverWidth ();
 
-			    w->saveMask |= CWX | CWY;
+			    w->saveMask () |= CWX | CWY;
 
-			    if (w->saveMask & CWWidth)
-				width = w->saveWc.width;
+			    if (w->saveMask ()& CWWidth)
+				width = w->saveWc ().width;
 
-			    w->saveWc.x = xRoot - (width >> 1);
-			    w->saveWc.y = yRoot + (w->input.top >> 1);
+			    w->saveWc ().x = xRoot - (width >> 1);
+			    w->saveWc ().y = yRoot + (w->input ().top >> 1);
 
 			    md->x = md->y = 0;
 
-			    maximizeWindow (w, 0);
+			    w->maximize (0);
 
 			    ms->snapOffY = ms->snapBackY;
 
@@ -481,21 +552,21 @@ moveHandleMotionEvent (CompScreen *s,
 		{
 		    if (abs ((yRoot - workArea.y) - ms->snapBackY) < SNAP_BACK)
 		    {
-			if (!otherScreenGrabExist (s, "move", 0))
+			if (!s->otherGrabExist ("move", 0))
 			{
 			    int wy;
 
 			    /* update server position before maximizing
 			       window again so that it is maximized on
 			       correct output */
-			    syncWindowPosition (w);
+			    w->syncPosition ();
 
-			    maximizeWindow (w, ms->origState);
+			    w->maximize (ms->origState);
 
-			    wy  = workArea.y + (w->input.top >> 1);
-			    wy += w->sizeHints.height_inc >> 1;
+			    wy  = workArea.y + (w->input ().top >> 1);
+			    wy += w->sizeHints ().height_inc >> 1;
 
-			    warpPointer (s, 0, wy - pointerY);
+			    s->warpPointer (0, wy - pointerY);
 
 			    return;
 			}
@@ -503,10 +574,10 @@ moveHandleMotionEvent (CompScreen *s,
 		}
 	    }
 
-	    if (w->state & CompWindowStateMaximizedVertMask)
+	    if (w->state () & CompWindowStateMaximizedVertMask)
 	    {
-		min = workArea.y + w->input.top;
-		max = workArea.y + workArea.height - w->input.bottom - wHeight;
+		min = workArea.y + w->input ().top;
+		max = workArea.y + workArea.height - w->input ().bottom - wHeight;
 
 		if (wY + dy < min)
 		    dy = min - wY;
@@ -514,16 +585,16 @@ moveHandleMotionEvent (CompScreen *s,
 		    dy = max - wY;
 	    }
 
-	    if (w->state & CompWindowStateMaximizedHorzMask)
+	    if (w->state () & CompWindowStateMaximizedHorzMask)
 	    {
-		if (wX > s->width || wX + w->width < 0)
+		if (wX > s->width () || wX + w->width () < 0)
 		    return;
 
 		if (wX + wWidth < 0)
 		    return;
 
-		min = workArea.x + w->input.left;
-		max = workArea.x + workArea.width - w->input.right - wWidth;
+		min = workArea.x + w->input ().left;
+		max = workArea.x + workArea.width - w->input ().right - wWidth;
 
 		if (wX + dx < min)
 		    dx = min - wX;
@@ -534,9 +605,8 @@ moveHandleMotionEvent (CompScreen *s,
 
 	if (dx || dy)
 	{
-	    moveWindow (w,
-			wX + dx - w->attrib.x,
-			wY + dy - w->attrib.y,
+	    w->move (wX + dx - w->attrib ().x,
+			wY + dy - w->attrib ().y,
 			TRUE, FALSE);
 
 	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value.b)
@@ -544,12 +614,12 @@ moveHandleMotionEvent (CompScreen *s,
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
 		   major performance regression in the 0.5.2 release. */
-		w->serverX = w->attrib.x;
-		w->serverY = w->attrib.y;
+		w->serverX () = w->attrib ().x;
+		w->serverY () = w->attrib ().y;
 	    }
 	    else
 	    {
-		syncWindowPosition (w);
+		w->syncPosition ();
 	    }
 
 	    md->x -= dx;
@@ -558,39 +628,35 @@ moveHandleMotionEvent (CompScreen *s,
     }
 }
 
-static void
-moveHandleEvent (CompDisplay *d,
-		 XEvent      *event)
+void
+MoveDisplay::handleEvent (XEvent *event)
 {
     CompScreen *s;
-
-    MOVE_DISPLAY (d);
 
     switch (event->type) {
     case ButtonPress:
     case ButtonRelease:
-	s = findScreenAtDisplay (d, event->xbutton.root);
+	s = display->findScreen (event->xbutton.root);
 	if (s)
 	{
 	    MOVE_SCREEN (s);
 
 	    if (ms->grabIndex)
 	    {
-		if (md->releaseButton == -1 ||
-		    md->releaseButton == event->xbutton.button)
+		if (releaseButton == -1 ||
+		    releaseButton == event->xbutton.button)
 		{
 		    CompAction *action;
-		    int        opt = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
 
-		    action = &md->opt[opt].value.action;
-		    moveTerminate (d, action, CompActionStateTermButton,
+		    action = &opt[MOVE_DISPLAY_OPTION_INITIATE_BUTTON].value.action;
+		    moveTerminate (display, action, CompActionStateTermButton,
 				   NULL, 0);
 		}
 	    }
 	}
 	break;
     case KeyPress:
-	s = findScreenAtDisplay (d, event->xkey.root);
+	s = display->findScreen (event->xkey.root);
 	if (s)
 	{
 	    MOVE_SCREEN (s);
@@ -601,9 +667,9 @@ moveHandleEvent (CompDisplay *d,
 
 		for (i = 0; i < NUM_KEYS; i++)
 		{
-		    if (event->xkey.keycode == md->key[i])
+		    if (event->xkey.keycode == key[i])
 		    {
-			XWarpPointer (d->display, None, None, 0, 0, 0, 0,
+			XWarpPointer (display->dpy (), None, None, 0, 0, 0, 0,
 				      mKeys[i].dx * KEY_MOVE_INC,
 				      mKeys[i].dy * KEY_MOVE_INC);
 			break;
@@ -613,25 +679,25 @@ moveHandleEvent (CompDisplay *d,
 	}
 	break;
     case MotionNotify:
-	s = findScreenAtDisplay (d, event->xmotion.root);
+	s = display->findScreen (event->xmotion.root);
 	if (s)
 	    moveHandleMotionEvent (s, pointerX, pointerY);
 	break;
     case EnterNotify:
     case LeaveNotify:
-	s = findScreenAtDisplay (d, event->xcrossing.root);
+	s = display->findScreen (event->xcrossing.root);
 	if (s)
 	    moveHandleMotionEvent (s, pointerX, pointerY);
 	break;
     case ClientMessage:
-	if (event->xclient.message_type == d->wmMoveResizeAtom)
+	if (event->xclient.message_type == display->atoms ().wmMoveResize)
 	{
 	    CompWindow *w;
 
 	    if (event->xclient.data.l[2] == WmMoveResizeMove ||
 		event->xclient.data.l[2] == WmMoveResizeMoveKeyboard)
 	    {
-		w = findWindowAtDisplay (d, event->xclient.window);
+		w = display->findWindow (event->xclient.window);
 		if (w)
 		{
 		    CompOption o[5];
@@ -646,7 +712,7 @@ moveHandleEvent (CompDisplay *d,
 		    {
 			option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
 
-			moveInitiate (d, &md->opt[option].value.action,
+			moveInitiate (display, &opt[option].value.action,
 				      CompActionStateInitKey,
 				      o, 1);
 		    }
@@ -658,7 +724,7 @@ moveHandleEvent (CompDisplay *d,
 
 			option = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
 
-			XQueryPointer (d->display, w->screen->root,
+			XQueryPointer (display->dpy (), w->screen ()->root (),
 				       &root, &child, &xRoot, &yRoot,
 				       &i, &i, &mods);
 
@@ -682,12 +748,12 @@ moveHandleEvent (CompDisplay *d,
 			    o[4].value.i = event->xclient.data.l[3] ?
 				           event->xclient.data.l[3] : -1;
 
-			    moveInitiate (d,
-					  &md->opt[option].value.action,
+			    moveInitiate (display,
+					  &opt[option].value.action,
 					  CompActionStateInitButton,
 					  o, 5);
 
-			    moveHandleMotionEvent (w->screen, xRoot, yRoot);
+			    moveHandleMotionEvent (w->screen (), xRoot, yRoot);
 			}
 		    }
 		}
@@ -695,61 +761,57 @@ moveHandleEvent (CompDisplay *d,
 	}
 	break;
     case DestroyNotify:
-	if (md->w && md->w->id == event->xdestroywindow.window)
+	if (w && w->id () == event->xdestroywindow.window)
 	{
 	    int option;
 
 	    option = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
-	    moveTerminate (d,
-			   &md->opt[option].value.action,
+	    moveTerminate (display,
+			   &opt[option].value.action,
 			   0, NULL, 0);
 	    option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
-	    moveTerminate (d,
-			   &md->opt[option].value.action,
+	    moveTerminate (display,
+			   &opt[option].value.action,
 			   0, NULL, 0);
 	}
 	break;
     case UnmapNotify:
-	if (md->w && md->w->id == event->xunmap.window)
+	if (w && w->id () == event->xunmap.window)
 	{
 	    int option;
 
 	    option = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
-	    moveTerminate (d,
-			   &md->opt[option].value.action,
+	    moveTerminate (display,
+			   &opt[option].value.action,
 			   0, NULL, 0);
 	    option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
-	    moveTerminate (d,
-			   &md->opt[option].value.action,
+	    moveTerminate (display,
+			   &opt[option].value.action,
 			   0, NULL, 0);
 	}
     default:
 	break;
     }
 
-    UNWRAP (md, d, handleEvent);
-    (*d->handleEvent) (d, event);
-    WRAP (md, d, handleEvent, moveHandleEvent);
+    display->handleEvent (event);
 }
 
-static Bool
-movePaintWindow (CompWindow		 *w,
-		 const WindowPaintAttrib *attrib,
-		 const CompTransform	 *transform,
-		 Region			 region,
-		 unsigned int		 mask)
+bool
+MoveWindow::paint (const WindowPaintAttrib *attrib,
+		   const CompTransform	 *transform,
+		   Region			 region,
+		   unsigned int		 mask)
 {
     WindowPaintAttrib sAttrib;
-    CompScreen	      *s = w->screen;
-    Bool	      status;
+    bool	      status;
 
-    MOVE_SCREEN (s);
+    MOVE_SCREEN (window->screen ());
 
     if (ms->grabIndex)
     {
-	MOVE_DISPLAY (s->display);
+	MOVE_DISPLAY (window->screen ()->display ());
 
-	if (md->w == w && md->moveOpacity != OPAQUE)
+	if (md->w == window && md->moveOpacity != OPAQUE)
 	{
 	    /* modify opacity of windows that are not active */
 	    sAttrib = *attrib;
@@ -759,34 +821,32 @@ movePaintWindow (CompWindow		 *w,
 	}
     }
 
-    UNWRAP (ms, s, paintWindow);
-    status = (*s->paintWindow) (w, attrib, transform, region, mask);
-    WRAP (ms, s, paintWindow, movePaintWindow);
+    status = window->paint (attrib, transform, region, mask);
 
     return status;
 }
 
 static CompOption *
-moveGetDisplayOptions (CompPlugin  *plugin,
-		       CompDisplay *display,
+moveGetDisplayOptions (CompObject  *object,
 		       int	   *count)
 {
-    MOVE_DISPLAY (display);
+    CORE_DISPLAY (object);
+    MOVE_DISPLAY (d);
 
     *count = NUM_OPTIONS (md);
     return md->opt;
 }
 
-static Bool
-moveSetDisplayOption (CompPlugin      *plugin,
-		      CompDisplay     *display,
+static bool
+moveSetDisplayOption (CompObject      *object,
 		      const char      *name,
 		      CompOptionValue *value)
 {
     CompOption *o;
     int	       index;
 
-    MOVE_DISPLAY (display);
+    CORE_DISPLAY (object);
+    MOVE_DISPLAY (d);
 
     o = compFindOption (md->opt, NUM_OPTIONS (md), name, &index);
     if (!o)
@@ -801,7 +861,7 @@ moveSetDisplayOption (CompPlugin      *plugin,
 	}
 	break;
     default:
-	return compSetDisplayOption (display, o, value);
+	return compSetDisplayOption (d, o, value);
     }
 
     return FALSE;
@@ -816,19 +876,20 @@ static const CompMetadataOptionInfo moveDisplayOptionInfo[] = {
     { "lazy_positioning", "bool", 0, 0, 0 }
 };
 
-static Bool
-moveInitDisplay (CompPlugin  *p,
-		 CompDisplay *d)
+static bool
+moveInitDisplay (CompObject *o)
 {
     MoveDisplay *md;
     int	        i;
 
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
+    CORE_DISPLAY (o);
 
-    md = (MoveDisplay *) malloc (sizeof (MoveDisplay));
+    if (!checkPluginABI ("core", CORE_ABIVERSION))
+	return false;
+
+    md = new MoveDisplay (d);
     if (!md)
-	return FALSE;
+	return false;
 
     if (!compInitDisplayOptionsFromMetadata (d,
 					     &moveMetadata,
@@ -836,16 +897,16 @@ moveInitDisplay (CompPlugin  *p,
 					     md->opt,
 					     MOVE_DISPLAY_OPTION_NUM))
     {
-	free (md);
-	return FALSE;
+	delete md;
+	return false;
     }
 
     md->screenPrivateIndex = allocateScreenPrivateIndex (d);
     if (md->screenPrivateIndex < 0)
     {
 	compFiniDisplayOptions (d, md->opt, MOVE_DISPLAY_OPTION_NUM);
-	free (md);
-	return FALSE;
+	delete md;
+	return false;
     }
 
     md->moveOpacity =
@@ -857,97 +918,124 @@ moveInitDisplay (CompPlugin  *p,
     md->releaseButton = 0;
 
     for (i = 0; i < NUM_KEYS; i++)
-	md->key[i] = XKeysymToKeycode (d->display,
+	md->key[i] = XKeysymToKeycode (d->dpy (),
 				       XStringToKeysym (mKeys[i].name));
 
-    WRAP (md, d, handleEvent, moveHandleEvent);
 
-    d->base.privates[displayPrivateIndex].ptr = md;
+    d->privates[displayPrivateIndex].ptr = md;
 
-    return TRUE;
+    return true;
 }
 
 static void
-moveFiniDisplay (CompPlugin  *p,
-		 CompDisplay *d)
+moveFiniDisplay (CompObject *o)
 {
+    CORE_DISPLAY (o);
     MOVE_DISPLAY (d);
 
     freeScreenPrivateIndex (d, md->screenPrivateIndex);
 
-    UNWRAP (md, d, handleEvent);
-
     compFiniDisplayOptions (d, md->opt, MOVE_DISPLAY_OPTION_NUM);
 
-    free (md);
+    delete md;
 }
 
-static Bool
-moveInitScreen (CompPlugin *p,
-		CompScreen *s)
+static bool
+moveInitScreen (CompObject *o)
 {
     MoveScreen *ms;
 
-    MOVE_DISPLAY (s->display);
+    CORE_SCREEN (o);
+    MOVE_DISPLAY (s->display ());
 
-    ms = (MoveScreen *) malloc (sizeof (MoveScreen));
+    ms = new MoveScreen (s);
     if (!ms)
-	return FALSE;
+	return false;
+
+    ms->windowPrivateIndex = allocateWindowPrivateIndex (s);
+    if (ms->windowPrivateIndex < 0)
+    {
+	delete ms;
+	return false;
+    }
 
     ms->grabIndex = 0;
 
-    ms->moveCursor = XCreateFontCursor (s->display->display, XC_fleur);
+    ms->moveCursor = XCreateFontCursor (s->display ()->dpy (), XC_fleur);
 
-    WRAP (ms, s, paintWindow, movePaintWindow);
+    s->privates[md->screenPrivateIndex].ptr = ms;
 
-    s->base.privates[md->screenPrivateIndex].ptr = ms;
-
-    return TRUE;
+    return true;
 }
 
 static void
-moveFiniScreen (CompPlugin *p,
-		CompScreen *s)
+moveFiniScreen (CompObject *o)
 {
+    CORE_SCREEN (o);
     MOVE_SCREEN (s);
 
-    UNWRAP (ms, s, paintWindow);
+    freeWindowPrivateIndex (s, ms->windowPrivateIndex);
 
     if (ms->moveCursor)
-	XFreeCursor (s->display->display, ms->moveCursor);
+	XFreeCursor (s->display ()->dpy (), ms->moveCursor);
 
-    free (ms);
+    delete ms;
 }
 
-static CompBool
-moveInitObject (CompPlugin *p,
-		CompObject *o)
+static bool
+moveInitWindow (CompObject *o)
+{
+    MoveWindow *mw;
+
+    CORE_WINDOW (o);
+    MOVE_SCREEN (w->screen ());
+
+    mw = new MoveWindow (w);
+    if (!mw)
+	return false;
+
+    w->privates[ms->windowPrivateIndex].ptr = mw;
+
+    return true;
+}
+
+static void
+moveFiniWindow (CompObject *o)
+{
+    CORE_WINDOW (o);
+    MOVE_WINDOW (w);
+
+    delete mw;
+}
+
+bool
+MovePluginVTable::initObject (CompObject *o)
 {
     static InitPluginObjectProc dispTab[] = {
 	(InitPluginObjectProc) 0, /* InitCore */
 	(InitPluginObjectProc) moveInitDisplay,
-	(InitPluginObjectProc) moveInitScreen
+	(InitPluginObjectProc) moveInitScreen,
+	(InitPluginObjectProc) moveInitWindow
     };
 
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
+    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (o));
 }
 
-static void
-moveFiniObject (CompPlugin *p,
-		CompObject *o)
+void
+MovePluginVTable::finiObject (CompObject *o)
 {
     static FiniPluginObjectProc dispTab[] = {
 	(FiniPluginObjectProc) 0, /* FiniCore */
 	(FiniPluginObjectProc) moveFiniDisplay,
-	(FiniPluginObjectProc) moveFiniScreen
+	(FiniPluginObjectProc) moveFiniScreen,
+	(FiniPluginObjectProc) moveFiniWindow
     };
 
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
+    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (o));
 }
 
-static CompOption *
-moveGetObjectOptions (CompPlugin *plugin,
-		      CompObject *object,
+CompOption *
+MovePluginVTable::getObjectOptions (CompObject *object,
 		      int	 *count)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
@@ -956,12 +1044,11 @@ moveGetObjectOptions (CompPlugin *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (plugin, object, count));
+		     (CompOption *) (*count = 0), (object, count));
 }
 
-static CompBool
-moveSetObjectOption (CompPlugin      *plugin,
-		     CompObject      *object,
+bool
+MovePluginVTable::setObjectOption (CompObject      *object,
 		     const char      *name,
 		     CompOptionValue *value)
 {
@@ -971,57 +1058,48 @@ moveSetObjectOption (CompPlugin      *plugin,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
-		     (plugin, object, name, value));
+		     (object, name, value));
 }
 
-static Bool
-moveInit (CompPlugin *p)
+bool
+MovePluginVTable::init ()
 {
     if (!compInitPluginMetadataFromInfo (&moveMetadata,
-					 p->vTable->name,
+					 name (),
 					 moveDisplayOptionInfo,
 					 MOVE_DISPLAY_OPTION_NUM,
 					 0, 0))
-	return FALSE;
+	return false;
 
     displayPrivateIndex = allocateDisplayPrivateIndex ();
     if (displayPrivateIndex < 0)
     {
 	compFiniMetadata (&moveMetadata);
-	return FALSE;
+	return false;
     }
 
-    compAddMetadataFromFile (&moveMetadata, p->vTable->name);
+    compAddMetadataFromFile (&moveMetadata, name ());
 
-    return TRUE;
+    return true;
 }
 
-static void
-moveFini (CompPlugin *p)
+void
+MovePluginVTable::fini ()
 {
     freeDisplayPrivateIndex (displayPrivateIndex);
     compFiniMetadata (&moveMetadata);
 }
 
-static CompMetadata *
-moveGetMetadata (CompPlugin *plugin)
+CompMetadata *
+MovePluginVTable::getMetadata ()
 {
     return &moveMetadata;
 }
 
-CompPluginVTable moveVTable = {
-    "move",
-    moveGetMetadata,
-    moveInit,
-    moveFini,
-    moveInitObject,
-    moveFiniObject,
-    moveGetObjectOptions,
-    moveSetObjectOption
-};
+MovePluginVTable moveVTable;
 
 CompPluginVTable *
-getCompPluginInfo20070830 (void)
+getCompPluginInfo20080805 (void)
 {
     return &moveVTable;
 }

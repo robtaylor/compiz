@@ -605,7 +605,7 @@ keyBindingToString (CompDisplay    *d,
 	KeySym keysym;
 	char   *keyname;
 
-	keysym  = XKeycodeToKeysym (d->display, key->keycode, 0);
+	keysym  = XKeycodeToKeysym (d->dpy (), key->keycode, 0);
 	keyname = XKeysymToString (keysym);
 
 	if (keyname)
@@ -743,7 +743,7 @@ stringToKeyBinding (CompDisplay    *d,
     {
 	KeyCode keycode;
 
-	keycode = XKeysymToKeycode (d->display, keysym);
+	keycode = XKeysymToKeycode (d->dpy (), keysym);
 	if (keycode)
 	{
 	    key->keycode   = keycode;

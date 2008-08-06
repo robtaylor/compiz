@@ -47,7 +47,10 @@
 
 #include <compiz-core.h>
 
-#define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
+#include <compscreen.h>
+#include "privatescreen.h"
+
+#define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
 
 static int
 reallocScreenPrivate (int  size,
@@ -57,13 +60,13 @@ reallocScreenPrivate (int  size,
     CompScreen  *s;
     void        *privates;
 
-    for (s = d->screens; s; s = s->next)
+    for (s = d->screens(); s; s = s->next)
     {
-	privates = realloc (s->base.privates, size * sizeof (CompPrivate));
+	privates = realloc (s->privates, size * sizeof (CompPrivate));
 	if (!privates)
 	    return FALSE;
 
-	s->base.privates = (CompPrivate *) privates;
+	s->privates = (CompPrivate *) privates;
     }
 
     return TRUE;
@@ -102,9 +105,9 @@ forEachScreenObject (CompObject	        *parent,
 
 	CORE_DISPLAY (parent);
 
-	for (s = d->screens; s; s = s->next)
+	for (s = d->screens(); s; s = s->next)
 	{
-	    if (!(*proc) (&s->base, closure))
+	    if (!(*proc) (s, closure))
 		return FALSE;
 	}
     }
@@ -119,7 +122,7 @@ nameScreenObject (CompObject *object)
 
     CORE_SCREEN (object);
 
-    snprintf (tmp, 256, "%d", s->screenNum);
+    snprintf (tmp, 256, "%d", s->screenNum ());
 
     return strdup (tmp);
 }
@@ -135,9 +138,9 @@ findScreenObject (CompObject *parent,
 
 	CORE_DISPLAY (parent);
 
-	for (s = d->screens; s; s = s->next)
-	    if (s->screenNum == screenNum)
-		return &s->base;
+	for (s = d->screens(); s; s = s->next)
+	    if (s->screenNum () == screenNum)
+		return s;
     }
 
     return NULL;
@@ -146,126 +149,125 @@ findScreenObject (CompObject *parent,
 int
 allocateScreenPrivateIndex (CompDisplay *display)
 {
-    return compObjectAllocatePrivateIndex (&display->base,
-					   COMP_OBJECT_TYPE_SCREEN);
+    return compObjectAllocatePrivateIndex (display, COMP_OBJECT_TYPE_SCREEN);
 }
 
 void
 freeScreenPrivateIndex (CompDisplay *display,
 			int	    index)
 {
-    compObjectFreePrivateIndex (&display->base,
-				COMP_OBJECT_TYPE_SCREEN,
-				index);
+    compObjectFreePrivateIndex (display, COMP_OBJECT_TYPE_SCREEN, index);
 }
 
-static Bool
-desktopHintEqual (CompScreen	*s,
-		  unsigned long *data,
-		  int		size,
-		  int		offset,
-		  int		hintSize)
+
+bool
+PrivateScreen::desktopHintEqual (unsigned long *data,
+				 int           size,
+				 int           offset,
+				 int           hintSize)
 {
-    if (size != s->desktopHintSize)
-	return FALSE;
+    if (size != desktopHintSize)
+	return false;
 
     if (memcmp (data + offset,
-		s->desktopHintData + offset,
+		desktopHintData + offset,
 		hintSize * sizeof (unsigned long)) == 0)
-	return TRUE;
+	return true;
 
-    return FALSE;
+    return false;
 }
 
-static void
-setDesktopHints (CompScreen *s)
+void
+PrivateScreen::setDesktopHints ()
 {
-    CompDisplay   *d = s->display;
     unsigned long *data;
-    int		  size, offset, hintSize, i;
+    int		  size, offset, hintSize;
+    unsigned int  i;
 
-    size = s->nDesktop * 2 + s->nDesktop * 2 + s->nDesktop * 4 + 1;
+    size = nDesktop * 2 + nDesktop * 2 + nDesktop * 4 + 1;
 
     data = (unsigned long *) malloc (sizeof (unsigned long) * size);
     if (!data)
 	return;
 
     offset   = 0;
-    hintSize = s->nDesktop * 2;
+    hintSize = nDesktop * 2;
 
-    for (i = 0; i < s->nDesktop; i++)
+    for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = s->x * s->width;
-	data[offset + i * 2 + 1] = s->y * s->height;
+	data[offset + i * 2 + 0] = x * width;
+	data[offset + i * 2 + 1] = y * height;
     }
 
-    if (!desktopHintEqual (s, data, size, offset, hintSize))
-	XChangeProperty (d->display, s->root, d->desktopViewportAtom,
+    if (!desktopHintEqual (data, size, offset, hintSize))
+	XChangeProperty (display->dpy (), root,
+			 display->atoms ().desktopViewport,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) &data[offset], hintSize);
 
     offset += hintSize;
 
-    for (i = 0; i < s->nDesktop; i++)
+    for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = s->width  * s->hsize;
-	data[offset + i * 2 + 1] = s->height * s->vsize;
+	data[offset + i * 2 + 0] = width  * hsize;
+	data[offset + i * 2 + 1] = height * vsize;
     }
 
-    if (!desktopHintEqual (s, data, size, offset, hintSize))
-	XChangeProperty (d->display, s->root, d->desktopGeometryAtom,
+    if (!desktopHintEqual (data, size, offset, hintSize))
+	XChangeProperty (display->dpy (), root,
+			 display->atoms ().desktopGeometry,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) &data[offset], hintSize);
 
     offset += hintSize;
-    hintSize = s->nDesktop * 4;
+    hintSize = nDesktop * 4;
 
-    for (i = 0; i < s->nDesktop; i++)
+    for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 4 + 0] = s->workArea.x;
-	data[offset + i * 4 + 1] = s->workArea.y;
-	data[offset + i * 4 + 2] = s->workArea.width;
-	data[offset + i * 4 + 3] = s->workArea.height;
+	data[offset + i * 4 + 0] = workArea.x;
+	data[offset + i * 4 + 1] = workArea.y;
+	data[offset + i * 4 + 2] = workArea.width;
+	data[offset + i * 4 + 3] = workArea.height;
     }
 
-    if (!desktopHintEqual (s, data, size, offset, hintSize))
-	XChangeProperty (d->display, s->root, d->workareaAtom,
+    if (!desktopHintEqual (data, size, offset, hintSize))
+	XChangeProperty (display->dpy (), root,
+			 display->atoms ().workarea,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) &data[offset], hintSize);
 
     offset += hintSize;
 
-    data[offset] = s->nDesktop;
+    data[offset] = nDesktop;
     hintSize = 1;
 
-    if (!desktopHintEqual (s, data, size, offset, hintSize))
-	XChangeProperty (d->display, s->root, d->numberOfDesktopsAtom,
+    if (!desktopHintEqual (data, size, offset, hintSize))
+	XChangeProperty (display->dpy (), root,
+			 display->atoms ().numberOfDesktops,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) &data[offset], hintSize);
 
-    if (s->desktopHintData)
-	free (s->desktopHintData);
+    if (desktopHintData)
+	free (desktopHintData);
 
-    s->desktopHintData = data;
-    s->desktopHintSize = size;
+    desktopHintData = data;
+    desktopHintSize = size;
 }
 
-static void
-setVirtualScreenSize (CompScreen *screen,
-		      int	 hsize,
-		      int	 vsize)
+void
+PrivateScreen::setVirtualScreenSize (int newh, int newv)
 {
-    screen->hsize = hsize;
-    screen->vsize = vsize;
+    hsize = newh;
+    vsize = newv;
 
-    setDesktopHints (screen);
+    setDesktopHints ();
 }
 
-static void
-updateOutputDevices (CompScreen	*s)
+void
+PrivateScreen::updateOutputDevices ()
 {
     CompOutput	  *o, *output = NULL;
-    CompListValue *list = &s->opt[COMP_SCREEN_OPTION_OUTPUTS].value.list;
+    CompListValue *list = &opt[COMP_SCREEN_OPTION_OUTPUTS].value.list;
     int		  nOutput = 0;
     int		  x, y, i, j, bits;
     unsigned int  width, height;
@@ -279,16 +281,16 @@ updateOutputDevices (CompScreen	*s)
 
 	x      = 0;
 	y      = 0;
-	width  = s->width;
-	height = s->height;
+	width  = this->width;
+	height = this->height;
 
 	bits = XParseGeometry (list->value[i].s, &x, &y, &width, &height);
 
 	if (bits & XNegative)
-	    x = s->width + x - width;
+	    x = this->width + x - width;
 
 	if (bits & YNegative)
-	    y = s->height + y - height;
+	    y = this->height + y - height;
 
 	x1 = x;
 	y1 = y;
@@ -299,10 +301,10 @@ updateOutputDevices (CompScreen	*s)
 	    x1 = 0;
 	if (y1 < 0)
 	    y1 = 0;
-	if (x2 > s->width)
-	    x2 = s->width;
-	if (y2 > s->height)
-	    y2 = s->height;
+	if (x2 > this->width)
+	    x2 = this->width;
+	if (y2 > this->height)
+	    y2 = this->height;
 
 	if (x1 < x2 && y1 < y2)
 	{
@@ -329,8 +331,8 @@ updateOutputDevices (CompScreen	*s)
 
 	output->region.extents.x1 = 0;
 	output->region.extents.y1 = 0;
-	output->region.extents.x2 = s->width;
-	output->region.extents.y2 = s->height;
+	output->region.extents.x2 = this->width;
+	output->region.extents.y2 = this->height;
 
 	nOutput = 1;
     }
@@ -358,25 +360,25 @@ updateOutputDevices (CompScreen	*s)
 	output[i].id = i;
     }
 
-    if (s->outputDev)
+    if (outputDev)
     {
-	for (i = 0; i < s->nOutputDev; i++)
-	    if (s->outputDev[i].name)
-		free (s->outputDev[i].name);
+	for (i = 0; i < nOutputDev; i++)
+	    if (outputDev[i].name)
+		free (outputDev[i].name);
 
-	free (s->outputDev);
+	free (outputDev);
     }
 
-    s->outputDev             = output;
-    s->nOutputDev            = nOutput;
-    s->hasOverlappingOutputs = FALSE;
+    outputDev             = output;
+    nOutputDev            = nOutput;
+    hasOverlappingOutputs = false;
 
-    setCurrentOutput (s, s->currentOutputDev);
+    screen->setCurrentOutput (currentOutputDev);
 
-    updateWorkareaForScreen (s);
+    screen->updateWorkarea ();
 
-    setDefaultViewport (s);
-    damageScreen (s);
+    screen->setDefaultViewport ();
+    screen->damageScreen ();
 
     region = XCreateRegion ();
     if (region)
@@ -393,18 +395,18 @@ updateOutputDevices (CompScreen	*s)
 				  &output[j].region,
 				  region);
 		if (REGION_NOT_EMPTY (region))
-		    s->hasOverlappingOutputs = TRUE;
+		    hasOverlappingOutputs = true;
 	    }
 	XSubtractRegion (&emptyRegion, &emptyRegion, region);
 	
-	if (s->display->nScreenInfo)
+	if (display->nScreenInfo())
 	{
-	    for (i = 0; i < s->display->nScreenInfo; i++)
+	    for (i = 0; i < display->nScreenInfo(); i++)
 	    {
-		r.extents.x1 = s->display->screenInfo[i].x_org;
-		r.extents.y1 = s->display->screenInfo[i].y_org;
-		r.extents.x2 = r.extents.x1 + s->display->screenInfo[i].width;
-		r.extents.y2 = r.extents.y1 + s->display->screenInfo[i].height;
+		r.extents.x1 = display->screenInfo()[i].x_org;
+		r.extents.y1 = display->screenInfo()[i].y_org;
+		r.extents.x2 = r.extents.x1 + display->screenInfo()[i].width;
+		r.extents.y2 = r.extents.y1 + display->screenInfo()[i].height;
 
 		XUnionRegion (region, &r, region);
 	    }
@@ -413,52 +415,53 @@ updateOutputDevices (CompScreen	*s)
 	{
 	    r.extents.x1 = 0;
 	    r.extents.y1 = 0;
-	    r.extents.x2 = s->width;
-	    r.extents.y2 = s->height;
+	    r.extents.x2 = this->width;
+	    r.extents.y2 = this->height;
 
 	    XUnionRegion (region, &r, region);
 	}
 
 	/* remove all output regions from visible screen region */
-	for (i = 0; i < s->nOutputDev; i++)
-	    XSubtractRegion (region, &s->outputDev[i].region, region);
+	for (i = 0; i < nOutputDev; i++)
+	    XSubtractRegion (region, &outputDev[i].region, region);
 
 	/* we should clear color buffers before swapping if we have visible
 	   regions without output */
-	s->clearBuffers = REGION_NOT_EMPTY (region);
+	clearBuffers = REGION_NOT_EMPTY (region);
 
 	XDestroyRegion (region);
     }
 
-    (*s->outputChangeNotify) (s);
+    screen->outputChangeNotify ();
 }
 
-static void
-detectOutputDevices (CompScreen *s)
+void
+PrivateScreen::detectOutputDevices ()
 {
-    if (!noDetection && s->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
+    if (!noDetection && opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
     {
 	char		*name;
 	CompOptionValue	value;
 	char		output[1024];
 	int		i, size = sizeof (output);
 
-	if (s->display->nScreenInfo)
+	if (display->nScreenInfo())
 	{
-	    int n = s->display->nScreenInfo;
+	    int n = display->nScreenInfo();
 
 	    value.list.nValue = n;
-	    value.list.value  = (CompOptionValue *) malloc (sizeof (CompOptionValue) * n);
+	    value.list.value  = (CompOptionValue *)
+		malloc (sizeof (CompOptionValue) * n);
 	    if (!value.list.value)
 		return;
 
 	    for (i = 0; i < n; i++)
 	    {
 		snprintf (output, size, "%dx%d+%d+%d",
-			  s->display->screenInfo[i].width,
-			  s->display->screenInfo[i].height,
-			  s->display->screenInfo[i].x_org,
-			  s->display->screenInfo[i].y_org);
+			  display->screenInfo()[i].width,
+			  display->screenInfo()[i].height,
+			  display->screenInfo()[i].x_org,
+			  display->screenInfo()[i].y_org);
 
 		value.list.value[i].s = strdup (output);
 	    }
@@ -470,16 +473,16 @@ detectOutputDevices (CompScreen *s)
 	    if (!value.list.value)
 		return;
 
-	    snprintf (output, size, "%dx%d+%d+%d", s->width, s->height, 0, 0);
+	    snprintf (output, size, "%dx%d+%d+%d", width, height, 0, 0);
 
 	    value.list.value->s = strdup (output);
 	}
 
-	name = s->opt[COMP_SCREEN_OPTION_OUTPUTS].name;
+	name = opt[COMP_SCREEN_OPTION_OUTPUTS].name;
 
-	s->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = FALSE;
-	(*core.setOptionForPlugin) (&s->base, "core", name, &value);
-	s->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = TRUE;
+	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = false;
+	core->setOptionForPlugin (screen, "core", name, &value);
+	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = true;
 
 	for (i = 0; i < value.list.nValue; i++)
 	    if (value.list.value[i].s)
@@ -489,60 +492,66 @@ detectOutputDevices (CompScreen *s)
     }
     else
     {
-	updateOutputDevices (s);
+	updateOutputDevices ();
     }
 }
 
 CompOption *
-getScreenOptions (CompPlugin *plugin,
-		  CompScreen *screen,
-		  int	     *count)
+CompScreen::getScreenOptions (CompObject *object,
+			      int        *count)
 {
+    CompScreen *screen = (CompScreen *) object;
     *count = NUM_OPTIONS (screen);
-    return screen->opt;
+    return screen->priv->opt;
 }
 
-Bool
-setScreenOption (CompPlugin	 *plugin,
-		 CompScreen      *screen,
+bool
+setScreenOption (CompObject      *object,
 		 const char	 *name,
 		 CompOptionValue *value)
+{
+    return ((CompScreen *) object)->setOption (name, value);
+}
+
+bool
+CompScreen::setOption (const char      *name,
+		       CompOptionValue *value)
 {
     CompOption *o;
     int	       index;
 
-    o = compFindOption (screen->opt, NUM_OPTIONS (screen), name, &index);
+    o = compFindOption (priv->opt, NUM_OPTIONS (this), name, &index);
     if (!o)
-	return FALSE;
+	return false;
 
     switch (index) {
     case COMP_SCREEN_OPTION_DETECT_REFRESH_RATE:
 	if (compSetBoolOption (o, value))
 	{
 	    if (value->b)
-		detectRefreshRateOfScreen (screen);
+		detectRefreshRate ();
 
-	    return TRUE;
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_DETECT_OUTPUTS:
 	if (compSetBoolOption (o, value))
 	{
 	    if (value->b)
-		detectOutputDevices (screen);
+		priv->detectOutputDevices ();
 
-	    return TRUE;
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_REFRESH_RATE:
-	if (screen->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
-	    return FALSE;
+	if (priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
+	    return false;
 
 	if (compSetIntOption (o, value))
 	{
-	    screen->redrawTime = 1000 / o->value.i;
-	    screen->optimalRedrawTime = screen->redrawTime;
-	    return TRUE;
+	    priv->redrawTime = 1000 / o->value.i;
+	    priv->optimalRedrawTime = priv->redrawTime;
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_HSIZE:
@@ -550,17 +559,17 @@ setScreenOption (CompPlugin	 *plugin,
 	{
 	    CompOption *vsize;
 
-	    vsize = compFindOption (screen->opt, NUM_OPTIONS (screen),
+	    vsize = compFindOption (priv->opt, NUM_OPTIONS (this),
 				    "vsize", NULL);
 
 	    if (!vsize)
-		return FALSE;
+		return false;
 
-	    if (o->value.i * screen->width > MAXSHORT)
-		return FALSE;
+	    if (o->value.i * priv->width > MAXSHORT)
+		return false;
 
-	    setVirtualScreenSize (screen, o->value.i, vsize->value.i);
-	    return TRUE;
+	    priv->setVirtualScreenSize (o->value.i, vsize->value.i);
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_VSIZE:
@@ -568,81 +577,55 @@ setScreenOption (CompPlugin	 *plugin,
 	{
 	    CompOption *hsize;
 
-	    hsize = compFindOption (screen->opt, NUM_OPTIONS (screen),
+	    hsize = compFindOption (priv->opt, NUM_OPTIONS (this),
 				    "hsize", NULL);
 
 	    if (!hsize)
-		return FALSE;
+		return false;
 
-	    if (o->value.i * screen->height > MAXSHORT)
-		return FALSE;
+	    if (o->value.i * priv->height > MAXSHORT)
+		return false;
 
-	    setVirtualScreenSize (screen, hsize->value.i, o->value.i);
-	    return TRUE;
+	    priv->setVirtualScreenSize (hsize->value.i, o->value.i);
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS:
 	if (compSetIntOption (o, value))
 	{
-	    setNumberOfDesktops (screen, o->value.i);
-	    return TRUE;
+	    setNumberOfDesktops (o->value.i);
+	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_DEFAULT_ICON:
 	if (compSetStringOption (o, value))
-	    return updateDefaultIcon (screen);
+	    return updateDefaultIcon ();
 	break;
     case COMP_SCREEN_OPTION_OUTPUTS:
 	if (!noDetection &&
-	    screen->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
-	    return FALSE;
+	    priv->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
+	    return false;
 
 	if (compSetOptionList (o, value))
 	{
-	    updateOutputDevices (screen);
-	    return TRUE;
-	}
-	break;
-    case COMP_SCREEN_OPTION_OPACITY_MATCHES:
-	if (compSetOptionList (o, value))
-	{
-	    CompWindow *w;
-	    int	       i;
-
-	    for (i = 0; i < o->value.list.nValue; i++)
-		matchUpdate (screen->display, &o->value.list.value[i].match);
-
-	    for (w = screen->windows; w; w = w->next)
-		updateWindowOpacity (w);
-
-	    return TRUE;
-	}
-	break;
-    case COMP_SCREEN_OPTION_OPACITY_VALUES:
-	if (compSetOptionList (o, value))
-	{
-	    CompWindow *w;
-
-	    for (w = screen->windows; w; w = w->next)
-		updateWindowOpacity (w);
-
-	    return TRUE;
+	    priv->updateOutputDevices ();
+	    return true;
 	}
 	break;
      case COMP_SCREEN_OPTION_FORCE_INDEPENDENT:
 	if (compSetBoolOption (o, value))
 	{
-	    updateOutputDevices (screen);
-	    return TRUE;
+	    priv->updateOutputDevices ();
+	    return true;
 	}
 	break;
     default:
-	if (compSetScreenOption (screen, o, value))
-	    return TRUE;
+	if (compSetScreenOption (this, o, value))
+	    return true;
 	break;
     }
 
-    return FALSE;
+    return false;
 }
 
 const CompMetadataOptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
@@ -663,34 +646,40 @@ const CompMetadataOptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
     { "focus_prevention_level", "int",
       RESTOSTRING (0, FOCUS_PREVENTION_LEVEL_LAST), 0, 0 },
     { "focus_prevention_match", "match", 0, 0, 0 },
-    { "opacity_matches", "list", "<type>match</type>", 0, 0 },
-    { "opacity_values", "list", "<type>int</type>", 0, 0 },
     { "texture_compression", "bool", 0, 0, 0 },
     { "force_independent_output_painting", "bool", 0, 0, 0 }
 };
 
-static void
-updateStartupFeedback (CompScreen *s)
+void
+PrivateScreen::updateStartupFeedback ()
 {
-    if (s->startupSequences)
-	XDefineCursor (s->display->display, s->root, s->busyCursor);
+    if (startupSequences)
+	XDefineCursor (display->dpy (), root, busyCursor);
     else
-	XDefineCursor (s->display->display, s->root, s->normalCursor);
+	XDefineCursor (display->dpy (), root, normalCursor);
 }
 
 #define STARTUP_TIMEOUT_DELAY 15000
 
-static Bool
-startupSequenceTimeout (void *data)
+bool
+CompScreen::startupSequenceTimeout (void *data)
 {
-    CompScreen		*screen = (CompScreen *) data;
+    CompScreen *screen = (CompScreen *) data;
+
+    screen->priv->handleStartupSequenceTimeout ();
+    return true;
+}
+
+void
+PrivateScreen::handleStartupSequenceTimeout()
+{
     CompStartupSequence *s;
     struct timeval	now, active;
     double		elapsed;
 
     gettimeofday (&now, NULL);
 
-    for (s = screen->startupSequences; s; s = s->next)
+    for (s = startupSequences; s; s = s->next)
     {
 	sn_startup_sequence_get_last_active_time (s->sequence,
 						  &active.tv_sec,
@@ -702,13 +691,10 @@ startupSequenceTimeout (void *data)
 	if (elapsed > STARTUP_TIMEOUT_DELAY)
 	    sn_startup_sequence_complete (s->sequence);
     }
-
-    return TRUE;
 }
 
-static void
-addSequence (CompScreen        *screen,
-	     SnStartupSequence *sequence)
+void
+PrivateScreen::addSequence (SnStartupSequence *sequence)
 {
     CompStartupSequence *s;
 
@@ -718,28 +704,27 @@ addSequence (CompScreen        *screen,
 
     sn_startup_sequence_ref (sequence);
 
-    s->next     = screen->startupSequences;
+    s->next     = startupSequences;
     s->sequence = sequence;
-    s->viewportX = screen->x;
-    s->viewportY = screen->y;
+    s->viewportX = x;
+    s->viewportY = y;
 
-    screen->startupSequences = s;
+    startupSequences = s;
 
-    if (!screen->startupSequenceTimeoutHandle)
-	compAddTimeout (1000, 1500,
-			startupSequenceTimeout,
-			screen);
+    if (!startupSequenceTimeoutHandle)
+	core->addTimeout (1000, 1500,
+			  CompScreen::startupSequenceTimeout,
+			  this);
 
-    updateStartupFeedback (screen);
+    updateStartupFeedback ();
 }
 
-static void
-removeSequence (CompScreen        *screen,
-		SnStartupSequence *sequence)
+void
+PrivateScreen::removeSequence (SnStartupSequence *sequence)
 {
     CompStartupSequence *s, *p = NULL;
 
-    for (s = screen->startupSequences; s; s = s->next)
+    for (s = startupSequences; s; s = s->next)
     {
 	if (s->sequence == sequence)
 	    break;
@@ -755,22 +740,22 @@ removeSequence (CompScreen        *screen,
     if (p)
 	p->next = s->next;
     else
-	screen->startupSequences = NULL;
+	startupSequences = NULL;
 
     free (s);
 
-    if (!screen->startupSequences && screen->startupSequenceTimeoutHandle)
+    if (!startupSequences && startupSequenceTimeoutHandle)
     {
-	compRemoveTimeout (screen->startupSequenceTimeoutHandle);
-	screen->startupSequenceTimeoutHandle = 0;
+	core->removeTimeout (startupSequenceTimeoutHandle);
+	startupSequenceTimeoutHandle = 0;
     }
 
-    updateStartupFeedback (screen);
+    updateStartupFeedback ();
 }
 
-static void
-compScreenSnEvent (SnMonitorEvent *event,
-		   void           *userData)
+void
+CompScreen::compScreenSnEvent (SnMonitorEvent *event,
+			       void           *userData)
 {
     CompScreen	      *screen = (CompScreen *) userData;
     SnStartupSequence *sequence;
@@ -779,10 +764,10 @@ compScreenSnEvent (SnMonitorEvent *event,
 
     switch (sn_monitor_event_get_type (event)) {
     case SN_MONITOR_EVENT_INITIATED:
-	addSequence (screen, sequence);
+	screen->priv->addSequence (sequence);
 	break;
     case SN_MONITOR_EVENT_COMPLETED:
-	removeSequence (screen, sn_monitor_event_get_startup_sequence (event));
+	screen->priv->removeSequence (sn_monitor_event_get_startup_sequence (event));
 	break;
     case SN_MONITOR_EVENT_CHANGED:
     case SN_MONITOR_EVENT_CANCELED:
@@ -790,8 +775,8 @@ compScreenSnEvent (SnMonitorEvent *event,
     }
 }
 
-static void
-updateScreenEdges (CompScreen *s)
+void
+PrivateScreen::updateScreenEdges ()
 {
     struct screenEdgeGeometry {
 	int xw, x0;
@@ -812,12 +797,12 @@ updateScreenEdges (CompScreen *s)
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
-	if (s->screenEdge[i].id)
-	    XMoveResizeWindow (s->display->display, s->screenEdge[i].id,
-			       geometry[i].xw * s->width  + geometry[i].x0,
-			       geometry[i].yh * s->height + geometry[i].y0,
-			       geometry[i].ww * s->width  + geometry[i].w0,
-			       geometry[i].hh * s->height + geometry[i].h0);
+	if (screenEdge[i].id)
+	    XMoveResizeWindow (display->dpy (), screenEdge[i].id,
+			       geometry[i].xw * width  + geometry[i].x0,
+			       geometry[i].yh * height + geometry[i].y0,
+			       geometry[i].ww * width  + geometry[i].w0,
+			       geometry[i].hh * height + geometry[i].h0);
     }
 }
 
@@ -866,36 +851,24 @@ perspective (GLfloat *m,
 }
 
 void
-setCurrentOutput (CompScreen *s,
-		  int	     outputNum)
+CompScreen::setCurrentOutput (int outputNum)
 {
-    if (outputNum >= s->nOutputDev)
+    if (outputNum >= priv->nOutputDev)
 	outputNum = 0;
 
-    s->currentOutputDev = outputNum;
+    priv->currentOutputDev = outputNum;
 }
 
-static void
-reshape (CompScreen *s,
-	 int	    w,
-	 int	    h)
+void
+PrivateScreen::reshape (int w, int h)
 {
 
 #ifdef USE_COW
     if (useCow)
-	XMoveResizeWindow (s->display->display, s->overlay, 0, 0, w, h);
+	XMoveResizeWindow (display->dpy (), overlay, 0, 0, w, h);
 #endif
 
-    if (s->display->xineramaExtension)
-    {
-	CompDisplay *d = s->display;
-
-	if (d->screenInfo)
-	    XFree (d->screenInfo);
-
-	d->nScreenInfo = 0;
-	d->screenInfo = XineramaQueryScreens (d->display, &d->nScreenInfo);
-    }
+    display->updateScreenInfo();
 
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
@@ -905,66 +878,64 @@ reshape (CompScreen *s,
     glViewport (-1, -1, 2, 2);
     glRasterPos2f (0, 0);
 
-    s->rasterX = s->rasterY = 0;
+    rasterX = rasterY = 0;
 
-    perspective (s->projection, 60.0f, 1.0f, 0.1f, 100.0f);
+    perspective (projection, 60.0f, 1.0f, 0.1f, 100.0f);
 
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
-    glMultMatrixf (s->projection);
+    glMultMatrixf (projection);
     glMatrixMode (GL_MODELVIEW);
 
-    s->region.rects = &s->region.extents;
-    s->region.numRects = 1;
-    s->region.extents.x1 = 0;
-    s->region.extents.y1 = 0;
-    s->region.extents.x2 = w;
-    s->region.extents.y2 = h;
-    s->region.size = 1;
+    region.rects = &region.extents;
+    region.numRects = 1;
+    region.extents.x1 = 0;
+    region.extents.y1 = 0;
+    region.extents.x2 = w;
+    region.extents.y2 = h;
+    region.size = 1;
 
-    s->width  = w;
-    s->height = h;
+    width  = w;
+    height = h;
 
-    s->fullscreenOutput.name             = "fullscreen";
-    s->fullscreenOutput.id               = ~0;
-    s->fullscreenOutput.width            = w;
-    s->fullscreenOutput.height           = h;
-    s->fullscreenOutput.region           = s->region;
-    s->fullscreenOutput.workArea.x       = 0;
-    s->fullscreenOutput.workArea.y       = 0;
-    s->fullscreenOutput.workArea.width   = w;
-    s->fullscreenOutput.workArea.height  = h;
+    fullscreenOutput.name             = "fullscreen";
+    fullscreenOutput.id               = ~0;
+    fullscreenOutput.width            = w;
+    fullscreenOutput.height           = h;
+    fullscreenOutput.region           = region;
+    fullscreenOutput.workArea.x       = 0;
+    fullscreenOutput.workArea.y       = 0;
+    fullscreenOutput.workArea.width   = w;
+    fullscreenOutput.workArea.height  = h;
  
-    updateScreenEdges (s);
+    updateScreenEdges ();
 }
 
 void
-configureScreen (CompScreen	 *s,
-		 XConfigureEvent *ce)
+CompScreen::configure (XConfigureEvent *ce)
 {
-    if (s->attrib.width  != ce->width ||
-	s->attrib.height != ce->height)
+    if (priv->attrib.width  != ce->width ||
+	priv->attrib.height != ce->height)
     {
-	s->attrib.width  = ce->width;
-	s->attrib.height = ce->height;
+	priv->attrib.width  = ce->width;
+	priv->attrib.height = ce->height;
 
-	reshape (s, ce->width, ce->height);
+	priv->reshape (ce->width, ce->height);
 
-	detectOutputDevices (s);
+	priv->detectOutputDevices ();
 
-	damageScreen (s);
+	damageScreen ();
     }
 }
 
-static FuncPtr
-getProcAddress (CompScreen *s,
-		const char *name)
+FuncPtr
+CompScreen::getProcAddress (const char *name)
 {
     static void *dlhand = NULL;
     FuncPtr     funcPtr = NULL;
 
-    if (s->getProcAddress)
-	funcPtr = s->getProcAddress ((GLubyte *) name);
+    if (priv->getProcAddress)
+	funcPtr = priv->getProcAddress ((GLubyte *) name);
 
     if (!funcPtr)
     {
@@ -984,10 +955,9 @@ getProcAddress (CompScreen *s,
 }
 
 void
-updateScreenBackground (CompScreen  *screen,
-			CompTexture *texture)
+PrivateScreen::updateScreenBackground (CompTexture *texture)
 {
-    Display	  *dpy = screen->display->display;
+    Display	  *dpy = display->dpy ();
     Atom	  pixmapAtom, actualType;
     int		  actualFormat, i, status;
     unsigned int  width = 1, height = 1, depth = 0;
@@ -1000,8 +970,8 @@ updateScreenBackground (CompScreen  *screen,
 
     for (i = 0; pixmap == 0 && i < 2; i++)
     {
-	status = XGetWindowProperty (dpy, screen->root,
-				     screen->display->xBackgroundAtom[i],
+	status = XGetWindowProperty (dpy, root,
+				     display->atoms ().xBackground[i],
 				     0, 4, FALSE, AnyPropertyType,
 				     &actualType, &actualFormat, &nItems,
 				     &bytesAfter, &prop);
@@ -1025,7 +995,7 @@ updateScreenBackground (CompScreen  *screen,
 		    if (XGetGeometry (dpy, p, &w, &i, &i,
 				      &width, &height, &ui, &depth))
 		    {
-			if (depth == screen->attrib.depth)
+			if (depth == attrib.depth)
 			    pixmap = p;
 		    }
 		}
@@ -1043,8 +1013,7 @@ updateScreenBackground (CompScreen  *screen,
 	finiTexture (screen, texture);
 	initTexture (screen, texture);
 
-	if (!bindPixmapToTexture (screen, texture, pixmap,
-				  width, height, depth))
+	if (!screen->bindPixmapToTexture (texture, pixmap, width, height, depth))
 	{
 	    compLogMessage (NULL, "core", CompLogLevelWarn,
 			    "Couldn't bind background pixmap 0x%x to "
@@ -1070,20 +1039,21 @@ updateScreenBackground (CompScreen  *screen,
 }
 
 void
-detectRefreshRateOfScreen (CompScreen *s)
+CompScreen::detectRefreshRate ()
 {
-    if (!noDetection && s->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
+    if (!noDetection &&
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
     {
 	char		*name;
 	CompOptionValue	value;
 
 	value.i = 0;
 
-	if (s->display->randrExtension)
+	if (priv->display->XRandr())
 	{
 	    XRRScreenConfiguration *config;
 
-	    config  = XRRGetScreenInfo (s->display->display, s->root);
+	    config  = XRRGetScreenInfo (priv->display->dpy (), priv->root);
 	    value.i = (int) XRRConfigCurrentRate (config);
 
 	    XRRFreeScreenConfigInfo (config);
@@ -1092,159 +1062,158 @@ detectRefreshRateOfScreen (CompScreen *s)
 	if (value.i == 0)
 	    value.i = defaultRefreshRate;
 
-	name = s->opt[COMP_SCREEN_OPTION_REFRESH_RATE].name;
+	name = priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].name;
 
-	s->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = FALSE;
-	(*core.setOptionForPlugin) (&s->base, "core", name, &value);
-	s->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = TRUE;
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = false;
+	core->setOptionForPlugin (this, "core", name, &value);
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = true;
     }
     else
     {
-	s->redrawTime = 1000 / s->opt[COMP_SCREEN_OPTION_REFRESH_RATE].value.i;
-	s->optimalRedrawTime = s->redrawTime;
+	priv->redrawTime = 1000 /
+	    priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].value.i;
+	priv->optimalRedrawTime = priv->redrawTime;
     }
 }
 
-static void
-setSupportingWmCheck (CompScreen *s)
+void
+PrivateScreen::setSupportingWmCheck ()
 {
-    CompDisplay *d = s->display;
-
-    XChangeProperty (d->display, s->grabWindow, d->supportingWmCheckAtom,
+    XChangeProperty (display->dpy (), grabWindow,
+		     display->atoms ().supportingWmCheck,
 		     XA_WINDOW, 32, PropModeReplace,
-		     (unsigned char *) &s->grabWindow, 1);
+		     (unsigned char *) &grabWindow, 1);
 
-    XChangeProperty (d->display, s->grabWindow, d->wmNameAtom,
-		     d->utf8StringAtom, 8, PropModeReplace,
+    XChangeProperty (display->dpy (), grabWindow, display->atoms ().wmName,
+		     display->atoms ().utf8String, 8, PropModeReplace,
 		     (unsigned char *) PACKAGE, strlen (PACKAGE));
-    XChangeProperty (d->display, s->grabWindow, d->winStateAtom,
+    XChangeProperty (display->dpy (), grabWindow, display->atoms ().winState,
 		     XA_ATOM, 32, PropModeReplace,
-		     (unsigned char *) &d->winStateSkipTaskbarAtom, 1);
-    XChangeProperty (d->display, s->grabWindow, d->winStateAtom,
+		     (unsigned char *) &display->atoms ().winStateSkipTaskbar,
+		     1);
+    XChangeProperty (display->dpy (), grabWindow, display->atoms ().winState,
 		     XA_ATOM, 32, PropModeAppend,
-		     (unsigned char *) &d->winStateSkipPagerAtom, 1);
-    XChangeProperty (d->display, s->grabWindow, d->winStateAtom,
+		     (unsigned char *) &display->atoms ().winStateSkipPager, 1);
+    XChangeProperty (display->dpy (), grabWindow, display->atoms ().winState,
 		     XA_ATOM, 32, PropModeAppend,
-		     (unsigned char *) &d->winStateHiddenAtom, 1);
+		     (unsigned char *) &display->atoms ().winStateHidden, 1);
 
-    XChangeProperty (d->display, s->root, d->supportingWmCheckAtom,
+    XChangeProperty (display->dpy (), root, display->atoms ().supportingWmCheck,
 		     XA_WINDOW, 32, PropModeReplace,
-		     (unsigned char *) &s->grabWindow, 1);
+		     (unsigned char *) &grabWindow, 1);
 }
 
-static void
-setSupported (CompScreen *s)
+void
+PrivateScreen::setSupported ()
 {
-    CompDisplay *d = s->display;
     Atom	data[256];
     int		i = 0;
 
-    data[i++] = d->supportedAtom;
-    data[i++] = d->supportingWmCheckAtom;
+    data[i++] = display->atoms ().supported;
+    data[i++] = display->atoms ().supportingWmCheck;
 
-    data[i++] = d->utf8StringAtom;
+    data[i++] = display->atoms ().utf8String;
 
-    data[i++] = d->clientListAtom;
-    data[i++] = d->clientListStackingAtom;
+    data[i++] = display->atoms ().clientList;
+    data[i++] = display->atoms ().clientListStacking;
 
-    data[i++] = d->winActiveAtom;
+    data[i++] = display->atoms ().winActive;
 
-    data[i++] = d->desktopViewportAtom;
-    data[i++] = d->desktopGeometryAtom;
-    data[i++] = d->currentDesktopAtom;
-    data[i++] = d->numberOfDesktopsAtom;
-    data[i++] = d->showingDesktopAtom;
+    data[i++] = display->atoms ().desktopViewport;
+    data[i++] = display->atoms ().desktopGeometry;
+    data[i++] = display->atoms ().currentDesktop;
+    data[i++] = display->atoms ().numberOfDesktops;
+    data[i++] = display->atoms ().showingDesktop;
 
-    data[i++] = d->workareaAtom;
+    data[i++] = display->atoms ().workarea;
 
-    data[i++] = d->wmNameAtom;
+    data[i++] = display->atoms ().wmName;
 /*
-    data[i++] = d->wmVisibleNameAtom;
+    data[i++] = display->atoms ().wmVisibleName;
 */
 
-    data[i++] = d->wmStrutAtom;
-    data[i++] = d->wmStrutPartialAtom;
+    data[i++] = display->atoms ().wmStrut;
+    data[i++] = display->atoms ().wmStrutPartial;
 
 /*
-    data[i++] = d->wmPidAtom;
+    data[i++] = display->atoms ().wmPid;
 */
 
-    data[i++] = d->wmUserTimeAtom;
-    data[i++] = d->frameExtentsAtom;
-    data[i++] = d->frameWindowAtom;
+    data[i++] = display->atoms ().wmUserTime;
+    data[i++] = display->atoms ().frameExtents;
+    data[i++] = display->atoms ().frameWindow;
 
-    data[i++] = d->winStateAtom;
-    data[i++] = d->winStateModalAtom;
-    data[i++] = d->winStateStickyAtom;
-    data[i++] = d->winStateMaximizedVertAtom;
-    data[i++] = d->winStateMaximizedHorzAtom;
-    data[i++] = d->winStateShadedAtom;
-    data[i++] = d->winStateSkipTaskbarAtom;
-    data[i++] = d->winStateSkipPagerAtom;
-    data[i++] = d->winStateHiddenAtom;
-    data[i++] = d->winStateFullscreenAtom;
-    data[i++] = d->winStateAboveAtom;
-    data[i++] = d->winStateBelowAtom;
-    data[i++] = d->winStateDemandsAttentionAtom;
+    data[i++] = display->atoms ().winState;
+    data[i++] = display->atoms ().winStateModal;
+    data[i++] = display->atoms ().winStateSticky;
+    data[i++] = display->atoms ().winStateMaximizedVert;
+    data[i++] = display->atoms ().winStateMaximizedHorz;
+    data[i++] = display->atoms ().winStateShaded;
+    data[i++] = display->atoms ().winStateSkipTaskbar;
+    data[i++] = display->atoms ().winStateSkipPager;
+    data[i++] = display->atoms ().winStateHidden;
+    data[i++] = display->atoms ().winStateFullscreen;
+    data[i++] = display->atoms ().winStateAbove;
+    data[i++] = display->atoms ().winStateBelow;
+    data[i++] = display->atoms ().winStateDemandsAttention;
 
-    data[i++] = d->winOpacityAtom;
-    data[i++] = d->winBrightnessAtom;
+    data[i++] = display->atoms ().winOpacity;
+    data[i++] = display->atoms ().winBrightness;
 
-    if (s->canDoSaturated)
+    if (canDoSaturated)
     {
-	data[i++] = d->winSaturationAtom;
-	data[i++] = d->winStateDisplayModalAtom;
+	data[i++] = display->atoms ().winSaturation;
+	data[i++] = display->atoms ().winStateDisplayModal;
     }
 
-    data[i++] = d->wmAllowedActionsAtom;
+    data[i++] = display->atoms ().wmAllowedActions;
 
-    data[i++] = d->winActionMoveAtom;
-    data[i++] = d->winActionResizeAtom;
-    data[i++] = d->winActionStickAtom;
-    data[i++] = d->winActionMinimizeAtom;
-    data[i++] = d->winActionMaximizeHorzAtom;
-    data[i++] = d->winActionMaximizeVertAtom;
-    data[i++] = d->winActionFullscreenAtom;
-    data[i++] = d->winActionCloseAtom;
-    data[i++] = d->winActionShadeAtom;
-    data[i++] = d->winActionChangeDesktopAtom;
-    data[i++] = d->winActionAboveAtom;
-    data[i++] = d->winActionBelowAtom;
+    data[i++] = display->atoms ().winActionMove;
+    data[i++] = display->atoms ().winActionResize;
+    data[i++] = display->atoms ().winActionStick;
+    data[i++] = display->atoms ().winActionMinimize;
+    data[i++] = display->atoms ().winActionMaximizeHorz;
+    data[i++] = display->atoms ().winActionMaximizeVert;
+    data[i++] = display->atoms ().winActionFullscreen;
+    data[i++] = display->atoms ().winActionClose;
+    data[i++] = display->atoms ().winActionShade;
+    data[i++] = display->atoms ().winActionChangeDesktop;
+    data[i++] = display->atoms ().winActionAbove;
+    data[i++] = display->atoms ().winActionBelow;
 
-    data[i++] = d->winTypeAtom;
-    data[i++] = d->winTypeDesktopAtom;
-    data[i++] = d->winTypeDockAtom;
-    data[i++] = d->winTypeToolbarAtom;
-    data[i++] = d->winTypeMenuAtom;
-    data[i++] = d->winTypeSplashAtom;
-    data[i++] = d->winTypeDialogAtom;
-    data[i++] = d->winTypeUtilAtom;
-    data[i++] = d->winTypeNormalAtom;
+    data[i++] = display->atoms ().winType;
+    data[i++] = display->atoms ().winTypeDesktop;
+    data[i++] = display->atoms ().winTypeDock;
+    data[i++] = display->atoms ().winTypeToolbar;
+    data[i++] = display->atoms ().winTypeMenu;
+    data[i++] = display->atoms ().winTypeSplash;
+    data[i++] = display->atoms ().winTypeDialog;
+    data[i++] = display->atoms ().winTypeUtil;
+    data[i++] = display->atoms ().winTypeNormal;
 
-    data[i++] = d->wmDeleteWindowAtom;
-    data[i++] = d->wmPingAtom;
+    data[i++] = display->atoms ().wmDeleteWindow;
+    data[i++] = display->atoms ().wmPing;
 
-    data[i++] = d->wmMoveResizeAtom;
-    data[i++] = d->moveResizeWindowAtom;
-    data[i++] = d->restackWindowAtom;
+    data[i++] = display->atoms ().wmMoveResize;
+    data[i++] = display->atoms ().moveResizeWindow;
+    data[i++] = display->atoms ().restackWindow;
 
-    XChangeProperty (d->display, s->root, d->supportedAtom, XA_ATOM, 32,
-		     PropModeReplace, (unsigned char *) data, i);
+    XChangeProperty (display->dpy (), root, display->atoms ().supported,
+		     XA_ATOM, 32, PropModeReplace, (unsigned char *) data, i);
 }
 
-static void
-getDesktopHints (CompScreen *s)
+void
+PrivateScreen::getDesktopHints ()
 {
-    CompDisplay   *d = s->display;
     unsigned long data[2];
     Atom	  actual;
     int		  result, format;
     unsigned long n, left;
     unsigned char *propData;
 
-    result = XGetWindowProperty (s->display->display, s->root,
-				 d->numberOfDesktopsAtom, 0L, 1L, FALSE,
-				 XA_CARDINAL, &actual, &format,
+    result = XGetWindowProperty (display->dpy (), root,
+				 display->atoms ().numberOfDesktops,
+				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
     if (result == Success && n && propData && useDesktopHints)
@@ -1253,11 +1222,11 @@ getDesktopHints (CompScreen *s)
 	XFree (propData);
 
 	if (data[0] > 0 && data[0] < 0xffffffff)
-	    s->nDesktop = data[0];
+	    nDesktop = data[0];
     }
 
-    result = XGetWindowProperty (s->display->display, s->root,
-				 d->desktopViewportAtom, 0L, 2L,
+    result = XGetWindowProperty (display->dpy (), root,
+				 display->atoms ().desktopViewport, 0L, 2L,
 				 FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
@@ -1267,19 +1236,19 @@ getDesktopHints (CompScreen *s)
 	{
 	    memcpy (data, propData, sizeof (unsigned long) * 2);
 
-	    if (data[0] / s->width < s->hsize - 1)
-		s->x = data[0] / s->width;
+	    if (data[0] / width < hsize - 1)
+		x = data[0] / width;
 
-	    if (data[1] / s->height < s->vsize - 1)
-		s->y = data[1] / s->height;
+	    if (data[1] / height < vsize - 1)
+		y = data[1] / height;
 	}
 
 	XFree (propData);
     }
 
-    result = XGetWindowProperty (s->display->display, s->root,
-				 d->currentDesktopAtom, 0L, 1L, FALSE,
-				 XA_CARDINAL, &actual, &format,
+    result = XGetWindowProperty (display->dpy (), root,
+				 display->atoms ().currentDesktop,
+				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
     if (result == Success && n && propData && useDesktopHints)
@@ -1287,13 +1256,13 @@ getDesktopHints (CompScreen *s)
 	memcpy (data, propData, sizeof (unsigned long));
 	XFree (propData);
 
-	if (data[0] < s->nDesktop)
-	    s->currentDesktop = data[0];
+	if (data[0] < nDesktop)
+	    currentDesktop = data[0];
     }
 
-    result = XGetWindowProperty (s->display->display, s->root,
-				 d->showingDesktopAtom, 0L, 1L, FALSE,
-				 XA_CARDINAL, &actual, &format,
+    result = XGetWindowProperty (display->dpy (), root,
+				 display->atoms ().showingDesktop,
+				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
     if (result == Success && n && propData)
@@ -1302,65 +1271,65 @@ getDesktopHints (CompScreen *s)
 	XFree (propData);
 
 	if (data[0])
-	    (*s->enterShowDesktopMode) (s);
+	    screen->enterShowDesktopMode ();
     }
 
-    data[0] = s->currentDesktop;
+    data[0] = currentDesktop;
 
-    XChangeProperty (d->display, s->root, d->currentDesktopAtom,
+    XChangeProperty (display->dpy (), root, display->atoms ().currentDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) data, 1);
 
-    data[0] = s->showingDesktopMask ? TRUE : FALSE;
+    data[0] = showingDesktopMask ? TRUE : FALSE;
 
-    XChangeProperty (d->display, s->root, d->showingDesktopAtom,
+    XChangeProperty (display->dpy (), root, display->atoms ().showingDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) data, 1);
 }
 
 void
-showOutputWindow (CompScreen *s)
+CompScreen::showOutputWindow ()
 {
 
 #ifdef USE_COW
     if (useCow)
     {
-	Display       *dpy = s->display->display;
+	Display       *dpy = priv->display->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
 
 	XFixesSetWindowShapeRegion (dpy,
-				    s->output,
+				    priv->output,
 				    ShapeBounding,
 				    0, 0, 0);
 	XFixesSetWindowShapeRegion (dpy,
-				    s->output,
+				    priv->output,
 				    ShapeInput,
 				    0, 0, region);
 
 	XFixesDestroyRegion (dpy, region);
 
-	damageScreen (s);
+	damageScreen ();
     }
 #endif
 
 }
 
 void
-hideOutputWindow (CompScreen *s)
+CompScreen::hideOutputWindow ()
 {
 
 #ifdef USE_COW
     if (useCow)
     {
-	Display       *dpy = s->display->display;
+	Display       *dpy = priv->display->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
 
 	XFixesSetWindowShapeRegion (dpy,
-				    s->output,
+				    priv->output,
 				    ShapeBounding,
 				    0, 0, region);
 
@@ -1371,13 +1340,13 @@ hideOutputWindow (CompScreen *s)
 }
 
 void
-updateOutputWindow (CompScreen *s)
+CompScreen::updateOutputWindow ()
 {
 
 #ifdef USE_COW
     if (useCow)
     {
-	Display       *dpy = s->display->display;
+	Display       *dpy = priv->display->dpy ();
 	XserverRegion region;
 	static Region tmpRegion = NULL;
 	CompWindow    *w;
@@ -1389,22 +1358,22 @@ updateOutputWindow (CompScreen *s)
 		return;
 	}
 
-	XSubtractRegion (&s->region, &emptyRegion, tmpRegion);
+	XSubtractRegion (&priv->region, &emptyRegion, tmpRegion);
 
-	for (w = s->reverseWindows; w; w = w->prev)
-	    if (w->overlayWindow)
+	for (w = priv->reverseWindows; w; w = w->prev)
+	    if (w->overlayWindow ())
 	    {
-		XSubtractRegion (tmpRegion, w->region, tmpRegion);
+		XSubtractRegion (tmpRegion, w->region (), tmpRegion);
 	    }
 	
-	XShapeCombineRegion (dpy, s->output, ShapeBounding,
+	XShapeCombineRegion (dpy, priv->output, ShapeBounding,
 			     0, 0, tmpRegion, ShapeSet);
 
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
 
 	XFixesSetWindowShapeRegion (dpy,
-				    s->output,
+				    priv->output,
 				    ShapeInput,
 				    0, 0, region);
 
@@ -1414,109 +1383,113 @@ updateOutputWindow (CompScreen *s)
 
 }
 
-static void
-makeOutputWindow (CompScreen *s)
+void
+PrivateScreen::makeOutputWindow ()
 {
 
 #ifdef USE_COW
     if (useCow)
     {
-	s->overlay = XCompositeGetOverlayWindow (s->display->display, s->root);
-	s->output  = s->overlay;
+	overlay = XCompositeGetOverlayWindow (display->dpy (), root);
+	output  = overlay;
 
-	XSelectInput (s->display->display, s->output, ExposureMask);
+	XSelectInput (display->dpy (), output, ExposureMask);
     }
     else
 #endif
 
-	s->output = s->overlay = s->root;
+	output = overlay = root;
 
-    showOutputWindow (s);
+    screen->showOutputWindow ();
 }
 
-static void
-enterShowDesktopMode (CompScreen *s)
+void
+CompScreen::enterShowDesktopMode ()
 {
-    CompDisplay   *d = s->display;
+    WRAPABLE_HND_FUNC(enterShowDesktopMode)
+
+    CompDisplay   *d = priv->display;
     CompWindow    *w;
     unsigned long data = 1;
     int		  count = 0;
-    CompOption    *st = &d->opt[COMP_DISPLAY_OPTION_HIDE_SKIP_TASKBAR_WINDOWS];
+    CompOption    *st = d->getOption ("hide_skip_taskbar_windows");
 
-    s->showingDesktopMask = ~(CompWindowTypeDesktopMask |
-			      CompWindowTypeDockMask);
+    priv->showingDesktopMask = ~(CompWindowTypeDesktopMask |
+				CompWindowTypeDockMask);
 
-    for (w = s->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
     {
-	if ((s->showingDesktopMask & w->wmType) &&
-	    (!(w->state & CompWindowStateSkipTaskbarMask) || st->value.b))
+	if ((priv->showingDesktopMask & w->wmType ()) &&
+	    (!(w->state () & CompWindowStateSkipTaskbarMask) ||
+	    (st && st->value.b)))
 	{
-	    if (!w->inShowDesktopMode && !w->grabbed &&
-		w->managed && (*s->focusWindow) (w))
+	    if (!w->inShowDesktopMode () && !w->grabbed () &&
+		w->managed () && w->focus ())
 	    {
-		w->inShowDesktopMode = TRUE;
-		hideWindow (w);
+		w->setShowDesktopMode (true);
+		w->hide ();
 	    }
 	}
 
-	if (w->inShowDesktopMode)
+	if (w->inShowDesktopMode ())
 	    count++;
     }
 
     if (!count)
     {
-	s->showingDesktopMask = 0;
+	priv->showingDesktopMask = 0;
 	data = 0;
     }
 
-    XChangeProperty (s->display->display, s->root,
-		     s->display->showingDesktopAtom,
+    XChangeProperty (priv->display->dpy (), priv->root,
+		     priv->display->atoms ().showingDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) &data, 1);
 }
 
-static void
-leaveShowDesktopMode (CompScreen *s,
-		      CompWindow *window)
+void
+CompScreen::leaveShowDesktopMode (CompWindow *window)
 {
+    WRAPABLE_HND_FUNC(leaveShowDesktopMode, window)
+
     CompWindow    *w;
     unsigned long data = 0;
 
     if (window)
     {
-	if (!window->inShowDesktopMode)
+	if (!window->inShowDesktopMode ())
 	    return;
 
-	window->inShowDesktopMode = FALSE;
-	showWindow (window);
+	window->setShowDesktopMode (false);
+	window->show ();
 
 	/* return if some other window is still in show desktop mode */
-	for (w = s->windows; w; w = w->next)
-	    if (w->inShowDesktopMode)
+	for (w = priv->windows; w; w = w->next)
+	    if (w->inShowDesktopMode ())
 		return;
 
-	s->showingDesktopMask = 0;
+	priv->showingDesktopMask = 0;
     }
     else
     {
-	s->showingDesktopMask = 0;
+	priv->showingDesktopMask = 0;
 
-	for (w = s->windows; w; w = w->next)
+	for (w = priv->windows; w; w = w->next)
 	{
-	    if (!w->inShowDesktopMode)
+	    if (!w->inShowDesktopMode ())
 		continue;
 
-	    w->inShowDesktopMode = FALSE;
-	    showWindow (w);
+	    w->setShowDesktopMode (false);
+	    w->show ();
 	}
 
 	/* focus default window - most likely this will be the window
 	   which had focus before entering showdesktop mode */
-	focusDefaultWindow (s);
+	focusDefaultWindow ();
     }
 
-    XChangeProperty (s->display->display, s->root,
-		     s->display->showingDesktopAtom,
+    XChangeProperty (priv->display->dpy (), priv->root,
+		     priv->display->atoms ().showingDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) &data, 1);
 }
@@ -1524,13 +1497,13 @@ leaveShowDesktopMode (CompScreen *s,
 static CompWindow *
 walkFirst (CompScreen *s)
 {
-    return s->windows;
+    return s->windows ();
 }
 
 static CompWindow *
 walkLast (CompScreen *s)
 {
-    return s->reverseWindows;
+    return s->reverseWindows ();
 }
 
 static CompWindow *
@@ -1545,10 +1518,11 @@ walkPrev (CompWindow *w)
     return w->prev;
 }
 
-static void
-initWindowWalker (CompScreen *screen,
-		  CompWalker *walker)
+void
+CompScreen::initWindowWalker (CompWalker *walker)
 {
+    WRAPABLE_HND_FUNC(initWindowWalker, walker)
+
     walker->fini  = NULL;
     walker->first = walkFirst;
     walker->last  = walkLast;
@@ -1556,69 +1530,309 @@ initWindowWalker (CompScreen *screen,
     walker->prev  = walkPrev;
 }
 
-static void
-freeScreen (CompScreen *s)
+CompScreen::CompScreen ()
 {
-    int i, j;
+    WRAPABLE_INIT_HND(preparePaint);
+    WRAPABLE_INIT_HND(donePaint);
+    WRAPABLE_INIT_HND(paint);
+    WRAPABLE_INIT_HND(paintOutput);
+    WRAPABLE_INIT_HND(paintTransformedOutput);
+    WRAPABLE_INIT_HND(enableOutputClipping);
+    WRAPABLE_INIT_HND(disableOutputClipping);
+    WRAPABLE_INIT_HND(applyTransform);
 
-    if (s->outputDev)
-    {
-	for (i = 0; i < s->nOutputDev; i++)
-	    if (s->outputDev[i].name)
-		free (s->outputDev[i].name);
+    WRAPABLE_INIT_HND(enterShowDesktopMode);
+    WRAPABLE_INIT_HND(leaveShowDesktopMode);
 
-	free (s->outputDev);
-    }
+    WRAPABLE_INIT_HND(outputChangeNotify);
 
-    if (s->clientList)
-	free (s->clientList);
+    WRAPABLE_INIT_HND(initWindowWalker);
 
-    if (s->desktopHintData)
-	free (s->desktopHintData);
+    WRAPABLE_INIT_HND(paintCursor);
+    WRAPABLE_INIT_HND(damageCursorRect);
 
-    if (s->buttonGrab)
-	free (s->buttonGrab);
+    priv = new PrivateScreen (this);
+    assert (priv);
+    next = NULL;
 
-    if (s->keyGrab)
-	free (s->keyGrab);
-
-    if (s->snContext)
-	sn_monitor_context_unref (s->snContext);
-
-    if (s->damage)
-	XDestroyRegion (s->damage);
-
-    if (s->grabs)
-	free (s->grabs);
-
-    /* XXX: Maybe we should free all fragment functions here? But
-       the definition of CompFunction is private to fragment.c ... */
-    for (i = 0; i < 2; i++)
-	for (j = 0; j < 64; j++)
-	    if (s->saturateFunction[i][j])
-		destroyFragmentFunction (s, s->saturateFunction[i][j]);
-
-    compFiniScreenOptions (s, s->opt, COMP_SCREEN_OPTION_NUM);
-
-    if (s->windowPrivateIndices)
-	free (s->windowPrivateIndices);
-
-    if (s->base.privates)
-	free (s->base.privates);
-
-    free (s);
+    windowPrivateIndices = 0;
+    windowPrivateLen     = 0;
 }
 
-Bool
-addScreen (CompDisplay *display,
-	   int	       screenNum,
-	   Window      wmSnSelectionWindow,
-	   Atom	       wmSnAtom,
-	   Time	       wmSnTimestamp)
+PrivateScreen::PrivateScreen (CompScreen *screen) :
+    screen(screen),
+    display (0),
+    windows (0),
+    reverseWindows (0),
+    width (0),
+    height (0),
+    x (0),
+    y (0),
+    nDesktop (1),
+    currentDesktop (0),
+    damageMask (COMP_SCREEN_DAMAGE_ALL_MASK),
+    root (None),
+    overlay (None),
+    output (None),
+    grabWindow (None),
+    textureRectangle (false),
+    textureNonPowerOfTwo (false),
+    textureEnvCombine (false),
+    textureEnvCrossbar (false),
+    textureBorderClamp (false),
+    textureCompression (false),
+    maxTextureSize (0),
+    fbo (false),
+    fragmentProgram (false),
+    maxTextureUnits (1),
+    exposeRects (0),
+    sizeExpose (0),
+    nExpose (0),
+    backgroundLoaded (false),
+    pendingDestroys (0),
+    desktopWindowCount (0),
+    mapNum (1),
+    activeNum (1),
+    outputDev (0),
+    nOutputDev (0),
+    currentOutputDev (0),
+    hasOverlappingOutputs (false),
+    windowOffsetX (0),
+    windowOffsetY (0),
+    currentHistory (0),
+    overlayWindowCount (0),
+    snContext (0),
+    startupSequences (0),
+    startupSequenceTimeoutHandle (0),
+    groups (0),
+    defaultIcon (0),
+    canDoSaturated (false),
+    canDoSlightlySaturated (false),
+    clientList (0),
+    nClientList (0),
+    buttonGrab (0),
+    nButtonGrab (0),
+    keyGrab (0),
+    nKeyGrab (0),
+    grabs (0),
+    grabSize (0),
+    maxGrab (0),
+    rasterX (0),
+    rasterY (0),
+    nextRedraw (0),
+    redrawTime (1000 / defaultRefreshRate),
+    optimalRedrawTime (1000 / defaultRefreshRate),
+    frameStatus (0),
+    timeMult (1),
+    idle (true),
+    timeLeft (0),
+    pendingCommands (true),
+    lastFunctionId (0),
+    fragmentFunctions (0),
+    fragmentPrograms (0),
+    clearBuffers (true),
+    lighting (false),
+    slowAnimations (false),
+    showingDesktopMask (0),
+    desktopHintData (0),
+    desktopHintSize (0),
+    cursors (0),
+    cursorImages (0),
+    paintHandle (0),
+    getProcAddress (0)
 {
-    CompScreen		 *s;
+    memset (saturateFunction, 0, sizeof (saturateFunction));
+    memset (history, 0, sizeof (history));
+    gettimeofday (&lastRedraw, 0);
+}
+
+PrivateScreen::~PrivateScreen ()
+{
+}
+
+bool
+CompScreen::init (CompDisplay *display, int screenNum)
+{
+    Display              *dpy = display->dpy ();
+    Window               newWmSnOwner = None, newCmSnOwner = None;
+    Atom                 wmSnAtom = 0, cmSnAtom = 0;
+    Time                 wmSnTimestamp = 0;
+    XEvent               event;
+    XSetWindowAttributes attr;
+    Window               currentWmSnOwner, currentCmSnOwner;
+    char                 buf[128];
+    bool                 rv;
+
+    sprintf (buf, "WM_S%d", screenNum);
+    wmSnAtom = XInternAtom (dpy, buf, 0);
+
+    currentWmSnOwner = XGetSelectionOwner (dpy, wmSnAtom);
+
+    if (currentWmSnOwner != None)
+    {
+	if (!replaceCurrentWm)
+	{
+	    compLogMessage (display, "core", CompLogLevelError,
+			    "Screen %d on display \"%s\" already "
+			    "has a window manager; try using the "
+			    "--replace option to replace the current "
+			    "window manager.",
+			    screenNum, DisplayString (dpy));
+
+	    return false;
+	}
+
+	XSelectInput (dpy, currentWmSnOwner, StructureNotifyMask);
+    }
+
+    sprintf (buf, "_NET_WM_CM_S%d", screenNum);
+    cmSnAtom = XInternAtom (dpy, buf, 0);
+
+    currentCmSnOwner = XGetSelectionOwner (dpy, cmSnAtom);
+
+    if (currentCmSnOwner != None)
+    {
+	if (!replaceCurrentWm)
+	{
+	    compLogMessage (display, "core", CompLogLevelError,
+			    "Screen %d on display \"%s\" already "
+			    "has a compositing manager; try using the "
+			    "--replace option to replace the current "
+			    "compositing manager.",
+			    screenNum, DisplayString (dpy));
+
+	    return false;
+	}
+    }
+
+    attr.override_redirect = TRUE;
+    attr.event_mask	       = PropertyChangeMask;
+
+    newCmSnOwner = newWmSnOwner =
+	XCreateWindow (dpy, XRootWindow (dpy, screenNum),
+		       -100, -100, 1, 1, 0,
+		       CopyFromParent, CopyFromParent,
+		       CopyFromParent,
+		       CWOverrideRedirect | CWEventMask,
+		       &attr);
+
+    XChangeProperty (dpy,
+		     newWmSnOwner,
+		     display->atoms ().wmName,
+		     display->atoms ().utf8String, 8,
+		     PropModeReplace,
+		     (unsigned char *) PACKAGE,
+		     strlen (PACKAGE));
+
+    XWindowEvent (dpy, newWmSnOwner, PropertyChangeMask, &event);
+
+    wmSnTimestamp = event.xproperty.time;
+
+    XSetSelectionOwner (dpy, wmSnAtom, newWmSnOwner, wmSnTimestamp);
+
+    if (XGetSelectionOwner (dpy, wmSnAtom) != newWmSnOwner)
+    {
+	compLogMessage (display, "core", CompLogLevelError,
+		        "Could not acquire window manager "
+		        "selection on screen %d display \"%s\"",
+		        screenNum, DisplayString (dpy));
+
+	XDestroyWindow (dpy, newWmSnOwner);
+
+	return false;
+    }
+
+    /* Send client message indicating that we are now the WM */
+    event.xclient.type	       = ClientMessage;
+    event.xclient.window       = XRootWindow (dpy, screenNum);
+    event.xclient.message_type = display->atoms ().manager;
+    event.xclient.format       = 32;
+    event.xclient.data.l[0]    = wmSnTimestamp;
+    event.xclient.data.l[1]    = wmSnAtom;
+    event.xclient.data.l[2]    = 0;
+    event.xclient.data.l[3]    = 0;
+    event.xclient.data.l[4]    = 0;
+
+    XSendEvent (dpy, XRootWindow (dpy, screenNum), FALSE,
+		StructureNotifyMask, &event);
+
+    /* Wait for old window manager to go away */
+    if (currentWmSnOwner != None)
+    {
+	do {
+	    XWindowEvent (dpy, currentWmSnOwner,
+			  StructureNotifyMask, &event);
+	} while (event.type != DestroyNotify);
+    }
+
+    compCheckForError (dpy);
+
+    XCompositeRedirectSubwindows (dpy, XRootWindow (dpy, screenNum),
+				  CompositeRedirectManual);
+
+    if (compCheckForError (dpy))
+    {
+	compLogMessage (display, "core", CompLogLevelError,
+			"Another composite manager is already "
+			"running on screen: %d", screenNum);
+
+	return false;
+    }
+
+    XSetSelectionOwner (dpy, cmSnAtom, newCmSnOwner, wmSnTimestamp);
+
+    if (XGetSelectionOwner (dpy, cmSnAtom) != newCmSnOwner)
+    {
+	compLogMessage (display, "core", CompLogLevelError,
+			"Could not acquire compositing manager "
+			"selection on screen %d display \"%s\"",
+			screenNum, DisplayString (dpy));
+
+	return false;
+    }
+
+    XGrabServer (dpy);
+
+    XSelectInput (dpy, XRootWindow (dpy, screenNum),
+		  SubstructureRedirectMask |
+		  SubstructureNotifyMask   |
+		  StructureNotifyMask      |
+		  PropertyChangeMask       |
+		  LeaveWindowMask          |
+		  EnterWindowMask          |
+		  KeyPressMask             |
+		  KeyReleaseMask           |
+		  ButtonPressMask          |
+		  ButtonReleaseMask        |
+		  FocusChangeMask          |
+		  ExposureMask);
+
+    if (compCheckForError (dpy))
+    {
+	compLogMessage (display, "core", CompLogLevelError,
+		        "Another window manager is "
+		        "already running on screen: %d", screenNum);
+
+	XUngrabServer (dpy);
+	return false;
+    }
+
+    rv = init (display, screenNum, newWmSnOwner, wmSnAtom, wmSnTimestamp);
+
+    XUngrabServer (dpy);
+    return rv;
+}
+
+
+bool
+CompScreen::init (CompDisplay *display,
+		  int         screenNum,
+		  Window      wmSnSelectionWindow,
+		  Atom        wmSnAtom,
+		  Time        wmSnTimestamp)
+{
     CompPrivate		 *privates;
-    Display		 *dpy = display->display;
+    Display		 *dpy = display->dpy ();
     static char		 data = 0;
     XColor		 black;
     Pixmap		 bitmap;
@@ -1637,235 +1851,109 @@ addScreen (CompDisplay *display,
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     CompWindow		 *w;
 
-    s = (CompScreen *) malloc (sizeof (CompScreen));
-    if (!s)
-	return FALSE;
-
-    s->windowPrivateIndices = 0;
-    s->windowPrivateLen     = 0;
-
     if (display->screenPrivateLen)
     {
-	privates = (CompPrivate *) malloc (display->screenPrivateLen * sizeof (CompPrivate));
+	privates = (CompPrivate *)
+	    malloc (display->screenPrivateLen * sizeof (CompPrivate));
 	if (!privates)
 	{
-	    free (s);
-	    return FALSE;
+	    return false;
 	}
     }
     else
 	privates = 0;
 
-    compObjectInit (&s->base, privates, COMP_OBJECT_TYPE_SCREEN);
+    compObjectInit (this, privates, COMP_OBJECT_TYPE_SCREEN);
 
-    s->display = display;
+    priv->display = display;
 
-    if (!compInitScreenOptionsFromMetadata (s,
+    if (!compInitScreenOptionsFromMetadata (this,
 					    &coreMetadata,
 					    coreScreenOptionInfo,
-					    s->opt,
+					    priv->opt,
 					    COMP_SCREEN_OPTION_NUM))
-	return FALSE;
+	return false;
 
-    s->snContext = NULL;
+    priv->damage = XCreateRegion ();
+    if (!priv->damage)
+	return false;
 
-    s->damage = XCreateRegion ();
-    if (!s->damage)
-	return FALSE;
-
-    s->x     = 0;
-    s->y     = 0;
-    s->hsize = s->opt[COMP_SCREEN_OPTION_HSIZE].value.i;
-    s->vsize = s->opt[COMP_SCREEN_OPTION_VSIZE].value.i;
-
-    s->windowOffsetX = 0;
-    s->windowOffsetY = 0;
-
-    s->nDesktop	      = 1;
-    s->currentDesktop = 0;
+    priv->hsize = priv->opt[COMP_SCREEN_OPTION_HSIZE].value.i;
+    priv->vsize = priv->opt[COMP_SCREEN_OPTION_VSIZE].value.i;
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
-	s->screenEdge[i].id    = None;
-	s->screenEdge[i].count = 0;
+	priv->screenEdge[i].id    = None;
+	priv->screenEdge[i].count = 0;
     }
 
-    s->buttonGrab  = 0;
-    s->nButtonGrab = 0;
-    s->keyGrab     = 0;
-    s->nKeyGrab    = 0;
+    priv->screenNum = screenNum;
+    priv->colormap  = DefaultColormap (dpy, screenNum);
+    priv->root	    = XRootWindow (dpy, screenNum);
 
-    s->grabs    = 0;
-    s->grabSize = 0;
-    s->maxGrab  = 0;
+    priv->snContext = sn_monitor_context_new (display->snDisplay (),
+					      screenNum,
+					      compScreenSnEvent, this,
+					      NULL);
 
-    s->pendingDestroys = 0;
+    priv->wmSnSelectionWindow = wmSnSelectionWindow;
+    priv->wmSnAtom            = wmSnAtom;
+    priv->wmSnTimestamp       = wmSnTimestamp;
 
-    s->clientList  = 0;
-    s->nClientList = 0;
+    if (!XGetWindowAttributes (dpy, priv->root, &priv->attrib))
+	return false;
 
-    s->screenNum = screenNum;
-    s->colormap  = DefaultColormap (dpy, screenNum);
-    s->root	 = XRootWindow (dpy, screenNum);
+    priv->workArea.x      = 0;
+    priv->workArea.y      = 0;
+    priv->workArea.width  = priv->attrib.width;
+    priv->workArea.height = priv->attrib.height;
+    priv->grabWindow = None;
 
-    s->mapNum    = 1;
-    s->activeNum = 1;
+    priv->makeOutputWindow ();
 
-    s->groups = NULL;
-
-    s->snContext = sn_monitor_context_new (display->snDisplay,
-					   screenNum,
-					   compScreenSnEvent, s,
-					   NULL);
-
-    s->startupSequences		    = NULL;
-    s->startupSequenceTimeoutHandle = 0;
-
-    s->wmSnSelectionWindow = wmSnSelectionWindow;
-    s->wmSnAtom		   = wmSnAtom;
-    s->wmSnTimestamp	   = wmSnTimestamp;
-
-    s->damageMask  = COMP_SCREEN_DAMAGE_ALL_MASK;
-    s->next	   = 0;
-    s->exposeRects = 0;
-    s->sizeExpose  = 0;
-    s->nExpose     = 0;
-
-    s->rasterX = 0;
-    s->rasterY = 0;
-
-    s->outputDev	= NULL;
-    s->nOutputDev	= 0;
-    s->currentOutputDev = 0;
-
-    s->windows = 0;
-    s->reverseWindows = 0;
-
-    s->nextRedraw  = 0;
-    s->frameStatus = 0;
-    s->timeMult    = 1;
-    s->idle	   = TRUE;
-    s->timeLeft    = 0;
-
-    s->pendingCommands = TRUE;
-
-    s->lastFunctionId = 0;
-
-    s->fragmentFunctions = NULL;
-    s->fragmentPrograms = NULL;
-
-    memset (s->saturateFunction, 0, sizeof (s->saturateFunction));
-
-    s->showingDesktopMask = 0;
-
-    memset (s->history, 0, sizeof (s->history));
-    s->currentHistory = 0;
-
-    s->overlayWindowCount = 0;
-
-    s->desktopHintData = NULL;
-    s->desktopHintSize = 0;
-
-    s->cursors = NULL;
-
-    s->clearBuffers = TRUE;
-
-    gettimeofday (&s->lastRedraw, 0);
-
-    s->preparePaintScreen	   = preparePaintScreen;
-    s->donePaintScreen		   = donePaintScreen;
-    s->paintScreen		   = paintScreen;
-    s->paintOutput		   = paintOutput;
-    s->paintTransformedOutput	   = paintTransformedOutput;
-    s->enableOutputClipping	   = enableOutputClipping;
-    s->disableOutputClipping	   = disableOutputClipping;
-    s->applyScreenTransform	   = applyScreenTransform;
-    s->paintWindow		   = paintWindow;
-    s->drawWindow		   = drawWindow;
-    s->addWindowGeometry	   = addWindowGeometry;
-    s->drawWindowTexture	   = drawWindowTexture;
-    s->damageWindowRect		   = damageWindowRect;
-    s->getOutputExtentsForWindow   = getOutputExtentsForWindow;
-    s->getAllowedActionsForWindow  = getAllowedActionsForWindow;
-    s->focusWindow		   = focusWindow;
-    s->activateWindow              = activateWindow;
-    s->placeWindow                 = placeWindow;
-    s->validateWindowResizeRequest = validateWindowResizeRequest;
-
-    s->paintCursor      = paintCursor;
-    s->damageCursorRect	= damageCursorRect;
-
-    s->windowResizeNotify = windowResizeNotify;
-    s->windowMoveNotify	  = windowMoveNotify;
-    s->windowGrabNotify   = windowGrabNotify;
-    s->windowUngrabNotify = windowUngrabNotify;
-
-    s->enterShowDesktopMode = enterShowDesktopMode;
-    s->leaveShowDesktopMode = leaveShowDesktopMode;
-
-    s->windowStateChangeNotify = windowStateChangeNotify;
-
-    s->outputChangeNotify = outputChangeNotify;
-
-    s->initWindowWalker = initWindowWalker;
-
-    s->getProcAddress = 0;
-
-    if (!XGetWindowAttributes (dpy, s->root, &s->attrib))
-	return FALSE;
-
-    s->workArea.x      = 0;
-    s->workArea.y      = 0;
-    s->workArea.width  = s->attrib.width;
-    s->workArea.height = s->attrib.height;
-
-    s->grabWindow = None;
-
-    makeOutputWindow (s);
-
-    templ.visualid = XVisualIDFromVisual (s->attrib.visual);
+    templ.visualid = XVisualIDFromVisual (priv->attrib.visual);
 
     visinfo = XGetVisualInfo (dpy, VisualIDMask, &templ, &nvisinfo);
     if (!nvisinfo)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Couldn't get visual info for default visual");
-	return FALSE;
+	return false;
     }
 
     defaultDepth = visinfo->depth;
 
     black.red = black.green = black.blue = 0;
 
-    if (!XAllocColor (dpy, s->colormap, &black))
+    if (!XAllocColor (dpy, priv->colormap, &black))
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Couldn't allocate color");
 	XFree (visinfo);
-	return FALSE;
+	return false;
     }
 
-    bitmap = XCreateBitmapFromData (dpy, s->root, &data, 1, 1);
+    bitmap = XCreateBitmapFromData (dpy, priv->root, &data, 1, 1);
     if (!bitmap)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Couldn't create bitmap");
 	XFree (visinfo);
-	return FALSE;
+	return false;
     }
 
-    s->invisibleCursor = XCreatePixmapCursor (dpy, bitmap, bitmap,
-					      &black, &black, 0, 0);
-    if (!s->invisibleCursor)
+    priv->invisibleCursor = XCreatePixmapCursor (dpy, bitmap, bitmap,
+						 &black, &black, 0, 0);
+    if (!priv->invisibleCursor)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Couldn't create invisible cursor");
 	XFree (visinfo);
-	return FALSE;
+	return false;
     }
 
     XFreePixmap (dpy, bitmap);
-    XFreeColors (dpy, s->colormap, &black.pixel, 1, 0);
+    XFreeColors (dpy, priv->colormap, &black.pixel, 1, 0);
 
     glXGetConfig (dpy, visinfo, GLX_USE_GL, &value);
     if (!value)
@@ -1873,7 +1961,7 @@ addScreen (CompDisplay *display,
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Root visual is not a GL visual");
 	XFree (visinfo);
-	return FALSE;
+	return false;
     }
 
     glXGetConfig (dpy, visinfo, GLX_DOUBLEBUFFER, &value);
@@ -1882,17 +1970,17 @@ addScreen (CompDisplay *display,
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Root visual is not a double buffered GL visual");
 	XFree (visinfo);
-	return FALSE;
+	return false;
     }
 
-    s->ctx = glXCreateContext (dpy, visinfo, NULL, !indirectRendering);
-    if (!s->ctx)
+    priv->ctx = glXCreateContext (dpy, visinfo, NULL, !indirectRendering);
+    if (!priv->ctx)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"glXCreateContext failed");
 	XFree (visinfo);
 
-	return FALSE;
+	return false;
     }
 
     glxExtensions = glXQueryExtensionsString (dpy, screenNum);
@@ -1902,7 +1990,7 @@ addScreen (CompDisplay *display,
 			"GLX_EXT_texture_from_pixmap is missing");
 	XFree (visinfo);
 
-	return FALSE;
+	return false;
     }
 
     XFree (visinfo);
@@ -1911,206 +1999,204 @@ addScreen (CompDisplay *display,
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"GLX_SGIX_fbconfig is missing");
-	return FALSE;
+	return false;
     }
 
-    s->getProcAddress = (GLXGetProcAddressProc)
-	getProcAddress (s, "glXGetProcAddressARB");
-    s->bindTexImage = (GLXBindTexImageProc)
-	getProcAddress (s, "glXBindTexImageEXT");
-    s->releaseTexImage = (GLXReleaseTexImageProc)
-	getProcAddress (s, "glXReleaseTexImageEXT");
-    s->queryDrawable = (GLXQueryDrawableProc)
-	getProcAddress (s, "glXQueryDrawable");
-    s->getFBConfigs = (GLXGetFBConfigsProc)
-	getProcAddress (s, "glXGetFBConfigs");
-    s->getFBConfigAttrib = (GLXGetFBConfigAttribProc)
-	getProcAddress (s, "glXGetFBConfigAttrib");
-    s->createPixmap = (GLXCreatePixmapProc)
-	getProcAddress (s, "glXCreatePixmap");
+    priv->getProcAddress = (GLXGetProcAddressProc)
+	getProcAddress ("glXGetProcAddressARB");
+    bindTexImage = (GLXBindTexImageProc)
+	getProcAddress ("glXBindTexImageEXT");
+    releaseTexImage = (GLXReleaseTexImageProc)
+	getProcAddress ("glXReleaseTexImageEXT");
+    queryDrawable = (GLXQueryDrawableProc)
+	getProcAddress ("glXQueryDrawable");
+    getFBConfigs = (GLXGetFBConfigsProc)
+	getProcAddress ("glXGetFBConfigs");
+    getFBConfigAttrib = (GLXGetFBConfigAttribProc)
+	getProcAddress ("glXGetFBConfigAttrib");
+    createPixmap = (GLXCreatePixmapProc)
+	getProcAddress ("glXCreatePixmap");
 
-    if (!s->bindTexImage)
+    if (!bindTexImage)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"glXBindTexImageEXT is missing");
-	return FALSE;
+	return false;
     }
 
-    if (!s->releaseTexImage)
+    if (!releaseTexImage)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"glXReleaseTexImageEXT is missing");
-	return FALSE;
+	return false;
     }
 
-    if (!s->queryDrawable     ||
-	!s->getFBConfigs      ||
-	!s->getFBConfigAttrib ||
-	!s->createPixmap)
+    if (!queryDrawable     ||
+	!getFBConfigs      ||
+	!getFBConfigAttrib ||
+	!createPixmap)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"fbconfig functions missing");
-	return FALSE;
+	return false;
     }
 
-    s->copySubBuffer = NULL;
+    copySubBuffer = NULL;
     if (strstr (glxExtensions, "GLX_MESA_copy_sub_buffer"))
-	s->copySubBuffer = (GLXCopySubBufferProc)
-	    getProcAddress (s, "glXCopySubBufferMESA");
+	copySubBuffer = (GLXCopySubBufferProc)
+	    getProcAddress ("glXCopySubBufferMESA");
 
-    s->getVideoSync = NULL;
-    s->waitVideoSync = NULL;
+    getVideoSync = NULL;
+    waitVideoSync = NULL;
     if (strstr (glxExtensions, "GLX_SGI_video_sync"))
     {
-	s->getVideoSync = (GLXGetVideoSyncProc)
-	    getProcAddress (s, "glXGetVideoSyncSGI");
+	getVideoSync = (GLXGetVideoSyncProc)
+	    getProcAddress ("glXGetVideoSyncSGI");
 
-	s->waitVideoSync = (GLXWaitVideoSyncProc)
-	    getProcAddress (s, "glXWaitVideoSyncSGI");
+	waitVideoSync = (GLXWaitVideoSyncProc)
+	    getProcAddress ("glXWaitVideoSyncSGI");
     }
 
-    glXMakeCurrent (dpy, s->output, s->ctx);
-    currentRoot = s->root;
+    glXMakeCurrent (dpy, priv->output, priv->ctx);
+    currentRoot = priv->root;
 
     glExtensions = (const char *) glGetString (GL_EXTENSIONS);
     if (!glExtensions)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"No valid GL extensions string found.");
-	return FALSE;
+	return false;
     }
 
-    s->textureNonPowerOfTwo = 0;
+    priv->textureNonPowerOfTwo = false;
     if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))
-	s->textureNonPowerOfTwo = 1;
+	priv->textureNonPowerOfTwo = true;
 
-    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &s->maxTextureSize);
+    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &priv->maxTextureSize);
 
-    s->textureRectangle = 0;
+    priv->textureRectangle = false;
     if (strstr (glExtensions, "GL_NV_texture_rectangle")  ||
 	strstr (glExtensions, "GL_EXT_texture_rectangle") ||
 	strstr (glExtensions, "GL_ARB_texture_rectangle"))
     {
-	s->textureRectangle = 1;
+	priv->textureRectangle = true;
 
-	if (!s->textureNonPowerOfTwo)
+	if (!priv->textureNonPowerOfTwo)
 	{
 	    GLint maxTextureSize;
 
 	    glGetIntegerv (GL_MAX_RECTANGLE_TEXTURE_SIZE_NV, &maxTextureSize);
-	    if (maxTextureSize > s->maxTextureSize)
-		s->maxTextureSize = maxTextureSize;
+	    if (maxTextureSize > priv->maxTextureSize)
+		priv->maxTextureSize = maxTextureSize;
 	}
     }
 
-    if (!(s->textureRectangle || s->textureNonPowerOfTwo))
+    if (!(priv->textureRectangle || priv->textureNonPowerOfTwo))
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"Support for non power of two textures missing");
-	return FALSE;
+	return false;
     }
 
-    s->textureEnvCombine = s->textureEnvCrossbar = 0;
+    priv->textureEnvCombine = priv->textureEnvCrossbar = false;
     if (strstr (glExtensions, "GL_ARB_texture_env_combine"))
     {
-	s->textureEnvCombine = 1;
+	priv->textureEnvCombine = true;
 
 	/* XXX: GL_NV_texture_env_combine4 need special code but it seams to
 	   be working anyway for now... */
 	if (strstr (glExtensions, "GL_ARB_texture_env_crossbar") ||
 	    strstr (glExtensions, "GL_NV_texture_env_combine4"))
-	    s->textureEnvCrossbar = 1;
+	    priv->textureEnvCrossbar = true;
     }
 
-    s->textureBorderClamp = 0;
+    priv->textureBorderClamp = false;
     if (strstr (glExtensions, "GL_ARB_texture_border_clamp") ||
 	strstr (glExtensions, "GL_SGIS_texture_border_clamp"))
-	s->textureBorderClamp = 1;
+	priv->textureBorderClamp = true;
 
-    s->maxTextureUnits = 1;
+    priv->maxTextureUnits = 1;
     if (strstr (glExtensions, "GL_ARB_multitexture"))
     {
-	s->activeTexture = (GLActiveTextureProc)
-	    getProcAddress (s, "glActiveTexture");
-	s->clientActiveTexture = (GLClientActiveTextureProc)
-	    getProcAddress (s, "glClientActiveTexture");
-	s->multiTexCoord2f = (GLMultiTexCoord2fProc)
-	    getProcAddress (s, "glMultiTexCoord2f");
+	activeTexture = (GLActiveTextureProc)
+	    getProcAddress ("glActiveTexture");
+	clientActiveTexture = (GLClientActiveTextureProc)
+	    getProcAddress ("glClientActiveTexture");
+	multiTexCoord2f = (GLMultiTexCoord2fProc)
+	    getProcAddress ("glMultiTexCoord2f");
 
-	if (s->activeTexture && s->clientActiveTexture && s->multiTexCoord2f)
-	    glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &s->maxTextureUnits);
+	if (activeTexture && clientActiveTexture && multiTexCoord2f)
+	    glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &priv->maxTextureUnits);
     }
 
-    s->fragmentProgram = 0;
+    priv->fragmentProgram = false;
     if (strstr (glExtensions, "GL_ARB_fragment_program"))
     {
-	s->genPrograms = (GLGenProgramsProc)
-	    getProcAddress (s, "glGenProgramsARB");
-	s->deletePrograms = (GLDeleteProgramsProc)
-	    getProcAddress (s, "glDeleteProgramsARB");
-	s->bindProgram = (GLBindProgramProc)
-	    getProcAddress (s, "glBindProgramARB");
-	s->programString = (GLProgramStringProc)
-	    getProcAddress (s, "glProgramStringARB");
-	s->programEnvParameter4f = (GLProgramParameter4fProc)
-	    getProcAddress (s, "glProgramEnvParameter4fARB");
-	s->programLocalParameter4f = (GLProgramParameter4fProc)
-	    getProcAddress (s, "glProgramLocalParameter4fARB");
-	s->getProgramiv = (GLGetProgramivProc)
-	    getProcAddress (s, "glGetProgramivARB");
+	genPrograms = (GLGenProgramsProc)
+	    getProcAddress ("glGenProgramsARB");
+	deletePrograms = (GLDeleteProgramsProc)
+	    getProcAddress ("glDeleteProgramsARB");
+	bindProgram = (GLBindProgramProc)
+	    getProcAddress ("glBindProgramARB");
+	programString = (GLProgramStringProc)
+	    getProcAddress ("glProgramStringARB");
+	programEnvParameter4f = (GLProgramParameter4fProc)
+	    getProcAddress ("glProgramEnvParameter4fARB");
+	programLocalParameter4f = (GLProgramParameter4fProc)
+	    getProcAddress ("glProgramLocalParameter4fARB");
+	getProgramiv = (GLGetProgramivProc)
+	    getProcAddress ("glGetProgramivARB");
 
-	if (s->genPrograms	       &&
-	    s->deletePrograms	       &&
-	    s->bindProgram	       &&
-	    s->programString	       &&
-	    s->programEnvParameter4f   &&
-	    s->programLocalParameter4f &&
-	    s->getProgramiv)
-	    s->fragmentProgram = 1;
+	if (genPrograms             &&
+	    deletePrograms          &&
+	    bindProgram             &&
+	    programString           &&
+	    programEnvParameter4f   &&
+	    programLocalParameter4f &&
+	    getProgramiv)
+	    priv->fragmentProgram = true;
     }
 
-    s->fbo = 0;
+    priv->fbo = false;
     if (strstr (glExtensions, "GL_EXT_framebuffer_object"))
     {
-	s->genFramebuffers = (GLGenFramebuffersProc)
-	    getProcAddress (s, "glGenFramebuffersEXT");
-	s->deleteFramebuffers = (GLDeleteFramebuffersProc)
-	    getProcAddress (s, "glDeleteFramebuffersEXT");
-	s->bindFramebuffer = (GLBindFramebufferProc)
-	    getProcAddress (s, "glBindFramebufferEXT");
-	s->checkFramebufferStatus = (GLCheckFramebufferStatusProc)
-	    getProcAddress (s, "glCheckFramebufferStatusEXT");
-	s->framebufferTexture2D = (GLFramebufferTexture2DProc)
-	    getProcAddress (s, "glFramebufferTexture2DEXT");
-	s->generateMipmap = (GLGenerateMipmapProc)
-	    getProcAddress (s, "glGenerateMipmapEXT");
+	genFramebuffers = (GLGenFramebuffersProc)
+	    getProcAddress ("glGenFramebuffersEXT");
+	deleteFramebuffers = (GLDeleteFramebuffersProc)
+	    getProcAddress ("glDeleteFramebuffersEXT");
+	bindFramebuffer = (GLBindFramebufferProc)
+	    getProcAddress ("glBindFramebufferEXT");
+	checkFramebufferStatus = (GLCheckFramebufferStatusProc)
+	    getProcAddress ("glCheckFramebufferStatusEXT");
+	framebufferTexture2D = (GLFramebufferTexture2DProc)
+	    getProcAddress ("glFramebufferTexture2DEXT");
+	generateMipmap = (GLGenerateMipmapProc)
+	    getProcAddress ("glGenerateMipmapEXT");
 
-	if (s->genFramebuffers	      &&
-	    s->deleteFramebuffers     &&
-	    s->bindFramebuffer	      &&
-	    s->checkFramebufferStatus &&
-	    s->framebufferTexture2D   &&
-	    s->generateMipmap)
-	    s->fbo = 1;
+	if (genFramebuffers        &&
+	    deleteFramebuffers     &&
+	    bindFramebuffer        &&
+	    checkFramebufferStatus &&
+	    framebufferTexture2D   &&
+	    generateMipmap)
+	    priv->fbo = true;
     }
 
-    s->textureCompression = 0;
+    priv->textureCompression = false;
     if (strstr (glExtensions, "GL_ARB_texture_compression"))
-	s->textureCompression = 1;
+	priv->textureCompression = true;
 
-    fbConfigs = (*s->getFBConfigs) (dpy,
-				    screenNum,
-				    &nElements);
+    fbConfigs = (*getFBConfigs) (dpy, screenNum, &nElements);
 
     for (i = 0; i <= MAX_DEPTH; i++)
     {
 	int j, db, stencil, depth, alpha, mipmap, rgba;
 
-	s->glxPixmapFBConfigs[i].fbConfig       = NULL;
-	s->glxPixmapFBConfigs[i].mipmap         = 0;
-	s->glxPixmapFBConfigs[i].yInverted      = 0;
-	s->glxPixmapFBConfigs[i].textureFormat  = 0;
-	s->glxPixmapFBConfigs[i].textureTargets = 0;
+	priv->glxPixmapFBConfigs[i].fbConfig       = NULL;
+	priv->glxPixmapFBConfigs[i].mipmap         = 0;
+	priv->glxPixmapFBConfigs[i].yInverted      = 0;
+	priv->glxPixmapFBConfigs[i].textureFormat  = 0;
+	priv->glxPixmapFBConfigs[i].textureTargets = 0;
 
 	db      = MAXSHORT;
 	stencil = MAXSHORT;
@@ -2134,30 +2220,30 @@ addScreen (CompDisplay *display,
 	    if (visualDepth != i)
 		continue;
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_ALPHA_SIZE,
-				     &alpha);
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_BUFFER_SIZE,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_ALPHA_SIZE,
+				  &alpha);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_BUFFER_SIZE,
+				  &value);
 	    if (value != i && (value - alpha) != i)
 		continue;
 
 	    value = 0;
 	    if (i == 32)
 	    {
-		(*s->getFBConfigAttrib) (dpy,
-					 fbConfigs[j],
-					 GLX_BIND_TO_TEXTURE_RGBA_EXT,
-					 &value);
+		(*getFBConfigAttrib) (dpy,
+				      fbConfigs[j],
+				      GLX_BIND_TO_TEXTURE_RGBA_EXT,
+				      &value);
 
 		if (value)
 		{
 		    rgba = 1;
 
-		    s->glxPixmapFBConfigs[i].textureFormat =
+		    priv->glxPixmapFBConfigs[i].textureFormat =
 			GLX_TEXTURE_FORMAT_RGBA_EXT;
 		}
 	    }
@@ -2167,92 +2253,87 @@ addScreen (CompDisplay *display,
 		if (rgba)
 		    continue;
 
-		(*s->getFBConfigAttrib) (dpy,
-					 fbConfigs[j],
-					 GLX_BIND_TO_TEXTURE_RGB_EXT,
-					 &value);
+		(*getFBConfigAttrib) (dpy,
+				      fbConfigs[j],
+				      GLX_BIND_TO_TEXTURE_RGB_EXT,
+				      &value);
 		if (!value)
 		    continue;
 
-		s->glxPixmapFBConfigs[i].textureFormat =
+		priv->glxPixmapFBConfigs[i].textureFormat =
 		    GLX_TEXTURE_FORMAT_RGB_EXT;
 	    }
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_DOUBLEBUFFER,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_DOUBLEBUFFER,
+				  &value);
 	    if (value > db)
 		continue;
 
 	    db = value;
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_STENCIL_SIZE,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_STENCIL_SIZE,
+				  &value);
 	    if (value > stencil)
 		continue;
 
 	    stencil = value;
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_DEPTH_SIZE,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_DEPTH_SIZE,
+				  &value);
 	    if (value > depth)
 		continue;
 
 	    depth = value;
 
-	    if (s->fbo)
+	    if (priv->fbo)
 	    {
-		(*s->getFBConfigAttrib) (dpy,
-					 fbConfigs[j],
-					 GLX_BIND_TO_MIPMAP_TEXTURE_EXT,
-					 &value);
+		(*getFBConfigAttrib) (dpy,
+				      fbConfigs[j],
+				      GLX_BIND_TO_MIPMAP_TEXTURE_EXT,
+				      &value);
 		if (value < mipmap)
 		    continue;
 
 		mipmap = value;
 	    }
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_Y_INVERTED_EXT,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_Y_INVERTED_EXT,
+				  &value);
 
-	    s->glxPixmapFBConfigs[i].yInverted = value;
+	    priv->glxPixmapFBConfigs[i].yInverted = value;
 
-	    (*s->getFBConfigAttrib) (dpy,
-				     fbConfigs[j],
-				     GLX_BIND_TO_TEXTURE_TARGETS_EXT,
-				     &value);
+	    (*getFBConfigAttrib) (dpy,
+				  fbConfigs[j],
+				  GLX_BIND_TO_TEXTURE_TARGETS_EXT,
+				  &value);
 
-	    s->glxPixmapFBConfigs[i].textureTargets = value;
+	    priv->glxPixmapFBConfigs[i].textureTargets = value;
 
-	    s->glxPixmapFBConfigs[i].fbConfig = fbConfigs[j];
-	    s->glxPixmapFBConfigs[i].mipmap   = mipmap;
+	    priv->glxPixmapFBConfigs[i].fbConfig = fbConfigs[j];
+	    priv->glxPixmapFBConfigs[i].mipmap   = mipmap;
 	}
     }
 
     if (nElements)
 	XFree (fbConfigs);
 
-    if (!s->glxPixmapFBConfigs[defaultDepth].fbConfig)
+    if (!priv->glxPixmapFBConfigs[defaultDepth].fbConfig)
     {
 	compLogMessage (display, "core", CompLogLevelFatal,
 			"No GLXFBConfig for default depth, "
 			"this isn't going to work.");
-	return FALSE;
+	return false;
     }
 
-    initTexture (s, &s->backgroundTexture);
-    s->backgroundLoaded = FALSE;
-
-    s->defaultIcon = NULL;
-
-    s->desktopWindowCount = 0;
+    initTexture (this, &priv->backgroundTexture);
 
     glClearColor (0.0, 0.0, 0.0, 1.0);
     glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
@@ -2263,22 +2344,19 @@ addScreen (CompDisplay *display,
     glEnableClientState (GL_VERTEX_ARRAY);
     glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 
-    s->canDoSaturated = s->canDoSlightlySaturated = FALSE;
-    if (s->textureEnvCombine && s->maxTextureUnits >= 2)
+    priv->canDoSaturated = priv->canDoSlightlySaturated = false;
+    if (priv->textureEnvCombine && priv->maxTextureUnits >= 2)
     {
-	s->canDoSaturated = TRUE;
-	if (s->textureEnvCrossbar && s->maxTextureUnits >= 4)
-	    s->canDoSlightlySaturated = TRUE;
+	priv->canDoSaturated = true;
+	if (priv->textureEnvCrossbar && priv->maxTextureUnits >= 4)
+	    priv->canDoSlightlySaturated = true;
     }
 
-    s->redrawTime = 1000 / defaultRefreshRate;
-    s->optimalRedrawTime = s->redrawTime;
+    priv->reshape (priv->attrib.width, priv->attrib.height);
 
-    reshape (s, s->attrib.width, s->attrib.height);
-
-    detectRefreshRateOfScreen (s);
-    detectOutputDevices (s);
-    updateOutputDevices (s);
+    detectRefreshRate ();
+    priv->detectOutputDevices ();
+    priv->updateOutputDevices ();
 
     glLightModelfv (GL_LIGHT_MODEL_AMBIENT, globalAmbient);
 
@@ -2291,32 +2369,30 @@ addScreen (CompDisplay *display,
 
     glNormal3f (0.0f, 0.0f, -1.0f);
 
-    s->lighting	      = FALSE;
-    s->slowAnimations = FALSE;
+    priv->lighting	      = false;
+    priv->slowAnimations = false;
 
-    addScreenToDisplay (display, s);
+    priv->display->addScreenActions (this);
 
-    getDesktopHints (s);
+    priv->getDesktopHints ();
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (objectInitPlugins (&s->base));
+    assert (objectInitPlugins (this));
 
-    (*core.objectAdd) (&display->base, &s->base);
+    core->objectAdd (display, this);
 
-    XQueryTree (dpy, s->root,
+    XQueryTree (dpy, priv->root,
 		&rootReturn, &parentReturn,
 		&children, &nchildren);
 
     for (i = 0; i < nchildren; i++)
-	addWindow (s, children[i], i ? children[i - 1] : 0);
+	new CompWindow (this, children[i], i ? children[i - 1] : 0);
 
-    for (w = s->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
     {
-	if (w->attrib.map_state == IsViewable)
+	if (w->attrib ().map_state == IsViewable)
 	{
-	    w->activeNum = s->activeNum++;
-	    w->damaged   = TRUE;
-	    w->invisible = WINDOW_INVISIBLE (w);
+	    w->setActiveNum (priv->activeNum++);
 	}
     }
 
@@ -2325,26 +2401,26 @@ addScreen (CompDisplay *display,
     attrib.override_redirect = 1;
     attrib.event_mask	     = PropertyChangeMask;
 
-    s->grabWindow = XCreateWindow (dpy, s->root, -100, -100, 1, 1, 0,
-				   CopyFromParent, InputOnly, CopyFromParent,
-				   CWOverrideRedirect | CWEventMask,
-				   &attrib);
-    XMapWindow (dpy, s->grabWindow);
+    priv->grabWindow = XCreateWindow (dpy, priv->root, -100, -100, 1, 1, 0,
+				      CopyFromParent, InputOnly, CopyFromParent,
+				      CWOverrideRedirect | CWEventMask,
+				      &attrib);
+    XMapWindow (dpy, priv->grabWindow);
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
 	long xdndVersion = 3;
 
-	s->screenEdge[i].id = XCreateWindow (dpy, s->root, -100, -100, 1, 1, 0,
-					     CopyFromParent, InputOnly,
-					     CopyFromParent, CWOverrideRedirect,
-					     &attrib);
+	priv->screenEdge[i].id = XCreateWindow (dpy, priv->root, -100, -100, 1, 1, 0,
+					        CopyFromParent, InputOnly,
+					        CopyFromParent, CWOverrideRedirect,
+					        &attrib);
 
-	XChangeProperty (dpy, s->screenEdge[i].id, display->xdndAwareAtom,
+	XChangeProperty (dpy, priv->screenEdge[i].id, display->atoms ().xdndAware,
 			 XA_ATOM, 32, PropModeReplace,
 			 (unsigned char *) &xdndVersion, 1);
 
-	XSelectInput (dpy, s->screenEdge[i].id,
+	XSelectInput (dpy, priv->screenEdge[i].id,
 		      EnterWindowMask   |
 		      LeaveWindowMask   |
 		      ButtonPressMask   |
@@ -2352,144 +2428,178 @@ addScreen (CompDisplay *display,
 		      PointerMotionMask);
     }
 
-    updateScreenEdges (s);
+    priv->updateScreenEdges ();
 
-    setDesktopHints (s);
-    setSupportingWmCheck (s);
-    setSupported (s);
+    priv->setDesktopHints ();
+    priv->setSupportingWmCheck ();
+    priv->setSupported ();
 
-    s->normalCursor = XCreateFontCursor (dpy, XC_left_ptr);
-    s->busyCursor   = XCreateFontCursor (dpy, XC_watch);
+    priv->normalCursor = XCreateFontCursor (dpy, XC_left_ptr);
+    priv->busyCursor   = XCreateFontCursor (dpy, XC_watch);
 
-    XDefineCursor (dpy, s->root, s->normalCursor);
+    XDefineCursor (dpy, priv->root, priv->normalCursor);
 
-    s->filter[NOTHING_TRANS_FILTER] = COMP_TEXTURE_FILTER_FAST;
-    s->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
-    s->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
+    priv->filter[NOTHING_TRANS_FILTER] = COMP_TEXTURE_FILTER_FAST;
+    priv->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
+    priv->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
 
-    return TRUE;
+    priv->paintHandle = core->addTimeout (priv->optimalRedrawTime, MAXSHORT,
+					  PrivateScreen::paintTimeout, this);
+    return true;
 }
 
-void
-removeScreen (CompScreen *s)
+CompScreen::~CompScreen ()
 {
-    CompDisplay *d = s->display;
-    CompScreen  *p;
-    int		i;
+    core->removeTimeout (priv->paintHandle);
 
-    for (p = d->screens; p; p = p->next)
-	if (p->next == s)
-	    break;
+    while (priv->windows)
+	delete priv->windows;
 
-    if (p)
-	p->next = s->next;
-    else
-	d->screens = NULL;
+    core->objectRemove (priv->display, this);
 
-    while (s->windows)
-	removeWindow (s->windows);
+    objectFiniPlugins (this);
 
-    (*core.objectRemove) (&d->base, &s->base);
+    XUngrabKey (priv->display->dpy (), AnyKey, AnyModifier, priv->root);
 
-    objectFiniPlugins (&s->base);
+    for (int i = 0; i < SCREEN_EDGE_NUM; i++)
+	XDestroyWindow (priv->display->dpy (), priv->screenEdge[i].id);
 
-    XUngrabKey (d->display, AnyKey, AnyModifier, s->root);
+    XDestroyWindow (priv->display->dpy (), priv->grabWindow);
 
-    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-	XDestroyWindow (d->display, s->screenEdge[i].id);
+    finiTexture (this, &priv->backgroundTexture);
 
-    XDestroyWindow (d->display, s->grabWindow);
-
-    finiTexture (s, &s->backgroundTexture);
-
-    if (s->defaultIcon)
+    if (priv->defaultIcon)
     {
-	finiTexture (s, &s->defaultIcon->texture);
-	free (s->defaultIcon);
+	finiTexture (this, &priv->defaultIcon->texture);
+	free (priv->defaultIcon);
     }
 
-    glXDestroyContext (d->display, s->ctx);
+    glXDestroyContext (priv->display->dpy (), priv->ctx);
 
-    XFreeCursor (d->display, s->invisibleCursor);
+    XFreeCursor (priv->display->dpy (), priv->invisibleCursor);
 
 #ifdef USE_COW
     if (useCow)
-	XCompositeReleaseOverlayWindow (s->display->display, s->root);
+	XCompositeReleaseOverlayWindow (priv->display->dpy (), priv->root);
 #endif
 
-    freeScreen (s);
+    int i, j;
+
+    if (priv->outputDev)
+    {
+	for (i = 0; i < priv->nOutputDev; i++)
+	    if (priv->outputDev[i].name)
+		free (priv->outputDev[i].name);
+
+	free (priv->outputDev);
+    }
+
+    if (priv->clientList)
+	free (priv->clientList);
+
+    if (priv->desktopHintData)
+	free (priv->desktopHintData);
+
+    if (priv->buttonGrab)
+	free (priv->buttonGrab);
+
+    if (priv->keyGrab)
+	free (priv->keyGrab);
+
+    if (priv->snContext)
+	sn_monitor_context_unref (priv->snContext);
+
+    if (priv->damage)
+	XDestroyRegion (priv->damage);
+
+    if (priv->grabs)
+	free (priv->grabs);
+
+    /* XXX: Maybe we should free all fragment functions here? But
+       the definition of CompFunction is private to fragment.c ... */
+    for (i = 0; i < 2; i++)
+	for (j = 0; j < 64; j++)
+	    if (priv->saturateFunction[i][j])
+		destroyFragmentFunction (this, priv->saturateFunction[i][j]);
+
+    compFiniScreenOptions (this, priv->opt, COMP_SCREEN_OPTION_NUM);
+
+    if (windowPrivateIndices)
+	free (windowPrivateIndices);
+
+    if (privates)
+	free (privates);
+
+    delete priv;
 }
 
 void
-damageScreenRegion (CompScreen *screen,
-		    Region     region)
+CompScreen::damageRegion (Region region)
 {
-    if (screen->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
+    if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
-    XUnionRegion (screen->damage, region, screen->damage);
+    XUnionRegion (priv->damage, region, priv->damage);
 
-    screen->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
+    priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
 }
 
 void
-damageScreen (CompScreen *s)
+CompScreen::damageScreen ()
 {
-    s->damageMask |= COMP_SCREEN_DAMAGE_ALL_MASK;
-    s->damageMask &= ~COMP_SCREEN_DAMAGE_REGION_MASK;
+    priv->damageMask |= COMP_SCREEN_DAMAGE_ALL_MASK;
+    priv->damageMask &= ~COMP_SCREEN_DAMAGE_REGION_MASK;
 }
 
 void
-damagePendingOnScreen (CompScreen *s)
+CompScreen::damagePending ()
 {
-    s->damageMask |= COMP_SCREEN_DAMAGE_PENDING_MASK;
+    priv->damageMask |= COMP_SCREEN_DAMAGE_PENDING_MASK;
 }
 
 void
-forEachWindowOnScreen (CompScreen	 *screen,
-		       ForEachWindowProc proc,
-		       void		 *closure)
+CompScreen::forEachWindow (ForEachWindowProc proc, void *closure)
 {
     CompWindow *w;
 
-    for (w = screen->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
 	(*proc) (w, closure);
 }
 
 void
-focusDefaultWindow (CompScreen *s)
+CompScreen::focusDefaultWindow ()
 {
-    CompDisplay *d = s->display;
+    CompDisplay *d = priv->display;
     CompWindow  *w;
     CompWindow  *focus = NULL;
 
-    if (!d->opt[COMP_DISPLAY_OPTION_CLICK_TO_FOCUS].value.b)
+    if (!d->getOption ("click_to_focus")->value.b)
     {
-	w = findTopLevelWindowAtDisplay (d, d->below);
-	if (w && !(w->type & (CompWindowTypeDesktopMask |
-			      CompWindowTypeDockMask)))
+	w = d->findTopLevelWindow (d->below ());
+	if (w && !(w->type () & (CompWindowTypeDesktopMask |
+				 CompWindowTypeDockMask)))
 	{
-	    if ((*w->screen->focusWindow) (w))
+	    if (w->focus ())
 		focus = w;
 	}
     }
 
     if (!focus)
     {
-	for (w = s->reverseWindows; w; w = w->prev)
+	for (w = priv->reverseWindows; w; w = w->prev)
 	{
-	    if (w->type & CompWindowTypeDockMask)
+	    if (w->type () & CompWindowTypeDockMask)
 		continue;
 
-	    if ((*s->focusWindow) (w))
+	    if (w->focus ())
 	    {
 		if (focus)
 		{
-		    if (w->type & (CompWindowTypeNormalMask |
-				   CompWindowTypeDialogMask |
-				   CompWindowTypeModalDialogMask))
+		    if (w->type () & (CompWindowTypeNormalMask |
+				      CompWindowTypeDialogMask |
+				      CompWindowTypeModalDialogMask))
 		    {
-			if (compareWindowActiveness (focus, w) < 0)
+			if (CompWindow::compareWindowActiveness (focus, w) < 0)
 			    focus = w;
 		    }
 		}
@@ -2501,21 +2611,20 @@ focusDefaultWindow (CompScreen *s)
 
     if (focus)
     {
-	if (focus->id != d->activeWindow)
-	    moveInputFocusToWindow (focus);
+	if (focus->id () != d->activeWindow ())
+	    focus->moveInputFocusTo ();
     }
     else
     {
-	XSetInputFocus (d->display, s->root, RevertToPointerRoot,
+	XSetInputFocus (d->dpy (), priv->root, RevertToPointerRoot,
 			CurrentTime);
     }
 }
 
 CompWindow *
-findWindowAtScreen (CompScreen *s,
-		    Window     id)
+CompScreen::findWindow (Window id)
 {
-    if (lastFoundWindow && lastFoundWindow->id == id)
+    if (lastFoundWindow && lastFoundWindow->id () == id)
     {
 	return lastFoundWindow;
     }
@@ -2523,8 +2632,8 @@ findWindowAtScreen (CompScreen *s,
     {
 	CompWindow *w;
 
-	for (w = s->windows; w; w = w->next)
-	    if (w->id == id)
+	for (w = priv->windows; w; w = w->next)
+	    if (w->id () == id)
 		return (lastFoundWindow = w);
     }
 
@@ -2532,22 +2641,21 @@ findWindowAtScreen (CompScreen *s,
 }
 
 CompWindow *
-findTopLevelWindowAtScreen (CompScreen *s,
-			    Window     id)
+CompScreen::findTopLevelWindow (Window id)
 {
     CompWindow *w;
 
-    w = findWindowAtScreen (s, id);
+    w = findWindow (id);
     if (!w)
 	return NULL;
 
-    if (w->attrib.override_redirect)
+    if (w->attrib ().override_redirect)
     {
 	/* likely a frame window */
-	if (w->attrib.c_class == InputOnly)
+	if (w->attrib ().c_class == InputOnly)
 	{
-	    for (w = s->windows; w; w = w->next)
-		if (w->frame == id)
+	    for (w = priv->windows; w; w = w->next)
+		if (w->frame () == id)
 		    return w;
 	}
 
@@ -2558,26 +2666,24 @@ findTopLevelWindowAtScreen (CompScreen *s,
 }
 
 void
-insertWindowIntoScreen (CompScreen *s,
-			CompWindow *w,
-			Window	   aboveId)
+CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 {
     CompWindow *p;
 
-    if (s->windows)
+    if (priv->windows)
     {
 	if (!aboveId)
 	{
-	    w->next = s->windows;
+	    w->next = priv->windows;
 	    w->prev = NULL;
-	    s->windows->prev = w;
-	    s->windows = w;
+	    priv->windows->prev = w;
+	    priv->windows = w;
 	}
 	else
 	{
-	    for (p = s->windows; p; p = p->next)
+	    for (p = priv->windows; p; p = p->next)
 	    {
-		if (p->id == aboveId)
+		if (p->id () == aboveId)
 		{
 		    if (p->next)
 		    {
@@ -2591,7 +2697,7 @@ insertWindowIntoScreen (CompScreen *s,
 			p->next = w;
 			w->next = NULL;
 			w->prev = p;
-			s->reverseWindows = w;
+			priv->reverseWindows = w;
 		    }
 		    break;
 		}
@@ -2606,14 +2712,13 @@ insertWindowIntoScreen (CompScreen *s,
     }
     else
     {
-	s->reverseWindows = s->windows = w;
+	priv->reverseWindows = priv->windows = w;
 	w->prev = w->next = NULL;
     }
 }
 
 void
-unhookWindowFromScreen (CompScreen *s,
-			CompWindow *w)
+CompScreen::unhookWindow (CompWindow *w)
 {
     CompWindow *next, *prev;
 
@@ -2630,7 +2735,7 @@ unhookWindowFromScreen (CompScreen *s,
 	    }
 	    else
 	    {
-		s->windows = next;
+		priv->windows = next;
 		next->prev = NULL;
 	    }
 	}
@@ -2643,14 +2748,14 @@ unhookWindowFromScreen (CompScreen *s,
 	    }
 	    else
 	    {
-		s->reverseWindows = prev;
+		priv->reverseWindows = prev;
 		prev->next = NULL;
 	    }
 	}
     }
     else
     {
-	s->windows = s->reverseWindows = NULL;
+	priv->windows = priv->reverseWindows = NULL;
     }
 
     if (w == lastFoundWindow)
@@ -2663,29 +2768,27 @@ unhookWindowFromScreen (CompScreen *s,
 			   ButtonPressMask   | \
 			   PointerMotionMask)
 int
-pushScreenGrab (CompScreen *s,
-		Cursor     cursor,
-		const char *name)
+CompScreen::pushGrab (Cursor cursor, const char *name)
 {
-    if (s->maxGrab == 0)
+    if (priv->maxGrab == 0)
     {
 	int status;
 
-	status = XGrabPointer (s->display->display, s->grabWindow, TRUE,
+	status = XGrabPointer (priv->display->dpy (), priv->grabWindow, TRUE,
 			       POINTER_GRAB_MASK,
 			       GrabModeAsync, GrabModeAsync,
-			       s->root, cursor,
+			       priv->root, cursor,
 			       CurrentTime);
 
 	if (status == GrabSuccess)
 	{
-	    status = XGrabKeyboard (s->display->display,
-				    s->grabWindow, TRUE,
+	    status = XGrabKeyboard (priv->display->dpy (),
+				    priv->grabWindow, TRUE,
 				    GrabModeAsync, GrabModeAsync,
 				    CurrentTime);
 	    if (status != GrabSuccess)
 	    {
-		XUngrabPointer (s->display->display, CurrentTime);
+		XUngrabPointer (priv->display->dpy (), CurrentTime);
 		return 0;
 	    }
 	}
@@ -2694,88 +2797,84 @@ pushScreenGrab (CompScreen *s,
     }
     else
     {
-	XChangeActivePointerGrab (s->display->display, POINTER_GRAB_MASK,
+	XChangeActivePointerGrab (priv->display->dpy (), POINTER_GRAB_MASK,
 				  cursor, CurrentTime);
     }
 
-    if (s->grabSize <= s->maxGrab)
+    if (priv->grabSize <= priv->maxGrab)
     {
-	s->grabs = (CompGrab *) realloc (s->grabs, sizeof (CompGrab) * (s->maxGrab + 1));
-	if (!s->grabs)
+	priv->grabs = (CompGrab *)
+	    realloc (priv->grabs, sizeof (CompGrab) * (priv->maxGrab + 1));
+	if (!priv->grabs)
 	    return 0;
 
-	s->grabSize = s->maxGrab + 1;
+	priv->grabSize = priv->maxGrab + 1;
     }
 
-    s->grabs[s->maxGrab].cursor = cursor;
-    s->grabs[s->maxGrab].active = TRUE;
-    s->grabs[s->maxGrab].name   = name;
+    priv->grabs[priv->maxGrab].cursor = cursor;
+    priv->grabs[priv->maxGrab].active = TRUE;
+    priv->grabs[priv->maxGrab].name   = name;
 
-    s->maxGrab++;
+    priv->maxGrab++;
 
-    return s->maxGrab;
+    return priv->maxGrab;
 }
 
 void
-updateScreenGrab (CompScreen *s,
-		  int        index,
-		  Cursor     cursor)
+CompScreen::updateGrab (int index, Cursor cursor)
 {
   index--;
 
 #ifdef DEBUG
-    if (index < 0 || index >= s->maxGrab)
+    if (index < 0 || index >= priv->maxGrab)
 	abort ();
 #endif
 
-  XChangeActivePointerGrab (s->display->display, POINTER_GRAB_MASK,
+  XChangeActivePointerGrab (priv->display->dpy (), POINTER_GRAB_MASK,
 			    cursor, CurrentTime);
 
-  s->grabs[index].cursor = cursor;
+  priv->grabs[index].cursor = cursor;
 }
 
 void
-removeScreenGrab (CompScreen *s,
-		  int	     index,
-		  XPoint     *restorePointer)
+CompScreen::removeGrab (int index, XPoint *restorePointer)
 {
     int maxGrab;
 
     index--;
 
 #ifdef DEBUG
-    if (index < 0 || index >= s->maxGrab)
+    if (index < 0 || index >= priv->maxGrab)
 	abort ();
 #endif
 
-    s->grabs[index].cursor = None;
-    s->grabs[index].active = FALSE;
+    priv->grabs[index].cursor = None;
+    priv->grabs[index].active = FALSE;
 
-    for (maxGrab = s->maxGrab; maxGrab; maxGrab--)
-	if (s->grabs[maxGrab - 1].active)
+    for (maxGrab = priv->maxGrab; maxGrab; maxGrab--)
+	if (priv->grabs[maxGrab - 1].active)
 	    break;
 
-    if (maxGrab != s->maxGrab)
+    if (maxGrab != priv->maxGrab)
     {
 	if (maxGrab)
 	{
-	    XChangeActivePointerGrab (s->display->display,
+	    XChangeActivePointerGrab (priv->display->dpy (),
 				      POINTER_GRAB_MASK,
-				      s->grabs[maxGrab - 1].cursor,
+				      priv->grabs[maxGrab - 1].cursor,
 				      CurrentTime);
 	}
 	else
 	{
 	    if (restorePointer)
-		warpPointer (s,
-			     restorePointer->x - pointerX,
+		warpPointer (restorePointer->x - pointerX,
 			     restorePointer->y - pointerY);
 
-	    XUngrabPointer (s->display->display, CurrentTime);
-	    XUngrabKeyboard (s->display->display, CurrentTime);
+	    XUngrabPointer (priv->display->dpy (), CurrentTime);
+	    XUngrabKeyboard (priv->display->dpy (), CurrentTime);
 	}
 
-	s->maxGrab = maxGrab;
+	priv->maxGrab = maxGrab;
     }
 }
 
@@ -2783,82 +2882,80 @@ removeScreenGrab (CompScreen *s,
    It returns TRUE if a grab exists but it is NOT held by one of the
    plugins listed, returns FALSE otherwise. */
 
-Bool
-otherScreenGrabExist (CompScreen *s, ...)
+bool
+CompScreen::otherGrabExist (const char *first, ...)
 {
-    va_list ap;
-    char    *name;
-    int	    i;
+    va_list    ap;
+    const char *name;
+    int	       i;
 
-    for (i = 0; i < s->maxGrab; i++)
+    for (i = 0; i < priv->maxGrab; i++)
     {
-	if (s->grabs[i].active)
+	if (priv->grabs[i].active)
 	{
-	    va_start (ap, s);
+	    va_start (ap, first);
 
-	    name = va_arg (ap, char *);
+	    name = first;
 	    while (name)
 	    {
-		if (strcmp (name, s->grabs[i].name) == 0)
+		if (strcmp (name, priv->grabs[i].name) == 0)
 		    break;
 
-		name = va_arg (ap, char *);
+		name = va_arg (ap, const char *);
 	    }
 
 	    va_end (ap);
 
 	    if (!name)
-		return TRUE;
+		return true;
 	}
     }
 
-    return FALSE;
+    return false;
 }
 
-static void
-grabUngrabOneKey (CompScreen   *s,
-		  unsigned int modifiers,
-		  int          keycode,
-		  Bool         grab)
+void
+PrivateScreen::grabUngrabOneKey (unsigned int modifiers,
+				 int          keycode,
+				 bool         grab)
 {
     if (grab)
     {
-	XGrabKey (s->display->display,
+	XGrabKey (display->dpy (),
 		  keycode,
 		  modifiers,
-		  s->root,
+		  root,
 		  TRUE,
 		  GrabModeAsync,
 		  GrabModeAsync);
     }
     else
     {
-	XUngrabKey (s->display->display,
+	XUngrabKey (display->dpy (),
 		    keycode,
 		    modifiers,
-		    s->root);
+		    root);
     }
 }
 
-static Bool
-grabUngrabKeys (CompScreen   *s,
-		unsigned int modifiers,
-		int          keycode,
-		Bool         grab)
+bool
+PrivateScreen::grabUngrabKeys (unsigned int modifiers,
+			       int          keycode,
+			       bool         grab)
 {
-    XModifierKeymap *modMap = s->display->modMap;
+    XModifierKeymap *modMap = display->modMap ();
     int ignore, mod, k;
 
-    compCheckForError (s->display->display);
+    compCheckForError (display->dpy ());
 
-    for (ignore = 0; ignore <= s->display->ignoredModMask; ignore++)
+    for (ignore = 0; ignore <= display->ignoredModMask (); ignore++)
     {
-	if (ignore & ~s->display->ignoredModMask)
+	if (ignore & ~display->ignoredModMask ())
 	    continue;
 
 	if (keycode != 0)
 	{
-	    grabUngrabOneKey (s, modifiers | ignore, keycode, grab);
+	    grabUngrabOneKey (modifiers | ignore, keycode, grab);
 	}
 	else
 	{
@@ -2872,188 +2969,184 @@ grabUngrabKeys (CompScreen   *s,
 		    {
 			if (modMap->modifiermap[k])
 			{
-			    grabUngrabOneKey (
-				s,
-				(modifiers & ~(1 << mod)) | ignore,
-				modMap->modifiermap[k],
-				grab);
+			    grabUngrabOneKey ((modifiers & ~(1 << mod)) |
+					      ignore,
+					      modMap->modifiermap[k],
+					      grab);
 			}
 		    }
 		}
 	    }
 	}
 
-	if (compCheckForError (s->display->display))
-	    return FALSE;
+	if (compCheckForError (display->dpy ()))
+	    return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-static Bool
-addPassiveKeyGrab (CompScreen	  *s,
-		   CompKeyBinding *key)
+bool
+PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 {
-    CompKeyGrab  *keyGrab;
+    CompKeyGrab  *newKeyGrab;
     unsigned int mask;
     int          i;
 
-    mask = virtualToRealModMask (s->display, key->modifiers);
+    mask = display->virtualToRealModMask (key->modifiers);
 
-    for (i = 0; i < s->nKeyGrab; i++)
+    for (i = 0; i < nKeyGrab; i++)
     {
-	if (key->keycode == s->keyGrab[i].keycode &&
-	    mask         == s->keyGrab[i].modifiers)
+	if (key->keycode == keyGrab[i].keycode &&
+	    mask         == keyGrab[i].modifiers)
 	{
-	    s->keyGrab[i].count++;
-	    return TRUE;
+	    keyGrab[i].count++;
+	    return true;
 	}
     }
 
-    keyGrab = (CompKeyGrab  *) realloc (s->keyGrab, sizeof (CompKeyGrab) * (s->nKeyGrab + 1));
+    newKeyGrab = (CompKeyGrab  *)
+	realloc (keyGrab, sizeof (CompKeyGrab) * (nKeyGrab + 1));
     if (!keyGrab)
-	return FALSE;
+	return false;
 
-    s->keyGrab = keyGrab;
+    keyGrab = newKeyGrab;
 
     if (!(mask & CompNoMask))
     {
-	if (!grabUngrabKeys (s, mask, key->keycode, TRUE))
-	    return FALSE;
+	if (!grabUngrabKeys (mask, key->keycode, true))
+	    return false;
     }
 
-    s->keyGrab[s->nKeyGrab].keycode   = key->keycode;
-    s->keyGrab[s->nKeyGrab].modifiers = mask;
-    s->keyGrab[s->nKeyGrab].count     = 1;
+    keyGrab[nKeyGrab].keycode   = key->keycode;
+    keyGrab[nKeyGrab].modifiers = mask;
+    keyGrab[nKeyGrab].count     = 1;
 
-    s->nKeyGrab++;
+    nKeyGrab++;
 
-    return TRUE;
+    return true;
 }
 
-static void
-removePassiveKeyGrab (CompScreen     *s,
-		      CompKeyBinding *key)
+void
+PrivateScreen::removePassiveKeyGrab (CompKeyBinding *key)
 {
     unsigned int mask;
     int          i;
 
-    for (i = 0; i < s->nKeyGrab; i++)
+    for (i = 0; i < nKeyGrab; i++)
     {
-	mask = virtualToRealModMask (s->display, key->modifiers);
-	if (key->keycode == s->keyGrab[i].keycode &&
-	    mask         == s->keyGrab[i].modifiers)
+	mask = display->virtualToRealModMask (key->modifiers);
+	if (key->keycode == keyGrab[i].keycode &&
+	    mask         == keyGrab[i].modifiers)
 	{
-	    s->keyGrab[i].count--;
-	    if (s->keyGrab[i].count)
+	    keyGrab[i].count--;
+	    if (keyGrab[i].count)
 		return;
 
-	    memmove (s->keyGrab + i, s->keyGrab + i + 1,
-		     (s->nKeyGrab - (i + 1)) * sizeof (CompKeyGrab));
+	    memmove (keyGrab + i, keyGrab + i + 1,
+		     (nKeyGrab - (i + 1)) * sizeof (CompKeyGrab));
 
-	    s->nKeyGrab--;
-	    s->keyGrab = (CompKeyGrab  *) realloc (s->keyGrab,
-				  sizeof (CompKeyGrab) * s->nKeyGrab);
+	    nKeyGrab--;
+	    keyGrab = (CompKeyGrab  *) realloc (keyGrab,
+				  sizeof (CompKeyGrab) * nKeyGrab);
 
 	    if (!(mask & CompNoMask))
-		grabUngrabKeys (s, mask, key->keycode, FALSE);
+		grabUngrabKeys (mask, key->keycode, false);
 	}
     }
 }
 
-static void
-updatePassiveKeyGrabs (CompScreen *s)
+void
+PrivateScreen::updatePassiveKeyGrabs ()
 {
     int i;
 
-    XUngrabKey (s->display->display, AnyKey, AnyModifier, s->root);
+    XUngrabKey (display->dpy (), AnyKey, AnyModifier, root);
 
-    for (i = 0; i < s->nKeyGrab; i++)
+    for (i = 0; i < nKeyGrab; i++)
     {
-	if (!(s->keyGrab[i].modifiers & CompNoMask))
+	if (!(keyGrab[i].modifiers & CompNoMask))
 	{
-	    grabUngrabKeys (s, s->keyGrab[i].modifiers,
-			    s->keyGrab[i].keycode, TRUE);
+	    grabUngrabKeys (keyGrab[i].modifiers,
+			    keyGrab[i].keycode, true);
 	}
     }
 }
 
-static Bool
-addPassiveButtonGrab (CompScreen        *s,
-		      CompButtonBinding *button)
+bool
+PrivateScreen::addPassiveButtonGrab (CompButtonBinding *button)
 {
-    CompButtonGrab *buttonGrab;
+    CompButtonGrab *newButtonGrab;
     int            i;
 
-    for (i = 0; i < s->nButtonGrab; i++)
+    for (i = 0; i < nButtonGrab; i++)
     {
-	if (button->button    == s->buttonGrab[i].button &&
-	    button->modifiers == s->buttonGrab[i].modifiers)
+	if (button->button    == buttonGrab[i].button &&
+	    button->modifiers == buttonGrab[i].modifiers)
 	{
-	    s->buttonGrab[i].count++;
-	    return TRUE;
+	    buttonGrab[i].count++;
+	    return true;
 	}
     }
 
-    buttonGrab = (CompButtonGrab  *) realloc (s->buttonGrab,
-			  sizeof (CompButtonGrab) * (s->nButtonGrab + 1));
+    newButtonGrab = (CompButtonGrab  *)
+	realloc (buttonGrab, sizeof (CompButtonGrab) * (nButtonGrab + 1));
+
     if (!buttonGrab)
-	return FALSE;
+	return false;
 
-    s->buttonGrab = buttonGrab;
+    buttonGrab = newButtonGrab;
 
-    s->buttonGrab[s->nButtonGrab].button    = button->button;
-    s->buttonGrab[s->nButtonGrab].modifiers = button->modifiers;
-    s->buttonGrab[s->nButtonGrab].count     = 1;
+    buttonGrab[nButtonGrab].button    = button->button;
+    buttonGrab[nButtonGrab].modifiers = button->modifiers;
+    buttonGrab[nButtonGrab].count     = 1;
 
-    s->nButtonGrab++;
+    nButtonGrab++;
 
-    return TRUE;
+    return true;
 }
 
-static void
-removePassiveButtonGrab (CompScreen        *s,
-			 CompButtonBinding *button)
+void
+PrivateScreen::removePassiveButtonGrab (CompButtonBinding *button)
 {
     int          i;
 
-    for (i = 0; i < s->nButtonGrab; i++)
+    for (i = 0; i < nButtonGrab; i++)
     {
-	if (button->button    == s->buttonGrab[i].button &&
-	    button->modifiers == s->buttonGrab[i].modifiers)
+	if (button->button    == buttonGrab[i].button &&
+	    button->modifiers == buttonGrab[i].modifiers)
 	{
-	    s->buttonGrab[i].count--;
-	    if (s->buttonGrab[i].count)
+	    buttonGrab[i].count--;
+	    if (buttonGrab[i].count)
 		return;
 
-	    memmove (s->buttonGrab + i, s->buttonGrab + i + 1,
-		     (s->nButtonGrab - (i + 1)) * sizeof (CompButtonGrab));
+	    memmove (buttonGrab + i, buttonGrab + i + 1,
+		     (nButtonGrab - (i + 1)) * sizeof (CompButtonGrab));
 
-	    s->nButtonGrab--;
-	    s->buttonGrab = (CompButtonGrab  *) realloc (s->buttonGrab,
-				     sizeof (CompButtonGrab) * s->nButtonGrab);
+	    nButtonGrab--;
+	    buttonGrab = (CompButtonGrab  *)
+		realloc (buttonGrab, sizeof (CompButtonGrab) * nButtonGrab);
 	}
     }
 }
 
-Bool
-addScreenAction (CompScreen *s,
-		 CompAction *action)
+bool
+CompScreen::addAction (CompAction *action)
 {
     if (action->type & CompBindingTypeKey)
     {
-	if (!addPassiveKeyGrab (s, &action->key))
-	    return FALSE;
+	if (!priv->addPassiveKeyGrab (&action->key))
+	    return true;
     }
 
     if (action->type & CompBindingTypeButton)
     {
-	if (!addPassiveButtonGrab (s, &action->button))
+	if (!priv->addPassiveButtonGrab (&action->button))
 	{
 	    if (action->type & CompBindingTypeKey)
-		removePassiveKeyGrab (s, &action->key);
+		priv->removePassiveKeyGrab (&action->key);
 
-	    return FALSE;
+	    return true;
 	}
     }
 
@@ -3063,21 +3156,20 @@ addScreenAction (CompScreen *s,
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	    if (action->edgeMask & (1 << i))
-		enableScreenEdge (s, i);
+		enableEdge (i);
     }
 
-    return TRUE;
+    return true;
 }
 
 void
-removeScreenAction (CompScreen *s,
-		    CompAction *action)
+CompScreen::removeAction (CompAction *action)
 {
     if (action->type & CompBindingTypeKey)
-	removePassiveKeyGrab (s, &action->key);
+	priv->removePassiveKeyGrab (&action->key);
 
     if (action->type & CompBindingTypeButton)
-	removePassiveButtonGrab (s, &action->button);
+	priv->removePassiveButtonGrab (&action->button);
 
     if (action->edgeMask)
     {
@@ -3085,20 +3177,19 @@ removeScreenAction (CompScreen *s,
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	    if (action->edgeMask & (1 << i))
-		disableScreenEdge (s, i);
+		disableEdge (i);
     }
 }
 
 void
-updatePassiveGrabs (CompScreen *s)
+CompScreen::updatePassiveGrabs ()
 {
-    updatePassiveKeyGrabs (s);
+    priv->updatePassiveKeyGrabs ();
 }
 
-static void
-computeWorkareaForBox (CompScreen *s,
-		       BoxPtr     pBox,
-		       XRectangle *area)
+void
+PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
+				      XRectangle *area)
 {
     CompWindow *w;
     Region     region;
@@ -3122,20 +3213,20 @@ computeWorkareaForBox (CompScreen *s,
 
     XUnionRegion (&r, region, region);
 
-    for (w = s->windows; w; w = w->next)
+    for (w = windows; w; w = w->next)
     {
-	if (!w->mapNum)
+	if (!w->mapNum ())
 	    continue;
 
-	if (w->struts)
+	if (w->struts ())
 	{
 	    r.extents.y1 = pBox->y1;
 	    r.extents.y2 = pBox->y2;
 
-	    x1 = w->struts->left.x;
-	    y1 = w->struts->left.y;
-	    x2 = x1 + w->struts->left.width;
-	    y2 = y1 + w->struts->left.height;
+	    x1 = w->struts ()->left.x;
+	    y1 = w->struts ()->left.y;
+	    x2 = x1 + w->struts ()->left.width;
+	    y2 = y1 + w->struts ()->left.height;
 
 	    if (y1 < pBox->y2 && y2 > pBox->y1)
 	    {
@@ -3145,10 +3236,10 @@ computeWorkareaForBox (CompScreen *s,
 		XSubtractRegion (region, &r, region);
 	    }
 
-	    x1 = w->struts->right.x;
-	    y1 = w->struts->right.y;
-	    x2 = x1 + w->struts->right.width;
-	    y2 = y1 + w->struts->right.height;
+	    x1 = w->struts ()->right.x;
+	    y1 = w->struts ()->right.y;
+	    x2 = x1 + w->struts ()->right.width;
+	    y2 = y1 + w->struts ()->right.height;
 
 	    if (y1 < pBox->y2 && y2 > pBox->y1)
 	    {
@@ -3161,10 +3252,10 @@ computeWorkareaForBox (CompScreen *s,
 	    r.extents.x1 = pBox->x1;
 	    r.extents.x2 = pBox->x2;
 
-	    x1 = w->struts->top.x;
-	    y1 = w->struts->top.y;
-	    x2 = x1 + w->struts->top.width;
-	    y2 = y1 + w->struts->top.height;
+	    x1 = w->struts ()->top.x;
+	    y1 = w->struts ()->top.y;
+	    x2 = x1 + w->struts ()->top.width;
+	    y2 = y1 + w->struts ()->top.height;
 
 	    if (x1 < pBox->x2 && x2 > pBox->x1)
 	    {
@@ -3174,10 +3265,10 @@ computeWorkareaForBox (CompScreen *s,
 		XSubtractRegion (region, &r, region);
 	    }
 
-	    x1 = w->struts->bottom.x;
-	    y1 = w->struts->bottom.y;
-	    x2 = x1 + w->struts->bottom.width;
-	    y2 = y1 + w->struts->bottom.height;
+	    x1 = w->struts ()->bottom.x;
+	    y1 = w->struts ()->bottom.y;
+	    x2 = x1 + w->struts ()->bottom.width;
+	    y2 = y1 + w->struts ()->bottom.height;
 
 	    if (x1 < pBox->x2 && x2 > pBox->x1)
 	    {
@@ -3198,58 +3289,57 @@ computeWorkareaForBox (CompScreen *s,
 }
 
 void
-updateWorkareaForScreen (CompScreen *s)
+CompScreen::updateWorkarea ()
 {
     XRectangle workArea;
     BoxRec     box;
     int        i;
 
-    for (i = 0; i < s->nOutputDev; i++)
-	computeWorkareaForBox (s,
-			       &s->outputDev[i].region.extents,
-			       &s->outputDev[i].workArea);
+    for (i = 0; i < priv->nOutputDev; i++)
+	priv->computeWorkareaForBox (&priv->outputDev[i].region.extents,
+				     &priv->outputDev[i].workArea);
 
     box.x1 = 0;
     box.y1 = 0;
-    box.x2 = s->width;
-    box.y2 = s->height;
+    box.x2 = priv->width;
+    box.y2 = priv->height;
 
-    computeWorkareaForBox (s, &box, &workArea);
+    priv->computeWorkareaForBox (&box, &workArea);
 
-    if (memcmp (&workArea, &s->workArea, sizeof (XRectangle)))
+    if (memcmp (&workArea, &priv->workArea, sizeof (XRectangle)))
     {
 	CompWindow *w;
 
-	s->workArea = workArea;
+	priv->workArea = workArea;
 
-	setDesktopHints (s);
+	priv->setDesktopHints ();
 
 	/* as work area changed, update all maximized windows on this
 	   screen to snap to the new work area */
-	for (w = s->windows; w; w = w->next)
-	    updateWindowSize (w);
+	for (w = priv->windows; w; w = w->next)
+	    w->updateSize ();
     }
 }
 
-static Bool
+static bool
 isClientListWindow (CompWindow *w)
 {
     /* windows with client id less than 2 have been destroyed and only exists
        because some plugin keeps a reference to them. they should not be in
        client lists */
-    if (w->id < 2)
-	return FALSE;
+    if (w->id () < 2)
+	return false;
 
-    if (w->attrib.override_redirect)
-	return FALSE;
+    if (w->attrib ().override_redirect)
+	return false;
 
-    if (w->attrib.map_state != IsViewable)
+    if (w->attrib ().map_state != IsViewable)
     {
-	if (!(w->state & CompWindowStateHiddenMask))
-	    return FALSE;
+	if (!(w->state () & CompWindowStateHiddenMask))
+	    return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -3264,156 +3354,126 @@ countClientListWindow (CompWindow *w,
     }
 }
 
-static void
-addClientListWindow (CompWindow *w,
-		     void       *closure)
-{
-    if (isClientListWindow (w))
-    {
-	int *num = (int *) closure;
-
-	w->screen->clientList[*num] = w;
-	*num = *num + 1;
-    }
-}
-
 static int
 compareMappingOrder (const void *w1,
 		     const void *w2)
 {
-    return (*((CompWindow **) w1))->mapNum - (*((CompWindow **) w2))->mapNum;
+    return (*((CompWindow **) w1))->mapNum () -
+	   (*((CompWindow **) w2))->mapNum ();
 }
 
 void
-updateClientListForScreen (CompScreen *s)
+CompScreen::updateClientList ()
 {
     Window *clientList;
     Window *clientListStacking;
-    Bool   updateClientList = FALSE;
-    Bool   updateClientListStacking = FALSE;
+    Bool   updateClientList = true;
+    Bool   updateClientListStacking = true;
     int	   i, n = 0;
 
-    forEachWindowOnScreen (s, countClientListWindow, (void *) &n);
+    forEachWindow (countClientListWindow, (void *) &n);
 
     if (n == 0)
     {
-	if (n != s->nClientList)
+	if (n != priv->nClientList)
 	{
-	    free (s->clientList);
+	    free (priv->clientList);
 
-	    s->clientList  = NULL;
-	    s->nClientList = 0;
+	    priv->clientList  = NULL;
+	    priv->nClientList = 0;
 
-	    XChangeProperty (s->display->display, s->root,
-			     s->display->clientListAtom,
+	    XChangeProperty (priv->display->dpy (), priv->root,
+			     priv->display->atoms ().clientList,
 			     XA_WINDOW, 32, PropModeReplace,
-			     (unsigned char *) &s->grabWindow, 1);
-	    XChangeProperty (s->display->display, s->root,
-			     s->display->clientListStackingAtom,
+			     (unsigned char *) &priv->grabWindow, 1);
+	    XChangeProperty (priv->display->dpy (), priv->root,
+			     priv->display->atoms ().clientListStacking,
 			     XA_WINDOW, 32, PropModeReplace,
-			     (unsigned char *) &s->grabWindow, 1);
+			     (unsigned char *) &priv->grabWindow, 1);
 	}
 
 	return;
     }
 
-    if (n != s->nClientList)
+    if (n != priv->nClientList)
     {
 	CompWindow **list;
 
-	list = (CompWindow **) realloc (s->clientList,
-			(sizeof (CompWindow *) + sizeof (Window) * 2) * n);
+	list = (CompWindow **)
+	    realloc (priv->clientList, (sizeof (CompWindow *) +
+		     sizeof (Window) * 2) * n);
 	if (!list)
 	    return;
 
-	s->clientList  = list;
-	s->nClientList = n;
+	priv->clientList  = list;
+	priv->nClientList = n;
 
-	updateClientList = updateClientListStacking = TRUE;
+	updateClientList = updateClientListStacking = true;
     }
 
-    clientList	       = (Window *) (s->clientList + n);
+    clientList	       = (Window *) (priv->clientList + n);
     clientListStacking = clientList + n;
 
     i = 0;
-    forEachWindowOnScreen (s, addClientListWindow, (void *) &i);
+    for (CompWindow *w = priv->windows; w; w = w->next)
+	if (isClientListWindow (w))
+	{
+	    priv->clientList[i] = w;
+	    i++;
+	}
 
     for (i = 0; i < n; i++)
     {
 	if (!updateClientListStacking)
 	{
-	    if (clientListStacking[i] != s->clientList[i]->id)
-		updateClientListStacking = TRUE;
+	    if (clientListStacking[i] != priv->clientList[i]->id ())
+		updateClientListStacking = true;
 	}
 
-	clientListStacking[i] = s->clientList[i]->id;
+	clientListStacking[i] = priv->clientList[i]->id ();
     }
 
     /* sort window list in mapping order */
-    qsort (s->clientList, n, sizeof (CompWindow *), compareMappingOrder);
+    qsort (priv->clientList, n, sizeof (CompWindow *), compareMappingOrder);
 
     for (i = 0; i < n; i++)
     {
 	if (!updateClientList)
 	{
-	    if (clientList[i] != s->clientList[i]->id)
-		updateClientList = TRUE;
+	    if (clientList[i] != priv->clientList[i]->id ())
+		updateClientList = true;
 	}
 
-	clientList[i] = s->clientList[i]->id;
+	clientList[i] = priv->clientList[i]->id ();
     }
 
     if (updateClientList)
-	XChangeProperty (s->display->display, s->root,
-			 s->display->clientListAtom,
+	XChangeProperty (priv->display->dpy (), priv->root,
+			 priv->display->atoms ().clientList,
 			 XA_WINDOW, 32, PropModeReplace,
-			 (unsigned char *) clientList, s->nClientList);
+			 (unsigned char *) clientList, priv->nClientList);
 
     if (updateClientListStacking)
-	XChangeProperty (s->display->display, s->root,
-			 s->display->clientListStackingAtom,
+	XChangeProperty (priv->display->dpy (), priv->root,
+			 priv->display->atoms ().clientListStacking,
 			 XA_WINDOW, 32, PropModeReplace,
-			 (unsigned char *) clientListStacking, s->nClientList);
-}
-
-Window
-getActiveWindow (CompDisplay *display,
-		 Window      root)
-{
-    Atom	  actual;
-    int		  result, format;
-    unsigned long n, left;
-    unsigned char *data;
-    Window	  w = None;
-
-    result = XGetWindowProperty (display->display, root,
-				 display->winActiveAtom, 0L, 1L, FALSE,
-				 XA_WINDOW, &actual, &format,
-				 &n, &left, &data);
-
-    if (result == Success && n && data)
-    {
-	memcpy (&w, data, sizeof (Window));
-	XFree (data);
-    }
-
-    return w;
+			 (unsigned char *) clientListStacking,
+			 priv->nClientList);
 }
 
 void
-toolkitAction (CompScreen *s,
-	       Atom	  toolkitAction,
-	       Time       eventTime,
-	       Window	  window,
-	       long	  data0,
-	       long	  data1,
-	       long	  data2)
+CompScreen::toolkitAction (Atom   toolkitAction,
+			   Time   eventTime,
+			   Window window,
+			   long   data0,
+			   long   data1,
+			   long   data2)
 {
     XEvent ev;
 
     ev.type		    = ClientMessage;
     ev.xclient.window	    = window;
-    ev.xclient.message_type = s->display->toolkitActionAtom;
+    ev.xclient.message_type = priv->display->atoms ().toolkitAction;
     ev.xclient.format	    = 32;
     ev.xclient.data.l[0]    = toolkitAction;
     ev.xclient.data.l[1]    = eventTime;
@@ -3421,15 +3481,15 @@ toolkitAction (CompScreen *s,
     ev.xclient.data.l[3]    = data1;
     ev.xclient.data.l[4]    = data2;
 
-    XUngrabPointer (s->display->display, CurrentTime);
-    XUngrabKeyboard (s->display->display, CurrentTime);
+    XUngrabPointer (priv->display->dpy (), CurrentTime);
+    XUngrabKeyboard (priv->display->dpy (), CurrentTime);
 
-    XSendEvent (s->display->display, s->root, FALSE, StructureNotifyMask, &ev);
+    XSendEvent (priv->display->dpy (), priv->root, FALSE,
+		StructureNotifyMask, &ev);
 }
 
 void
-runCommand (CompScreen *s,
-	    const char *command)
+CompScreen::runCommand (const char *command)
 {
     if (*command == '\0')
 	return;
@@ -3438,13 +3498,13 @@ runCommand (CompScreen *s,
     {
 	/* build a display string that uses the right screen number */
 	/* 5 extra chars should be enough for pretty much every situation */
-	int  stringLen = strlen (s->display->displayString) + 5;
+	int  stringLen = strlen (priv->display->displayString ()) + 5;
 	char screenString[stringLen];
 	char *pos, *delimiter, *colon;
 	
 	setsid ();
 
-	strcpy (screenString, s->display->displayString);
+	strcpy (screenString, priv->display->displayString ());
 	delimiter = strrchr (screenString, ':');
 	if (delimiter)
 	{
@@ -3461,7 +3521,7 @@ runCommand (CompScreen *s,
 	pos = screenString + strlen (screenString);
 
 	snprintf (pos, stringLen - (pos - screenString),
-		  "%s.%d", colon, s->screenNum);
+		  "%s.%d", colon, priv->screenNum);
 
 	putenv (screenString);
 
@@ -3470,150 +3530,71 @@ runCommand (CompScreen *s,
 }
 
 void
-moveScreenViewport (CompScreen *s,
-		    int	       tx,
-		    int	       ty,
-		    Bool       sync)
+CompScreen::moveViewport (int tx, int ty, bool sync)
 {
     CompWindow *w;
     int         wx, wy;
 
-    tx = s->x - tx;
-    tx = MOD (tx, s->hsize);
-    tx -= s->x;
+    tx = priv->x - tx;
+    tx = MOD (tx, priv->hsize);
+    tx -= priv->x;
 
-    ty = s->y - ty;
-    ty = MOD (ty, s->vsize);
-    ty -= s->y;
+    ty = priv->y - ty;
+    ty = MOD (ty, priv->vsize);
+    ty -= priv->y;
 
     if (!tx && !ty)
 	return;
 
-    s->x += tx;
-    s->y += ty;
+    priv->x += tx;
+    priv->y += ty;
 
-    tx *= -s->width;
-    ty *= -s->height;
+    tx *= -priv->width;
+    ty *= -priv->height;
 
-    for (w = s->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
     {
-	if (windowOnAllViewports (w))
+	if (w->onAllViewports ())
 	    continue;
 
-	getWindowMovementForOffset (w, tx, ty, &wx, &wy);
+	w->getMovementForOffset (tx, ty, &wx, &wy);
 
-	if (w->saveMask & CWX)
-	    w->saveWc.x += wx;
+	if (w->saveMask () & CWX)
+	    w->saveWc ().x += wx;
 
-	if (w->saveMask & CWY)
-	    w->saveWc.y += wy;
+	if (w->saveMask () & CWY)
+	    w->saveWc ().y += wy;
 
 	/* move */
-	moveWindow (w, wx, wy, sync, TRUE);
+	w->move (wx, wy, sync, true);
 
 	if (sync)
-	    syncWindowPosition (w);
+	    w->syncPosition ();
     }
 
     if (sync)
     {
-	setDesktopHints (s);
+	priv->setDesktopHints ();
 
-	setCurrentActiveWindowHistory (s, s->x, s->y);
+	setCurrentActiveWindowHistory (priv->x, priv->y);
 
-	w = findWindowAtDisplay (s->display, s->display->activeWindow);
+	w = priv->display->findWindow (priv->display->activeWindow ());
 	if (w)
 	{
 	    int x, y;
 
-	    defaultViewportForWindow (w, &x, &y);
+	    w->defaultViewport (&x, &y);
 
 	    /* add window to current history if it's default viewport is
 	       still the current one. */
-	    if (s->x == x && s->y == y)
-		addToCurrentActiveWindowHistory (s, w->id);
+	    if (priv->x == x && priv->y == y)
+		addToCurrentActiveWindowHistory (w->id ());
 	}
-    }
-}
-
-void
-moveWindowToViewportPosition (CompWindow *w,
-			      int	 x,
-			      int        y,
-			      Bool       sync)
-{
-    int	tx, vWidth = w->screen->width * w->screen->hsize;
-    int ty, vHeight = w->screen->height * w->screen->vsize;
-
-    if (w->screen->hsize != 1)
-    {
-	x += w->screen->x * w->screen->width;
-	x = MOD (x, vWidth);
-	x -= w->screen->x * w->screen->width;
-    }
-
-    if (w->screen->vsize != 1)
-    {
-	y += w->screen->y * w->screen->height;
-	y = MOD (y, vHeight);
-	y -= w->screen->y * w->screen->height;
-    }
-
-    tx = x - w->attrib.x;
-    ty = y - w->attrib.y;
-
-    if (tx || ty)
-    {
-	int m, wx, wy;
-
-	if (!w->managed)
-	    return;
-
-	if (w->type & (CompWindowTypeDesktopMask | CompWindowTypeDockMask))
-	    return;
-
-	if (w->state & CompWindowStateStickyMask)
-	    return;
-
-	wx = tx;
-	wy = ty;
-
-	if (w->screen->hsize != 1)
-	{
-	    m = w->attrib.x + tx;
-
-	    if (m - w->output.left < w->screen->width - vWidth)
-		wx = tx + vWidth;
-	    else if (m + w->width + w->output.right > vWidth)
-		wx = tx - vWidth;
-	}
-
-	if (w->screen->vsize != 1)
-	{
-	    m = w->attrib.y + ty;
-
-	    if (m - w->output.top < w->screen->height - vHeight)
-		wy = ty + vHeight;
-	    else if (m + w->height + w->output.bottom > vHeight)
-		wy = ty - vHeight;
-	}
-
-	if (w->saveMask & CWX)
-	    w->saveWc.x += wx;
-
-	if (w->saveMask & CWY)
-	    w->saveWc.y += wy;
-
-	moveWindow (w, wx, wy, sync, TRUE);
-
-	if (sync)
-	    syncWindowPosition (w);
     }
 }
 
 CompGroup *
-addGroupToScreen (CompScreen *s,
-		  Window     id)
+CompScreen::addGroup (Window id)
 {
     CompGroup *group;
 
@@ -3621,32 +3602,31 @@ addGroupToScreen (CompScreen *s,
     if (!group)
 	return NULL;
 
-    group->next   = s->groups;
+    group->next   = priv->groups;
     group->refCnt = 1;
     group->id     = id;
 
-    s->groups = group;
+    priv->groups = group;
 
     return group;
 }
 
 void
-removeGroupFromScreen (CompScreen *s,
-		       CompGroup  *group)
+CompScreen::removeGroup (CompGroup *group)
 {
     group->refCnt--;
     if (group->refCnt)
 	return;
 
-    if (group == s->groups)
+    if (group == priv->groups)
     {
-	s->groups = group->next;
+	priv->groups = group->next;
     }
     else
     {
 	CompGroup *g;
 
-	for (g = s->groups; g; g = g->next)
+	for (g = priv->groups; g; g = g->next)
 	{
 	    if (g->next == group)
 	    {
@@ -3660,12 +3640,11 @@ removeGroupFromScreen (CompScreen *s,
 }
 
 CompGroup *
-findGroupAtScreen (CompScreen *s,
-		   Window     id)
+CompScreen::findGroup (Window id)
 {
     CompGroup *g;
 
-    for (g = s->groups; g; g = g->next)
+    for (g = priv->groups; g; g = g->next)
 	if (g->id == id)
 	    return g;
 
@@ -3673,25 +3652,24 @@ findGroupAtScreen (CompScreen *s,
 }
 
 void
-applyStartupProperties (CompScreen *screen,
-			CompWindow *window)
+CompScreen::applyStartupProperties (CompWindow *window)
 {
     CompStartupSequence *s;
-    const char	        *startupId = window->startupId;
+    const char	        *startupId = window->startupId ();
 
     if (!startupId)
     {
 	CompWindow *leader;
 
-	leader = findWindowAtScreen (screen, window->clientLeader);
+	leader = findWindow (window->clientLeader ());
 	if (leader)
-	    startupId = leader->startupId;
+	    startupId = leader->startupId ();
 
 	if (!startupId)
 	    return;
     }
 
-    for (s = screen->startupSequences; s; s = s->next)
+    for (s = priv->startupSequences; s; s = s->next)
     {
 	const char *id;
 
@@ -3701,33 +3679,19 @@ applyStartupProperties (CompScreen *screen,
     }
 
     if (s)
-    {
-	int workspace;
-
-	window->initialViewportX = s->viewportX;
-	window->initialViewportY = s->viewportY;
-
-	workspace = sn_startup_sequence_get_workspace (s->sequence);
-	if (workspace >= 0)
-	    window->desktop = workspace;
-
-	window->initialTimestamp    =
-	    sn_startup_sequence_get_timestamp (s->sequence);
-	window->initialTimestampSet = TRUE;
-    }
+	window->applyStartupProperties (s);
 }
 
 void
-sendWindowActivationRequest (CompScreen *s,
-			     Window	id)
+CompScreen::sendWindowActivationRequest (Window id)
 {
     XEvent xev;
 
     xev.xclient.type    = ClientMessage;
-    xev.xclient.display = s->display->display;
+    xev.xclient.display = priv->display->dpy ();
     xev.xclient.format  = 32;
 
-    xev.xclient.message_type = s->display->winActiveAtom;
+    xev.xclient.message_type = priv->display->atoms ().winActive;
     xev.xclient.window	     = id;
 
     xev.xclient.data.l[0] = 2;
@@ -3736,31 +3700,29 @@ sendWindowActivationRequest (CompScreen *s,
     xev.xclient.data.l[3] = 0;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (s->display->display,
-		s->root,
+    XSendEvent (priv->display->dpy (),
+		priv->root,
 		FALSE,
 		SubstructureRedirectMask | SubstructureNotifyMask,
 		&xev);
 }
 
 void
-screenTexEnvMode (CompScreen *s,
-		  GLenum     mode)
+CompScreen::setTexEnvMode (GLenum mode)
 {
-    if (s->lighting)
+    if (priv->lighting)
 	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
     else
 	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
 }
 
 void
-screenLighting (CompScreen *s,
-		Bool       lighting)
+CompScreen::setLighting (bool lighting)
 {
-    if (s->lighting != lighting)
+    if (priv->lighting != lighting)
     {
-	if (!s->opt[COMP_SCREEN_OPTION_LIGHTING].value.b)
-	    lighting = FALSE;
+	if (!priv->opt[COMP_SCREEN_OPTION_LIGHTING].value.b)
+	    lighting = false;
 
 	if (lighting)
 	{
@@ -3773,204 +3735,190 @@ screenLighting (CompScreen *s,
 	    glDisable (GL_LIGHTING);
 	}
 
-	s->lighting = lighting;
+	priv->lighting = lighting;
 
-	screenTexEnvMode (s, GL_REPLACE);
+	setTexEnvMode (GL_REPLACE);
     }
 }
 
 void
-enableScreenEdge (CompScreen *s,
-		  int	     edge)
+CompScreen::enableEdge (int edge)
 {
-    s->screenEdge[edge].count++;
-    if (s->screenEdge[edge].count == 1)
-	XMapRaised (s->display->display, s->screenEdge[edge].id);
+    priv->screenEdge[edge].count++;
+    if (priv->screenEdge[edge].count == 1)
+	XMapRaised (priv->display->dpy (), priv->screenEdge[edge].id);
 }
 
 void
-disableScreenEdge (CompScreen *s,
-		   int	      edge)
+CompScreen::disableEdge (int edge)
 {
-    s->screenEdge[edge].count--;
-    if (s->screenEdge[edge].count == 0)
-	XUnmapWindow (s->display->display, s->screenEdge[edge].id);
+    priv->screenEdge[edge].count--;
+    if (priv->screenEdge[edge].count == 0)
+	XUnmapWindow (priv->display->dpy (), priv->screenEdge[edge].id);
 }
 
 Window
-getTopWindow (CompScreen *s)
+CompScreen::getTopWindow ()
 {
     CompWindow *w;
 
     /* return first window that has not been destroyed */
-    for (w = s->reverseWindows; w; w = w->prev)
+    for (w = priv->reverseWindows; w; w = w->prev)
     {
-	if (w->id > 1)
-	    return w->id;
+	if (w->id () > 1)
+	    return w->id ();
     }
 
     return None;
 }
 
 void
-makeScreenCurrent (CompScreen *s)
+CompScreen::makeCurrent ()
 {
-    if (currentRoot != s->root)
+    if (currentRoot != priv->root)
     {
-	glXMakeCurrent (s->display->display, s->output, s->ctx);
-	currentRoot = s->root;
+	glXMakeCurrent (priv->display->dpy (), priv->output, priv->ctx);
+	currentRoot = priv->root;
     }
 
-    s->pendingCommands = TRUE;
+    priv->pendingCommands = true;
 }
 
 void
-finishScreenDrawing (CompScreen *s)
+CompScreen::finishDrawing ()
 {
-    if (s->pendingCommands)
+    if (priv->pendingCommands)
     {
-	makeScreenCurrent (s);
+	makeCurrent ();
 	glFinish ();
 
-	s->pendingCommands = FALSE;
+	priv->pendingCommands = true;
     }
 }
 
 int
-outputDeviceForPoint (CompScreen *s,
-		      int	 x,
-		      int	 y)
+CompScreen::outputDeviceForPoint (int x, int y)
 {
-    return outputDeviceForGeometry (s, x, y, 1, 1, 0);
+    return outputDeviceForGeometry (x, y, 1, 1, 0);
 }
 
 void
-getCurrentOutputExtents (CompScreen *s,
-			 int	    *x1,
-			 int	    *y1,
-			 int	    *x2,
-			 int	    *y2)
+CompScreen::getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2)
 {
     if (x1)
-	*x1 = s->outputDev[s->currentOutputDev].region.extents.x1;
+	*x1 = priv->outputDev[priv->currentOutputDev].region.extents.x1;
 
     if (y1)
-	*y1 = s->outputDev[s->currentOutputDev].region.extents.y1;
+	*y1 = priv->outputDev[priv->currentOutputDev].region.extents.y1;
 
     if (x2)
-	*x2 = s->outputDev[s->currentOutputDev].region.extents.x2;
+	*x2 = priv->outputDev[priv->currentOutputDev].region.extents.x2;
 
     if (y2)
-	*y2 = s->outputDev[s->currentOutputDev].region.extents.y2;
+	*y2 = priv->outputDev[priv->currentOutputDev].region.extents.y2;
 }
 
 void
-setNumberOfDesktops (CompScreen   *s,
-		     unsigned int nDesktop)
+CompScreen::setNumberOfDesktops (unsigned int nDesktop)
 {
     CompWindow *w;
 
     if (nDesktop < 1 || nDesktop >= 0xffffffff)
 	return;
 
-    if (nDesktop == s->nDesktop)
+    if (nDesktop == priv->nDesktop)
 	return;
 
-    if (s->currentDesktop >= nDesktop)
-	s->currentDesktop = nDesktop - 1;
+    if (priv->currentDesktop >= nDesktop)
+	priv->currentDesktop = nDesktop - 1;
 
-    for (w = s->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
     {
-	if (w->desktop == 0xffffffff)
+	if (w->desktop () == 0xffffffff)
 	    continue;
 
-	if (w->desktop >= nDesktop)
-	    setDesktopForWindow (w, nDesktop - 1);
+	if (w->desktop () >= nDesktop)
+	    w->setDesktop (nDesktop - 1);
     }
 
-    s->nDesktop = nDesktop;
+    priv->nDesktop = nDesktop;
 
-    setDesktopHints (s);
+    priv->setDesktopHints ();
 }
 
 void
-setCurrentDesktop (CompScreen   *s,
-		   unsigned int desktop)
+CompScreen::setCurrentDesktop (unsigned int desktop)
 {
     unsigned long data;
     CompWindow    *w;
 
-    if (desktop >= s->nDesktop)
+    if (desktop >= priv->nDesktop)
 	return;
 
-    if (desktop == s->currentDesktop)
+    if (desktop == priv->currentDesktop)
 	return;
 
-    s->currentDesktop = desktop;
+    priv->currentDesktop = desktop;
 
-    for (w = s->windows; w; w = w->next)
+    for (w = priv->windows; w; w = w->next)
     {
-	if (w->desktop == 0xffffffff)
+	if (w->desktop () == 0xffffffff)
 	    continue;
 
-	if (w->desktop == desktop)
-	    showWindow (w);
+	if (w->desktop () == desktop)
+	    w->show ();
 	else
-	    hideWindow (w);
+	    w->hide ();
     }
 
     data = desktop;
 
-    XChangeProperty (s->display->display, s->root,
-		     s->display->currentDesktopAtom,
+    XChangeProperty (priv->display->dpy (), priv->root,
+		     priv->display->atoms ().currentDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) &data, 1);
 }
 
 void
-getWorkareaForOutput (CompScreen *s,
-		      int	 output,
-		      XRectangle *area)
+CompScreen::getWorkareaForOutput (int output, XRectangle *area)
 {
-    *area = s->outputDev[output].workArea;
+    *area = priv->outputDev[output].workArea;
 }
 
 void
-setDefaultViewport (CompScreen *s)
+CompScreen::setDefaultViewport ()
 {
-    s->lastViewport.x	   = s->outputDev->region.extents.x1;
-    s->lastViewport.y	   = s->height - s->outputDev->region.extents.y2;
-    s->lastViewport.width  = s->outputDev->width;
-    s->lastViewport.height = s->outputDev->height;
+    priv->lastViewport.x      = priv->outputDev->region.extents.x1;
+    priv->lastViewport.y      = priv->height - priv->outputDev->region.extents.y2;
+    priv->lastViewport.width  = priv->outputDev->width;
+    priv->lastViewport.height = priv->outputDev->height;
 
-    glViewport (s->lastViewport.x,
-		s->lastViewport.y,
-		s->lastViewport.width,
-		s->lastViewport.height);
+    glViewport (priv->lastViewport.x,
+		priv->lastViewport.y,
+		priv->lastViewport.width,
+		priv->lastViewport.height);
 }
 
 void
-outputChangeNotify (CompScreen *s)
-{
-}
+CompScreen::outputChangeNotify ()
+    WRAPABLE_HND_FUNC(outputChangeNotify)
 
 void
-clearScreenOutput (CompScreen	*s,
-		   CompOutput	*output,
-		   unsigned int mask)
+CompScreen::clearOutput (CompOutput   *output,
+			 unsigned int mask)
 {
     BoxPtr pBox = &output->region.extents;
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != s->width ||
-	pBox->y2 != s->height)
+	pBox->x2 != priv->width ||
+	pBox->y2 != priv->height)
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
 	glScissor (pBox->x1,
-		   s->height - pBox->y2,
+		   priv->height - pBox->y2,
 		   pBox->x2 - pBox->x1,
 		   pBox->y2 - pBox->y1);
 	glClear (mask);
@@ -3990,14 +3938,13 @@ clearScreenOutput (CompScreen	*s,
    located, except for when the window is visible in the current viewport as
    the current viewport is then always returned. */
 void
-viewportForGeometry (CompScreen *s,
-		     int	x,
-		     int	y,
-		     int	width,
-		     int	height,
-		     int	borderWidth,
-		     int	*viewportX,
-		     int	*viewportY)
+CompScreen::viewportForGeometry (int x,
+				 int y,
+				 int width,
+				 int height,
+				 int borderWidth,
+				 int *viewportX,
+				 int *viewportY)
 {
     int	centerX;
     int	centerY;
@@ -4005,14 +3952,14 @@ viewportForGeometry (CompScreen *s,
     width  += borderWidth * 2;
     height += borderWidth * 2;
 
-    if ((x < s->width  && x + width  > 0) &&
-	(y < s->height && y + height > 0))
+    if ((x < priv->width  && x + width  > 0) &&
+	(y < priv->height && y + height > 0))
     {
 	if (viewportX)
-	    *viewportX = s->x;
+	    *viewportX = priv->x;
 
 	if (viewportY)
-	    *viewportY = s->y;
+	    *viewportY = priv->y;
 
 	return;
     }
@@ -4021,18 +3968,18 @@ viewportForGeometry (CompScreen *s,
     {
 	centerX = x + (width >> 1);
 	if (centerX < 0)
-	    *viewportX = s->x + ((centerX / s->width) - 1) % s->hsize;
+	    *viewportX = priv->x + ((centerX / priv->width) - 1) % priv->hsize;
 	else
-	    *viewportX = s->x + (centerX / s->width) % s->hsize;
+	    *viewportX = priv->x + (centerX / priv->width) % priv->hsize;
     }
 
     if (viewportY)
     {
 	centerY = y + (height >> 1);
 	if (centerY < 0)
-	    *viewportY = s->y + ((centerY / s->height) - 1) % s->vsize;
+	    *viewportY = priv->y + ((centerY / priv->height) - 1) % priv->vsize;
 	else
-	    *viewportY = s->y + (centerY / s->height) % s->vsize;
+	    *viewportY = priv->y + (centerY / priv->height) % priv->vsize;
     }
 }
 
@@ -4058,22 +4005,21 @@ rectangleOverlapArea (BOX *rect1,
 }
 
 int
-outputDeviceForGeometry (CompScreen *s,
-			 int	    x,
-			 int	    y,
-			 int	    width,
-			 int	    height,
-			 int	    borderWidth)
+CompScreen::outputDeviceForGeometry (int x,
+				     int y,
+				     int width,
+				     int height,
+				     int borderWidth)
 {
-    int overlapAreas[s->nOutputDev];
+    int overlapAreas[priv->nOutputDev];
     int i, highest, seen, highestScore;
     int strategy;
     BOX geomRect;
 
-    if (s->nOutputDev == 1)
+    if (priv->nOutputDev == 1)
 	return 0;
 
-    strategy = s->opt[COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS].value.i;
+    strategy = priv->opt[COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS].value.i;
 
     if (strategy == OUTPUT_OVERLAP_MODE_SMART)
     {
@@ -4082,12 +4028,12 @@ outputDeviceForGeometry (CompScreen *s,
 	geomRect.x2 = width + 2 * borderWidth;
 	geomRect.y2 = height + 2 * borderWidth;
 
-	geomRect.x1 = x % s->width;
+	geomRect.x1 = x % priv->width;
 	if ((geomRect.x1 + geomRect.x2 / 2) < 0)
-	    geomRect.x1 += s->width;
-	geomRect.y1 = y % s->height;
+	    geomRect.x1 += priv->width;
+	geomRect.y1 = y % priv->height;
 	if ((geomRect.y1 + geomRect.y2 / 2) < 0)
-	    geomRect.y1 += s->height;
+	    geomRect.y1 += priv->height;
 
 	geomRect.x2 += geomRect.x1;
 	geomRect.y2 += geomRect.y1;
@@ -4096,24 +4042,25 @@ outputDeviceForGeometry (CompScreen *s,
     {
 	/* for biggest/smallest modes, only use the window center to determine
 	   the correct output device */
-	geomRect.x1 = (x + (width / 2) + borderWidth) % s->width;
+	geomRect.x1 = (x + (width / 2) + borderWidth) % priv->width;
 	if (geomRect.x1 < 0)
-	    geomRect.x1 += s->width;
-	geomRect.y1 = (y + (height / 2) + borderWidth) % s->height;
+	    geomRect.x1 += priv->width;
+	geomRect.y1 = (y + (height / 2) + borderWidth) % priv->height;
 	if (geomRect.y1 < 0)
-	    geomRect.y1 += s->height;
+	    geomRect.y1 += priv->height;
 
 	geomRect.x2 = geomRect.x1 + 1;
 	geomRect.y2 = geomRect.y1 + 1;
     }
 
     /* get amount of overlap on all output devices */
-    for (i = 0; i < s->nOutputDev; i++)
-	overlapAreas[i] = rectangleOverlapArea (&s->outputDev[i].region.extents,
-						&geomRect);
+    for (i = 0; i < priv->nOutputDev; i++)
+	overlapAreas[i] =
+		rectangleOverlapArea (&priv->outputDev[i].region.extents,
+				      &geomRect);
 
     /* find output with largest overlap */
-    for (i = 0, highest = 0, highestScore = 0; i < s->nOutputDev; i++)
+    for (i = 0, highest = 0, highestScore = 0; i < priv->nOutputDev; i++)
 	if (overlapAreas[i] > highestScore)
 	{
 	    highest = i;
@@ -4121,7 +4068,7 @@ outputDeviceForGeometry (CompScreen *s,
 	}
 
     /* look if the highest score is unique */
-    for (i = 0, seen = 0; i < s->nOutputDev; i++)
+    for (i = 0, seen = 0; i < priv->nOutputDev; i++)
 	if (overlapAreas[i] == highestScore)
 	    seen++;
 
@@ -4138,10 +4085,10 @@ outputDeviceForGeometry (CompScreen *s,
 	else
 	    bestOutputSize = UINT_MAX;
 
-	for (i = 0, highest = 0; i < s->nOutputDev; i++)
+	for (i = 0, highest = 0; i < priv->nOutputDev; i++)
 	    if (overlapAreas[i] == highestScore)
 	    {
-		BOX  *box = &s->outputDev[i].region.extents;
+		BOX  *box = &priv->outputDev[i].region.extents;
 		Bool bestFit;
 
 		currentSize = (box->x2 - box->x1) * (box->y2 - box->y1);
@@ -4158,62 +4105,61 @@ outputDeviceForGeometry (CompScreen *s,
 		}
 	    }
     }
-    
+
     return highest;
 }
 
-Bool
-updateDefaultIcon (CompScreen *screen)
+bool
+CompScreen::updateDefaultIcon ()
 {
     CompIcon *icon;
-    char     *file = screen->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value.s;
+    char     *file = priv->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value.s;
     void     *data;
     int      width, height;
 
-    if (screen->defaultIcon)
+    if (priv->defaultIcon)
     {
-	finiTexture (screen, &screen->defaultIcon->texture);
-	free (screen->defaultIcon);
-	screen->defaultIcon = NULL;
+	finiTexture (this, &priv->defaultIcon->texture);
+	free (priv->defaultIcon);
+	priv->defaultIcon = NULL;
     }
 
-    if (!readImageFromFile (screen->display, file, &width, &height, &data))
-	return FALSE;
+    if (!priv->display->readImageFromFile (file, &width, &height, &data))
+	return false;
 
     icon = (CompIcon *) malloc (sizeof (CompIcon) + width * height * sizeof (CARD32));
     if (!icon)
     {
 	free (data);
-	return FALSE;
+	return false;
     }
 
-    initTexture (screen, &icon->texture);
+    initTexture (this, &icon->texture);
 
     icon->width  = width;
     icon->height = height;
 
     memcpy (icon + 1, data, + width * height * sizeof (CARD32));
 
-    screen->defaultIcon = icon;
+    priv->defaultIcon = icon;
 
     free (data);
 
-    return TRUE;
+    return true;
 }
 
 CompCursor *
-findCursorAtScreen (CompScreen *screen)
+CompScreen::findCursor ()
 {
-    return screen->cursors;
+    return priv->cursors;
 }
 
 CompCursorImage *
-findCursorImageAtScreen (CompScreen    *screen,
-			 unsigned long serial)
+CompScreen::findCursorImage (unsigned long serial)
 {
     CompCursorImage *image;
 
-    for (image = screen->cursorImages; image; image = image->next)
+    for (image = priv->cursorImages; image; image = image->next)
 	if (image->serial == serial)
 	    return image;
 
@@ -4221,39 +4167,36 @@ findCursorImageAtScreen (CompScreen    *screen,
 }
 
 void
-setCurrentActiveWindowHistory (CompScreen *s,
-			       int	  x,
-			       int	  y)
+CompScreen::setCurrentActiveWindowHistory (int x, int y)
 {
     int	i, min = 0;
 
     for (i = 0; i < ACTIVE_WINDOW_HISTORY_NUM; i++)
     {
-	if (s->history[i].x == x && s->history[i].y == y)
+	if (priv->history[i].x == x && priv->history[i].y == y)
 	{
-	    s->currentHistory = i;
+	    priv->currentHistory = i;
 	    return;
 	}
     }
 
     for (i = 1; i < ACTIVE_WINDOW_HISTORY_NUM; i++)
-	if (s->history[i].activeNum < s->history[min].activeNum)
+	if (priv->history[i].activeNum < priv->history[min].activeNum)
 	    min = i;
 
-    s->currentHistory = min;
+    priv->currentHistory = min;
 
-    s->history[min].activeNum = s->activeNum;
-    s->history[min].x	      = x;
-    s->history[min].y	      = y;
+    priv->history[min].activeNum = priv->activeNum;
+    priv->history[min].x         = x;
+    priv->history[min].y         = y;
 
-    memset (s->history[min].id, 0, sizeof (s->history[min].id));
+    memset (priv->history[min].id, 0, sizeof (priv->history[min].id));
 }
 
 void
-addToCurrentActiveWindowHistory (CompScreen *s,
-				 Window	    id)
+CompScreen::addToCurrentActiveWindowHistory (Window id)
 {
-    CompActiveWindowHistory *history = &s->history[s->currentHistory];
+    CompActiveWindowHistory *history = &priv->history[priv->currentHistory];
     Window		    tmp, next = id;
     int			    i;
 
@@ -4269,14 +4212,808 @@ addToCurrentActiveWindowHistory (CompScreen *s,
 	    break;
     }
 
-    history->activeNum = s->activeNum;
+    history->activeNum = priv->activeNum;
 }
 
 void
-setWindowPaintOffset (CompScreen *s,
-		      int        x,
-		      int        y)
+CompScreen::setWindowPaintOffset (int x, int y)
 {
-    s->windowOffsetX = x;
-    s->windowOffsetY = y;
+    priv->windowOffsetX = x;
+    priv->windowOffsetY = y;
 }
+
+
+ScreenInterface::ScreenInterface ()
+{
+    WRAPABLE_INIT_FUNC(preparePaint);
+    WRAPABLE_INIT_FUNC(donePaint);
+    WRAPABLE_INIT_FUNC(paint);
+    WRAPABLE_INIT_FUNC(paintOutput);
+    WRAPABLE_INIT_FUNC(paintTransformedOutput);
+    WRAPABLE_INIT_FUNC(enableOutputClipping);
+    WRAPABLE_INIT_FUNC(disableOutputClipping);
+    WRAPABLE_INIT_FUNC(applyTransform);
+
+    WRAPABLE_INIT_FUNC(enterShowDesktopMode);
+    WRAPABLE_INIT_FUNC(leaveShowDesktopMode);
+
+    WRAPABLE_INIT_FUNC(outputChangeNotify);
+
+    WRAPABLE_INIT_FUNC(initWindowWalker);
+
+    WRAPABLE_INIT_FUNC(paintCursor);
+    WRAPABLE_INIT_FUNC(damageCursorRect);
+}
+
+void
+ScreenInterface::preparePaint (int msSinceLastPaint)
+    WRAPABLE_DEF_FUNC(preparePaint, msSinceLastPaint)
+
+void
+ScreenInterface::donePaint ()
+    WRAPABLE_DEF_FUNC(donePaint)
+
+void
+ScreenInterface::paint (CompOutput   *outputs,
+			int          numOutput,
+			unsigned int mask)
+    WRAPABLE_DEF_FUNC(paint, outputs, numOutput, mask)
+
+bool
+ScreenInterface::paintOutput (const ScreenPaintAttrib *sAttrib,
+			      const CompTransform     *transform,
+			      Region	              region,
+			      CompOutput              *output,
+			      unsigned int            mask)
+    WRAPABLE_DEF_FUNC_RETURN(paintOutput, sAttrib, transform, region,
+			     output, mask)
+
+void
+ScreenInterface::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
+					 const CompTransform     *transform,
+					 Region                  region,
+					 CompOutput              *output,
+					 unsigned int            mask)
+    WRAPABLE_DEF_FUNC(paintTransformedOutput, sAttrib, transform, region,
+		      output, mask)
+
+void
+ScreenInterface::applyTransform (const ScreenPaintAttrib *sAttrib,
+				 CompOutput              *output,
+				 CompTransform           *transform)
+    WRAPABLE_DEF_FUNC(applyTransform, sAttrib, output, transform)
+
+void
+ScreenInterface::enableOutputClipping (const CompTransform *transform,
+				       Region              region,
+				       CompOutput          *output)
+    WRAPABLE_DEF_FUNC(enableOutputClipping, transform, region, output)
+
+void
+ScreenInterface::disableOutputClipping ()
+    WRAPABLE_DEF_FUNC(disableOutputClipping)
+
+
+void
+ScreenInterface::paintCursor (CompCursor	  *cursor,
+			      const CompTransform *transform,
+			      Region		  region,
+			      unsigned int	  mask)
+    WRAPABLE_DEF_FUNC(paintCursor, cursor, transform, region, mask)
+
+void
+ScreenInterface::enterShowDesktopMode ()
+    WRAPABLE_DEF_FUNC(enterShowDesktopMode)
+
+void
+ScreenInterface::leaveShowDesktopMode (CompWindow *window)
+    WRAPABLE_DEF_FUNC(leaveShowDesktopMode, window)
+
+void
+ScreenInterface::outputChangeNotify ()
+    WRAPABLE_DEF_FUNC(outputChangeNotify)
+
+void
+ScreenInterface::initWindowWalker (CompWalker *walker)
+    WRAPABLE_DEF_FUNC(initWindowWalker, walker)
+
+bool
+ScreenInterface::damageCursorRect (CompCursor *c,
+				   bool       initial,
+				   BoxPtr     rect)
+    WRAPABLE_DEF_FUNC_RETURN(damageCursorRect, c, initial, rect)
+
+CompDisplay *
+CompScreen::display ()
+{
+    return priv->display;
+}
+
+Window
+CompScreen::root ()
+{
+    return priv->root;
+}
+
+CompOption *
+CompScreen::getOption (const char *name)
+{
+    int        index;
+    CompOption *o = compFindOption (priv->opt, NUM_OPTIONS (this),
+				    name, &index);
+    return o;
+}
+
+int
+CompScreen::maxGrab ()
+{
+    return priv->maxGrab;
+}
+
+unsigned int
+CompScreen::showingDesktopMask ()
+{
+    return priv->showingDesktopMask;
+}
+
+bool
+paintTimeout (void *closure)
+{
+    CompScreen *s = (CompScreen *) closure;
+    return s->handlePaintTimeout ();
+}
+
+
+int
+CompScreen::getTimeToNextRedraw (struct timeval *tv)
+{
+    int diff, next;
+
+    diff = TIMEVALDIFF (tv, &priv->lastRedraw);
+
+    /* handle clock rollback */
+    if (diff < 0)
+	diff = 0;
+
+    if (priv->idle || (getVideoSync &&
+	priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value.b))
+    {
+	if (priv->timeMult > 1)
+	{
+	    priv->frameStatus = -1;
+	    priv->redrawTime = priv->optimalRedrawTime;
+	    priv->timeMult--;
+	}
+    }
+    else
+    {
+	if (diff > priv->redrawTime)
+	{
+	    if (priv->frameStatus > 0)
+		priv->frameStatus = 0;
+
+	    next = priv->optimalRedrawTime * (priv->timeMult + 1);
+	    if (diff > next)
+	    {
+		priv->frameStatus--;
+		if (priv->frameStatus < -1)
+		{
+		    priv->timeMult++;
+		    priv->redrawTime = diff = next;
+		}
+	    }
+	}
+	else if (diff < priv->redrawTime)
+	{
+	    if (priv->frameStatus < 0)
+		priv->frameStatus = 0;
+
+	    if (priv->timeMult > 1)
+	    {
+		next = priv->optimalRedrawTime * (priv->timeMult - 1);
+		if (diff < next)
+		{
+		    priv->frameStatus++;
+		    if (priv->frameStatus > 4)
+		    {
+			priv->timeMult--;
+			priv->redrawTime = next;
+		    }
+		}
+	    }
+	}
+    }
+    if (diff >= priv->redrawTime)
+	return 1;
+
+    return priv->redrawTime - diff;
+}
+
+void
+CompScreen::waitForVideoSync ()
+{
+    unsigned int sync;
+
+    if (!priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value.b)
+	return;
+
+    if (getVideoSync)
+    {
+	glFlush ();
+
+	(*getVideoSync) (&sync);
+	(*waitVideoSync) (2, (sync + 1) % 2, &sync);
+    }
+}
+
+static const CompTransform identity = {
+    {
+	1.0, 0.0, 0.0, 0.0,
+	0.0, 1.0, 0.0, 0.0,
+	0.0, 0.0, 1.0, 0.0,
+	0.0, 0.0, 0.0, 1.0
+    }
+};
+
+void
+CompScreen::paint (CompOutput   *outputs,
+		   int          numOutput,
+		   unsigned int mask)
+{
+    WRAPABLE_HND_FUNC(paint, outputs, numOutput, mask)
+
+    XRectangle r;
+    int	       i;
+
+    for (i = 0; i < numOutput; i++)
+    {
+	targetScreen = this;
+	targetOutput = &outputs[i];
+
+	r.x	 = outputs[i].region.extents.x1;
+	r.y	 = priv->height - outputs[i].region.extents.y2;
+	r.width  = outputs[i].width;
+	r.height = outputs[i].height;
+
+	if (priv->lastViewport.x	   != r.x     ||
+	    priv->lastViewport.y	   != r.y     ||
+	    priv->lastViewport.width  != r.width ||
+	    priv->lastViewport.height != r.height)
+	{
+	    glViewport (r.x, r.y, r.width, r.height);
+	    priv->lastViewport = r;
+	}
+
+	if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
+	{
+	    paintOutput (&defaultScreenPaintAttrib,
+			 &identity,
+			 &outputs[i].region, &outputs[i],
+			 PAINT_SCREEN_REGION_MASK |
+			 PAINT_SCREEN_FULL_MASK);
+	}
+	else if (mask & COMP_SCREEN_DAMAGE_REGION_MASK)
+	{
+	    XIntersectRegion (priv->display->mTmpRegion,
+			      &outputs[i].region,
+			      priv->display->mOutputRegion);
+
+	    if (!paintOutput (&defaultScreenPaintAttrib,
+			      &identity,
+			      priv->display->mOutputRegion, &outputs[i],
+			      PAINT_SCREEN_REGION_MASK))
+	    {
+		paintOutput (&defaultScreenPaintAttrib,
+			     &identity,
+			     &outputs[i].region, &outputs[i],
+			     PAINT_SCREEN_FULL_MASK);
+
+		XUnionRegion (priv->display->mTmpRegion,
+			      &outputs[i].region,
+			      priv->display->mTmpRegion);
+
+	    }
+	}
+    }
+}
+
+void
+CompScreen::warpPointer (int dx, int dy)
+{
+    CompDisplay *display = priv->display;
+    XEvent      event;
+
+    pointerX += dx;
+    pointerY += dy;
+
+    if (pointerX >= priv->width)
+	pointerX = priv->width - 1;
+    else if (pointerX < 0)
+	pointerX = 0;
+
+    if (pointerY >= priv->height)
+	pointerY = priv->height - 1;
+    else if (pointerY < 0)
+	pointerY = 0;
+
+    XWarpPointer (display->dpy (),
+		  None, priv->root,
+		  0, 0, 0, 0,
+		  pointerX, pointerY);
+
+    XSync (display->dpy (), FALSE);
+
+    while (XCheckMaskEvent (display->dpy (),
+			    LeaveWindowMask |
+			    EnterWindowMask |
+			    PointerMotionMask,
+			    &event));
+
+    if (!inHandleEvent)
+    {
+	lastPointerX = pointerX;
+	lastPointerY = pointerY;
+    }
+}
+
+CompWindow *
+CompScreen::windows ()
+{
+    return priv->windows;
+}
+
+CompWindow *
+CompScreen::reverseWindows ()
+{
+    return priv->reverseWindows;
+}
+
+Time
+CompScreen::getCurrentTime ()
+{
+    XEvent event;
+
+    XChangeProperty (priv->display->dpy (), priv->grabWindow,
+		     XA_PRIMARY, XA_STRING, 8,
+		     PropModeAppend, NULL, 0);
+    XWindowEvent (priv->display->dpy (), priv->grabWindow,
+		  PropertyChangeMask,
+		  &event);
+
+    return event.xproperty.time;
+}
+
+Atom
+CompScreen::selectionAtom ()
+{
+    return priv->wmSnAtom;
+}
+
+Window
+CompScreen::selectionWindow ()
+{
+    return priv->wmSnSelectionWindow;
+}
+
+Time
+CompScreen::selectionTimestamp ()
+{
+    return priv->wmSnTimestamp;
+}
+
+CompCursor *
+CompScreen::cursors ()
+{
+    return priv->cursors;
+}
+
+int
+CompScreen::screenNum ()
+{
+    return priv->screenNum;
+}
+
+bool
+PrivateScreen::paintTimeout (void *closure)
+{
+    CompScreen *s = (CompScreen *) closure;
+    return s->handlePaintTimeout ();
+}
+
+bool
+CompScreen::handlePaintTimeout ()
+{
+    int         timeDiff;
+    struct      timeval tv;
+    CompDisplay *d = priv->display;
+
+    gettimeofday (&tv, 0);
+
+    if (priv->damageMask)
+    {
+	finishDrawing ();
+ 
+	targetScreen = this;
+
+	timeDiff = TIMEVALDIFF (&tv, &priv->lastRedraw);
+
+	/* handle clock rollback */
+	if (timeDiff < 0)
+	    timeDiff = 0;
+
+	makeCurrent ();
+
+	if (priv->slowAnimations)
+	{
+	    preparePaint (priv->idle ? 2 : (timeDiff * 2) / priv->redrawTime);
+	}
+	else
+	    preparePaint (priv->idle ? priv->redrawTime : timeDiff);
+
+	/* substract top most overlay window region */
+	if (priv->overlayWindowCount)
+	{
+	    for (CompWindow *w = priv->reverseWindows; w; w = w->prev)
+	    {
+		if (w->destroyed () || w->invisible ())
+		    continue;
+
+		if (!w->redirected ())
+		    XSubtractRegion (priv->damage, w->region (),
+				     priv->damage);
+
+		break;
+	    }
+
+	    if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
+	    {
+		priv->damageMask &= ~COMP_SCREEN_DAMAGE_ALL_MASK;
+		priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
+	    }
+	}
+
+	if (priv->damageMask & COMP_SCREEN_DAMAGE_REGION_MASK)
+	{
+	    XIntersectRegion (priv->damage, &priv->region,
+			      d->mTmpRegion);
+
+	    if (d->mTmpRegion->numRects  == 1	  &&
+		d->mTmpRegion->rects->x1 == 0	  &&
+		d->mTmpRegion->rects->y1 == 0	  &&
+		d->mTmpRegion->rects->x2 == priv->width &&
+		d->mTmpRegion->rects->y2 == priv->height)
+		damageScreen ();
+	}
+
+	EMPTY_REGION (priv->damage);
+
+	int mask = priv->damageMask;
+	priv->damageMask = 0;
+
+	if (priv->clearBuffers)
+	{
+	    if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
+		glClear (GL_COLOR_BUFFER_BIT);
+	}
+
+	if (priv->opt[COMP_SCREEN_OPTION_FORCE_INDEPENDENT].value.b
+	    || !priv->hasOverlappingOutputs)
+	    paint (priv->outputDev, priv->nOutputDev, mask);
+	else
+	    paint (&priv->fullscreenOutput, 1, mask);
+
+	targetScreen = NULL;
+	targetOutput = &priv->outputDev[0];
+
+	waitForVideoSync ();
+
+	if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
+	{
+	    glXSwapBuffers (d->dpy (), priv->output);
+	}
+	else
+	{
+	    BoxPtr pBox;
+	    int    nBox, y;
+
+	    pBox = d->mTmpRegion->rects;
+	    nBox = d->mTmpRegion->numRects;
+
+	    if (copySubBuffer)
+	    {
+		while (nBox--)
+		{
+		    y = priv->height - pBox->y2;
+
+		    (*copySubBuffer) (d->dpy (),
+				      priv->output,
+				      pBox->x1, y,
+				      pBox->x2 - pBox->x1,
+				      pBox->y2 - pBox->y1);
+
+		    pBox++;
+		}
+	    }
+	    else
+	    {
+		glEnable (GL_SCISSOR_TEST);
+		glDrawBuffer (GL_FRONT);
+
+		while (nBox--)
+		{
+		    y = priv->height - pBox->y2;
+
+		    glBitmap (0, 0, 0, 0,
+			      pBox->x1 - priv->rasterX,
+			      y - priv->rasterY,
+			      NULL);
+
+		    priv->rasterX = pBox->x1;
+		    priv->rasterY = y;
+
+		    glScissor (pBox->x1, y,
+			       pBox->x2 - pBox->x1,
+			       pBox->y2 - pBox->y1);
+
+		    glCopyPixels (pBox->x1, y,
+				  pBox->x2 - pBox->x1,
+				  pBox->y2 - pBox->y1,
+				  GL_COLOR);
+
+		    pBox++;
+		}
+
+		glDrawBuffer (GL_BACK);
+		glDisable (GL_SCISSOR_TEST);
+		glFlush ();
+	    }
+	}
+
+	priv->lastRedraw = tv;
+
+	donePaint ();
+
+	/* remove destroyed windows */
+	while (priv->pendingDestroys)
+	{
+	    CompWindow *w;
+
+	    for (w = priv->windows; w; w = w->next)
+	    {
+		if (w->destroyed ())
+		{
+		    w->addDamage ();
+		    delete w;
+		    break;
+		}
+	    }
+
+	    priv->pendingDestroys--;
+	}
+
+	priv->idle = false;
+    }
+    else
+    {
+	priv->idle = true;
+    }
+
+    gettimeofday (&tv, 0);
+
+    core->addTimeout (getTimeToNextRedraw (&tv), MAXSHORT,
+		      PrivateScreen::paintTimeout, this);
+    return false;
+}
+
+int
+CompScreen::maxTextureSize ()
+{
+    return priv->maxTextureSize;
+}
+
+unsigned int
+CompScreen::damageMask ()
+{
+    return priv->damageMask;
+}
+
+int
+CompScreen::x ()
+{
+    return priv->x;
+}
+
+int
+CompScreen::y ()
+{
+    return priv->y;
+}
+
+int
+CompScreen::vsize ()
+{
+    return priv->vsize;
+}
+
+int
+CompScreen::hsize ()
+{
+    return priv->hsize;
+}
+
+int
+CompScreen::width ()
+{
+    return priv->width;
+}
+
+int
+CompScreen::height ()
+{
+    return priv->height;
+}
+
+unsigned int &
+CompScreen::pendingDestroys ()
+{
+    return priv->pendingDestroys;
+}
+
+unsigned int &
+CompScreen::mapNum ()
+{
+    return priv->mapNum;
+}
+
+int &
+CompScreen::desktopWindowCount ()
+{
+    return priv->desktopWindowCount;
+}
+
+int &
+CompScreen::overlayWindowCount ()
+{
+    return priv->overlayWindowCount;
+}
+
+CompOutput *
+CompScreen::outputDev ()
+{
+    return priv->outputDev;
+}
+
+int
+CompScreen::nOutputDev ()
+{
+    return priv->nOutputDev;
+}
+
+XRectangle
+CompScreen::workArea ()
+{
+    return priv->workArea;
+}
+
+
+unsigned int
+CompScreen::currentDesktop ()
+{
+    return priv->currentDesktop;
+}
+
+unsigned int
+CompScreen::nDesktop ()
+{
+    return priv->nDesktop;
+}
+
+CompActiveWindowHistory *
+CompScreen::currentHistory ()
+{
+    return &priv->history[priv->currentHistory];
+}
+
+CompScreenEdge &
+CompScreen::screenEdge (int edge)
+{
+    return priv->screenEdge[edge];
+}
+
+Window
+CompScreen::overlay ()
+{
+    return priv->overlay;
+}
+
+unsigned int &
+CompScreen::activeNum ()
+{
+    return priv->activeNum;
+}
+
+void
+CompScreen::updateBackground ()
+{
+    finiTexture (this, &priv->backgroundTexture);
+    initTexture (this, &priv->backgroundTexture);
+
+    if (priv->backgroundLoaded)
+    {
+	priv->backgroundLoaded = false;
+	damageScreen ();
+    }
+}
+
+bool
+CompScreen::textureNonPowerOfTwo ()
+{
+    return priv->textureNonPowerOfTwo;
+}
+
+bool
+CompScreen::textureCompression ()
+{
+    return priv->textureCompression;
+}
+
+bool
+CompScreen::canDoSaturated ()
+{
+    return priv->canDoSaturated;
+}
+
+bool
+CompScreen::canDoSlightlySaturated ()
+{
+    return priv->canDoSlightlySaturated;
+}
+
+bool
+CompScreen::lighting ()
+{
+    return priv->lighting;
+}
+
+int
+CompScreen::filter (int filter)
+{
+    return priv->filter[filter];
+}
+
+CompFunction *&
+CompScreen::fragmentFunctions ()
+{
+    return priv->fragmentFunctions;
+}
+
+CompProgram *&
+CompScreen::fragmentPrograms ()
+{
+    return priv->fragmentPrograms;
+}
+
+int &
+CompScreen::lastFunctionId ()
+{
+    return priv->lastFunctionId;
+}
+
+int &
+CompScreen::getSaturateFunction (int target, int param)
+{
+    return priv->saturateFunction[target][param];
+}
+
+bool
+CompScreen::fragmentProgram ()
+{
+    return priv->fragmentProgram;
+}
+
+CompCursorImage *&
+CompScreen::cursorImages ()
+{
+    return priv->cursorImages;
+}
+
