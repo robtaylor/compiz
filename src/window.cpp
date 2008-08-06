@@ -4537,8 +4537,8 @@ CompWindow::processMap ()
     bool                   allowFocus;
     CompStackingUpdateMode stackingMode;
 
-    priv->initialViewportX = priv->screen->vp ().x ();
-    priv->initialViewportY = priv->screen->vp ().y ();
+    priv->initialViewport.setX (priv->screen->vp ().x ());
+    priv->initialViewport.setY (priv->screen->vp ().y ());
 
     priv->initialTimestampSet = false;
 
@@ -4765,8 +4765,8 @@ CompWindow::applyStartupProperties (CompStartupSequence *s)
 {
     int workspace;
 
-    priv->initialViewportX = s->viewportX;
-    priv->initialViewportY = s->viewportY;
+    priv->initialViewport.setX (s->viewportX);
+    priv->initialViewport.setY (s->viewportY);
 
     workspace = sn_startup_sequence_get_workspace (s->sequence);
     if (workspace >= 0)
@@ -5359,8 +5359,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     destroyRefCnt (1),
     unmapRefCnt (1),
 
-    initialViewportX (0),
-    initialViewportY (0),
+    initialViewport (0, 0),
 
     initialTimestamp (0),
     initialTimestampSet (false),

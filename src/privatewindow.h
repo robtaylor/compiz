@@ -3,6 +3,7 @@
 
 #include <compiz-core.h>
 #include <compwindow.h>
+#include <comppoint.h>
 
 #define WINDOW_INVISIBLE(w)				          \
     ((w)->attrib.map_state != IsViewable		       || \
@@ -177,8 +178,7 @@ class PrivateWindow {
 	int		      destroyRefCnt;
 	int		      unmapRefCnt;
 
-	unsigned int initialViewportX;
-	unsigned int initialViewportY;
+	CompPoint initialViewport;
 
 	Time initialTimestamp;
 	Bool initialTimestampSet;
