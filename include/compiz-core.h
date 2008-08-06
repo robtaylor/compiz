@@ -1254,11 +1254,6 @@ typedef struct _CompButtonGrab {
     int		 count;
 } CompButtonGrab;
 
-typedef struct _CompGrab {
-    Bool       active;
-    Cursor     cursor;
-    const char *name;
-} CompGrab;
 
 typedef struct _CompGroup {
     struct _CompGroup *next;

@@ -1568,8 +1568,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     keyGrab (0),
     nKeyGrab (0),
     grabs (0),
-    grabSize (0),
-    maxGrab (0),
     rasterPos (0, 0),
     nextRedraw (0),
     redrawTime (1000 / defaultRefreshRate),
@@ -2455,9 +2453,6 @@ CompScreen::~CompScreen ()
     if (priv->damage)
 	XDestroyRegion (priv->damage);
 
-    if (priv->grabs)
-	free (priv->grabs);
-
     /* XXX: Maybe we should free all fragment functions here? But
        the definition of CompFunction is private to fragment.c ... */
     for (i = 0; i < 2; i++)
@@ -2710,10 +2705,10 @@ CompScreen::unhookWindow (CompWindow *w)
 #define POINTER_GRAB_MASK (ButtonReleaseMask | \
 			   ButtonPressMask   | \
 			   PointerMotionMask)
-int
+CompScreen::Grab::handle
 CompScreen::pushGrab (Cursor cursor, const char *name)
 {
-    if (priv->maxGrab == 0)
+    if (priv->grabs.empty())
     {
 	int status;
 
@@ -2732,11 +2727,11 @@ CompScreen::pushGrab (Cursor cursor, const char *name)
 	    if (status != GrabSuccess)
 	    {
 		XUngrabPointer (priv->display->dpy (), CurrentTime);
-		return 0;
+		return NULL;
 	    }
 	}
 	else
-	    return 0;
+	    return NULL;
     }
     else
     {
@@ -2744,80 +2739,49 @@ CompScreen::pushGrab (Cursor cursor, const char *name)
 				  cursor, CurrentTime);
     }
 
-    if (priv->grabSize <= priv->maxGrab)
-    {
-	priv->grabs = (CompGrab *)
-	    realloc (priv->grabs, sizeof (CompGrab) * (priv->maxGrab + 1));
-	if (!priv->grabs)
-	    return 0;
+    Grab grab;
+    grab.cursor = cursor;
+    grab.name   = name;
 
-	priv->grabSize = priv->maxGrab + 1;
+    return &priv->grabs.insert (priv->grabs.end (), grab);
+}
+
+void
+CompScreen::updateGrab (CompScreen::Grab::handle handle, Cursor cursor)
+{
+    if (!handle)
+	return;
+
+    XChangeActivePointerGrab (priv->display->dpy (), POINTER_GRAB_MASK,
+			      cursor, CurrentTime);
+
+    (**handle).cursor = cursor;
+}
+
+void
+CompScreen::removeGrab (CompScreen::Grab::handle handle,
+			CompPoint *restorePointer)
+{
+    if (!handle)
+	return;
+
+    priv->grabs.erase (*handle);
+
+    if (!priv->grabs.empty ())
+    {
+	XChangeActivePointerGrab (priv->display->dpy (),
+				  POINTER_GRAB_MASK,
+				  priv->grabs.back ().cursor,
+				  CurrentTime);
     }
-
-    priv->grabs[priv->maxGrab].cursor = cursor;
-    priv->grabs[priv->maxGrab].active = TRUE;
-    priv->grabs[priv->maxGrab].name   = name;
-
-    priv->maxGrab++;
-
-    return priv->maxGrab;
-}
-
-void
-CompScreen::updateGrab (int index, Cursor cursor)
-{
-  index--;
-
-#ifdef DEBUG
-    if (index < 0 || index >= priv->maxGrab)
-	abort ();
-#endif
-
-  XChangeActivePointerGrab (priv->display->dpy (), POINTER_GRAB_MASK,
-			    cursor, CurrentTime);
-
-  priv->grabs[index].cursor = cursor;
-}
-
-void
-CompScreen::removeGrab (int index, XPoint *restorePointer)
-{
-    int maxGrab;
-
-    index--;
-
-#ifdef DEBUG
-    if (index < 0 || index >= priv->maxGrab)
-	abort ();
-#endif
-
-    priv->grabs[index].cursor = None;
-    priv->grabs[index].active = FALSE;
-
-    for (maxGrab = priv->maxGrab; maxGrab; maxGrab--)
-	if (priv->grabs[maxGrab - 1].active)
-	    break;
-
-    if (maxGrab != priv->maxGrab)
+    else
     {
-	if (maxGrab)
-	{
-	    XChangeActivePointerGrab (priv->display->dpy (),
-				      POINTER_GRAB_MASK,
-				      priv->grabs[maxGrab - 1].cursor,
-				      CurrentTime);
-	}
-	else
-	{
 	    if (restorePointer)
-		warpPointer (restorePointer->x - pointerX,
-			     restorePointer->y - pointerY);
+		warpPointer (restorePointer->x () - pointerX,
+			     restorePointer->y () - pointerY);
 
 	    XUngrabPointer (priv->display->dpy (), CurrentTime);
 	    XUngrabKeyboard (priv->display->dpy (), CurrentTime);
-	}
-
-	priv->maxGrab = maxGrab;
     }
 }
 
@@ -2828,30 +2792,27 @@ CompScreen::removeGrab (int index, XPoint *restorePointer)
 bool
 CompScreen::otherGrabExist (const char *first, ...)
 {
-    va_list    ap;
-    const char *name;
-    int	       i;
+    va_list                   ap;
+    const char                *name;
+    std::list<Grab>::iterator it;
 
-    for (i = 0; i < priv->maxGrab; i++)
+    for (it = priv->grabs.begin (); it != priv->grabs.end (); it++)
     {
-	if (priv->grabs[i].active)
+	va_start (ap, first);
+
+	name = first;
+	while (name)
 	{
-	    va_start (ap, first);
+	    if (strcmp (name, (*it).name) == 0)
+		break;
 
-	    name = first;
-	    while (name)
-	    {
-		if (strcmp (name, priv->grabs[i].name) == 0)
-		    break;
-
-		name = va_arg (ap, const char *);
-	    }
-
-	    va_end (ap);
-
-	    if (!name)
-		return true;
+	    name = va_arg (ap, const char *);
 	}
+
+	va_end (ap);
+
+	if (!name)
+	return true;
     }
 
     return false;
@@ -4284,10 +4245,10 @@ CompScreen::getOption (const char *name)
     return o;
 }
 
-int
-CompScreen::maxGrab ()
+bool
+CompScreen::hasGrab ()
 {
-    return priv->maxGrab;
+    return !priv->grabs.empty ();
 }
 
 unsigned int

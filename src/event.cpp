@@ -220,7 +220,7 @@ PrivateDisplay::triggerButtonPressBindings (CompOption  *option,
 
 	if (event->xbutton.window != edgeWindow)
 	{
-	    if (!s->maxGrab () || event->xbutton.window != s->root ())
+	    if (!s->hasGrab () || event->xbutton.window != s->root ())
 		return false;
 	}
 
@@ -1175,7 +1175,7 @@ CompDisplay::handleEvent (XEvent *event)
 
     if (priv->handleActionEvent (event))
     {
-	if (!priv->screens->maxGrab ())
+	if (!priv->screens->hasGrab ())
 	    XAllowEvents (priv->dpy, AsyncPointer, event->xbutton.time);
 
 	return;
@@ -1325,7 +1325,7 @@ CompDisplay::handleEvent (XEvent *event)
 		}
 	    }
 
-	    if (!s->maxGrab ())
+	    if (!s->hasGrab ())
 		XAllowEvents (priv->dpy, ReplayPointer, event->xbutton.time);
 	}
 	break;
@@ -1896,7 +1896,7 @@ CompDisplay::handleEvent (XEvent *event)
 	}
 	break;
     case EnterNotify:
-	if (!priv->screens->maxGrab ()		    &&
+	if (!priv->screens->hasGrab ()		    &&
 	    event->xcrossing.mode   != NotifyGrab   &&
 	    event->xcrossing.mode   != NotifyUngrab &&
 	    event->xcrossing.detail != NotifyInferior)

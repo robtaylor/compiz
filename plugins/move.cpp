@@ -137,7 +137,7 @@ class MoveScreen {
 	int windowPrivateIndex;
 
         CompScreen *screen;
-	int grabIndex;
+	CompScreen::Grab::handle grab;
 
 	Cursor moveCursor;
 
@@ -258,10 +258,10 @@ moveInitiate (CompDisplay     *d,
 	ms->snapBackY = w->serverGeometry ().y () - workArea.y;
 	ms->snapOffY  = y - workArea.y;
 
-	if (!ms->grabIndex)
-	    ms->grabIndex = s->pushGrab (ms->moveCursor, "move");
+	if (!ms->grab)
+	    ms->grab = s->pushGrab (ms->moveCursor, "move");
 
-	if (ms->grabIndex)
+	if (ms->grab)
 	{
 	    md->w = w;
 
@@ -315,10 +315,10 @@ moveTerminate (CompDisplay     *d,
 
 	md->w->ungrabNotify ();
 
-	if (ms->grabIndex)
+	if (ms->grab)
 	{
-	    md->w->screen ()->removeGrab (ms->grabIndex, NULL);
-	    ms->grabIndex = 0;
+	    md->w->screen ()->removeGrab (ms->grab, NULL);
+	    ms->grab = NULL;
 	}
 
 	if (md->moveOpacity != OPAQUE)
@@ -431,7 +431,7 @@ moveHandleMotionEvent (CompScreen *s,
 {
     MOVE_SCREEN (s);
 
-    if (ms->grabIndex)
+    if (ms->grab)
     {
 	int	   dx, dy;
 	int	   wX, wY;
@@ -643,7 +643,7 @@ MoveDisplay::handleEvent (XEvent *event)
 	{
 	    MOVE_SCREEN (s);
 
-	    if (ms->grabIndex)
+	    if (ms->grab)
 	    {
 		if (releaseButton == -1 ||
 		    releaseButton == event->xbutton.button)
@@ -663,7 +663,7 @@ MoveDisplay::handleEvent (XEvent *event)
 	{
 	    MOVE_SCREEN (s);
 
-	    if (ms->grabIndex)
+	    if (ms->grab)
 	    {
 		int i;
 
@@ -809,7 +809,7 @@ MoveWindow::paint (const WindowPaintAttrib *attrib,
 
     MOVE_SCREEN (window->screen ());
 
-    if (ms->grabIndex)
+    if (ms->grab)
     {
 	MOVE_DISPLAY (window->screen ()->display ());
 
@@ -961,7 +961,7 @@ moveInitScreen (CompObject *o)
 	return false;
     }
 
-    ms->grabIndex = 0;
+    ms->grab = NULL;
 
     ms->moveCursor = XCreateFontCursor (s->display ()->dpy (), XC_fleur);
 

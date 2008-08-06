@@ -194,9 +194,7 @@ class PrivateScreen {
 	CompKeyGrab    *keyGrab;
 	int		   nKeyGrab;
 
-	CompGrab *grabs;
-	int	     grabSize;
-	int	     maxGrab;
+	std::list<CompScreen::Grab> grabs;
 
 	CompPoint rasterPos;
 	struct timeval lastRedraw;

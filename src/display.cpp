@@ -200,7 +200,7 @@ CompScreen::mainMenu (CompDisplay     *d,
     time = getIntOptionNamed (option, nOption, "time", CurrentTime);
 
     s = d->findScreen (xid);
-    if (s && !s->priv->maxGrab)
+    if (s && s->priv->grabs.empty ())
 	s->toolkitAction (s->display ()->atoms().toolkitActionMainMenu, time,
 			  s->priv->root, 0, 0, 0);
 
@@ -222,7 +222,7 @@ CompScreen::runDialog (CompDisplay     *d,
     time = getIntOptionNamed (option, nOption, "time", CurrentTime);
 
     s = d->findScreen (xid);
-    if (s && !s->priv->maxGrab)
+    if (s && s->priv->grabs.empty ())
 	s->toolkitAction (s->display ()->atoms().toolkitActionRunDialog, time,
 			  s->priv->root , 0, 0, 0);
 
@@ -513,7 +513,7 @@ CompScreen::windowMenu (CompDisplay     *d,
     xid = getIntOptionNamed (option, nOption, "window", 0);
 
     w = d->findTopLevelWindow (xid);
-    if (w && !w->screen ()->priv->maxGrab)
+    if (w && w->screen ()->priv->grabs.empty ())
     {
 	int  x, y, button;
 	Time time;
