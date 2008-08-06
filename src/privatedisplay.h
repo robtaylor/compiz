@@ -100,8 +100,7 @@ class PrivateDisplay {
 	bool xineramaExtension;
 	int  xineramaEvent, xineramaError;
 
-	XineramaScreenInfo *screenInfo;
-	int		   nScreenInfo;
+	std::vector<XineramaScreenInfo> screenInfo;
 
 	SnDisplay *snDisplay;
 

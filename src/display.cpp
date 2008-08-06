@@ -878,9 +878,6 @@ CompDisplay::~CompDisplay ()
     if (priv->modMap)
 	XFreeModifiermap (priv->modMap);
 
-    if (priv->screenInfo)
-	XFree (priv->screenInfo);
-
     if (screenPrivateIndices)
 	free (screenPrivateIndices);
 
@@ -1161,16 +1158,10 @@ CompDisplay::getOption (const char *name)
     return o;
 }
 
-XineramaScreenInfo *
+std::vector<XineramaScreenInfo> &
 CompDisplay::screenInfo ()
 {
     return priv->screenInfo;
-}
-
-int
-CompDisplay::nScreenInfo ()
-{
-    return priv->nScreenInfo;
 }
 
 bool
@@ -1250,11 +1241,13 @@ CompDisplay::updateScreenInfo ()
 {
     if (priv->xineramaExtension)
     {
-	if (priv->screenInfo)
-	    XFree (priv->screenInfo);
+	int nInfo;
+	XineramaScreenInfo *info = XineramaQueryScreens (priv->dpy, &nInfo);
+	
+	priv->screenInfo = std::vector<XineramaScreenInfo> (info, info + nInfo);
 
-	priv->nScreenInfo = 0;
-	priv->screenInfo = XineramaQueryScreens (priv->dpy, &priv->nScreenInfo);
+	if (info)
+	    XFree (info);
     }
 }
 
@@ -2737,8 +2730,7 @@ PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     display (display),
     screens (0),
     watchFdHandle (0),
-    screenInfo (NULL),
-    nScreenInfo (0),
+    screenInfo (0),
     textureFilter (GL_LINEAR),
     activeWindow (0),
     below (None),

@@ -1337,7 +1337,7 @@ CompWindow::updateStruts ()
 	int i;
 
 	/* applications expect us to clip struts to xinerama edges */
-	for (i = 0; i < priv->screen->display ()->nScreenInfo (); i++)
+	for (i = 0; i < priv->screen->display ()->screenInfo ().size (); i++)
 	{
 	    x1 = priv->screen->display ()->screenInfo ()[i].x_org;
 	    y1 = priv->screen->display ()->screenInfo ()[i].y_org;

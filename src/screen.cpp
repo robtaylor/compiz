@@ -363,14 +363,14 @@ PrivateScreen::updateOutputDevices ()
 	    }
 	XSubtractRegion (&emptyRegion, &emptyRegion, region);
 	
-	if (display->nScreenInfo())
+	if (display->screenInfo ().size ())
 	{
-	    for (int i = 0; i < display->nScreenInfo(); i++)
+	    for (int i = 0; i < display->screenInfo ().size (); i++)
 	    {
-		r.extents.x1 = display->screenInfo()[i].x_org;
-		r.extents.y1 = display->screenInfo()[i].y_org;
-		r.extents.x2 = r.extents.x1 + display->screenInfo()[i].width;
-		r.extents.y2 = r.extents.y1 + display->screenInfo()[i].height;
+		r.extents.x1 = display->screenInfo ()[i].x_org;
+		r.extents.y1 = display->screenInfo ()[i].y_org;
+		r.extents.x2 = r.extents.x1 + display->screenInfo ()[i].width;
+		r.extents.y2 = r.extents.y1 + display->screenInfo ()[i].height;
 
 		XUnionRegion (region, &r, region);
 	    }
@@ -409,9 +409,9 @@ PrivateScreen::detectOutputDevices ()
 	char		output[1024];
 	int		i, size = sizeof (output);
 
-	if (display->nScreenInfo())
+	if (display->screenInfo ().size ())
 	{
-	    int n = display->nScreenInfo();
+	    int n = display->screenInfo ().size ();
 
 	    value.list.nValue = n;
 	    value.list.value  = (CompOptionValue *)

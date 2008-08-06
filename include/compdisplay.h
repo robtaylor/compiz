@@ -198,11 +198,8 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	setOption (const char      *name,
 		   CompOptionValue *value);
 
-	XineramaScreenInfo *
+	std::vector<XineramaScreenInfo> &
 	screenInfo ();
-
-	int
-	nScreenInfo ();
 
 	bool
 	XRandr ();
