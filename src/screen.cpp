@@ -266,15 +266,14 @@ PrivateScreen::setVirtualScreenSize (int newh, int newv)
 void
 PrivateScreen::updateOutputDevices ()
 {
-    CompOutput	  *o, *output = NULL;
     CompListValue *list = &opt[COMP_SCREEN_OPTION_OUTPUTS].value.list;
-    int		  nOutput = 0;
-    int		  x, y, i, j, bits;
+    unsigned int  nOutput = 0;
+    int		  x, y, bits;
     unsigned int  width, height;
     int		  x1, y1, x2, y2;
     Region	  region;
 
-    for (i = 0; i < list->nValue; i++)
+    for (int i = 0; i < list->nValue; i++)
     {
 	if (!list->value[i].s)
 	    continue;
@@ -308,69 +307,34 @@ PrivateScreen::updateOutputDevices ()
 
 	if (x1 < x2 && y1 < y2)
 	{
-	    o = (CompOutput *) realloc (output, sizeof (CompOutput) * (nOutput + 1));
-	    if (o)
-	    {
-		o[nOutput].region.extents.x1 = x1;
-		o[nOutput].region.extents.y1 = y1;
-		o[nOutput].region.extents.x2 = x2;
-		o[nOutput].region.extents.y2 = y2;
+	    if (outputDevs.size () < nOutput + 1)
+		outputDevs.resize (nOutput + 1);
 
-		output = o;
-		nOutput++;
-	    }
+	    outputDevs[nOutput].setGeometry (x1, x2, y1, y2);
+	    nOutput++;
 	}
     }
 
     /* make sure we have at least one output */
     if (!nOutput)
     {
-	output = (CompOutput *) malloc (sizeof (CompOutput));
-	if (!output)
-	    return;
+	if (outputDevs.size () < 1)
+	    outputDevs.resize (1);
 
-	output->region.extents.x1 = 0;
-	output->region.extents.y1 = 0;
-	output->region.extents.x2 = this->width;
-	output->region.extents.y2 = this->height;
-
+	outputDevs[0].setGeometry (0, this->width, 0, this->height);
 	nOutput = 1;
     }
 
+    if (outputDevs.size () > nOutput)
+	outputDevs.resize (nOutput);
+
     /* set name, width, height and update rect pointers in all regions */
-    for (i = 0; i < nOutput; i++)
+    for (unsigned int i = 0; i < nOutput; i++)
     {
-	output[i].name = (char *) malloc (sizeof (char) * 10);
-	if (output[i].name)
-	    snprintf (output[i].name, 10, "Output %d", nOutput);
-
-	output[i].region.rects = &output[i].region.extents;
-	output[i].region.numRects = 1;
-
-	output[i].width  = output[i].region.extents.x2 -
-	    output[i].region.extents.x1;
-	output[i].height = output[i].region.extents.y2 -
-	    output[i].region.extents.y1;
-
-	output[i].workArea.x      = output[i].region.extents.x1;
-	output[i].workArea.y      = output[i].region.extents.x1;
-	output[i].workArea.width  = output[i].width;
-	output[i].workArea.height = output[i].height;
-
-	output[i].id = i;
+	outputDevs[i].setId ("Output " + i, i);
     }
 
-    if (outputDev)
-    {
-	for (i = 0; i < nOutputDev; i++)
-	    if (outputDev[i].name)
-		free (outputDev[i].name);
 
-	free (outputDev);
-    }
-
-    outputDev             = output;
-    nOutputDev            = nOutput;
     hasOverlappingOutputs = false;
 
     screen->setCurrentOutput (currentOutputDev);
@@ -388,11 +352,11 @@ PrivateScreen::updateOutputDevices ()
 	r.rects = &r.extents;
 	r.numRects = 1;
 
-	for (i = 0; i < nOutput - 1; i++)
-	    for (j = i + 1; j < nOutput; j++)
+	for (unsigned int i = 0; i < outputDevs.size () - 1; i++)
+	    for (unsigned int j = i + 1; j < outputDevs.size (); j++)
             {
-		XIntersectRegion (&output[i].region,
-				  &output[j].region,
+		XIntersectRegion (outputDevs[i].region (),
+				  outputDevs[j].region (),
 				  region);
 		if (REGION_NOT_EMPTY (region))
 		    hasOverlappingOutputs = true;
@@ -401,7 +365,7 @@ PrivateScreen::updateOutputDevices ()
 	
 	if (display->nScreenInfo())
 	{
-	    for (i = 0; i < display->nScreenInfo(); i++)
+	    for (int i = 0; i < display->nScreenInfo(); i++)
 	    {
 		r.extents.x1 = display->screenInfo()[i].x_org;
 		r.extents.y1 = display->screenInfo()[i].y_org;
@@ -422,8 +386,8 @@ PrivateScreen::updateOutputDevices ()
 	}
 
 	/* remove all output regions from visible screen region */
-	for (i = 0; i < nOutputDev; i++)
-	    XSubtractRegion (region, &outputDev[i].region, region);
+	for (unsigned int i = 0; i < outputDevs.size (); i++)
+	    XSubtractRegion (region, outputDevs[i].region (), region);
 
 	/* we should clear color buffers before swapping if we have visible
 	   regions without output */
@@ -851,9 +815,9 @@ perspective (GLfloat *m,
 }
 
 void
-CompScreen::setCurrentOutput (int outputNum)
+CompScreen::setCurrentOutput (unsigned int outputNum)
 {
-    if (outputNum >= priv->nOutputDev)
+    if (outputNum >= priv->outputDevs.size ())
 	outputNum = 0;
 
     priv->currentOutputDev = outputNum;
@@ -898,16 +862,9 @@ PrivateScreen::reshape (int w, int h)
     width  = w;
     height = h;
 
-    fullscreenOutput.name             = "fullscreen";
-    fullscreenOutput.id               = ~0;
-    fullscreenOutput.width            = w;
-    fullscreenOutput.height           = h;
-    fullscreenOutput.region           = region;
-    fullscreenOutput.workArea.x       = 0;
-    fullscreenOutput.workArea.y       = 0;
-    fullscreenOutput.workArea.width   = w;
-    fullscreenOutput.workArea.height  = h;
- 
+    fullscreenOutput.setId ("fullscreen", ~0);
+    fullscreenOutput.setGeometry (0, 0, w, h);
+
     updateScreenEdges ();
 }
 
@@ -1593,8 +1550,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopWindowCount (0),
     mapNum (1),
     activeNum (1),
-    outputDev (0),
-    nOutputDev (0),
+    outputDevs (0),
     currentOutputDev (0),
     hasOverlappingOutputs (false),
     windowOffsetX (0),
@@ -2485,15 +2441,6 @@ CompScreen::~CompScreen ()
 
     int i, j;
 
-    if (priv->outputDev)
-    {
-	for (i = 0; i < priv->nOutputDev; i++)
-	    if (priv->outputDev[i].name)
-		free (priv->outputDev[i].name);
-
-	free (priv->outputDev);
-    }
-
     if (priv->clientList)
 	free (priv->clientList);
 
@@ -3293,11 +3240,13 @@ CompScreen::updateWorkarea ()
 {
     XRectangle workArea;
     BoxRec     box;
-    int        i;
 
-    for (i = 0; i < priv->nOutputDev; i++)
-	priv->computeWorkareaForBox (&priv->outputDev[i].region.extents,
-				     &priv->outputDev[i].workArea);
+    for (unsigned int i = 0; i < priv->outputDevs.size (); i++)
+    {
+	priv->computeWorkareaForBox (&priv->outputDevs[i].region ()->extents,
+				     &workArea);
+	priv->outputDevs[i].setWorkArea (workArea);
+    }
 
     box.x1 = 0;
     box.y1 = 0;
@@ -3806,16 +3755,16 @@ void
 CompScreen::getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2)
 {
     if (x1)
-	*x1 = priv->outputDev[priv->currentOutputDev].region.extents.x1;
+	*x1 = priv->outputDevs[priv->currentOutputDev].x1 ();
 
     if (y1)
-	*y1 = priv->outputDev[priv->currentOutputDev].region.extents.y1;
+	*y1 = priv->outputDevs[priv->currentOutputDev].y1 ();
 
     if (x2)
-	*x2 = priv->outputDev[priv->currentOutputDev].region.extents.x2;
+	*x2 = priv->outputDevs[priv->currentOutputDev].x2 ();
 
     if (y2)
-	*y2 = priv->outputDev[priv->currentOutputDev].region.extents.y2;
+	*y2 = priv->outputDevs[priv->currentOutputDev].y2 ();
 }
 
 void
@@ -3882,16 +3831,16 @@ CompScreen::setCurrentDesktop (unsigned int desktop)
 void
 CompScreen::getWorkareaForOutput (int output, XRectangle *area)
 {
-    *area = priv->outputDev[output].workArea;
+    *area = priv->outputDevs[output].workArea ();
 }
 
 void
 CompScreen::setDefaultViewport ()
 {
-    priv->lastViewport.x      = priv->outputDev->region.extents.x1;
-    priv->lastViewport.y      = priv->height - priv->outputDev->region.extents.y2;
-    priv->lastViewport.width  = priv->outputDev->width;
-    priv->lastViewport.height = priv->outputDev->height;
+    priv->lastViewport.x      = priv->outputDevs[0].x1 ();
+    priv->lastViewport.y      = priv->height - priv->outputDevs[0].y2 ();
+    priv->lastViewport.width  = priv->outputDevs[0].width ();
+    priv->lastViewport.height = priv->outputDevs[0].height ();
 
     glViewport (priv->lastViewport.x,
 		priv->lastViewport.y,
@@ -3907,7 +3856,7 @@ void
 CompScreen::clearOutput (CompOutput   *output,
 			 unsigned int mask)
 {
-    BoxPtr pBox = &output->region.extents;
+    BoxPtr pBox = &output->region ()->extents;
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
@@ -4011,12 +3960,13 @@ CompScreen::outputDeviceForGeometry (int x,
 				     int height,
 				     int borderWidth)
 {
-    int overlapAreas[priv->nOutputDev];
-    int i, highest, seen, highestScore;
-    int strategy;
-    BOX geomRect;
+    int          overlapAreas[priv->outputDevs.size ()];
+    int          highest, seen, highestScore;
+    int          strategy;
+    unsigned int i;
+    BOX          geomRect;
 
-    if (priv->nOutputDev == 1)
+    if (priv->outputDevs.size () == 1)
 	return 0;
 
     strategy = priv->opt[COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS].value.i;
@@ -4054,13 +4004,13 @@ CompScreen::outputDeviceForGeometry (int x,
     }
 
     /* get amount of overlap on all output devices */
-    for (i = 0; i < priv->nOutputDev; i++)
+    for (i = 0; i < priv->outputDevs.size (); i++)
 	overlapAreas[i] =
-		rectangleOverlapArea (&priv->outputDev[i].region.extents,
+		rectangleOverlapArea (&priv->outputDevs[i].region ()->extents,
 				      &geomRect);
 
     /* find output with largest overlap */
-    for (i = 0, highest = 0, highestScore = 0; i < priv->nOutputDev; i++)
+    for (i = 0, highest = 0, highestScore = 0; i < priv->outputDevs.size (); i++)
 	if (overlapAreas[i] > highestScore)
 	{
 	    highest = i;
@@ -4068,7 +4018,7 @@ CompScreen::outputDeviceForGeometry (int x,
 	}
 
     /* look if the highest score is unique */
-    for (i = 0, seen = 0; i < priv->nOutputDev; i++)
+    for (i = 0, seen = 0; i < priv->outputDevs.size (); i++)
 	if (overlapAreas[i] == highestScore)
 	    seen++;
 
@@ -4085,10 +4035,10 @@ CompScreen::outputDeviceForGeometry (int x,
 	else
 	    bestOutputSize = UINT_MAX;
 
-	for (i = 0, highest = 0; i < priv->nOutputDev; i++)
+	for (i = 0, highest = 0; i < priv->outputDevs.size (); i++)
 	    if (overlapAreas[i] == highestScore)
 	    {
-		BOX  *box = &priv->outputDev[i].region.extents;
+		BOX  *box = &priv->outputDevs[i].region ()->extents;
 		Bool bestFit;
 
 		currentSize = (box->x2 - box->x1) * (box->y2 - box->y1);
@@ -4254,10 +4204,9 @@ ScreenInterface::donePaint ()
     WRAPABLE_DEF_FUNC(donePaint)
 
 void
-ScreenInterface::paint (CompOutput   *outputs,
-			int          numOutput,
-			unsigned int mask)
-    WRAPABLE_DEF_FUNC(paint, outputs, numOutput, mask)
+ScreenInterface::paint (CompOutput::ptrList &outputs,
+			unsigned int        mask)
+    WRAPABLE_DEF_FUNC(paint, outputs, mask)
 
 bool
 ScreenInterface::paintOutput (const ScreenPaintAttrib *sAttrib,
@@ -4456,24 +4405,25 @@ static const CompTransform identity = {
 };
 
 void
-CompScreen::paint (CompOutput   *outputs,
-		   int          numOutput,
-		   unsigned int mask)
+CompScreen::paint (CompOutput::ptrList &outputs,
+		   unsigned int        mask)
 {
-    WRAPABLE_HND_FUNC(paint, outputs, numOutput, mask)
+    WRAPABLE_HND_FUNC(paint, outputs, mask)
 
-    XRectangle r;
-    int	       i;
+    XRectangle                    r;
+    CompOutput::ptrList::iterator it;
+    CompOutput                    *output;
 
-    for (i = 0; i < numOutput; i++)
+    for (it = outputs.begin (); it != outputs.end (); it++)
     {
+	output = (*it);
 	targetScreen = this;
-	targetOutput = &outputs[i];
+	targetOutput = output;
 
-	r.x	 = outputs[i].region.extents.x1;
-	r.y	 = priv->height - outputs[i].region.extents.y2;
-	r.width  = outputs[i].width;
-	r.height = outputs[i].height;
+	r.x	 = output->x1 ();
+	r.y	 = priv->height - output->y2 ();
+	r.width  = output->width ();
+	r.height = output->height ();
 
 	if (priv->lastViewport.x	   != r.x     ||
 	    priv->lastViewport.y	   != r.y     ||
@@ -4488,28 +4438,28 @@ CompScreen::paint (CompOutput   *outputs,
 	{
 	    paintOutput (&defaultScreenPaintAttrib,
 			 &identity,
-			 &outputs[i].region, &outputs[i],
+			 output->region (), output,
 			 PAINT_SCREEN_REGION_MASK |
 			 PAINT_SCREEN_FULL_MASK);
 	}
 	else if (mask & COMP_SCREEN_DAMAGE_REGION_MASK)
 	{
 	    XIntersectRegion (priv->display->mTmpRegion,
-			      &outputs[i].region,
+			      output->region (),
 			      priv->display->mOutputRegion);
 
 	    if (!paintOutput (&defaultScreenPaintAttrib,
 			      &identity,
-			      priv->display->mOutputRegion, &outputs[i],
+			      priv->display->mOutputRegion, output,
 			      PAINT_SCREEN_REGION_MASK))
 	    {
 		paintOutput (&defaultScreenPaintAttrib,
 			     &identity,
-			     &outputs[i].region, &outputs[i],
+			     output->region (), output,
 			     PAINT_SCREEN_FULL_MASK);
 
 		XUnionRegion (priv->display->mTmpRegion,
-			      &outputs[i].region,
+			      output->region (),
 			      priv->display->mTmpRegion);
 
 	    }
@@ -4696,14 +4646,21 @@ CompScreen::handlePaintTimeout ()
 		glClear (GL_COLOR_BUFFER_BIT);
 	}
 
+	CompOutput::ptrList outputs (0);
+	
 	if (priv->opt[COMP_SCREEN_OPTION_FORCE_INDEPENDENT].value.b
 	    || !priv->hasOverlappingOutputs)
-	    paint (priv->outputDev, priv->nOutputDev, mask);
+	{
+	    for (unsigned int i = 0; i < priv->outputDevs.size (); i++)
+		outputs.push_back (&priv->outputDevs[i]);
+	}
 	else
-	    paint (&priv->fullscreenOutput, 1, mask);
+	    outputs.push_back (&priv->fullscreenOutput);
 
+	paint (outputs, mask);
+	
 	targetScreen = NULL;
-	targetOutput = &priv->outputDev[0];
+	targetOutput = &priv->outputDevs[0];
 
 	waitForVideoSync ();
 
@@ -4877,16 +4834,10 @@ CompScreen::overlayWindowCount ()
     return priv->overlayWindowCount;
 }
 
-CompOutput *
-CompScreen::outputDev ()
+CompOutput::vector &
+CompScreen::outputDevs ()
 {
-    return priv->outputDev;
-}
-
-int
-CompScreen::nOutputDev ()
-{
-    return priv->nOutputDev;
+    return priv->outputDevs;
 }
 
 XRectangle

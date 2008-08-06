@@ -87,7 +87,7 @@ typedef struct _CompFunctionData  CompFunctionData;
 typedef struct _FragmentAttrib    FragmentAttrib;
 typedef struct _CompCursor	  CompCursor;
 typedef struct _CompMatch	  CompMatch;
-typedef struct _CompOutput        CompOutput;
+class CompOutput;
 typedef struct _CompWalker        CompWalker;
 
 class CompDisplay;
@@ -1306,15 +1306,6 @@ struct _CompIcon {
     int		height;
 };
 
-struct _CompOutput {
-    char       *name;
-    int        id;
-    REGION     region;
-    int        width;
-    int        height;
-    XRectangle workArea;
-};
-
 typedef struct _CompCursorImage {
     struct _CompCursorImage *next;
 
@@ -1844,6 +1835,13 @@ compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
 
 COMPIZ_END_DECLS
 
+#include <string>
+#include <vector>
+#include <list>
+
+typedef std::string CompString;
+
+#include <compoutput.h>
 #include <compobject.h>
 #include <compcore.h>
 #include <compdisplay.h>

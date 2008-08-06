@@ -11,7 +11,7 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 
 	WRAPABLE_DEF(void, preparePaint, int);
 	WRAPABLE_DEF(void, donePaint);
-	WRAPABLE_DEF(void, paint, CompOutput *outputs, int, unsigned int);
+	WRAPABLE_DEF(void, paint, CompOutput::ptrList &outputs, unsigned int);
 
 	WRAPABLE_DEF(bool, paintOutput, const ScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,
@@ -86,7 +86,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 		   CompOptionValue *value);
 
 	void
-	setCurrentOutput (int outputNum);
+	setCurrentOutput (unsigned int outputNum);
 
 	void
 	configure (XConfigureEvent *ce);
@@ -328,11 +328,8 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	int &
 	overlayWindowCount ();
 
-	CompOutput *
-	outputDev ();
-
-	int
-	nOutputDev ();
+	CompOutput::vector &
+	outputDevs ();
 
 	XRectangle
 	workArea ();
@@ -422,7 +419,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	WRAPABLE_HND(void, preparePaint, int);
 	WRAPABLE_HND(void, donePaint);
-	WRAPABLE_HND(void, paint, CompOutput *outputs, int, unsigned int);
+	WRAPABLE_HND(void, paint, CompOutput::ptrList &outputs, unsigned int);
 
 	WRAPABLE_HND(bool, paintOutput, const ScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,

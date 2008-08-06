@@ -151,11 +151,10 @@ class PrivateScreen {
 	unsigned int      mapNum;
 	unsigned int      activeNum;
 
-	CompOutput *outputDev;
-	int	       nOutputDev;
-	int	       currentOutputDev;
-	CompOutput fullscreenOutput;
-	Bool       hasOverlappingOutputs;
+	CompOutput::vector outputDevs;
+	int	           currentOutputDev;
+	CompOutput         fullscreenOutput;
+	bool               hasOverlappingOutputs;
 
 	int windowOffsetX;
 	int windowOffsetY;

@@ -29,4 +29,5 @@ compiz_SOURCES =   \
 	matrix.cpp   \
 	cursor.cpp   \
 	match.cpp    \
-	metadata.cpp
+	metadata.cpp \
+	output.cpp

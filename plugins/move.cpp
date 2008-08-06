@@ -364,12 +364,12 @@ moveGetYConstrainRegion (CompScreen *s)
 
     XUnionRegion (&r, region, region);
 
-    for (i = 0; i < s->nOutputDev (); i++)
+    for (i = 0; i < s->outputDevs ().size(); i++)
     {
-	XUnionRegion (&s->outputDev ()[i].region, region, region);
+	XUnionRegion (s->outputDevs ()[i].region (), region, region);
 
 	s->getWorkareaForOutput (i, &workArea);
-	extents = s->outputDev ()[i].region.extents;
+	extents = s->outputDevs ()[i].region ()->extents;
 
 	for (w = s->windows (); w; w = w->next)
 	{

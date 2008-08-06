@@ -2675,8 +2675,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
     {
 	saveGeometry (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 
-	xwc->width	  = screen->outputDev ()[output].width;
-	xwc->height	  = screen->outputDev ()[output].height;
+	xwc->width	  = screen->outputDevs ()[output].width ();
+	xwc->height	  = screen->outputDevs ()[output].height ();
 	xwc->border_width = 0;
 
 	mask |= CWWidth | CWHeight | CWBorderWidth;
@@ -2746,8 +2746,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
     {
 	if (type & CompWindowTypeFullscreenMask)
 	{
-	    xwc->x = x + screen->outputDev ()[output].region.extents.x1;
-	    xwc->y = y + screen->outputDev ()[output].region.extents.y1;
+	    xwc->x = x + screen->outputDevs ()[output].x1 ();
+	    xwc->y = y + screen->outputDevs ()[output].y1 ();
 
 	    mask |= CWX | CWY;
 	}

@@ -78,12 +78,12 @@ transformToScreenSpace (CompScreen    *screen,
 {
     matrixTranslate (transform, -0.5f, -0.5f, z);
     matrixScale (transform,
-		 1.0f  / output->width,
-		 -1.0f / output->height,
+		 1.0f  / output->width (),
+		 -1.0f / output->height (),
 		 1.0f);
     matrixTranslate (transform,
-		     -output->region.extents.x1,
-		     -output->region.extents.y2,
+		     -output->x1 (),
+		     -output->y2 (),
 		     0.0f);
 }
 
@@ -93,11 +93,11 @@ prepareXCoords (CompScreen *screen,
 		float      z)
 {
     glTranslatef (-0.5f, -0.5f, z);
-    glScalef (1.0f  / output->width,
-	      -1.0f / output->height,
+    glScalef (1.0f  / output->width (),
+	      -1.0f / output->height (),
 	      1.0f);
-    glTranslatef (-output->region.extents.x1,
-		  -output->region.extents.y2,
+    glTranslatef (-output->x1 (),
+		  -output->y2 (),
 		  0.0f);
 }
 
@@ -255,7 +255,7 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
     static Region tmpRegion = NULL;
     CompWindow    *w;
     CompCursor	  *c;
-    int		  count, windowMask, odMask, i;
+    int		  count, windowMask, odMask;
     CompWindow	  *fullscreenWindow = NULL;
     CompWalker    walk;
     bool          status;
@@ -352,9 +352,9 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 		    }
 		    else
 		    {
-			for (i = 0; i < nOutputDev; i++)
+			for (unsigned int i = 0; i < outputDevs.size (); i++)
 			    if (XEqualRegion (w->region (),
-					      &outputDev[i].region))
+					      outputDevs[i].region ()))
 				fullscreenWindow = w;
 		    }
 		}
@@ -425,11 +425,11 @@ CompScreen::enableOutputClipping (const CompTransform *transform,
     GLdouble p1[2] = { region->extents.x1, h - region->extents.y2 };
     GLdouble p2[2] = { region->extents.x2, h - region->extents.y1 };
 
-    GLdouble halfW = output->width / 2.0;
-    GLdouble halfH = output->height / 2.0;
+    GLdouble halfW = output->width () / 2.0;
+    GLdouble halfH = output->height () / 2.0;
 
-    GLdouble cx = output->region.extents.x1 + halfW;
-    GLdouble cy = (h - output->region.extents.y2) + halfH;
+    GLdouble cx = output->x1 () + halfW;
+    GLdouble cy = (h - output->y2 ()) + halfH;
 
     GLdouble top[4]    = { 0.0, halfH / (cy - p1[1]), 0.0, 0.5 };
     GLdouble bottom[4] = { 0.0, halfH / (cy - p2[1]), 0.0, 0.5 };
@@ -533,8 +533,7 @@ CompScreen::paintOutput (const ScreenPaintAttrib *sAttrib,
 	{
 	    if (mask & PAINT_SCREEN_FULL_MASK)
 	    {
-		region = &output->region;
-
+		region = output->region ();
 		paintTransformedOutput (sAttrib, &sTransform, region,
 					output, mask);
 
@@ -548,7 +547,7 @@ CompScreen::paintOutput (const ScreenPaintAttrib *sAttrib,
     }
     else if (mask & PAINT_SCREEN_FULL_MASK)
     {
-	paintTransformedOutput (sAttrib, &sTransform, &output->region,
+	paintTransformedOutput (sAttrib, &sTransform, output->region (),
 				output, mask);
 
 	return true;
