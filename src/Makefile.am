@@ -30,4 +30,5 @@ compiz_SOURCES =   \
 	cursor.cpp   \
 	match.cpp    \
 	metadata.cpp \
-	output.cpp
+	output.cpp   \
+	rect.cpp

@@ -1,7 +1,9 @@
 #ifndef _COMPOUTPUT_H
 #define _COMPOUTPUT_H
 
-class CompOutput {
+#include <comprect.h>
+
+class CompOutput : public CompRect {
 
     public:
 	CompOutput ();
@@ -10,20 +12,10 @@ class CompOutput {
 	
 	unsigned int id ();
 
-	unsigned int x1 ();
-	unsigned int y1 ();
-	unsigned int x2 ();
-	unsigned int y2 ();
-	unsigned int width ();
-	unsigned int height ();
-
-	Region region ();
-
 	XRectangle workArea ();
 
 	void setWorkArea (XRectangle);
-	void setGeometry (unsigned int, unsigned int,
-			  unsigned int, unsigned int);
+	void setGeometry (int, int, int, int);
 	void setId (CompString, unsigned int);
 
 	typedef std::vector<CompOutput> vector;
@@ -34,7 +26,6 @@ class CompOutput {
 
 	CompString   mName;
 	unsigned int mId;
-	REGION       mRegion;
 
 	XRectangle   mWorkArea;
 };

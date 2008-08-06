@@ -1841,6 +1841,7 @@ COMPIZ_END_DECLS
 
 typedef std::string CompString;
 
+#include <comprect.h>
 #include <compoutput.h>
 #include <compobject.h>
 #include <compcore.h>
