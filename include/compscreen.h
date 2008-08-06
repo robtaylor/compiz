@@ -291,23 +291,11 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	unsigned int
 	damageMask ();
 
-	int
-	x ();
+	CompPoint vp ();
 
-	int
-	y ();
+	CompSize vpSize ();
 
-	int
-	vsize ();
-
-	int
-	hsize ();
-
-	int
-	width ();
-
-	int
-	height ();
+	CompSize size ();
 
 	unsigned int &
 	pendingDestroys ();

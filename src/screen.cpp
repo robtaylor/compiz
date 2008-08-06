@@ -181,12 +181,12 @@ void
 PrivateScreen::setDesktopHints ()
 {
     unsigned long *data;
-    int		  size, offset, hintSize;
+    int		  dSize, offset, hintSize;
     unsigned int  i;
 
-    size = nDesktop * 2 + nDesktop * 2 + nDesktop * 4 + 1;
+    dSize = nDesktop * 2 + nDesktop * 2 + nDesktop * 4 + 1;
 
-    data = (unsigned long *) malloc (sizeof (unsigned long) * size);
+    data = (unsigned long *) malloc (sizeof (unsigned long) * dSize);
     if (!data)
 	return;
 
@@ -195,11 +195,11 @@ PrivateScreen::setDesktopHints ()
 
     for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = x * width;
-	data[offset + i * 2 + 1] = y * height;
+	data[offset + i * 2 + 0] = vp.x () * size.width ();
+	data[offset + i * 2 + 1] = vp.y () * size.height ();
     }
 
-    if (!desktopHintEqual (data, size, offset, hintSize))
+    if (!desktopHintEqual (data, dSize, offset, hintSize))
 	XChangeProperty (display->dpy (), root,
 			 display->atoms ().desktopViewport,
 			 XA_CARDINAL, 32, PropModeReplace,
@@ -209,11 +209,11 @@ PrivateScreen::setDesktopHints ()
 
     for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = width  * hsize;
-	data[offset + i * 2 + 1] = height * vsize;
+	data[offset + i * 2 + 0] = size.width () * vpSize.width ();
+	data[offset + i * 2 + 1] = size.height () * vpSize.height ();
     }
 
-    if (!desktopHintEqual (data, size, offset, hintSize))
+    if (!desktopHintEqual (data, dSize, offset, hintSize))
 	XChangeProperty (display->dpy (), root,
 			 display->atoms ().desktopGeometry,
 			 XA_CARDINAL, 32, PropModeReplace,
@@ -230,7 +230,7 @@ PrivateScreen::setDesktopHints ()
 	data[offset + i * 4 + 3] = workArea.height;
     }
 
-    if (!desktopHintEqual (data, size, offset, hintSize))
+    if (!desktopHintEqual (data, dSize, offset, hintSize))
 	XChangeProperty (display->dpy (), root,
 			 display->atoms ().workarea,
 			 XA_CARDINAL, 32, PropModeReplace,
@@ -241,7 +241,7 @@ PrivateScreen::setDesktopHints ()
     data[offset] = nDesktop;
     hintSize = 1;
 
-    if (!desktopHintEqual (data, size, offset, hintSize))
+    if (!desktopHintEqual (data, dSize, offset, hintSize))
 	XChangeProperty (display->dpy (), root,
 			 display->atoms ().numberOfDesktops,
 			 XA_CARDINAL, 32, PropModeReplace,
@@ -251,14 +251,14 @@ PrivateScreen::setDesktopHints ()
 	free (desktopHintData);
 
     desktopHintData = data;
-    desktopHintSize = size;
+    desktopHintSize = dSize;
 }
 
 void
 PrivateScreen::setVirtualScreenSize (int newh, int newv)
 {
-    hsize = newh;
-    vsize = newv;
+    vpSize.setWidth (newh);
+    vpSize.setHeight (newv);
 
     setDesktopHints ();
 }
@@ -280,16 +280,16 @@ PrivateScreen::updateOutputDevices ()
 
 	x      = 0;
 	y      = 0;
-	width  = this->width;
-	height = this->height;
+	width  = size.width ();
+	height = size.height ();
 
 	bits = XParseGeometry (list->value[i].s, &x, &y, &width, &height);
 
 	if (bits & XNegative)
-	    x = this->width + x - width;
+	    x = size.width () + x - width;
 
 	if (bits & YNegative)
-	    y = this->height + y - height;
+	    y = size.height () + y - height;
 
 	x1 = x;
 	y1 = y;
@@ -300,10 +300,10 @@ PrivateScreen::updateOutputDevices ()
 	    x1 = 0;
 	if (y1 < 0)
 	    y1 = 0;
-	if (x2 > this->width)
-	    x2 = this->width;
-	if (y2 > this->height)
-	    y2 = this->height;
+	if (x2 > size.width ())
+	    x2 = size.width ();
+	if (y2 > size.height ())
+	    y2 = size.height ();
 
 	if (x1 < x2 && y1 < y2)
 	{
@@ -321,7 +321,7 @@ PrivateScreen::updateOutputDevices ()
 	if (outputDevs.size () < 1)
 	    outputDevs.resize (1);
 
-	outputDevs[0].setGeometry (0, this->width, 0, this->height);
+	outputDevs[0].setGeometry (0, size.width (), 0, size.height ());
 	nOutput = 1;
     }
 
@@ -379,8 +379,8 @@ PrivateScreen::updateOutputDevices ()
 	{
 	    r.extents.x1 = 0;
 	    r.extents.y1 = 0;
-	    r.extents.x2 = this->width;
-	    r.extents.y2 = this->height;
+	    r.extents.x2 = size.width ();
+	    r.extents.y2 = size.height ();
 
 	    XUnionRegion (region, &r, region);
 	}
@@ -437,7 +437,8 @@ PrivateScreen::detectOutputDevices ()
 	    if (!value.list.value)
 		return;
 
-	    snprintf (output, size, "%dx%d+%d+%d", width, height, 0, 0);
+	    snprintf (output, size, "%dx%d+%d+%d",
+		      this->size.width (), this->size.height (), 0, 0);
 
 	    value.list.value->s = strdup (output);
 	}
@@ -529,7 +530,7 @@ CompScreen::setOption (const char      *name,
 	    if (!vsize)
 		return false;
 
-	    if (o->value.i * priv->width > MAXSHORT)
+	    if (o->value.i * priv->size.width () > MAXSHORT)
 		return false;
 
 	    priv->setVirtualScreenSize (o->value.i, vsize->value.i);
@@ -547,7 +548,7 @@ CompScreen::setOption (const char      *name,
 	    if (!hsize)
 		return false;
 
-	    if (o->value.i * priv->height > MAXSHORT)
+	    if (o->value.i * priv->size.height () > MAXSHORT)
 		return false;
 
 	    priv->setVirtualScreenSize (hsize->value.i, o->value.i);
@@ -670,8 +671,8 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
 
     s->next     = startupSequences;
     s->sequence = sequence;
-    s->viewportX = x;
-    s->viewportY = y;
+    s->viewportX = vp.x ();
+    s->viewportY = vp.y ();
 
     startupSequences = s;
 
@@ -763,10 +764,10 @@ PrivateScreen::updateScreenEdges ()
     {
 	if (screenEdge[i].id)
 	    XMoveResizeWindow (display->dpy (), screenEdge[i].id,
-			       geometry[i].xw * width  + geometry[i].x0,
-			       geometry[i].yh * height + geometry[i].y0,
-			       geometry[i].ww * width  + geometry[i].w0,
-			       geometry[i].hh * height + geometry[i].h0);
+			       geometry[i].xw * size.width () + geometry[i].x0,
+			       geometry[i].yh * size.height () + geometry[i].y0,
+			       geometry[i].ww * size.width () + geometry[i].w0,
+			       geometry[i].hh * size.height () + geometry[i].h0);
     }
 }
 
@@ -842,7 +843,7 @@ PrivateScreen::reshape (int w, int h)
     glViewport (-1, -1, 2, 2);
     glRasterPos2f (0, 0);
 
-    rasterX = rasterY = 0;
+    rasterPos = CompPoint (0, 0);
 
     perspective (projection, 60.0f, 1.0f, 0.1f, 100.0f);
 
@@ -859,8 +860,8 @@ PrivateScreen::reshape (int w, int h)
     region.extents.y2 = h;
     region.size = 1;
 
-    width  = w;
-    height = h;
+    size.setWidth (w);
+    size.setHeight (h);
 
     fullscreenOutput.setId ("fullscreen", ~0);
     fullscreenOutput.setGeometry (0, 0, w, h);
@@ -1193,11 +1194,11 @@ PrivateScreen::getDesktopHints ()
 	{
 	    memcpy (data, propData, sizeof (unsigned long) * 2);
 
-	    if (data[0] / width < hsize - 1)
-		x = data[0] / width;
+	    if (data[0] / size.width () < vpSize.width () - 1)
+		vp.setX (data[0] / size.width ());
 
-	    if (data[1] / height < vsize - 1)
-		y = data[1] / height;
+	    if (data[1] / size.height () < vpSize.height () - 1)
+		vp.setY (data[1] / size.height ());
 	}
 
 	XFree (propData);
@@ -1521,10 +1522,9 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     display (0),
     windows (0),
     reverseWindows (0),
-    width (0),
-    height (0),
-    x (0),
-    y (0),
+    size (0, 0),
+    vp (0, 0),
+    vpSize (1, 1),
     nDesktop (1),
     currentDesktop (0),
     damageMask (COMP_SCREEN_DAMAGE_ALL_MASK),
@@ -1553,8 +1553,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     outputDevs (0),
     currentOutputDev (0),
     hasOverlappingOutputs (false),
-    windowOffsetX (0),
-    windowOffsetY (0),
+    windowPaintOffset (0, 0),
     currentHistory (0),
     overlayWindowCount (0),
     snContext (0),
@@ -1573,8 +1572,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     grabs (0),
     grabSize (0),
     maxGrab (0),
-    rasterX (0),
-    rasterY (0),
+    rasterPos (0, 0),
     nextRedraw (0),
     redrawTime (1000 / defaultRefreshRate),
     optimalRedrawTime (1000 / defaultRefreshRate),
@@ -1834,8 +1832,8 @@ CompScreen::init (CompDisplay *display,
     if (!priv->damage)
 	return false;
 
-    priv->hsize = priv->opt[COMP_SCREEN_OPTION_HSIZE].value.i;
-    priv->vsize = priv->opt[COMP_SCREEN_OPTION_VSIZE].value.i;
+    priv->vpSize.setWidth (priv->opt[COMP_SCREEN_OPTION_HSIZE].value.i);
+    priv->vpSize.setHeight (priv->opt[COMP_SCREEN_OPTION_VSIZE].value.i);
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -3250,8 +3248,8 @@ CompScreen::updateWorkarea ()
 
     box.x1 = 0;
     box.y1 = 0;
-    box.x2 = priv->width;
-    box.y2 = priv->height;
+    box.x2 = priv->size.width ();
+    box.y2 = priv->size.height ();
 
     priv->computeWorkareaForBox (&box, &workArea);
 
@@ -3484,22 +3482,22 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
     CompWindow *w;
     int         wx, wy;
 
-    tx = priv->x - tx;
-    tx = MOD (tx, priv->hsize);
-    tx -= priv->x;
+    tx = priv->vp.x () - tx;
+    tx = MOD (tx, priv->vpSize.width ());
+    tx -= priv->vp.x ();
 
-    ty = priv->y - ty;
-    ty = MOD (ty, priv->vsize);
-    ty -= priv->y;
+    ty = priv->vp.y () - ty;
+    ty = MOD (ty, priv->vpSize.height ());
+    ty -= priv->vp.y ();
 
     if (!tx && !ty)
 	return;
 
-    priv->x += tx;
-    priv->y += ty;
+    priv->vp.setX (priv->vp.x () + tx);
+    priv->vp.setY (priv->vp.y () + ty);
 
-    tx *= -priv->width;
-    ty *= -priv->height;
+    tx *= -priv->size.width ();
+    ty *= -priv->size.height ();
 
     for (w = priv->windows; w; w = w->next)
     {
@@ -3525,7 +3523,7 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
     {
 	priv->setDesktopHints ();
 
-	setCurrentActiveWindowHistory (priv->x, priv->y);
+	setCurrentActiveWindowHistory (priv->vp.x (), priv->vp.y ());
 
 	w = priv->display->findWindow (priv->display->activeWindow ());
 	if (w)
@@ -3536,7 +3534,7 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 
 	    /* add window to current history if it's default viewport is
 	       still the current one. */
-	    if (priv->x == x && priv->y == y)
+	    if (priv->vp.x () == x && priv->vp.y () == y)
 		addToCurrentActiveWindowHistory (w->id ());
 	}
     }
@@ -3838,7 +3836,7 @@ void
 CompScreen::setDefaultViewport ()
 {
     priv->lastViewport.x      = priv->outputDevs[0].x1 ();
-    priv->lastViewport.y      = priv->height - priv->outputDevs[0].y2 ();
+    priv->lastViewport.y      = priv->size.height () - priv->outputDevs[0].y2 ();
     priv->lastViewport.width  = priv->outputDevs[0].width ();
     priv->lastViewport.height = priv->outputDevs[0].height ();
 
@@ -3860,14 +3858,14 @@ CompScreen::clearOutput (CompOutput   *output,
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != priv->width ||
-	pBox->y2 != priv->height)
+	pBox->x2 != priv->size.width () ||
+	pBox->y2 != priv->size.height ())
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
 	glScissor (pBox->x1,
-		   priv->height - pBox->y2,
+		   priv->size.height () - pBox->y2,
 		   pBox->x2 - pBox->x1,
 		   pBox->y2 - pBox->y1);
 	glClear (mask);
@@ -3897,14 +3895,14 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
     gm.setWidth  (gm.width () + (gm.border () * 2));
     gm.setHeight (gm.height () + (gm.border () * 2));
 
-    if ((gm.x () < priv->width  && gm.x () + gm.width () > 0) &&
-	(gm.y () < priv->height && gm.y ()+ gm.height () > 0))
+    if ((gm.x () < priv->size.width ()  && gm.x () + gm.width () > 0) &&
+	(gm.y () < priv->size.height () && gm.y ()+ gm.height () > 0))
     {
 	if (viewportX)
-	    *viewportX = priv->x;
+	    *viewportX = priv->vp.x ();
 
 	if (viewportY)
-	    *viewportY = priv->y;
+	    *viewportY = priv->vp.y ();
 
 	return;
     }
@@ -3913,18 +3911,22 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
     {
 	centerX = gm.x () + (gm.width () >> 1);
 	if (centerX < 0)
-	    *viewportX = priv->x + ((centerX / priv->width) - 1) % priv->hsize;
+	    *viewportX = priv->vp.x () + ((centerX / priv->size.width ()) - 1) %
+		priv->vpSize.width ();
 	else
-	    *viewportX = priv->x + (centerX / priv->width) % priv->hsize;
+	    *viewportX = priv->vp.x () + (centerX / priv->size.width ()) %
+		priv->vpSize.width ();
     }
 
     if (viewportY)
     {
 	centerY = gm.y () + (gm.height () >> 1);
 	if (centerY < 0)
-	    *viewportY = priv->y + ((centerY / priv->height) - 1) % priv->vsize;
+	    *viewportY = priv->vp.y () +
+		((centerY / priv->size.height ()) - 1) % priv->vpSize.height ();
 	else
-	    *viewportY = priv->y + (centerY / priv->height) % priv->vsize;
+	    *viewportY = priv->vp.y () + (centerY / priv->size.height ()) %
+		priv->vpSize.height ();
     }
 }
 
@@ -3970,12 +3972,12 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 	geomRect.x2 = gm.width () + 2 * gm.border ();
 	geomRect.y2 = gm.height () + 2 * gm.border ();
 
-	geomRect.x1 = gm.x () % priv->width;
+	geomRect.x1 = gm.x () % priv->size.width ();
 	if ((geomRect.x1 + geomRect.x2 / 2) < 0)
-	    geomRect.x1 += priv->width;
-	geomRect.y1 = gm.y () % priv->height;
+	    geomRect.x1 += priv->size.width ();
+	geomRect.y1 = gm.y () % priv->size.height ();
 	if ((geomRect.y1 + geomRect.y2 / 2) < 0)
-	    geomRect.y1 += priv->height;
+	    geomRect.y1 += priv->size.height ();
 
 	geomRect.x2 += geomRect.x1;
 	geomRect.y2 += geomRect.y1;
@@ -3984,12 +3986,12 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
     {
 	/* for biggest/smallest modes, only use the window center to determine
 	   the correct output device */
-	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % priv->width;
+	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % priv->size.width ();
 	if (geomRect.x1 < 0)
-	    geomRect.x1 += priv->width;
-	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % priv->height;
+	    geomRect.x1 += priv->size.width ();
+	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % priv->size.height ();
 	if (geomRect.y1 < 0)
-	    geomRect.y1 += priv->height;
+	    geomRect.y1 += priv->size.height ();
 
 	geomRect.x2 = geomRect.x1 + 1;
 	geomRect.y2 = geomRect.y1 + 1;
@@ -4160,8 +4162,7 @@ CompScreen::addToCurrentActiveWindowHistory (Window id)
 void
 CompScreen::setWindowPaintOffset (int x, int y)
 {
-    priv->windowOffsetX = x;
-    priv->windowOffsetY = y;
+    priv->windowPaintOffset = CompPoint (x, y);
 }
 
 
@@ -4413,7 +4414,7 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 	targetOutput = output;
 
 	r.x	 = output->x1 ();
-	r.y	 = priv->height - output->y2 ();
+	r.y	 = priv->size.height () - output->y2 ();
 	r.width  = output->width ();
 	r.height = output->height ();
 
@@ -4468,13 +4469,13 @@ CompScreen::warpPointer (int dx, int dy)
     pointerX += dx;
     pointerY += dy;
 
-    if (pointerX >= priv->width)
-	pointerX = priv->width - 1;
+    if (pointerX >= priv->size.width ())
+	pointerX = priv->size.width () - 1;
     else if (pointerX < 0)
 	pointerX = 0;
 
-    if (pointerY >= priv->height)
-	pointerY = priv->height - 1;
+    if (pointerY >= priv->size.height ())
+	pointerY = priv->size.height () - 1;
     else if (pointerY < 0)
 	pointerY = 0;
 
@@ -4622,8 +4623,8 @@ CompScreen::handlePaintTimeout ()
 	    if (d->mTmpRegion->numRects  == 1	  &&
 		d->mTmpRegion->rects->x1 == 0	  &&
 		d->mTmpRegion->rects->y1 == 0	  &&
-		d->mTmpRegion->rects->x2 == priv->width &&
-		d->mTmpRegion->rects->y2 == priv->height)
+		d->mTmpRegion->rects->x2 == priv->size.width () &&
+		d->mTmpRegion->rects->y2 == priv->size.height ())
 		damageScreen ();
 	}
 
@@ -4672,7 +4673,7 @@ CompScreen::handlePaintTimeout ()
 	    {
 		while (nBox--)
 		{
-		    y = priv->height - pBox->y2;
+		    y = priv->size.height () - pBox->y2;
 
 		    (*copySubBuffer) (d->dpy (),
 				      priv->output,
@@ -4690,15 +4691,14 @@ CompScreen::handlePaintTimeout ()
 
 		while (nBox--)
 		{
-		    y = priv->height - pBox->y2;
+		    y = priv->size.height () - pBox->y2;
 
 		    glBitmap (0, 0, 0, 0,
-			      pBox->x1 - priv->rasterX,
-			      y - priv->rasterY,
+			      pBox->x1 - priv->rasterPos.x (),
+			      y - priv->rasterPos.y (),
 			      NULL);
 
-		    priv->rasterX = pBox->x1;
-		    priv->rasterY = y;
+		    priv->rasterPos = CompPoint (pBox->x1, y);
 
 		    glScissor (pBox->x1, y,
 			       pBox->x2 - pBox->x1,
@@ -4766,40 +4766,22 @@ CompScreen::damageMask ()
     return priv->damageMask;
 }
 
-int
-CompScreen::x ()
+CompPoint
+CompScreen::vp ()
 {
-    return priv->x;
+    return priv->vp;
 }
 
-int
-CompScreen::y ()
+CompSize
+CompScreen::vpSize ()
 {
-    return priv->y;
+    return priv->vpSize;
 }
 
-int
-CompScreen::vsize ()
+CompSize
+CompScreen::size ()
 {
-    return priv->vsize;
-}
-
-int
-CompScreen::hsize ()
-{
-    return priv->hsize;
-}
-
-int
-CompScreen::width ()
-{
-    return priv->width;
-}
-
-int
-CompScreen::height ()
-{
-    return priv->height;
+    return priv->size;
 }
 
 unsigned int &

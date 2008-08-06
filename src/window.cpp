@@ -1226,21 +1226,21 @@ CompWindow::updateStruts ()
     c_new.left.x	    = 0;
     c_new.left.y	    = 0;
     c_new.left.width  = 0;
-    c_new.left.height = priv->screen->height ();
+    c_new.left.height = priv->screen->size().height ();
 
-    c_new.right.x      = priv->screen->width ();
+    c_new.right.x      = priv->screen->size().width ();
     c_new.right.y      = 0;
     c_new.right.width  = 0;
-    c_new.right.height = priv->screen->height ();
+    c_new.right.height = priv->screen->size().height ();
 
     c_new.top.x	   = 0;
     c_new.top.y	   = 0;
-    c_new.top.width  = priv->screen->width ();
+    c_new.top.width  = priv->screen->size().width ();
     c_new.top.height = 0;
 
     c_new.bottom.x      = 0;
-    c_new.bottom.y      = priv->screen->height ();
-    c_new.bottom.width  = priv->screen->width ();
+    c_new.bottom.y      = priv->screen->size().height ();
+    c_new.bottom.width  = priv->screen->size().width ();
     c_new.bottom.height = 0;
 
     result = XGetWindowProperty (priv->screen->display ()->dpy (), priv->id,
@@ -1258,20 +1258,21 @@ CompWindow::updateStruts ()
 
 	    hasNew = true;
 
-	    gap = priv->screen->width () - struts[0] - struts[1];
+	    gap = priv->screen->size().width () - struts[0] - struts[1];
 	    gap -= MIN_EMPTY;
 
 	    c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
 	    c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
 
-	    gap = priv->screen->height () - struts[2] - struts[3];
+	    gap = priv->screen->size().height () - struts[2] - struts[3];
 	    gap -= MIN_EMPTY;
 
 	    c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
 	    c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
 
-	    c_new.right.x  = priv->screen->width () - c_new.right.width;
-	    c_new.bottom.y = priv->screen->height () - c_new.bottom.height;
+	    c_new.right.x  = priv->screen->size().width () - c_new.right.width;
+	    c_new.bottom.y = priv->screen->size().height () -
+			     c_new.bottom.height;
 
 	    c_new.left.y       = struts[4];
 	    c_new.left.height  = struts[5] - c_new.left.y + 1;
@@ -1304,23 +1305,25 @@ CompWindow::updateStruts ()
 
 		hasNew = true;
 
-		gap = priv->screen->width () - struts[0] - struts[1];
+		gap = priv->screen->size().width () - struts[0] - struts[1];
 		gap -= MIN_EMPTY;
 
 		c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
 		c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
 
-		gap = priv->screen->height () - struts[2] - struts[3];
+		gap = priv->screen->size().height () - struts[2] - struts[3];
 		gap -= MIN_EMPTY;
 
 		c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
 		c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
 
 		c_new.left.x  = 0;
-		c_new.right.x = priv->screen->width () - c_new.right.width;
+		c_new.right.x = priv->screen->size().width () -
+				c_new.right.width;
 
 		c_new.top.y    = 0;
-		c_new.bottom.y = priv->screen->height () - c_new.bottom.height;
+		c_new.bottom.y = priv->screen->size().height () -
+				 c_new.bottom.height;
 	    }
 
 	    XFree (data);
@@ -1944,8 +1947,8 @@ CompWindow::focus ()
 
     if (priv->attrib.x + priv->width  <= 0	||
 	priv->attrib.y + priv->height <= 0	||
-	priv->attrib.x >= priv->screen->width ()||
-	priv->attrib.y >= priv->screen->height ())
+	priv->attrib.x >= priv->screen->size().width ()||
+	priv->attrib.y >= priv->screen->size().height ())
 	return false;
 
     return true;
@@ -2664,8 +2667,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 
     screen->viewportForGeometry (old, &vx, &vy);
 
-    x = (vx - screen->x ()) * screen->width ();
-    y = (vy - screen->y ()) * screen->height ();
+    x = (vx - screen->vp ().x ()) * screen->size().width ();
+    y = (vy - screen->vp ().y ()) * screen->size().height ();
 
     output = screen->outputDeviceForGeometry (old);
     screen->getWorkareaForOutput (output, &workArea);
@@ -2992,9 +2995,10 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	    max = priv->screen->workArea ().y +
 		  priv->screen->workArea ().height;
 
-	    min -= priv->screen->y () * priv->screen->height ();
-	    max += (priv->screen->vsize () - priv->screen->y () - 1) *
-		   priv->screen->height ();
+	    min -= priv->screen->vp ().y () * priv->screen->size().height ();
+	    max += (priv->screen->vpSize ().height () -
+		   priv->screen->vp ().y () - 1) *
+		   priv->screen->size().height ();
 
 	    if (xwc->y < min)
 		xwc->y = min;
@@ -3009,9 +3013,10 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	    min = priv->screen->workArea ().x + priv->input.left;
 	    max = priv->screen->workArea ().x + priv->screen->workArea ().width;
 
-	    min -= priv->screen->x () * priv->screen->width ();
-	    max += (priv->screen->hsize () - priv->screen->x () - 1) *
-		   priv->screen->width ();
+	    min -= priv->screen->vp ().x () * priv->screen->size().width ();
+	    max += (priv->screen->vpSize ().width () -
+		   priv->screen->vp ().x () - 1) *
+		   priv->screen->size().width ();
 
 	    if (xwc->x < min)
 		xwc->x = min;
@@ -3342,10 +3347,12 @@ PrivateWindow::ensureWindowVisibility ()
 		   CompWindowTypeUnknownMask))
 	return;
 
-    x1 = screen->workArea ().x - screen->width () * screen->x ();
-    y1 = screen->workArea ().y - screen->height () * screen->y ();
-    x2 = x1 + screen->workArea ().width + screen->hsize () * screen->width ();
-    y2 = y1 + screen->workArea ().height + screen->vsize () * screen->height ();
+    x1 = screen->workArea ().x - screen->size().width () * screen->vp ().x ();
+    y1 = screen->workArea ().y - screen->size().height () * screen->vp ().y ();
+    x2 = x1 + screen->workArea ().width + screen->vpSize ().width () *
+	 screen->size().width ();
+    y2 = y1 + screen->workArea ().height + screen->vpSize ().height () *
+	 screen->size().height ();
 
     if (serverGeometry.x () - input.left >= x2)
 	dx = (x2 - 25) - serverGeometry.x ();
@@ -3877,7 +3884,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
 
     /* not in current viewport */
     window->defaultViewport (&vx, &vy);
-    if (vx != s->x () || vy != s->y ())
+    if (vx != s->vp ().x () || vy != s->vp ().y ())
 	return false;
 
     if (!gotTimestamp)
@@ -4226,21 +4233,21 @@ CompWindow::getMovementForOffset (int offX,
     CompScreen *s = priv->screen;
     int         m, vWidth, vHeight;
 
-    vWidth = s->width () * s->hsize ();
-    vHeight = s->height () * s->vsize ();
+    vWidth = s->size().width () * s->vpSize ().width ();
+    vHeight = s->size().height () * s->vpSize ().height ();
 
-    offX %= s->width () * s->hsize ();
-    offY %= s->height () * s->vsize ();
+    offX %= vWidth;
+    offY %= vHeight;
 
     /* x */
-    if (s->hsize () == 1)
+    if (s->vpSize ().width () == 1)
     {
 	(*retX) = offX;
     }
     else
     {
 	m = priv->attrib.x + offX;
-	if (m - priv->input.left < s->width () - vWidth)
+	if (m - priv->input.left < s->size().width () - vWidth)
 	    *retX = offX + vWidth;
 	else if (m + priv->width + priv->input.right > vWidth)
 	    *retX = offX - vWidth;
@@ -4248,14 +4255,14 @@ CompWindow::getMovementForOffset (int offX,
 	    *retX = offX;
     }
 
-    if (s->vsize () == 1)
+    if (s->vpSize ().height () == 1)
     {
 	*retY = offY;
     }
     else
     {
 	m = priv->attrib.y + offY;
-	if (m - priv->input.top < s->height () - vHeight)
+	if (m - priv->input.top < s->size().height () - vHeight)
 	    *retY = offY + vHeight;
 	else if (m + priv->height + priv->input.bottom > vHeight)
 	    *retY = offY - vHeight;
@@ -4530,8 +4537,8 @@ CompWindow::processMap ()
     bool                   allowFocus;
     CompStackingUpdateMode stackingMode;
 
-    priv->initialViewportX = priv->screen->x ();
-    priv->initialViewportY = priv->screen->y ();
+    priv->initialViewportX = priv->screen->vp ().x ();
+    priv->initialViewportY = priv->screen->vp ().y ();
 
     priv->initialTimestampSet = false;
 
@@ -4676,21 +4683,23 @@ CompWindow::saveWc ()
 void
 CompWindow::moveToViewportPosition (int x, int y, bool sync)
 {
-    int	tx, vWidth = priv->screen->width () * priv->screen->hsize ();
-    int ty, vHeight = priv->screen->height () * priv->screen->vsize ();
+    int	tx, vWidth = priv->screen->size().width () *
+		     priv->screen->vpSize ().width ();
+    int ty, vHeight = priv->screen->size().height () *
+		      priv->screen->vpSize ().height ();
 
-    if (priv->screen->hsize () != 1)
+    if (priv->screen->vpSize ().width () != 1)
     {
-	x += priv->screen->x () * priv->screen->width ();
+	x += priv->screen->vp ().x () * priv->screen->size().width ();
 	x = MOD (x, vWidth);
-	x -= priv->screen->x () * priv->screen->width ();
+	x -= priv->screen->vp ().x () * priv->screen->size().width ();
     }
 
-    if (priv->screen->vsize () != 1)
+    if (priv->screen->vpSize ().height () != 1)
     {
-	y += priv->screen->y () * priv->screen->height ();
+	y += priv->screen->vp ().y () * priv->screen->size().height ();
 	y = MOD (y, vHeight);
-	y -= priv->screen->y () * priv->screen->height ();
+	y -= priv->screen->vp ().y () * priv->screen->size().height ();
     }
 
     tx = x - priv->attrib.x;
@@ -4712,21 +4721,21 @@ CompWindow::moveToViewportPosition (int x, int y, bool sync)
 	wx = tx;
 	wy = ty;
 
-	if (priv->screen->hsize ()!= 1)
+	if (priv->screen->vpSize ().width ()!= 1)
 	{
 	    m = priv->attrib.x + tx;
 
-	    if (m - priv->output.left < priv->screen->width () - vWidth)
+	    if (m - priv->output.left < priv->screen->size().width () - vWidth)
 		wx = tx + vWidth;
 	    else if (m + priv->width + priv->output.right > vWidth)
 		wx = tx - vWidth;
 	}
 
-	if (priv->screen->vsize () != 1)
+	if (priv->screen->vpSize ().height () != 1)
 	{
 	    m = priv->attrib.y + ty;
 
-	    if (m - priv->output.top < priv->screen->height () - vHeight)
+	    if (m - priv->output.top < priv->screen->size().height () - vHeight)
 		wy = ty + vHeight;
 	    else if (m + priv->height + priv->output.bottom > vHeight)
 		wy = ty - vHeight;

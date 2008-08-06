@@ -1641,11 +1641,11 @@ CompDisplay::handleEvent (XEvent *event)
 	    {
 		CompOptionValue value;
 
-		value.i = event->xclient.data.l[0] / s->width ();
+		value.i = event->xclient.data.l[0] / s->size ().width ();
 
 		core->setOptionForPlugin (s, "core", "hsize", &value);
 
-		value.i = event->xclient.data.l[1] / s->height ();
+		value.i = event->xclient.data.l[1] / s->size ().height ();
 
 		core->setOptionForPlugin (s, "core", "vsize", &value);
 	    }

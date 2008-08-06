@@ -3,6 +3,8 @@
 
 #include <compiz-core.h>
 #include <compscreen.h>
+#include <compsize.h>
+#include <comppoint.h>
 
 class PrivateScreen {
 
@@ -113,12 +115,10 @@ class PrivateScreen {
 
 	Colormap	      colormap;
 	int		      screenNum;
-	int		      width;
-	int		      height;
-	int		      x;
-	int		      y;
-	int		      hsize;		/* Number of horizontal viewports */
-	int		      vsize;		/* Number of vertical viewports */
+
+	CompSize              size;
+	CompPoint             vp;
+	CompSize              vpSize;
 	unsigned int      nDesktop;
 	unsigned int      currentDesktop;
 	REGION	      region;
@@ -156,8 +156,8 @@ class PrivateScreen {
 	CompOutput         fullscreenOutput;
 	bool               hasOverlappingOutputs;
 
-	int windowOffsetX;
-	int windowOffsetY;
+
+	CompPoint windowPaintOffset;
 
 	XRectangle lastViewport;
 
@@ -200,8 +200,7 @@ class PrivateScreen {
 	int	     grabSize;
 	int	     maxGrab;
 
-	int		   rasterX;
-	int		   rasterY;
+	CompPoint rasterPos;
 	struct timeval lastRedraw;
 	int		   nextRedraw;
 	int		   redrawTime;

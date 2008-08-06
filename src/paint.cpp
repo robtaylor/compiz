@@ -305,13 +305,13 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 
 	    odMask = PAINT_WINDOW_OCCLUSION_DETECTION_MASK;
 		
-	    if ((windowOffsetX != 0 || windowOffsetY != 0) &&
+	    if ((windowPaintOffset.x () != 0 || windowPaintOffset.x () != 0) &&
 		!w->onAllViewports ())
 	    {
 		withOffset = true;
 
-		w->getMovementForOffset (windowOffsetX,
-					 windowOffsetY,
+		w->getMovementForOffset (windowPaintOffset.x (),
+					 windowPaintOffset.y (),
 					 &offX, &offY);
 
 		vTransform = *transform;
@@ -388,11 +388,12 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 	if (!(mask & PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK))
 	    clip = w->clip ();
 
-	if ((windowOffsetX != 0 || windowOffsetY != 0) &&
+	if ((windowPaintOffset.x () != 0 || windowPaintOffset.y () != 0) &&
 	    !w->onAllViewports ())
 	{
-	    w->getMovementForOffset (windowOffsetX,
-				     windowOffsetY, &offX, &offY);
+	   w->getMovementForOffset (windowPaintOffset.x (),
+				    windowPaintOffset.y (),
+				    &offX, &offY);
 
 	    vTransform = *transform;
 	    matrixTranslate (&vTransform, offX, offY, 0);
@@ -420,7 +421,7 @@ CompScreen::enableOutputClipping (const CompTransform *transform,
 {
     WRAPABLE_HND_FUNC(enableOutputClipping, transform, region, output)
 
-    GLdouble h = priv->height;
+    GLdouble h = priv->size.height ();
 
     GLdouble p1[2] = { region->extents.x1, h - region->extents.y2 };
     GLdouble p2[2] = { region->extents.x2, h - region->extents.y1 };

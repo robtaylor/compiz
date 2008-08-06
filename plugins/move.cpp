@@ -355,11 +355,11 @@ moveGetYConstrainRegion (CompScreen *s)
     r.extents.x1 = MINSHORT;
     r.extents.y1 = 0;
     r.extents.x2 = 0;
-    r.extents.y2 = s->height ();
+    r.extents.y2 = s->size ().height ();
 
     XUnionRegion (&r, region, region);
 
-    r.extents.x1 = s->width ();
+    r.extents.x1 = s->size ().width ();
     r.extents.x2 = MAXSHORT;
 
     XUnionRegion (&r, region, region);
@@ -589,7 +589,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (w->state () & CompWindowStateMaximizedHorzMask)
 	    {
-		if (wX > s->width () || wX + w->width () < 0)
+		if (wX > s->size ().width () || wX + w->width () < 0)
 		    return;
 
 		if (wX + wWidth < 0)
