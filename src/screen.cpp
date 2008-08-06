@@ -1543,8 +1543,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     fragmentProgram (false),
     maxTextureUnits (1),
     exposeRects (0),
-    sizeExpose (0),
-    nExpose (0),
     backgroundLoaded (false),
     pendingDestroys (0),
     desktopWindowCount (0),

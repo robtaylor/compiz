@@ -141,9 +141,7 @@ class PrivateScreen {
 	int		      fragmentProgram;
 	int		      maxTextureUnits;
 	Cursor	      invisibleCursor;
-	XRectangle        *exposeRects;
-	int		      sizeExpose;
-	int		      nExpose;
+	std::list <CompRect> exposeRects;
 	CompTexture       backgroundTexture;
 	Bool	      backgroundLoaded;
 	unsigned int      pendingDestroys;

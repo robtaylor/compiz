@@ -1119,41 +1119,19 @@ CompScreen::handleExposeEvent (XExposeEvent *event)
     if (priv->output == event->window)
 	return;
 
-    int more = event->count + 1;
-
-    if (priv->nExpose == priv->sizeExpose)
-    {
-	priv->exposeRects = (XRectangle *)
-	    realloc (priv->exposeRects, (priv->sizeExpose + more) *
-		     sizeof (XRectangle));
-	priv->sizeExpose += more;
-    }
-
-    priv->exposeRects[priv->nExpose].x      = event->x;
-    priv->exposeRects[priv->nExpose].y      = event->y;
-    priv->exposeRects[priv->nExpose].width  = event->width;
-    priv->exposeRects[priv->nExpose].height = event->height;
-    priv->nExpose++;
+    priv->exposeRects.push_back (CompRect (event->x, event->x + event->width,
+				 	   event->y, event->y + event->height));
 
     if (event->count == 0)
     {
-	REGION rect;
-
-	rect.rects = &rect.extents;
-	rect.numRects = rect.size = 1;
-
-	while (priv->nExpose--)
+	CompRect rect;
+	while (!priv->exposeRects.empty())
 	{
-	    rect.extents.x1 = priv->exposeRects[priv->nExpose].x;
-	    rect.extents.y1 = priv->exposeRects[priv->nExpose].y;
-	    rect.extents.x2 = rect.extents.x1 +
-		priv->exposeRects[priv->nExpose].width;
-	    rect.extents.y2 = rect.extents.y1 +
-		priv->exposeRects[priv->nExpose].height;
+	    rect = priv->exposeRects.front ();
+	    priv->exposeRects.pop_front ();
 
-	    damageRegion (&rect);
+	    damageRegion (rect.region ());
 	}
-	priv->nExpose = 0;
     }
 }
 
