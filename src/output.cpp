@@ -70,6 +70,8 @@ CompOutput::setGeometry (int x1, int x2, int y1, int y2)
     if (y2 < 0)
 	y2 = 0;
 
+    CompRect::setGeometry (x1, x2, y1, y2);
+
     mWorkArea.x      = this->x1 ();
     mWorkArea.y      = this->y1 ();
     mWorkArea.width  = width ();

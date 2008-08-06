@@ -272,6 +272,7 @@ PrivateScreen::updateOutputDevices ()
     unsigned int  width, height;
     int		  x1, y1, x2, y2;
     Region	  region;
+    char          str[10];
 
     for (int i = 0; i < list->nValue; i++)
     {
@@ -331,7 +332,8 @@ PrivateScreen::updateOutputDevices ()
     /* set name, width, height and update rect pointers in all regions */
     for (unsigned int i = 0; i < nOutput; i++)
     {
-	outputDevs[i].setId ("Output " + i, i);
+	snprintf (str, 10, "Output %d", i);
+	outputDevs[i].setId (str, i);
     }
 
 
