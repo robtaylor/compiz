@@ -1563,10 +1563,8 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     canDoSlightlySaturated (false),
     clientList (0),
     nClientList (0),
-    buttonGrab (0),
-    nButtonGrab (0),
-    keyGrab (0),
-    nKeyGrab (0),
+    buttonGrabs (0),
+    keyGrabs (0),
     grabs (0),
     rasterPos (0, 0),
     nextRedraw (0),
@@ -2441,12 +2439,6 @@ CompScreen::~CompScreen ()
     if (priv->desktopHintData)
 	free (priv->desktopHintData);
 
-    if (priv->buttonGrab)
-	free (priv->buttonGrab);
-
-    if (priv->keyGrab)
-	free (priv->keyGrab);
-
     if (priv->snContext)
 	sn_monitor_context_unref (priv->snContext);
 
@@ -2893,28 +2885,23 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 bool
 PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 {
-    CompKeyGrab  *newKeyGrab;
-    unsigned int mask;
-    int          i;
+    KeyGrab                      newKeyGrab;
+    unsigned int                 mask;
+    std::list<KeyGrab>::iterator it;
 
     mask = display->virtualToRealModMask (key->modifiers);
 
-    for (i = 0; i < nKeyGrab; i++)
+    for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
-	if (key->keycode == keyGrab[i].keycode &&
-	    mask         == keyGrab[i].modifiers)
+	if (key->keycode == (*it).keycode &&
+	    mask         == (*it).modifiers)
 	{
-	    keyGrab[i].count++;
+	    (*it).count++;
 	    return true;
 	}
     }
 
-    newKeyGrab = (CompKeyGrab  *)
-	realloc (keyGrab, sizeof (CompKeyGrab) * (nKeyGrab + 1));
-    if (!keyGrab)
-	return false;
 
-    keyGrab = newKeyGrab;
 
     if (!(mask & CompNoMask))
     {
@@ -2922,11 +2909,11 @@ PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 	    return false;
     }
 
-    keyGrab[nKeyGrab].keycode   = key->keycode;
-    keyGrab[nKeyGrab].modifiers = mask;
-    keyGrab[nKeyGrab].count     = 1;
+    newKeyGrab.keycode   = key->keycode;
+    newKeyGrab.modifiers = mask;
+    newKeyGrab.count     = 1;
 
-    nKeyGrab++;
+    keyGrabs.push_back (newKeyGrab);
 
     return true;
 }
@@ -2934,25 +2921,21 @@ PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 void
 PrivateScreen::removePassiveKeyGrab (CompKeyBinding *key)
 {
-    unsigned int mask;
-    int          i;
+    unsigned int                 mask;
+    std::list<KeyGrab>::iterator it;
 
-    for (i = 0; i < nKeyGrab; i++)
+    mask = display->virtualToRealModMask (key->modifiers);
+
+    for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
-	mask = display->virtualToRealModMask (key->modifiers);
-	if (key->keycode == keyGrab[i].keycode &&
-	    mask         == keyGrab[i].modifiers)
+	if (key->keycode == (*it).keycode &&
+	    mask         == (*it).modifiers)
 	{
-	    keyGrab[i].count--;
-	    if (keyGrab[i].count)
+	    (*it).count--;
+	    if ((*it).count)
 		return;
 
-	    memmove (keyGrab + i, keyGrab + i + 1,
-		     (nKeyGrab - (i + 1)) * sizeof (CompKeyGrab));
-
-	    nKeyGrab--;
-	    keyGrab = (CompKeyGrab  *) realloc (keyGrab,
-				  sizeof (CompKeyGrab) * nKeyGrab);
+	    it = keyGrabs.erase (it);
 
 	    if (!(mask & CompNoMask))
 		grabUngrabKeys (mask, key->keycode, false);
@@ -2963,16 +2946,16 @@ PrivateScreen::removePassiveKeyGrab (CompKeyBinding *key)
 void
 PrivateScreen::updatePassiveKeyGrabs ()
 {
-    int i;
+    std::list<KeyGrab>::iterator it;
 
     XUngrabKey (display->dpy (), AnyKey, AnyModifier, root);
 
-    for (i = 0; i < nKeyGrab; i++)
+    for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
-	if (!(keyGrab[i].modifiers & CompNoMask))
+	if (!((*it).modifiers & CompNoMask))
 	{
-	    grabUngrabKeys (keyGrab[i].modifiers,
-			    keyGrab[i].keycode, true);
+	    grabUngrabKeys ((*it).modifiers,
+			    (*it).keycode, true);
 	}
     }
 }
@@ -2980,32 +2963,24 @@ PrivateScreen::updatePassiveKeyGrabs ()
 bool
 PrivateScreen::addPassiveButtonGrab (CompButtonBinding *button)
 {
-    CompButtonGrab *newButtonGrab;
-    int            i;
+    ButtonGrab                      newButtonGrab;
+    std::list<ButtonGrab>::iterator it;
 
-    for (i = 0; i < nButtonGrab; i++)
+    for (it = buttonGrabs.begin (); it != buttonGrabs.end (); it++)
     {
-	if (button->button    == buttonGrab[i].button &&
-	    button->modifiers == buttonGrab[i].modifiers)
+	if (button->button    == (*it).button &&
+	    button->modifiers == (*it).modifiers)
 	{
-	    buttonGrab[i].count++;
+	    (*it).count++;
 	    return true;
 	}
     }
 
-    newButtonGrab = (CompButtonGrab  *)
-	realloc (buttonGrab, sizeof (CompButtonGrab) * (nButtonGrab + 1));
+    newButtonGrab.button    = button->button;
+    newButtonGrab.modifiers = button->modifiers;
+    newButtonGrab.count     = 1;
 
-    if (!buttonGrab)
-	return false;
-
-    buttonGrab = newButtonGrab;
-
-    buttonGrab[nButtonGrab].button    = button->button;
-    buttonGrab[nButtonGrab].modifiers = button->modifiers;
-    buttonGrab[nButtonGrab].count     = 1;
-
-    nButtonGrab++;
+    buttonGrabs.push_back (newButtonGrab);
 
     return true;
 }
@@ -3013,23 +2988,18 @@ PrivateScreen::addPassiveButtonGrab (CompButtonBinding *button)
 void
 PrivateScreen::removePassiveButtonGrab (CompButtonBinding *button)
 {
-    int          i;
+    std::list<ButtonGrab>::iterator it;
 
-    for (i = 0; i < nButtonGrab; i++)
+    for (it = buttonGrabs.begin (); it != buttonGrabs.end (); it++)
     {
-	if (button->button    == buttonGrab[i].button &&
-	    button->modifiers == buttonGrab[i].modifiers)
+	if (button->button    == (*it).button &&
+	    button->modifiers == (*it).modifiers)
 	{
-	    buttonGrab[i].count--;
-	    if (buttonGrab[i].count)
+	    (*it).count--;
+	    if ((*it).count)
 		return;
 
-	    memmove (buttonGrab + i, buttonGrab + i + 1,
-		     (nButtonGrab - (i + 1)) * sizeof (CompButtonGrab));
-
-	    nButtonGrab--;
-	    buttonGrab = (CompButtonGrab  *)
-		realloc (buttonGrab, sizeof (CompButtonGrab) * nButtonGrab);
+	    it = buttonGrabs.erase (it);
 	}
     }
 }

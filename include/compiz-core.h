@@ -1242,18 +1242,6 @@ typedef void (*WindowMoveNotifyProc) (CompWindow *window,
 #define COMP_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
 #define COMP_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
 
-typedef struct _CompKeyGrab {
-    int		 keycode;
-    unsigned int modifiers;
-    int		 count;
-} CompKeyGrab;
-
-typedef struct _CompButtonGrab {
-    int		 button;
-    unsigned int modifiers;
-    int		 count;
-} CompButtonGrab;
-
 
 typedef struct _CompGroup {
     struct _CompGroup *next;

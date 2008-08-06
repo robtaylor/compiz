@@ -9,6 +9,21 @@
 class PrivateScreen {
 
     public:
+	class KeyGrab {
+	    public:
+		int          keycode;
+		unsigned int modifiers;
+		int          count;
+	};
+
+	class ButtonGrab {
+	    public:
+		int          button;
+		unsigned int modifiers;
+		int          count;
+	};
+
+    public:
 	PrivateScreen (CompScreen *screen);
 	~PrivateScreen ();
 
@@ -189,10 +204,8 @@ class PrivateScreen {
 	CompWindow **clientList;
 	int	       nClientList;
 
-	CompButtonGrab *buttonGrab;
-	int		   nButtonGrab;
-	CompKeyGrab    *keyGrab;
-	int		   nKeyGrab;
+	std::list<ButtonGrab> buttonGrabs;	
+	std::list<KeyGrab> keyGrabs;
 
 	std::list<CompScreen::Grab> grabs;
 
