@@ -1,4 +1,6 @@
+#include <compiz-core.h>
 #include <compwindow.h>
+#include <privatewindow.h>
 
 
 CompWindow::Geometry::Geometry () :
@@ -26,4 +28,23 @@ void
 CompWindow::Geometry::setBorder (unsigned int border)
 {
     mBorder = border;
+}
+
+void
+CompWindow::Geometry::set (int x, int y,
+			   unsigned int width,
+			   unsigned int height,
+			   unsigned int border)
+{
+    setX (x);
+    setY (y);
+    setWidth (width);
+    setHeight (height);
+    mBorder = border;
+}
+
+CompWindow::Geometry &
+CompWindow::serverGeometry ()
+{
+    return priv->serverGeometry;
 }

@@ -3748,7 +3748,7 @@ CompScreen::finishDrawing ()
 int
 CompScreen::outputDeviceForPoint (int x, int y)
 {
-    return outputDeviceForGeometry (x, y, 1, 1, 0);
+    return outputDeviceForGeometry (CompWindow::Geometry (x, y, 1, 1, 0));
 }
 
 void
@@ -3887,22 +3887,18 @@ CompScreen::clearOutput (CompOutput   *output,
    located, except for when the window is visible in the current viewport as
    the current viewport is then always returned. */
 void
-CompScreen::viewportForGeometry (int x,
-				 int y,
-				 int width,
-				 int height,
-				 int borderWidth,
-				 int *viewportX,
-				 int *viewportY)
+CompScreen::viewportForGeometry (CompWindow::Geometry gm,
+				 int                  *viewportX,
+				 int                  *viewportY)
 {
     int	centerX;
     int	centerY;
 
-    width  += borderWidth * 2;
-    height += borderWidth * 2;
+    gm.setWidth  (gm.width () + (gm.border () * 2));
+    gm.setHeight (gm.height () + (gm.border () * 2));
 
-    if ((x < priv->width  && x + width  > 0) &&
-	(y < priv->height && y + height > 0))
+    if ((gm.x () < priv->width  && gm.x () + gm.width () > 0) &&
+	(gm.y () < priv->height && gm.y ()+ gm.height () > 0))
     {
 	if (viewportX)
 	    *viewportX = priv->x;
@@ -3915,7 +3911,7 @@ CompScreen::viewportForGeometry (int x,
 
     if (viewportX)
     {
-	centerX = x + (width >> 1);
+	centerX = gm.x () + (gm.width () >> 1);
 	if (centerX < 0)
 	    *viewportX = priv->x + ((centerX / priv->width) - 1) % priv->hsize;
 	else
@@ -3924,7 +3920,7 @@ CompScreen::viewportForGeometry (int x,
 
     if (viewportY)
     {
-	centerY = y + (height >> 1);
+	centerY = gm.y () + (gm.height () >> 1);
 	if (centerY < 0)
 	    *viewportY = priv->y + ((centerY / priv->height) - 1) % priv->vsize;
 	else
@@ -3954,11 +3950,7 @@ rectangleOverlapArea (BOX *rect1,
 }
 
 int
-CompScreen::outputDeviceForGeometry (int x,
-				     int y,
-				     int width,
-				     int height,
-				     int borderWidth)
+CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 {
     int          overlapAreas[priv->outputDevs.size ()];
     int          highest, seen, highestScore;
@@ -3975,13 +3967,13 @@ CompScreen::outputDeviceForGeometry (int x,
     {
 	/* for smart mode, calculate the overlap of the whole rectangle
 	   with the output device rectangle */
-	geomRect.x2 = width + 2 * borderWidth;
-	geomRect.y2 = height + 2 * borderWidth;
+	geomRect.x2 = gm.width () + 2 * gm.border ();
+	geomRect.y2 = gm.height () + 2 * gm.border ();
 
-	geomRect.x1 = x % priv->width;
+	geomRect.x1 = gm.x () % priv->width;
 	if ((geomRect.x1 + geomRect.x2 / 2) < 0)
 	    geomRect.x1 += priv->width;
-	geomRect.y1 = y % priv->height;
+	geomRect.y1 = gm.y () % priv->height;
 	if ((geomRect.y1 + geomRect.y2 / 2) < 0)
 	    geomRect.y1 += priv->height;
 
@@ -3992,10 +3984,10 @@ CompScreen::outputDeviceForGeometry (int x,
     {
 	/* for biggest/smallest modes, only use the window center to determine
 	   the correct output device */
-	geomRect.x1 = (x + (width / 2) + borderWidth) % priv->width;
+	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % priv->width;
 	if (geomRect.x1 < 0)
 	    geomRect.x1 += priv->width;
-	geomRect.y1 = (y + (height / 2) + borderWidth) % priv->height;
+	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % priv->height;
 	if (geomRect.y1 < 0)
 	    geomRect.y1 += priv->height;
 

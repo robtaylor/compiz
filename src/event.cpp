@@ -94,9 +94,7 @@ CompWindow::handleSyncAlarm ()
 
 	priv->syncWait = FALSE;
 
-	if (resize (priv->syncX, priv->syncY,
-		    priv->syncWidth, priv->syncHeight,
-		    priv->syncBorderWidth))
+	if (resize (priv->syncGeometry))
 	{
 	    XRectangle *rects;
 	    int	       nDamage;

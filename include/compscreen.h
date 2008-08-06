@@ -1,6 +1,7 @@
 #ifndef _COMPSCREEN_H
 #define _COMPSCREEN_H
 
+#include <compwindow.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -253,20 +254,12 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	clearOutput (CompOutput *output, unsigned int mask);
 
 	void
-	viewportForGeometry (int x,
-			     int y,
-			     int width,
-			     int height,
-			     int borderWidth,
-			     int *viewportX,
-			     int *viewportY);
+	viewportForGeometry (CompWindow::Geometry gm,
+			     int                  *viewportX,
+			     int                  *viewportY);
 
 	int
-	outputDeviceForGeometry (int x,
-				 int y,
-				 int width,
-				 int height,
-				 int borderWidth);
+	outputDeviceForGeometry (CompWindow::Geometry gm);
 
 	bool
 	updateDefaultIcon ();

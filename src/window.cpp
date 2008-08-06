@@ -176,12 +176,12 @@ PrivateWindow::recalcNormalHints ()
     int maxSize;
 
     maxSize = screen->maxTextureSize ();
-    maxSize -= serverBorderWidth * 2;
+    maxSize -= serverGeometry.border () * 2;
 
-    sizeHints.x      = serverX;
-    sizeHints.y      = serverY;
-    sizeHints.width  = serverWidth;
-    sizeHints.height = serverHeight;
+    sizeHints.x      = serverGeometry.x ();
+    sizeHints.y      = serverGeometry.y ();
+    sizeHints.width  = serverGeometry.width ();
+    sizeHints.height = serverGeometry.height ();
 
     if (!(sizeHints.flags & PBaseSize))
     {
@@ -770,12 +770,12 @@ PrivateWindow::updateFrameWindow ()
 	XRectangle rects[4];
 	int	   x, y, width, height;
 	int	   i = 0;
-	int	   bw = serverBorderWidth * 2;
+	int	   bw = serverGeometry.border () * 2;
 
-	x      = serverX - input.left;
-	y      = serverY - input.top;
-	width  = serverWidth  + input.left + input.right + bw;
-	height = serverHeight + input.top  + input.bottom + bw;
+	x      = serverGeometry.x () - input.left;
+	y      = serverGeometry.y () - input.top;
+	width  = serverGeometry.width () + input.left + input.right + bw;
+	height = serverGeometry.height () + input.top  + input.bottom + bw;
 
 	if (shaded)
 	    height = input.top + input.bottom;
@@ -1491,11 +1491,11 @@ CompWindow::sendConfigureNotify ()
     }
     else
     {
-	xev.x		 = priv->serverX;
-	xev.y		 = priv->serverY;
-	xev.width	 = priv->serverWidth;
-	xev.height	 = priv->serverHeight;
-	xev.border_width = priv->serverBorderWidth;
+	xev.x		 = priv->serverGeometry.x ();
+	xev.y		 = priv->serverGeometry.y ();
+	xev.width	 = priv->serverGeometry.width ();
+	xev.height	 = priv->serverGeometry.height ();
+	xev.border_width = priv->serverGeometry.border ();
 
 	xev.above	      = (prev) ? prev->priv->id : None;
 	xev.override_redirect = priv->attrib.override_redirect;
@@ -1624,11 +1624,25 @@ PrivateWindow::restack (Window aboveId)
 }
 
 bool
-CompWindow::resize (int	x,int y, int width, int height, int borderWidth)
+CompWindow::resize (XWindowAttributes attr)
 {
-    if (priv->attrib.width        != width  ||
-	priv->attrib.height       != height ||
-	priv->attrib.border_width != borderWidth)
+    return resize (Geometry (attr.x, attr.y, attr.width, attr.height,
+			     attr.border_width));
+}
+
+bool
+CompWindow::resize (int x, int y, unsigned int width, unsigned int height,
+		    unsigned int border)
+{
+    return resize (Geometry (x, y, width, height, border));
+}
+
+bool
+CompWindow::resize (CompWindow::Geometry gm)
+{
+    if (priv->attrib.width        != (int) gm.width ()  ||
+	priv->attrib.height       != (int) gm.height () ||
+	priv->attrib.border_width != (int) gm.border ())
     {
 	unsigned int pw, ph, actualWidth, actualHeight, ui;
 	int	     dx, dy, dwidth, dheight;
@@ -1637,8 +1651,8 @@ CompWindow::resize (int	x,int y, int width, int height, int borderWidth)
 	Status	     result;
 	int	     i;
 
-	pw = width  + borderWidth * 2;
-	ph = height + borderWidth * 2;
+	pw = gm.width () + gm.border () * 2;
+	ph = gm.height () + gm.border () * 2;
 
 	if (priv->mapNum && priv->redirected)
 	{
@@ -1662,16 +1676,16 @@ CompWindow::resize (int	x,int y, int width, int height, int borderWidth)
 
 	addDamage ();
 
-	dx      = x - priv->attrib.x;
-	dy      = y - priv->attrib.y;
-	dwidth  = width - priv->attrib.width;
-	dheight = height - priv->attrib.height;
+	dx      = gm.x () - priv->attrib.x;
+	dy      = gm.y () - priv->attrib.y;
+	dwidth  = gm.width () - priv->attrib.width;
+	dheight = gm.height () - priv->attrib.height;
 
-	priv->attrib.x	       = x;
-	priv->attrib.y	       = y;
-	priv->attrib.width	       = width;
-	priv->attrib.height       = height;
-	priv->attrib.border_width = borderWidth;
+	priv->attrib.x	          = gm.x ();
+	priv->attrib.y	          = gm.y ();
+	priv->attrib.width	  = gm.width ();
+	priv->attrib.height       = gm.height ();
+	priv->attrib.border_width = gm.border ();
 
 	priv->width  = pw;
 	priv->height = ph;
@@ -1691,12 +1705,12 @@ CompWindow::resize (int	x,int y, int width, int height, int borderWidth)
 
 	priv->updateFrameWindow ();
     }
-    else if (priv->attrib.x != x || priv->attrib.y != y)
+    else if (priv->attrib.x != gm.x () || priv->attrib.y != gm.y ())
     {
 	int dx, dy;
 
-	dx = x - priv->attrib.x;
-	dy = y - priv->attrib.y;
+	dx = gm.x () - priv->attrib.x;
+	dy = gm.y () - priv->attrib.y;
 
 	move (dx, dy, true, true);
 
@@ -1825,12 +1839,8 @@ CompWindow::sendSyncRequest ()
     XSendEvent (priv->screen->display ()->dpy (), priv->id, FALSE, 0,
 		(XEvent *) &xev);
 
-    priv->syncWait	       = TRUE;
-    priv->syncX	       = priv->serverX;
-    priv->syncY	       = priv->serverY;
-    priv->syncWidth       = priv->serverWidth;
-    priv->syncHeight      = priv->serverHeight;
-    priv->syncBorderWidth = priv->serverBorderWidth;
+    priv->syncWait     = TRUE;
+    priv->syncGeometry = priv->serverGeometry;
 
     if (!priv->syncWaitHandle)
 	priv->syncWaitHandle =
@@ -1842,21 +1852,15 @@ CompWindow::configure (XConfigureEvent *ce)
 {
     if (priv->syncWait)
     {
-	priv->syncX	   = ce->x;
-	priv->syncY	   = ce->y;
-	priv->syncWidth       = ce->width;
-	priv->syncHeight      = ce->height;
-	priv->syncBorderWidth = ce->border_width;
+	priv->syncGeometry.set (ce->x, ce->y, ce->width, ce->height,
+				ce->border_width);
     }
     else
     {
 	if (ce->override_redirect)
 	{
-	    priv->serverX		 = ce->x;
-	    priv->serverY		 = ce->y;
-	    priv->serverWidth       = ce->width;
-	    priv->serverHeight      = ce->height;
-	    priv->serverBorderWidth = ce->border_width;
+	    priv->serverGeometry.set (ce->x, ce->y, ce->width, ce->height,
+				      ce->border_width);
 	}
 
 	resize (ce->x, ce->y, ce->width, ce->height, ce->border_width);
@@ -1909,15 +1913,16 @@ CompWindow::move (int dx, int dy, Bool damage, Bool immediate)
 void
 CompWindow::syncPosition ()
 {
-    priv->serverX = priv->attrib.x;
-    priv->serverY = priv->attrib.y;
+    priv->serverGeometry.setX (priv->attrib.x);
+    priv->serverGeometry.setY (priv->attrib.y);
 
-    XMoveWindow (priv->screen->display ()->dpy (), priv->id, priv->attrib.x, priv->attrib.y);
+    XMoveWindow (priv->screen->display ()->dpy (), priv->id,
+		 priv->attrib.x, priv->attrib.y);
 
     if (priv->frame)
 	XMoveWindow (priv->screen->display ()->dpy (), priv->frame,
-		     priv->serverX - priv->input.left,
-		     priv->serverY - priv->input.top);
+		     priv->serverGeometry.x () - priv->input.left,
+		     priv->serverGeometry.y () - priv->input.top);
 }
 
 bool
@@ -2437,19 +2442,19 @@ PrivateWindow::saveGeometry (int mask)
 	return;
 
     if (m & CWX)
-	saveWc.x = serverX;
+	saveWc.x = serverGeometry.x ();
 
     if (m & CWY)
-	saveWc.y = serverY;
+	saveWc.y = serverGeometry.y ();
 
     if (m & CWWidth)
-	saveWc.width = serverWidth;
+	saveWc.width = serverGeometry.width ();
 
     if (m & CWHeight)
-	saveWc.height = serverHeight;
+	saveWc.height = serverGeometry.height ();
 
     if (m & CWBorderWidth)
-	saveWc.border_width = serverBorderWidth;
+	saveWc.border_width = serverGeometry.border ();
 
     saveMask |= m;
 }
@@ -2474,7 +2479,7 @@ PrivateWindow::restoreGeometry (XWindowChanges *xwc,
 	   the same as the current width then make it a little be smaller so
 	   the user can see that it changed and it also makes sure that
 	   windowResizeNotify is called and plugins are notified. */
-	if (xwc->width == serverWidth)
+	if (xwc->width == (int) serverGeometry.width ())
 	{
 	    xwc->width -= 10;
 	    if (m & CWX)
@@ -2488,7 +2493,7 @@ PrivateWindow::restoreGeometry (XWindowChanges *xwc,
 
 	/* As above, if the saved height is the same as the current height
 	   then make it a little be smaller. */
-	if (xwc->height == serverHeight)
+	if (xwc->height == (int) serverGeometry.height ())
 	{
 	    xwc->height -= 10;
 	    if (m & CWY)
@@ -2509,19 +2514,19 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
 				   XWindowChanges *xwc)
 {
     if (valueMask & CWX)
-	serverX = xwc->x;
+	serverGeometry.setX (xwc->x);
 
     if (valueMask & CWY)
-	serverY = xwc->y;
+	serverGeometry.setY (xwc->y);
 
     if (valueMask & CWWidth)
-	serverWidth = xwc->width;
+	serverGeometry.setWidth (xwc->width);
 
     if (valueMask & CWHeight)
-	serverHeight	= xwc->height;
+	serverGeometry.setHeight (xwc->height);
 
     if (valueMask & CWBorderWidth)
-	serverBorderWidth = xwc->border_width;
+	serverGeometry.setBorder (xwc->border_width);
 
     XConfigureWindow (screen->display ()->dpy (), id, valueMask, xwc);
 
@@ -2649,11 +2654,7 @@ CompWindow::configureXWindow (unsigned int valueMask,
 
 int
 PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
-				     int	     oldX,
-				     int	     oldY,
-				     int	     oldWidth,
-				     int	     oldHeight,
-				     int	     oldBorderWidth)
+				     CompWindow::Geometry old)
 {
     XRectangle workArea;
     int	       mask = 0;
@@ -2661,14 +2662,12 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
     int	       vx, vy;
     int	       output;
 
-    screen->viewportForGeometry (oldX, oldY, oldWidth, oldHeight,
-				 oldBorderWidth, &vx, &vy);
+    screen->viewportForGeometry (old, &vx, &vy);
 
     x = (vx - screen->x ()) * screen->width ();
     y = (vy - screen->y ()) * screen->height ();
 
-    output = screen->outputDeviceForGeometry (oldX, oldY, oldWidth, oldHeight,
-					      oldBorderWidth);
+    output = screen->outputDeviceForGeometry (old);
     screen->getWorkareaForOutput (output, &workArea);
 
     if (type & CompWindowTypeFullscreenMask)
@@ -2690,7 +2689,7 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	    saveGeometry (CWY | CWHeight);
 
 	    xwc->height = workArea.height - input.top -
-		input.bottom - oldBorderWidth * 2;
+		input.bottom - old.border () * 2;
 
 	    mask |= CWHeight;
 	}
@@ -2704,7 +2703,7 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	    saveGeometry (CWX | CWWidth);
 
 	    xwc->width = workArea.width - input.left -
-		input.right - oldBorderWidth * 2;
+		input.right - old.border () * 2;
 
 	    mask |= CWWidth;
 	}
@@ -2714,28 +2713,28 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	}
 
 	/* constrain window width if smaller than minimum width */
-	if (!(mask & CWWidth) && oldWidth < sizeHints.min_width)
+	if (!(mask & CWWidth) && (int) old.width () < sizeHints.min_width)
 	{
 	    xwc->width = sizeHints.min_width;
 	    mask |= CWWidth;
 	}
 
 	/* constrain window width if greater than maximum width */
-	if (!(mask & CWWidth) && oldWidth > sizeHints.max_width)
+	if (!(mask & CWWidth) && (int) old.width () > sizeHints.max_width)
 	{
 	    xwc->width = sizeHints.max_width;
 	    mask |= CWWidth;
 	}
 
 	/* constrain window height if smaller than minimum height */
-	if (!(mask & CWHeight) && oldHeight < sizeHints.min_height)
+	if (!(mask & CWHeight) && (int) old.height () < sizeHints.min_height)
 	{
 	    xwc->height = sizeHints.min_height;
 	    mask |= CWHeight;
 	}
 
 	/* constrain window height if greater than maximum height */
-	if (!(mask & CWHeight) && oldHeight > sizeHints.max_height)
+	if (!(mask & CWHeight) && (int) old.height () > sizeHints.max_height)
 	{
 	    xwc->height = sizeHints.max_height;
 	    mask |= CWHeight;
@@ -2755,15 +2754,15 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	{
 	    int width, height, max;
 
-	    width  = (mask & CWWidth)  ? xwc->width  : oldWidth;
-	    height = (mask & CWHeight) ? xwc->height : oldHeight;
+	    width  = (mask & CWWidth)  ? xwc->width  : old.width ();
+	    height = (mask & CWHeight) ? xwc->height : old.height ();
 
-	    xwc->width  = oldWidth;
-	    xwc->height = oldHeight;
+	    xwc->width  = old.width ();
+	    xwc->height = old.height ();
 
 	    constrainNewWindowSize (width, height, &width, &height);
 
-	    if (width != oldWidth)
+	    if (width != (int) old.width ())
 	    {
 		mask |= CWWidth;
 		xwc->width = width;
@@ -2771,7 +2770,7 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	    else
 		mask &= ~CWWidth;
 
-	    if (height != oldHeight)
+	    if (height != (int) old.height ())
 	    {
 		mask |= CWHeight;
 		xwc->height = height;
@@ -2781,22 +2780,22 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 
 	    if (state & CompWindowStateMaximizedVertMask)
 	    {
-		if (oldY < y + workArea.y + input.top)
+		if (old.y () < y + workArea.y + input.top)
 		{
 		    xwc->y = y + workArea.y + input.top;
 		    mask |= CWY;
 		}
 		else
 		{
-		    height = xwc->height + oldBorderWidth * 2;
+		    height = xwc->height + old.border () * 2;
 
 		    max = y + workArea.y + workArea.height;
-		    if (oldY + oldHeight + input.bottom > max)
+		    if (old.y () + (int) old.height () + input.bottom > max)
 		    {
 			xwc->y = max - height - input.bottom;
 			mask |= CWY;
 		    }
-		    else if (oldY + height + input.bottom > max)
+		    else if (old.y () + height + input.bottom > max)
 		    {
 			xwc->y = y + workArea.y +
 			    (workArea.height - input.top - height -
@@ -2808,22 +2807,22 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 
 	    if (state & CompWindowStateMaximizedHorzMask)
 	    {
-		if (oldX < x + workArea.x + input.left)
+		if (old.x () < x + workArea.x + input.left)
 		{
 		    xwc->x = x + workArea.x + input.left;
 		    mask |= CWX;
 		}
 		else
 		{
-		    width = xwc->width + oldBorderWidth * 2;
+		    width = xwc->width + old.border () * 2;
 
 		    max = x + workArea.x + workArea.width;
-		    if (oldX + oldWidth + input.right > max)
+		    if (old.x () + (int) old.width () + input.right > max)
 		    {
 			xwc->x = max - width - input.right;
 			mask |= CWX;
 		    }
-		    else if (oldX + width + input.right > max)
+		    else if (old.x () + width + input.right > max)
 		    {
 			xwc->x = x + workArea.x +
 			    (workArea.width - input.left - width -
@@ -2835,16 +2834,16 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	}
     }
 
-    if ((mask & CWX) && (xwc->x == oldX))
+    if ((mask & CWX) && (xwc->x == old.x ()))
 	mask &= ~CWX;
 
-    if ((mask & CWY) && (xwc->y == oldY))
+    if ((mask & CWY) && (xwc->y == old.y ()))
 	mask &= ~CWY;
 
-    if ((mask & CWWidth) && (xwc->width == oldWidth))
+    if ((mask & CWWidth) && (xwc->width == (int) old.width ()))
 	mask &= ~CWWidth;
 
-    if ((mask & CWHeight) && (xwc->height == oldHeight))
+    if ((mask & CWHeight) && (xwc->height == (int) old.height ()))
 	mask &= ~CWHeight;
 
     return mask;
@@ -2875,7 +2874,7 @@ CompWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case CenterGravity:
 	case SouthGravity:
 	    if (!(xwcm & CWX))
-		newX += (priv->serverWidth - xwc->width) / 2;
+		newX += (priv->serverGeometry.width () - xwc->width) / 2;
 	    break;
 
 	case NorthEastGravity:
@@ -2884,7 +2883,7 @@ CompWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	    if (xwcm & CWX)
 		newX -= priv->input.right;
 	    else
-		newX += priv->serverWidth - xwc->width;
+		newX += priv->serverGeometry.width () - xwc->width;
 	    break;
 
 	case StaticGravity:
@@ -2907,7 +2906,7 @@ CompWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case CenterGravity:
 	case EastGravity:
 	    if (!(xwcm & CWY))
-		newY += (priv->serverHeight - xwc->height) / 2;
+		newY += (priv->serverGeometry.height () - xwc->height) / 2;
 	    break;
 
 	case SouthWestGravity:
@@ -2916,7 +2915,7 @@ CompWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	    if (xwcm & CWY)
 		newY -= priv->input.bottom;
 	    else
-		newY += priv->serverHeight - xwc->height;
+		newY += priv->serverGeometry.height () - xwc->height;
 	    break;
 
 	case StaticGravity:
@@ -2953,13 +2952,13 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	gravity = priv->sizeHints.win_gravity;
 
     if (!(xwcm & CWX))
-	xwc->x = priv->serverX;
+	xwc->x = priv->serverGeometry.x ();
     if (!(xwcm & CWY))
-	xwc->y = priv->serverY;
+	xwc->y = priv->serverGeometry.y ();
     if (!(xwcm & CWWidth))
-	xwc->width = priv->serverWidth;
+	xwc->width = priv->serverGeometry.width ();
     if (!(xwcm & CWHeight))
-	xwc->height = priv->serverHeight;
+	xwc->height = priv->serverGeometry.height ();
 
     if (xwcm & (CWWidth | CWHeight))
     {
@@ -3033,26 +3032,27 @@ CompWindow::moveResize (XWindowChanges *xwc,
     if (priv->state & CompWindowStateMaximizedVertMask)
 	xwcm &= ~CWHeight;
 
-    xwcm |= priv->addWindowSizeChanges (xwc, xwc->x, xwc->y, xwc->width,
-					xwc->height, xwc->border_width);
+    xwcm |= priv->addWindowSizeChanges (xwc, Geometry (xwc->x, xwc->y,
+					xwc->width, xwc->height,
+					xwc->border_width));
 
     /* check if the new coordinates are useful and valid (different
        to current size); if not, we have to clear them to make sure
        we send a synthetic ConfigureNotify event if all coordinates
        match the server coordinates */
-    if (xwc->x == priv->serverX)
+    if (xwc->x == priv->serverGeometry.x ())
 	xwcm &= ~CWX;
 
-    if (xwc->y == priv->serverY)
+    if (xwc->y == priv->serverGeometry.y ())
 	xwcm &= ~CWY;
 
-    if (xwc->width == priv->serverWidth)
+    if (xwc->width == (int) priv->serverGeometry.width ())
 	xwcm &= ~CWWidth;
 
-    if (xwc->height == priv->serverHeight)
+    if (xwc->height == (int) priv->serverGeometry.height ())
 	xwcm &= ~CWHeight;
 
-    if (xwc->border_width == priv->serverBorderWidth)
+    if (xwc->border_width == (int) priv->serverGeometry.border ())
 	xwcm &= ~CWBorderWidth;
 
     /* update saved window coordinates - if CWX or CWY is set for fullscreen
@@ -3060,10 +3060,10 @@ CompWindow::moveResize (XWindowChanges *xwc,
        safe to assume that the saved coordinates should be updated too, e.g.
        because the window was moved to another viewport by some client */
     if ((xwcm & CWX) && (priv->saveMask & CWX))
-    	priv->saveWc.x += (xwc->x - priv->serverX);
+    	priv->saveWc.x += (xwc->x - priv->serverGeometry.x ());
 
     if ((xwcm & CWY) && (priv->saveMask & CWY))
-	priv->saveWc.y += (xwc->y - priv->serverY);
+	priv->saveWc.y += (xwc->y - priv->serverGeometry.y ());
 
     if (priv->mapNum && (xwcm & (CWWidth | CWHeight)))
 	sendSyncRequest ();
@@ -3090,10 +3090,7 @@ CompWindow::updateSize ()
     if (priv->attrib.override_redirect || !priv->managed)
 	return;
 
-    mask = priv->addWindowSizeChanges (&xwc,
-				       priv->serverX, priv->serverY,
-				       priv->serverWidth, priv->serverHeight,
-				       priv->serverBorderWidth);
+    mask = priv->addWindowSizeChanges (&xwc, priv->serverGeometry);
     if (mask)
     {
 	if (priv->mapNum && (mask & (CWWidth | CWHeight)))
@@ -3319,10 +3316,7 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 	}
     }
 
-    mask |= priv->addWindowSizeChanges (&xwc,
-					priv->serverX, priv->serverY,
-					priv->serverWidth, priv->serverHeight,
-					priv->serverBorderWidth);
+    mask |= priv->addWindowSizeChanges (&xwc, priv->serverGeometry);
 
     if (priv->mapNum && (mask & (CWWidth | CWHeight)))
 	sendSyncRequest ();
@@ -3335,8 +3329,8 @@ void
 PrivateWindow::ensureWindowVisibility ()
 {
     int x1, y1, x2, y2;
-    int	width = serverWidth + serverBorderWidth * 2;
-    int	height = serverHeight + serverBorderWidth * 2;
+    int	width = serverGeometry.width () + serverGeometry.border () * 2;
+    int	height = serverGeometry.height () + serverGeometry.border () * 2;
     int dx = 0;
     int dy = 0;
 
@@ -3353,22 +3347,22 @@ PrivateWindow::ensureWindowVisibility ()
     x2 = x1 + screen->workArea ().width + screen->hsize () * screen->width ();
     y2 = y1 + screen->workArea ().height + screen->vsize () * screen->height ();
 
-    if (serverX - input.left >= x2)
-	dx = (x2 - 25) - serverX;
-    else if (serverX + width + input.right <= x1)
-	dx = (x1 + 25) - (serverX + width);
+    if (serverGeometry.x () - input.left >= x2)
+	dx = (x2 - 25) - serverGeometry.x ();
+    else if (serverGeometry.x () + width + input.right <= x1)
+	dx = (x1 + 25) - (serverGeometry.x () + width);
 
-    if (serverY - input.top >= y2)
-	dy = (y2 - 25) - serverY;
-    else if (serverY + height + input.bottom <= y1)
-	dy = (y1 + 25) - (serverY + height);
+    if (serverGeometry.y () - input.top >= y2)
+	dy = (y2 - 25) - serverGeometry.y ();
+    else if (serverGeometry.y () + height + input.bottom <= y1)
+	dy = (y1 + 25) - (serverGeometry.y () + height);
 
     if (dx || dy)
     {
 	XWindowChanges xwc;
 
-	xwc.x = serverX + dx;
-	xwc.y = serverY + dy;
+	xwc.x = serverGeometry.x () + dx;
+	xwc.y = serverGeometry.y () + dy;
 
 	window->configureXWindow (CWX | CWY, &xwc);
     }
@@ -3980,10 +3974,7 @@ CompWindow::redirect ()
 void
 CompWindow::defaultViewport (int *vx, int *vy)
 {
-    priv->screen->viewportForGeometry (priv->serverX, priv->serverY,
-				       priv->serverWidth, priv->serverHeight,
-			               priv->serverBorderWidth,
-			               vx, vy);
+    priv->screen->viewportForGeometry (priv->serverGeometry, vx, vy);
 }
 
 /* returns icon with dimensions as close as possible to width and height
@@ -4133,9 +4124,7 @@ CompWindow::freeIcons ()
 int
 CompWindow::outputDevice ()
 {
-    return priv->screen->outputDeviceForGeometry (
-	priv->serverX, priv->serverY, priv->serverWidth, priv->serverHeight,
-	priv->serverBorderWidth);
+    return priv->screen->outputDeviceForGeometry (priv->serverGeometry);
 }
 
 bool
@@ -4556,10 +4545,10 @@ CompWindow::processMap ()
 	unsigned int   xwcm;
 
 	/* adjust for gravity */
-	xwc.x      = priv->serverX;
-	xwc.y      = priv->serverY;
-	xwc.width  = priv->serverWidth;
-	xwc.height = priv->serverHeight;
+	xwc.x      = priv->serverGeometry.x ();
+	xwc.y      = priv->serverGeometry.y ();
+	xwc.width  = priv->serverGeometry.width ();
+	xwc.height = priv->serverGeometry.height ();
 
 	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity);
 
@@ -4833,36 +4822,6 @@ CompWindow::width ()
     return priv->width;
 }
 
-int &
-CompWindow::serverX ()
-{
-    return priv->serverX;
-}
-
-int &
-CompWindow::serverY ()
-{
-    return priv->serverY;
-}
-
-int
-CompWindow::serverWidth ()
-{
-    return priv->serverWidth;
-}
-
-int
-CompWindow::serverHeight ()
-{
-    return priv->serverHeight;
-}
-
-int
-CompWindow::serverBorderWidth ()
-{
-    return priv->serverBorderWidth;
-}
-
 CompWindowExtents
 CompWindow::input ()
 {
@@ -5085,9 +5044,13 @@ CompWindow::CompWindow (CompScreen *screen,
     if (!XGetWindowAttributes (d->dpy (), id, &priv->attrib))
 	setDefaultWindowAttributes (&priv->attrib);
 
-    priv->serverWidth	    = priv->attrib.width;
-    priv->serverHeight	    = priv->attrib.height;
-    priv->serverBorderWidth = priv->attrib.border_width;
+
+    priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
+			      priv->attrib.width, priv->attrib.height,
+			      priv->attrib.border_width);
+    priv->syncGeometry.set (priv->attrib.x, priv->attrib.y,
+			    priv->attrib.width, priv->attrib.height,
+			    priv->attrib.border_width);
 
     priv->width  = priv->attrib.width  + priv->attrib.border_width * 2;
     priv->height = priv->attrib.height + priv->attrib.border_width * 2;
@@ -5098,15 +5061,6 @@ CompWindow::CompWindow (CompScreen *screen,
 
     priv->transientFor = None;
     priv->clientLeader = None;
-
-    priv->serverX = priv->attrib.x;
-    priv->serverY = priv->attrib.y;
-
-    priv->syncX	       = priv->attrib.x;
-    priv->syncY	       = priv->attrib.y;
-    priv->syncWidth       = priv->attrib.width;
-    priv->syncHeight      = priv->attrib.height;
-    priv->syncBorderWidth = priv->attrib.border_width;
 
     XSelectInput (d->dpy (), id,
 		  PropertyChangeMask |
@@ -5369,11 +5323,6 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     frame (None),
     mapNum (0),
     activeNum (0),
-    serverX (0),
-    serverY (0),
-    serverWidth (0),
-    serverHeight (0),
-    serverBorderWidth (0),
     transientFor (None),
     clientLeader (None),
     pixmap (None),

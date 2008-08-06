@@ -241,8 +241,8 @@ moveInitiate (CompDisplay     *d,
 
 	md->status = RectangleOut;
 
-	md->savedX = w->serverX ();
-	md->savedY = w->serverY ();
+	md->savedX = w->serverGeometry ().x ();
+	md->savedY = w->serverGeometry ().y ();
 
 	md->x = 0;
 	md->y = 0;
@@ -255,7 +255,7 @@ moveInitiate (CompDisplay     *d,
 	s->getWorkareaForOutput (w->outputDevice (),
 					&workArea);
 
-	ms->snapBackY = w->serverY () - workArea.y;
+	ms->snapBackY = w->serverGeometry ().y () - workArea.y;
 	ms->snapOffY  = y - workArea.y;
 
 	if (!ms->grabIndex)
@@ -442,10 +442,12 @@ moveHandleMotionEvent (CompScreen *s,
 
 	w = md->w;
 	
-	wX      = w->serverX ();
-	wY      = w->serverY ();
-	wWidth  = w->serverWidth () + w->serverBorderWidth () * 2;
-	wHeight = w->serverHeight () + w->serverBorderWidth () * 2;
+	wX      = w->serverGeometry ().x ();
+	wY      = w->serverGeometry ().y ();
+	wWidth  = w->serverGeometry ().width () +
+		  w->serverGeometry ().border () * 2;
+	wHeight = w->serverGeometry ().height () +
+		  w->serverGeometry ().border () * 2;
 
 	md->x += xRoot - lastPointerX;
 	md->y += yRoot - lastPointerY;
@@ -528,7 +530,7 @@ moveHandleMotionEvent (CompScreen *s,
 		    {
 			if (!s->otherGrabExist ("move", 0))
 			{
-			    int width = w->serverWidth ();
+			    int width = w->serverGeometry ().width ();
 
 			    w->saveMask () |= CWX | CWY;
 
@@ -614,8 +616,8 @@ moveHandleMotionEvent (CompScreen *s,
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
 		   major performance regression in the 0.5.2 release. */
-		w->serverX () = w->attrib ().x;
-		w->serverY () = w->attrib ().y;
+		w->serverGeometry ().setX (w->attrib ().x);
+		w->serverGeometry ().setY (w->attrib ().y);
 	    }
 	    else
 	    {

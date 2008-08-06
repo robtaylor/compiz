@@ -1,7 +1,6 @@
 #ifndef _COMPWINDOW_H
 #define _COMPWINDOW_H
 
-#include <compiz-core.h>
 #include <compsize.h>
 #include <comppoint.h>
 
@@ -53,6 +52,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 		Geometry (int, int, unsigned int, unsigned int, unsigned int);
 
 		unsigned int border ();
+
+		void set (int, int, unsigned int, unsigned int, unsigned int);
 
 		void setBorder (unsigned int);
 
@@ -235,7 +236,14 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	unmap ();
 
 	bool
-	resize (int x, int y, int width, int height, int borderWidth);
+	resize (XWindowAttributes);
+	
+	bool
+	resize (Geometry);
+
+	bool
+	resize (int x, int y, unsigned int width, unsigned int height,
+		unsigned int border = 0);
 
 	bool
 	handleSyncAlarm ();
@@ -373,20 +381,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	int
 	width ();
 
-	int &
-	serverX ();
-
-	int &
-	serverY ();
-
-	int
-	serverWidth ();
-
-	int
-	serverHeight ();
-
-	int
-	serverBorderWidth ();
+	Geometry &
+	serverGeometry ();
 
 	CompWindowExtents
 	input ();

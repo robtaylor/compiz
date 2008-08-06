@@ -87,11 +87,7 @@ class PrivateWindow {
 
 	int
 	addWindowSizeChanges (XWindowChanges *xwc,
-			      int	     oldX,
-			      int	     oldY,
-			      int	     oldWidth,
-			      int	     oldHeight,
-			      int	     oldBorderWidth);
+			      CompWindow::Geometry old);
 
 	int
 	addWindowStackChanges (XWindowChanges *xwc,
@@ -150,11 +146,7 @@ class PrivateWindow {
 	unsigned int      mapNum;
 	unsigned int      activeNum;
 	XWindowAttributes attrib;
-	int		      serverX;
-	int		      serverY;
-	int		      serverWidth;
-	int		      serverHeight;
-	int		      serverBorderWidth;
+	CompWindow::Geometry      serverGeometry;
 	Window	      transientFor;
 	Window	      clientLeader;
 	XSizeHints	      sizeHints;
@@ -241,12 +233,8 @@ class PrivateWindow {
 	unsigned long syncAlarmConnection;
 	unsigned int  syncWaitHandle;
 
-	bool syncWait;
-	int	 syncX;
-	int	 syncY;
-	int	 syncWidth;
-	int	 syncHeight;
-	int	 syncBorderWidth;
+	bool     syncWait;
+	CompWindow::Geometry syncGeometry;
 
 	bool closeRequests;
 	Time lastCloseRequestTime;
