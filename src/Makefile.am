@@ -31,4 +31,7 @@ compiz_SOURCES =   \
 	match.cpp    \
 	metadata.cpp \
 	output.cpp   \
-	rect.cpp
+	rect.cpp     \
+	size.cpp     \
+	point.cpp    \
+	windowgeometry.cpp

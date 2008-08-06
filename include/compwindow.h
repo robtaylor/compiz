@@ -1,6 +1,10 @@
 #ifndef _COMPWINDOW_H
 #define _COMPWINDOW_H
 
+#include <compiz-core.h>
+#include <compsize.h>
+#include <comppoint.h>
+
 class CompWindow;
 class PrivateWindow;
 
@@ -40,6 +44,22 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 
 class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
+    public:
+
+	class Geometry : public CompPoint, public CompSize {
+
+	    public:
+		Geometry ();
+		Geometry (int, int, unsigned int, unsigned int, unsigned int);
+
+		unsigned int border ();
+
+		void setBorder (unsigned int);
+
+	    private:
+		unsigned int mBorder;
+	};
+	
     public:
 	CompWindow *next;
 	CompWindow *prev;

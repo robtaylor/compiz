@@ -13,7 +13,7 @@ CompRect::CompRect ()
 
 CompRect::CompRect (int x1, int x2, int y1, int y2)
 {
-    CompRect ();
+    CompRect::CompRect ();
     setGeometry (x1, x2, y1, y2);
 }
 
