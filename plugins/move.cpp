@@ -137,7 +137,7 @@ class MoveScreen {
 	int windowPrivateIndex;
 
         CompScreen *screen;
-	CompScreen::Grab::handle grab;
+	CompScreen::grabHandle grab;
 
 	Cursor moveCursor;
 

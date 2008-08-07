@@ -23,6 +23,15 @@ class PrivateScreen {
 		int          count;
 	};
 
+	class Grab {
+	    public:
+
+		friend class CompScreen;
+	    private:
+		Cursor                      cursor;
+	    	const char                  *name;
+	};
+
     public:
 	PrivateScreen (CompScreen *screen);
 	~PrivateScreen ();
@@ -207,7 +216,7 @@ class PrivateScreen {
 	std::list<ButtonGrab> buttonGrabs;	
 	std::list<KeyGrab> keyGrabs;
 
-	std::list<CompScreen::Grab> grabs;
+	std::list<Grab *> grabs;
 
 	CompPoint rasterPos;
 	struct timeval lastRedraw;

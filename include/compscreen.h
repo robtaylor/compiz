@@ -47,18 +47,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	char *windowPrivateIndices;
 	int  windowPrivateLen;
 
-    public:
-	class Grab {
-	    public:
-		typedef std::list<Grab>::iterator* handle;
-
-		friend class CompScreen;
-		friend class PrivateScreen;
-	    private:
-		Cursor     cursor;
-	    	const char *name;
-	};
-
+	typedef void* grabHandle;
     public:
 	CompScreen ();
 	~CompScreen ();
@@ -169,14 +158,14 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	void
 	unhookWindow (CompWindow *w);
 
-	Grab::handle
+	grabHandle
 	pushGrab (Cursor cursor, const char *name);
 
 	void
-	updateGrab (Grab::handle handle, Cursor cursor);
+	updateGrab (grabHandle handle, Cursor cursor);
 
 	void
-	removeGrab (Grab::handle handle, CompPoint *restorePointer);
+	removeGrab (grabHandle handle, CompPoint *restorePointer);
 
 	bool
 	otherGrabExist (const char *, ...);

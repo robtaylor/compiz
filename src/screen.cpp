@@ -2699,7 +2699,7 @@ CompScreen::unhookWindow (CompWindow *w)
 #define POINTER_GRAB_MASK (ButtonReleaseMask | \
 			   ButtonPressMask   | \
 			   PointerMotionMask)
-CompScreen::Grab::handle
+CompScreen::grabHandle
 CompScreen::pushGrab (Cursor cursor, const char *name)
 {
     if (priv->grabs.empty())
@@ -2733,15 +2733,17 @@ CompScreen::pushGrab (Cursor cursor, const char *name)
 				  cursor, CurrentTime);
     }
 
-    Grab grab;
-    grab.cursor = cursor;
-    grab.name   = name;
+    PrivateScreen::Grab *grab = new PrivateScreen::Grab ();
+    grab->cursor = cursor;
+    grab->name   = name;
 
-    return &priv->grabs.insert (priv->grabs.end (), grab);
+    priv->grabs.push_back (grab);
+
+    return grab;
 }
 
 void
-CompScreen::updateGrab (CompScreen::Grab::handle handle, Cursor cursor)
+CompScreen::updateGrab (CompScreen::grabHandle handle, Cursor cursor)
 {
     if (!handle)
 	return;
@@ -2749,23 +2751,30 @@ CompScreen::updateGrab (CompScreen::Grab::handle handle, Cursor cursor)
     XChangeActivePointerGrab (priv->display->dpy (), POINTER_GRAB_MASK,
 			      cursor, CurrentTime);
 
-    (**handle).cursor = cursor;
+    ((PrivateScreen::Grab *) handle)->cursor = cursor;
 }
 
 void
-CompScreen::removeGrab (CompScreen::Grab::handle handle,
+CompScreen::removeGrab (CompScreen::grabHandle handle,
 			CompPoint *restorePointer)
 {
     if (!handle)
 	return;
 
-    priv->grabs.erase (*handle);
+    std::list<PrivateScreen::Grab *>::iterator it;
 
+    it = std::find (priv->grabs.begin (), priv->grabs.end (), handle);
+
+    if (it != priv->grabs.end ())
+    {
+	priv->grabs.erase (it);
+	delete handle;
+    }
     if (!priv->grabs.empty ())
     {
 	XChangeActivePointerGrab (priv->display->dpy (),
 				  POINTER_GRAB_MASK,
-				  priv->grabs.back ().cursor,
+				  priv->grabs.back ()->cursor,
 				  CurrentTime);
     }
     else
@@ -2786,9 +2795,10 @@ CompScreen::removeGrab (CompScreen::Grab::handle handle,
 bool
 CompScreen::otherGrabExist (const char *first, ...)
 {
-    va_list                   ap;
-    const char                *name;
-    std::list<Grab>::iterator it;
+    va_list    ap;
+    const char *name;
+
+    std::list<PrivateScreen::Grab *>::iterator it;
 
     for (it = priv->grabs.begin (); it != priv->grabs.end (); it++)
     {
@@ -2797,7 +2807,7 @@ CompScreen::otherGrabExist (const char *first, ...)
 	name = first;
 	while (name)
 	{
-	    if (strcmp (name, (*it).name) == 0)
+	    if (strcmp (name, (*it)->name) == 0)
 		break;
 
 	    name = va_arg (ap, const char *);
