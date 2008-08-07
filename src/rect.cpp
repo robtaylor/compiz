@@ -13,8 +13,18 @@ CompRect::CompRect ()
 
 CompRect::CompRect (int x1, int x2, int y1, int y2)
 {
-    CompRect::CompRect ();
-    setGeometry (x1, x2, y1, y2);
+    mRegion.rects = &mRegion.extents;
+    mRegion.numRects = 1;
+    mRegion.extents.x1 = x1;
+    mRegion.extents.x2 = x2;
+    mRegion.extents.y1 = y1;
+    mRegion.extents.y2 = y2;
+}
+
+CompRect::CompRect (const CompRect& r)
+{
+    mRegion = r.mRegion;
+    mRegion.rects = &mRegion.extents;
 }
 
 int

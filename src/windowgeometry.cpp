@@ -12,10 +12,10 @@ CompWindow::Geometry::Geometry (int x, int y,
 				unsigned int width,
 				unsigned int height,
 				unsigned int border) :
+    CompPoint (x, y),
+    CompSize (width, height),
     mBorder (border)
 {
-    CompPoint::CompPoint (x,y);
-    CompSize::CompSize (width, height);
 }
 
 unsigned int

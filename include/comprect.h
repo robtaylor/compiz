@@ -6,6 +6,7 @@ class CompRect {
     public:
 	CompRect ();
 	CompRect (int, int, int, int);
+	CompRect (const CompRect&);
 
 	int x ();
 	int y ();
