@@ -87,58 +87,6 @@ freeWindowObjectPrivateIndex (CompObject *parent,
 		      index);
 }
 
-CompBool
-forEachWindowObject (CompObject	        *parent,
-		     ObjectCallBackProc proc,
-		     void	        *closure)
-{
-    if (parent->type == COMP_OBJECT_TYPE_SCREEN)
-    {
-	CompWindow *w;
-
-	CORE_SCREEN (parent);
-
-	for (w = s->windows (); w; w = w->next)
-	{
-	    if (!(*proc) (w, closure))
-		return FALSE;
-	}
-    }
-
-    return TRUE;
-}
-
-char *
-nameWindowObject (CompObject *object)
-{
-    char tmp[256];
-
-    CORE_WINDOW (object);
-
-    snprintf (tmp, 256, "0x%lu", w->id ());
-
-    return strdup (tmp);
-}
-
-CompObject *
-findWindowObject (CompObject *parent,
-		  const char *name)
-{
-    if (parent->type == COMP_OBJECT_TYPE_SCREEN)
-    {
-	CompWindow *w;
-	Window	   id = atoi (name);
-
-	CORE_SCREEN (parent);
-
-	for (w = s->windows (); w; w = w->next)
-	    if (w->id () == id)
-		return w;
-    }
-
-    return NULL;
-}
-
 int
 allocateWindowPrivateIndex (CompScreen *screen)
 {
@@ -4994,7 +4942,8 @@ CompWindow::paintAttrib ()
 
 CompWindow::CompWindow (CompScreen *screen,
 			Window     id,
-			Window     aboveId)
+			Window     aboveId) :
+   CompObject (COMP_OBJECT_TYPE_WINDOW, "window")
 {
     WRAPABLE_INIT_HND(paint);
     WRAPABLE_INIT_HND(draw);
@@ -5485,3 +5434,13 @@ PrivateWindow::~PrivateWindow ()
 	free (resClass);
 }
 
+CompString
+CompWindow::name ()
+{
+    char tmp[256];
+
+    snprintf (tmp, 256, "0x%lu", priv->id);
+
+    return CompString (tmp);
+
+}

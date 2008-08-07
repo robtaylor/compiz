@@ -94,6 +94,8 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	CompCore ();
 	~CompCore ();
 
+	CompString name ();
+
 	bool
 	init ();
 

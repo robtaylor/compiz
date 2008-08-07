@@ -114,44 +114,6 @@ freeDisplayObjectPrivateIndex (CompObject *parent,
     freePrivateIndex (displayPrivateLen, displayPrivateIndices, index);
 }
 
-CompBool
-forEachDisplayObject (CompObject         *parent,
-		      ObjectCallBackProc proc,
-		      void	         *closure)
-{
-    if (parent->type == COMP_OBJECT_TYPE_CORE)
-    {
-	CompDisplay *d;
-
-	for (d = core->displays(); d; d = d->next)
-	{
-	    if (!(*proc) (d, closure))
-		return FALSE;
-	}
-    }
-
-    return TRUE;
-}
-
-char *
-nameDisplayObject (CompObject *object)
-{
-    return NULL;
-}
-
-CompObject *
-findDisplayObject (CompObject *parent,
-		   const char *name)
-{
-    if (parent->type == COMP_OBJECT_TYPE_CORE)
-    {
-	if (!name || !name[0])
-	    return core->displays ();
-    }
-
-    return NULL;
-}
-
 int
 allocateDisplayPrivateIndex (void)
 {
@@ -832,6 +794,7 @@ setDisplayAction (CompDisplay     *display,
 }
 
 CompDisplay::CompDisplay () :
+    CompObject (COMP_OBJECT_TYPE_DISPLAY, "display"),
     next (0),
     screenPrivateIndices (0),
     screenPrivateLen (0)
@@ -854,8 +817,6 @@ CompDisplay::~CompDisplay ()
 {
     while (priv->screens)
 	removeScreen (priv->screens);
-
-    core->objectRemove (core, this);
 
     objectFiniPlugins (this);
 
@@ -1065,7 +1026,7 @@ CompDisplay::init (const char *name)
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (objectInitPlugins (this));
 
-    core->objectAdd (core, this);
+    core->addChild (this);
 
     if (onlyCurrentScreen)
     {
@@ -1123,6 +1084,12 @@ CompDisplay::init (const char *name)
 			  500, CompDisplay::pingTimeout, this);
 
     return true;
+}
+
+CompString
+CompDisplay::name ()
+{
+    return CompString ("");
 }
 
 CompDisplay::Atoms

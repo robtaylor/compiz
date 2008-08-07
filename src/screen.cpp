@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <limits.h>
+#include <algorithm>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -92,58 +93,6 @@ freeScreenObjectPrivateIndex (CompObject *parent,
     freePrivateIndex (display->screenPrivateLen,
 		      display->screenPrivateIndices,
 		      index);
-}
-
-CompBool
-forEachScreenObject (CompObject	        *parent,
-		     ObjectCallBackProc proc,
-		     void	        *closure)
-{
-    if (parent->type == COMP_OBJECT_TYPE_DISPLAY)
-    {
-	CompScreen *s;
-
-	CORE_DISPLAY (parent);
-
-	for (s = d->screens(); s; s = s->next)
-	{
-	    if (!(*proc) (s, closure))
-		return FALSE;
-	}
-    }
-
-    return TRUE;
-}
-
-char *
-nameScreenObject (CompObject *object)
-{
-    char tmp[256];
-
-    CORE_SCREEN (object);
-
-    snprintf (tmp, 256, "%d", s->screenNum ());
-
-    return strdup (tmp);
-}
-
-CompObject *
-findScreenObject (CompObject *parent,
-		  const char *name)
-{
-    if (parent->type == COMP_OBJECT_TYPE_DISPLAY)
-    {
-	CompScreen *s;
-	int	   screenNum = atoi (name);
-
-	CORE_DISPLAY (parent);
-
-	for (s = d->screens(); s; s = s->next)
-	    if (s->screenNum () == screenNum)
-		return s;
-    }
-
-    return NULL;
 }
 
 int
@@ -1490,7 +1439,8 @@ CompScreen::initWindowWalker (CompWalker *walker)
     walker->prev  = walkPrev;
 }
 
-CompScreen::CompScreen ()
+CompScreen::CompScreen ():
+    CompObject (COMP_OBJECT_TYPE_SCREEN, "screen")
 {
     WRAPABLE_INIT_HND(preparePaint);
     WRAPABLE_INIT_HND(donePaint);
@@ -2329,7 +2279,7 @@ CompScreen::init (CompDisplay *display,
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (objectInitPlugins (this));
 
-    core->objectAdd (display, this);
+    display->addChild (this);
 
     XQueryTree (dpy, priv->root,
 		&rootReturn, &parentReturn,
@@ -2405,8 +2355,6 @@ CompScreen::~CompScreen ()
     while (priv->windows)
 	delete priv->windows;
 
-    core->objectRemove (priv->display, this);
-
     objectFiniPlugins (this);
 
     XUngrabKey (priv->display->dpy (), AnyKey, AnyModifier, priv->root);
@@ -2463,6 +2411,17 @@ CompScreen::~CompScreen ()
 	free (privates);
 
     delete priv;
+}
+
+CompString
+CompScreen::name ()
+{
+    char tmp[256];
+
+    snprintf (tmp, 256, "%d", priv->screenNum);
+
+    return CompString (tmp);
+
 }
 
 void

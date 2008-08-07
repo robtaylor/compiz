@@ -32,6 +32,7 @@
 
 #include <stdio.h>
 #include <sys/time.h>
+#include <assert.h>
 
 #include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
@@ -278,77 +279,6 @@ freePrivateIndex (int  len,
 		  int  index);
 
 
-/* object.c */
-
-typedef unsigned int CompObjectType;
-
-#define COMP_OBJECT_TYPE_CORE    0
-#define COMP_OBJECT_TYPE_DISPLAY 1
-#define COMP_OBJECT_TYPE_SCREEN  2
-#define COMP_OBJECT_TYPE_WINDOW  3
-
-
-typedef CompBool (*ObjectCallBackProc) (CompObject *object,
-					void       *closure);
-
-typedef CompBool (*ObjectTypeCallBackProc) (CompObjectType type,
-					    CompObject     *parent,
-					    void	   *closure);
-
-void
-compObjectInit (CompObject     *object,
-		CompPrivate    *privates,
-		CompObjectType type);
-
-void
-compObjectFini (CompObject *object);
-
-int
-compObjectAllocatePrivateIndex (CompObject     *parent,
-				CompObjectType type);
-
-void
-compObjectFreePrivateIndex (CompObject     *parent,
-			    CompObjectType type,
-			    int	           index);
-
-CompBool
-compObjectForEach (CompObject	      *parent,
-		   CompObjectType     type,
-		   ObjectCallBackProc proc,
-		   void		      *closure);
-
-CompBool
-compObjectForEachType (CompObject	      *parent,
-		       ObjectTypeCallBackProc proc,
-		       void		      *closure);
-
-const char *
-compObjectTypeName (CompObjectType type);
-
-char *
-compObjectName (CompObject *object);
-
-CompObject *
-compObjectFind (CompObject     *parent,
-		CompObjectType type,
-		const char     *name);
-
-#define ARRAY_SIZE(array)		 \
-    (sizeof (array) / sizeof (array[0]))
-
-#define DISPATCH_CHECK(object, dispTab, tabSize)	      \
-    ((object)->type < (tabSize) && (dispTab)[(object)->type])
-
-#define DISPATCH(object, dispTab, tabSize, args)   \
-    if (DISPATCH_CHECK (object, dispTab, tabSize)) \
-	(*(dispTab)[(object)->type]) args
-
-#define RETURN_DISPATCH(object, dispTab, tabSize, def, args) \
-    if (DISPATCH_CHECK (object, dispTab, tabSize))	     \
-	return (*(dispTab)[(object)->type]) args;	     \
-    else						     \
-	return (def)
 
 /* session.c */
 
@@ -732,11 +662,6 @@ allocDisplayObjectPrivateIndex (CompObject *parent);
 void
 freeDisplayObjectPrivateIndex (CompObject *parent,
 			       int	  index);
-
-CompBool
-forEachDisplayObject (CompObject	 *parent,
-		      ObjectCallBackProc proc,
-		      void		 *closure);
 
 char *
 nameDisplayObject (CompObject *object);
@@ -1338,17 +1263,8 @@ void
 freeScreenObjectPrivateIndex (CompObject *parent,
 			      int	 index);
 
-CompBool
-forEachScreenObject (CompObject	        *parent,
-		     ObjectCallBackProc proc,
-		     void	        *closure);
-
 char *
 nameScreenObject (CompObject *object);
-
-CompObject *
-findScreenObject (CompObject *parent,
-		  const char *name);
 
 int
 allocateScreenPrivateIndex (CompDisplay *display);
@@ -1403,11 +1319,6 @@ allocWindowObjectPrivateIndex (CompObject *parent);
 void
 freeWindowObjectPrivateIndex (CompObject *parent,
 			      int	 index);
-
-CompBool
-forEachWindowObject (CompObject	        *parent,
-		     ObjectCallBackProc proc,
-		     void	        *closure);
 
 char *
 nameWindowObject (CompObject *object);

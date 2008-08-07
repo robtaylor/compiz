@@ -30,6 +30,7 @@
 #include <dirent.h>
 
 #include <compiz-core.h>
+#include <compobject.h>
 
 CompPlugin *plugins = 0;
 
@@ -319,15 +320,15 @@ typedef struct _InitObjectTypeContext {
     CompObjectType type;
 } InitObjectTypeContext;
 
-static CompBool
+static bool
 initObjectTree (CompObject *object,
 		void       *closure);
 
-static CompBool
+static bool
 finiObjectTree (CompObject *object,
 		void       *closure);
 
-static CompBool
+static bool
 initObjectsWithType (CompObjectType type,
 		     CompObject	    *parent,
 		     void	    *closure)
@@ -340,9 +341,9 @@ initObjectsWithType (CompObjectType type,
     ctx.plugin = pCtx->plugin;
     ctx.object = NULL;
 
-    if (!compObjectForEach (parent, type, initObjectTree, (void *) &ctx))
+    if (!parent->forEachChild (initObjectTree, (void *) &ctx, type))
     {
-	compObjectForEach (parent, type, finiObjectTree, (void *) &ctx);
+	parent->forEachChild (finiObjectTree, (void *) &ctx, type);
 
 	return FALSE;
     }
@@ -350,7 +351,7 @@ initObjectsWithType (CompObjectType type,
     return TRUE;
 }
 
-static CompBool
+static bool
 finiObjectsWithType (CompObjectType type,
 		     CompObject	    *parent,
 		     void	    *closure)
@@ -365,12 +366,12 @@ finiObjectsWithType (CompObjectType type,
     ctx.plugin = pCtx->plugin;
     ctx.object = NULL;
 
-    compObjectForEach (parent, type, finiObjectTree, (void *) &ctx);
+    parent->forEachChild (finiObjectTree, (void *) &ctx, type);
 
     return TRUE;
 }
 
-static CompBool
+static bool
 initObjectTree (CompObject *object,
 		void       *closure)
 {
@@ -413,7 +414,7 @@ initObjectTree (CompObject *object,
     return TRUE;
 }
 
-static CompBool
+static bool
 finiObjectTree (CompObject *object,
 		void       *closure)
 {

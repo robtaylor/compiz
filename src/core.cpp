@@ -107,7 +107,8 @@ freeCorePrivateIndex (int index)
     ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
      (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
 
-CompCore::CompCore ()
+CompCore::CompCore () :
+    CompObject (COMP_OBJECT_TYPE_CORE, "core")
 {
     priv = new PrivateCore (this);
     assert (priv);
@@ -159,6 +160,13 @@ CompCore::~CompCore ()
 	unloadPlugin (p);
 
 }
+
+CompString
+CompCore::name ()
+{
+    return CompString ("");
+}
+
 
 CompDisplay *
 CompCore::displays()
@@ -553,17 +561,12 @@ CompCore::setOptionForPlugin (CompObject      *object,
 
 void
 CompCore::objectAdd (CompObject *parent, CompObject *object)
-{
     WRAPABLE_HND_FUNC(objectAdd, parent, object)
-    object->parent = parent;
-}
+
 
 void
 CompCore::objectRemove (CompObject *parent, CompObject *object)
-{
     WRAPABLE_HND_FUNC(objectRemove, parent, object)
-    object->parent = NULL;
-}
 
 void
 CompCore::sessionEvent (CompSessionEvent event,

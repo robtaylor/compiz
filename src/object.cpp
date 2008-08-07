@@ -23,7 +23,10 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
+#include <algorithm>
+
 #include <compiz-core.h>
+#include "privateobject.h"
 
 typedef CompBool (*AllocObjectPrivateIndexProc) (CompObject *parent);
 
@@ -43,38 +46,23 @@ struct _CompObjectInfo {
     const char			*name;
     AllocObjectPrivateIndexProc allocPrivateIndex;
     FreeObjectPrivateIndexProc  freePrivateIndex;
-    ForEachObjectProc		forEachObject;
-    NameObjectProc		nameObject;
-    FindObjectProc		findObject;
 } objectInfo[] = {
     {
 	"core",
 	allocCoreObjectPrivateIndex,
-	freeCoreObjectPrivateIndex,
-	forEachCoreObject,
-	nameCoreObject,
-	findCoreObject
+	freeCoreObjectPrivateIndex
     }, {
 	"display",
 	allocDisplayObjectPrivateIndex,
-	freeDisplayObjectPrivateIndex,
-	forEachDisplayObject,
-	nameDisplayObject,
-	findDisplayObject
+	freeDisplayObjectPrivateIndex
     }, {
 	"screen",
 	allocScreenObjectPrivateIndex,
-	freeScreenObjectPrivateIndex,
-	forEachScreenObject,
-	nameScreenObject,
-	findScreenObject
+	freeScreenObjectPrivateIndex
     }, {
 	"window",
 	allocWindowObjectPrivateIndex,
-	freeWindowObjectPrivateIndex,
-	forEachWindowObject,
-	nameWindowObject,
-	findWindowObject
+	freeWindowObjectPrivateIndex
     }
 };
 
@@ -83,9 +71,7 @@ compObjectInit (CompObject     *object,
 		CompPrivate    *privates,
 		CompObjectType type)
 {
-    object->type     = type;
     object->privates = privates;
-    object->parent   = NULL;
 }
 
 int
@@ -103,19 +89,17 @@ compObjectFreePrivateIndex (CompObject     *parent,
     (*objectInfo[type].freePrivateIndex) (parent, index);
 }
 
-CompBool
-compObjectForEach (CompObject	      *parent,
-		   CompObjectType     type,
-		   ObjectCallBackProc proc,
-		   void		      *closure)
+
+const char *
+compObjectTypeName (CompObjectType type)
 {
-    return (*objectInfo[type].forEachObject) (parent, proc, closure);
+    return objectInfo[type].name;
 }
 
 CompBool
-compObjectForEachType (CompObject	      *parent,
+compObjectForEachType (CompObject            *parent,
 		       ObjectTypeCallBackProc proc,
-		       void		      *closure)
+		       void                   *closure)
 {
     int i;
 
@@ -126,22 +110,88 @@ compObjectForEachType (CompObject	      *parent,
     return TRUE;
 }
 
+
+PrivateObject::PrivateObject () :
+    typeName (0),
+    parent (NULL),
+    children (0)
+{
+}
+
+
+CompObject::CompObject (CompObjectType type, const char* typeName) :
+    privates (0)
+{
+    priv = new PrivateObject ();
+    assert (priv);
+
+    priv->type     = type;
+    priv->typeName = typeName;
+}
+	
+CompObject::~CompObject ()
+{
+    std::list<CompObject *>::iterator it;
+
+    while (!priv->children.empty ())
+    {
+	CompObject *o = priv->children.front ();
+	priv->children.pop_front ();
+	o->priv->parent = NULL;
+	core->objectRemove (this, o);
+	delete o;
+    }
+    if (priv->parent)
+    {
+	it = std::find (priv->parent->priv->children.begin (),
+			priv->parent->priv->children.end (),
+			this);
+
+	if (it != priv->parent->priv->children.end ())
+	{
+	    priv->parent->priv->children.erase (it);
+	    core->objectRemove (priv->parent, this);
+	}
+    }
+}
+
 const char *
-compObjectTypeName (CompObjectType type)
+CompObject::typeName ()
 {
-    return objectInfo[type].name;
+    return priv->typeName;
 }
 
-char *
-compObjectName (CompObject *object)
+CompObjectType
+CompObject::type ()
 {
-    return (*objectInfo[object->type].nameObject) (object);
+    return priv->type;
 }
 
-CompObject *
-compObjectFind (CompObject     *parent,
-		CompObjectType type,
-		const char     *name)
+void
+CompObject::addChild (CompObject *object)
 {
-    return (*objectInfo[type].findObject) (parent, name);
+    if (!object)
+	return;
+    object->priv->parent = this;
+    priv->children.push_back (object);
+    core->objectAdd (this, object);
 }
+
+bool
+CompObject::forEachChild (ObjectCallBackProc proc,
+			  void	             *closure,
+			  CompObjectType     type)
+{
+    bool rv = true;
+
+    std::list<CompObject *>::iterator it;
+    for (it = priv->children.begin (); it != priv->children.end (); it++)
+    {
+	if (type > 0 && (*it)->type () != type)
+	    continue;
+	rv &= (*proc) ((*it), closure);
+    }
+
+    return rv;
+}
+

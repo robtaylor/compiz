@@ -52,6 +52,8 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	CompScreen ();
 	~CompScreen ();
 
+	CompString name ();
+
 	bool
 	init (CompDisplay *, int);
 
