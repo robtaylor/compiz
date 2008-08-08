@@ -41,63 +41,20 @@
 #include "privatewindow.h"
 
 
-
-
-
-
-static int
-reallocWindowPrivates (int  size,
-		       void *closure)
-{
-    CompScreen *s = (CompScreen *) closure;
-    CompWindow *w;
-    void       *privates;
-
-    for (w = s->windows (); w; w = w->next)
-    {
-	privates = realloc (w->privates, size * sizeof (CompPrivate));
-	if (!privates)
-	    return FALSE;
-
-	w->privates = (CompPrivate *) privates;
-    }
-
-    return TRUE;
-}
+CompObject::indices windowPrivateIndices (0);
 
 int
-allocWindowObjectPrivateIndex (CompObject *parent)
+CompWindow::allocPrivateIndex ()
 {
-    CompScreen *screen = (CompScreen *) parent;
-
-    return allocatePrivateIndex (&screen->windowPrivateLen,
-				 &screen->windowPrivateIndices,
-				 reallocWindowPrivates,
-				 (void *) screen);
+    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_WINDOW,
+					     &windowPrivateIndices);
 }
 
 void
-freeWindowObjectPrivateIndex (CompObject *parent,
-			      int	 index)
+CompWindow::freePrivateIndex (int index)
 {
-    CompScreen *screen = (CompScreen *) parent;
-
-    freePrivateIndex (screen->windowPrivateLen,
-		      screen->windowPrivateIndices,
-		      index);
-}
-
-int
-allocateWindowPrivateIndex (CompScreen *screen)
-{
-    return compObjectAllocatePrivateIndex (screen, COMP_OBJECT_TYPE_WINDOW);
-}
-
-void
-freeWindowPrivateIndex (CompScreen *screen,
-			int	   index)
-{
-    compObjectFreePrivateIndex (screen, COMP_OBJECT_TYPE_WINDOW, index);
+    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_WINDOW,
+				  &windowPrivateIndices, index);
 }
 
 bool
@@ -4943,7 +4900,7 @@ CompWindow::paintAttrib ()
 CompWindow::CompWindow (CompScreen *screen,
 			Window     id,
 			Window     aboveId) :
-   CompObject (COMP_OBJECT_TYPE_WINDOW, "window")
+   CompObject (COMP_OBJECT_TYPE_WINDOW, "window", &windowPrivateIndices)
 {
     WRAPABLE_INIT_HND(paint);
     WRAPABLE_INIT_HND(draw);
@@ -4972,18 +4929,7 @@ CompWindow::CompWindow (CompScreen *screen,
 
     priv->screen = screen;
 
-    CompPrivate	*privates;
     CompDisplay *d = screen->display ();
-
-    if (screen->windowPrivateLen)
-    {
-	privates = (CompPrivate *) malloc (screen->windowPrivateLen * sizeof (CompPrivate));
-	assert (privates);
-    }
-    else
-	privates = 0;
-
-    compObjectInit (this, privates, COMP_OBJECT_TYPE_WINDOW);
 
     priv->region = XCreateRegion ();
     assert (priv->region);
@@ -5189,10 +5135,11 @@ CompWindow::CompWindow (CompScreen *screen,
 	}
     }
 
+    screen->addChild (this);
+
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (objectInitPlugins (this));
 
-    core->objectAdd (screen, this);
 
     recalcActions ();
     updateIconGeometry ();
@@ -5266,9 +5213,6 @@ CompWindow::~CompWindow ()
     objectFiniPlugins (this);
 
     release ();
-
-    if (privates)
-	free (privates);
 
     delete priv;
 }

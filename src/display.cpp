@@ -76,54 +76,21 @@ typedef struct {
 
 #define NUM_OPTIONS(d) (sizeof ((d)->priv->opt) / sizeof (CompOption))
 
-static char *displayPrivateIndices = 0;
-static int  displayPrivateLen = 0;
 
-static int
-reallocDisplayPrivate (int  size,
-		       void *closure)
-{
-    CompDisplay *d;
-    void        *privates;
-
-    for (d = core->displays(); d; d = d->next)
-    {
-	privates = realloc (d->privates, size * sizeof (CompPrivate));
-	if (!privates)
-	    return FALSE;
-
-	d->privates = (CompPrivate *) privates;
-    }
-
-    return TRUE;
-}
+CompObject::indices displayPrivateIndices (0);
 
 int
-allocDisplayObjectPrivateIndex (CompObject *parent)
+CompDisplay::allocPrivateIndex ()
 {
-    return allocatePrivateIndex (&displayPrivateLen,
-				 &displayPrivateIndices,
-				 reallocDisplayPrivate,
-				 0);
+    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_DISPLAY,
+					     &displayPrivateIndices);
 }
 
 void
-freeDisplayObjectPrivateIndex (CompObject *parent,
-			       int	  index)
+CompDisplay::freePrivateIndex (int index)
 {
-    freePrivateIndex (displayPrivateLen, displayPrivateIndices, index);
-}
-
-int
-allocateDisplayPrivateIndex (void)
-{
-    return compObjectAllocatePrivateIndex (NULL, COMP_OBJECT_TYPE_DISPLAY);
-}
-
-void
-freeDisplayPrivateIndex (int index)
-{
-    compObjectFreePrivateIndex (NULL, COMP_OBJECT_TYPE_DISPLAY, index);
+    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_DISPLAY,
+				  &displayPrivateIndices, index);
 }
 
 bool
@@ -794,10 +761,8 @@ setDisplayAction (CompDisplay     *display,
 }
 
 CompDisplay::CompDisplay () :
-    CompObject (COMP_OBJECT_TYPE_DISPLAY, "display"),
-    next (0),
-    screenPrivateIndices (0),
-    screenPrivateLen (0)
+    CompObject (COMP_OBJECT_TYPE_DISPLAY, "display", &displayPrivateIndices),
+    next (0)
 {
     WRAPABLE_INIT_HND(handleEvent);
     WRAPABLE_INIT_HND(handleCompizEvent);
@@ -839,39 +804,18 @@ CompDisplay::~CompDisplay ()
     if (priv->modMap)
 	XFreeModifiermap (priv->modMap);
 
-    if (screenPrivateIndices)
-	free (screenPrivateIndices);
-
-    if (privates)
-	free (privates);
-
     delete priv;
 }
 
 bool
 CompDisplay::init (const char *name)
 {
-    CompPrivate	*privates;
     Window	focus;
     int		revertTo, i;
     int		compositeMajor, compositeMinor;
     int		fixesMinor;
     int		xkbOpcode;
     int		firstScreen, lastScreen;
-
-    if (displayPrivateLen)
-    {
-	privates =
-	    (CompPrivate *) malloc (displayPrivateLen * sizeof (CompPrivate));
-	if (!privates)
-	{
-	    return false;
-	}
-    }
-    else
-	privates = 0;
-
-    compObjectInit (this, privates, COMP_OBJECT_TYPE_DISPLAY);
 
     mTmpRegion = XCreateRegion ();
     if (!mTmpRegion)
@@ -1023,10 +967,10 @@ CompDisplay::init (const char *name)
     priv->returnKeyCode =
 	XKeysymToKeycode (priv->dpy, XStringToKeysym ("Return"));
 
+    core->addChild (this);
+
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (objectInitPlugins (this));
-
-    core->addChild (this);
 
     if (onlyCurrentScreen)
     {

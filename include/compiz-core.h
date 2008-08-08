@@ -258,26 +258,13 @@ extern CompMetadata coreMetadata;
 #define UNWRAP(priv, real, func) \
     (real)->func = (priv)->func
 
+
 typedef union _CompPrivate {
     void	  *ptr;
     long	  val;
     unsigned long uval;
     void	  *(*fptr) (void);
 } CompPrivate;
-
-typedef int (*ReallocPrivatesProc) (int size, void *closure);
-
-int
-allocatePrivateIndex (int		  *len,
-		      char		  **indices,
-		      ReallocPrivatesProc reallocProc,
-		      void		  *closure);
-
-void
-freePrivateIndex (int  len,
-		  char *indices,
-		  int  index);
-
 
 
 /* session.c */
@@ -646,35 +633,6 @@ union _CompMatchOp {
     CompMatchExpOp   exp;
 };
 
-
-
-
-#define GET_CORE_DISPLAY(object) ((CompDisplay *) (object))
-#define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
-
-CompBool
-allocDisplayObjectPrivates (CompObject *object,
-			    CompObject *parent);
-
-int
-allocDisplayObjectPrivateIndex (CompObject *parent);
-
-void
-freeDisplayObjectPrivateIndex (CompObject *parent,
-			       int	  index);
-
-char *
-nameDisplayObject (CompObject *object);
-
-CompObject *
-findDisplayObject (CompObject *parent,
-		   const char *name);
-
-int
-allocateDisplayPrivateIndex (void);
-
-void
-freeDisplayPrivateIndex (int index);
 
 bool
 setDisplayOption (CompObject      *object,
@@ -1248,31 +1206,6 @@ typedef struct _CompActiveWindowHistory {
     int    activeNum;
 } CompActiveWindowHistory;
 
-
-#define GET_CORE_SCREEN(object) ((CompScreen *) (object))
-#define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
-
-CompBool
-allocScreenObjectPrivates (CompObject *object,
-			   CompObject *parent);
-
-int
-allocScreenObjectPrivateIndex (CompObject *parent);
-
-void
-freeScreenObjectPrivateIndex (CompObject *parent,
-			      int	 index);
-
-char *
-nameScreenObject (CompObject *object);
-
-int
-allocateScreenPrivateIndex (CompDisplay *display);
-
-void
-freeScreenPrivateIndex (CompDisplay *display,
-			int	    index);
-
 bool
 setScreenOption (CompObject      *object,
 		 const char      *name,
@@ -1306,34 +1239,6 @@ typedef struct _CompStruts {
 } CompStruts;
 
 
-#define GET_CORE_WINDOW(object) ((CompWindow *) (object))
-#define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
-
-CompBool
-allocWindowObjectPrivates (CompObject *object,
-			   CompObject *parent);
-
-int
-allocWindowObjectPrivateIndex (CompObject *parent);
-
-void
-freeWindowObjectPrivateIndex (CompObject *parent,
-			      int	 index);
-
-char *
-nameWindowObject (CompObject *object);
-
-CompObject *
-findWindowObject (CompObject *parent,
-		  const char *name);
-
-int
-allocateWindowPrivateIndex (CompScreen *screen);
-
-void
-freeWindowPrivateIndex (CompScreen *screen,
-			int	   index);
-
 /* plugin.c */
 
 #define HOME_PLUGINDIR ".compiz/plugins"
@@ -1360,7 +1265,7 @@ struct _CompPlugin {
     CompPluginVTable *vTable;
 };
 
-CompBool
+bool
 objectInitPlugins (CompObject *o);
 
 void

@@ -7,6 +7,9 @@
 class CompWindow;
 class PrivateWindow;
 
+#define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
+#define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
+
 class WindowInterface : public WrapableInterface<CompWindow> {
     public:
 	WindowInterface ();
@@ -450,6 +453,9 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	static int
 	compareWindowActiveness (CompWindow *w1,
 				 CompWindow *w2);
+
+	static int allocPrivateIndex ();
+	static void freePrivateIndex (int index);
 
     	WRAPABLE_HND(bool, paint, const WindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);

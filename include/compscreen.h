@@ -6,6 +6,9 @@
 class CompScreen;
 class PrivateScreen;
 
+#define GET_CORE_SCREEN(object) (dynamic_cast<CompScreen *> (object))
+#define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
+
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
 	ScreenInterface ();
@@ -399,6 +402,9 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	CompCursorImage *&
 	cursorImages ();
+
+	static int allocPrivateIndex ();
+	static void freePrivateIndex (int index);
 
 	WRAPABLE_HND(void, preparePaint, int);
 	WRAPABLE_HND(void, donePaint);

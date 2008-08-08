@@ -32,73 +32,21 @@
 
 CompCore *core;
 
-static char *corePrivateIndices = 0;
-static int  corePrivateLen = 0;
-
-static int
-reallocCorePrivate (int  size,
-		    void *closure)
-{
-    void *privates;
-
-    privates = realloc (core->privates, size * sizeof (CompPrivate));
-    if (!privates)
-	return FALSE;
-
-    core->privates = (CompPrivate *) privates;
-
-    return TRUE;
-}
+CompObject::indices corePrivateIndices (0);
 
 int
-allocCoreObjectPrivateIndex (CompObject *parent)
+CompCore::allocPrivateIndex ()
 {
-    return allocatePrivateIndex (&corePrivateLen,
-				 &corePrivateIndices,
-				 reallocCorePrivate,
-				 0);
+    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_CORE,
+					     &corePrivateIndices);
 }
 
 void
-freeCoreObjectPrivateIndex (CompObject *parent,
-			    int	       index)
+CompCore::freePrivateIndex (int index)
 {
-    freePrivateIndex (corePrivateLen, corePrivateIndices, index);
+    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_CORE,
+				  &corePrivateIndices, index);
 }
-
-CompBool
-forEachCoreObject (CompObject         *parent,
-		   ObjectCallBackProc proc,
-		   void		      *closure)
-{
-    return TRUE;
-}
-
-char *
-nameCoreObject (CompObject *object)
-{
-    return NULL;
-}
-
-CompObject *
-findCoreObject (CompObject *parent,
-		const char *name)
-{
-    return NULL;
-}
-
-int
-allocateCorePrivateIndex (void)
-{
-    return compObjectAllocatePrivateIndex (NULL, COMP_OBJECT_TYPE_CORE);
-}
-
-void
-freeCorePrivateIndex (int index)
-{
-    compObjectFreePrivateIndex (NULL, COMP_OBJECT_TYPE_CORE, index);
-}
-
 
 #define TIMEVALDIFF(tv1, tv2)						   \
     ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
@@ -112,8 +60,6 @@ CompCore::CompCore () :
 {
     priv = new PrivateCore (this);
     assert (priv);
-
-    compObjectInit (this, 0, COMP_OBJECT_TYPE_CORE);
 }
 
 bool

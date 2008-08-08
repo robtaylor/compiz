@@ -138,6 +138,9 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	void *
 	removeTimeout (CompTimeoutHandle handle);
 
+	static int allocPrivateIndex ();
+	static void freePrivateIndex (int index);
+
         // Wrapable interface
 
 	WRAPABLE_HND(void, fileWatchAdded, CompFileWatch *)

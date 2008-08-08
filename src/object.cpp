@@ -28,89 +28,6 @@
 #include <compiz-core.h>
 #include "privateobject.h"
 
-typedef CompBool (*AllocObjectPrivateIndexProc) (CompObject *parent);
-
-typedef void (*FreeObjectPrivateIndexProc) (CompObject *parent,
-					    int	       index);
-
-typedef CompBool (*ForEachObjectProc) (CompObject	  *parent,
-				       ObjectCallBackProc proc,
-				       void		  *closure);
-
-typedef char *(*NameObjectProc) (CompObject *object);
-
-typedef CompObject *(*FindObjectProc) (CompObject *parent,
-				       const char *name);
-
-struct _CompObjectInfo {
-    const char			*name;
-    AllocObjectPrivateIndexProc allocPrivateIndex;
-    FreeObjectPrivateIndexProc  freePrivateIndex;
-} objectInfo[] = {
-    {
-	"core",
-	allocCoreObjectPrivateIndex,
-	freeCoreObjectPrivateIndex
-    }, {
-	"display",
-	allocDisplayObjectPrivateIndex,
-	freeDisplayObjectPrivateIndex
-    }, {
-	"screen",
-	allocScreenObjectPrivateIndex,
-	freeScreenObjectPrivateIndex
-    }, {
-	"window",
-	allocWindowObjectPrivateIndex,
-	freeWindowObjectPrivateIndex
-    }
-};
-
-void
-compObjectInit (CompObject     *object,
-		CompPrivate    *privates,
-		CompObjectType type)
-{
-    object->privates = privates;
-}
-
-int
-compObjectAllocatePrivateIndex (CompObject     *parent,
-				CompObjectType type)
-{
-    return (*objectInfo[type].allocPrivateIndex) (parent);
-}
-
-void
-compObjectFreePrivateIndex (CompObject     *parent,
-			    CompObjectType type,
-			    int	           index)
-{
-    (*objectInfo[type].freePrivateIndex) (parent, index);
-}
-
-
-const char *
-compObjectTypeName (CompObjectType type)
-{
-    return objectInfo[type].name;
-}
-
-CompBool
-compObjectForEachType (CompObject            *parent,
-		       ObjectTypeCallBackProc proc,
-		       void                   *closure)
-{
-    int i;
-
-    for (i = 0; i < sizeof (objectInfo) / sizeof (objectInfo[0]); i++)
-	if (!(*proc) (i, parent, closure))
-	    return FALSE;
-
-    return TRUE;
-}
-
-
 PrivateObject::PrivateObject () :
     typeName (0),
     parent (NULL),
@@ -119,7 +36,8 @@ PrivateObject::PrivateObject () :
 }
 
 
-CompObject::CompObject (CompObjectType type, const char* typeName) :
+CompObject::CompObject (CompObjectType type, const char* typeName,
+		        CompObject::indices *iList) :
     privates (0)
 {
     priv = new PrivateObject ();
@@ -127,6 +45,9 @@ CompObject::CompObject (CompObjectType type, const char* typeName) :
 
     priv->type     = type;
     priv->typeName = typeName;
+
+    if (iList && iList->size() > 0)
+	privates.resize (iList->size ());
 }
 	
 CompObject::~CompObject ()
@@ -193,5 +114,77 @@ CompObject::forEachChild (ObjectCallBackProc proc,
     }
 
     return rv;
+}
+
+typedef struct _ResizeInfo {
+    CompObjectType type;
+    unsigned int   size;
+} ResizeInfo;
+
+static bool
+resizePrivates (CompObject *o, void * closure)
+{
+    ResizeInfo *info = static_cast<ResizeInfo *> (closure);
+
+    if (o->type () == info->type)
+    {
+	o->privates.resize (info->size);
+    }
+    o->forEachChild (resizePrivates, info);
+
+    return true;
+}
+
+int
+CompObject::allocatePrivateIndex (CompObjectType      type,
+				  CompObject::indices *iList)
+{
+    if (!iList)
+	return -1;
+
+    for (unsigned int i = 0; i < iList->size(); i++)
+    {
+	if (!iList->at (i))
+	{
+	    iList->at (i) = true;
+	    return i;
+	}
+    }
+    unsigned int i = iList->size ();
+    iList->resize (i + 1);
+    iList->at (i) = true;
+
+    ResizeInfo info;
+    info.type = type;
+    info.size = i + 1;
+
+
+    resizePrivates (core, static_cast<void *> (&info));
+
+    return i;
+}
+
+void
+CompObject::freePrivateIndex (CompObjectType type,
+			      CompObject::indices *iList,
+	 		      int idx)
+{
+    if (!iList || idx < 0 || idx >= (int) iList->size())
+	return;
+
+    if (idx < (int) iList->size () - 1)
+    {
+	iList->at(idx) = false;
+	return;
+    }
+
+    unsigned int i = iList->size () - 1;
+    iList->resize (i);
+
+    ResizeInfo info;
+    info.type = type;
+    info.size = i;
+
+    resizePrivates (core, static_cast<void *> (&info));
 }
 

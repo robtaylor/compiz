@@ -85,6 +85,9 @@ struct _MoveKeys {
 #define SNAP_OFF  100
 
 static int displayPrivateIndex;
+static int screenPrivateIndex;
+static int windowPrivateIndex;
+
 
 #define MOVE_DISPLAY_OPTION_INITIATE_BUTTON   0
 #define MOVE_DISPLAY_OPTION_INITIATE_KEY      1
@@ -106,10 +109,7 @@ class MoveDisplay : public DisplayInterface {
 	void
 	handleEvent (XEvent *);
 	
-
 	CompDisplay *display;
-	int		    screenPrivateIndex;
-	
 
 	CompOption opt[MOVE_DISPLAY_OPTION_NUM];
 
@@ -133,8 +133,6 @@ class MoveScreen {
     public:
 	
 	MoveScreen (CompScreen *screen) : screen (screen) {};
-
-	int windowPrivateIndex;
 
         CompScreen *screen;
 	CompScreen::grabHandle grab;
@@ -163,22 +161,22 @@ class MoveWindow : public WindowInterface {
 };
 
 #define GET_MOVE_DISPLAY(d)					  \
-    ((MoveDisplay *) (d)->privates[displayPrivateIndex].ptr)
+    static_cast<MoveDisplay *> ((d)->privates[displayPrivateIndex].ptr)
 
 #define MOVE_DISPLAY(d)		           \
     MoveDisplay *md = GET_MOVE_DISPLAY (d)
 
-#define GET_MOVE_SCREEN(s, md)					      \
-    ((MoveScreen *) (s)->privates[(md)->screenPrivateIndex].ptr)
+#define GET_MOVE_SCREEN(s)					      \
+    static_cast<MoveScreen *> ((s)->privates[screenPrivateIndex].ptr)
 
 #define MOVE_SCREEN(s)						        \
-    MoveScreen *ms = GET_MOVE_SCREEN (s, GET_MOVE_DISPLAY (s->display ()))
+    MoveScreen *ms = GET_MOVE_SCREEN (s)
 
-#define GET_MOVE_WINDOW(w, ms)					      \
-    ((MoveWindow *) (w)->privates[(ms)->windowPrivateIndex].ptr)
+#define GET_MOVE_WINDOW(w)					      \
+    static_cast<MoveWindow *> ((w)->privates[windowPrivateIndex].ptr)
 
 #define MOVE_WINDOW(w)						        \
-    MoveWindow *mw = GET_MOVE_WINDOW (w, GET_MOVE_SCREEN (w->screen (), GET_MOVE_DISPLAY (w->screen ()->display())))
+    MoveWindow *mw = GET_MOVE_WINDOW (w)
 
 #define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
 
@@ -639,6 +637,7 @@ MoveDisplay::handleEvent (XEvent *event)
     case ButtonPress:
     case ButtonRelease:
 	s = display->findScreen (event->xbutton.root);
+	
 	if (s)
 	{
 	    MOVE_SCREEN (s);
@@ -903,14 +902,6 @@ moveInitDisplay (CompObject *o)
 	return false;
     }
 
-    md->screenPrivateIndex = allocateScreenPrivateIndex (d);
-    if (md->screenPrivateIndex < 0)
-    {
-	compFiniDisplayOptions (d, md->opt, MOVE_DISPLAY_OPTION_NUM);
-	delete md;
-	return false;
-    }
-
     md->moveOpacity =
 	(md->opt[MOVE_DISPLAY_OPTION_OPACITY].value.i * OPAQUE) / 100;
 
@@ -935,8 +926,6 @@ moveFiniDisplay (CompObject *o)
     CORE_DISPLAY (o);
     MOVE_DISPLAY (d);
 
-    freeScreenPrivateIndex (d, md->screenPrivateIndex);
-
     compFiniDisplayOptions (d, md->opt, MOVE_DISPLAY_OPTION_NUM);
 
     delete md;
@@ -954,18 +943,11 @@ moveInitScreen (CompObject *o)
     if (!ms)
 	return false;
 
-    ms->windowPrivateIndex = allocateWindowPrivateIndex (s);
-    if (ms->windowPrivateIndex < 0)
-    {
-	delete ms;
-	return false;
-    }
-
     ms->grab = NULL;
 
     ms->moveCursor = XCreateFontCursor (s->display ()->dpy (), XC_fleur);
 
-    s->privates[md->screenPrivateIndex].ptr = ms;
+    s->privates[screenPrivateIndex].ptr = ms;
 
     return true;
 }
@@ -975,8 +957,6 @@ moveFiniScreen (CompObject *o)
 {
     CORE_SCREEN (o);
     MOVE_SCREEN (s);
-
-    freeWindowPrivateIndex (s, ms->windowPrivateIndex);
 
     if (ms->moveCursor)
 	XFreeCursor (s->display ()->dpy (), ms->moveCursor);
@@ -996,7 +976,7 @@ moveInitWindow (CompObject *o)
     if (!mw)
 	return false;
 
-    w->privates[ms->windowPrivateIndex].ptr = mw;
+    w->privates[windowPrivateIndex].ptr = mw;
 
     return true;
 }
@@ -1073,9 +1053,24 @@ MovePluginVTable::init ()
 					 0, 0))
 	return false;
 
-    displayPrivateIndex = allocateDisplayPrivateIndex ();
+    displayPrivateIndex = CompDisplay::allocPrivateIndex ();
     if (displayPrivateIndex < 0)
     {
+	compFiniMetadata (&moveMetadata);
+	return false;
+    }
+    screenPrivateIndex = CompScreen::allocPrivateIndex ();
+    if (screenPrivateIndex < 0)
+    {
+	CompDisplay::freePrivateIndex (displayPrivateIndex);
+	compFiniMetadata (&moveMetadata);
+	return false;
+    }
+    windowPrivateIndex = CompWindow::allocPrivateIndex ();
+    if (windowPrivateIndex < 0)
+    {
+	CompDisplay::freePrivateIndex (displayPrivateIndex);
+	CompScreen::freePrivateIndex (screenPrivateIndex);
 	compFiniMetadata (&moveMetadata);
 	return false;
     }
@@ -1088,7 +1083,10 @@ MovePluginVTable::init ()
 void
 MovePluginVTable::fini ()
 {
-    freeDisplayPrivateIndex (displayPrivateIndex);
+    CompDisplay::freePrivateIndex (displayPrivateIndex);
+    CompScreen::freePrivateIndex (screenPrivateIndex);
+    CompWindow::freePrivateIndex (windowPrivateIndex);
+
     compFiniMetadata (&moveMetadata);
 }
 

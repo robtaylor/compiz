@@ -1,6 +1,7 @@
 #ifndef _COMPOBJECT_H
 #define _COMPOBJECT_H
 
+#include <vector>
 
 typedef int CompObjectType;
 
@@ -14,43 +15,6 @@ typedef int CompObjectType;
 
 typedef bool (*ObjectCallBackProc) (CompObject *object,
 				    void       *closure);
-
-typedef bool (*ObjectTypeCallBackProc) (CompObjectType type,
-					CompObject     *parent,
-					void           *closure);
-
-void
-compObjectInit (CompObject     *object,
-		CompPrivate    *privates,
-		CompObjectType type);
-
-void
-compObjectFini (CompObject *object);
-
-int
-compObjectAllocatePrivateIndex (CompObject     *parent,
-				CompObjectType type);
-
-void
-compObjectFreePrivateIndex (CompObject     *parent,
-			    CompObjectType type,
-			    int	           index);
-
-CompBool
-compObjectForEachType (CompObject	      *parent,
-		       ObjectTypeCallBackProc proc,
-		       void		      *closure);
-
-const char *
-compObjectTypeName (CompObjectType type);
-
-char *
-compObjectName (CompObject *object);
-
-CompObject *
-compObjectFind (CompObject     *parent,
-		CompObjectType type,
-		const char     *name);
 
 #define ARRAY_SIZE(array)		 \
     (sizeof (array) / sizeof (array[0]))
@@ -71,8 +35,13 @@ compObjectFind (CompObject     *parent,
 class PrivateObject;
 
 class CompObject {
+
     public:
-	CompObject (CompObjectType type, const char* typeName);
+	typedef std::vector<bool> indices;
+
+    public:
+	CompObject (CompObjectType type, const char* typeName,
+		    indices *iList = NULL);
 	virtual ~CompObject ();
 
         const char *typeName ();
@@ -87,7 +56,13 @@ class CompObject {
 	virtual CompString name () = 0;
 
     public:
-	CompPrivate	   *privates;
+
+	std::vector<CompPrivate> privates;
+
+    protected:
+	static int allocatePrivateIndex (CompObjectType type, indices *iList);
+	static void freePrivateIndex (CompObjectType type,
+				      indices *iList, int idx);
 
     private:
 	PrivateObject *priv;

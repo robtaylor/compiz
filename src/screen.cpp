@@ -53,59 +53,20 @@
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
 
-static int
-reallocScreenPrivate (int  size,
-		      void *closure)
-{
-    CompDisplay *d = (CompDisplay *) closure;
-    CompScreen  *s;
-    void        *privates;
-
-    for (s = d->screens(); s; s = s->next)
-    {
-	privates = realloc (s->privates, size * sizeof (CompPrivate));
-	if (!privates)
-	    return FALSE;
-
-	s->privates = (CompPrivate *) privates;
-    }
-
-    return TRUE;
-}
+CompObject::indices screenPrivateIndices (0);
 
 int
-allocScreenObjectPrivateIndex (CompObject *parent)
+CompScreen::allocPrivateIndex ()
 {
-    CompDisplay *display = (CompDisplay *) parent;
-
-    return allocatePrivateIndex (&display->screenPrivateLen,
-				 &display->screenPrivateIndices,
-				 reallocScreenPrivate,
-				 (void *) display);
+    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_SCREEN,
+					     &screenPrivateIndices);
 }
 
 void
-freeScreenObjectPrivateIndex (CompObject *parent,
-			      int	 index)
+CompScreen::freePrivateIndex (int index)
 {
-    CompDisplay *display = (CompDisplay *) parent;
-
-    freePrivateIndex (display->screenPrivateLen,
-		      display->screenPrivateIndices,
-		      index);
-}
-
-int
-allocateScreenPrivateIndex (CompDisplay *display)
-{
-    return compObjectAllocatePrivateIndex (display, COMP_OBJECT_TYPE_SCREEN);
-}
-
-void
-freeScreenPrivateIndex (CompDisplay *display,
-			int	    index)
-{
-    compObjectFreePrivateIndex (display, COMP_OBJECT_TYPE_SCREEN, index);
+    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_SCREEN,
+				  &screenPrivateIndices, index);
 }
 
 
@@ -1440,7 +1401,7 @@ CompScreen::initWindowWalker (CompWalker *walker)
 }
 
 CompScreen::CompScreen ():
-    CompObject (COMP_OBJECT_TYPE_SCREEN, "screen")
+    CompObject (COMP_OBJECT_TYPE_SCREEN, "screen", &screenPrivateIndices)
 {
     WRAPABLE_INIT_HND(preparePaint);
     WRAPABLE_INIT_HND(donePaint);
@@ -1731,7 +1692,6 @@ CompScreen::init (CompDisplay *display,
 		  Atom        wmSnAtom,
 		  Time        wmSnTimestamp)
 {
-    CompPrivate		 *privates;
     Display		 *dpy = display->dpy ();
     static char		 data = 0;
     XColor		 black;
@@ -1750,20 +1710,6 @@ CompScreen::init (CompDisplay *display,
     GLfloat		 diffuseLight[]   = { 0.9f, 0.9f,  0.9f, 0.9f };
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     CompWindow		 *w;
-
-    if (display->screenPrivateLen)
-    {
-	privates = (CompPrivate *)
-	    malloc (display->screenPrivateLen * sizeof (CompPrivate));
-	if (!privates)
-	{
-	    return false;
-	}
-    }
-    else
-	privates = 0;
-
-    compObjectInit (this, privates, COMP_OBJECT_TYPE_SCREEN);
 
     priv->display = display;
 
@@ -2276,10 +2222,12 @@ CompScreen::init (CompDisplay *display,
 
     priv->getDesktopHints ();
 
+    display->addChild (this);
+
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (objectInitPlugins (this));
 
-    display->addChild (this);
+
 
     XQueryTree (dpy, priv->root,
 		&rootReturn, &parentReturn,
@@ -2403,12 +2351,6 @@ CompScreen::~CompScreen ()
 		destroyFragmentFunction (this, priv->saturateFunction[i][j]);
 
     compFiniScreenOptions (this, priv->opt, COMP_SCREEN_OPTION_NUM);
-
-    if (windowPrivateIndices)
-	free (windowPrivateIndices);
-
-    if (privates)
-	free (privates);
 
     delete priv;
 }
@@ -2727,7 +2669,7 @@ CompScreen::removeGrab (CompScreen::grabHandle handle,
     if (it != priv->grabs.end ())
     {
 	priv->grabs.erase (it);
-	delete handle;
+	delete (static_cast<PrivateScreen::Grab *> (handle));
     }
     if (!priv->grabs.empty ())
     {

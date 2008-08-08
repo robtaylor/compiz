@@ -13,7 +13,6 @@ compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
 	main.cpp	   \
-	privates.cpp \
 	object.cpp   \
 	core.cpp	   \
 	display.cpp  \

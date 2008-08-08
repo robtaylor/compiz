@@ -8,6 +8,8 @@ class CompDisplay;
 class CompScreen;
 class PrivateDisplay;
 
+#define GET_CORE_DISPLAY(object) (dynamic_cast<CompDisplay *> (object))
+#define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
 
 class DisplayInterface : public WrapableInterface<CompDisplay> {
     public:
@@ -34,8 +36,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
     public:
 	CompDisplay *next;
-	char *screenPrivateIndices;
-	int  screenPrivateLen;
 
 	class Atoms {
 	    public:
@@ -354,6 +354,9 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	void
 	addScreenActions (CompScreen *s);
+
+	static int allocPrivateIndex ();
+	static void freePrivateIndex (int index);
 	
 	// wrapable interface
 	WRAPABLE_HND(void, handleEvent, XEvent *event)
