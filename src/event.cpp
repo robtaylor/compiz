@@ -2012,15 +2012,17 @@ CompDisplay::handleEvent (XEvent *event)
 
 	    sa = (XSyncAlarmNotifyEvent *) event;
 
-	    w = NULL;
-
 	    for (s = priv->screens; s; s = s->next)
+	    {
 		for (w = s->windows (); w; w = w->next)
+		{
 		    if (w->syncAlarm () == sa->alarm)
-			break;
-
-	    if (w)
-		w->handleSyncAlarm ();
+		    {
+			w->handleSyncAlarm ();
+			return;
+		    }
+		}
+	    }
 	}
 	break;
     }
