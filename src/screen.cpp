@@ -3080,12 +3080,20 @@ CompScreen::updateWorkarea ()
 {
     XRectangle workArea;
     BoxRec     box;
+    bool       workAreaChanged = false;
 
     for (unsigned int i = 0; i < priv->outputDevs.size (); i++)
     {
+	XRectangle oldWorkArea = priv->outputDevs[i].workArea ();
+
 	priv->computeWorkareaForBox (&priv->outputDevs[i].region ()->extents,
 				     &workArea);
-	priv->outputDevs[i].setWorkArea (workArea);
+
+	if (memcmp (&workArea, &oldWorkArea, sizeof (XRectangle)))
+	{
+	    workAreaChanged = true;
+	    priv->outputDevs[i].setWorkArea (workArea);
+	}
     }
 
     box.x1 = 0;
@@ -3097,11 +3105,15 @@ CompScreen::updateWorkarea ()
 
     if (memcmp (&workArea, &priv->workArea, sizeof (XRectangle)))
     {
-	CompWindow *w;
-
+	workAreaChanged = true;
 	priv->workArea = workArea;
 
 	priv->setDesktopHints ();
+    }
+
+    if (workAreaChanged)
+    {
+	CompWindow *w;
 
 	/* as work area changed, update all maximized windows on this
 	   screen to snap to the new work area */
