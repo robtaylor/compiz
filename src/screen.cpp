@@ -588,10 +588,10 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
 
     startupSequences = s;
 
-    if (!startupSequenceTimeoutHandle)
-	core->addTimeout (1000, 1500,
-			  CompScreen::startupSequenceTimeout,
-			  this);
+    if (!startupSequenceTimer.active ())
+	startupSequenceTimer.start (1000, 1500,
+				    CompScreen::startupSequenceTimeout,
+				    this);
 
     updateStartupFeedback ();
 }
@@ -621,11 +621,8 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     free (s);
 
-    if (!startupSequences && startupSequenceTimeoutHandle)
-    {
-	core->removeTimeout (startupSequenceTimeoutHandle);
-	startupSequenceTimeoutHandle = 0;
-    }
+    if (!startupSequences && startupSequenceTimer.active ())
+	startupSequenceTimer.stop ();
 
     updateStartupFeedback ();
 }
@@ -1469,7 +1466,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     overlayWindowCount (0),
     snContext (0),
     startupSequences (0),
-    startupSequenceTimeoutHandle (0),
+    startupSequenceTimer (),
     groups (0),
     defaultIcon (0),
     canDoSaturated (false),
@@ -1499,7 +1496,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopHintSize (0),
     cursors (0),
     cursorImages (0),
-    paintHandle (0),
+    paintTimer (),
     getProcAddress (0)
 {
     memset (saturateFunction, 0, sizeof (saturateFunction));
@@ -2291,14 +2288,14 @@ CompScreen::init (CompDisplay *display,
     priv->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
     priv->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
 
-    priv->paintHandle = core->addTimeout (priv->optimalRedrawTime, MAXSHORT,
-					  PrivateScreen::paintTimeout, this);
+    priv->paintTimer.start (priv->optimalRedrawTime, MAXSHORT,
+			    PrivateScreen::paintTimeout, this);
     return true;
 }
 
 CompScreen::~CompScreen ()
 {
-    core->removeTimeout (priv->paintHandle);
+    priv->paintTimer.stop ();
 
     while (priv->windows)
 	delete priv->windows;
@@ -4603,9 +4600,8 @@ CompScreen::handlePaintTimeout ()
 
     gettimeofday (&tv, 0);
 
-    core->addTimeout (getTimeToNextRedraw (&tv), MAXSHORT,
-		      PrivateScreen::paintTimeout, this);
-    return false;
+    priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
+    return true;
 }
 
 int

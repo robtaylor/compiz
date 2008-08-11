@@ -231,7 +231,7 @@ class PrivateWindow {
 	XSyncValue	  syncValue;
 	XSyncAlarm	  syncAlarm;
 	unsigned long syncAlarmConnection;
-	unsigned int  syncWaitHandle;
+	CompCore::Timer   syncWaitTimer;
 
 	bool     syncWait;
 	CompWindow::Geometry syncGeometry;

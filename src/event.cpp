@@ -86,12 +86,6 @@ CompWindow::handleSyncAlarm ()
 {
     if (priv->syncWait)
     {
-	if (priv->syncWaitHandle)
-	{
-	    core->removeTimeout (priv->syncWaitHandle);
-	    priv->syncWaitHandle = 0;
-	}
-
 	priv->syncWait = FALSE;
 
 	if (resize (priv->syncGeometry))
@@ -120,7 +114,6 @@ CompWindow::handleSyncAlarm ()
 	}
     }
 
-    priv->syncWaitHandle = 0;
     return false;
 }
 
@@ -723,9 +716,9 @@ PrivateDisplay::triggerEdgeEnter (unsigned int    edge,
 	for (i = 0; i < nArgument; i++)
 	    delayedSettings->option[i] = argument[i];
 
-	edgeDelayHandle = core->addTimeout (delay, (float) delay * 1.2,
-					    delayedEdgeTimeout,
-					    delayedSettings);
+	edgeDelayTimer.start  (delay, (float) delay * 1.2,
+			       delayedEdgeTimeout,
+			       delayedSettings);
 
 	delayState = CompActionStateNoEdgeDelay;
 	if (triggerAllEdgeEnterBindings (display, state, delayState,
@@ -875,14 +868,14 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	    if (!s)
 		return false;
 
-	    if (edgeDelayHandle)
+	    if (edgeDelayTimer.active ())
 	    {
-		void *closure;
+		edgeDelayTimer.stop ();
 
-		closure = core->removeTimeout (edgeDelayHandle);
-		if (closure)
-		    free (closure);
-		edgeDelayHandle = 0;
+		if (edgeDelayTimer.closure ())
+		    free (edgeDelayTimer.closure ());
+
+		edgeDelayTimer.setCallback (delayedEdgeTimeout, NULL);
 	    }
 
 	    if (edgeWindow && edgeWindow != event->xcrossing.window)
@@ -1921,11 +1914,10 @@ CompDisplay::handleEvent (XEvent *event)
 
 		if (!priv->opt[COMP_DISPLAY_OPTION_CLICK_TO_FOCUS].value.b)
 		{
-		    if (priv->autoRaiseHandle &&
+		    if (priv->autoRaiseTimer.active () &&
 			priv->autoRaiseWindow != w->id ())
 		    {
-			core->removeTimeout (priv->autoRaiseHandle);
-			priv->autoRaiseHandle = 0;
+			priv->autoRaiseTimer.stop ();
 		    }
 
 		    if (w->type () & ~(CompWindowTypeDockMask |
@@ -1938,9 +1930,10 @@ CompDisplay::handleEvent (XEvent *event)
 			    if (delay > 0)
 			    {
 				priv->autoRaiseWindow = w->id ();
-				priv->autoRaiseHandle =
-				    core->addTimeout (delay, (float) delay * 1.2,
-						      autoRaiseTimeout, this);
+				priv->autoRaiseTimer.start (delay,
+							    (float) delay * 1.2,
+						            autoRaiseTimeout,
+							    this);
 			    }
 			    else
 			    {

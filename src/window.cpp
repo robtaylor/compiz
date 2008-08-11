@@ -1750,9 +1750,8 @@ CompWindow::sendSyncRequest ()
     priv->syncWait     = TRUE;
     priv->syncGeometry = priv->serverGeometry;
 
-    if (!priv->syncWaitHandle)
-	priv->syncWaitHandle =
-	    core->addTimeout (1000, 1200, syncWaitTimeout, this);
+    if (!priv->syncWaitTimer.active ())
+	priv->syncWaitTimer.start (1000, 1200, syncWaitTimeout, this);
 }
 
 void
@@ -5294,7 +5293,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     saveMask (0),
     syncCounter (0),
     syncAlarm (None),
-    syncWaitHandle (0),
+    syncWaitTimer (),
 
     syncWait (false),
     closeRequests (false),
@@ -5339,8 +5338,7 @@ PrivateWindow::~PrivateWindow ()
      if (syncAlarm)
 	XSyncDestroyAlarm (screen->display ()->dpy (), syncAlarm);
 
-    if (syncWaitHandle)
-	core->removeTimeout (syncWaitHandle);
+    syncWaitTimer.stop ();
 
     destroyTexture (screen, texture);
 

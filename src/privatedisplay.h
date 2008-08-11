@@ -105,7 +105,7 @@ class PrivateDisplay {
 	SnDisplay *snDisplay;
 
 	unsigned int      lastPing;
-	CompTimeoutHandle pingHandle;
+	CompCore::Timer   pingTimer;
 
 	GLenum textureFilter;
 
@@ -123,10 +123,10 @@ class PrivateDisplay {
 
 	CompOption opt[COMP_DISPLAY_OPTION_NUM];
 
-	CompTimeoutHandle autoRaiseHandle;
+	CompCore::Timer autoRaiseTimer;
 	Window	      autoRaiseWindow;
 
-	CompTimeoutHandle edgeDelayHandle;
+	CompCore::Timer edgeDelayTimer;
 
 	CompOptionValue plugin;
 	bool	    dirtyPluginList;

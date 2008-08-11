@@ -10,9 +10,6 @@ class PrivateCore {
 	PrivateCore (CompCore *core);
 	~PrivateCore ();
 
-	void
-	addTimeout(CompTimeout *);
-
 	short int
 	watchFdEvents (CompWatchFdHandle handle);
 
@@ -20,7 +17,11 @@ class PrivateCore {
 	doPoll (int timeout);
 
 	void
-	handleTimeouts (struct timeval *tv);
+	handleTimers (struct timeval *tv);
+
+	void addTimer (CompCore::Timer *timer);
+	void removeTimer (CompCore::Timer *timer);
+
 
     public:
 	CompCore    *core;
@@ -29,9 +30,8 @@ class PrivateCore {
 	std::list<CompFileWatch *>  fileWatch;
 	CompFileWatchHandle         lastFileWatchHandle;
 
-	std::list<CompTimeout *> timeouts;
-	struct timeval           lastTimeout;
-	CompTimeoutHandle        lastTimeoutHandle;
+	std::list<CompCore::Timer *> timers;
+	struct timeval               lastTimeout;
 
 	std::list<CompWatchFd *> watchFds;
 	CompWatchFdHandle        lastWatchFdHandle;

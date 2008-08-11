@@ -26,16 +26,6 @@ typedef struct _CompFileWatch {
     CompFileWatchHandle   handle;
 } CompFileWatch;
 
-typedef struct _CompTimeout {
-    int			minTime;
-    int			maxTime;
-    int			minLeft;
-    int			maxLeft;
-    CallBackProc	callBack;
-    void		*closure;
-    CompTimeoutHandle   handle;
-} CompTimeout;
-
 typedef struct _CompWatchFd {
     int			fd;
     CallBackProc	callBack;
@@ -89,6 +79,43 @@ class CoreInterface : public WrapableInterface<CompCore> {
 
 class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 
+    public:
+	class Timer {
+
+	    public:
+		Timer ();
+		~Timer ();
+
+		bool active ();
+		unsigned int minTime ();
+		unsigned int maxTime ();
+		unsigned int minLeft ();
+		unsigned int maxLeft ();
+		void *closure ();
+		
+		
+		void setTimes (unsigned int min, unsigned int max = 0);
+		void setCallback (CallBackProc callback, void *closure = NULL);
+
+		void start ();
+		void start (unsigned int min, unsigned int max = 0);
+		void start (unsigned int min, unsigned int max,
+			    CallBackProc callback, void *closure = NULL);
+		void stop ();
+
+		friend class CompCore;
+		friend class PrivateCore;
+		
+	    private:
+		bool         mActive;
+		unsigned int mMinTime;
+		unsigned int mMaxTime;
+		int          mMinLeft;
+		int          mMaxLeft;
+		CallBackProc mCallBack;
+		void         *mClosure;
+	};
+
     // functions
     public:
 	CompCore ();
@@ -119,13 +146,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 
 	void
 	removeFileWatch (CompFileWatchHandle handle);
-
-	CompTimeoutHandle
-	addTimeout (int	         minTime,
-		    int	         maxTime,
-		    CallBackProc callBack,
-		    void	 *closure = NULL);
-
+	
 	CompWatchFdHandle
 	addWatchFd (int	         fd,
 		    short int    events,
@@ -135,8 +156,6 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	void
 	removeWatchFd (CompWatchFdHandle handle);
 
-	void *
-	removeTimeout (CompTimeoutHandle handle);
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
@@ -156,6 +175,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 
 	WRAPABLE_HND(void, sessionEvent, CompSessionEvent, CompOption *, unsigned int)
 
+	friend class Timer;
     private:
 	PrivateCore *priv;
 };

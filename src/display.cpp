@@ -785,8 +785,6 @@ CompDisplay::~CompDisplay ()
 
     objectFiniPlugins (this);
 
-    core->removeTimeout (priv->pingHandle);
-
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
@@ -1022,10 +1020,9 @@ CompDisplay::init (const char *name)
 	    priv->screens->focusDefaultWindow ();
     }
 
-    priv->pingHandle =
-	core->addTimeout (priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
-			  priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i +
-			  500, CompDisplay::pingTimeout, this);
+    priv->pingTimer.start (priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
+			   priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i +
+			   500, CompDisplay::pingTimeout, this);
 
     return true;
 }
@@ -1304,12 +1301,7 @@ CompDisplay::setOption (const char      *name,
     case COMP_DISPLAY_OPTION_PING_DELAY:
 	if (compSetIntOption (o, value))
 	{
-	    if (priv->pingHandle)
-		core->removeTimeout (priv->pingHandle);
-
-	    priv->pingHandle =
-		core->addTimeout (o->value.i, o->value.i + 500,
-				  CompDisplay::pingTimeout, priv->dpy);
+	    priv->pingTimer.setTimes (o->value.i, o->value.i + 500);
 	    return true;
 	}
 	break;
@@ -2647,9 +2639,9 @@ PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     below (None),
     modMap (0),
     ignoredModMask (LockMask),
-    autoRaiseHandle (0),
+    autoRaiseTimer (),
     autoRaiseWindow (0),
-    edgeDelayHandle (0),
+    edgeDelayTimer (),
     dirtyPluginList (true)
 {
     for (int i = 0; i < CompModNum; i++)

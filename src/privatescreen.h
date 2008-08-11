@@ -192,7 +192,7 @@ class PrivateScreen {
 
 	SnMonitorContext    *snContext;
 	CompStartupSequence *startupSequences;
-	unsigned int        startupSequenceTimeoutHandle;
+	CompCore::Timer     startupSequenceTimer;
 
 	int filter[3];
 
@@ -258,7 +258,7 @@ class PrivateScreen {
 	CompOption opt[COMP_SCREEN_OPTION_NUM];
 
 
-	CompTimeoutHandle paintHandle;
+	CompCore::Timer paintTimer;
 
 	GLXGetProcAddressProc    getProcAddress;
 
