@@ -14,7 +14,7 @@
  *
  * NOVELL, INC. DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
- * NO EVENT SHALL NOVELL, INC. BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * NO EVENT SHALL NOVELL, INC. BE LIABLE FOR ANY SPECI<<<<<fAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
  * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
@@ -38,6 +38,8 @@
 #include <assert.h>
 #include <limits.h>
 #include <algorithm>
+
+#include <boost/bind.hpp>
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -539,15 +541,6 @@ PrivateScreen::updateStartupFeedback ()
 #define STARTUP_TIMEOUT_DELAY 15000
 
 bool
-CompScreen::startupSequenceTimeout (void *data)
-{
-    CompScreen *screen = (CompScreen *) data;
-
-    screen->priv->handleStartupSequenceTimeout ();
-    return true;
-}
-
-void
 PrivateScreen::handleStartupSequenceTimeout()
 {
     CompStartupSequence *s;
@@ -568,6 +561,8 @@ PrivateScreen::handleStartupSequenceTimeout()
 	if (elapsed > STARTUP_TIMEOUT_DELAY)
 	    sn_startup_sequence_complete (s->sequence);
     }
+
+    return true;
 }
 
 void
@@ -589,9 +584,9 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
     startupSequences = s;
 
     if (!startupSequenceTimer.active ())
-	startupSequenceTimer.start (1000, 1500,
-				    CompScreen::startupSequenceTimeout,
-				    this);
+	startupSequenceTimer.start (
+	    boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this),
+	    1000, 1500);
 
     updateStartupFeedback ();
 }
@@ -2288,8 +2283,8 @@ CompScreen::init (CompDisplay *display,
     priv->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
     priv->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
 
-    priv->paintTimer.start (priv->optimalRedrawTime, MAXSHORT,
-			    PrivateScreen::paintTimeout, this);
+    priv->paintTimer.start (boost::bind(&CompScreen::handlePaintTimeout, this),
+			    priv->optimalRedrawTime, MAXSHORT);
     return true;
 }
 
@@ -4415,13 +4410,6 @@ int
 CompScreen::screenNum ()
 {
     return priv->screenNum;
-}
-
-bool
-PrivateScreen::paintTimeout (void *closure)
-{
-    CompScreen *s = (CompScreen *) closure;
-    return s->handlePaintTimeout ();
 }
 
 bool

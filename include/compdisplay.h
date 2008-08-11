@@ -416,9 +416,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	static CompOption *
 	getDisplayOptions (CompObject  *object,
 			   int	       *count);
-
-	static bool
-	pingTimeout (void *closure);
 };
 
 extern Bool inHandleEvent;

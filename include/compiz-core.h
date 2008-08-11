@@ -667,8 +667,6 @@ setDisplayAction (CompDisplay     *display,
 
 typedef struct _CompDelayedEdgeSettings
 {
-    CompDisplay *d;
-
     unsigned int edge;
     unsigned int state;
 

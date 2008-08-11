@@ -37,6 +37,8 @@
 #include <assert.h>
 #include <math.h>
 
+#include <boost/bind.hpp>
+
 #include <compiz-core.h>
 #include "privatewindow.h"
 
@@ -1713,14 +1715,6 @@ PrivateWindow::initializeSyncCounter ()
     return false;
 }
 
-static bool
-syncWaitTimeout (void *closure)
-{
-    CompWindow *w = (CompWindow *) closure;
-
-    return w->handleSyncAlarm ();
-}
-
 void
 CompWindow::sendSyncRequest ()
 {
@@ -1751,7 +1745,8 @@ CompWindow::sendSyncRequest ()
     priv->syncGeometry = priv->serverGeometry;
 
     if (!priv->syncWaitTimer.active ())
-	priv->syncWaitTimer.start (1000, 1200, syncWaitTimeout, this);
+	priv->syncWaitTimer.start (
+	    boost::bind (&CompWindow::handleSyncAlarm, this), 1000, 1200);
 }
 
 void

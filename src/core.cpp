@@ -428,7 +428,7 @@ PrivateCore::handleTimers (struct timeval *tv)
 	timers.pop_front();
 
 	t->mActive = false;
-	if ((*t->mCallBack) (t->mClosure))
+	if (t->mCallBack ())
 	{
 	    addTimer (t);
 	    t->mActive = true;
@@ -566,8 +566,7 @@ CompCore::Timer::Timer () :
     mMaxTime (0),
     mMinLeft (0),
     mMaxLeft (0),
-    mCallBack (NULL),
-    mClosure (NULL)
+    mCallBack (NULL)
 {
 }
 
@@ -591,13 +590,12 @@ CompCore::Timer::setTimes (unsigned int min, unsigned int max)
 }
 	
 void
-CompCore::Timer::setCallback (CallBackProc callback, void *closure)
+CompCore::Timer::setCallback (CompCore::Timer::CallBack callback)
 {
     bool wasActive = mActive;
     if (mActive)
 	stop ();
     mCallBack = callback;
-    mClosure = closure;
 
     if (wasActive)
 	start ();
@@ -620,12 +618,12 @@ CompCore::Timer::start (unsigned int min, unsigned int max)
 }
 
 void
-CompCore::Timer::start (unsigned int min, unsigned int max,
-			CallBackProc callback, void *closure)
+CompCore::Timer::start (CompCore::Timer::CallBack callback,
+			unsigned int min, unsigned int max)
 {
     stop ();
     setTimes (min, max);
-    setCallback (callback, closure);
+    setCallback (callback);
     start ();
 }
 
@@ -658,12 +656,6 @@ unsigned int
 CompCore::Timer::maxLeft ()
 {
     return (mMaxLeft < 0)? 0 : mMaxLeft;
-}
-
-void *
-CompCore::Timer::closure ()
-{
-    return mClosure;
 }
 
 bool

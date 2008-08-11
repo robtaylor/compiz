@@ -66,7 +66,7 @@ class PrivateScreen {
 	void
 	updateScreenBackground (CompTexture *texture);
 
-	void
+	bool
 	handleStartupSequenceTimeout();
 
 	void
@@ -125,9 +125,6 @@ class PrivateScreen {
 			   Region	       region,
 			   CompOutput	       *output,
 			   unsigned int	       mask);
-
-	static bool
-	paintTimeout (void *closure);
 
     public:
 

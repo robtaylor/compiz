@@ -506,9 +506,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	getScreenOptions ( CompObject *object,
 			  int	     *count);
 
-	static bool
-	startupSequenceTimeout (void *data);
-
 	static void
 	compScreenSnEvent (SnMonitorEvent *event,
 			   void           *userData);

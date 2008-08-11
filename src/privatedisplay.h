@@ -57,7 +57,7 @@ class PrivateDisplay {
 	void
 	setAudibleBell (bool audible);
 
-	void
+	bool
 	handlePingTimeout ();
 	
 	bool
@@ -127,6 +127,7 @@ class PrivateDisplay {
 	Window	      autoRaiseWindow;
 
 	CompCore::Timer edgeDelayTimer;
+	CompDelayedEdgeSettings edgeDelaySettings;
 
 	CompOptionValue plugin;
 	bool	    dirtyPluginList;

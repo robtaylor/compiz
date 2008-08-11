@@ -2,7 +2,9 @@
 #define _COMPCORE_H
 
 #include <list>
+#include <boost/function.hpp>
 #include "wrapable.h"
+
 
 class PrivateCore;
 class CompCore;
@@ -83,6 +85,9 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	class Timer {
 
 	    public:
+
+		typedef boost::function<bool ()> CallBack;
+		
 		Timer ();
 		~Timer ();
 
@@ -91,16 +96,14 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 		unsigned int maxTime ();
 		unsigned int minLeft ();
 		unsigned int maxLeft ();
-		void *closure ();
-		
 		
 		void setTimes (unsigned int min, unsigned int max = 0);
-		void setCallback (CallBackProc callback, void *closure = NULL);
+		void setCallback (CallBack callback);
 
 		void start ();
 		void start (unsigned int min, unsigned int max = 0);
-		void start (unsigned int min, unsigned int max,
-			    CallBackProc callback, void *closure = NULL);
+		void start (CallBack callback,
+			    unsigned int min, unsigned int max = 0);
 		void stop ();
 
 		friend class CompCore;
@@ -112,8 +115,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 		unsigned int mMaxTime;
 		int          mMinLeft;
 		int          mMaxLeft;
-		CallBackProc mCallBack;
-		void         *mClosure;
+		CallBack     mCallBack;
 	};
 
     // functions

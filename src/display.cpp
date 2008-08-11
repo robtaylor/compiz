@@ -43,6 +43,8 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/shape.h>
 
+#include <boost/bind.hpp>
+
 #include <compiz-core.h>
 #include "privatedisplay.h"
 #include "privatescreen.h"
@@ -632,15 +634,6 @@ CompDisplay::getDisplayOptions (CompObject  *object,
 }
 
 bool
-CompDisplay::pingTimeout (void *closure)
-{
-    CompDisplay *d = (CompDisplay *) closure;
-    d->priv->handlePingTimeout();
-    return true;
-}
-
-
-bool
 setDisplayOption (CompObject      *object,
 		  const char      *name,
 		  CompOptionValue *value)
@@ -1020,9 +1013,10 @@ CompDisplay::init (const char *name)
 	    priv->screens->focusDefaultWindow ();
     }
 
-    priv->pingTimer.start (priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
-			   priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i +
-			   500, CompDisplay::pingTimeout, this);
+    priv->pingTimer.start (
+	boost::bind(&PrivateDisplay::handlePingTimeout, priv),
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i + 500);
 
     return true;
 }
@@ -1225,7 +1219,7 @@ PrivateDisplay::setAudibleBell (bool audible)
 				  audible ? XkbAudibleBellMask : 0);
 }
 
-void
+bool
 PrivateDisplay::handlePingTimeout ()
 {
     CompScreen  *s;
@@ -1258,6 +1252,8 @@ PrivateDisplay::handlePingTimeout ()
     }
 
     lastPing = ping;
+
+    return true;
 }
 
 bool
