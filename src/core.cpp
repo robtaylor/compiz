@@ -194,7 +194,7 @@ CompCore::eventLoop ()
 	    gettimeofday (&tv, 0);
 	    priv->handleTimers (&tv);
 
-	    if ((*priv->timers.begin())->mMinLeft > 0)
+	    if (priv->timers.front()->mMinLeft > 0)
 	    {
 		std::list<CompCore::Timer *>::iterator it = priv->timers.begin();
 
@@ -210,6 +210,8 @@ CompCore::eventLoop ()
 		    it++;
 		}
 		priv->doPoll (time);
+		gettimeofday (&tv, 0);
+		priv->handleTimers (&tv);
 	    }
 	}
 	else

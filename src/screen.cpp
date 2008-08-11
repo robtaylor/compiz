@@ -2369,14 +2369,21 @@ CompScreen::damageRegion (Region region)
     if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     XUnionRegion (priv->damage, region, priv->damage);
 
     priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
+
 }
 
 void
 CompScreen::damageScreen ()
 {
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     priv->damageMask |= COMP_SCREEN_DAMAGE_ALL_MASK;
     priv->damageMask &= ~COMP_SCREEN_DAMAGE_REGION_MASK;
 }
@@ -2384,6 +2391,9 @@ CompScreen::damageScreen ()
 void
 CompScreen::damagePending ()
 {
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     priv->damageMask |= COMP_SCREEN_DAMAGE_PENDING_MASK;
 }
 
