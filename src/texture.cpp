@@ -34,7 +34,7 @@
 #include <compiz-core.h>
 #include "privatescreen.h"
 
-static CompMatrix _identity_matrix = {
+static CompTextureMatrix _identity_matrix = {
     1.0f, 0.0f,
     0.0f, 1.0f,
     0.0f, 0.0f

@@ -4218,10 +4218,10 @@ WindowInterface::draw (const CompTransform  *transform,
     WRAPABLE_DEF_FUNC_RETURN(draw, transform, fragment, region, mask)
 
 void
-WindowInterface::addGeometry (CompMatrix *matrix,
-			      int	 nMatrix,
-			      Region	 region,
-			      Region	 clip)
+WindowInterface::addGeometry (CompTextureMatrix *matrix,
+			      int	        nMatrix,
+			      Region	        region,
+			      Region	        clip)
     WRAPABLE_DEF_FUNC(addGeometry, matrix, nMatrix, region, clip)
 
 void

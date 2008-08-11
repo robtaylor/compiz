@@ -153,7 +153,7 @@ class PrivateWindow {
 	XSizeHints	      sizeHints;
 	Pixmap	      pixmap;
 	CompTexture       *texture;
-	CompMatrix        matrix;
+	CompTextureMatrix matrix;
 	Damage	      damage;
 	bool	      inputHint;
 	bool	      alpha;

@@ -720,10 +720,10 @@ CompWindow::drawGeometry ()
 }
 
 void
-CompWindow::addGeometry (CompMatrix *matrix,
-			 int        nMatrix,
-			 Region     region,
-			 Region     clip)
+CompWindow::addGeometry (CompTextureMatrix *matrix,
+			 int               nMatrix,
+			 Region            region,
+			 Region            clip)
 {
     WRAPABLE_HND_FUNC(addGeometry, matrix, nMatrix, region, clip)
 

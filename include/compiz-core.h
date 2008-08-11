@@ -739,11 +739,11 @@ typedef struct _WindowPaintAttrib {
 extern ScreenPaintAttrib defaultScreenPaintAttrib;
 extern WindowPaintAttrib defaultWindowPaintAttrib;
 
-typedef struct _CompMatrix {
+typedef struct _CompTextureMatrix {
     float xx; float yx;
     float xy; float yy;
     float x0; float y0;
-} CompMatrix;
+} CompTextureMatrix;
 
 #define COMP_TEX_COORD_X(m, vx) ((m)->xx * (vx) + (m)->x0)
 #define COMP_TEX_COORD_Y(m, vy) ((m)->yy * (vy) + (m)->y0)
@@ -838,21 +838,6 @@ prepareXCoords (CompScreen *screen,
 		float      z);
 
 
-Bool
-moreWindowVertices (CompWindow *w,
-		    int        newSize);
-
-Bool
-moreWindowIndices (CompWindow *w,
-		   int        newSize);
-
-void
-addWindowGeometry (CompWindow *w,
-		   CompMatrix *matrix,
-		   int	      nMatrix,
-		   Region     region,
-		   Region     clip);
-
 /* texture.c */
 
 #define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
@@ -865,16 +850,16 @@ typedef enum {
 typedef int CompTextureFilter;
 
 struct _CompTexture {
-    GLuint     name;
-    GLenum     target;
-    GLfloat    dx, dy;
-    GLXPixmap  pixmap;
-    GLenum     filter;
-    GLenum     wrap;
-    CompMatrix matrix;
-    Bool       oldMipmaps;
-    Bool       mipmap;
-    int        refCount;
+    GLuint            name;
+    GLenum            target;
+    GLfloat           dx, dy;
+    GLXPixmap         pixmap;
+    GLenum            filter;
+    GLenum            wrap;
+    CompTextureMatrix matrix;
+    Bool              oldMipmaps;
+    Bool              mipmap;
+    int               refCount;
 };
 
 void
@@ -1193,7 +1178,7 @@ struct _CompCursor {
     int	x;
     int	y;
 
-    CompMatrix matrix;
+    CompTextureMatrix matrix;
 };
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
