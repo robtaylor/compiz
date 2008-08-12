@@ -37,10 +37,6 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 	WRAPABLE_DEF(void, outputChangeNotify);
 
 	WRAPABLE_DEF(void, initWindowWalker, CompWalker *walker);
-
-	WRAPABLE_DEF(void, paintCursor, CompCursor *, const CompTransform *,
-		     Region, unsigned int);
-	WRAPABLE_DEF(bool, damageCursorRect, CompCursor *, bool, BoxPtr);
 };
 
 
@@ -115,9 +111,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	Time
 	selectionTimestamp ();
-
-	CompCursor *
-	cursors ();
 
 	void
 	updateWorkareaForScreen ();
@@ -270,12 +263,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	bool
 	updateDefaultIcon ();
 
-	CompCursor *
-	findCursor ();
-
-	CompCursorImage *
-	findCursorImage (unsigned long serial);
-
 	void
 	setCurrentActiveWindowHistory (int x, int y);
 
@@ -384,12 +371,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	bool
 	framebufferObject ();
 	
-	void
-	addCursor ();
-
-	CompCursorImage *&
-	cursorImages ();
-
 	CompFBConfig * glxPixmapFBConfig (unsigned int depth);
 
 	static int allocPrivateIndex ();
@@ -418,10 +399,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	WRAPABLE_HND(void, outputChangeNotify);
 
 	WRAPABLE_HND(void, initWindowWalker, CompWalker *walker);
-
-	WRAPABLE_HND(void, paintCursor, CompCursor *, const CompTransform *,
-		     Region, unsigned int);
-	WRAPABLE_HND(bool, damageCursorRect, CompCursor *, bool, BoxPtr);
 
 	GLXBindTexImageProc      bindTexImage;
 	GLXReleaseTexImageProc   releaseTexImage;

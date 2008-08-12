@@ -26,7 +26,6 @@ compiz_SOURCES =   \
 	session.cpp  \
 	fragment.cpp \
 	matrix.cpp   \
-	cursor.cpp   \
 	match.cpp    \
 	metadata.cpp \
 	output.cpp   \

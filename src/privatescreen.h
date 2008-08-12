@@ -248,9 +248,6 @@ class PrivateScreen {
 	unsigned long *desktopHintData;
 	int           desktopHintSize;
 
-	CompCursor      *cursors;
-	CompCursorImage *cursorImages;
-
 	GLXContext ctx;
 
 	CompOption opt[COMP_SCREEN_OPTION_NUM];

@@ -282,9 +282,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 			  int	      height,
 			  void	      *data);
 
-	CompCursor *
-	findCursor ();
-
 	void
 	updateScreenInfo ();
 

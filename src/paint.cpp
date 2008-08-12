@@ -102,52 +102,6 @@ prepareXCoords (CompScreen *screen,
 }
 
 void
-CompScreen::paintCursor (CompCursor          *c,
-			 const CompTransform *transform,
-			 Region              region,
-			 unsigned int        mask)
-{
-    WRAPABLE_HND_FUNC(paintCursor, c, transform, region, mask)
-
-    int x1, y1, x2, y2;
-
-    if (!c->image)
-	return;
-
-    x1 = c->x;
-    y1 = c->y;
-    x2 = c->x + c->image->width;
-    y2 = c->y + c->image->height;
-
-    glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-    glEnable (GL_BLEND);
-
-    c->image->texture->enable (CompTexture::Fast);
-
-    glBegin (GL_QUADS);
-
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x1),
-		  COMP_TEX_COORD_Y (&c->matrix, y2));
-    glVertex2i (x1, y2);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x2),
-		  COMP_TEX_COORD_Y (&c->matrix, y2));
-    glVertex2i (x2, y2);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x2),
-		  COMP_TEX_COORD_Y (&c->matrix, y1));
-    glVertex2i (x2, y1);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x1),
-		  COMP_TEX_COORD_Y (&c->matrix, y1));
-    glVertex2i (x1, y1);
-
-    glEnd ();
-
-    c->image->texture->disable ();
-
-    glDisable (GL_BLEND);
-    glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-}
-
-void
 PrivateScreen::paintBackground (Region	      region,
 				bool	      transformed)
 {
@@ -253,7 +207,6 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 {
     static Region tmpRegion = NULL;
     CompWindow    *w;
-    CompCursor	  *c;
     int		  count, windowMask, odMask;
     CompWindow	  *fullscreenWindow = NULL;
     CompWalker    walk;
@@ -407,10 +360,6 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 
     if (walk.fini)
 	(*walk.fini) (screen, &walk);
-
-    /* paint cursors */
-    for (c = cursors; c; c = c->next)
-	screen->paintCursor (c, transform, tmpRegion, 0);
 }
 
 void

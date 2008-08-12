@@ -1411,9 +1411,6 @@ CompScreen::CompScreen ():
 
     WRAPABLE_INIT_HND(initWindowWalker);
 
-    WRAPABLE_INIT_HND(paintCursor);
-    WRAPABLE_INIT_HND(damageCursorRect);
-
     priv = new PrivateScreen (this);
     assert (priv);
     next = NULL;
@@ -1490,8 +1487,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
-    cursors (0),
-    cursorImages (0),
     paintTimer (),
     getProcAddress (0)
 {
@@ -3945,24 +3940,6 @@ CompScreen::updateDefaultIcon ()
     return true;
 }
 
-CompCursor *
-CompScreen::findCursor ()
-{
-    return priv->cursors;
-}
-
-CompCursorImage *
-CompScreen::findCursorImage (unsigned long serial)
-{
-    CompCursorImage *image;
-
-    for (image = priv->cursorImages; image; image = image->next)
-	if (image->serial == serial)
-	    return image;
-
-    return NULL;
-}
-
 void
 CompScreen::setCurrentActiveWindowHistory (int x, int y)
 {
@@ -4036,9 +4013,6 @@ ScreenInterface::ScreenInterface ()
     WRAPABLE_INIT_FUNC(outputChangeNotify);
 
     WRAPABLE_INIT_FUNC(initWindowWalker);
-
-    WRAPABLE_INIT_FUNC(paintCursor);
-    WRAPABLE_INIT_FUNC(damageCursorRect);
 }
 
 void
@@ -4088,14 +4062,6 @@ void
 ScreenInterface::disableOutputClipping ()
     WRAPABLE_DEF_FUNC(disableOutputClipping)
 
-
-void
-ScreenInterface::paintCursor (CompCursor	  *cursor,
-			      const CompTransform *transform,
-			      Region		  region,
-			      unsigned int	  mask)
-    WRAPABLE_DEF_FUNC(paintCursor, cursor, transform, region, mask)
-
 void
 ScreenInterface::enterShowDesktopMode ()
     WRAPABLE_DEF_FUNC(enterShowDesktopMode)
@@ -4111,12 +4077,6 @@ ScreenInterface::outputChangeNotify ()
 void
 ScreenInterface::initWindowWalker (CompWalker *walker)
     WRAPABLE_DEF_FUNC(initWindowWalker, walker)
-
-bool
-ScreenInterface::damageCursorRect (CompCursor *c,
-				   bool       initial,
-				   BoxPtr     rect)
-    WRAPABLE_DEF_FUNC_RETURN(damageCursorRect, c, initial, rect)
 
 CompDisplay *
 CompScreen::display ()
@@ -4395,12 +4355,6 @@ Time
 CompScreen::selectionTimestamp ()
 {
     return priv->wmSnTimestamp;
-}
-
-CompCursor *
-CompScreen::cursors ()
-{
-    return priv->cursors;
 }
 
 int
@@ -4778,12 +4732,6 @@ bool
 CompScreen::fragmentProgram ()
 {
     return priv->fragmentProgram;
-}
-
-CompCursorImage *&
-CompScreen::cursorImages ()
-{
-    return priv->cursorImages;
 }
 
 CompFBConfig*

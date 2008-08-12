@@ -86,7 +86,6 @@ typedef struct _CompProgram	  CompProgram;
 typedef struct _CompFunction	  CompFunction;
 typedef struct _CompFunctionData  CompFunctionData;
 typedef struct _FragmentAttrib    FragmentAttrib;
-typedef struct _CompCursor	  CompCursor;
 typedef struct _CompMatch	  CompMatch;
 class CompOutput;
 typedef struct _CompWalker        CompWalker;
@@ -1333,27 +1332,6 @@ matrixTranslate (CompTransform *transform,
 void
 matrixGetIdentity (CompTransform *m);
 
-/* cursor.c */
-
-Bool
-damageCursorRect (CompCursor *c,
-		  Bool       initial,
-		  BoxPtr     rect);
-
-void
-addCursorDamageRect (CompCursor *c,
-		     BoxPtr     rect);
-
-void
-addCursorDamage (CompCursor *c);
-
-void
-updateCursor (CompCursor    *c,
-	      int	    x,
-	      int	    y,
-	      unsigned long serial);
-
-
 /* match.c */
 
 void
@@ -1536,31 +1514,6 @@ struct _CompIcon {
     int		width;
     int		height;
 };
-
-typedef struct _CompCursorImage {
-    struct _CompCursorImage *next;
-
-    unsigned long serial;
-    Pixmap	  pixmap;
-    CompTexture   *texture;
-    int		  xhot;
-    int	          yhot;
-    int		  width;
-    int	          height;
-} CompCursorImage;
-
-struct _CompCursor {
-    struct _CompCursor *next;
-
-    CompScreen	    *screen;
-    CompCursorImage *image;
-
-    int	x;
-    int	y;
-
-    CompTexture::Matrix matrix;
-};
-
 
 	
 #include <string>

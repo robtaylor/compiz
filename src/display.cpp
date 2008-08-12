@@ -914,13 +914,6 @@ CompDisplay::init (const char *name)
     }
 
     XFixesQueryVersion (priv->dpy, &priv->fixesVersion, &fixesMinor);
-    /*
-    if (d->fixesVersion < 5)
-    {
-	fprintf (stderr, "%s: Need fixes extension version 5 or later "
-		 "for client-side cursor\n", programName);
-    }
-    */
 
     priv->randrExtension = XRRQueryExtension (priv->dpy, &priv->randrEvent,
 					      &priv->randrError);
@@ -1884,19 +1877,6 @@ CompDisplay::writeImageToFile (const char *path,
 			       void	  *data)
 {
     return imageToFile (path, name, format, width, height, width * 4, data);
-}
-
-
-CompCursor *
-CompDisplay::findCursor ()
-{
-    CompScreen *s;
-
-    for (s = priv->screens; s; s = s->next)
-	if (s->cursors ())
-	    return s->cursors ();
-
-    return NULL;
 }
 
 Window
