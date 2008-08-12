@@ -41,6 +41,7 @@
 
 #include <compiz-core.h>
 #include <comptexture.h>
+#include <compicon.h>
 #include "privatewindow.h"
 
 
@@ -3884,7 +3885,7 @@ CompWindow::getIcon (int width, int height)
     int	     i, wh, diff, oldDiff;
 
     /* need to fetch icon property */
-    if (priv->nIcon == 0)
+    if (priv->icons.size () == 0 && !priv->noIcons)
     {
 	Atom	      actual;
 	int	      result, format;
@@ -3917,29 +3918,13 @@ CompWindow::getIcon (int width, int height)
 
 		if (iw && ih)
 		{
-		    icon = (CompIcon *) malloc (sizeof (CompIcon) +
-				   iw * ih * sizeof (CARD32));
+		    icon = new CompIcon (priv->screen, iw, ih);
 		    if (!icon)
 			continue;
 
-		    pIcon = (CompIcon **) realloc (priv->icon,
-				     sizeof (CompIcon *) * (priv->nIcon + 1));
-		    if (!pIcon)
-		    {
-			free (icon);
-			continue;
-		    }
+		    priv->icons.push_back (icon);
 
-		    priv->icon = pIcon;
-		    priv->icon[priv->nIcon] = icon;
-		    priv->nIcon++;
-
-		    icon->width  = iw;
-		    icon->height = ih;
-
-		    icon->texture = new CompTexture (priv->screen);
-
-		    p = (CARD32 *) (icon + 1);
+		    p = (CARD32 *) (icon->data ());
 
 		    /* EWMH doesn't say if icon data is premultiplied or
 		       not but most applications seem to assume data should
@@ -3968,32 +3953,34 @@ CompWindow::getIcon (int width, int height)
 	}
 
 	/* don't fetch property again */
-	if (priv->nIcon == 0)
-	    priv->nIcon = -1;
+	if (priv->icons.size() == 0)
+	    priv->noIcons = true;
     }
 
     /* no icons available for this window */
-    if (priv->nIcon == -1)
+    if (priv->noIcons)
 	return NULL;
 
     icon = NULL;
     wh   = width + height;
 
-    for (i = 0; i < priv->nIcon; i++)
+    for (i = 0; i < priv->icons.size (); i++)
     {
-	if (priv->icon[i]->width > width || priv->icon[i]->height > height)
+	if (priv->icons[i]->width () > width ||
+	    priv->icons[i]->height () > height)
 	    continue;
 
 	if (icon)
 	{
-	    diff    = wh - (priv->icon[i]->width + priv->icon[i]->height);
-	    oldDiff = wh - (icon->width + icon->height);
+	    diff    = wh - (priv->icons[i]->width () +
+		      priv->icons[i]->height ());
+	    oldDiff = wh - (icon->width () + icon->height ());
 
 	    if (diff < oldDiff)
-		icon = priv->icon[i];
+		icon = priv->icons[i];
 	}
 	else
-	    icon = priv->icon[i];
+	    icon = priv->icons[i];
     }
 
     return icon;
@@ -4004,19 +3991,13 @@ CompWindow::freeIcons ()
 {
     int i;
 
-    for (i = 0; i < priv->nIcon; i++)
+    for (unsigned int i = 0; i < priv->icons.size (); i++)
     {
-	delete priv->icon[i]->texture;
-	free (priv->icon[i]);
+	delete priv->icons[i];
     }
 
-    if (priv->icon)
-    {
-	free (priv->icon);
-	priv->icon = NULL;
-    }
-
-    priv->nIcon = 0;
+    priv->icons.resize (0);
+    priv->noIcons = false;
 }
 
 int
@@ -5267,8 +5248,8 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
 
     struts (0),
 
-    icon (0),
-    nIcon (0),
+    icons (0),
+    noIcons (false),
 
     iconGeometrySet (false),
 
@@ -5343,7 +5324,7 @@ PrivateWindow::~PrivateWindow ()
     if (struts)
 	free (struts);
 
-    if (icon)
+    if (icons.size ())
 	window->freeIcons ();
 
     if (startupId)

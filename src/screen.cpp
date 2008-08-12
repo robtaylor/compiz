@@ -51,6 +51,7 @@
 #include <compiz-core.h>
 
 #include <compscreen.h>
+#include <compicon.h>
 #include "privatescreen.h"
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
@@ -888,7 +889,7 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
     }
 
     if (!texture->name () && backgroundImage)
-	readImageToTexture (screen, texture, backgroundImage,
+	CompTexture::readImageToTexture (screen, texture, backgroundImage,
 					 &width, &height);
 
     if (texture->target () == GL_TEXTURE_2D)
@@ -2299,10 +2300,7 @@ CompScreen::~CompScreen ()
     XDestroyWindow (priv->display->dpy (), priv->grabWindow);
 
     if (priv->defaultIcon)
-    {
-	delete priv->defaultIcon->texture;
-	free (priv->defaultIcon);
-    }
+	delete priv->defaultIcon;
 
     glXDestroyContext (priv->display->dpy (), priv->ctx);
 
@@ -3904,36 +3902,22 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 bool
 CompScreen::updateDefaultIcon ()
 {
-    CompIcon *icon;
     char     *file = priv->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value.s;
     void     *data;
     int      width, height;
 
     if (priv->defaultIcon)
     {
-	delete priv->defaultIcon->texture;
-	free (priv->defaultIcon);
+	delete priv->defaultIcon;
 	priv->defaultIcon = NULL;
     }
 
     if (!priv->display->readImageFromFile (file, &width, &height, &data))
 	return false;
 
-    icon = (CompIcon *) malloc (sizeof (CompIcon) + width * height * sizeof (CARD32));
-    if (!icon)
-    {
-	free (data);
-	return false;
-    }
+    priv->defaultIcon = new CompIcon (this, width, height);
 
-    icon->texture = new CompTexture (this);
-
-    icon->width  = width;
-    icon->height = height;
-
-    memcpy (icon + 1, data, + width * height * sizeof (CARD32));
-
-    priv->defaultIcon = icon;
+    memcpy (priv->defaultIcon->data (), data, width * height * sizeof (CARD32));
 
     free (data);
 

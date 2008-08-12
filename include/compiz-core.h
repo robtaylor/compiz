@@ -79,8 +79,8 @@ COMPIZ_BEGIN_DECLS
 #  define BITMAP_BIT_ORDER LSBFirst
 #endif
 
-class  CompTexture;
-typedef struct _CompIcon	  CompIcon;
+class CompTexture;
+class CompIcon;
 typedef struct _CompWindowExtents CompWindowExtents;
 typedef struct _CompProgram	  CompProgram;
 typedef struct _CompFunction	  CompFunction;
@@ -828,34 +828,6 @@ prepareXCoords (CompScreen *screen,
 		CompOutput *output,
 		float      z);
 
-
-/* texture.c */
-
-
-Bool
-iconToTexture (CompScreen *screen,
-	       CompIcon   *icon);
-
-Bool
-readImageToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *imageFileName,
-		    unsigned int *returnWidth,
-		    unsigned int *returnHeight);
-
-/*
-
-void
-enableTextureClampToBorder (CompScreen	      *screen,
-			    CompTexture	      *texture,
-			    CompTextureFilter filter);
-
-void
-enableTextureClampToEdge (CompScreen	    *screen,
-			  CompTexture	    *texture,
-			  CompTextureFilter filter);
-
-*/
 /* screen.c */
 
 #define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
@@ -1506,15 +1478,6 @@ compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
 
 
 COMPIZ_END_DECLS
-
-#include <comptexture.h>
-	
-struct _CompIcon {
-    CompTexture *texture;
-    int		width;
-    int		height;
-};
-
 	
 #include <string>
 #include <vector>

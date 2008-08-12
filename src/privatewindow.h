@@ -219,8 +219,8 @@ class PrivateWindow {
 
 	CompStruts *struts;
 
-	CompIcon **icon;
-	int	     nIcon;
+	std::vector<CompIcon *> icons;
+	bool noIcons;
 
 	XRectangle iconGeometry;
 	bool       iconGeometrySet;

@@ -1,6 +1,10 @@
 #ifndef _COMPTEXTURE_H
 #define _COMPTEXTURE_H
 
+#include <X11/Xlib-xcb.h>
+
+#include <GL/gl.h>
+
 #include <boost/shared_ptr.hpp>
 
 #define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
@@ -56,6 +60,14 @@ class CompTexture {
 					unsigned int height,
 					GLenum       format,
 					GLenum       type);
+
+	static bool
+	readImageToTexture (CompScreen   *screen,
+			    CompTexture  *texture,
+			    const char	 *imageFileName,
+			    unsigned int *returnWidth,
+			    unsigned int *returnHeight);
+
 
     private:
 	boost::shared_ptr <PrivateTexture> priv;

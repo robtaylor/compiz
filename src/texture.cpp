@@ -176,12 +176,12 @@ CompTexture::imageDataToTexture (CompTexture  *texture,
 }
 
 
-Bool
-readImageToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *imageFileName,
-		    unsigned int *returnWidth,
-		    unsigned int *returnHeight)
+bool
+CompTexture::readImageToTexture (CompScreen   *screen,
+				 CompTexture  *texture,
+				 const char   *imageFileName,
+				 unsigned int *returnWidth,
+				 unsigned int *returnHeight)
 {
     void *image;
     int  width, height;
@@ -202,16 +202,6 @@ readImageToTexture (CompScreen   *screen,
 	*returnHeight = height;
 
     return status;
-}
-
-Bool
-iconToTexture (CompScreen *screen,
-	       CompIcon   *icon)
-{
-    return CompTexture::imageBufferToTexture (icon->texture,
-					      (char *) (icon + 1),
-					      icon->width,
-					      icon->height);
 }
 
 bool
