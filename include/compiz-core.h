@@ -79,7 +79,7 @@ COMPIZ_BEGIN_DECLS
 #  define BITMAP_BIT_ORDER LSBFirst
 #endif
 
-typedef struct _CompTexture	  CompTexture;
+class  CompTexture;
 typedef struct _CompIcon	  CompIcon;
 typedef struct _CompWindowExtents CompWindowExtents;
 typedef struct _CompProgram	  CompProgram;
@@ -737,12 +737,6 @@ typedef struct _WindowPaintAttrib {
 extern ScreenPaintAttrib defaultScreenPaintAttrib;
 extern WindowPaintAttrib defaultWindowPaintAttrib;
 
-typedef struct _CompTextureMatrix {
-    float xx; float yx;
-    float xy; float yy;
-    float x0; float y0;
-} CompTextureMatrix;
-
 #define COMP_TEX_COORD_X(m, vx) ((m)->xx * (vx) + (m)->x0)
 #define COMP_TEX_COORD_Y(m, vy) ((m)->yy * (vy) + (m)->y0)
 
@@ -838,73 +832,19 @@ prepareXCoords (CompScreen *screen,
 
 /* texture.c */
 
-#define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
-
-typedef enum {
-    COMP_TEXTURE_FILTER_FAST,
-    COMP_TEXTURE_FILTER_GOOD
-} CompTextureFilterEnum;
-
-typedef int CompTextureFilter;
-
-struct _CompTexture {
-    GLuint            name;
-    GLenum            target;
-    GLfloat           dx, dy;
-    GLXPixmap         pixmap;
-    GLenum            filter;
-    GLenum            wrap;
-    CompTextureMatrix matrix;
-    Bool              oldMipmaps;
-    Bool              mipmap;
-    int               refCount;
-};
-
-void
-initTexture (CompScreen  *screen,
-	     CompTexture *texture);
-
-void
-finiTexture (CompScreen  *screen,
-	     CompTexture *texture);
-
-CompTexture *
-createTexture (CompScreen *screen);
-
-void
-destroyTexture (CompScreen  *screen,
-		CompTexture *texture);
-
-Bool
-imageBufferToTexture (CompScreen   *screen,
-		      CompTexture  *texture,
-		      const char   *image,
-		      unsigned int width,
-		      unsigned int height);
-
-Bool
-imageDataToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *image,
-		    unsigned int width,
-		    unsigned int height,
-		    GLenum       format,
-		    GLenum       type);
-
-
-Bool
-readImageToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *imageFileName,
-		    unsigned int *width,
-		    unsigned int *height);
 
 Bool
 iconToTexture (CompScreen *screen,
 	       CompIcon   *icon);
 
+Bool
+readImageToTexture (CompScreen   *screen,
+		    CompTexture  *texture,
+		    const char	 *imageFileName,
+		    unsigned int *returnWidth,
+		    unsigned int *returnHeight);
 
-
+/*
 
 void
 enableTextureClampToBorder (CompScreen	      *screen,
@@ -916,7 +856,7 @@ enableTextureClampToEdge (CompScreen	    *screen,
 			  CompTexture	    *texture,
 			  CompTextureFilter filter);
 
-
+*/
 /* screen.c */
 
 #define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
@@ -1149,35 +1089,6 @@ typedef struct _CompScreenEdge {
     unsigned int count;
 } CompScreenEdge;
 
-struct _CompIcon {
-    CompTexture texture;
-    int		width;
-    int		height;
-};
-
-typedef struct _CompCursorImage {
-    struct _CompCursorImage *next;
-
-    unsigned long serial;
-    Pixmap	  pixmap;
-    CompTexture   texture;
-    int		  xhot;
-    int	          yhot;
-    int		  width;
-    int	          height;
-} CompCursorImage;
-
-struct _CompCursor {
-    struct _CompCursor *next;
-
-    CompScreen	    *screen;
-    CompCursorImage *image;
-
-    int	x;
-    int	y;
-
-    CompTextureMatrix matrix;
-};
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
@@ -1615,8 +1526,43 @@ compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
 					int			     length);
 
 
+
 COMPIZ_END_DECLS
 
+#include <comptexture.h>
+	
+struct _CompIcon {
+    CompTexture *texture;
+    int		width;
+    int		height;
+};
+
+typedef struct _CompCursorImage {
+    struct _CompCursorImage *next;
+
+    unsigned long serial;
+    Pixmap	  pixmap;
+    CompTexture   *texture;
+    int		  xhot;
+    int	          yhot;
+    int		  width;
+    int	          height;
+} CompCursorImage;
+
+struct _CompCursor {
+    struct _CompCursor *next;
+
+    CompScreen	    *screen;
+    CompCursorImage *image;
+
+    int	x;
+    int	y;
+
+    CompTexture::Matrix matrix;
+};
+
+
+	
 #include <string>
 #include <vector>
 #include <list>
@@ -1630,5 +1576,5 @@ typedef std::string CompString;
 #include <compdisplay.h>
 #include <compscreen.h>
 #include <compwindow.h>
-
+		 
 #endif

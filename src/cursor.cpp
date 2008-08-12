@@ -31,7 +31,7 @@
 static void
 setCursorMatrix (CompCursor *c)
 {
-    c->matrix = c->image->texture.matrix;
+    c->matrix = c->image->texture->matrix ();
     c->matrix.x0 -= (c->x * c->matrix.xx);
     c->matrix.y0 -= (c->y * c->matrix.yy);
 }
@@ -145,14 +145,14 @@ updateCursor (CompCursor    *c,
 	    cursorImage->width  = image->width;
 	    cursorImage->height = image->height;
 
-	    initTexture (c->screen, &cursorImage->texture);
+	    cursorImage->texture = new CompTexture (c->screen);
 
-	    if (!imageBufferToTexture (c->screen,
-				       &cursorImage->texture,
-				       (char *) image->pixels,
-				       image->width,
-				       image->height))
+	    if (!CompTexture::imageBufferToTexture (cursorImage->texture,
+						    (char *) image->pixels,
+						    image->width,
+						    image->height))
 	    {
+		delete cursorImage->texture;
 		free (cursorImage);
 		XFree (image);
 		return;

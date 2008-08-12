@@ -869,13 +869,13 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
 
     if (pixmap)
     {
+/* FIXME:
 	if (pixmap == texture->pixmap)
 	    return;
+*/
+	texture->reset ();
 
-	finiTexture (screen, texture);
-	initTexture (screen, texture);
-
-	if (!screen->bindPixmapToTexture (texture, pixmap, width, height, depth))
+	if (!texture->bindPixmap (pixmap, width, height, depth))
 	{
 	    compLogMessage (NULL, "core", CompLogLevelWarn,
 			    "Couldn't bind background pixmap 0x%x to "
@@ -884,19 +884,19 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
     }
     else
     {
-	finiTexture (screen, texture);
-	initTexture (screen, texture);
+	texture->reset ();
     }
 
-    if (!texture->name && backgroundImage)
-	readImageToTexture (screen, texture, backgroundImage, &width, &height);
+    if (!texture->name () && backgroundImage)
+	readImageToTexture (screen, texture, backgroundImage,
+					 &width, &height);
 
-    if (texture->target == GL_TEXTURE_2D)
+    if (texture->target () == GL_TEXTURE_2D)
     {
-	glBindTexture (texture->target, texture->name);
-	glTexParameteri (texture->target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (texture->target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture (texture->target, 0);
+	glBindTexture (texture->target (), texture->name ());
+	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture (texture->target (), 0);
     }
 }
 
@@ -1448,6 +1448,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     fragmentProgram (false),
     maxTextureUnits (1),
     exposeRects (0),
+    backgroundTexture (screen),
     backgroundLoaded (false),
     pendingDestroys (0),
     desktopWindowCount (0),
@@ -2171,8 +2172,6 @@ CompScreen::init (CompDisplay *display,
 	return false;
     }
 
-    initTexture (this, &priv->backgroundTexture);
-
     glClearColor (0.0, 0.0, 0.0, 1.0);
     glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable (GL_CULL_FACE);
@@ -2279,9 +2278,9 @@ CompScreen::init (CompDisplay *display,
 
     XDefineCursor (dpy, priv->root, priv->normalCursor);
 
-    priv->filter[NOTHING_TRANS_FILTER] = COMP_TEXTURE_FILTER_FAST;
-    priv->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
-    priv->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
+    priv->filter[NOTHING_TRANS_FILTER] = CompTexture::Fast;
+    priv->filter[SCREEN_TRANS_FILTER]  = CompTexture::Good;
+    priv->filter[WINDOW_TRANS_FILTER]  = CompTexture::Good;
 
     priv->paintTimer.start (boost::bind(&CompScreen::handlePaintTimeout, this),
 			    priv->optimalRedrawTime, MAXSHORT);
@@ -2304,11 +2303,9 @@ CompScreen::~CompScreen ()
 
     XDestroyWindow (priv->display->dpy (), priv->grabWindow);
 
-    finiTexture (this, &priv->backgroundTexture);
-
     if (priv->defaultIcon)
     {
-	finiTexture (this, &priv->defaultIcon->texture);
+	delete priv->defaultIcon->texture;
 	free (priv->defaultIcon);
     }
 
@@ -3919,7 +3916,7 @@ CompScreen::updateDefaultIcon ()
 
     if (priv->defaultIcon)
     {
-	finiTexture (this, &priv->defaultIcon->texture);
+	delete priv->defaultIcon->texture;
 	free (priv->defaultIcon);
 	priv->defaultIcon = NULL;
     }
@@ -3934,7 +3931,7 @@ CompScreen::updateDefaultIcon ()
 	return false;
     }
 
-    initTexture (this, &icon->texture);
+    icon->texture = new CompTexture (this);
 
     icon->width  = width;
     icon->height = height;
@@ -4708,8 +4705,7 @@ CompScreen::activeNum ()
 void
 CompScreen::updateBackground ()
 {
-    finiTexture (this, &priv->backgroundTexture);
-    initTexture (this, &priv->backgroundTexture);
+    priv->backgroundTexture.reset ();
 
     if (priv->backgroundLoaded)
     {
@@ -4748,7 +4744,7 @@ CompScreen::lighting ()
     return priv->lighting;
 }
 
-int
+CompTexture::Filter
 CompScreen::filter (int filter)
 {
     return priv->filter[filter];
@@ -4790,3 +4786,14 @@ CompScreen::cursorImages ()
     return priv->cursorImages;
 }
 
+CompFBConfig*
+CompScreen::glxPixmapFBConfig (unsigned int depth)
+{
+    return &priv->glxPixmapFBConfigs[depth];
+}
+
+bool
+CompScreen::framebufferObject ()
+{
+    return priv->fbo;
+}

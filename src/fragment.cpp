@@ -24,6 +24,7 @@
  */
 
 #include <compiz-core.h>
+#include <comptexture.h>
 
 #include <string.h>
 #include <stdlib.h>
@@ -1270,7 +1271,7 @@ getSaturateFragmentFunction (CompScreen  *s,
     if (param >= 64)
 	return 0;
 
-    if (texture->target == GL_TEXTURE_2D)
+    if (texture->target () == GL_TEXTURE_2D)
 	target = COMP_FETCH_TARGET_2D;
     else
 	target = COMP_FETCH_TARGET_RECT;

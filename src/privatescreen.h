@@ -5,6 +5,7 @@
 #include <compscreen.h>
 #include <compsize.h>
 #include <comppoint.h>
+#include <comptexture.h>
 
 class PrivateScreen {
 
@@ -191,7 +192,7 @@ class PrivateScreen {
 	CompStartupSequence *startupSequences;
 	CompCore::Timer     startupSequenceTimer;
 
-	int filter[3];
+	CompTexture::Filter filter[3];
 
 	CompGroup *groups;
 

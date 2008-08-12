@@ -40,6 +40,7 @@
 #include <boost/bind.hpp>
 
 #include <compiz-core.h>
+#include <comptexture.h>
 #include "privatewindow.h"
 
 
@@ -826,7 +827,7 @@ CompWindow::updateWindowOutputExtents ()
 void
 PrivateWindow::setWindowMatrix ()
 {
-    matrix = texture->matrix;
+    matrix = texture.matrix ();
     matrix.x0 -= (attrib.x * matrix.xx);
     matrix.y0 -= (attrib.y * matrix.yy);
 }
@@ -851,7 +852,7 @@ CompWindow::bind ()
 	if (attr.map_state != IsViewable)
 	{
 	    XUngrabServer (priv->screen->display ()->dpy ());
-	    finiTexture (priv->screen, priv->texture);
+	    priv->texture.reset ();
 	    priv->bindFailed = true;
 	    return false;
 	}
@@ -862,9 +863,8 @@ CompWindow::bind ()
 	XUngrabServer (priv->screen->display ()->dpy ());
     }
 
-    if (!priv->screen->bindPixmapToTexture (priv->texture, priv->pixmap,
-					    priv->width, priv->height,
-					    priv->attrib.depth))
+    if (!priv->texture.bindPixmap (priv->pixmap, priv->width, priv->height,
+				   priv->attrib.depth))
     {
 	compLogMessage (priv->screen->display (), "core", CompLogLevelInfo,
 			"Couldn't bind redirected window 0x%x to "
@@ -881,15 +881,7 @@ CompWindow::release ()
 {
     if (priv->pixmap)
     {
-	CompTexture *texture;
-
-	texture = createTexture (priv->screen);
-	if (texture)
-	{
-	    destroyTexture (priv->screen, priv->texture);
-
-	    priv->texture = texture;
-	}
+	priv->texture = CompTexture (priv->screen);
 
 	XFreePixmap (priv->screen->display ()->dpy (), priv->pixmap);
 
@@ -3945,7 +3937,7 @@ CompWindow::getIcon (int width, int height)
 		    icon->width  = iw;
 		    icon->height = ih;
 
-		    initTexture (priv->screen, &icon->texture);
+		    icon->texture = new CompTexture (priv->screen);
 
 		    p = (CARD32 *) (icon + 1);
 
@@ -4014,7 +4006,7 @@ CompWindow::freeIcons ()
 
     for (i = 0; i < priv->nIcon; i++)
     {
-	finiTexture (priv->screen, &priv->icon[i]->texture);
+	delete priv->icon[i]->texture;
 	free (priv->icon[i]);
     }
 
@@ -4212,10 +4204,10 @@ WindowInterface::draw (const CompTransform  *transform,
     WRAPABLE_DEF_FUNC_RETURN(draw, transform, fragment, region, mask)
 
 void
-WindowInterface::addGeometry (CompTextureMatrix *matrix,
-			      int	        nMatrix,
-			      Region	        region,
-			      Region	        clip)
+WindowInterface::addGeometry (CompTexture::Matrix *matrix,
+			      int	          nMatrix,
+			      Region	          region,
+			      Region	          clip)
     WRAPABLE_DEF_FUNC(addGeometry, matrix, nMatrix, region, clip)
 
 void
@@ -4823,7 +4815,7 @@ CompWindow::updateStartupId ()
 void
 CompWindow::processDamage (XDamageNotifyEvent *de)
 {
-    priv->texture->oldMipmaps = true;
+    priv->texture.damage ();
 
     if (priv->syncWait)
     {
@@ -4918,10 +4910,8 @@ CompWindow::CompWindow (CompScreen *screen,
 
     WRAPABLE_INIT_HND(stateChangeNotify);
 
-    priv = new PrivateWindow (this);
+    priv = new PrivateWindow (this, screen);
     assert (priv);
-
-    priv->screen = screen;
 
     CompDisplay *d = screen->display ();
 
@@ -4930,10 +4920,6 @@ CompWindow::CompWindow (CompScreen *screen,
 
     priv->clip = XCreateRegion ();
     assert (priv->clip);
-
-    priv->texture = createTexture (screen);
-    assert (priv->texture);
-
 
     /* Failure means that window has been destroyed. We still have to add the
        window to the window list as we might get configure requests which
@@ -5211,9 +5197,9 @@ CompWindow::~CompWindow ()
     delete priv;
 }
 
-PrivateWindow::PrivateWindow (CompWindow *window) :
+PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     window (window),
-    screen (0),
+    screen (screen),
     refcnt (1),
     id (None),
     frame (None),
@@ -5222,6 +5208,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     transientFor (None),
     clientLeader (None),
     pixmap (None),
+    texture (screen),
     damage (None),
     inputHint (true),
     alpha (false),
@@ -5334,8 +5321,6 @@ PrivateWindow::~PrivateWindow ()
 	XSyncDestroyAlarm (screen->display ()->dpy (), syncAlarm);
 
     syncWaitTimer.stop ();
-
-    destroyTexture (screen, texture);
 
     if (frame)
 	XDestroyWindow (screen->display ()->dpy (), frame);

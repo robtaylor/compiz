@@ -3,6 +3,7 @@
 
 #include <compsize.h>
 #include <comppoint.h>
+#include <comptexture.h>
 
 class CompWindow;
 class PrivateWindow;
@@ -18,7 +19,7 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_DEF(bool, draw, const CompTransform *,
 		     const FragmentAttrib *, Region, unsigned int);
-	WRAPABLE_DEF(void, addGeometry, CompTextureMatrix *matrix,
+	WRAPABLE_DEF(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_DEF(void, drawTexture, CompTexture *texture,
 		     const FragmentAttrib *, unsigned int);
@@ -461,7 +462,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_HND(bool, draw, const CompTransform *,
 		     const FragmentAttrib *, Region, unsigned int);
-	WRAPABLE_HND(void, addGeometry, CompTextureMatrix *matrix,
+	WRAPABLE_HND(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_HND(void, drawTexture, CompTexture *texture,
 		     const FragmentAttrib *, unsigned int);

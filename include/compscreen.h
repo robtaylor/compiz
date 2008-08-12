@@ -2,6 +2,7 @@
 #define _COMPSCREEN_H
 
 #include <compwindow.h>
+#include <comptexture.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -354,13 +355,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	textureCompression ();
 
 	bool
-	bindPixmapToTexture (CompTexture *texture,
-			     Pixmap	 pixmap,
-			     int	 width,
-			     int	 height,
-			     int	 depth);
-
-	bool
 	canDoSaturated ();
 
 	bool
@@ -369,7 +363,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	bool
 	lighting ();
 
-	int
+	CompTexture::Filter
 	filter (int);
 
 	CompFunction *&
@@ -386,22 +380,17 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	bool
 	fragmentProgram ();
+
+	bool
+	framebufferObject ();
 	
-	void
-	releasePixmapFromTexture (CompTexture *texture);
-
-	void
-	enableTexture (CompTexture	 *texture,
-		       CompTextureFilter filter);
-
-	void
-	disableTexture (CompTexture *texture);
-
 	void
 	addCursor ();
 
 	CompCursorImage *&
 	cursorImages ();
+
+	CompFBConfig * glxPixmapFBConfig (unsigned int depth);
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
