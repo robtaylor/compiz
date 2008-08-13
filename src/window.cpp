@@ -43,6 +43,7 @@
 #include <comptexture.h>
 #include <compicon.h>
 #include "privatewindow.h"
+#include "privatescreen.h"
 
 
 CompObject::indices windowPrivateIndices (0);

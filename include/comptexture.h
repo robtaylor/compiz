@@ -9,6 +9,15 @@
 
 #define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
 
+#define COMP_TEX_COORD_X(m, vx) ((m)->xx * (vx) + (m)->x0)
+#define COMP_TEX_COORD_Y(m, vy) ((m)->yy * (vy) + (m)->y0)
+
+#define COMP_TEX_COORD_XY(m, vx, vy)		\
+    ((m)->xx * (vx) + (m)->xy * (vy) + (m)->x0)
+#define COMP_TEX_COORD_YX(m, vx, vy)		\
+    ((m)->yx * (vx) + (m)->yy * (vy) + (m)->y0)
+
+
 class CompScreen;
 class PrivateTexture;
 
