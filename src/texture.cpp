@@ -53,32 +53,19 @@ CompTexture::~CompTexture ()
 
 PrivateTexture::PrivateTexture (CompTexture *texture, CompScreen *screen) :
     screen (screen),
-    texture (texture)
+    texture (texture),
+    name (0),
+    target (GL_TEXTURE_2D),
+    pixmap  (None),
+    filter  (GL_NEAREST),
+    wrap    (GL_CLAMP_TO_EDGE),
+    matrix  (_identity_matrix),
+    damaged (true),
+    mipmap  (false)
 {
-    init ();
 }
 
 PrivateTexture::~PrivateTexture ()
-{
-    fini ();
-}
-
-
-void
-PrivateTexture::init ()
-{
-    name    = 0;
-    target  = GL_TEXTURE_2D;
-    pixmap  = None;
-    filter  = GL_NEAREST;
-    wrap    = GL_CLAMP_TO_EDGE;
-    matrix  = _identity_matrix;
-    damaged = true;
-    mipmap  = false;
-}
-
-void
-PrivateTexture::fini ()
 {
     if (name)
     {
@@ -87,6 +74,7 @@ PrivateTexture::fini ()
 	glDeleteTextures (1, &name);
     }
 }
+
 
 bool
 PrivateTexture::loadImageData (const char   *image,
@@ -495,8 +483,8 @@ CompTexture::matrix ()
 void
 CompTexture::reset ()
 {
-    priv->fini ();
-    priv->init ();
+    priv = boost::shared_ptr <PrivateTexture>
+		(new PrivateTexture (this, priv->screen));
 }
 
 bool

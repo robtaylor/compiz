@@ -10,9 +10,6 @@ class PrivateTexture {
 	PrivateTexture (CompTexture *, CompScreen *);
 	~PrivateTexture ();
 
-	void init ();
-	void fini ();
-
 	bool loadImageData (const char   *image,
 			    unsigned int width,
 			    unsigned int height,
