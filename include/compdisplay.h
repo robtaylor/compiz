@@ -2,6 +2,8 @@
 #define _COMPDISPLAY_H
 
 #include <list>
+
+#include <compmatch.h>
 #include "wrapable.h"
 
 class CompDisplay;
@@ -25,7 +27,7 @@ class DisplayInterface : public WrapableInterface<CompDisplay> {
 		 const char *, int, int, int, void *);
 
 	
-    WRAPABLE_DEF(void, matchInitExp, CompMatchExp *, const char *);
+    WRAPABLE_DEF(CompMatch::Expression *, matchInitExp, const CompString);
     WRAPABLE_DEF(void, matchExpHandlerChanged)
     WRAPABLE_DEF(void, matchPropertyChanged, CompWindow *)
 
@@ -366,7 +368,7 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 		     const char *, int, int, int, void *)
 
 	
-	WRAPABLE_HND(void, matchInitExp, CompMatchExp *, const char *);
+	WRAPABLE_HND(CompMatch::Expression *, matchInitExp, const CompString);
 	WRAPABLE_HND(void, matchExpHandlerChanged)
 	WRAPABLE_HND(void, matchPropertyChanged, CompWindow *)
 

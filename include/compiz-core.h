@@ -86,7 +86,7 @@ typedef struct _CompProgram	  CompProgram;
 typedef struct _CompFunction	  CompFunction;
 typedef struct _CompFunctionData  CompFunctionData;
 typedef struct _FragmentAttrib    FragmentAttrib;
-typedef struct _CompMatch	  CompMatch;
+class CompMatch;
 class CompOutput;
 typedef struct _CompWalker        CompWalker;
 
@@ -274,13 +274,7 @@ struct _CompAction {
     CompPrivate priv;
 };
 
-typedef union _CompMatchOp CompMatchOp;
 
-struct _CompMatch {
-    CompDisplay *display;
-    CompMatchOp *op;
-    int		nOp;
-};
 
 typedef struct {
     CompOptionType  type;
@@ -295,7 +289,7 @@ union _CompOptionValue {
     char	   *s;
     unsigned short c[4];
     CompAction     action;
-    CompMatch      match;
+    CompMatch      *match;
     CompListValue  list;
 };
 
@@ -429,52 +423,7 @@ isActionOption (CompOption *option);
 typedef void (*ForEachWindowProc) (CompWindow *window,
 				   void	      *closure);
 
-#define MATCH_OP_AND_MASK (1 << 0)
-#define MATCH_OP_NOT_MASK (1 << 1)
 
-typedef enum {
-    CompMatchOpTypeGroup,
-    CompMatchOpTypeExp
-} CompMatchOpType;
-
-typedef struct _CompMatchAnyOp {
-    CompMatchOpType type;
-    int		    flags;
-} CompMatchAnyOp;
-
-typedef struct _CompMatchGroupOp {
-    CompMatchOpType type;
-    int		    flags;
-    CompMatchOp	    *op;
-    int		    nOp;
-} CompMatchGroupOp;
-
-typedef void (*CompMatchExpFiniProc) (CompDisplay *display,
-				      CompPrivate priv);
-
-typedef Bool (*CompMatchExpEvalProc) (CompDisplay *display,
-				      CompWindow  *window,
-				      CompPrivate priv);
-
-typedef struct _CompMatchExp {
-    CompMatchExpFiniProc fini;
-    CompMatchExpEvalProc eval;
-    CompPrivate		 priv;
-} CompMatchExp;
-
-typedef struct _CompMatchExpOp {
-    CompMatchOpType type;
-    int		    flags;
-    char	    *value;
-    CompMatchExp    e;
-} CompMatchExpOp;
-
-union _CompMatchOp {
-    CompMatchOpType  type;
-    CompMatchAnyOp   any;
-    CompMatchGroupOp group;
-    CompMatchExpOp   exp;
-};
 
 
 bool
@@ -895,57 +844,6 @@ void
 matrixGetIdentity (CompTransform *m);
 
 /* match.c */
-
-void
-matchInit (CompMatch *match);
-
-void
-matchFini (CompMatch *match);
-
-Bool
-matchEqual (CompMatch *m1,
-	    CompMatch *m2);
-
-Bool
-matchCopy (CompMatch *dst,
-	   CompMatch *src);
-
-Bool
-matchAddGroup (CompMatch *match,
-	       int	 flags,
-	       CompMatch *group);
-
-Bool
-matchAddExp (CompMatch *match,
-	     int	flags,
-	     const char	*value);
-
-void
-matchAddFromString (CompMatch  *match,
-		    const char *str);
-
-char *
-matchToString (CompMatch *match);
-
-void
-matchUpdate (CompDisplay *display,
-	     CompMatch   *match);
-
-Bool
-matchEval (CompMatch  *match,
-	   CompWindow *window);
-
-void
-matchInitExp (CompDisplay  *display,
-	      CompMatchExp *exp,
-	      const char   *value);
-
-void
-matchExpHandlerChanged (CompDisplay *display);
-
-void
-matchPropertyChanged (CompDisplay *display,
-		      CompWindow  *window);
 
 
 /* metadata.c */

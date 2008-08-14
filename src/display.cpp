@@ -45,7 +45,7 @@
 
 #include <boost/bind.hpp>
 
-#include <compiz-core.h>
+
 #include "privatedisplay.h"
 #include "privatescreen.h"
 #include "privatewindow.h"
@@ -2587,9 +2587,9 @@ DisplayInterface::imageToFile (const char *path,
     WRAPABLE_DEF_FUNC_RETURN(imageToFile, path, name, format, width, height,
 			     stride, data)
 
-void
-DisplayInterface::matchInitExp (CompMatchExp *exp, const char *value)
-    WRAPABLE_DEF_FUNC(matchInitExp, exp, value)
+CompMatch::Expression *
+DisplayInterface::matchInitExp (const CompString value)
+    WRAPABLE_DEF_FUNC_RETURN(matchInitExp, value)
 
 void
 DisplayInterface::matchExpHandlerChanged ()

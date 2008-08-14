@@ -3768,8 +3768,8 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* allow focus for excluded windows */
-    match = &s->getOption ("focus_prevention_match")->value.match;
-    if (!matchEval (match, window))
+    match = s->getOption ("focus_prevention_match")->value.match;
+    if (!match->evaluate (window))
 	return true;
 
     if (level == FOCUS_PREVENTION_LEVEL_VERYHIGH)

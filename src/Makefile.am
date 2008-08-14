@@ -12,6 +12,7 @@ bin_PROGRAMS = compiz
 compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
+	match.cpp    \
 	main.cpp	   \
 	object.cpp   \
 	core.cpp	   \
@@ -26,7 +27,6 @@ compiz_SOURCES =   \
 	session.cpp  \
 	fragment.cpp \
 	matrix.cpp   \
-	match.cpp    \
 	metadata.cpp \
 	output.cpp   \
 	rect.cpp     \
