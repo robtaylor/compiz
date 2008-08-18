@@ -715,7 +715,7 @@ initMatchValue (CompDisplay     *d,
 {
     xmlChar *value;
 
-    matchInit (&v->match);
+    v->match = new CompMatch ();
 
     if (!doc)
 	return;
@@ -723,12 +723,12 @@ initMatchValue (CompDisplay     *d,
     value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
     if (value)
     {
-	matchAddFromString (&v->match, (char *) value);
+	*v->match = (char *) value;
 	xmlFree (value);
     }
 
     if (!helper)
-	matchUpdate (d, &v->match);
+	v->match->update (d);
 }
 
 static void

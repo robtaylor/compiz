@@ -83,7 +83,8 @@ compFiniOptionValue (CompOptionValue *v,
 	    free (v->s);
 	break;
     case CompOptionTypeMatch:
-	matchFini (&v->match);
+	delete (v->match);
+	v->match = NULL;
 	break;
     case CompOptionTypeList:
 	for (i = 0; i < v->list.nValue; i++)
@@ -292,22 +293,20 @@ Bool
 compSetMatchOption (CompOption      *option,
 		    CompOptionValue *value)
 {
-    CompDisplay *display = option->value.match.display;
+    CompDisplay *display = option->value.match->display ();
     CompMatch	match;
 
-    if (matchEqual (&option->value.match, &value->match))
+    if (*option->value.match == *value->match)
 	return FALSE;
 
-    if (!matchCopy (&match, &value->match))
-	return FALSE;
+    match = *value->match;
 
-    matchFini (&option->value.match);
+    delete option->value.match;
 
-    option->value.match.op  = match.op;
-    option->value.match.nOp = match.nOp;
+    option->value.match = new CompMatch (*value->match);
 
     if (display)
-	matchUpdate (display, &option->value.match);
+	option->value.match->update (display);
 
     return TRUE;
 }
@@ -338,7 +337,8 @@ compSetOptionList (CompOption      *option,
 		    free (option->value.list.value[i].s);
 		break;
 	    case CompOptionTypeMatch:
-		matchFini (&option->value.list.value[i].match);
+		delete option->value.list.value[i].match;
+		option->value.list.value[i].match = NULL;
 	    default:
 		break;
 	    }
@@ -524,7 +524,7 @@ getMatchOptionNamed (CompOption	*option,
     {
 	if (option->type == CompOptionTypeMatch)
 	    if (strcmp (option->name, name) == 0)
-		return &option->value.match;
+		return option->value.match;
 
 	option++;
     }

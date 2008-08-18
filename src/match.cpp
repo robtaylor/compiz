@@ -26,288 +26,226 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <compiz-core.h>
 #include "privatedisplay.h"
 
-static void
-matchResetOps (CompDisplay *display,
-	       CompMatchOp *op,
-	       int	   nOp)
-{
-    while (nOp--)
-    {
-	switch (op->type) {
-	case CompMatchOpTypeGroup:
-	    matchResetOps (display, op->group.op, op->group.nOp);
-	    break;
-	case CompMatchOpTypeExp:
-	    if (op->exp.e.fini)
-	    {
-		(*op->exp.e.fini) (display, op->exp.e.priv);
-		op->exp.e.fini = NULL;
-	    }
+#include <compmatch.h>
+#include "privatematch.h"
 
-	    op->exp.e.eval     = NULL;
-	    op->exp.e.priv.val = 0;
-	    break;
+class CoreExp : public CompMatch::Expression {
+    public:
+	typedef enum {
+	    TypeXid,
+	    TypeState,
+	    TypeOverride,
+	    TypeType
+	} Type;
+	
+	CoreExp (CompString str)
+	{
+	    if (str.compare (0, 4, "xid=") == 0)
+	    {
+		mType = TypeXid;
+		priv.val = strtol (str.substr (4).c_str (), NULL, 0);
+	    }
+	    else if (str.compare (0, 6, "state=") == 0)
+	    {
+		mType = TypeState;
+		priv.uval = CompDisplay::windowStateFromString
+				(str.substr (6).c_str ());
+	    }
+	    else if (str.compare (0, 18, "override_redirect=") == 0)
+	    {
+		mType = TypeOverride;
+		priv.val = strtol (str.substr (18).c_str (), NULL, 0);
+	    }
+	    else
+	    {
+		if (str.compare (0, 5, "type=") == 0)
+		    str = str.substr (5);
+
+		mType = TypeType;
+		priv.uval = CompWindow::windowTypeFromString (str.c_str ());
+	    }
 	}
 
-	op++;
-    }
+	bool evaluate (CompWindow *w)
+	{
+
+	    switch (mType)
+	    {
+		
+		case TypeXid:
+		    return ((unsigned int) priv.val == w->id ());
+		case TypeState:
+		    return (priv.uval & w->state ());
+		case TypeOverride:
+		{
+		    bool overrideRedirect = w->attrib ().override_redirect;
+		    return ((priv.val == 1 && overrideRedirect) ||
+			    (priv.val == 0 && !overrideRedirect));
+		}
+		case TypeType:
+		    return (priv.uval & w->wmType ());
+	    }
+	    return true;
+	}
+
+	Type        mType;
+	CompPrivate priv;
+};
+
+CompMatch::Expression *
+CompDisplay::matchInitExp (const CompString str)
+{
+    WRAPABLE_HND_FUNC_RETURN(CompMatch::Expression *, matchInitExp, str)
+
+    return new CoreExp (str);
 }
 
 static void
-matchReset (CompMatch *match)
+matchUpdateMatchOptions (CompOption  *option,
+			 int	     nOption)
 {
-    if (match->display)
-	matchResetOps (match->display, match->op, match->nOp);
+    while (nOption--)
+    {
+	switch (option->type) {
+	case CompOptionTypeMatch:
+	    if (option->value.match && option->value.match->display ())
+		option->value.match->update (option->value.match->display ());
+	    break;
+	case CompOptionTypeList:
+	    if (option->value.list.type == CompOptionTypeMatch)
+	    {
+		int i;
 
-    match->display = NULL;
+		for (i = 0; i < option->value.list.nValue; i++)
+		    if (option->value.list.value[i].match &&
+		        option->value.list.value[i].match->display ())
+			option->value.list.value[i].match->update
+			    (option->value.list.value[i].match->display ());
+	    }
+	default:
+	    break;
+	}
+
+	option++;
+    }
 }
 
 void
-matchInit (CompMatch *match)
+CompDisplay::matchExpHandlerChanged ()
 {
-    match->display = NULL;
-    match->op	   = NULL;
-    match->nOp	    = 0;
-}
+    WRAPABLE_HND_FUNC(matchExpHandlerChanged)
 
-static void
-matchFiniOps (CompMatchOp *op,
-	      int	  nOp)
-{
-    while (nOp--)
+    CompOption *option;
+    int	       nOption;
+    CompPlugin *p;
+    CompScreen *s;
+
+    for (p = getPlugins (); p; p = p->next)
     {
-	switch (op->type) {
-	case CompMatchOpTypeGroup:
-	    matchFiniOps (op->group.op, op->group.nOp);
-	    free (op->group.op);
-	    break;
-	case CompMatchOpTypeExp:
-	    free (op->exp.value);
-	    break;
-	}
+	option = p->vTable->getObjectOptions (this, &nOption);
+	matchUpdateMatchOptions (option, nOption);
+    }
 
-	op++;
+    for (s = priv->screens; s; s = s->next)
+    {
+	for (p = getPlugins (); p; p = p->next)
+	{
+	    option = p->vTable->getObjectOptions (s, &nOption);
+	    matchUpdateMatchOptions (option, nOption);
+	}
     }
 }
 
 void
-matchFini (CompMatch *match)
+CompDisplay::matchPropertyChanged (CompWindow *w)
 {
-    matchReset (match);
-    matchFiniOps (match->op, match->nOp);
-    free (match->op);
+    WRAPABLE_HND_FUNC(matchPropertyChanged, w)
 }
 
-static Bool
-matchOpsEqual (CompMatchOp *op1,
-	       CompMatchOp *op2,
-	       int	   nOp)
+
+
+static void
+matchResetOps (MatchOp::List &list)
 {
-    while (nOp--)
+    MatchExpOp *exp;
+    foreach (MatchOp &op, list)
     {
-	if (op1->type != op2->type)
-	    return FALSE;
+	switch (op.type ()) {
+	    case MatchOp::TypeGroup:
+		matchResetOps (dynamic_cast <MatchGroupOp &> (op).op);
+		break;
+	    case MatchOp::TypeExp:
+		exp = dynamic_cast <MatchExpOp *> (&op);
+		if (exp && exp->e)
+		{
 
-	switch (op1->type) {
-	case CompMatchOpTypeGroup:
-	    if (op1->group.nOp != op2->group.nOp)
-		return FALSE;
+		    exp->e.reset ();
+		}
+		break;
+	    default:
+		break;
+	}
+    }
+}
 
-	    if (!matchOpsEqual (op1->group.op, op2->group.op, op1->group.nOp))
-		return FALSE;
+static bool
+matchOpsEqual (MatchOp::List &list1,
+	       MatchOp::List &list2)
+{
+    MatchOp::List::iterator it1 = list1.begin (), it2 = list2.begin ();
 
-	    break;
-	case CompMatchOpTypeExp:
-	    if (op1->exp.flags != op2->exp.flags)
-		return FALSE;
+    MatchGroupOp *g1, *g2;
+    MatchExpOp *e1, *e2;
+    
+    if (list1.size () != list2.size ())
+	return false;
 
-	    if (strcmp (op1->exp.value, op2->exp.value))
-		return FALSE;
+    while (it1 != list1.end ())
+    {
+	if ((*it1).type () != (*it2).type ())
+	    return false;
 
-	    break;
+	if ((*it1).flags != (*it2).flags)
+	    return false;
+
+	switch ((*it1).type ()) {
+	    case MatchOp::TypeGroup:
+		g1 = dynamic_cast<MatchGroupOp *> (&(*it1));
+		g2 = dynamic_cast<MatchGroupOp *> (&(*it2));
+
+		if (!matchOpsEqual (g1->op, g2->op))
+		    return false;
+
+		break;
+	    case MatchOp::TypeExp:
+		e1 = dynamic_cast<MatchExpOp *> (&(*it1));
+		e2 = dynamic_cast<MatchExpOp *> (&(*it2));
+
+		if (e1->value != e2->value)
+		    return false;
+
+		break;
+	    default:
+		break;
 	}
 
-	op1++;
-	op2++;
+	it1++;
+	it2++;
     }
 
-    return TRUE;
+    return true;
 }
 
-Bool
-matchEqual (CompMatch *m1,
-	    CompMatch *m2)
-{
-    if (m1->nOp != m2->nOp)
-	return FALSE;
 
-    return matchOpsEqual (m1->op, m2->op, m1->nOp);
-}
-
-static CompMatchOp *
-matchAddOp (CompMatch	    *match,
-	    CompMatchOpType type,
-	    int		    flags)
-{
-    CompMatchOp *op;
-
-    /* remove AND prefix if this is the first op in this group */
-    if (!match->nOp)
-	flags &= ~MATCH_OP_AND_MASK;
-
-    op = (CompMatchOp *) realloc (match->op, sizeof (CompMatchOp) * (match->nOp + 1));
-    if (!op)
-	return FALSE;
-
-    op[match->nOp].any.type  = type;
-    op[match->nOp].any.flags = flags;
-
-    match->op = op;
-    match->nOp++;
-
-    return &match->op[match->nOp - 1];
-}
-
-static Bool
-matchCopyOps (CompMatchOp *opDst,
-	      CompMatchOp *opSrc,
-	      int	   nOpSrc)
-{
-    CompMatchOp *op, *first = opDst;
-    int		count = 0;
-
-    while (nOpSrc--)
-    {
-	opDst->any.type  = opSrc->any.type;
-	opDst->any.flags = opSrc->any.flags;
-
-	switch (opSrc->type) {
-	case CompMatchOpTypeGroup:
-	    op = (CompMatchOp *) malloc (sizeof (CompMatchOp) * opSrc->group.nOp);
-	    if (!op)
-	    {
-		matchFiniOps (first, count);
-		return FALSE;
-	    }
-
-	    if (!matchCopyOps (op, opSrc->group.op, opSrc->group.nOp))
-	    {
-		free (op);
-		matchFiniOps (first, count);
-		return FALSE;
-	    }
-
-	    opDst->group.op  = op;
-	    opDst->group.nOp = opSrc->group.nOp;
-	    break;
-	case CompMatchOpTypeExp:
-	    opDst->exp.value = strdup (opSrc->exp.value);
-	    if (!opDst->exp.value)
-	    {
-		matchFiniOps (first, count);
-		return FALSE;
-	    }
-
-	    opDst->exp.e.fini	  = NULL;
-	    opDst->exp.e.eval	  = NULL;
-	    opDst->exp.e.priv.val = 0;
-	    break;
-	}
-
-	count++;
-	opDst++;
-	opSrc++;
-    }
-
-    return TRUE;
-}
-
-Bool
-matchCopy (CompMatch *dst,
-	   CompMatch *src)
-{
-    CompMatchOp *opDst;
-
-    opDst = (CompMatchOp *) malloc (sizeof (CompMatchOp) * src->nOp);
-    if (!opDst)
-	return FALSE;
-
-    if (!matchCopyOps (opDst, src->op, src->nOp))
-    {
-	free (opDst);
-	return FALSE;
-    }
-
-    dst->op  = opDst;
-    dst->nOp = src->nOp;
-
-    return TRUE;
-}
-
-Bool
-matchAddGroup (CompMatch *match,
-	       int	 flags,
-	       CompMatch *group)
-{
-    CompMatchOp *op, *opDst;
-
-    opDst = (CompMatchOp *) malloc (sizeof (CompMatchOp) * group->nOp);
-    if (!opDst)
-	return FALSE;
-
-    if (!matchCopyOps (opDst, group->op, group->nOp))
-    {
-	free (opDst);
-	return FALSE;
-    }
-
-    op = matchAddOp (match, CompMatchOpTypeGroup, flags);
-    if (!op)
-    {
-	matchFiniOps (opDst, group->nOp);
-	free (opDst);
-	return FALSE;
-    }
-
-    op->group.op  = opDst;
-    op->group.nOp = group->nOp;
-
-    return TRUE;
-}
-
-Bool
-matchAddExp (CompMatch  *match,
-	     int        flags,
-	     const char *str)
-{
-    CompMatchOp *op;
-    char	*value;
-
-    value = strdup (str);
-    if (!value)
-	return FALSE;
-
-    op = matchAddOp (match, CompMatchOpTypeExp, flags);
-    if (!op)
-    {
-	free (value);
-	return FALSE;
-    }
-
-    op->exp.value      = value;
-    op->exp.e.fini     = NULL;
-    op->exp.e.eval     = NULL;
-    op->exp.e.priv.val = 0;
-
-    return TRUE;
-}
-
-static int
-nextIndex (const char *str,
-	   int	      i)
+static unsigned int
+nextIndex (CompString   &str,
+	   unsigned int i)
 {
     while (str[i] == '\\')
 	if (str[++i] != '\0')
@@ -316,55 +254,48 @@ nextIndex (const char *str,
     return i;
 }
 
-static char *
-strndupValue (const char *str,
-	      int	 n)
+
+static CompString
+strndupValue (CompString str)
 {
-    char *value;
+    CompString value;
 
-    value = (char *) malloc (sizeof (char) * (n + 1));
-    if (value)
+    unsigned int i, j, n = str.length ();
+
+    /* count trialing white spaces */
+    i = j = 0;
+    while (i < n)
     {
-	int i, j;
-
-	/* count trialing white spaces */
-	i = j = 0;
-	while (i < n)
+	if (str[i] != ' ')
 	{
-	    if (str[i] != ' ')
-	    {
-		j = 0;
-		if (str[i] == '\\')
-		    i++;
-	    }
-	    else
-	    {
-		j++;
-	    }
-
-	    i++;
-	}
-
-	/* remove trialing white spaces */
-	n -= j;
-
-	i = j = 0;
-	for (;;)
-	{
+	    j = 0;
 	    if (str[i] == '\\')
 		i++;
-
-	    value[j++] = str[i++];
-
-	    if (i >= n)
-	    {
-		value[j] = '\0';
-		return value;
-	    }
 	}
+	else
+	{
+	    j++;
+	}
+
+	i++;
     }
 
-    return NULL;
+    /* remove trialing white spaces */
+    n -= j;
+
+    i = j = 0;
+    for (;;)
+    {
+	if (str[i] == '\\')
+	    i++;
+
+	value += str[i++];
+
+	if (i >= n)
+	{
+	    return value;
+	}
+    }
 }
 
 /*
@@ -376,13 +307,16 @@ strndupValue (const char *str,
   "type=desktop | !type=dock"
   "!type=dock & (state=fullscreen | state=shaded)"
 */
-void
-matchAddFromString (CompMatch  *match,
-		    const char *str)
+
+static void
+matchAddFromString (MatchOp::List &list,
+		    CompString    str)
 {
-    char *value;
+    CompString value;
     int	 j, i = 0;
     int	 flags = 0;
+
+    str += "\0";
 
     while (str[i] != '\0')
     {
@@ -423,21 +357,10 @@ matchAddFromString (CompMatch  *match,
 
 	    length = j - i;
 
-	    value = (char *) malloc (sizeof (char) * (length + 1));
-	    if (value)
-	    {
-		CompMatch group;
-
-		strncpy (value, &str[i], length);
-		value[length] = '\0';
-
-		matchInit (&group);
-		matchAddFromString (&group, value);
-		matchAddGroup (match, flags, &group);
-		matchFini (&group);
-
-		free (value);
-	    }
+	    MatchGroupOp group;
+	    matchAddFromString (group.op, str.substr (i, length));
+	    group.flags = flags;
+	    list.push_back (group);
 
 	    while (str[j] != '\0' && str[j] != '|' && str[j] != '&')
 		j++;
@@ -449,12 +372,12 @@ matchAddFromString (CompMatch  *match,
 	    while (str[j] != '\0' && str[j] != '|' && str[j] != '&')
 		j = nextIndex (str, ++j);
 
-	    value = strndupValue (&str[i], j - i);
-	    if (value)
+	    if (j > i)
 	    {
-		matchAddExp (match, flags, value);
-
-		free (value);
+		MatchExpOp exp;
+		exp.value = strndupValue (str.substr(i, j - i));
+		exp.flags = flags;
+		list.push_back (exp);
 	    }
 	}
 
@@ -468,299 +391,302 @@ matchAddFromString (CompMatch  *match,
 	    i++;
 	}
     }
+
+    if (list.size ())
+	list.front ().flags &= ~MATCH_OP_AND_MASK;
+
 }
 
-static char *
-matchOpsToString (CompMatchOp *op,
-		  int	      nOp)
+static CompString
+matchOpsToString (MatchOp::List &list)
 {
-    char *value, *group;
-    char *str = NULL;
-    int  length = 0;
+    CompString value (""), group;
 
-    while (nOp--)
+    foreach (MatchOp &op, list)
     {
-	value = NULL;
+	switch (op.type ()) {
+	    case MatchOp::TypeGroup:
+		group = matchOpsToString (dynamic_cast <MatchGroupOp &> (op).op);
+		if (group.length ())
+		{
+		    if (value.length ())
+		    {
+			value += ((op.flags & MATCH_OP_AND_MASK) ?
+				  "& " : "| ");
+		    }
+		    if (op.flags & MATCH_OP_NOT_MASK)
+			value += "!";
+		    value += "(" + group + ") ";
+		}
+		break;
+	    case MatchOp::TypeExp:
 
-	switch (op->type) {
-	case CompMatchOpTypeGroup:
-	    group = matchOpsToString (op->group.op, op->group.nOp);
-	    if (group)
-	    {
-		value = (char *) malloc (sizeof (char) * (strlen (group) + 7));
-		if (value)
-		    sprintf (value, "%s%s(%s)%s", !str ? "" :
-			     ((op->any.flags & MATCH_OP_AND_MASK) ?
-			      "& " : "| "),
-			     (op->any.flags & MATCH_OP_NOT_MASK) ? "!" : "",
-			     group, nOp ? " " : "");
-
-		free (group);
-	    }
-	    break;
-	case CompMatchOpTypeExp:
-	    value = (char *) malloc (sizeof (char) * (strlen (op->exp.value) + 5));
-	    if (value)
-		sprintf (value, "%s%s%s%s", !str ? "" :
-			 ((op->any.flags & MATCH_OP_AND_MASK) ? "& " : "| "),
-			 (op->any.flags & MATCH_OP_NOT_MASK) ? "!" : "",
-			 op->exp.value, nOp ? " " : "");
-	    break;
+		if (value.length ())
+		{
+		    value += ((op.flags & MATCH_OP_AND_MASK) ?
+			      "& " : "| ");
+		}
+		if (op.flags & MATCH_OP_NOT_MASK)
+		    value += "!";
+		    value += dynamic_cast <MatchExpOp &> (op).value;
+		break;
+	    default:
+		break;
 	}
-
-	if (value)
-	{
-	    char *s;
-	    int  valueLength = strlen (value);
-
-	    s = (char *) malloc (sizeof (char) * (length + valueLength + 1));
-	    if (s)
-	    {
-		if (str)
-		    memcpy (s, str, sizeof (char) * length);
-
-		memcpy (s + length, value, sizeof (char) * valueLength);
-
-		length += valueLength;
-
-		s[length] = '\0';
-
-		if (str)
-		    free (str);
-
-		str = s;
-	    }
-
-	    free (value);
-	}
-
-	op++;
     }
 
-    return str;
-}
+    value.erase (value.length () - 1);
 
-char *
-matchToString (CompMatch *match)
-{
-    char *str;
-
-    str = matchOpsToString (match->op, match->nOp);
-    if (!str)
-	str = strdup ("");
-
-    return str;
+    return value;
 }
 
 static void
-matchUpdateOps (CompDisplay *display,
-		CompMatchOp *op,
-		int	    nOp)
+matchUpdateOps (CompDisplay   *display,
+		MatchOp::List &list)
 {
-    while (nOp--)
+    MatchExpOp *exp;
+    foreach (MatchOp &op, list)
     {
-	switch (op->type) {
-	case CompMatchOpTypeGroup:
-	    matchUpdateOps (display, op->group.op, op->group.nOp);
-	    break;
-	case CompMatchOpTypeExp:
-	    display->matchInitExp (&op->exp.e, op->exp.value);
-	    break;
+	switch (op.type ()) {
+	    case MatchOp::TypeGroup:
+		matchUpdateOps (display, dynamic_cast <MatchGroupOp &> (op).op);
+		break;
+	    case MatchOp::TypeExp:
+		exp = dynamic_cast <MatchExpOp *> (&op);
+		if (exp)
+		    exp->e.reset (display->matchInitExp (exp->value));
+		break;
+	    default:
+		break;
 	}
-
-	op++;
     }
 }
 
-void
-matchUpdate (CompDisplay *display,
-	     CompMatch   *match)
+static bool
+matchEvalOps (MatchOp::List &list,
+	      CompWindow    *w)
 {
-    matchReset (match);
-    matchUpdateOps (display, match->op, match->nOp);
-    match->display = display;
-}
+    bool       value, result = false;
+    MatchExpOp *exp;
 
-static Bool
-matchEvalOps (CompDisplay *display,
-	      CompMatchOp *op,
-	      int	  nOp,
-	      CompWindow  *window)
-{
-    Bool value, result = FALSE;
-
-    while (nOp--)
+    foreach (MatchOp &op, list)
     {
 	/* fast evaluation */
-	if (op->any.flags & MATCH_OP_AND_MASK)
+	if (op.flags & MATCH_OP_AND_MASK)
 	{
 	    /* result will never be true */
 	    if (!result)
-		return FALSE;
+		return false;
 	}
 	else
 	{
 	    /* result will always be true */
 	    if (result)
-		return TRUE;
+		return true;
 	}
 
-	switch (op->type) {
-	case CompMatchOpTypeGroup:
-	    value = matchEvalOps (display, op->group.op, op->group.nOp, window);
-	    break;
-	case CompMatchOpTypeExp:
-	default:
-	    value = (*op->exp.e.eval) (display, window, op->exp.e.priv);
-	    break;
+	switch (op.type ()) {
+	    case MatchOp::TypeGroup:
+		value = matchEvalOps (dynamic_cast <MatchGroupOp &> (op).op, w);
+		break;
+	    case MatchOp::TypeExp:
+		exp = dynamic_cast <MatchExpOp *> (&op);
+		if (exp->e.get ())
+		    value = exp->e->evaluate (w);
+		else
+		    value = true;
+		break;
+	    default:
+		value = true;
+		break;
 	}
 
-	if (op->any.flags & MATCH_OP_NOT_MASK)
+	if (op.flags & MATCH_OP_NOT_MASK)
 	    value = !value;
 
-	if (op->any.flags & MATCH_OP_AND_MASK)
+	if (op.flags & MATCH_OP_AND_MASK)
 	    result = (result && value);
 	else
 	    result = (result || value);
-
-	op++;
     }
 
     return result;
 }
 
-Bool
-matchEval (CompMatch  *match,
-	   CompWindow *window)
+MatchOp::MatchOp () :
+    flags (0)
 {
-    if (match->display)
-	return matchEvalOps (match->display, match->op, match->nOp, window);
-
-    return FALSE;
 }
 
-static Bool
-matchEvalTypeExp (CompDisplay *display,
-		  CompWindow  *window,
-		  CompPrivate c_private)
+MatchOp::~MatchOp ()
 {
-    return (c_private.uval & window->wmType ());
 }
 
-static Bool
-matchEvalStateExp (CompDisplay *display,
-		   CompWindow  *window,
-		   CompPrivate c_private)
+MatchExpOp::MatchExpOp () :
+    value (""),
+    e ()
 {
-    return (c_private.uval & window->state ());
 }
 
-static Bool
-matchEvalIdExp (CompDisplay *display,
-		CompWindow  *window,
-		CompPrivate c_private)
+MatchGroupOp::MatchGroupOp () :
+    op (0)
 {
-    return (c_private.val == window->id ());
 }
 
-static Bool
-matchEvalOverrideRedirectExp (CompDisplay *display,
-			      CompWindow  *window,
-			      CompPrivate c_private)
+PrivateMatch::PrivateMatch () :
+    op (),
+    display (NULL)
 {
-    Bool overrideRedirect = window->attrib ().override_redirect;
-    return ((c_private.val == 1 && overrideRedirect) ||
-	    (c_private.val == 0 && !overrideRedirect));
 }
 
-void
-CompDisplay::matchInitExp (CompMatchExp *exp, const char *value)
+
+CompMatch::CompMatch () :
+    priv (new PrivateMatch ())
 {
-    WRAPABLE_HND_FUNC(matchInitExp, exp, value)
-
-    if (strncmp (value, "xid=", 4) == 0)
-    {
-	exp->eval     = matchEvalIdExp;
-	exp->priv.val = strtol (value + 4, NULL, 0);
-    }
-    else if (strncmp (value, "state=", 6) == 0)
-    {
-	exp->eval      = matchEvalStateExp;
-	exp->priv.uval = windowStateFromString (value + 6);
-    }
-    else if (strncmp (value, "override_redirect=", 18) == 0)
-    {
-	exp->eval     = matchEvalOverrideRedirectExp;
-	exp->priv.val = strtol (value + 18, NULL, 0);
-    }
-    else
-    {
-	if (strncmp (value, "type=", 5) == 0)
-	    value += 5;
-
-	exp->eval      = matchEvalTypeExp;
-	exp->priv.uval = CompWindow::windowTypeFromString (value);
-    }
 }
 
-static void
-matchUpdateMatchOptions (CompOption *option,
-			 int	    nOption)
+CompMatch::CompMatch (const CompString str) :
+    priv (new PrivateMatch ())
 {
-    while (nOption--)
-    {
-	switch (option->type) {
-	case CompOptionTypeMatch:
-	    if (option->value.match.display)
-		matchUpdate (option->value.match.display, &option->value.match);
-	    break;
-	case CompOptionTypeList:
-	    if (option->value.list.type == CompOptionTypeMatch)
-	    {
-		int i;
+    matchAddFromString (priv->op.op, str);
+}
 
-		for (i = 0; i < option->value.list.nValue; i++)
-		    if (option->value.list.value[i].match.display)
-			matchUpdate (option->value.list.value[i].match.display,
-				     &option->value.list.value[i].match);
-	    }
-	default:
-	    break;
-	}
+CompMatch::CompMatch (const CompMatch &match) :
+    priv (new PrivateMatch ())
+{
+    priv->op = match.priv->op;
+}
+	
 
-	option++;
-    }
+CompMatch::~CompMatch ()
+{
+    delete priv;
 }
 
 void
-CompDisplay::matchExpHandlerChanged ()
+CompMatch::update (CompDisplay *display)
 {
-    WRAPABLE_HND_FUNC(matchExpHandlerChanged)
-
-    CompOption *option;
-    int	       nOption;
-    CompPlugin *p;
-    CompScreen *s;
-    CompWindow *w;
-
-    for (p = getPlugins (); p; p = p->next)
-    {
-	option = p->vTable->getObjectOptions (this, &nOption);
-	matchUpdateMatchOptions (option, nOption);
-    }
-
-    for (s = priv->screens; s; s = s->next)
-    {
-	for (p = getPlugins (); p; p = p->next)
-	{
-	    option = p->vTable->getObjectOptions (s, &nOption);
-	    matchUpdateMatchOptions (option, nOption);
-	}
-    }
+    matchResetOps (priv->op.op);
+    matchUpdateOps (display, priv->op.op);
+    priv->display = display;
+}
+	
+bool
+CompMatch::evaluate (CompWindow *window)
+{
+    return matchEvalOps (priv->op.op, window);
 }
 
-void
-CompDisplay::matchPropertyChanged (CompWindow *w)
+CompString
+CompMatch::toString ()
 {
-    WRAPABLE_HND_FUNC(matchPropertyChanged, w)
+    return matchOpsToString (priv->op.op);
+}
+
+CompDisplay *
+CompMatch::display ()
+{
+    return priv->display;
+}
+
+CompMatch &
+CompMatch::operator= (const CompMatch &match)
+{
+    priv->op = match.priv->op;
+    priv->display = match.priv->display;
+    return *this;
+}
+
+CompMatch &
+CompMatch::operator&= (const CompMatch &match)
+{
+    MatchGroupOp g1;
+    MatchGroupOp g2;
+
+    g1.op = priv->op.op;
+    g2.op = match.priv->op.op;
+    g2.flags = MATCH_OP_AND_MASK;
+
+    priv->op.op.clear ();
+    priv->op.op.push_back (g1);
+    priv->op.op.push_back (g2);
+
+    return *this;
+}
+
+CompMatch &
+CompMatch::operator|= (const CompMatch &match)
+{
+    MatchGroupOp g1;
+    MatchGroupOp g2;
+
+    g1.op = priv->op.op;
+    g2.op = match.priv->op.op;
+
+    priv->op.op.clear ();
+    priv->op.op.push_back (g1);
+    priv->op.op.push_back (g2);
+
+    return *this;
+}
+
+const CompMatch &
+CompMatch::operator& (const CompMatch &match)
+{
+    return CompMatch (*this) &= match;
+}
+
+const CompMatch &
+CompMatch::operator| (const CompMatch &match)
+{
+    return CompMatch (*this) |= match;
+}
+
+const CompMatch &
+CompMatch::operator! ()
+{
+    MatchGroupOp g;
+    g.op = priv->op.op;
+    g.flags ^= MATCH_OP_NOT_MASK;
+    priv->op.op.clear ();
+    priv->op.op.push_back (g);
+    return *this;
+}
+
+CompMatch &
+CompMatch::operator= (const CompString &str)
+{
+    priv->op.op.clear ();
+    matchAddFromString (priv->op.op, str);
+    return *this;
+}
+
+CompMatch &
+CompMatch::operator&= (const CompString &str)
+{
+    return CompMatch (*this) &= CompMatch (str);
+}
+
+CompMatch &
+CompMatch::operator|= (const CompString &str)
+{
+    return CompMatch (*this) |= CompMatch (str);
+}
+
+const CompMatch &
+CompMatch::operator& (const CompString &str)
+{
+    return CompMatch(*this) &= str;
+}
+
+const CompMatch &
+CompMatch::operator| (const CompString &str)
+{
+    return CompMatch(*this) |= str;
+}
+
+bool
+CompMatch::operator== (const CompMatch &match)
+{
+    matchOpsEqual (priv->op.op, match.priv->op.op);
 }

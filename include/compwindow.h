@@ -3,12 +3,160 @@
 
 #include <compsize.h>
 #include <comppoint.h>
+#include <comptexture.h>
+#include <compfragment.h>
 
 class CompWindow;
 class PrivateWindow;
 
 #define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
 #define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
+
+#define CompWindowProtocolDeleteMask	  (1 << 0)
+#define CompWindowProtocolTakeFocusMask	  (1 << 1)
+#define CompWindowProtocolPingMask	  (1 << 2)
+#define CompWindowProtocolSyncRequestMask (1 << 3)
+
+#define CompWindowTypeDesktopMask      (1 << 0)
+#define CompWindowTypeDockMask         (1 << 1)
+#define CompWindowTypeToolbarMask      (1 << 2)
+#define CompWindowTypeMenuMask         (1 << 3)
+#define CompWindowTypeUtilMask         (1 << 4)
+#define CompWindowTypeSplashMask       (1 << 5)
+#define CompWindowTypeDialogMask       (1 << 6)
+#define CompWindowTypeNormalMask       (1 << 7)
+#define CompWindowTypeDropdownMenuMask (1 << 8)
+#define CompWindowTypePopupMenuMask    (1 << 9)
+#define CompWindowTypeTooltipMask      (1 << 10)
+#define CompWindowTypeNotificationMask (1 << 11)
+#define CompWindowTypeComboMask	       (1 << 12)
+#define CompWindowTypeDndMask	       (1 << 13)
+#define CompWindowTypeModalDialogMask  (1 << 14)
+#define CompWindowTypeFullscreenMask   (1 << 15)
+#define CompWindowTypeUnknownMask      (1 << 16)
+
+#define NO_FOCUS_MASK (CompWindowTypeDesktopMask | \
+		       CompWindowTypeDockMask    | \
+		       CompWindowTypeSplashMask)
+
+#define CompWindowStateModalMask	    (1 <<  0)
+#define CompWindowStateStickyMask	    (1 <<  1)
+#define CompWindowStateMaximizedVertMask    (1 <<  2)
+#define CompWindowStateMaximizedHorzMask    (1 <<  3)
+#define CompWindowStateShadedMask	    (1 <<  4)
+#define CompWindowStateSkipTaskbarMask	    (1 <<  5)
+#define CompWindowStateSkipPagerMask	    (1 <<  6)
+#define CompWindowStateHiddenMask	    (1 <<  7)
+#define CompWindowStateFullscreenMask	    (1 <<  8)
+#define CompWindowStateAboveMask	    (1 <<  9)
+#define CompWindowStateBelowMask	    (1 << 10)
+#define CompWindowStateDemandsAttentionMask (1 << 11)
+#define CompWindowStateDisplayModalMask	    (1 << 12)
+
+#define MAXIMIZE_STATE (CompWindowStateMaximizedHorzMask | \
+			CompWindowStateMaximizedVertMask)
+
+#define CompWindowActionMoveMask	  (1 << 0)
+#define CompWindowActionResizeMask	  (1 << 1)
+#define CompWindowActionStickMask	  (1 << 2)
+#define CompWindowActionMinimizeMask      (1 << 3)
+#define CompWindowActionMaximizeHorzMask  (1 << 4)
+#define CompWindowActionMaximizeVertMask  (1 << 5)
+#define CompWindowActionFullscreenMask	  (1 << 6)
+#define CompWindowActionCloseMask	  (1 << 7)
+#define CompWindowActionShadeMask	  (1 << 8)
+#define CompWindowActionChangeDesktopMask (1 << 9)
+#define CompWindowActionAboveMask	  (1 << 10)
+#define CompWindowActionBelowMask	  (1 << 11)
+
+#define MwmFuncAll      (1L << 0)
+#define MwmFuncResize   (1L << 1)
+#define MwmFuncMove     (1L << 2)
+#define MwmFuncIconify  (1L << 3)
+#define MwmFuncMaximize (1L << 4)
+#define MwmFuncClose    (1L << 5)
+
+#define MwmDecorHandle   (1L << 2)
+#define MwmDecorTitle    (1L << 3)
+#define MwmDecorMenu     (1L << 4)
+#define MwmDecorMinimize (1L << 5)
+#define MwmDecorMaximize (1L << 6)
+
+#define MwmDecorAll      (1L << 0)
+#define MwmDecorBorder   (1L << 1)
+#define MwmDecorHandle   (1L << 2)
+#define MwmDecorTitle    (1L << 3)
+#define MwmDecorMenu     (1L << 4)
+#define MwmDecorMinimize (1L << 5)
+#define MwmDecorMaximize (1L << 6)
+
+#define WmMoveResizeSizeTopLeft      0
+#define WmMoveResizeSizeTop          1
+#define WmMoveResizeSizeTopRight     2
+#define WmMoveResizeSizeRight        3
+#define WmMoveResizeSizeBottomRight  4
+#define WmMoveResizeSizeBottom       5
+#define WmMoveResizeSizeBottomLeft   6
+#define WmMoveResizeSizeLeft         7
+#define WmMoveResizeMove             8
+#define WmMoveResizeSizeKeyboard     9
+#define WmMoveResizeMoveKeyboard    10
+
+/*
+  window paint flags
+
+  bit 1-16 are used for read-only flags and they provide
+  information that describe the screen rendering pass
+  currently in process.
+
+  bit 17-32 are writable flags and they provide information
+  that is used to optimize rendering.
+*/
+
+/*
+  this flag is present when window is being painted
+  on a transformed screen.
+*/
+#define PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK (1 << 0)
+
+/*
+  this flag is present when window is being tested
+  for occlusion of other windows.
+*/
+#define PAINT_WINDOW_OCCLUSION_DETECTION_MASK   (1 << 1)
+
+/*
+  this flag indicates that the window ist painted with
+  an offset
+*/
+#define PAINT_WINDOW_WITH_OFFSET_MASK           (1 << 2)
+
+/*
+  flag indicate that window is translucent.
+*/
+#define PAINT_WINDOW_TRANSLUCENT_MASK           (1 << 16)
+
+/*
+  flag indicate that window is transformed.
+*/
+#define PAINT_WINDOW_TRANSFORMED_MASK           (1 << 17)
+
+/*
+  flag indicate that core PaintWindow function should
+  not draw this window.
+*/
+#define PAINT_WINDOW_NO_CORE_INSTANCE_MASK	(1 << 18)
+
+/*
+  flag indicate that blending is required.
+*/
+#define PAINT_WINDOW_BLEND_MASK			(1 << 19)
+
+#define CompWindowGrabKeyMask    (1 << 0)
+#define CompWindowGrabButtonMask (1 << 1)
+#define CompWindowGrabMoveMask   (1 << 2)
+#define CompWindowGrabResizeMask (1 << 3)
+
 
 class WindowInterface : public WrapableInterface<CompWindow> {
     public:
@@ -17,11 +165,11 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 	WRAPABLE_DEF(bool, paint, const WindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_DEF(bool, draw, const CompTransform *,
-		     const FragmentAttrib *, Region, unsigned int);
-	WRAPABLE_DEF(void, addGeometry, CompMatrix *matrix,
+		     CompFragment::Attrib &, Region, unsigned int);
+	WRAPABLE_DEF(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_DEF(void, drawTexture, CompTexture *texture,
-		     const FragmentAttrib *, unsigned int);
+		     CompFragment::Attrib &, unsigned int);
 	WRAPABLE_DEF(void, drawGeometry);
 	WRAPABLE_DEF(bool, damageRect, bool, BoxPtr);
 
@@ -460,11 +608,11 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
     	WRAPABLE_HND(bool, paint, const WindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_HND(bool, draw, const CompTransform *,
-		     const FragmentAttrib *, Region, unsigned int);
-	WRAPABLE_HND(void, addGeometry, CompMatrix *matrix,
+		     CompFragment::Attrib &, Region, unsigned int);
+	WRAPABLE_HND(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_HND(void, drawTexture, CompTexture *texture,
-		     const FragmentAttrib *, unsigned int);
+		     CompFragment::Attrib &, unsigned int);
 	WRAPABLE_HND(void, drawGeometry);
 
 	

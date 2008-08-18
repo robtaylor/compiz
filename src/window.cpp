@@ -37,8 +37,13 @@
 #include <assert.h>
 #include <math.h>
 
+#include <boost/bind.hpp>
+
 #include <compiz-core.h>
+#include <comptexture.h>
+#include <compicon.h>
 #include "privatewindow.h"
+#include "privatescreen.h"
 
 
 CompObject::indices windowPrivateIndices (0);
@@ -824,7 +829,7 @@ CompWindow::updateWindowOutputExtents ()
 void
 PrivateWindow::setWindowMatrix ()
 {
-    matrix = texture->matrix;
+    matrix = texture.matrix ();
     matrix.x0 -= (attrib.x * matrix.xx);
     matrix.y0 -= (attrib.y * matrix.yy);
 }
@@ -849,7 +854,7 @@ CompWindow::bind ()
 	if (attr.map_state != IsViewable)
 	{
 	    XUngrabServer (priv->screen->display ()->dpy ());
-	    finiTexture (priv->screen, priv->texture);
+	    priv->texture.reset ();
 	    priv->bindFailed = true;
 	    return false;
 	}
@@ -860,9 +865,8 @@ CompWindow::bind ()
 	XUngrabServer (priv->screen->display ()->dpy ());
     }
 
-    if (!priv->screen->bindPixmapToTexture (priv->texture, priv->pixmap,
-					    priv->width, priv->height,
-					    priv->attrib.depth))
+    if (!priv->texture.bindPixmap (priv->pixmap, priv->width, priv->height,
+				   priv->attrib.depth))
     {
 	compLogMessage (priv->screen->display (), "core", CompLogLevelInfo,
 			"Couldn't bind redirected window 0x%x to "
@@ -879,15 +883,7 @@ CompWindow::release ()
 {
     if (priv->pixmap)
     {
-	CompTexture *texture;
-
-	texture = createTexture (priv->screen);
-	if (texture)
-	{
-	    destroyTexture (priv->screen, priv->texture);
-
-	    priv->texture = texture;
-	}
+	priv->texture = CompTexture (priv->screen);
 
 	XFreePixmap (priv->screen->display ()->dpy (), priv->pixmap);
 
@@ -1713,14 +1709,6 @@ PrivateWindow::initializeSyncCounter ()
     return false;
 }
 
-static bool
-syncWaitTimeout (void *closure)
-{
-    CompWindow *w = (CompWindow *) closure;
-
-    return w->handleSyncAlarm ();
-}
-
 void
 CompWindow::sendSyncRequest ()
 {
@@ -1750,9 +1738,9 @@ CompWindow::sendSyncRequest ()
     priv->syncWait     = TRUE;
     priv->syncGeometry = priv->serverGeometry;
 
-    if (!priv->syncWaitHandle)
-	priv->syncWaitHandle =
-	    core->addTimeout (1000, 1200, syncWaitTimeout, this);
+    if (!priv->syncWaitTimer.active ())
+	priv->syncWaitTimer.start (
+	    boost::bind (&CompWindow::handleSyncAlarm, this), 1000, 1200);
 }
 
 void
@@ -3780,8 +3768,8 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* allow focus for excluded windows */
-    match = &s->getOption ("focus_prevention_match")->value.match;
-    if (!matchEval (match, window))
+    match = s->getOption ("focus_prevention_match")->value.match;
+    if (!match->evaluate (window))
 	return true;
 
     if (level == FOCUS_PREVENTION_LEVEL_VERYHIGH)
@@ -3898,7 +3886,7 @@ CompWindow::getIcon (int width, int height)
     int	     i, wh, diff, oldDiff;
 
     /* need to fetch icon property */
-    if (priv->nIcon == 0)
+    if (priv->icons.size () == 0 && !priv->noIcons)
     {
 	Atom	      actual;
 	int	      result, format;
@@ -3931,29 +3919,13 @@ CompWindow::getIcon (int width, int height)
 
 		if (iw && ih)
 		{
-		    icon = (CompIcon *) malloc (sizeof (CompIcon) +
-				   iw * ih * sizeof (CARD32));
+		    icon = new CompIcon (priv->screen, iw, ih);
 		    if (!icon)
 			continue;
 
-		    pIcon = (CompIcon **) realloc (priv->icon,
-				     sizeof (CompIcon *) * (priv->nIcon + 1));
-		    if (!pIcon)
-		    {
-			free (icon);
-			continue;
-		    }
+		    priv->icons.push_back (icon);
 
-		    priv->icon = pIcon;
-		    priv->icon[priv->nIcon] = icon;
-		    priv->nIcon++;
-
-		    icon->width  = iw;
-		    icon->height = ih;
-
-		    initTexture (priv->screen, &icon->texture);
-
-		    p = (CARD32 *) (icon + 1);
+		    p = (CARD32 *) (icon->data ());
 
 		    /* EWMH doesn't say if icon data is premultiplied or
 		       not but most applications seem to assume data should
@@ -3982,32 +3954,34 @@ CompWindow::getIcon (int width, int height)
 	}
 
 	/* don't fetch property again */
-	if (priv->nIcon == 0)
-	    priv->nIcon = -1;
+	if (priv->icons.size() == 0)
+	    priv->noIcons = true;
     }
 
     /* no icons available for this window */
-    if (priv->nIcon == -1)
+    if (priv->noIcons)
 	return NULL;
 
     icon = NULL;
     wh   = width + height;
 
-    for (i = 0; i < priv->nIcon; i++)
+    for (i = 0; i < priv->icons.size (); i++)
     {
-	if (priv->icon[i]->width > width || priv->icon[i]->height > height)
+	if (priv->icons[i]->width () > width ||
+	    priv->icons[i]->height () > height)
 	    continue;
 
 	if (icon)
 	{
-	    diff    = wh - (priv->icon[i]->width + priv->icon[i]->height);
-	    oldDiff = wh - (icon->width + icon->height);
+	    diff    = wh - (priv->icons[i]->width () +
+		      priv->icons[i]->height ());
+	    oldDiff = wh - (icon->width () + icon->height ());
 
 	    if (diff < oldDiff)
-		icon = priv->icon[i];
+		icon = priv->icons[i];
 	}
 	else
-	    icon = priv->icon[i];
+	    icon = priv->icons[i];
     }
 
     return icon;
@@ -4018,19 +3992,13 @@ CompWindow::freeIcons ()
 {
     int i;
 
-    for (i = 0; i < priv->nIcon; i++)
+    for (unsigned int i = 0; i < priv->icons.size (); i++)
     {
-	finiTexture (priv->screen, &priv->icon[i]->texture);
-	free (priv->icon[i]);
+	delete priv->icons[i];
     }
 
-    if (priv->icon)
-    {
-	free (priv->icon);
-	priv->icon = NULL;
-    }
-
-    priv->nIcon = 0;
+    priv->icons.resize (0);
+    priv->noIcons = false;
 }
 
 int
@@ -4212,22 +4180,22 @@ WindowInterface::paint (const WindowPaintAttrib *attrib,
 
 bool
 WindowInterface::draw (const CompTransform  *transform,
-		       const FragmentAttrib *fragment,
-		       Region		     region,
-		       unsigned int	     mask)
+		       CompFragment::Attrib &fragment,
+		       Region               region,
+		       unsigned int         mask)
     WRAPABLE_DEF_FUNC_RETURN(draw, transform, fragment, region, mask)
 
 void
-WindowInterface::addGeometry (CompMatrix *matrix,
-			      int	 nMatrix,
-			      Region	 region,
-			      Region	 clip)
+WindowInterface::addGeometry (CompTexture::Matrix *matrix,
+			      int	          nMatrix,
+			      Region	          region,
+			      Region	          clip)
     WRAPABLE_DEF_FUNC(addGeometry, matrix, nMatrix, region, clip)
 
 void
-WindowInterface::drawTexture (CompTexture	   *texture,
-			      const FragmentAttrib *fragment,
-			      unsigned int	   mask)
+WindowInterface::drawTexture (CompTexture          *texture,
+			      CompFragment::Attrib &fragment,
+			      unsigned int         mask)
     WRAPABLE_DEF_FUNC(drawTexture, texture, fragment, mask)
 
 void
@@ -4829,7 +4797,7 @@ CompWindow::updateStartupId ()
 void
 CompWindow::processDamage (XDamageNotifyEvent *de)
 {
-    priv->texture->oldMipmaps = true;
+    priv->texture.damage ();
 
     if (priv->syncWait)
     {
@@ -4924,10 +4892,8 @@ CompWindow::CompWindow (CompScreen *screen,
 
     WRAPABLE_INIT_HND(stateChangeNotify);
 
-    priv = new PrivateWindow (this);
+    priv = new PrivateWindow (this, screen);
     assert (priv);
-
-    priv->screen = screen;
 
     CompDisplay *d = screen->display ();
 
@@ -4936,10 +4902,6 @@ CompWindow::CompWindow (CompScreen *screen,
 
     priv->clip = XCreateRegion ();
     assert (priv->clip);
-
-    priv->texture = createTexture (screen);
-    assert (priv->texture);
-
 
     /* Failure means that window has been destroyed. We still have to add the
        window to the window list as we might get configure requests which
@@ -5217,9 +5179,9 @@ CompWindow::~CompWindow ()
     delete priv;
 }
 
-PrivateWindow::PrivateWindow (CompWindow *window) :
+PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     window (window),
-    screen (0),
+    screen (screen),
     refcnt (1),
     id (None),
     frame (None),
@@ -5228,6 +5190,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     transientFor (None),
     clientLeader (None),
     pixmap (None),
+    texture (screen),
     damage (None),
     inputHint (true),
     alpha (false),
@@ -5286,15 +5249,15 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
 
     struts (0),
 
-    icon (0),
-    nIcon (0),
+    icons (0),
+    noIcons (false),
 
     iconGeometrySet (false),
 
     saveMask (0),
     syncCounter (0),
     syncAlarm (None),
-    syncWaitHandle (0),
+    syncWaitTimer (),
 
     syncWait (false),
     closeRequests (false),
@@ -5339,10 +5302,7 @@ PrivateWindow::~PrivateWindow ()
      if (syncAlarm)
 	XSyncDestroyAlarm (screen->display ()->dpy (), syncAlarm);
 
-    if (syncWaitHandle)
-	core->removeTimeout (syncWaitHandle);
-
-    destroyTexture (screen, texture);
+    syncWaitTimer.stop ();
 
     if (frame)
 	XDestroyWindow (screen->display ()->dpy (), frame);
@@ -5365,7 +5325,7 @@ PrivateWindow::~PrivateWindow ()
     if (struts)
 	free (struts);
 
-    if (icon)
+    if (icons.size ())
 	window->freeIcons ();
 
     if (startupId)

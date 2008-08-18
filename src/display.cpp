@@ -43,7 +43,9 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/shape.h>
 
-#include <compiz-core.h>
+#include <boost/bind.hpp>
+
+
 #include "privatedisplay.h"
 #include "privatescreen.h"
 #include "privatewindow.h"
@@ -632,15 +634,6 @@ CompDisplay::getDisplayOptions (CompObject  *object,
 }
 
 bool
-CompDisplay::pingTimeout (void *closure)
-{
-    CompDisplay *d = (CompDisplay *) closure;
-    d->priv->handlePingTimeout();
-    return true;
-}
-
-
-bool
 setDisplayOption (CompObject      *object,
 		  const char      *name,
 		  CompOptionValue *value)
@@ -785,8 +778,6 @@ CompDisplay::~CompDisplay ()
 
     objectFiniPlugins (this);
 
-    core->removeTimeout (priv->pingHandle);
-
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
@@ -923,13 +914,6 @@ CompDisplay::init (const char *name)
     }
 
     XFixesQueryVersion (priv->dpy, &priv->fixesVersion, &fixesMinor);
-    /*
-    if (d->fixesVersion < 5)
-    {
-	fprintf (stderr, "%s: Need fixes extension version 5 or later "
-		 "for client-side cursor\n", programName);
-    }
-    */
 
     priv->randrExtension = XRRQueryExtension (priv->dpy, &priv->randrEvent,
 					      &priv->randrError);
@@ -1022,10 +1006,10 @@ CompDisplay::init (const char *name)
 	    priv->screens->focusDefaultWindow ();
     }
 
-    priv->pingHandle =
-	core->addTimeout (priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
-			  priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i +
-			  500, CompDisplay::pingTimeout, this);
+    priv->pingTimer.start (
+	boost::bind(&PrivateDisplay::handlePingTimeout, priv),
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i + 500);
 
     return true;
 }
@@ -1228,7 +1212,7 @@ PrivateDisplay::setAudibleBell (bool audible)
 				  audible ? XkbAudibleBellMask : 0);
 }
 
-void
+bool
 PrivateDisplay::handlePingTimeout ()
 {
     CompScreen  *s;
@@ -1261,6 +1245,8 @@ PrivateDisplay::handlePingTimeout ()
     }
 
     lastPing = ping;
+
+    return true;
 }
 
 bool
@@ -1304,12 +1290,7 @@ CompDisplay::setOption (const char      *name,
     case COMP_DISPLAY_OPTION_PING_DELAY:
 	if (compSetIntOption (o, value))
 	{
-	    if (priv->pingHandle)
-		core->removeTimeout (priv->pingHandle);
-
-	    priv->pingHandle =
-		core->addTimeout (o->value.i, o->value.i + 500,
-				  CompDisplay::pingTimeout, priv->dpy);
+	    priv->pingTimer.setTimes (o->value.i, o->value.i + 500);
 	    return true;
 	}
 	break;
@@ -1896,19 +1877,6 @@ CompDisplay::writeImageToFile (const char *path,
 			       void	  *data)
 {
     return imageToFile (path, name, format, width, height, width * 4, data);
-}
-
-
-CompCursor *
-CompDisplay::findCursor ()
-{
-    CompScreen *s;
-
-    for (s = priv->screens; s; s = s->next)
-	if (s->cursors ())
-	    return s->cursors ();
-
-    return NULL;
 }
 
 Window
@@ -2619,9 +2587,9 @@ DisplayInterface::imageToFile (const char *path,
     WRAPABLE_DEF_FUNC_RETURN(imageToFile, path, name, format, width, height,
 			     stride, data)
 
-void
-DisplayInterface::matchInitExp (CompMatchExp *exp, const char *value)
-    WRAPABLE_DEF_FUNC(matchInitExp, exp, value)
+CompMatch::Expression *
+DisplayInterface::matchInitExp (const CompString value)
+    WRAPABLE_DEF_FUNC_RETURN(matchInitExp, value)
 
 void
 DisplayInterface::matchExpHandlerChanged ()
@@ -2647,9 +2615,9 @@ PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     below (None),
     modMap (0),
     ignoredModMask (LockMask),
-    autoRaiseHandle (0),
+    autoRaiseTimer (),
     autoRaiseWindow (0),
-    edgeDelayHandle (0),
+    edgeDelayTimer (),
     dirtyPluginList (true)
 {
     for (int i = 0; i < CompModNum; i++)

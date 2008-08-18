@@ -4,6 +4,7 @@
 #include <compiz-core.h>
 #include <compwindow.h>
 #include <comppoint.h>
+#include <comptexture.h>
 
 #define WINDOW_INVISIBLE(w)				          \
     ((w)->attrib.map_state != IsViewable		       || \
@@ -17,7 +18,7 @@
 class PrivateWindow {
 
     public:
-	PrivateWindow (CompWindow *window);
+	PrivateWindow (CompWindow *window, CompScreen *screen);
 	~PrivateWindow ();
 
 	void
@@ -152,8 +153,8 @@ class PrivateWindow {
 	Window	      clientLeader;
 	XSizeHints	      sizeHints;
 	Pixmap	      pixmap;
-	CompTexture       *texture;
-	CompMatrix        matrix;
+	CompTexture       texture;
+	CompTexture::Matrix matrix;
 	Damage	      damage;
 	bool	      inputHint;
 	bool	      alpha;
@@ -218,8 +219,8 @@ class PrivateWindow {
 
 	CompStruts *struts;
 
-	CompIcon **icon;
-	int	     nIcon;
+	std::vector<CompIcon *> icons;
+	bool noIcons;
 
 	XRectangle iconGeometry;
 	bool       iconGeometrySet;
@@ -231,7 +232,7 @@ class PrivateWindow {
 	XSyncValue	  syncValue;
 	XSyncAlarm	  syncAlarm;
 	unsigned long syncAlarmConnection;
-	unsigned int  syncWaitHandle;
+	CompCore::Timer   syncWaitTimer;
 
 	bool     syncWait;
 	CompWindow::Geometry syncGeometry;

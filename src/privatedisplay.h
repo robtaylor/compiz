@@ -4,6 +4,77 @@
 #include <compiz-core.h>
 #include <compdisplay.h>
 
+#define COMP_DISPLAY_OPTION_ABI                              0
+#define COMP_DISPLAY_OPTION_ACTIVE_PLUGINS                   1
+#define COMP_DISPLAY_OPTION_TEXTURE_FILTER                   2
+#define COMP_DISPLAY_OPTION_CLICK_TO_FOCUS                   3
+#define COMP_DISPLAY_OPTION_AUTORAISE                        4
+#define COMP_DISPLAY_OPTION_AUTORAISE_DELAY                  5
+#define COMP_DISPLAY_OPTION_CLOSE_WINDOW_KEY                 6
+#define COMP_DISPLAY_OPTION_CLOSE_WINDOW_BUTTON              7
+#define COMP_DISPLAY_OPTION_MAIN_MENU_KEY                    8
+#define COMP_DISPLAY_OPTION_RUN_DIALOG_KEY                   9
+#define COMP_DISPLAY_OPTION_COMMAND0                         10
+#define COMP_DISPLAY_OPTION_COMMAND1                         11
+#define COMP_DISPLAY_OPTION_COMMAND2                         12
+#define COMP_DISPLAY_OPTION_COMMAND3                         13
+#define COMP_DISPLAY_OPTION_COMMAND4                         14
+#define COMP_DISPLAY_OPTION_COMMAND5                         15
+#define COMP_DISPLAY_OPTION_COMMAND6                         16
+#define COMP_DISPLAY_OPTION_COMMAND7                         17
+#define COMP_DISPLAY_OPTION_COMMAND8                         18
+#define COMP_DISPLAY_OPTION_COMMAND9                         19
+#define COMP_DISPLAY_OPTION_COMMAND10                        20
+#define COMP_DISPLAY_OPTION_COMMAND11                        21
+#define COMP_DISPLAY_OPTION_RUN_COMMAND0_KEY                 22
+#define COMP_DISPLAY_OPTION_RUN_COMMAND1_KEY                 23
+#define COMP_DISPLAY_OPTION_RUN_COMMAND2_KEY                 24
+#define COMP_DISPLAY_OPTION_RUN_COMMAND3_KEY                 25
+#define COMP_DISPLAY_OPTION_RUN_COMMAND4_KEY                 26
+#define COMP_DISPLAY_OPTION_RUN_COMMAND5_KEY                 27
+#define COMP_DISPLAY_OPTION_RUN_COMMAND6_KEY                 28
+#define COMP_DISPLAY_OPTION_RUN_COMMAND7_KEY                 29
+#define COMP_DISPLAY_OPTION_RUN_COMMAND8_KEY                 30
+#define COMP_DISPLAY_OPTION_RUN_COMMAND9_KEY                 31
+#define COMP_DISPLAY_OPTION_RUN_COMMAND10_KEY                32
+#define COMP_DISPLAY_OPTION_RUN_COMMAND11_KEY                33
+#define COMP_DISPLAY_OPTION_SLOW_ANIMATIONS_KEY              34
+#define COMP_DISPLAY_OPTION_RAISE_WINDOW_KEY                 35
+#define COMP_DISPLAY_OPTION_RAISE_WINDOW_BUTTON              36
+#define COMP_DISPLAY_OPTION_LOWER_WINDOW_KEY                 37
+#define COMP_DISPLAY_OPTION_LOWER_WINDOW_BUTTON              38
+#define COMP_DISPLAY_OPTION_UNMAXIMIZE_WINDOW_KEY            39
+#define COMP_DISPLAY_OPTION_MINIMIZE_WINDOW_KEY              40
+#define COMP_DISPLAY_OPTION_MINIMIZE_WINDOW_BUTTON           41
+#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_KEY              42
+#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_HORZ_KEY         43
+#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_VERT_KEY         44
+#define COMP_DISPLAY_OPTION_SCREENSHOT                       45
+#define COMP_DISPLAY_OPTION_RUN_SCREENSHOT_KEY               46
+#define COMP_DISPLAY_OPTION_WINDOW_SCREENSHOT                47
+#define COMP_DISPLAY_OPTION_RUN_WINDOW_SCREENSHOT_KEY        48
+#define COMP_DISPLAY_OPTION_WINDOW_MENU_BUTTON               49
+#define COMP_DISPLAY_OPTION_WINDOW_MENU_KEY                  50
+#define COMP_DISPLAY_OPTION_SHOW_DESKTOP_KEY                 51
+#define COMP_DISPLAY_OPTION_SHOW_DESKTOP_EDGE                52
+#define COMP_DISPLAY_OPTION_RAISE_ON_CLICK                   53
+#define COMP_DISPLAY_OPTION_AUDIBLE_BELL                     54
+#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_KEY      55
+#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_BUTTON   56
+#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_HORZ_KEY 57
+#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_VERT_KEY 58
+#define COMP_DISPLAY_OPTION_HIDE_SKIP_TASKBAR_WINDOWS        59
+#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_SHADED_KEY         60
+#define COMP_DISPLAY_OPTION_IGNORE_HINTS_WHEN_MAXIMIZED      61
+#define COMP_DISPLAY_OPTION_TERMINAL			     62
+#define COMP_DISPLAY_OPTION_RUN_TERMINAL_KEY		     63
+#define COMP_DISPLAY_OPTION_PING_DELAY			     64
+#define COMP_DISPLAY_OPTION_EDGE_DELAY                       65
+#define COMP_DISPLAY_OPTION_NUM				     66
+
+extern const CompMetadataOptionInfo
+coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM];
+
 class PrivateDisplay {
 
     public:
@@ -57,7 +128,7 @@ class PrivateDisplay {
 	void
 	setAudibleBell (bool audible);
 
-	void
+	bool
 	handlePingTimeout ();
 	
 	bool
@@ -105,7 +176,7 @@ class PrivateDisplay {
 	SnDisplay *snDisplay;
 
 	unsigned int      lastPing;
-	CompTimeoutHandle pingHandle;
+	CompCore::Timer   pingTimer;
 
 	GLenum textureFilter;
 
@@ -123,10 +194,11 @@ class PrivateDisplay {
 
 	CompOption opt[COMP_DISPLAY_OPTION_NUM];
 
-	CompTimeoutHandle autoRaiseHandle;
+	CompCore::Timer autoRaiseTimer;
 	Window	      autoRaiseWindow;
 
-	CompTimeoutHandle edgeDelayHandle;
+	CompCore::Timer edgeDelayTimer;
+	CompDelayedEdgeSettings edgeDelaySettings;
 
 	CompOptionValue plugin;
 	bool	    dirtyPluginList;

@@ -79,15 +79,10 @@ COMPIZ_BEGIN_DECLS
 #  define BITMAP_BIT_ORDER LSBFirst
 #endif
 
-typedef struct _CompTexture	  CompTexture;
-typedef struct _CompIcon	  CompIcon;
+class CompTexture;
+class CompIcon;
 typedef struct _CompWindowExtents CompWindowExtents;
-typedef struct _CompProgram	  CompProgram;
-typedef struct _CompFunction	  CompFunction;
-typedef struct _CompFunctionData  CompFunctionData;
-typedef struct _FragmentAttrib    FragmentAttrib;
-typedef struct _CompCursor	  CompCursor;
-typedef struct _CompMatch	  CompMatch;
+class CompMatch;
 class CompOutput;
 typedef struct _CompWalker        CompWalker;
 
@@ -113,96 +108,6 @@ class CompDisplay;
 #define CompScrollLockMask (1 << 22)
 
 #define CompNoMask         (1 << 25)
-
-#define CompWindowProtocolDeleteMask	  (1 << 0)
-#define CompWindowProtocolTakeFocusMask	  (1 << 1)
-#define CompWindowProtocolPingMask	  (1 << 2)
-#define CompWindowProtocolSyncRequestMask (1 << 3)
-
-#define CompWindowTypeDesktopMask      (1 << 0)
-#define CompWindowTypeDockMask         (1 << 1)
-#define CompWindowTypeToolbarMask      (1 << 2)
-#define CompWindowTypeMenuMask         (1 << 3)
-#define CompWindowTypeUtilMask         (1 << 4)
-#define CompWindowTypeSplashMask       (1 << 5)
-#define CompWindowTypeDialogMask       (1 << 6)
-#define CompWindowTypeNormalMask       (1 << 7)
-#define CompWindowTypeDropdownMenuMask (1 << 8)
-#define CompWindowTypePopupMenuMask    (1 << 9)
-#define CompWindowTypeTooltipMask      (1 << 10)
-#define CompWindowTypeNotificationMask (1 << 11)
-#define CompWindowTypeComboMask	       (1 << 12)
-#define CompWindowTypeDndMask	       (1 << 13)
-#define CompWindowTypeModalDialogMask  (1 << 14)
-#define CompWindowTypeFullscreenMask   (1 << 15)
-#define CompWindowTypeUnknownMask      (1 << 16)
-
-#define NO_FOCUS_MASK (CompWindowTypeDesktopMask | \
-		       CompWindowTypeDockMask    | \
-		       CompWindowTypeSplashMask)
-
-#define CompWindowStateModalMask	    (1 <<  0)
-#define CompWindowStateStickyMask	    (1 <<  1)
-#define CompWindowStateMaximizedVertMask    (1 <<  2)
-#define CompWindowStateMaximizedHorzMask    (1 <<  3)
-#define CompWindowStateShadedMask	    (1 <<  4)
-#define CompWindowStateSkipTaskbarMask	    (1 <<  5)
-#define CompWindowStateSkipPagerMask	    (1 <<  6)
-#define CompWindowStateHiddenMask	    (1 <<  7)
-#define CompWindowStateFullscreenMask	    (1 <<  8)
-#define CompWindowStateAboveMask	    (1 <<  9)
-#define CompWindowStateBelowMask	    (1 << 10)
-#define CompWindowStateDemandsAttentionMask (1 << 11)
-#define CompWindowStateDisplayModalMask	    (1 << 12)
-
-#define MAXIMIZE_STATE (CompWindowStateMaximizedHorzMask | \
-			CompWindowStateMaximizedVertMask)
-
-#define CompWindowActionMoveMask	  (1 << 0)
-#define CompWindowActionResizeMask	  (1 << 1)
-#define CompWindowActionStickMask	  (1 << 2)
-#define CompWindowActionMinimizeMask      (1 << 3)
-#define CompWindowActionMaximizeHorzMask  (1 << 4)
-#define CompWindowActionMaximizeVertMask  (1 << 5)
-#define CompWindowActionFullscreenMask	  (1 << 6)
-#define CompWindowActionCloseMask	  (1 << 7)
-#define CompWindowActionShadeMask	  (1 << 8)
-#define CompWindowActionChangeDesktopMask (1 << 9)
-#define CompWindowActionAboveMask	  (1 << 10)
-#define CompWindowActionBelowMask	  (1 << 11)
-
-#define MwmFuncAll      (1L << 0)
-#define MwmFuncResize   (1L << 1)
-#define MwmFuncMove     (1L << 2)
-#define MwmFuncIconify  (1L << 3)
-#define MwmFuncMaximize (1L << 4)
-#define MwmFuncClose    (1L << 5)
-
-#define MwmDecorHandle   (1L << 2)
-#define MwmDecorTitle    (1L << 3)
-#define MwmDecorMenu     (1L << 4)
-#define MwmDecorMinimize (1L << 5)
-#define MwmDecorMaximize (1L << 6)
-
-#define MwmDecorAll      (1L << 0)
-#define MwmDecorBorder   (1L << 1)
-#define MwmDecorHandle   (1L << 2)
-#define MwmDecorTitle    (1L << 3)
-#define MwmDecorMenu     (1L << 4)
-#define MwmDecorMinimize (1L << 5)
-#define MwmDecorMaximize (1L << 6)
-
-#define WmMoveResizeSizeTopLeft      0
-#define WmMoveResizeSizeTop          1
-#define WmMoveResizeSizeTopRight     2
-#define WmMoveResizeSizeRight        3
-#define WmMoveResizeSizeBottomRight  4
-#define WmMoveResizeSizeBottom       5
-#define WmMoveResizeSizeBottomLeft   6
-#define WmMoveResizeSizeLeft         7
-#define WmMoveResizeMove             8
-#define WmMoveResizeSizeKeyboard     9
-#define WmMoveResizeMoveKeyboard    10
 
 #define OPAQUE 0xffff
 #define COLOR  0xffff
@@ -365,13 +270,7 @@ struct _CompAction {
     CompPrivate priv;
 };
 
-typedef union _CompMatchOp CompMatchOp;
 
-struct _CompMatch {
-    CompDisplay *display;
-    CompMatchOp *op;
-    int		nOp;
-};
 
 typedef struct {
     CompOptionType  type;
@@ -386,7 +285,7 @@ union _CompOptionValue {
     char	   *s;
     unsigned short c[4];
     CompAction     action;
-    CompMatch      match;
+    CompMatch      *match;
     CompListValue  list;
 };
 
@@ -515,123 +414,12 @@ isActionOption (CompOption *option);
 
 /* display.c */
 
-#define COMP_DISPLAY_OPTION_ABI                              0
-#define COMP_DISPLAY_OPTION_ACTIVE_PLUGINS                   1
-#define COMP_DISPLAY_OPTION_TEXTURE_FILTER                   2
-#define COMP_DISPLAY_OPTION_CLICK_TO_FOCUS                   3
-#define COMP_DISPLAY_OPTION_AUTORAISE                        4
-#define COMP_DISPLAY_OPTION_AUTORAISE_DELAY                  5
-#define COMP_DISPLAY_OPTION_CLOSE_WINDOW_KEY                 6
-#define COMP_DISPLAY_OPTION_CLOSE_WINDOW_BUTTON              7
-#define COMP_DISPLAY_OPTION_MAIN_MENU_KEY                    8
-#define COMP_DISPLAY_OPTION_RUN_DIALOG_KEY                   9
-#define COMP_DISPLAY_OPTION_COMMAND0                         10
-#define COMP_DISPLAY_OPTION_COMMAND1                         11
-#define COMP_DISPLAY_OPTION_COMMAND2                         12
-#define COMP_DISPLAY_OPTION_COMMAND3                         13
-#define COMP_DISPLAY_OPTION_COMMAND4                         14
-#define COMP_DISPLAY_OPTION_COMMAND5                         15
-#define COMP_DISPLAY_OPTION_COMMAND6                         16
-#define COMP_DISPLAY_OPTION_COMMAND7                         17
-#define COMP_DISPLAY_OPTION_COMMAND8                         18
-#define COMP_DISPLAY_OPTION_COMMAND9                         19
-#define COMP_DISPLAY_OPTION_COMMAND10                        20
-#define COMP_DISPLAY_OPTION_COMMAND11                        21
-#define COMP_DISPLAY_OPTION_RUN_COMMAND0_KEY                 22
-#define COMP_DISPLAY_OPTION_RUN_COMMAND1_KEY                 23
-#define COMP_DISPLAY_OPTION_RUN_COMMAND2_KEY                 24
-#define COMP_DISPLAY_OPTION_RUN_COMMAND3_KEY                 25
-#define COMP_DISPLAY_OPTION_RUN_COMMAND4_KEY                 26
-#define COMP_DISPLAY_OPTION_RUN_COMMAND5_KEY                 27
-#define COMP_DISPLAY_OPTION_RUN_COMMAND6_KEY                 28
-#define COMP_DISPLAY_OPTION_RUN_COMMAND7_KEY                 29
-#define COMP_DISPLAY_OPTION_RUN_COMMAND8_KEY                 30
-#define COMP_DISPLAY_OPTION_RUN_COMMAND9_KEY                 31
-#define COMP_DISPLAY_OPTION_RUN_COMMAND10_KEY                32
-#define COMP_DISPLAY_OPTION_RUN_COMMAND11_KEY                33
-#define COMP_DISPLAY_OPTION_SLOW_ANIMATIONS_KEY              34
-#define COMP_DISPLAY_OPTION_RAISE_WINDOW_KEY                 35
-#define COMP_DISPLAY_OPTION_RAISE_WINDOW_BUTTON              36
-#define COMP_DISPLAY_OPTION_LOWER_WINDOW_KEY                 37
-#define COMP_DISPLAY_OPTION_LOWER_WINDOW_BUTTON              38
-#define COMP_DISPLAY_OPTION_UNMAXIMIZE_WINDOW_KEY            39
-#define COMP_DISPLAY_OPTION_MINIMIZE_WINDOW_KEY              40
-#define COMP_DISPLAY_OPTION_MINIMIZE_WINDOW_BUTTON           41
-#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_KEY              42
-#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_HORZ_KEY         43
-#define COMP_DISPLAY_OPTION_MAXIMIZE_WINDOW_VERT_KEY         44
-#define COMP_DISPLAY_OPTION_SCREENSHOT                       45
-#define COMP_DISPLAY_OPTION_RUN_SCREENSHOT_KEY               46
-#define COMP_DISPLAY_OPTION_WINDOW_SCREENSHOT                47
-#define COMP_DISPLAY_OPTION_RUN_WINDOW_SCREENSHOT_KEY        48
-#define COMP_DISPLAY_OPTION_WINDOW_MENU_BUTTON               49
-#define COMP_DISPLAY_OPTION_WINDOW_MENU_KEY                  50
-#define COMP_DISPLAY_OPTION_SHOW_DESKTOP_KEY                 51
-#define COMP_DISPLAY_OPTION_SHOW_DESKTOP_EDGE                52
-#define COMP_DISPLAY_OPTION_RAISE_ON_CLICK                   53
-#define COMP_DISPLAY_OPTION_AUDIBLE_BELL                     54
-#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_KEY      55
-#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_BUTTON   56
-#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_HORZ_KEY 57
-#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_MAXIMIZED_VERT_KEY 58
-#define COMP_DISPLAY_OPTION_HIDE_SKIP_TASKBAR_WINDOWS        59
-#define COMP_DISPLAY_OPTION_TOGGLE_WINDOW_SHADED_KEY         60
-#define COMP_DISPLAY_OPTION_IGNORE_HINTS_WHEN_MAXIMIZED      61
-#define COMP_DISPLAY_OPTION_TERMINAL			     62
-#define COMP_DISPLAY_OPTION_RUN_TERMINAL_KEY		     63
-#define COMP_DISPLAY_OPTION_PING_DELAY			     64
-#define COMP_DISPLAY_OPTION_EDGE_DELAY                       65
-#define COMP_DISPLAY_OPTION_NUM				     66
+
 
 typedef void (*ForEachWindowProc) (CompWindow *window,
 				   void	      *closure);
 
-#define MATCH_OP_AND_MASK (1 << 0)
-#define MATCH_OP_NOT_MASK (1 << 1)
 
-typedef enum {
-    CompMatchOpTypeGroup,
-    CompMatchOpTypeExp
-} CompMatchOpType;
-
-typedef struct _CompMatchAnyOp {
-    CompMatchOpType type;
-    int		    flags;
-} CompMatchAnyOp;
-
-typedef struct _CompMatchGroupOp {
-    CompMatchOpType type;
-    int		    flags;
-    CompMatchOp	    *op;
-    int		    nOp;
-} CompMatchGroupOp;
-
-typedef void (*CompMatchExpFiniProc) (CompDisplay *display,
-				      CompPrivate priv);
-
-typedef Bool (*CompMatchExpEvalProc) (CompDisplay *display,
-				      CompWindow  *window,
-				      CompPrivate priv);
-
-typedef struct _CompMatchExp {
-    CompMatchExpFiniProc fini;
-    CompMatchExpEvalProc eval;
-    CompPrivate		 priv;
-} CompMatchExp;
-
-typedef struct _CompMatchExpOp {
-    CompMatchOpType type;
-    int		    flags;
-    char	    *value;
-    CompMatchExp    e;
-} CompMatchExpOp;
-
-union _CompMatchOp {
-    CompMatchOpType  type;
-    CompMatchAnyOp   any;
-    CompMatchGroupOp group;
-    CompMatchExpOp   exp;
-};
 
 
 bool
@@ -667,8 +455,6 @@ setDisplayAction (CompDisplay     *display,
 
 typedef struct _CompDelayedEdgeSettings
 {
-    CompDisplay *d;
-
     unsigned int edge;
     unsigned int state;
 
@@ -739,28 +525,6 @@ typedef struct _WindowPaintAttrib {
 extern ScreenPaintAttrib defaultScreenPaintAttrib;
 extern WindowPaintAttrib defaultWindowPaintAttrib;
 
-typedef struct _CompMatrix {
-    float xx; float yx;
-    float xy; float yy;
-    float x0; float y0;
-} CompMatrix;
-
-#define COMP_TEX_COORD_X(m, vx) ((m)->xx * (vx) + (m)->x0)
-#define COMP_TEX_COORD_Y(m, vy) ((m)->yy * (vy) + (m)->y0)
-
-#define COMP_TEX_COORD_XY(m, vx, vy)		\
-    ((m)->xx * (vx) + (m)->xy * (vy) + (m)->x0)
-#define COMP_TEX_COORD_YX(m, vx, vy)		\
-    ((m)->yx * (vx) + (m)->yy * (vy) + (m)->y0)
-
-#define PAINT_SCREEN_REGION_MASK		   (1 << 0)
-#define PAINT_SCREEN_FULL_MASK			   (1 << 1)
-#define PAINT_SCREEN_TRANSFORMED_MASK		   (1 << 2)
-#define PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK (1 << 3)
-#define PAINT_SCREEN_CLEAR_MASK			   (1 << 4)
-#define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
-#define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
-
 
 
 typedef void (*WalkerFiniProc) (CompScreen *screen,
@@ -779,57 +543,6 @@ struct _CompWalker {
     WalkStepProc prev;
 };
 
-/*
-  window paint flags
-
-  bit 1-16 are used for read-only flags and they provide
-  information that describe the screen rendering pass
-  currently in process.
-
-  bit 17-32 are writable flags and they provide information
-  that is used to optimize rendering.
-*/
-
-/*
-  this flag is present when window is being painted
-  on a transformed screen.
-*/
-#define PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK (1 << 0)
-
-/*
-  this flag is present when window is being tested
-  for occlusion of other windows.
-*/
-#define PAINT_WINDOW_OCCLUSION_DETECTION_MASK   (1 << 1)
-
-/*
-  this flag indicates that the window ist painted with
-  an offset
-*/
-#define PAINT_WINDOW_WITH_OFFSET_MASK           (1 << 2)
-
-/*
-  flag indicate that window is translucent.
-*/
-#define PAINT_WINDOW_TRANSLUCENT_MASK           (1 << 16)
-
-/*
-  flag indicate that window is transformed.
-*/
-#define PAINT_WINDOW_TRANSFORMED_MASK           (1 << 17)
-
-/*
-  flag indicate that core PaintWindow function should
-  not draw this window.
-*/
-#define PAINT_WINDOW_NO_CORE_INSTANCE_MASK	(1 << 18)
-
-/*
-  flag indicate that blending is required.
-*/
-#define PAINT_WINDOW_BLEND_MASK			(1 << 19)
-
-
 
 /* XXX: prepareXCoords will be removed */
 void
@@ -837,294 +550,10 @@ prepareXCoords (CompScreen *screen,
 		CompOutput *output,
 		float      z);
 
-
-Bool
-moreWindowVertices (CompWindow *w,
-		    int        newSize);
-
-Bool
-moreWindowIndices (CompWindow *w,
-		   int        newSize);
-
-void
-addWindowGeometry (CompWindow *w,
-		   CompMatrix *matrix,
-		   int	      nMatrix,
-		   Region     region,
-		   Region     clip);
-
-/* texture.c */
-
-#define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
-
-typedef enum {
-    COMP_TEXTURE_FILTER_FAST,
-    COMP_TEXTURE_FILTER_GOOD
-} CompTextureFilterEnum;
-
-typedef int CompTextureFilter;
-
-struct _CompTexture {
-    GLuint     name;
-    GLenum     target;
-    GLfloat    dx, dy;
-    GLXPixmap  pixmap;
-    GLenum     filter;
-    GLenum     wrap;
-    CompMatrix matrix;
-    Bool       oldMipmaps;
-    Bool       mipmap;
-    int        refCount;
-};
-
-void
-initTexture (CompScreen  *screen,
-	     CompTexture *texture);
-
-void
-finiTexture (CompScreen  *screen,
-	     CompTexture *texture);
-
-CompTexture *
-createTexture (CompScreen *screen);
-
-void
-destroyTexture (CompScreen  *screen,
-		CompTexture *texture);
-
-Bool
-imageBufferToTexture (CompScreen   *screen,
-		      CompTexture  *texture,
-		      const char   *image,
-		      unsigned int width,
-		      unsigned int height);
-
-Bool
-imageDataToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *image,
-		    unsigned int width,
-		    unsigned int height,
-		    GLenum       format,
-		    GLenum       type);
-
-
-Bool
-readImageToTexture (CompScreen   *screen,
-		    CompTexture  *texture,
-		    const char	 *imageFileName,
-		    unsigned int *width,
-		    unsigned int *height);
-
-Bool
-iconToTexture (CompScreen *screen,
-	       CompIcon   *icon);
-
-
-
-
-void
-enableTextureClampToBorder (CompScreen	      *screen,
-			    CompTexture	      *texture,
-			    CompTextureFilter filter);
-
-void
-enableTextureClampToEdge (CompScreen	    *screen,
-			  CompTexture	    *texture,
-			  CompTextureFilter filter);
-
-
 /* screen.c */
 
-#define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
-#define COMP_SCREEN_OPTION_LIGHTING		  1
-#define COMP_SCREEN_OPTION_REFRESH_RATE		  2
-#define COMP_SCREEN_OPTION_HSIZE		  3
-#define COMP_SCREEN_OPTION_VSIZE		  4
-#define COMP_SCREEN_OPTION_OPACITY_STEP		  5
-#define COMP_SCREEN_OPTION_UNREDIRECT_FS	  6
-#define COMP_SCREEN_OPTION_DEFAULT_ICON		  7
-#define COMP_SCREEN_OPTION_SYNC_TO_VBLANK	  8
-#define COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS	  9
-#define COMP_SCREEN_OPTION_DETECT_OUTPUTS	  10
-#define COMP_SCREEN_OPTION_OUTPUTS		  11
-#define COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS	  12
-#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_LEVEL 13
-#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_MATCH 14
-#define COMP_SCREEN_OPTION_TEXTURE_COMPRESSION	  15
-#define COMP_SCREEN_OPTION_FORCE_INDEPENDENT      16
-#define COMP_SCREEN_OPTION_NUM		          17
-
-#ifndef GLX_EXT_texture_from_pixmap
-#define GLX_BIND_TO_TEXTURE_RGB_EXT        0x20D0
-#define GLX_BIND_TO_TEXTURE_RGBA_EXT       0x20D1
-#define GLX_BIND_TO_MIPMAP_TEXTURE_EXT     0x20D2
-#define GLX_BIND_TO_TEXTURE_TARGETS_EXT    0x20D3
-#define GLX_Y_INVERTED_EXT                 0x20D4
-#define GLX_TEXTURE_FORMAT_EXT             0x20D5
-#define GLX_TEXTURE_TARGET_EXT             0x20D6
-#define GLX_MIPMAP_TEXTURE_EXT             0x20D7
-#define GLX_TEXTURE_FORMAT_NONE_EXT        0x20D8
-#define GLX_TEXTURE_FORMAT_RGB_EXT         0x20D9
-#define GLX_TEXTURE_FORMAT_RGBA_EXT        0x20DA
-#define GLX_TEXTURE_1D_BIT_EXT             0x00000001
-#define GLX_TEXTURE_2D_BIT_EXT             0x00000002
-#define GLX_TEXTURE_RECTANGLE_BIT_EXT      0x00000004
-#define GLX_TEXTURE_1D_EXT                 0x20DB
-#define GLX_TEXTURE_2D_EXT                 0x20DC
-#define GLX_TEXTURE_RECTANGLE_EXT          0x20DD
-#define GLX_FRONT_LEFT_EXT                 0x20DE
-#endif
-
-#define OUTPUT_OVERLAP_MODE_SMART          0
-#define OUTPUT_OVERLAP_MODE_PREFER_LARGER  1
-#define OUTPUT_OVERLAP_MODE_PREFER_SMALLER 2
-#define OUTPUT_OVERLAP_MODE_LAST           OUTPUT_OVERLAP_MODE_PREFER_SMALLER
-
-#define FOCUS_PREVENTION_LEVEL_NONE     0
-#define FOCUS_PREVENTION_LEVEL_LOW      1
-#define FOCUS_PREVENTION_LEVEL_HIGH     2
-#define FOCUS_PREVENTION_LEVEL_VERYHIGH 3
-#define FOCUS_PREVENTION_LEVEL_LAST     FOCUS_PREVENTION_LEVEL_VERYHIGH
-
-typedef void (*FuncPtr) (void);
-typedef FuncPtr (*GLXGetProcAddressProc) (const GLubyte *procName);
-
-typedef void    (*GLXBindTexImageProc)    (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer,
-					   int		 *attribList);
-typedef void    (*GLXReleaseTexImageProc) (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer);
-typedef void    (*GLXQueryDrawableProc)   (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 attribute,
-					   unsigned int  *value);
-
-typedef void (*GLXCopySubBufferProc) (Display     *display,
-				      GLXDrawable drawable,
-				      int	  x,
-				      int	  y,
-				      int	  width,
-				      int	  height);
-
-typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
-typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
-				     int	  remainder,
-				     unsigned int *count);
-
-#ifndef GLX_VERSION_1_3
-typedef struct __GLXFBConfigRec *GLXFBConfig;
-#endif
-
-typedef GLXFBConfig *(*GLXGetFBConfigsProc) (Display *display,
-					     int     screen,
-					     int     *nElements);
-typedef int (*GLXGetFBConfigAttribProc) (Display     *display,
-					 GLXFBConfig config,
-					 int	     attribute,
-					 int	     *value);
-typedef GLXPixmap (*GLXCreatePixmapProc) (Display     *display,
-					  GLXFBConfig config,
-					  Pixmap      pixmap,
-					  const int   *attribList);
-
-typedef void (*GLActiveTextureProc) (GLenum texture);
-typedef void (*GLClientActiveTextureProc) (GLenum texture);
-typedef void (*GLMultiTexCoord2fProc) (GLenum, GLfloat, GLfloat);
-
-typedef void (*GLGenProgramsProc) (GLsizei n,
-				   GLuint  *programs);
-typedef void (*GLDeleteProgramsProc) (GLsizei n,
-				      GLuint  *programs);
-typedef void (*GLBindProgramProc) (GLenum target,
-				   GLuint program);
-typedef void (*GLProgramStringProc) (GLenum	  target,
-				     GLenum	  format,
-				     GLsizei	  len,
-				     const GLvoid *string);
-typedef void (*GLProgramParameter4fProc) (GLenum  target,
-					  GLuint  index,
-					  GLfloat x,
-					  GLfloat y,
-					  GLfloat z,
-					  GLfloat w);
-typedef void (*GLGetProgramivProc) (GLenum target,
-				    GLenum pname,
-				    int    *params);
-
-typedef void (*GLGenFramebuffersProc) (GLsizei n,
-				       GLuint  *framebuffers);
-typedef void (*GLDeleteFramebuffersProc) (GLsizei n,
-					  GLuint  *framebuffers);
-typedef void (*GLBindFramebufferProc) (GLenum target,
-				       GLuint framebuffer);
-typedef GLenum (*GLCheckFramebufferStatusProc) (GLenum target);
-typedef void (*GLFramebufferTexture2DProc) (GLenum target,
-					    GLenum attachment,
-					    GLenum textarget,
-					    GLuint texture,
-					    GLint  level);
-typedef void (*GLGenerateMipmapProc) (GLenum target);
 
 #define MAX_DEPTH 32
-
-
-
-typedef Bool (*DamageWindowRectProc) (CompWindow *w,
-				      Bool       initial,
-				      BoxPtr     rect);
-
-typedef Bool (*DamageWindowRegionProc) (CompWindow *w,
-					Region     region);
-
-
-typedef void (*GetOutputExtentsForWindowProc) (CompWindow	 *w,
-					       CompWindowExtents *output);
-
-typedef void (*GetAllowedActionsForWindowProc) (CompWindow   *w,
-						unsigned int *setActions,
-						unsigned int *clearActions);
-
-typedef Bool (*FocusWindowProc) (CompWindow *window);
-
-typedef void (*ActivateWindowProc) (CompWindow *window);
-
-typedef Bool (*PlaceWindowProc) (CompWindow *window,
-				 int        x,
-				 int        y,
-				 int        *newX,
-				 int        *newY);
-
-typedef void (*ValidateWindowResizeRequestProc) (CompWindow     *window,
-						 unsigned int   *mask,
-						 XWindowChanges *xwc);
-
-typedef void (*WindowResizeNotifyProc) (CompWindow *window,
-					int        dx,
-					int        dy,
-					int        dwidth,
-					int        dheight);
-
-typedef void (*WindowMoveNotifyProc) (CompWindow *window,
-				      int	 dx,
-				      int	 dy,
-				      Bool	 immediate);
-
-#define CompWindowGrabKeyMask    (1 << 0)
-#define CompWindowGrabButtonMask (1 << 1)
-#define CompWindowGrabMoveMask   (1 << 2)
-#define CompWindowGrabResizeMask (1 << 3)
-
-
-
-
-
-#define COMP_SCREEN_DAMAGE_PENDING_MASK (1 << 0)
-#define COMP_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
-#define COMP_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
-
 
 typedef struct _CompGroup {
     struct _CompGroup *next;
@@ -1166,35 +595,6 @@ typedef struct _CompScreenEdge {
     unsigned int count;
 } CompScreenEdge;
 
-struct _CompIcon {
-    CompTexture texture;
-    int		width;
-    int		height;
-};
-
-typedef struct _CompCursorImage {
-    struct _CompCursorImage *next;
-
-    unsigned long serial;
-    Pixmap	  pixmap;
-    CompTexture   texture;
-    int		  xhot;
-    int	          yhot;
-    int		  width;
-    int	          height;
-} CompCursorImage;
-
-struct _CompCursor {
-    struct _CompCursor *next;
-
-    CompScreen	    *screen;
-    CompCursorImage *image;
-
-    int	x;
-    int	y;
-
-    CompMatrix matrix;
-};
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
@@ -1307,99 +707,6 @@ getPluginDisplayIndex (CompDisplay *d,
 
 /* fragment.c */
 
-#define MAX_FRAGMENT_FUNCTIONS 16
-
-struct _FragmentAttrib {
-    GLushort opacity;
-    GLushort brightness;
-    GLushort saturation;
-    int	     nTexture;
-    int	     function[MAX_FRAGMENT_FUNCTIONS];
-    int	     nFunction;
-    int	     nParam;
-};
-
-CompFunctionData *
-createFunctionData (void);
-
-void
-destroyFunctionData (CompFunctionData *data);
-
-Bool
-addTempHeaderOpToFunctionData (CompFunctionData *data,
-			       const char	*name);
-
-Bool
-addParamHeaderOpToFunctionData (CompFunctionData *data,
-				const char	 *name);
-
-Bool
-addAttribHeaderOpToFunctionData (CompFunctionData *data,
-				 const char	  *name);
-
-#define COMP_FETCH_TARGET_2D   0
-#define COMP_FETCH_TARGET_RECT 1
-#define COMP_FETCH_TARGET_NUM  2
-
-Bool
-addFetchOpToFunctionData (CompFunctionData *data,
-			  const char	   *dst,
-			  const char	   *offset,
-			  int		   target);
-
-Bool
-addColorOpToFunctionData (CompFunctionData *data,
-			  const char	   *dst,
-			  const char	   *src);
-
-Bool
-addDataOpToFunctionData (CompFunctionData *data,
-			 const char	  *str,
-			 ...);
-
-Bool
-addBlendOpToFunctionData (CompFunctionData *data,
-			  const char	   *str,
-			  ...);
-
-int
-createFragmentFunction (CompScreen	 *s,
-			const char	 *name,
-			CompFunctionData *data);
-
-void
-destroyFragmentFunction (CompScreen *s,
-			 int	    id);
-
-int
-getSaturateFragmentFunction (CompScreen  *s,
-			     CompTexture *texture,
-			     int	 param);
-
-int
-allocFragmentTextureUnits (FragmentAttrib *attrib,
-			   int		  nTexture);
-
-int
-allocFragmentParameters (FragmentAttrib *attrib,
-			 int		nParam);
-
-void
-addFragmentFunction (FragmentAttrib *attrib,
-		     int	    function);
-
-void
-initFragmentAttrib (FragmentAttrib	    *attrib,
-		    const WindowPaintAttrib *paint);
-
-bool
-enableFragmentAttrib (CompScreen     *s,
-		      FragmentAttrib *attrib,
-		      Bool	     *blending);
-
-void
-disableFragmentAttrib (CompScreen     *s,
-		       FragmentAttrib *attrib);
 
 
 /* matrix.c */
@@ -1439,79 +746,7 @@ matrixTranslate (CompTransform *transform,
 void
 matrixGetIdentity (CompTransform *m);
 
-/* cursor.c */
-
-Bool
-damageCursorRect (CompCursor *c,
-		  Bool       initial,
-		  BoxPtr     rect);
-
-void
-addCursorDamageRect (CompCursor *c,
-		     BoxPtr     rect);
-
-void
-addCursorDamage (CompCursor *c);
-
-void
-updateCursor (CompCursor    *c,
-	      int	    x,
-	      int	    y,
-	      unsigned long serial);
-
-
 /* match.c */
-
-void
-matchInit (CompMatch *match);
-
-void
-matchFini (CompMatch *match);
-
-Bool
-matchEqual (CompMatch *m1,
-	    CompMatch *m2);
-
-Bool
-matchCopy (CompMatch *dst,
-	   CompMatch *src);
-
-Bool
-matchAddGroup (CompMatch *match,
-	       int	 flags,
-	       CompMatch *group);
-
-Bool
-matchAddExp (CompMatch *match,
-	     int	flags,
-	     const char	*value);
-
-void
-matchAddFromString (CompMatch  *match,
-		    const char *str);
-
-char *
-matchToString (CompMatch *match);
-
-void
-matchUpdate (CompDisplay *display,
-	     CompMatch   *match);
-
-Bool
-matchEval (CompMatch  *match,
-	   CompWindow *window);
-
-void
-matchInitExp (CompDisplay  *display,
-	      CompMatchExp *exp,
-	      const char   *value);
-
-void
-matchExpHandlerChanged (CompDisplay *display);
-
-void
-matchPropertyChanged (CompDisplay *display,
-		      CompWindow  *window);
 
 
 /* metadata.c */
@@ -1529,11 +764,6 @@ typedef struct _CompMetadataOptionInfo {
     CompActionCallBackProc initiate;
     CompActionCallBackProc terminate;
 } CompMetadataOptionInfo;
-
-extern const CompMetadataOptionInfo
-coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM];
-extern const CompMetadataOptionInfo
-coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM];
 
 struct _CompMetadata {
     char   *path;
@@ -1632,13 +862,17 @@ compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
 					int			     length);
 
 
-COMPIZ_END_DECLS
 
+COMPIZ_END_DECLS
+	
 #include <string>
 #include <vector>
 #include <list>
 
 typedef std::string CompString;
+
+CompString compPrintf (const char *format, ...);
+CompString compPrintf (const char *format, va_list ap);
 
 #include <comprect.h>
 #include <compoutput.h>
@@ -1647,5 +881,5 @@ typedef std::string CompString;
 #include <compdisplay.h>
 #include <compscreen.h>
 #include <compwindow.h>
-
+		 
 #endif

@@ -14,7 +14,7 @@
  *
  * NOVELL, INC. DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE,
  * INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS, IN
- * NO EVENT SHALL NOVELL, INC. BE LIABLE FOR ANY SPECIAL, INDIRECT OR
+ * NO EVENT SHALL NOVELL, INC. BE LIABLE FOR ANY SPECI<<<<<fAL, INDIRECT OR
  * CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM LOSS
  * OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT,
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
@@ -39,6 +39,8 @@
 #include <limits.h>
 #include <algorithm>
 
+#include <boost/bind.hpp>
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
@@ -49,6 +51,7 @@
 #include <compiz-core.h>
 
 #include <compscreen.h>
+#include <compicon.h>
 #include "privatescreen.h"
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
@@ -539,15 +542,6 @@ PrivateScreen::updateStartupFeedback ()
 #define STARTUP_TIMEOUT_DELAY 15000
 
 bool
-CompScreen::startupSequenceTimeout (void *data)
-{
-    CompScreen *screen = (CompScreen *) data;
-
-    screen->priv->handleStartupSequenceTimeout ();
-    return true;
-}
-
-void
 PrivateScreen::handleStartupSequenceTimeout()
 {
     CompStartupSequence *s;
@@ -568,6 +562,8 @@ PrivateScreen::handleStartupSequenceTimeout()
 	if (elapsed > STARTUP_TIMEOUT_DELAY)
 	    sn_startup_sequence_complete (s->sequence);
     }
+
+    return true;
 }
 
 void
@@ -588,10 +584,10 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
 
     startupSequences = s;
 
-    if (!startupSequenceTimeoutHandle)
-	core->addTimeout (1000, 1500,
-			  CompScreen::startupSequenceTimeout,
-			  this);
+    if (!startupSequenceTimer.active ())
+	startupSequenceTimer.start (
+	    boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this),
+	    1000, 1500);
 
     updateStartupFeedback ();
 }
@@ -621,11 +617,8 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     free (s);
 
-    if (!startupSequences && startupSequenceTimeoutHandle)
-    {
-	core->removeTimeout (startupSequenceTimeoutHandle);
-	startupSequenceTimeoutHandle = 0;
-    }
+    if (!startupSequences && startupSequenceTimer.active ())
+	startupSequenceTimer.stop ();
 
     updateStartupFeedback ();
 }
@@ -877,13 +870,13 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
 
     if (pixmap)
     {
+/* FIXME:
 	if (pixmap == texture->pixmap)
 	    return;
+*/
+	texture->reset ();
 
-	finiTexture (screen, texture);
-	initTexture (screen, texture);
-
-	if (!screen->bindPixmapToTexture (texture, pixmap, width, height, depth))
+	if (!texture->bindPixmap (pixmap, width, height, depth))
 	{
 	    compLogMessage (NULL, "core", CompLogLevelWarn,
 			    "Couldn't bind background pixmap 0x%x to "
@@ -892,19 +885,19 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
     }
     else
     {
-	finiTexture (screen, texture);
-	initTexture (screen, texture);
+	texture->reset ();
     }
 
-    if (!texture->name && backgroundImage)
-	readImageToTexture (screen, texture, backgroundImage, &width, &height);
+    if (!texture->name () && backgroundImage)
+	CompTexture::readImageToTexture (screen, texture, backgroundImage,
+					 &width, &height);
 
-    if (texture->target == GL_TEXTURE_2D)
+    if (texture->target () == GL_TEXTURE_2D)
     {
-	glBindTexture (texture->target, texture->name);
-	glTexParameteri (texture->target, GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (texture->target, GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture (texture->target, 0);
+	glBindTexture (texture->target (), texture->name ());
+	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glBindTexture (texture->target (), 0);
     }
 }
 
@@ -1419,9 +1412,6 @@ CompScreen::CompScreen ():
 
     WRAPABLE_INIT_HND(initWindowWalker);
 
-    WRAPABLE_INIT_HND(paintCursor);
-    WRAPABLE_INIT_HND(damageCursorRect);
-
     priv = new PrivateScreen (this);
     assert (priv);
     next = NULL;
@@ -1456,6 +1446,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     fragmentProgram (false),
     maxTextureUnits (1),
     exposeRects (0),
+    backgroundTexture (screen),
     backgroundLoaded (false),
     pendingDestroys (0),
     desktopWindowCount (0),
@@ -1469,7 +1460,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     overlayWindowCount (0),
     snContext (0),
     startupSequences (0),
-    startupSequenceTimeoutHandle (0),
+    startupSequenceTimer (),
     groups (0),
     defaultIcon (0),
     canDoSaturated (false),
@@ -1488,21 +1479,16 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     idle (true),
     timeLeft (0),
     pendingCommands (true),
-    lastFunctionId (0),
-    fragmentFunctions (0),
-    fragmentPrograms (0),
+    fragmentStorage (),
     clearBuffers (true),
     lighting (false),
     slowAnimations (false),
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
-    cursors (0),
-    cursorImages (0),
-    paintHandle (0),
+    paintTimer (),
     getProcAddress (0)
 {
-    memset (saturateFunction, 0, sizeof (saturateFunction));
     memset (history, 0, sizeof (history));
     gettimeofday (&lastRedraw, 0);
 }
@@ -2179,8 +2165,6 @@ CompScreen::init (CompDisplay *display,
 	return false;
     }
 
-    initTexture (this, &priv->backgroundTexture);
-
     glClearColor (0.0, 0.0, 0.0, 1.0);
     glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
     glEnable (GL_CULL_FACE);
@@ -2287,18 +2271,18 @@ CompScreen::init (CompDisplay *display,
 
     XDefineCursor (dpy, priv->root, priv->normalCursor);
 
-    priv->filter[NOTHING_TRANS_FILTER] = COMP_TEXTURE_FILTER_FAST;
-    priv->filter[SCREEN_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
-    priv->filter[WINDOW_TRANS_FILTER]  = COMP_TEXTURE_FILTER_GOOD;
+    priv->filter[NOTHING_TRANS_FILTER] = CompTexture::Fast;
+    priv->filter[SCREEN_TRANS_FILTER]  = CompTexture::Good;
+    priv->filter[WINDOW_TRANS_FILTER]  = CompTexture::Good;
 
-    priv->paintHandle = core->addTimeout (priv->optimalRedrawTime, MAXSHORT,
-					  PrivateScreen::paintTimeout, this);
+    priv->paintTimer.start (boost::bind(&CompScreen::handlePaintTimeout, this),
+			    priv->optimalRedrawTime, MAXSHORT);
     return true;
 }
 
 CompScreen::~CompScreen ()
 {
-    core->removeTimeout (priv->paintHandle);
+    priv->paintTimer.stop ();
 
     while (priv->windows)
 	delete priv->windows;
@@ -2312,13 +2296,8 @@ CompScreen::~CompScreen ()
 
     XDestroyWindow (priv->display->dpy (), priv->grabWindow);
 
-    finiTexture (this, &priv->backgroundTexture);
-
     if (priv->defaultIcon)
-    {
-	finiTexture (this, &priv->defaultIcon->texture);
-	free (priv->defaultIcon);
-    }
+	delete priv->defaultIcon;
 
     glXDestroyContext (priv->display->dpy (), priv->ctx);
 
@@ -2343,13 +2322,6 @@ CompScreen::~CompScreen ()
     if (priv->damage)
 	XDestroyRegion (priv->damage);
 
-    /* XXX: Maybe we should free all fragment functions here? But
-       the definition of CompFunction is private to fragment.c ... */
-    for (i = 0; i < 2; i++)
-	for (j = 0; j < 64; j++)
-	    if (priv->saturateFunction[i][j])
-		destroyFragmentFunction (this, priv->saturateFunction[i][j]);
-
     compFiniScreenOptions (this, priv->opt, COMP_SCREEN_OPTION_NUM);
 
     delete priv;
@@ -2372,14 +2344,21 @@ CompScreen::damageRegion (Region region)
     if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     XUnionRegion (priv->damage, region, priv->damage);
 
     priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
+
 }
 
 void
 CompScreen::damageScreen ()
 {
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     priv->damageMask |= COMP_SCREEN_DAMAGE_ALL_MASK;
     priv->damageMask &= ~COMP_SCREEN_DAMAGE_REGION_MASK;
 }
@@ -2387,6 +2366,9 @@ CompScreen::damageScreen ()
 void
 CompScreen::damagePending ()
 {
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+
     priv->damageMask |= COMP_SCREEN_DAMAGE_PENDING_MASK;
 }
 
@@ -3910,58 +3892,26 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 bool
 CompScreen::updateDefaultIcon ()
 {
-    CompIcon *icon;
     char     *file = priv->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value.s;
     void     *data;
     int      width, height;
 
     if (priv->defaultIcon)
     {
-	finiTexture (this, &priv->defaultIcon->texture);
-	free (priv->defaultIcon);
+	delete priv->defaultIcon;
 	priv->defaultIcon = NULL;
     }
 
     if (!priv->display->readImageFromFile (file, &width, &height, &data))
 	return false;
 
-    icon = (CompIcon *) malloc (sizeof (CompIcon) + width * height * sizeof (CARD32));
-    if (!icon)
-    {
-	free (data);
-	return false;
-    }
+    priv->defaultIcon = new CompIcon (this, width, height);
 
-    initTexture (this, &icon->texture);
-
-    icon->width  = width;
-    icon->height = height;
-
-    memcpy (icon + 1, data, + width * height * sizeof (CARD32));
-
-    priv->defaultIcon = icon;
+    memcpy (priv->defaultIcon->data (), data, width * height * sizeof (CARD32));
 
     free (data);
 
     return true;
-}
-
-CompCursor *
-CompScreen::findCursor ()
-{
-    return priv->cursors;
-}
-
-CompCursorImage *
-CompScreen::findCursorImage (unsigned long serial)
-{
-    CompCursorImage *image;
-
-    for (image = priv->cursorImages; image; image = image->next)
-	if (image->serial == serial)
-	    return image;
-
-    return NULL;
 }
 
 void
@@ -4037,9 +3987,6 @@ ScreenInterface::ScreenInterface ()
     WRAPABLE_INIT_FUNC(outputChangeNotify);
 
     WRAPABLE_INIT_FUNC(initWindowWalker);
-
-    WRAPABLE_INIT_FUNC(paintCursor);
-    WRAPABLE_INIT_FUNC(damageCursorRect);
 }
 
 void
@@ -4089,14 +4036,6 @@ void
 ScreenInterface::disableOutputClipping ()
     WRAPABLE_DEF_FUNC(disableOutputClipping)
 
-
-void
-ScreenInterface::paintCursor (CompCursor	  *cursor,
-			      const CompTransform *transform,
-			      Region		  region,
-			      unsigned int	  mask)
-    WRAPABLE_DEF_FUNC(paintCursor, cursor, transform, region, mask)
-
 void
 ScreenInterface::enterShowDesktopMode ()
     WRAPABLE_DEF_FUNC(enterShowDesktopMode)
@@ -4112,12 +4051,6 @@ ScreenInterface::outputChangeNotify ()
 void
 ScreenInterface::initWindowWalker (CompWalker *walker)
     WRAPABLE_DEF_FUNC(initWindowWalker, walker)
-
-bool
-ScreenInterface::damageCursorRect (CompCursor *c,
-				   bool       initial,
-				   BoxPtr     rect)
-    WRAPABLE_DEF_FUNC_RETURN(damageCursorRect, c, initial, rect)
 
 CompDisplay *
 CompScreen::display ()
@@ -4398,23 +4331,10 @@ CompScreen::selectionTimestamp ()
     return priv->wmSnTimestamp;
 }
 
-CompCursor *
-CompScreen::cursors ()
-{
-    return priv->cursors;
-}
-
 int
 CompScreen::screenNum ()
 {
     return priv->screenNum;
-}
-
-bool
-PrivateScreen::paintTimeout (void *closure)
-{
-    CompScreen *s = (CompScreen *) closure;
-    return s->handlePaintTimeout ();
 }
 
 bool
@@ -4603,9 +4523,8 @@ CompScreen::handlePaintTimeout ()
 
     gettimeofday (&tv, 0);
 
-    core->addTimeout (getTimeToNextRedraw (&tv), MAXSHORT,
-		      PrivateScreen::paintTimeout, this);
-    return false;
+    priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
+    return true;
 }
 
 int
@@ -4714,8 +4633,7 @@ CompScreen::activeNum ()
 void
 CompScreen::updateBackground ()
 {
-    finiTexture (this, &priv->backgroundTexture);
-    initTexture (this, &priv->backgroundTexture);
+    priv->backgroundTexture.reset ();
 
     if (priv->backgroundLoaded)
     {
@@ -4754,34 +4672,16 @@ CompScreen::lighting ()
     return priv->lighting;
 }
 
-int
+CompTexture::Filter
 CompScreen::filter (int filter)
 {
     return priv->filter[filter];
 }
 
-CompFunction *&
-CompScreen::fragmentFunctions ()
+CompFragment::Storage *
+CompScreen::fragmentStorage ()
 {
-    return priv->fragmentFunctions;
-}
-
-CompProgram *&
-CompScreen::fragmentPrograms ()
-{
-    return priv->fragmentPrograms;
-}
-
-int &
-CompScreen::lastFunctionId ()
-{
-    return priv->lastFunctionId;
-}
-
-int &
-CompScreen::getSaturateFunction (int target, int param)
-{
-    return priv->saturateFunction[target][param];
+    return &priv->fragmentStorage;
 }
 
 bool
@@ -4790,9 +4690,14 @@ CompScreen::fragmentProgram ()
     return priv->fragmentProgram;
 }
 
-CompCursorImage *&
-CompScreen::cursorImages ()
+CompFBConfig*
+CompScreen::glxPixmapFBConfig (unsigned int depth)
 {
-    return priv->cursorImages;
+    return &priv->glxPixmapFBConfigs[depth];
 }
 
+bool
+CompScreen::framebufferObject ()
+{
+    return priv->fbo;
+}

@@ -7,6 +7,8 @@ m4_define(compiz_version_major, 0)
 m4_define(compiz_version_minor, 7)
 m4_define(compiz_version_micro, 7)
 
+m4_include(m4/ax_boost_base.m4)
+
 AC_INIT([compiz],
 	[compiz_version_major().compiz_version_minor().compiz_version_micro()],
 	[davidr@novell.com])
@@ -40,6 +42,8 @@ AM_GLIB_GNU_GETTEXT
 GETTEXT_PACKAGE=compiz
 AC_DEFINE_UNQUOTED(GETTEXT_PACKAGE,"$GETTEXT_PACKAGE", [Gettext package.])
 AC_SUBST(GETTEXT_PACKAGE)
+
+AX_BOOST_BASE([1.34.0])
 
 if test "x$GCC" = "xyes"; then
   case " $CFLAGS " in
@@ -132,6 +136,8 @@ COMPIZ_REQUIRES="x11-xcb    \
 
 PKG_CHECK_MODULES(COMPIZ, $COMPIZ_REQUIRES)
 AC_SUBST(COMPIZ_REQUIRES)
+
+COMPIZ_CFLAGS="$COMPIZ_CFLAGS $BOOST_CPPFLAGS"
 
 DECORATION_REQUIRES="xrender"
 

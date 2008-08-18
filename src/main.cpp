@@ -35,6 +35,8 @@
 #include <sys/wait.h>
 
 #include <compiz-core.h>
+#include "privatedisplay.h"
+#include "privatescreen.h"
 
 char *programName;
 char **programArgv;

@@ -26,6 +26,7 @@
 #include <string.h>
 #include <sys/poll.h>
 #include <assert.h>
+#include <algorithm>
 
 #include <compiz-core.h>
 #include "privatecore.h"
@@ -169,10 +170,10 @@ CompCore::removeDisplay (CompDisplay *d)
 void
 CompCore::eventLoop ()
 {
-    struct timeval tv;
-    CompDisplay    *d;
-    CompTimeout    *t;
-    int		   time;
+    struct timeval  tv;
+    CompDisplay     *d;
+    CompCore::Timer *t;
+    int		    time;
 
     for (d = priv->displays; d; d = d->next)
 	d->setWatchFdHandle (addWatchFd (ConnectionNumber (d->dpy()),
@@ -188,27 +189,29 @@ CompCore::eventLoop ()
 	    d->processEvents ();
 	}
 
-	if (!priv->timeouts.empty())
+	if (!priv->timers.empty())
 	{
 	    gettimeofday (&tv, 0);
-	    priv->handleTimeouts (&tv);
+	    priv->handleTimers (&tv);
 
-	    if ((*priv->timeouts.begin())->minLeft > 0)
+	    if (priv->timers.front()->mMinLeft > 0)
 	    {
-		std::list<CompTimeout *>::iterator it = priv->timeouts.begin();
+		std::list<CompCore::Timer *>::iterator it = priv->timers.begin();
 
 		t = (*it);
-		time = t->maxLeft;
-		while (it != priv->timeouts.end())
+		time = t->mMaxLeft;
+		while (it != priv->timers.end())
 		{
 		    t = (*it);
-		    if (t->minLeft <= time)
+		    if (t->mMinLeft <= time)
 			break;
-		    if (t->maxLeft < time)
-			time = t->maxLeft;
+		    if (t->mMaxLeft < time)
+			time = t->mMaxLeft;
 		    it++;
 		}
 		priv->doPoll (time);
+		gettimeofday (&tv, 0);
+		priv->handleTimers (&tv);
 	    }
 	}
 	else
@@ -271,69 +274,38 @@ CompCore::removeFileWatch (CompFileWatchHandle handle)
 }
 
 void
-PrivateCore::addTimeout (CompTimeout *timeout)
+PrivateCore::addTimer (CompCore::Timer *timer)
 {
-    std::list<CompTimeout *>::iterator it;
+    std::list<CompCore::Timer *>::iterator it;
 
-    for (it = timeouts.begin(); it != timeouts.end(); it++)
+    it = std::find (timers.begin (), timers.end (), timer);
+
+    if (it != timers.end ())
+	return;
+
+    for (it = timers.begin(); it != timers.end(); it++)
     {
-	if (timeout->minTime < (*it)->minLeft)
+	if ((int) timer->mMinTime < (*it)->mMinLeft)
 	    break;
     }
 
-    timeout->minLeft = timeout->minTime;
-    timeout->maxLeft = timeout->maxTime;
+    timer->mMinLeft = timer->mMinTime;
+    timer->mMaxLeft = timer->mMaxTime;
 
-    timeouts.insert (it, timeout);
+    timers.insert (it, timer);
 }
 
-CompTimeoutHandle
-CompCore::addTimeout (int	     minTime,
-		      int	     maxTime,
-		      CallBackProc   callBack,
-		      void	     *closure)
+void
+PrivateCore::removeTimer (CompCore::Timer *timer)
 {
-    CompTimeout *timeout = new CompTimeout();
+    std::list<CompCore::Timer *>::iterator it;
 
-    if (!timeout)
-	return 0;
+    it = std::find (timers.begin (), timers.end (), timer);
 
-    timeout->minTime  = minTime;
-    timeout->maxTime  = (maxTime >= minTime) ? maxTime : minTime;
-    timeout->callBack = callBack;
-    timeout->closure  = closure;
-    timeout->handle   = priv->lastTimeoutHandle++;
+    if (it == timers.end ())
+	return;
 
-    if (priv->lastTimeoutHandle == MAXSHORT)
-	priv->lastTimeoutHandle = 1;
-
-    priv->addTimeout (timeout);
-
-    return timeout->handle;
-}
-
-void *
-CompCore::removeTimeout (CompTimeoutHandle handle)
-{
-    std::list<CompTimeout *>::iterator it;
-    CompTimeout                        *t;
-    void                               *closure = NULL;
-
-    for (it = priv->timeouts.begin(); it != priv->timeouts.end(); it++)
-	if ((*it)->handle == handle)
-	    break;
-
-    if (it == priv->timeouts.end())
-	return NULL;
-
-    t = (*it);
-    priv->timeouts.erase (it);
-
-    closure = t->closure;
-
-    delete t;
-
-    return closure;
+    timers.erase (it);
 }
 
 CompWatchFdHandle
@@ -430,11 +402,11 @@ PrivateCore::doPoll (int timeout)
 }
 
 void
-PrivateCore::handleTimeouts (struct timeval *tv)
+PrivateCore::handleTimers (struct timeval *tv)
 {
-    CompTimeout                        *t;
-    int		                       timeDiff;
-    std::list<CompTimeout *>::iterator it;
+    CompCore::Timer                        *t;
+    int		                           timeDiff;
+    std::list<CompCore::Timer *>::iterator it;
 
     timeDiff = TIMEVALDIFF (tv, &lastTimeout);
 
@@ -442,26 +414,24 @@ PrivateCore::handleTimeouts (struct timeval *tv)
     if (timeDiff < 0)
 	timeDiff = 0;
 
-    for (it = timeouts.begin(); it != timeouts.end(); it++)
+    for (it = timers.begin(); it != timers.end(); it++)
     {
 	t = (*it);
-	t->minLeft -= timeDiff;
-	t->maxLeft -= timeDiff;
+	t->mMinLeft -= timeDiff;
+	t->mMaxLeft -= timeDiff;
     }
 
-    while (timeouts.begin() != timeouts.end() &&
-	   (*timeouts.begin())->minLeft <= 0)
+    while (timers.begin() != timers.end() &&
+	   (*timers.begin())->mMinLeft <= 0)
     {
-	t = (*timeouts.begin());
-	timeouts.pop_front();
+	t = (*timers.begin());
+	timers.pop_front();
 
-	if ((*t->callBack) (t->closure))
+	t->mActive = false;
+	if (t->mCallBack ())
 	{
-	    addTimeout (t);
-	}
-	else
-	{
-	    delete t;
+	    addTimer (t);
+	    t->mActive = true;
 	}
     }
 
@@ -577,8 +547,7 @@ PrivateCore::PrivateCore (CompCore *core) :
     displays (0),
     fileWatch (0),
     lastFileWatchHandle (1),
-    timeouts (0),
-    lastTimeoutHandle (1),
+    timers (0),
     watchFds (0),
     lastWatchFdHandle (1),
     watchPollFds (0),
@@ -589,4 +558,108 @@ PrivateCore::PrivateCore (CompCore *core) :
 
 PrivateCore::~PrivateCore ()
 {
+}
+
+CompCore::Timer::Timer () :
+    mActive (false),
+    mMinTime (0),
+    mMaxTime (0),
+    mMinLeft (0),
+    mMaxLeft (0),
+    mCallBack (NULL)
+{
+}
+
+CompCore::Timer::~Timer ()
+{
+    if (mActive)
+	core->priv->removeTimer (this);
+}
+
+void
+CompCore::Timer::setTimes (unsigned int min, unsigned int max)
+{
+    bool wasActive = mActive;
+    if (mActive)
+	stop ();
+    mMinTime = min;
+    mMaxTime = (min <= max)? max : min;
+
+    if (wasActive)
+	start ();
+}
+	
+void
+CompCore::Timer::setCallback (CompCore::Timer::CallBack callback)
+{
+    bool wasActive = mActive;
+    if (mActive)
+	stop ();
+    mCallBack = callback;
+
+    if (wasActive)
+	start ();
+}
+
+void
+CompCore::Timer::start ()
+{
+    stop ();
+    mActive = true;
+    core->priv->addTimer (this);
+}
+
+void
+CompCore::Timer::start (unsigned int min, unsigned int max)
+{
+    stop ();
+    setTimes (min, max);
+    start ();
+}
+
+void
+CompCore::Timer::start (CompCore::Timer::CallBack callback,
+			unsigned int min, unsigned int max)
+{
+    stop ();
+    setTimes (min, max);
+    setCallback (callback);
+    start ();
+}
+
+void
+CompCore::Timer::stop ()
+{
+    mActive = false;
+    core->priv->removeTimer (this);
+}
+
+unsigned int
+CompCore::Timer::minTime ()
+{
+    return mMinTime;
+}
+
+unsigned int
+CompCore::Timer::maxTime ()
+{
+    return mMaxTime;
+}
+
+unsigned int
+CompCore::Timer::minLeft ()
+{
+    return (mMinLeft < 0)? 0 : mMinLeft;
+}
+
+unsigned int
+CompCore::Timer::maxLeft ()
+{
+    return (mMaxLeft < 0)? 0 : mMaxLeft;
+}
+
+bool
+CompCore::Timer::active ()
+{
+    return mActive;
 }

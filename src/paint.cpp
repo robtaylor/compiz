@@ -102,52 +102,6 @@ prepareXCoords (CompScreen *screen,
 }
 
 void
-CompScreen::paintCursor (CompCursor          *c,
-			 const CompTransform *transform,
-			 Region              region,
-			 unsigned int        mask)
-{
-    WRAPABLE_HND_FUNC(paintCursor, c, transform, region, mask)
-
-    int x1, y1, x2, y2;
-
-    if (!c->image)
-	return;
-
-    x1 = c->x;
-    y1 = c->y;
-    x2 = c->x + c->image->width;
-    y2 = c->y + c->image->height;
-
-    glDisableClientState (GL_TEXTURE_COORD_ARRAY);
-    glEnable (GL_BLEND);
-
-    c->screen->enableTexture (&c->image->texture, COMP_TEXTURE_FILTER_FAST);
-
-    glBegin (GL_QUADS);
-
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x1),
-		  COMP_TEX_COORD_Y (&c->matrix, y2));
-    glVertex2i (x1, y2);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x2),
-		  COMP_TEX_COORD_Y (&c->matrix, y2));
-    glVertex2i (x2, y2);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x2),
-		  COMP_TEX_COORD_Y (&c->matrix, y1));
-    glVertex2i (x2, y1);
-    glTexCoord2f (COMP_TEX_COORD_X (&c->matrix, x1),
-		  COMP_TEX_COORD_Y (&c->matrix, y1));
-    glVertex2i (x1, y1);
-
-    glEnd ();
-
-    c->screen->disableTexture (&c->image->texture);
-
-    glDisable (GL_BLEND);
-    glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-}
-
-void
 PrivateScreen::paintBackground (Region	      region,
 				bool	      transformed)
 {
@@ -161,10 +115,9 @@ PrivateScreen::paintBackground (Region	      region,
 
     if (desktopWindowCount)
     {
-	if (bg->name)
+	if (bg->name ())
 	{
-	    finiTexture (screen, bg);
-	    initTexture (screen, bg);
+	    bg->reset ();
 	}
 
 	backgroundLoaded = false;
@@ -187,26 +140,26 @@ PrivateScreen::paintBackground (Region	      region,
     n = nBox;
     while (n--)
     {
-	*d++ = COMP_TEX_COORD_X (&bg->matrix, pBox->x1);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix, pBox->y2);
+	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x1);
+	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y2);
 
 	*d++ = pBox->x1;
 	*d++ = pBox->y2;
 
-	*d++ = COMP_TEX_COORD_X (&bg->matrix, pBox->x2);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix, pBox->y2);
+	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x2);
+	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y2);
 
 	*d++ = pBox->x2;
 	*d++ = pBox->y2;
 
-	*d++ = COMP_TEX_COORD_X (&bg->matrix, pBox->x2);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix, pBox->y1);
+	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x2);
+	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y1);
 
 	*d++ = pBox->x2;
 	*d++ = pBox->y1;
 
-	*d++ = COMP_TEX_COORD_X (&bg->matrix, pBox->x1);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix, pBox->y1);
+	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x1);
+	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y1);
 
 	*d++ = pBox->x1;
 	*d++ = pBox->y1;
@@ -217,16 +170,16 @@ PrivateScreen::paintBackground (Region	      region,
     glTexCoordPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data);
     glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data + 2);
 
-    if (bg->name)
+    if (bg->name ())
     {
 	if (transformed)
-	    screen->enableTexture (bg, COMP_TEXTURE_FILTER_GOOD);
+	    bg->enable (CompTexture::Good);
 	else
-	    screen->enableTexture (bg, COMP_TEXTURE_FILTER_FAST);
+	    bg->enable (CompTexture::Fast);
 
 	glDrawArrays (GL_QUADS, 0, nBox * 4);
 
-	screen->disableTexture (bg);
+	bg->disable ();
     }
     else
     {
@@ -254,7 +207,6 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 {
     static Region tmpRegion = NULL;
     CompWindow    *w;
-    CompCursor	  *c;
     int		  count, windowMask, odMask;
     CompWindow	  *fullscreenWindow = NULL;
     CompWalker    walk;
@@ -408,10 +360,6 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 
     if (walk.fini)
 	(*walk.fini) (screen, &walk);
-
-    /* paint cursors */
-    for (c = cursors; c; c = c->next)
-	screen->paintCursor (c, transform, tmpRegion, 0);
 }
 
 void
@@ -720,10 +668,10 @@ CompWindow::drawGeometry ()
 }
 
 void
-CompWindow::addGeometry (CompMatrix *matrix,
-			 int        nMatrix,
-			 Region     region,
-			 Region     clip)
+CompWindow::addGeometry (CompTexture::Matrix *matrix,
+			 int                 nMatrix,
+			 Region              region,
+			 Region              clip)
 {
     WRAPABLE_HND_FUNC(addGeometry, matrix, nMatrix, region, clip)
 
@@ -866,50 +814,51 @@ CompWindow::addGeometry (CompMatrix *matrix,
 }
 
 static bool
-enableFragmentProgramAndDrawGeometry (CompWindow	   *w,
-				      CompTexture	   *texture,
-				      const FragmentAttrib *attrib,
-				      int		   filter,
-				      unsigned int	   mask)
+enableFragmentProgramAndDrawGeometry (CompWindow           *w,
+				      CompTexture          *texture,
+				      CompFragment::Attrib &attrib,
+				      CompTexture::Filter  filter,
+				      unsigned int         mask)
 {
-    FragmentAttrib fa = *attrib;
-    CompScreen     *s = w->screen ();
-    Bool	   blending;
+    CompFragment::Attrib fa (attrib);
+    CompScreen           *s = w->screen ();
+    bool                 blending;
 
-    if (s->canDoSaturated () && attrib->saturation != COLOR)
+    if (s->canDoSaturated () && attrib.getSaturation () != COLOR)
     {
 	int param, function;
 
-	param    = allocFragmentParameters (&fa, 1);
-	function = getSaturateFragmentFunction (s, texture, param);
+	param    = fa.allocParameters (1);
+	function =
+	    CompFragment::getSaturateFragmentFunction (s, texture, param);
 
-	addFragmentFunction (&fa, function);
+	fa.addFunction (function);
 
 	(*s->programEnvParameter4f) (GL_FRAGMENT_PROGRAM_ARB, param,
 				     RED_SATURATION_WEIGHT,
 				     GREEN_SATURATION_WEIGHT,
 				     BLUE_SATURATION_WEIGHT,
-				     attrib->saturation / 65535.0f);
+				     attrib.getSaturation () / 65535.0f);
     }
 
-    if (!enableFragmentAttrib (s, &fa, &blending))
+    if (!fa.enable (s, &blending))
 	return false;
 
-    s->enableTexture (texture, filter);
+    texture->enable (filter);
 
     if (mask & PAINT_WINDOW_BLEND_MASK)
     {
 	if (blending)
 	    glEnable (GL_BLEND);
 
-	if (attrib->opacity != OPAQUE || attrib->brightness != BRIGHT)
+	if (attrib.getOpacity () != OPAQUE || attrib.getBrightness () != BRIGHT)
 	{
 	    GLushort color;
 
-	    color = (attrib->opacity * attrib->brightness) >> 16;
+	    color = (attrib.getOpacity () * attrib.getBrightness ()) >> 16;
 
 	    s->setTexEnvMode (GL_MODULATE);
-	    glColor4us (color, color, color, attrib->opacity);
+	    glColor4us (color, color, color, attrib.getOpacity ());
 
 	    w->drawGeometry ();
 
@@ -924,11 +873,11 @@ enableFragmentProgramAndDrawGeometry (CompWindow	   *w,
 	if (blending)
 	    glDisable (GL_BLEND);
     }
-    else if (attrib->brightness != BRIGHT)
+    else if (attrib.getBrightness () != BRIGHT)
     {
 	s->setTexEnvMode (GL_MODULATE);
-	glColor4us (attrib->brightness, attrib->brightness,
-		    attrib->brightness, BRIGHT);
+	glColor4us (attrib.getBrightness (), attrib.getBrightness (),
+		    attrib.getBrightness (), BRIGHT);
 
 	w->drawGeometry ();
 
@@ -940,9 +889,9 @@ enableFragmentProgramAndDrawGeometry (CompWindow	   *w,
 	w->drawGeometry ();
     }
 
-    s->disableTexture (texture);
+    texture->disable ();
 
-    disableFragmentAttrib (s, &fa);
+    fa.disable (s);
 
     return true;
 }
@@ -950,20 +899,20 @@ enableFragmentProgramAndDrawGeometry (CompWindow	   *w,
 static void
 enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 					 CompTexture	      *texture,
-					 const FragmentAttrib *attrib,
-					 int		      filter,
+					 CompFragment::Attrib &attrib,
+					 CompTexture::Filter  filter,
 					 unsigned int	      mask)
 {
     CompScreen *s = w->screen ();
 
-    if (s->canDoSaturated () && attrib->saturation != COLOR)
+    if (s->canDoSaturated () && attrib.getSaturation () != COLOR)
     {
 	GLfloat constant[4];
 
 	if (mask & PAINT_WINDOW_BLEND_MASK)
 	    glEnable (GL_BLEND);
 
-	s->enableTexture (texture, filter);
+	texture->enable (filter);
 
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 
@@ -983,7 +932,7 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 
 	s->activeTexture (GL_TEXTURE1_ARB);
 
-	s->enableTexture (texture, filter);
+	texture->enable (filter);
 
 	glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 
@@ -993,7 +942,7 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 	glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
 	glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
-	if (s->canDoSlightlySaturated () && attrib->saturation > 0)
+	if (s->canDoSlightlySaturated () && attrib.getSaturation () > 0)
 	{
 	    glTexEnvf (GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE);
 	    glTexEnvf (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
@@ -1008,7 +957,7 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 
 	    s->activeTexture (GL_TEXTURE2_ARB);
 
-	    s->enableTexture (texture, filter);
+	    texture->enable (filter);
 
 	    glTexEnvf (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_COMBINE);
 
@@ -1024,19 +973,20 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 	    glTexEnvf (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
 	    glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
 
-	    constant[3] = attrib->saturation / 65535.0f;
+	    constant[3] = attrib.getSaturation () / 65535.0f;
 
 	    glTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, constant);
 
-	    if (attrib->opacity < OPAQUE || attrib->brightness != BRIGHT)
+	    if (attrib.getOpacity () < OPAQUE ||
+		attrib.getBrightness () != BRIGHT)
 	    {
 		s->activeTexture (GL_TEXTURE3_ARB);
 
-		s->enableTexture (texture, filter);
+		texture->enable (filter);
 
-		constant[3] = attrib->opacity / 65535.0f;
+		constant[3] = attrib.getOpacity () / 65535.0f;
 		constant[0] = constant[1] = constant[2] = constant[3] *
-		    attrib->brightness / 65535.0f;
+		    attrib.getBrightness () / 65535.0f;
 
 		glTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, constant);
 
@@ -1056,7 +1006,7 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 
 		w->drawGeometry ();
 
-		s->disableTexture (texture);
+		texture->disable ();
 
 		glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
@@ -1067,7 +1017,7 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 		w->drawGeometry ();
 	    }
 
-	    s->disableTexture (texture);
+	    texture->disable ();
 
 	    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
@@ -1081,9 +1031,9 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 	    glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND0_ALPHA, GL_SRC_ALPHA);
 	    glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND1_ALPHA, GL_SRC_ALPHA);
 
-	    constant[3] = attrib->opacity / 65535.0f;
+	    constant[3] = attrib.getOpacity () / 65535.0f;
 	    constant[0] = constant[1] = constant[2] = constant[3] *
-		attrib->brightness / 65535.0f;
+			  attrib.getBrightness ()/ 65535.0f;
 
 	    constant[0] = 0.5f + 0.5f * RED_SATURATION_WEIGHT   * constant[0];
 	    constant[1] = 0.5f + 0.5f * GREEN_SATURATION_WEIGHT * constant[1];
@@ -1094,13 +1044,13 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 	    w->drawGeometry ();
 	}
 
-	s->disableTexture (texture);
+	texture->disable ();
 
 	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
 	s->activeTexture (GL_TEXTURE0_ARB);
 
-	s->disableTexture (texture);
+	texture->disable ();
 
 	glColor4usv (defaultColor);
 	s->setTexEnvMode (GL_REPLACE);
@@ -1110,19 +1060,20 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
     }
     else
     {
-	s->enableTexture (texture, filter);
+	texture->enable (filter);
 
 	if (mask & PAINT_WINDOW_BLEND_MASK)
 	{
 	    glEnable (GL_BLEND);
-	    if (attrib->opacity != OPAQUE || attrib->brightness != BRIGHT)
+	    if (attrib.getOpacity ()!= OPAQUE ||
+		attrib.getBrightness () != BRIGHT)
 	    {
 		GLushort color;
 
-		color = (attrib->opacity * attrib->brightness) >> 16;
+		color = (attrib.getOpacity () * attrib.getBrightness ()) >> 16;
 
 		s->setTexEnvMode (GL_MODULATE);
-		glColor4us (color, color, color, attrib->opacity);
+		glColor4us (color, color, color, attrib.getOpacity ());
 
 		w->drawGeometry ();
 
@@ -1136,11 +1087,11 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 
 	    glDisable (GL_BLEND);
 	}
-	else if (attrib->brightness != BRIGHT)
+	else if (attrib.getBrightness () != BRIGHT)
 	{
 	    s->setTexEnvMode (GL_MODULATE);
-	    glColor4us (attrib->brightness, attrib->brightness,
-			attrib->brightness, BRIGHT);
+	    glColor4us (attrib.getBrightness (), attrib.getBrightness (),
+			attrib.getBrightness (), BRIGHT);
 
 	    w->drawGeometry ();
 
@@ -1152,18 +1103,18 @@ enableFragmentOperationsAndDrawGeometry (CompWindow	      *w,
 	    w->drawGeometry ();
 	}
 
-	s->disableTexture (texture);
+	texture->disable ();
     }
 }
 
 void
-CompWindow::drawTexture (CompTexture		*texture,
-			 const FragmentAttrib	*attrib,
-			 unsigned int		mask)
+CompWindow::drawTexture (CompTexture          *texture,
+			 CompFragment::Attrib &attrib,
+			 unsigned int         mask)
 {
     WRAPABLE_HND_FUNC(drawTexture, texture, attrib, mask)
 
-    int filter;
+    CompTexture::Filter filter;
 
     if (mask & (PAINT_WINDOW_TRANSFORMED_MASK |
 		PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK))
@@ -1171,8 +1122,8 @@ CompWindow::drawTexture (CompTexture		*texture,
     else
 	filter = priv->screen->filter (NOTHING_TRANS_FILTER);
 
-    if ((!attrib->nFunction && (!priv->screen->lighting () ||
-	 attrib->saturation == COLOR || attrib->saturation == 0)) ||
+    if ((!attrib.hasFunctions () && (!priv->screen->lighting () ||
+	 attrib.getSaturation () == COLOR || attrib.getSaturation () == 0)) ||
 	!enableFragmentProgramAndDrawGeometry (this,
 					       texture,
 					       attrib,
@@ -1189,7 +1140,7 @@ CompWindow::drawTexture (CompTexture		*texture,
 
 bool
 CompWindow::draw (const CompTransform  *transform,
-		  const FragmentAttrib *fragment,
+		  CompFragment::Attrib &fragment,
 		  Region               region,
 		  unsigned int         mask)
 {
@@ -1204,7 +1155,7 @@ CompWindow::draw (const CompTransform  *transform,
     if (priv->attrib.map_state != IsViewable)
 	return true;
 
-    if (!priv->texture->pixmap && !bind ())
+    if (!priv->texture.hasPixmap () && !bind ())
 	return false;
 
     if (mask & PAINT_WINDOW_TRANSLUCENT_MASK)
@@ -1213,7 +1164,7 @@ CompWindow::draw (const CompTransform  *transform,
     priv->vCount = priv->indexCount = 0;
     addGeometry (&priv->matrix, 1, priv->region, region);
     if (priv->vCount)
-	drawTexture (priv->texture, fragment, mask);
+	drawTexture (&priv->texture, fragment, mask);
 
     return true;
 }
@@ -1226,8 +1177,8 @@ CompWindow::paint (const WindowPaintAttrib *attrib,
 {
     WRAPABLE_HND_FUNC_RETURN(bool, paint, attrib, transform, region, mask)
 
-    FragmentAttrib fragment;
-    Bool	   status;
+    CompFragment::Attrib fragment (attrib);
+    bool                 status;
 
     priv->lastPaint = *attrib;
 
@@ -1256,8 +1207,6 @@ CompWindow::paint (const WindowPaintAttrib *attrib,
     if (mask & PAINT_WINDOW_NO_CORE_INSTANCE_MASK)
 	return true;
 
-    initFragmentAttrib (&fragment, attrib);
-
     if (mask & PAINT_WINDOW_TRANSFORMED_MASK ||
         mask & PAINT_WINDOW_WITH_OFFSET_MASK)
     {
@@ -1265,7 +1214,7 @@ CompWindow::paint (const WindowPaintAttrib *attrib,
 	glLoadMatrixf (transform->m);
     }
 
-    status = draw (transform, &fragment, region, mask);
+    status = draw (transform, fragment, region, mask);
 
     if (mask & PAINT_WINDOW_TRANSFORMED_MASK ||
         mask & PAINT_WINDOW_WITH_OFFSET_MASK)

@@ -2,12 +2,125 @@
 #define _COMPSCREEN_H
 
 #include <compwindow.h>
+#include <comptexture.h>
+#include <compfragment.h>
 
 class CompScreen;
 class PrivateScreen;
 
 #define GET_CORE_SCREEN(object) (dynamic_cast<CompScreen *> (object))
 #define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
+
+#define PAINT_SCREEN_REGION_MASK		   (1 << 0)
+#define PAINT_SCREEN_FULL_MASK			   (1 << 1)
+#define PAINT_SCREEN_TRANSFORMED_MASK		   (1 << 2)
+#define PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK (1 << 3)
+#define PAINT_SCREEN_CLEAR_MASK			   (1 << 4)
+#define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
+#define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
+
+#ifndef GLX_EXT_texture_from_pixmap
+#define GLX_BIND_TO_TEXTURE_RGB_EXT        0x20D0
+#define GLX_BIND_TO_TEXTURE_RGBA_EXT       0x20D1
+#define GLX_BIND_TO_MIPMAP_TEXTURE_EXT     0x20D2
+#define GLX_BIND_TO_TEXTURE_TARGETS_EXT    0x20D3
+#define GLX_Y_INVERTED_EXT                 0x20D4
+#define GLX_TEXTURE_FORMAT_EXT             0x20D5
+#define GLX_TEXTURE_TARGET_EXT             0x20D6
+#define GLX_MIPMAP_TEXTURE_EXT             0x20D7
+#define GLX_TEXTURE_FORMAT_NONE_EXT        0x20D8
+#define GLX_TEXTURE_FORMAT_RGB_EXT         0x20D9
+#define GLX_TEXTURE_FORMAT_RGBA_EXT        0x20DA
+#define GLX_TEXTURE_1D_BIT_EXT             0x00000001
+#define GLX_TEXTURE_2D_BIT_EXT             0x00000002
+#define GLX_TEXTURE_RECTANGLE_BIT_EXT      0x00000004
+#define GLX_TEXTURE_1D_EXT                 0x20DB
+#define GLX_TEXTURE_2D_EXT                 0x20DC
+#define GLX_TEXTURE_RECTANGLE_EXT          0x20DD
+#define GLX_FRONT_LEFT_EXT                 0x20DE
+#endif
+
+typedef void (*FuncPtr) (void);
+typedef FuncPtr (*GLXGetProcAddressProc) (const GLubyte *procName);
+
+typedef void    (*GLXBindTexImageProc)    (Display	 *display,
+					   GLXDrawable	 drawable,
+					   int		 buffer,
+					   int		 *attribList);
+typedef void    (*GLXReleaseTexImageProc) (Display	 *display,
+					   GLXDrawable	 drawable,
+					   int		 buffer);
+typedef void    (*GLXQueryDrawableProc)   (Display	 *display,
+					   GLXDrawable	 drawable,
+					   int		 attribute,
+					   unsigned int  *value);
+
+typedef void (*GLXCopySubBufferProc) (Display     *display,
+				      GLXDrawable drawable,
+				      int	  x,
+				      int	  y,
+				      int	  width,
+				      int	  height);
+
+typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
+typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
+				     int	  remainder,
+				     unsigned int *count);
+
+#ifndef GLX_VERSION_1_3
+typedef struct __GLXFBConfigRec *GLXFBConfig;
+#endif
+
+typedef GLXFBConfig *(*GLXGetFBConfigsProc) (Display *display,
+					     int     screen,
+					     int     *nElements);
+typedef int (*GLXGetFBConfigAttribProc) (Display     *display,
+					 GLXFBConfig config,
+					 int	     attribute,
+					 int	     *value);
+typedef GLXPixmap (*GLXCreatePixmapProc) (Display     *display,
+					  GLXFBConfig config,
+					  Pixmap      pixmap,
+					  const int   *attribList);
+
+typedef void (*GLActiveTextureProc) (GLenum texture);
+typedef void (*GLClientActiveTextureProc) (GLenum texture);
+typedef void (*GLMultiTexCoord2fProc) (GLenum, GLfloat, GLfloat);
+
+typedef void (*GLGenProgramsProc) (GLsizei n,
+				   GLuint  *programs);
+typedef void (*GLDeleteProgramsProc) (GLsizei n,
+				      GLuint  *programs);
+typedef void (*GLBindProgramProc) (GLenum target,
+				   GLuint program);
+typedef void (*GLProgramStringProc) (GLenum	  target,
+				     GLenum	  format,
+				     GLsizei	  len,
+				     const GLvoid *string);
+typedef void (*GLProgramParameter4fProc) (GLenum  target,
+					  GLuint  index,
+					  GLfloat x,
+					  GLfloat y,
+					  GLfloat z,
+					  GLfloat w);
+typedef void (*GLGetProgramivProc) (GLenum target,
+				    GLenum pname,
+				    int    *params);
+
+typedef void (*GLGenFramebuffersProc) (GLsizei n,
+				       GLuint  *framebuffers);
+typedef void (*GLDeleteFramebuffersProc) (GLsizei n,
+					  GLuint  *framebuffers);
+typedef void (*GLBindFramebufferProc) (GLenum target,
+				       GLuint framebuffer);
+typedef GLenum (*GLCheckFramebufferStatusProc) (GLenum target);
+typedef void (*GLFramebufferTexture2DProc) (GLenum target,
+					    GLenum attachment,
+					    GLenum textarget,
+					    GLuint texture,
+					    GLint  level);
+typedef void (*GLGenerateMipmapProc) (GLenum target);
+
 
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
@@ -36,10 +149,6 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 	WRAPABLE_DEF(void, outputChangeNotify);
 
 	WRAPABLE_DEF(void, initWindowWalker, CompWalker *walker);
-
-	WRAPABLE_DEF(void, paintCursor, CompCursor *, const CompTransform *,
-		     Region, unsigned int);
-	WRAPABLE_DEF(bool, damageCursorRect, CompCursor *, bool, BoxPtr);
 };
 
 
@@ -114,9 +223,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	Time
 	selectionTimestamp ();
-
-	CompCursor *
-	cursors ();
 
 	void
 	updateWorkareaForScreen ();
@@ -269,12 +375,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	bool
 	updateDefaultIcon ();
 
-	CompCursor *
-	findCursor ();
-
-	CompCursorImage *
-	findCursorImage (unsigned long serial);
-
 	void
 	setCurrentActiveWindowHistory (int x, int y);
 
@@ -354,13 +454,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	textureCompression ();
 
 	bool
-	bindPixmapToTexture (CompTexture *texture,
-			     Pixmap	 pixmap,
-			     int	 width,
-			     int	 height,
-			     int	 depth);
-
-	bool
 	canDoSaturated ();
 
 	bool
@@ -369,39 +462,19 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	bool
 	lighting ();
 
-	int
+	CompTexture::Filter
 	filter (int);
 
-	CompFunction *&
-	fragmentFunctions ();
-
-	CompProgram *&
-	fragmentPrograms ();
-
-	int &
-	lastFunctionId ();
-
-	int &
-	getSaturateFunction (int, int);
+	CompFragment::Storage *
+	fragmentStorage ();
 
 	bool
 	fragmentProgram ();
+
+	bool
+	framebufferObject ();
 	
-	void
-	releasePixmapFromTexture (CompTexture *texture);
-
-	void
-	enableTexture (CompTexture	 *texture,
-		       CompTextureFilter filter);
-
-	void
-	disableTexture (CompTexture *texture);
-
-	void
-	addCursor ();
-
-	CompCursorImage *&
-	cursorImages ();
+	CompFBConfig * glxPixmapFBConfig (unsigned int depth);
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
@@ -429,10 +502,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	WRAPABLE_HND(void, outputChangeNotify);
 
 	WRAPABLE_HND(void, initWindowWalker, CompWalker *walker);
-
-	WRAPABLE_HND(void, paintCursor, CompCursor *, const CompTransform *,
-		     Region, unsigned int);
-	WRAPABLE_HND(bool, damageCursorRect, CompCursor *, bool, BoxPtr);
 
 	GLXBindTexImageProc      bindTexImage;
 	GLXReleaseTexImageProc   releaseTexImage;
@@ -505,9 +574,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	static CompOption *
 	getScreenOptions ( CompObject *object,
 			  int	     *count);
-
-	static bool
-	startupSequenceTimeout (void *data);
 
 	static void
 	compScreenSnEvent (SnMonitorEvent *event,

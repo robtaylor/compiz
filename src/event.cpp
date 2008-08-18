@@ -32,6 +32,8 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xfixes.h>
 
+#include <boost/bind.hpp>
+
 #include <compiz-core.h>
 #include "privatedisplay.h"
 #include "privatescreen.h"
@@ -86,12 +88,6 @@ CompWindow::handleSyncAlarm ()
 {
     if (priv->syncWait)
     {
-	if (priv->syncWaitHandle)
-	{
-	    core->removeTimeout (priv->syncWaitHandle);
-	    priv->syncWaitHandle = 0;
-	}
-
 	priv->syncWait = FALSE;
 
 	if (resize (priv->syncGeometry))
@@ -120,15 +116,13 @@ CompWindow::handleSyncAlarm ()
 	}
     }
 
-    priv->syncWaitHandle = 0;
     return false;
 }
 
 
 static bool
-autoRaiseTimeout (void *closure)
+autoRaiseTimeout (CompDisplay *display)
 {
-    CompDisplay *display = (CompDisplay *) closure;
     CompWindow  *w = display->findWindow (display->activeWindow ());
 
     if (display->autoRaiseWindow () == display->activeWindow () ||
@@ -672,18 +666,14 @@ triggerAllEdgeEnterBindings (CompDisplay     *d,
 }
 
 static bool
-delayedEdgeTimeout (void *closure)
+delayedEdgeTimeout (CompDisplay *d, CompDelayedEdgeSettings *settings)
 {
-    CompDelayedEdgeSettings *settings = (CompDelayedEdgeSettings *) closure;
-
-    triggerAllEdgeEnterBindings (settings->d,
+    triggerAllEdgeEnterBindings (d,
 				 settings->state,
 				 ~CompActionStateNoEdgeDelay,
 				 settings->edge,
 				 settings->option,
 				 settings->nOption);
-
-    free (settings);
 
     return false;
 }
@@ -695,7 +685,6 @@ PrivateDisplay::triggerEdgeEnter (unsigned int    edge,
 				  unsigned int    nArgument)
 {
     int                     delay;
-    CompDelayedEdgeSettings *delayedSettings = NULL;
 
     delay = opt[COMP_DISPLAY_OPTION_EDGE_DELAY].value.i;
 
@@ -704,28 +693,20 @@ PrivateDisplay::triggerEdgeEnter (unsigned int    edge,
 
     if (delay > 0)
     {
-	delayedSettings = (CompDelayedEdgeSettings *)
-	    malloc (sizeof (CompDelayedEdgeSettings));
-	if (delayedSettings)
-	{
-	    delayedSettings->d       = display;
-	    delayedSettings->edge    = edge;
-	    delayedSettings->state   = state;
-	    delayedSettings->nOption = nArgument;
-	}
-    }
-
-    if (delayedSettings)
-    {
 	CompActionState delayState;
 	int             i;
+		    
+	edgeDelaySettings.edge    = edge;
+	edgeDelaySettings.state   = state;
+	edgeDelaySettings.nOption = nArgument;
+
 
 	for (i = 0; i < nArgument; i++)
-	    delayedSettings->option[i] = argument[i];
+	    edgeDelaySettings.option[i] = argument[i];
 
-	edgeDelayHandle = core->addTimeout (delay, (float) delay * 1.2,
-					    delayedEdgeTimeout,
-					    delayedSettings);
+	edgeDelayTimer.start  (
+	    boost::bind (delayedEdgeTimeout, display, &edgeDelaySettings),
+			 delay, (float) delay * 1.2);
 
 	delayState = CompActionStateNoEdgeDelay;
 	if (triggerAllEdgeEnterBindings (display, state, delayState,
@@ -875,15 +856,8 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	    if (!s)
 		return false;
 
-	    if (edgeDelayHandle)
-	    {
-		void *closure;
-
-		closure = core->removeTimeout (edgeDelayHandle);
-		if (closure)
-		    free (closure);
-		edgeDelayHandle = 0;
-	    }
+	    if (edgeDelayTimer.active ())
+		edgeDelayTimer.stop ();
 
 	    if (edgeWindow && edgeWindow != event->xcrossing.window)
 	    {
@@ -1921,11 +1895,10 @@ CompDisplay::handleEvent (XEvent *event)
 
 		if (!priv->opt[COMP_DISPLAY_OPTION_CLICK_TO_FOCUS].value.b)
 		{
-		    if (priv->autoRaiseHandle &&
+		    if (priv->autoRaiseTimer.active () &&
 			priv->autoRaiseWindow != w->id ())
 		    {
-			core->removeTimeout (priv->autoRaiseHandle);
-			priv->autoRaiseHandle = 0;
+			priv->autoRaiseTimer.stop ();
 		    }
 
 		    if (w->type () & ~(CompWindowTypeDockMask |
@@ -1938,9 +1911,9 @@ CompDisplay::handleEvent (XEvent *event)
 			    if (delay > 0)
 			    {
 				priv->autoRaiseWindow = w->id ();
-				priv->autoRaiseHandle =
-				    core->addTimeout (delay, (float) delay * 1.2,
-						      autoRaiseTimeout, this);
+				priv->autoRaiseTimer.start (
+				    boost::bind (autoRaiseTimeout, this),
+				    delay, (float) delay * 1.2);
 			    }
 			    else
 			    {

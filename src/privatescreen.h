@@ -5,6 +5,46 @@
 #include <compscreen.h>
 #include <compsize.h>
 #include <comppoint.h>
+#include <comptexture.h>
+#include <compfragment.h>
+#include "privatefragment.h"
+
+#define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
+#define COMP_SCREEN_OPTION_LIGHTING		  1
+#define COMP_SCREEN_OPTION_REFRESH_RATE		  2
+#define COMP_SCREEN_OPTION_HSIZE		  3
+#define COMP_SCREEN_OPTION_VSIZE		  4
+#define COMP_SCREEN_OPTION_OPACITY_STEP		  5
+#define COMP_SCREEN_OPTION_UNREDIRECT_FS	  6
+#define COMP_SCREEN_OPTION_DEFAULT_ICON		  7
+#define COMP_SCREEN_OPTION_SYNC_TO_VBLANK	  8
+#define COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS	  9
+#define COMP_SCREEN_OPTION_DETECT_OUTPUTS	  10
+#define COMP_SCREEN_OPTION_OUTPUTS		  11
+#define COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS	  12
+#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_LEVEL 13
+#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_MATCH 14
+#define COMP_SCREEN_OPTION_TEXTURE_COMPRESSION	  15
+#define COMP_SCREEN_OPTION_FORCE_INDEPENDENT      16
+#define COMP_SCREEN_OPTION_NUM		          17
+
+#define OUTPUT_OVERLAP_MODE_SMART          0
+#define OUTPUT_OVERLAP_MODE_PREFER_LARGER  1
+#define OUTPUT_OVERLAP_MODE_PREFER_SMALLER 2
+#define OUTPUT_OVERLAP_MODE_LAST           OUTPUT_OVERLAP_MODE_PREFER_SMALLER
+
+#define FOCUS_PREVENTION_LEVEL_NONE     0
+#define FOCUS_PREVENTION_LEVEL_LOW      1
+#define FOCUS_PREVENTION_LEVEL_HIGH     2
+#define FOCUS_PREVENTION_LEVEL_VERYHIGH 3
+#define FOCUS_PREVENTION_LEVEL_LAST     FOCUS_PREVENTION_LEVEL_VERYHIGH
+
+#define COMP_SCREEN_DAMAGE_PENDING_MASK (1 << 0)
+#define COMP_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
+#define COMP_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
+
+extern const CompMetadataOptionInfo
+coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM];
 
 class PrivateScreen {
 
@@ -66,7 +106,7 @@ class PrivateScreen {
 	void
 	updateScreenBackground (CompTexture *texture);
 
-	void
+	bool
 	handleStartupSequenceTimeout();
 
 	void
@@ -125,9 +165,6 @@ class PrivateScreen {
 			   Region	       region,
 			   CompOutput	       *output,
 			   unsigned int	       mask);
-
-	static bool
-	paintTimeout (void *closure);
 
     public:
 
@@ -192,9 +229,9 @@ class PrivateScreen {
 
 	SnMonitorContext    *snContext;
 	CompStartupSequence *startupSequences;
-	unsigned int        startupSequenceTimeoutHandle;
+	CompCore::Timer     startupSequenceTimer;
 
-	int filter[3];
+	CompTexture::Filter filter[3];
 
 	CompGroup *groups;
 
@@ -229,12 +266,7 @@ class PrivateScreen {
 	int		   timeLeft;
 	Bool	   pendingCommands;
 
-	int lastFunctionId;
-
-	CompFunction *fragmentFunctions;
-	CompProgram  *fragmentPrograms;
-
-	int saturateFunction[2][64];
+	CompFragment::Storage fragmentStorage;
 
 	GLfloat projection[16];
 
@@ -250,15 +282,12 @@ class PrivateScreen {
 	unsigned long *desktopHintData;
 	int           desktopHintSize;
 
-	CompCursor      *cursors;
-	CompCursorImage *cursorImages;
-
 	GLXContext ctx;
 
 	CompOption opt[COMP_SCREEN_OPTION_NUM];
 
 
-	CompTimeoutHandle paintHandle;
+	CompCore::Timer paintTimer;
 
 	GLXGetProcAddressProc    getProcAddress;
 
