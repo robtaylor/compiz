@@ -1479,9 +1479,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     idle (true),
     timeLeft (0),
     pendingCommands (true),
-    lastFunctionId (0),
-    fragmentFunctions (0),
-    fragmentPrograms (0),
+    fragmentStorage (),
     clearBuffers (true),
     lighting (false),
     slowAnimations (false),
@@ -1491,7 +1489,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     paintTimer (),
     getProcAddress (0)
 {
-    memset (saturateFunction, 0, sizeof (saturateFunction));
     memset (history, 0, sizeof (history));
     gettimeofday (&lastRedraw, 0);
 }
@@ -2324,13 +2321,6 @@ CompScreen::~CompScreen ()
 
     if (priv->damage)
 	XDestroyRegion (priv->damage);
-
-    /* XXX: Maybe we should free all fragment functions here? But
-       the definition of CompFunction is private to fragment.c ... */
-    for (i = 0; i < 2; i++)
-	for (j = 0; j < 64; j++)
-	    if (priv->saturateFunction[i][j])
-		destroyFragmentFunction (this, priv->saturateFunction[i][j]);
 
     compFiniScreenOptions (this, priv->opt, COMP_SCREEN_OPTION_NUM);
 
@@ -4688,28 +4678,10 @@ CompScreen::filter (int filter)
     return priv->filter[filter];
 }
 
-CompFunction *&
-CompScreen::fragmentFunctions ()
+CompFragment::Storage *
+CompScreen::fragmentStorage ()
 {
-    return priv->fragmentFunctions;
-}
-
-CompProgram *&
-CompScreen::fragmentPrograms ()
-{
-    return priv->fragmentPrograms;
-}
-
-int &
-CompScreen::lastFunctionId ()
-{
-    return priv->lastFunctionId;
-}
-
-int &
-CompScreen::getSaturateFunction (int target, int param)
-{
-    return priv->saturateFunction[target][param];
+    return &priv->fragmentStorage;
 }
 
 bool

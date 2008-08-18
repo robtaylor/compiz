@@ -4,6 +4,7 @@
 #include <compsize.h>
 #include <comppoint.h>
 #include <comptexture.h>
+#include <compfragment.h>
 
 class CompWindow;
 class PrivateWindow;
@@ -164,11 +165,11 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 	WRAPABLE_DEF(bool, paint, const WindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_DEF(bool, draw, const CompTransform *,
-		     const FragmentAttrib *, Region, unsigned int);
+		     CompFragment::Attrib &, Region, unsigned int);
 	WRAPABLE_DEF(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_DEF(void, drawTexture, CompTexture *texture,
-		     const FragmentAttrib *, unsigned int);
+		     CompFragment::Attrib &, unsigned int);
 	WRAPABLE_DEF(void, drawGeometry);
 	WRAPABLE_DEF(bool, damageRect, bool, BoxPtr);
 
@@ -607,11 +608,11 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
     	WRAPABLE_HND(bool, paint, const WindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_HND(bool, draw, const CompTransform *,
-		     const FragmentAttrib *, Region, unsigned int);
+		     CompFragment::Attrib &, Region, unsigned int);
 	WRAPABLE_HND(void, addGeometry, CompTexture::Matrix *matrix,
 		     int, Region, Region);
 	WRAPABLE_HND(void, drawTexture, CompTexture *texture,
-		     const FragmentAttrib *, unsigned int);
+		     CompFragment::Attrib &, unsigned int);
 	WRAPABLE_HND(void, drawGeometry);
 
 	

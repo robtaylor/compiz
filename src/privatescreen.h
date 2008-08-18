@@ -6,6 +6,8 @@
 #include <compsize.h>
 #include <comppoint.h>
 #include <comptexture.h>
+#include <compfragment.h>
+#include "privatefragment.h"
 
 #define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
 #define COMP_SCREEN_OPTION_LIGHTING		  1
@@ -264,12 +266,7 @@ class PrivateScreen {
 	int		   timeLeft;
 	Bool	   pendingCommands;
 
-	int lastFunctionId;
-
-	CompFunction *fragmentFunctions;
-	CompProgram  *fragmentPrograms;
-
-	int saturateFunction[2][64];
+	CompFragment::Storage fragmentStorage;
 
 	GLfloat projection[16];
 

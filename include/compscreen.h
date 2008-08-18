@@ -3,6 +3,7 @@
 
 #include <compwindow.h>
 #include <comptexture.h>
+#include <compfragment.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -464,17 +465,8 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	CompTexture::Filter
 	filter (int);
 
-	CompFunction *&
-	fragmentFunctions ();
-
-	CompProgram *&
-	fragmentPrograms ();
-
-	int &
-	lastFunctionId ();
-
-	int &
-	getSaturateFunction (int, int);
+	CompFragment::Storage *
+	fragmentStorage ();
 
 	bool
 	fragmentProgram ();

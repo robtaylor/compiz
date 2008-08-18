@@ -82,10 +82,6 @@ COMPIZ_BEGIN_DECLS
 class CompTexture;
 class CompIcon;
 typedef struct _CompWindowExtents CompWindowExtents;
-typedef struct _CompProgram	  CompProgram;
-typedef struct _CompFunction	  CompFunction;
-typedef struct _CompFunctionData  CompFunctionData;
-typedef struct _FragmentAttrib    FragmentAttrib;
 class CompMatch;
 class CompOutput;
 typedef struct _CompWalker        CompWalker;
@@ -711,99 +707,6 @@ getPluginDisplayIndex (CompDisplay *d,
 
 /* fragment.c */
 
-#define MAX_FRAGMENT_FUNCTIONS 16
-
-struct _FragmentAttrib {
-    GLushort opacity;
-    GLushort brightness;
-    GLushort saturation;
-    int	     nTexture;
-    int	     function[MAX_FRAGMENT_FUNCTIONS];
-    int	     nFunction;
-    int	     nParam;
-};
-
-CompFunctionData *
-createFunctionData (void);
-
-void
-destroyFunctionData (CompFunctionData *data);
-
-Bool
-addTempHeaderOpToFunctionData (CompFunctionData *data,
-			       const char	*name);
-
-Bool
-addParamHeaderOpToFunctionData (CompFunctionData *data,
-				const char	 *name);
-
-Bool
-addAttribHeaderOpToFunctionData (CompFunctionData *data,
-				 const char	  *name);
-
-#define COMP_FETCH_TARGET_2D   0
-#define COMP_FETCH_TARGET_RECT 1
-#define COMP_FETCH_TARGET_NUM  2
-
-Bool
-addFetchOpToFunctionData (CompFunctionData *data,
-			  const char	   *dst,
-			  const char	   *offset,
-			  int		   target);
-
-Bool
-addColorOpToFunctionData (CompFunctionData *data,
-			  const char	   *dst,
-			  const char	   *src);
-
-Bool
-addDataOpToFunctionData (CompFunctionData *data,
-			 const char	  *str,
-			 ...);
-
-Bool
-addBlendOpToFunctionData (CompFunctionData *data,
-			  const char	   *str,
-			  ...);
-
-int
-createFragmentFunction (CompScreen	 *s,
-			const char	 *name,
-			CompFunctionData *data);
-
-void
-destroyFragmentFunction (CompScreen *s,
-			 int	    id);
-
-int
-getSaturateFragmentFunction (CompScreen  *s,
-			     CompTexture *texture,
-			     int	 param);
-
-int
-allocFragmentTextureUnits (FragmentAttrib *attrib,
-			   int		  nTexture);
-
-int
-allocFragmentParameters (FragmentAttrib *attrib,
-			 int		nParam);
-
-void
-addFragmentFunction (FragmentAttrib *attrib,
-		     int	    function);
-
-void
-initFragmentAttrib (FragmentAttrib	    *attrib,
-		    const WindowPaintAttrib *paint);
-
-bool
-enableFragmentAttrib (CompScreen     *s,
-		      FragmentAttrib *attrib,
-		      Bool	     *blending);
-
-void
-disableFragmentAttrib (CompScreen     *s,
-		       FragmentAttrib *attrib);
 
 
 /* matrix.c */
@@ -967,6 +870,9 @@ COMPIZ_END_DECLS
 #include <list>
 
 typedef std::string CompString;
+
+CompString compPrintf (const char *format, ...);
+CompString compPrintf (const char *format, va_list ap);
 
 #include <comprect.h>
 #include <compoutput.h>

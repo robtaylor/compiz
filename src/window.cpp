@@ -4180,9 +4180,9 @@ WindowInterface::paint (const WindowPaintAttrib *attrib,
 
 bool
 WindowInterface::draw (const CompTransform  *transform,
-		       const FragmentAttrib *fragment,
-		       Region		     region,
-		       unsigned int	     mask)
+		       CompFragment::Attrib &fragment,
+		       Region               region,
+		       unsigned int         mask)
     WRAPABLE_DEF_FUNC_RETURN(draw, transform, fragment, region, mask)
 
 void
@@ -4193,9 +4193,9 @@ WindowInterface::addGeometry (CompTexture::Matrix *matrix,
     WRAPABLE_DEF_FUNC(addGeometry, matrix, nMatrix, region, clip)
 
 void
-WindowInterface::drawTexture (CompTexture	   *texture,
-			      const FragmentAttrib *fragment,
-			      unsigned int	   mask)
+WindowInterface::drawTexture (CompTexture          *texture,
+			      CompFragment::Attrib &fragment,
+			      unsigned int         mask)
     WRAPABLE_DEF_FUNC(drawTexture, texture, fragment, mask)
 
 void
