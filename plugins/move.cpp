@@ -55,13 +55,13 @@ class MovePluginVTable : public CompPluginVTable
 	virtual void
 	finiObject (CompObject *object);
 
-	CompOption *
-	getObjectOptions (CompObject *object, int *count);
+	CompOption::Vector &
+	getObjectOptions (CompObject *object);
 
 	bool
-	setObjectOption (CompObject *object,
-			 const char *name,
-			 CompOptionValue *value);
+	setObjectOption (CompObject        *object,
+			 const char        *name,
+			 CompOption::Value &value);
 };
 
 
@@ -100,7 +100,8 @@ static int windowPrivateIndex;
 class MoveDisplay : public DisplayInterface {
 
     public:
-	MoveDisplay (CompDisplay *display) : display (display)
+	MoveDisplay (CompDisplay *display) : display (display),
+		     opt(MOVE_DISPLAY_OPTION_NUM)
 	{
 	    display->add (this);
 	    DisplayInterface::setHandler (display);
@@ -111,7 +112,7 @@ class MoveDisplay : public DisplayInterface {
 	
 	CompDisplay *display;
 
-	CompOption opt[MOVE_DISPLAY_OPTION_NUM];
+	CompOption::Vector opt;
 
 	CompWindow *w;
 	int	       savedX;
@@ -183,16 +184,15 @@ class MoveWindow : public WindowInterface {
 static bool
 moveInitiate (CompDisplay     *d,
 	      CompAction      *action,
-	      CompActionState state,
-	      CompOption      *option,
-	      int	      nOption)
+	      CompAction::State state,
+	      CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
     MOVE_DISPLAY (d);
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findWindow (xid);
     if (w && (w->actions () & CompWindowActionMoveMask))
@@ -205,14 +205,14 @@ moveInitiate (CompDisplay     *d,
 
 	MOVE_SCREEN (w->screen ());
 
-	mods = getIntOptionNamed (option, nOption, "modifiers", 0);
+	mods = CompOption::getIntOptionNamed (options, "modifiers", 0);
 
-	x = getIntOptionNamed (option, nOption, "x",
+	x = CompOption::getIntOptionNamed (options, "x",
 			       w->attrib ().x + (w->width () / 2));
-	y = getIntOptionNamed (option, nOption, "y",
+	y = CompOption::getIntOptionNamed (options, "y",
 			       w->attrib ().y + (w->height () / 2));
 
-	button = getIntOptionNamed (option, nOption, "button", -1);
+	button = CompOption::getIntOptionNamed (options, "button", -1);
 
 	if (s->otherGrabExist ("move", 0))
 	    return FALSE;
@@ -228,8 +228,8 @@ moveInitiate (CompDisplay     *d,
 	if (w->attrib ().override_redirect)
 	    return FALSE;
 
-	if (state & CompActionStateInitButton)
-	    action->state |= CompActionStateTermButton;
+	if (state & CompAction::StateInitButton)
+	    action->setState (action->state () | CompAction::StateTermButton);
 
 	if (md->region)
 	{
@@ -268,7 +268,7 @@ moveInitiate (CompDisplay     *d,
 	    w->grabNotify (x, y, mods,CompWindowGrabMoveMask |
 			   CompWindowGrabButtonMask);
 
-	    if (state & CompActionStateInitKey)
+	    if (state & CompAction::StateInitKey)
 	    {
 		int xRoot, yRoot;
 
@@ -289,9 +289,8 @@ moveInitiate (CompDisplay     *d,
 static bool
 moveTerminate (CompDisplay     *d,
 	       CompAction      *action,
-	       CompActionState state,
-	       CompOption      *option,
-	       int	       nOption)
+	       CompAction::State state,
+	       CompOption::Vector &options)
 {
     MOVE_DISPLAY (d);
 
@@ -299,7 +298,7 @@ moveTerminate (CompDisplay     *d,
     {
 	MOVE_SCREEN (md->w->screen ());
 
-	if (state & CompActionStateCancel)
+	if (state & CompAction::StateCancel)
 	    md->w->move (md->savedX - md->w->attrib ().x,
 			md->savedY - md->w->attrib ().y,
 			TRUE, FALSE);
@@ -326,7 +325,7 @@ moveTerminate (CompDisplay     *d,
 	md->releaseButton = 0;
     }
 
-    action->state &= ~(CompActionStateTermKey | CompActionStateTermButton);
+    action->setState (action->state () & ~(CompAction::StateTermKey | CompAction::StateTermButton));
 
     return FALSE;
 }
@@ -464,7 +463,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    s->getWorkareaForOutput (w->outputDevice (), &workArea);
 
-	    if (md->opt[MOVE_DISPLAY_OPTION_CONSTRAIN_Y].value.b)
+	    if (md->opt[MOVE_DISPLAY_OPTION_CONSTRAIN_Y].value ().b ())
 	    {
 		if (!md->region)
 		    md->region = moveGetYConstrainRegion (s);
@@ -520,7 +519,7 @@ moveHandleMotionEvent (CompScreen *s,
 		}
 	    }
 
-	    if (md->opt[MOVE_DISPLAY_OPTION_SNAPOFF_MAXIMIZED].value.b)
+	    if (md->opt[MOVE_DISPLAY_OPTION_SNAPOFF_MAXIMIZED].value ().b ())
 	    {
 		if (w->state () & CompWindowStateMaximizedVertMask)
 		{
@@ -609,7 +608,7 @@ moveHandleMotionEvent (CompScreen *s,
 			wY + dy - w->attrib ().y,
 			TRUE, FALSE);
 
-	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value.b)
+	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value ().b ())
 	    {
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
@@ -649,9 +648,9 @@ MoveDisplay::handleEvent (XEvent *event)
 		{
 		    CompAction *action;
 
-		    action = &opt[MOVE_DISPLAY_OPTION_INITIATE_BUTTON].value.action;
-		    moveTerminate (display, action, CompActionStateTermButton,
-				   NULL, 0);
+		    action = &opt[MOVE_DISPLAY_OPTION_INITIATE_BUTTON].value ().action ();
+		    moveTerminate (display, action, CompAction::StateTermButton,
+				   noOptions);
 		}
 	    }
 	}
@@ -701,21 +700,19 @@ MoveDisplay::handleEvent (XEvent *event)
 		w = display->findWindow (event->xclient.window);
 		if (w)
 		{
-		    CompOption o[5];
+		    CompOption::Vector o;
 		    int	       xRoot, yRoot;
 		    int	       option;
 
-		    o[0].type    = CompOptionTypeInt;
-		    o[0].name    = "window";
-		    o[0].value.i = event->xclient.window;
+		    o.push_back (CompOption ("window", CompOption::TypeInt));
+		    o[0].value ().set ((int) event->xclient.window);
 
 		    if (event->xclient.data.l[2] == WmMoveResizeMoveKeyboard)
 		    {
 			option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
 
-			moveInitiate (display, &opt[option].value.action,
-				      CompActionStateInitKey,
-				      o, 1);
+			moveInitiate (display, &opt[option].value ().action (),
+				      CompAction::StateInitKey, o);
 		    }
 		    else
 		    {
@@ -732,27 +729,22 @@ MoveDisplay::handleEvent (XEvent *event)
 			/* TODO: not only button 1 */
 			if (mods & Button1Mask)
 			{
-			    o[1].type	 = CompOptionTypeInt;
-			    o[1].name	 = "modifiers";
-			    o[1].value.i = mods;
+			    o.push_back (CompOption ("modifiers", CompOption::TypeInt));
+			    o[1].value ().set ((int) mods);
 
-			    o[2].type	 = CompOptionTypeInt;
-			    o[2].name	 = "x";
-			    o[2].value.i = event->xclient.data.l[0];
+			    o.push_back (CompOption ("x", CompOption::TypeInt));
+			    o[2].value ().set ((int) event->xclient.data.l[0]);
 
-			    o[3].type	 = CompOptionTypeInt;
-			    o[3].name	 = "y";
-			    o[3].value.i = event->xclient.data.l[1];
+			    o.push_back (CompOption ("y", CompOption::TypeInt));
+			    o[3].value ().set ((int) event->xclient.data.l[1]);
 
-			    o[4].type    = CompOptionTypeInt;
-			    o[4].name    = "button";
-			    o[4].value.i = event->xclient.data.l[3] ?
-				           event->xclient.data.l[3] : -1;
+			    o.push_back (CompOption ("button", CompOption::TypeInt));
+			    o[4].value ().set ((int) (event->xclient.data.l[3] ?
+				           event->xclient.data.l[3] : -1));
 
 			    moveInitiate (display,
-					  &opt[option].value.action,
-					  CompActionStateInitButton,
-					  o, 5);
+					  &opt[option].value ().action (),
+					  CompAction::StateInitButton, o);
 
 			    moveHandleMotionEvent (w->screen (), xRoot, yRoot);
 			}
@@ -768,12 +760,12 @@ MoveDisplay::handleEvent (XEvent *event)
 
 	    option = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
 	    moveTerminate (display,
-			   &opt[option].value.action,
-			   0, NULL, 0);
+			   &opt[option].value ().action (),
+			   0, noOptions);
 	    option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
 	    moveTerminate (display,
-			   &opt[option].value.action,
-			   0, NULL, 0);
+			   &opt[option].value ().action (),
+			   0, noOptions);
 	}
 	break;
     case UnmapNotify:
@@ -783,12 +775,12 @@ MoveDisplay::handleEvent (XEvent *event)
 
 	    option = MOVE_DISPLAY_OPTION_INITIATE_BUTTON;
 	    moveTerminate (display,
-			   &opt[option].value.action,
-			   0, NULL, 0);
+			   &opt[option].value ().action (),
+			   0, noOptions);
 	    option = MOVE_DISPLAY_OPTION_INITIATE_KEY;
 	    moveTerminate (display,
-			   &opt[option].value.action,
-			   0, NULL, 0);
+			   &opt[option].value ().action (),
+			   0, noOptions);
 	}
     default:
 	break;
@@ -827,42 +819,39 @@ MoveWindow::paint (const WindowPaintAttrib *attrib,
     return status;
 }
 
-static CompOption *
-moveGetDisplayOptions (CompObject  *object,
-		       int	   *count)
+static CompOption::Vector &
+moveGetDisplayOptions (CompObject  *object)
 {
     CORE_DISPLAY (object);
     MOVE_DISPLAY (d);
-
-    *count = NUM_OPTIONS (md);
     return md->opt;
 }
 
 static bool
 moveSetDisplayOption (CompObject      *object,
 		      const char      *name,
-		      CompOptionValue *value)
+		      CompOption::Value &value)
 {
     CompOption *o;
-    int	       index;
+    unsigned int index;
 
     CORE_DISPLAY (object);
     MOVE_DISPLAY (d);
 
-    o = compFindOption (md->opt, NUM_OPTIONS (md), name, &index);
+    o = CompOption::findOption (md->opt, name, &index);
     if (!o)
 	return FALSE;
 
     switch (index) {
     case MOVE_DISPLAY_OPTION_OPACITY:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
-	    md->moveOpacity = (o->value.i * OPAQUE) / 100;
+	    md->moveOpacity = (o->value ().i () * OPAQUE) / 100;
 	    return TRUE;
 	}
 	break;
     default:
-	return compSetDisplayOption (d, o, value);
+	return CompOption::setDisplayOption (d, *o, value);
     }
 
     return FALSE;
@@ -895,15 +884,14 @@ moveInitDisplay (CompObject *o)
     if (!compInitDisplayOptionsFromMetadata (d,
 					     &moveMetadata,
 					     moveDisplayOptionInfo,
-					     md->opt,
-					     MOVE_DISPLAY_OPTION_NUM))
+					     md->opt))
     {
 	delete md;
 	return false;
     }
 
     md->moveOpacity =
-	(md->opt[MOVE_DISPLAY_OPTION_OPACITY].value.i * OPAQUE) / 100;
+	(md->opt[MOVE_DISPLAY_OPTION_OPACITY].value ().i () * OPAQUE) / 100;
 
     md->w             = 0;
     md->region        = NULL;
@@ -926,7 +914,7 @@ moveFiniDisplay (CompObject *o)
     CORE_DISPLAY (o);
     MOVE_DISPLAY (d);
 
-    compFiniDisplayOptions (d, md->opt, MOVE_DISPLAY_OPTION_NUM);
+    CompOption::finiDisplayOptions (d, md->opt);
 
     delete md;
 }
@@ -1016,9 +1004,8 @@ MovePluginVTable::finiObject (CompObject *o)
     DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (o));
 }
 
-CompOption *
-MovePluginVTable::getObjectOptions (CompObject *object,
-		      int	 *count)
+CompOption::Vector &
+MovePluginVTable::getObjectOptions (CompObject *object)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
 	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
@@ -1026,20 +1013,20 @@ MovePluginVTable::getObjectOptions (CompObject *object,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (object, count));
+		     noOptions, (object));
 }
 
 bool
 MovePluginVTable::setObjectOption (CompObject      *object,
 		     const char      *name,
-		     CompOptionValue *value)
+		     CompOption::Value &value)
 {
     static SetPluginObjectOptionProc dispTab[] = {
 	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
 	(SetPluginObjectOptionProc) moveSetDisplayOption
     };
 
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
+    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
 		     (object, name, value));
 }
 

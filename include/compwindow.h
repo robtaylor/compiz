@@ -645,90 +645,74 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	// static action functions
 	static bool
-	closeWin (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	closeWin (CompDisplay        *d,
+		  CompAction         *action,
+		  CompAction::State  state,
+		  CompOption::Vector &options);
 
 	static bool
-	unmaximize (CompDisplay     *d,
-		    CompAction      *action,
-		    CompActionState state,
-		    CompOption      *option,
-		    int		    nOption);
+	unmaximizeAction (CompDisplay        *d,
+			  CompAction         *action,
+			  CompAction::State  state,
+			  CompOption::Vector &options);
 
 	static bool
-	minimize (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	minimizeAction (CompDisplay        *d,
+			CompAction         *action,
+			CompAction::State  state,
+			CompOption::Vector &options);
 
 	static bool
-	maximize (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	maximizeAction (CompDisplay        *d,
+			CompAction         *action,
+			CompAction::State  state,
+			CompOption::Vector &options);
 
 	static bool
-	maximizeHorizontally (CompDisplay     *d,
-			      CompAction      *action,
-			      CompActionState state,
-			      CompOption      *option,
-			      int	      nOption);
+	maximizeHorizontally (CompDisplay        *d,
+			      CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
 
 	static bool
-	maximizeVertically (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int		    nOption);
+	maximizeVertically (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
+	static bool
+	raiseInitiate (CompDisplay        *d,
+		       CompAction         *action,
+		       CompAction::State  state,
+		       CompOption::Vector &options);
+	static bool
+	lowerInitiate (CompDisplay        *d,
+		       CompAction         *action,
+		       CompAction::State  state,
+		       CompOption::Vector &options);
 
 	static bool
-	raiseInitiate (CompDisplay     *d,
-		       CompAction      *action,
-		       CompActionState state,
-		       CompOption      *option,
-		       int	       nOption);
+	toggleMaximized (CompDisplay        *d,
+			 CompAction         *action,
+			 CompAction::State  state,
+			 CompOption::Vector &options);
 
 	static bool
-	lowerInitiate (CompDisplay     *d,
-		       CompAction      *action,
-		       CompActionState state,
-		       CompOption      *option,
-		       int	       nOption);
+	toggleMaximizedHorizontally (CompDisplay        *d,
+				     CompAction         *action,
+				     CompAction::State  state,
+				     CompOption::Vector &options);
 
 	static bool
-	toggleMaximized (CompDisplay     *d,
-			 CompAction      *action,
-			 CompActionState state,
-			 CompOption      *option,
-			 int		 nOption);
-
+	toggleMaximizedVertically (CompDisplay        *d,
+				   CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options);
 
 	static bool
-	toggleMaximizedHorizontally (CompDisplay     *d,
-				     CompAction      *action,
-				     CompActionState state,
-				     CompOption      *option,
-				     int	     nOption);
-
-	static bool
-	toggleMaximizedVertically (CompDisplay     *d,
-				   CompAction      *action,
-				   CompActionState state,
-				   CompOption      *option,
-				   int		   nOption);
-
-	static bool
-	shade (CompDisplay     *d,
-	       CompAction      *action,
-	       CompActionState state,
-	       CompOption      *option,
-	       int	       nOption);
-
+	shade (CompDisplay        *d,
+	       CompAction         *action,
+	       CompAction::State  state,
+	       CompOption::Vector &options);
 		
 };
 

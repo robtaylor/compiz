@@ -27,16 +27,15 @@
 #define _COMPIZ_PLUGIN_H
 
 #include <compiz.h>
-
+#include <compoption.h>
 
 typedef bool (*InitPluginObjectProc) (CompObject *object);
 typedef void (*FiniPluginObjectProc) (CompObject *object);
 
-typedef CompOption *(*GetPluginObjectOptionsProc) (CompObject *object,
-						   int	      *count);
-typedef bool (*SetPluginObjectOptionProc) (CompObject      *object,
-					       const char      *name,
-					       CompOptionValue *value);
+typedef CompOption::Vector & (*GetPluginObjectOptionsProc) (CompObject *object);
+typedef bool (*SetPluginObjectOptionProc) (CompObject        *object,
+					   const char        *name,
+					   CompOption::Value &value);
 
 class CompPluginVTable {
 
@@ -60,13 +59,13 @@ class CompPluginVTable {
 	virtual void
 	finiObject (CompObject *object);
 	
-	virtual CompOption *
-	getObjectOptions (CompObject *object, int *count);
+	virtual CompOption::Vector &
+	getObjectOptions (CompObject *object);
 
 	virtual bool
-	setObjectOption (CompObject *object,
-			 const char *name,
-			 CompOptionValue *value);
+	setObjectOption (CompObject        *object,
+			 const char        *name,
+			 CompOption::Value &value);
 };
 
 COMPIZ_BEGIN_DECLS

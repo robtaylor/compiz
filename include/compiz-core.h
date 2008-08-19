@@ -58,8 +58,6 @@
      (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
 
 
-COMPIZ_BEGIN_DECLS
-
 #if COMPOSITE_MAJOR > 0 || COMPOSITE_MINOR > 2
 #define USE_COW
 #endif
@@ -164,13 +162,6 @@ extern CompMetadata coreMetadata;
     (real)->func = (priv)->func
 
 
-typedef union _CompPrivate {
-    void	  *ptr;
-    long	  val;
-    unsigned long uval;
-    void	  *(*fptr) (void);
-} CompPrivate;
-
 
 /* session.c */
 
@@ -200,214 +191,14 @@ getSessionClientId (CompSessionClientIdType type);
 
 /* option.c */
 
-typedef enum {
-    CompBindingTypeNone       = 0,
-    CompBindingTypeKey        = 1 << 0,
-    CompBindingTypeButton     = 1 << 1,
-    CompBindingTypeEdgeButton = 1 << 2
-} CompBindingTypeEnum;
 
-typedef unsigned int CompBindingType;
-
-typedef enum {
-    CompActionStateInitKey     = 1 <<  0,
-    CompActionStateTermKey     = 1 <<  1,
-    CompActionStateInitButton  = 1 <<  2,
-    CompActionStateTermButton  = 1 <<  3,
-    CompActionStateInitBell    = 1 <<  4,
-    CompActionStateInitEdge    = 1 <<  5,
-    CompActionStateTermEdge    = 1 <<  6,
-    CompActionStateInitEdgeDnd = 1 <<  7,
-    CompActionStateTermEdgeDnd = 1 <<  8,
-    CompActionStateCommit      = 1 <<  9,
-    CompActionStateCancel      = 1 << 10,
-    CompActionStateAutoGrab    = 1 << 11,
-    CompActionStateNoEdgeDelay = 1 << 12
-} CompActionStateEnum;
-
-typedef unsigned int CompActionState;
-
-typedef enum {
-    CompLogLevelFatal = 0,
-    CompLogLevelError,
-    CompLogLevelWarn,
-    CompLogLevelInfo,
-    CompLogLevelDebug
-} CompLogLevel;
-
-typedef struct _CompKeyBinding {
-    int		 keycode;
-    unsigned int modifiers;
-} CompKeyBinding;
-
-typedef struct _CompButtonBinding {
-    int		 button;
-    unsigned int modifiers;
-} CompButtonBinding;
-
-typedef struct _CompAction CompAction;
-
-typedef bool (*CompActionCallBackProc) (CompDisplay	*d,
-					CompAction	*action,
-					CompActionState state,
-					CompOption	*option,
-					int		nOption);
-
-struct _CompAction {
-    CompActionCallBackProc initiate;
-    CompActionCallBackProc terminate;
-
-    CompActionState state;
-
-    CompBindingType   type;
-    CompKeyBinding    key;
-    CompButtonBinding button;
-
-    Bool bell;
-
-    unsigned int edgeMask;
-
-    CompPrivate priv;
-};
-
-
-
-typedef struct {
-    CompOptionType  type;
-    CompOptionValue *value;
-    int		    nValue;
-} CompListValue;
-
-union _CompOptionValue {
-    Bool	   b;
-    int		   i;
-    float	   f;
-    char	   *s;
-    unsigned short c[4];
-    CompAction     action;
-    CompMatch      *match;
-    CompListValue  list;
-};
-
-typedef struct _CompOptionIntRestriction {
-    int min;
-    int max;
-} CompOptionIntRestriction;
-
-typedef struct _CompOptionFloatRestriction {
-    float min;
-    float max;
-    float precision;
-} CompOptionFloatRestriction;
-
-typedef union {
-    CompOptionIntRestriction    i;
-    CompOptionFloatRestriction  f;
-} CompOptionRestriction;
-
-struct _CompOption {
-    char		  *name;
-    CompOptionType	  type;
-    CompOptionValue	  value;
-    CompOptionRestriction rest;
-};
 
 typedef CompOption *(*DisplayOptionsProc) (CompDisplay *display, int *count);
 typedef CompOption *(*ScreenOptionsProc) (CompScreen *screen, int *count);
 
-Bool
-getBoolOptionNamed (CompOption *option,
-		    int	       nOption,
-		    const char *name,
-		    Bool       defaultValue);
 
-int
-getIntOptionNamed (CompOption *option,
-		   int	      nOption,
-		   const char *name,
-		   int	      defaultValue);
 
-float
-getFloatOptionNamed (CompOption *option,
-		     int	nOption,
-		     const char *name,
-		     float	defaultValue);
 
-char *
-getStringOptionNamed (CompOption *option,
-		      int	 nOption,
-		      const char *name,
-		      char	 *defaultValue);
-
-unsigned short *
-getColorOptionNamed (CompOption	    *option,
-		     int	    nOption,
-		     const char     *name,
-		     unsigned short *defaultValue);
-
-CompMatch *
-getMatchOptionNamed (CompOption	*option,
-		     int	nOption,
-		     const char *name,
-		     CompMatch  *defaultValue);
-
-char *
-keyBindingToString (CompDisplay    *d,
-		    CompKeyBinding *key);
-
-char *
-buttonBindingToString (CompDisplay       *d,
-		       CompButtonBinding *button);
-
-char *
-keyActionToString (CompDisplay *d,
-		   CompAction  *action);
-
-char *
-buttonActionToString (CompDisplay *d,
-		      CompAction  *action);
-
-Bool
-stringToKeyBinding (CompDisplay    *d,
-		    const char     *binding,
-		    CompKeyBinding *key);
-
-Bool
-stringToButtonBinding (CompDisplay	 *d,
-		       const char	 *binding,
-		       CompButtonBinding *button);
-
-void
-stringToKeyAction (CompDisplay *d,
-		   const char  *binding,
-		   CompAction  *action);
-
-void
-stringToButtonAction (CompDisplay *d,
-		      const char  *binding,
-		      CompAction  *action);
-
-const char *
-edgeToString (unsigned int edge);
-
-unsigned int
-stringToEdgeMask (const char *edge);
-
-char *
-edgeMaskToString (unsigned int edgeMask);
-
-Bool
-stringToColor (const char     *color,
-	       unsigned short *rgba);
-
-char *
-colorToString (unsigned short *rgba);
-
-const char *
-optionTypeToString (CompOptionType type);
-
-Bool
-isActionOption (CompOption *option);
 
 
 /* core.c */
@@ -421,11 +212,6 @@ typedef void (*ForEachWindowProc) (CompWindow *window,
 
 
 
-
-bool
-setDisplayOption (CompObject      *object,
-		  const char      *name,
-		  CompOptionValue *value);
 
 void
 compLogMessage (CompDisplay  *d,
@@ -445,22 +231,7 @@ warpPointer (CompScreen *screen,
 	     int	 dx,
 	     int	 dy);
 
-Bool
-setDisplayAction (CompDisplay     *display,
-		  CompOption      *o,
-		  CompOptionValue *value);
-
-
 /* event.c */
-
-typedef struct _CompDelayedEdgeSettings
-{
-    unsigned int edge;
-    unsigned int state;
-
-    CompOption   option[7];
-    unsigned int nOption;
-} CompDelayedEdgeSettings;
 
 
 void
@@ -606,13 +377,6 @@ typedef struct _CompActiveWindowHistory {
     int    activeNum;
 } CompActiveWindowHistory;
 
-bool
-setScreenOption (CompObject      *object,
-		 const char      *name,
-		 CompOptionValue *value);
-
-
-
 /* window.c */
 
 
@@ -757,12 +521,14 @@ matrixGetIdentity (CompTransform *m);
 #define MAXTOSTRING(x) "<max>" TOSTRING (x) "</max>"
 #define RESTOSTRING(min, max) MINTOSTRING (min) MAXTOSTRING (max)
 
+#include <compaction.h>
+
 typedef struct _CompMetadataOptionInfo {
-    const char		   *name;
-    const char		   *type;
-    const char		   *data;
-    CompActionCallBackProc initiate;
-    CompActionCallBackProc terminate;
+    const char		 *name;
+    const char		 *type;
+    const char		 *data;
+    CompAction::CallBack initiate;
+    CompAction::CallBack terminate;
 } CompMetadataOptionInfo;
 
 struct _CompMetadata {
@@ -771,7 +537,7 @@ struct _CompMetadata {
     int    nDoc;
 };
 
-Bool
+bool
 compInitPluginMetadataFromInfo (CompMetadata		     *metadata,
 				const char		     *plugin,
 				const CompMetadataOptionInfo *displayOptionInfo,
@@ -779,59 +545,32 @@ compInitPluginMetadataFromInfo (CompMetadata		     *metadata,
 				const CompMetadataOptionInfo *screenOptionInfo,
 				int			     nScreenOptionInfo);
 
-Bool
+bool
 compInitScreenOptionFromMetadata (CompScreen   *screen,
 				  CompMetadata *metadata,
 				  CompOption   *option,
 				  const char   *name);
 
-void
-compFiniScreenOption (CompScreen *screen,
-		      CompOption *option);
-
-Bool
+bool
 compInitScreenOptionsFromMetadata (CompScreen			*screen,
 				   CompMetadata			*metadata,
 				   const CompMetadataOptionInfo *info,
-				   CompOption			*option,
-				   int				n);
+				   CompOption::Vector		&options);
 
-void
-compFiniScreenOptions (CompScreen *screen,
-		       CompOption *option,
-		       int	  n);
 
-Bool
-compSetScreenOption (CompScreen      *screen,
-		     CompOption      *option,
-		     CompOptionValue *value);
-
-Bool
+bool
 compInitDisplayOptionFromMetadata (CompDisplay  *display,
 				   CompMetadata *metadata,
 				   CompOption   *option,
 				   const char   *name);
 
-void
-compFiniDisplayOption (CompDisplay *display,
-		       CompOption  *option);
 
-Bool
+bool
 compInitDisplayOptionsFromMetadata (CompDisplay			 *display,
 				    CompMetadata		 *metadata,
 				    const CompMetadataOptionInfo *info,
-				    CompOption			 *option,
-				    int				 n);
+				    CompOption::Vector	         &options);
 
-void
-compFiniDisplayOptions (CompDisplay *display,
-			CompOption  *option,
-			int	    n);
-
-Bool
-compSetDisplayOption (CompDisplay     *display,
-		      CompOption      *option,
-		      CompOptionValue *value);
 
 char *
 compGetShortPluginDescription (CompMetadata *metadata);
@@ -861,16 +600,7 @@ compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
 					char			     *buffer,
 					int			     length);
 
-
-
-COMPIZ_END_DECLS
 	
-#include <string>
-#include <vector>
-#include <list>
-
-typedef std::string CompString;
-
 CompString compPrintf (const char *format, ...);
 CompString compPrintf (const char *format, va_list ap);
 

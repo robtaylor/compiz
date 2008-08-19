@@ -18,7 +18,7 @@ CompString compPrintf (const char *format, va_list ap)
     unsigned int size = strlen (format) + 1;
     int          n;
     char         *str;
-    
+
     if (!format)
 	return CompString ("");
 
@@ -44,13 +44,15 @@ CompString compPrintf (const char *format, va_list ap)
 	else              /* glibc 2.0 */
 	    size++;       /* one more than the old size */
 
-	delete str;
+	delete [] str;
 	str = new char[size];
 	
-	if (str)
+	if (!str)
 	{
 	    return CompString ("");
 	}
     }
-    return CompString ("");
+    CompString rv(str);
+    delete [] str;
+    return rv;
 }

@@ -199,8 +199,8 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	getOption (const char *);
 
 	bool
-	setOption (const char      *name,
-		   CompOptionValue *value);
+	setOption (const char        *name,
+		   CompOption::Value &value);
 
 	std::vector<XineramaScreenInfo> &
 	screenInfo ();
@@ -385,36 +385,35 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
     public:
 
 	static bool
-	runCommandDispatch (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int		    nOption);
+	runCommandDispatch (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
 
 	static bool
-	runCommandScreenshot (CompDisplay     *d,
-			      CompAction      *action,
-			      CompActionState state,
-			      CompOption      *option,
-			      int	      nOption);
+	runCommandScreenshot(CompDisplay        *d,
+			     CompAction         *action,
+			     CompAction::State  state,
+			     CompOption::Vector &options);
 
 	static bool
-	runCommandWindowScreenshot (CompDisplay     *d,
-				    CompAction      *action,
-				    CompActionState state,
-				    CompOption      *option,
-				    int	            nOption);
+	runCommandWindowScreenshot(CompDisplay        *d,
+				   CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options);
 
 	static bool
-	runCommandTerminal (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int	            nOption);
+	runCommandTerminal (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
 
-	static CompOption *
-	getDisplayOptions (CompObject  *object,
-			   int	       *count);
+	static CompOption::Vector &
+	getDisplayOptions (CompObject  *object);
+
+	static bool setDisplayOption (CompObject        *object,
+				      const char        *name,
+				      CompOption::Value &value);
 };
 
 extern Bool inHandleEvent;

@@ -139,19 +139,19 @@ class PrivateScreen {
 			bool         grab);
 
 	bool
-	addPassiveKeyGrab (CompKeyBinding *key);
+	addPassiveKeyGrab (CompAction::KeyBinding &key);
 
 	void
-	removePassiveKeyGrab (CompKeyBinding *key);
+	removePassiveKeyGrab (CompAction::KeyBinding &key);
 
 	void
 	updatePassiveKeyGrabs ();
 
 	bool
-	addPassiveButtonGrab (CompButtonBinding *button);
+	addPassiveButtonGrab (CompAction::ButtonBinding &button);
 
 	void
-	removePassiveButtonGrab (CompButtonBinding *button);
+	removePassiveButtonGrab (CompAction::ButtonBinding &button);
 
 	void
 	computeWorkareaForBox (BoxPtr pBox, XRectangle *area);
@@ -284,7 +284,7 @@ class PrivateScreen {
 
 	GLXContext ctx;
 
-	CompOption opt[COMP_SCREEN_OPTION_NUM];
+	CompOption::Vector opt;
 
 
 	CompCore::Timer paintTimer;

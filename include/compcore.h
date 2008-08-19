@@ -5,6 +5,8 @@
 #include <boost/function.hpp>
 #include "wrapable.h"
 
+#include <compoption.h>
+
 
 class PrivateCore;
 class CompCore;
@@ -71,12 +73,12 @@ class CoreInterface : public WrapableInterface<CompCore> {
     WRAPABLE_DEF(bool, initPluginForObject, CompPlugin *, CompObject *)
     WRAPABLE_DEF(void, finiPluginForObject, CompPlugin *, CompObject *)
 
-    WRAPABLE_DEF(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOptionValue *)
+    WRAPABLE_DEF(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOption::Value &)
 
     WRAPABLE_DEF(void, objectAdd, CompObject *, CompObject *)
     WRAPABLE_DEF(void, objectRemove, CompObject *, CompObject *)
 
-    WRAPABLE_DEF(void, sessionEvent, CompSessionEvent, CompOption *, unsigned int)
+    WRAPABLE_DEF(void, sessionEvent, CompSessionEvent, CompOption::Vector &)
 };
 
 class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
@@ -170,12 +172,12 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	WRAPABLE_HND(bool, initPluginForObject, CompPlugin *, CompObject *)
 	WRAPABLE_HND(void, finiPluginForObject, CompPlugin *, CompObject *)
 
-	WRAPABLE_HND(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOptionValue *)
+	WRAPABLE_HND(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOption::Value &)
 
 	WRAPABLE_HND(void, objectAdd, CompObject *, CompObject *)
 	WRAPABLE_HND(void, objectRemove, CompObject *, CompObject *)
 
-	WRAPABLE_HND(void, sessionEvent, CompSessionEvent, CompOption *, unsigned int)
+	WRAPABLE_HND(void, sessionEvent, CompSessionEvent, CompOption::Vector &)
 
 	friend class Timer;
     private:

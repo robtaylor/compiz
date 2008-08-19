@@ -50,13 +50,13 @@ class CorePluginVTable : public CompPluginVTable
 	virtual void
 	fini ();
 
-	CompOption *
-	getObjectOptions (CompObject *object, int *count);
+	CompOption::Vector &
+	getObjectOptions (CompObject *object);
 
 	bool
-	setObjectOption (CompObject *object,
-			 const char *name,
-			 CompOptionValue *value);
+	setObjectOption (CompObject        *object,
+			 const char        *name,
+			 CompOption::Value &value);
 };
 
 bool
@@ -76,9 +76,8 @@ CorePluginVTable::getMetadata ()
     return &coreMetadata;
 }
 
-CompOption *
-CorePluginVTable::getObjectOptions (CompObject *object,
-				    int	 *count)
+CompOption::Vector &
+CorePluginVTable::getObjectOptions (CompObject *object)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
 	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
@@ -87,21 +86,21 @@ CorePluginVTable::getObjectOptions (CompObject *object,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (object, count));
+		     noOptions, (object));
 }
 
 bool
-CorePluginVTable::setObjectOption (CompObject      *object,
-				   const char      *name,
-				   CompOptionValue *value)
+CorePluginVTable::setObjectOption (CompObject        *object,
+				   const char        *name,
+				   CompOption::Value &value)
 {
     static SetPluginObjectOptionProc dispTab[] = {
 	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) setDisplayOption,
-	(SetPluginObjectOptionProc) setScreenOption
+	(SetPluginObjectOptionProc) CompDisplay::setDisplayOption,
+	(SetPluginObjectOptionProc) CompScreen::setScreenOption
     };
 
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
+    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
 		     (object, name, value));
 }
 
@@ -678,17 +677,15 @@ int
 getPluginABI (const char *name)
 {
     CompPlugin *p = findActivePlugin (name);
-    CompOption	*option;
-    int		nOption;
 
     if (!p)
 	return 0;
 
     /* MULTIDPYERROR: ABI options should be moved into core */
-    option = p->vTable->getObjectOptions (core->displays(),
-					     &nOption);
+    CompOption::Vector &options =
+	p->vTable->getObjectOptions (core->displays());
 
-    return getIntOptionNamed (option, nOption, "abi", 0);
+    return CompOption::getIntOptionNamed (options, "abi");
 }
 
 Bool
@@ -722,15 +719,14 @@ getPluginDisplayIndex (CompDisplay *d,
 		       int	   *index)
 {
     CompPlugin *p = findActivePlugin (name);
-    CompOption	*option;
-    int		nOption, value;
+    int        value;
 
     if (!p)
 	return FALSE;
 
-    option = p->vTable->getObjectOptions (d, &nOption);
+    CompOption::Vector &options = p->vTable->getObjectOptions (d);
 
-    value = getIntOptionNamed (option, nOption, "index", -1);
+    value = CompOption::getIntOptionNamed (options, "index", -1);
     if (value < 0)
 	return FALSE;
 
@@ -762,17 +758,16 @@ CompPluginVTable::finiObject (CompObject *object)
 {
 }
 	
-CompOption *
-CompPluginVTable::getObjectOptions (CompObject *object, int *count)
+CompOption::Vector &
+CompPluginVTable::getObjectOptions (CompObject *object)
 {
-    (*count) = 0;
-    return NULL;
+    return noOptions;
 }
 
 bool
-CompPluginVTable::setObjectOption (CompObject *object,
-				   const char *name,
-				   CompOptionValue *value)
+CompPluginVTable::setObjectOption (CompObject        *object,
+				   const char        *name,
+				   CompOption::Value &value)
 {
     return false;
 }

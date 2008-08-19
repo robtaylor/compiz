@@ -33,6 +33,9 @@
 #include <sys/poll.h>
 #include <assert.h>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #define XK_MISCELLANY
 #include <X11/keysymdef.h>
 
@@ -96,18 +99,17 @@ CompDisplay::freePrivateIndex (int index)
 }
 
 bool
-CompWindow::closeWin (CompDisplay     *d,
-		      CompAction      *action,
-		      CompActionState state,
-		      CompOption      *option,
-		      int	      nOption)
+CompWindow::closeWin (CompDisplay        *d,
+		      CompAction         *action,
+		      CompAction::State  state,
+		      CompOption::Vector &options)
 {
     CompWindow   *w;
     Window       xid;
     unsigned int time;
 
-    xid  = getIntOptionNamed (option, nOption, "window", 0);
-    time = getIntOptionNamed (option, nOption, "time", CurrentTime);
+    xid  = CompOption::getIntOptionNamed (options, "window");
+    time = CompOption::getIntOptionNamed (options, "time", CurrentTime);
 
     w = d->findTopLevelWindow (xid);
     if (w && (w->priv->actions  & CompWindowActionCloseMask))
@@ -117,18 +119,17 @@ CompWindow::closeWin (CompDisplay     *d,
 }
 
 bool
-CompScreen::mainMenu (CompDisplay     *d,
-		      CompAction      *action,
-		      CompActionState state,
-		      CompOption      *option,
-		      int	      nOption)
+CompScreen::mainMenu (CompDisplay        *d,
+		      CompAction         *action,
+		      CompAction::State  state,
+		      CompOption::Vector &options)
 {
     CompScreen   *s;
     Window       xid;
     unsigned int time;
 
-    xid  = getIntOptionNamed (option, nOption, "root", 0);
-    time = getIntOptionNamed (option, nOption, "time", CurrentTime);
+    xid  = CompOption::getIntOptionNamed (options, "root");
+    time = CompOption::getIntOptionNamed (options, "time", CurrentTime);
 
     s = d->findScreen (xid);
     if (s && s->priv->grabs.empty ())
@@ -139,18 +140,17 @@ CompScreen::mainMenu (CompDisplay     *d,
 }
 
 bool
-CompScreen::runDialog (CompDisplay     *d,
-		       CompAction      *action,
-		       CompActionState state,
-		       CompOption      *option,
-		       int	       nOption)
+CompScreen::runDialog (CompDisplay        *d,
+		       CompAction         *action,
+		       CompAction::State  state,
+		       CompOption::Vector &options)
 {
     CompScreen   *s;
     Window       xid;
     unsigned int time;
 
-    xid  = getIntOptionNamed (option, nOption, "root", 0);
-    time = getIntOptionNamed (option, nOption, "time", CurrentTime);
+    xid  = CompOption::getIntOptionNamed (options, "root");
+    time = CompOption::getIntOptionNamed (options, "time", CurrentTime);
 
     s = d->findScreen (xid);
     if (s && s->priv->grabs.empty ())
@@ -161,16 +161,15 @@ CompScreen::runDialog (CompDisplay     *d,
 }
 
 bool
-CompWindow::unmaximize (CompDisplay     *d,
-			CompAction      *action,
-			CompActionState state,
-			CompOption      *option,
-			int             nOption)
+CompWindow::unmaximizeAction (CompDisplay        *d,
+			      CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -180,16 +179,15 @@ CompWindow::unmaximize (CompDisplay     *d,
 }
 
 bool
-CompWindow::minimize (CompDisplay     *d,
-		      CompAction      *action,
-		      CompActionState state,
-		      CompOption      *option,
-		      int             nOption)
+CompWindow::minimizeAction (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w && (w->actions () & CompWindowActionMinimizeMask))
@@ -199,16 +197,15 @@ CompWindow::minimize (CompDisplay     *d,
 }
 
 bool
-CompWindow::maximize (CompDisplay     *d,
-		      CompAction      *action,
-		      CompActionState state,
-		      CompOption      *option,
-		      int             nOption)
+CompWindow::maximizeAction (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -218,16 +215,15 @@ CompWindow::maximize (CompDisplay     *d,
 }
 
 bool
-CompWindow::maximizeHorizontally (CompDisplay     *d,
-				  CompAction      *action,
-				  CompActionState state,
-				  CompOption      *option,
-				  int             nOption)
+CompWindow::maximizeHorizontally (CompDisplay        *d,
+				  CompAction         *action,
+				  CompAction::State  state,
+				  CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -237,16 +233,15 @@ CompWindow::maximizeHorizontally (CompDisplay     *d,
 }
 
 bool
-CompWindow::maximizeVertically (CompDisplay     *d,
-				CompAction      *action,
-				CompActionState state,
-				CompOption      *option,
-				int             nOption)
+CompWindow::maximizeVertically (CompDisplay        *d,
+				CompAction         *action,
+				CompAction::State  state,
+				CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -256,16 +251,15 @@ CompWindow::maximizeVertically (CompDisplay     *d,
 }
 
 bool
-CompScreen::showDesktop (CompDisplay     *d,
-			 CompAction      *action,
-			 CompActionState state,
-			 CompOption      *option,
-			 int             nOption)
+CompScreen::showDesktop (CompDisplay        *d,
+			 CompAction         *action,
+			 CompAction::State  state,
+			 CompOption::Vector &options)
 {
     CompScreen *s;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    xid = CompOption::getIntOptionNamed (options, "root");
 
     s = d->findScreen (xid);
     if (s)
@@ -280,16 +274,15 @@ CompScreen::showDesktop (CompDisplay     *d,
 }
 
 bool
-CompScreen::toggleSlowAnimations (CompDisplay     *d,
-				  CompAction      *action,
-				  CompActionState state,
-				  CompOption      *option,
-				  int             nOption)
+CompScreen::toggleSlowAnimations (CompDisplay        *d,
+				  CompAction         *action,
+				  CompAction::State  state,
+				  CompOption::Vector &options)
 {
     CompScreen *s;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    xid = CompOption::getIntOptionNamed (options, "root");
 
     s = d->findScreen (xid);
     if (s)
@@ -299,16 +292,15 @@ CompScreen::toggleSlowAnimations (CompDisplay     *d,
 }
 
 bool
-CompWindow::raiseInitiate (CompDisplay     *d,
-			   CompAction      *action,
-			   CompActionState state,
-			   CompOption      *option,
-			   int             nOption)
+CompWindow::raiseInitiate (CompDisplay        *d,
+			   CompAction         *action,
+			   CompAction::State  state,
+			   CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -318,16 +310,15 @@ CompWindow::raiseInitiate (CompDisplay     *d,
 }
 
 bool
-CompWindow::lowerInitiate (CompDisplay     *d,
-			   CompAction      *action,
-			   CompActionState state,
-			   CompOption      *option,
-			   int             nOption)
+CompWindow::lowerInitiate (CompDisplay        *d,
+			   CompAction         *action,
+			   CompAction::State  state,
+			   CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -337,16 +328,15 @@ CompWindow::lowerInitiate (CompDisplay     *d,
 }
 
 bool
-CompDisplay::runCommandDispatch (CompDisplay     *d,
-				 CompAction      *action,
-				 CompActionState state,
-				 CompOption      *option,
-				 int             nOption)
+CompDisplay::runCommandDispatch (CompDisplay        *d,
+				 CompAction         *action,
+				 CompAction::State  state,
+				 CompOption::Vector &options)
 {
     CompScreen *s;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    xid = CompOption::getIntOptionNamed (options, "root");
 
     s = d->findScreen (xid);
     if (s)
@@ -356,7 +346,7 @@ CompDisplay::runCommandDispatch (CompDisplay     *d,
 
 	while (i <= COMP_DISPLAY_OPTION_RUN_COMMAND11_KEY)
 	{
-	    if (action == &d->priv->opt[i].value.action)
+	    if (action == &d->priv->opt[i].value ().action ())
 	    {
 		index = i - COMP_DISPLAY_OPTION_RUN_COMMAND0_KEY +
 		    COMP_DISPLAY_OPTION_COMMAND0;
@@ -367,81 +357,79 @@ CompDisplay::runCommandDispatch (CompDisplay     *d,
 	}
 
 	if (index > 0)
-	    s->runCommand (d->priv->opt[index].value.s);
+	    s->runCommand (d->priv->opt[index].value ().s ());
     }
 
     return true;
 }
 
 bool
-CompDisplay::runCommandScreenshot (CompDisplay     *d,
-				   CompAction      *action,
-				   CompActionState state,
-				   CompOption      *option,
-				   int             nOption)
+CompDisplay::runCommandScreenshot (CompDisplay        *d,
+				   CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options)
 {
     CompScreen *s;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
-
-    s = d->findScreen (xid);
-    if (s)
-	s->runCommand (d->priv->opt[COMP_DISPLAY_OPTION_SCREENSHOT].value.s);
-
-    return true;
-}
-
-bool
-CompDisplay::runCommandWindowScreenshot (CompDisplay     *d,
-					 CompAction      *action,
-					 CompActionState state,
-					 CompOption      *option,
-					 int	         nOption)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    xid = CompOption::getIntOptionNamed (options, "root");
 
     s = d->findScreen (xid);
     if (s)
 	s->runCommand (
-	    d->priv->opt[COMP_DISPLAY_OPTION_WINDOW_SCREENSHOT].value.s);
+	    d->priv->opt[COMP_DISPLAY_OPTION_SCREENSHOT].value ().s ());
 
     return true;
 }
 
 bool
-CompDisplay::runCommandTerminal (CompDisplay     *d,
-				 CompAction      *action,
-				 CompActionState state,
-				 CompOption      *option,
-				 int             nOption)
+CompDisplay::runCommandWindowScreenshot (CompDisplay        *d,
+					 CompAction         *action,
+					 CompAction::State  state,
+					 CompOption::Vector &options)
 {
     CompScreen *s;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    xid = CompOption::getIntOptionNamed (options, "root");
 
     s = d->findScreen (xid);
     if (s)
-	s->runCommand (d->priv->opt[COMP_DISPLAY_OPTION_TERMINAL].value.s);
+	s->runCommand (
+	    d->priv->opt[COMP_DISPLAY_OPTION_WINDOW_SCREENSHOT].value ().s ());
 
     return true;
 }
 
 bool
-CompScreen::windowMenu (CompDisplay     *d,
-			CompAction      *action,
-			CompActionState state,
-			CompOption      *option,
-			int             nOption)
+CompDisplay::runCommandTerminal (CompDisplay        *d,
+				 CompAction         *action,
+				 CompAction::State  state,
+				 CompOption::Vector &options)
+{
+    CompScreen *s;
+    Window     xid;
+
+    xid = CompOption::getIntOptionNamed (options, "root");
+
+    s = d->findScreen (xid);
+    if (s)
+	s->runCommand (
+	    d->priv->opt[COMP_DISPLAY_OPTION_TERMINAL].value ().s ());
+
+    return true;
+}
+
+bool
+CompScreen::windowMenu (CompDisplay        *d,
+			CompAction         *action,
+			CompAction::State  state,
+			CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w && w->screen ()->priv->grabs.empty ())
@@ -449,10 +437,10 @@ CompScreen::windowMenu (CompDisplay     *d,
 	int  x, y, button;
 	Time time;
 
-	time   = getIntOptionNamed (option, nOption, "time", CurrentTime);
-	button = getIntOptionNamed (option, nOption, "button", 0);
-	x      = getIntOptionNamed (option, nOption, "x", w->attrib ().x);
-	y      = getIntOptionNamed (option, nOption, "y", w->attrib ().y);
+	time   = CompOption::getIntOptionNamed (options, "time", CurrentTime);
+	button = CompOption::getIntOptionNamed (options, "button", 0);
+	x      = CompOption::getIntOptionNamed (options, "x", w->attrib ().x);
+	y      = CompOption::getIntOptionNamed (options, "y", w->attrib ().y);
 
 	w->screen ()->toolkitAction (
 	    w->screen ()->display ()->atoms().toolkitActionWindowMenu,
@@ -463,16 +451,15 @@ CompScreen::windowMenu (CompDisplay     *d,
 }
 
 bool
-CompWindow::toggleMaximized (CompDisplay     *d,
-			     CompAction      *action,
-			     CompActionState state,
-			     CompOption      *option,
-			     int             nOption)
+CompWindow::toggleMaximized (CompDisplay        *d,
+			     CompAction         *action,
+			     CompAction::State  state,
+			     CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -487,16 +474,15 @@ CompWindow::toggleMaximized (CompDisplay     *d,
 }
 
 bool
-CompWindow::toggleMaximizedHorizontally (CompDisplay     *d,
-					 CompAction      *action,
-					 CompActionState state,
-					 CompOption      *option,
-					 int             nOption)
+CompWindow::toggleMaximizedHorizontally (CompDisplay        *d,
+					 CompAction         *action,
+					 CompAction::State  state,
+					 CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -506,16 +492,15 @@ CompWindow::toggleMaximizedHorizontally (CompDisplay     *d,
 }
 
 bool
-CompWindow::toggleMaximizedVertically (CompDisplay     *d,
-				       CompAction      *action,
-				       CompActionState state,
-				       CompOption      *option,
-				       int             nOption)
+CompWindow::toggleMaximizedVertically (CompDisplay        *d,
+				       CompAction         *action,
+				       CompAction::State  state,
+				       CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w)
@@ -525,16 +510,15 @@ CompWindow::toggleMaximizedVertically (CompDisplay     *d,
 }
 
 bool
-CompWindow::shade (CompDisplay     *d,
-		   CompAction      *action,
-		   CompActionState state,
-		   CompOption      *option,
-		   int             nOption)
+CompWindow::shade (CompDisplay        *d,
+		   CompAction         *action,
+		   CompAction::State  state,
+		   CompOption::Vector &options)
 {
     CompWindow *w;
     Window     xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", 0);
+    xid = CompOption::getIntOptionNamed (options, "window");
 
     w = d->findTopLevelWindow (xid);
     if (w && (w->priv->actions & CompWindowActionShadeMask))
@@ -586,10 +570,10 @@ const CompMetadataOptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
     { "raise_window_button", "button", 0, CompWindow::raiseInitiate, 0 },
     { "lower_window_key", "key", 0, CompWindow::lowerInitiate, 0 },
     { "lower_window_button", "button", 0, CompWindow::lowerInitiate, 0 },
-    { "unmaximize_window_key", "key", 0, CompWindow::unmaximize, 0 },
-    { "minimize_window_key", "key", 0, CompWindow::minimize, 0 },
-    { "minimize_window_button", "button", 0, CompWindow::minimize, 0 },
-    { "maximize_window_key", "key", 0, CompWindow::maximize, 0 },
+    { "unmaximize_window_key", "key", 0, CompWindow::unmaximizeAction, 0 },
+    { "minimize_window_key", "key", 0, CompWindow::minimizeAction, 0 },
+    { "minimize_window_button", "button", 0, CompWindow::minimizeAction, 0 },
+    { "maximize_window_key", "key", 0, CompWindow::maximizeAction, 0 },
     { "maximize_window_horizontally_key", "key", 0,
       CompWindow::maximizeHorizontally, 0 },
     { "maximize_window_vertically_key", "key", 0,
@@ -624,21 +608,24 @@ const CompMetadataOptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
     { "edge_delay", "int", "<min>0</min>", 0, 0 }
 };
 
-CompOption *
-CompDisplay::getDisplayOptions (CompObject  *object,
-				int         *count)
+CompOption::Vector &
+CompDisplay::getDisplayOptions (CompObject  *object)
 {
-    CompDisplay *display = (CompDisplay *) object;
-    *count = NUM_OPTIONS (display);
-    return display->priv->opt;
+    CompDisplay *display = dynamic_cast <CompDisplay *> (object);
+    if (display)
+	return display->priv->opt;
+    return noOptions;
 }
 
 bool
-setDisplayOption (CompObject      *object,
-		  const char      *name,
-		  CompOptionValue *value)
+CompDisplay::setDisplayOption (CompObject        *object,
+			       const char        *name,
+			       CompOption::Value &value)
 {
-    return ((CompDisplay *) object)->setOption (name, value);
+    CompDisplay *display = dynamic_cast <CompDisplay *> (object);
+    if (display)
+	return display->setOption (name, value);
+    return false;
 }
 
 
@@ -709,48 +696,14 @@ compCheckForError (Display *dpy)
 void
 CompDisplay::addScreenActions (CompScreen *s)
 {
-    int i;
-
-    for (i = 0; i < COMP_DISPLAY_OPTION_NUM; i++)
+    foreach (CompOption &o, priv->opt)
     {
-	if (!isActionOption (&priv->opt[i]))
+	if (!o.isAction ())
 	    continue;
 
-	if (priv->opt[i].value.action.state & CompActionStateAutoGrab)
-	    s->addAction (&priv->opt[i].value.action);
+	if (o.value ().action ().state () & CompAction::StateAutoGrab)
+	    s->addAction (&o.value ().action ());
     }
-}
-
-Bool
-setDisplayAction (CompDisplay     *display,
-		  CompOption      *o,
-		  CompOptionValue *value)
-{
-    CompScreen *s;
-
-    for (s = display->screens (); s; s = s->next)
-	if (!s->addAction (&value->action))
-	    break;
-
-    if (s)
-    {
-	CompScreen *failed = s;
-
-	for (s = display->screens (); s && s != failed; s = s->next)
-	    s->removeAction (&value->action);
-
-	return FALSE;
-    }
-    else
-    {
-	for (s = display->screens (); s; s = s->next)
-	    s->removeAction (&o->value.action);
-    }
-
-    if (compSetActionOption (o, value))
-	return TRUE;
-
-    return FALSE;
 }
 
 CompDisplay::CompDisplay () :
@@ -787,11 +740,6 @@ CompDisplay::~CompDisplay ()
     XDestroyRegion (mOutputRegion);
     XDestroyRegion (mTmpRegion);
 
-
-    compFiniDisplayOptions (this, priv->opt, COMP_DISPLAY_OPTION_NUM);
-
-    compFiniOptionValue (&priv->plugin, CompOptionTypeList);
-
     if (priv->modMap)
 	XFreeModifiermap (priv->modMap);
 
@@ -808,6 +756,8 @@ CompDisplay::init (const char *name)
     int		xkbOpcode;
     int		firstScreen, lastScreen;
 
+    CompOption::Value::Vector vList;
+
     mTmpRegion = XCreateRegion ();
     if (!mTmpRegion)
 	return false;
@@ -819,20 +769,9 @@ CompDisplay::init (const char *name)
 	return false;
     }
 
-    priv->plugin.list.type   = CompOptionTypeString;
-    priv->plugin.list.nValue = 1;
-    priv->plugin.list.value  =
-	(CompOptionValue *) malloc (sizeof (CompOptionValue));
+    vList.push_back ("core");
 
-    if (!priv->plugin.list.value) {
-	return false;
-    }
-
-    priv->plugin.list.value->s = strdup ("core");
-    if (!priv->plugin.list.value->s) {
-        free (priv->plugin.list.value);
-	return false;
-    }
+    priv->plugin.set (CompOption::TypeString, vList);
 
     priv->dpy = XOpenDisplay (name);
     if (!priv->dpy)
@@ -847,11 +786,10 @@ CompDisplay::init (const char *name)
     if (!compInitDisplayOptionsFromMetadata (this,
 					     &coreMetadata,
 					     coreDisplayOptionInfo,
-					     priv->opt,
-					     COMP_DISPLAY_OPTION_NUM))
+					     priv->opt))
 	return true;
 
-    priv->opt[COMP_DISPLAY_OPTION_ABI].value.i = CORE_ABIVERSION;
+    priv->opt[COMP_DISPLAY_OPTION_ABI].value ().set ((int) CORE_ABIVERSION);
 
     snprintf (priv->displayString, 255, "DISPLAY=%s",
 	      DisplayString (priv->dpy));
@@ -980,7 +918,8 @@ CompDisplay::init (const char *name)
 	return false;
     }
 
-    priv->setAudibleBell (priv->opt[COMP_DISPLAY_OPTION_AUDIBLE_BELL].value.b);
+    priv->setAudibleBell (
+	priv->opt[COMP_DISPLAY_OPTION_AUDIBLE_BELL].value ().b ());
 
     XGetInputFocus (priv->dpy, &focus, &revertTo);
 
@@ -1008,8 +947,8 @@ CompDisplay::init (const char *name)
 
     priv->pingTimer.start (
 	boost::bind(&PrivateDisplay::handlePingTimeout, priv),
-	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i,
-	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value.i + 500);
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value ().i (),
+	priv->opt[COMP_DISPLAY_OPTION_PING_DELAY].value ().i () + 500);
 
     return true;
 }
@@ -1047,9 +986,7 @@ CompDisplay::textureFilter ()
 CompOption *
 CompDisplay::getOption (const char *name)
 {
-    int        index;
-    CompOption *o = compFindOption (priv->opt, NUM_OPTIONS (this),
-				    name, &index);
+    CompOption *o = CompOption::findOption (priv->opt, name);
     return o;
 }
 
@@ -1250,14 +1187,13 @@ PrivateDisplay::handlePingTimeout ()
 }
 
 bool
-CompDisplay::setOption (const char      *name,
-			CompOptionValue *value)
+CompDisplay::setOption (const char        *name,
+			CompOption::Value &value)
 {
-    CompOption *o;
-    int	       index;
+    CompOption   *o;
+    unsigned int index;
 
-    o = compFindOption (priv->opt, NUM_OPTIONS (this),
-			name, &index);
+    o = CompOption::findOption (priv->opt, name, &index);
     if (!o)
 	return false;
 
@@ -1265,21 +1201,21 @@ CompDisplay::setOption (const char      *name,
     case COMP_DISPLAY_OPTION_ABI:
 	break;
     case COMP_DISPLAY_OPTION_ACTIVE_PLUGINS:
-	if (compSetOptionList (o, value))
+	if (o->set (value))
 	{
 	    priv->dirtyPluginList = true;
 	    return true;
 	}
 	break;
     case COMP_DISPLAY_OPTION_TEXTURE_FILTER:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
 	    CompScreen *s;
 
 	    for (s = priv->screens; s; s = s->next)
 		s->damageScreen ();
 
-	    if (!o->value.i)
+	    if (!o->value ().i ())
 		priv->textureFilter = GL_NEAREST;
 	    else
 		priv->textureFilter = GL_LINEAR;
@@ -1288,21 +1224,21 @@ CompDisplay::setOption (const char      *name,
 	}
 	break;
     case COMP_DISPLAY_OPTION_PING_DELAY:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
-	    priv->pingTimer.setTimes (o->value.i, o->value.i + 500);
+	    priv->pingTimer.setTimes (o->value ().i (), o->value ().i () + 500);
 	    return true;
 	}
 	break;
     case COMP_DISPLAY_OPTION_AUDIBLE_BELL:
-	if (compSetBoolOption (o, value))
+	if (o->set (value))
 	{
-	    priv->setAudibleBell (o->value.b);
+	    priv->setAudibleBell (o->value ().b ());
 	    return true;
 	}
 	break;
     default:
-	if (compSetDisplayOption (this, o, value))
+	if (CompOption::setDisplayOption (this, *o, value))
 	    return true;
 	break;
     }
@@ -1505,9 +1441,10 @@ CompDisplay::processEvents ()
 void
 PrivateDisplay::updatePlugins ()
 {
-    CompOption *o;
-    CompPlugin *p, **pop = 0;
-    int	       nPop, i, j;
+    CompOption              *o;
+    CompPlugin              *p;
+    unsigned int            nPop, i, j;
+    std::list<CompPlugin *> pop;
 
     dirtyPluginList = false;
 
@@ -1516,50 +1453,48 @@ PrivateDisplay::updatePlugins ()
     /* The old plugin list always begins with the core plugin. To make sure
        we don't unnecessarily unload plugins if the new plugin list does not
        contain the core plugin, we have to use an offset */
-    if (o->value.list.nValue > 0 && strcmp (o->value.list.value[0].s, "core"))
+
+    printf ("Loading plugin list with %d values\n",o->value ().list ().size ());
+    foreach (CompOption::Value &v, o->value ().list ())
+	printf("Value is \"%s\"\n",v.s ().c_str());
+    if (o->value ().list ().size () > 0 &&
+	o->value ().list ()[0]. s (). compare ("core"))
 	i = 0;
     else
 	i = 1;
 
+    printf ("Old plugin list has %d values\n",plugin.list ().size ());
+    foreach (CompOption::Value &v, plugin.list ())
+	printf("Value is \"%s\"\n",v.s ().c_str ());
     /* j is initialized to 1 to make sure we never pop the core plugin */
-    for (j = 1; j < plugin.list.nValue &&
-	 i < o->value.list.nValue; i++, j++)
+    for (j = 1; j < plugin.list ().size () &&
+	 i < o->value ().list ().size (); i++, j++)
     {
-	if (strcmp (plugin.list.value[j].s, o->value.list.value[i].s))
+	if (plugin.list ()[j].s ().compare (o->value ().list ()[i].s ()))
 	    break;
     }
 
-    nPop = plugin.list.nValue - j;
+    nPop = plugin.list ().size () - j;
 
-    if (nPop)
-    {
-	pop = (CompPlugin **) malloc (sizeof (CompPlugin *) * nPop);
-	if (!pop)
-	{
-	    core->setOptionForPlugin (display, "core", o->name, &plugin);
-	    return;
-	}
-    }
-
+    printf("We have to pop %d plugins\n",nPop);
+    
     for (j = 0; j < nPop; j++)
     {
-	pop[j] = popPlugin ();
-	plugin.list.nValue--;
-	free (plugin.list.value[plugin.list.nValue].s);
+	pop.push_back (popPlugin ());
+	plugin.list ().pop_back ();
     }
 
-    for (; i < o->value.list.nValue; i++)
+    for (; i < o->value ().list ().size (); i++)
     {
-	p = 0;
-	for (j = 0; j < nPop; j++)
+	p = NULL;
+	foreach (CompPlugin *pp, pop)
 	{
-	    if (pop[j] && strcmp (pop[j]->vTable->name (),
-				  o->value.list.value[i].s) == 0)
+	    if (o->value ().list ()[i]. s ().compare (pp->vTable->name ()) == 0)
 	    {
-		if (pushPlugin (pop[j]))
+		if (pushPlugin (pp))
 		{
-		    p = pop[j];
-		    pop[j] = 0;
+		    p = pp;
+		    pop.erase (std::find (pop.begin (), pop.end (), pp));
 		    break;
 		}
 	    }
@@ -1567,7 +1502,8 @@ PrivateDisplay::updatePlugins ()
 
 	if (p == 0)
 	{
-	    p = loadPlugin (o->value.list.value[i].s);
+	    printf("Loading %d \"%s\"\n",i, o->value ().list ()[i].s ().c_str ());
+	    p = loadPlugin (o->value ().list ()[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!pushPlugin (p))
@@ -1580,36 +1516,16 @@ PrivateDisplay::updatePlugins ()
 
 	if (p)
 	{
-	    CompOptionValue *value;
-
-	    value = (CompOptionValue *)
-		realloc (plugin.list.value, sizeof (CompOptionValue) *
-			 (plugin.list.nValue + 1));
-	    if (value)
-	    {
-		value[plugin.list.nValue].s = strdup (p->vTable->name ());
-
-		plugin.list.value = value;
-		plugin.list.nValue++;
-	    }
-	    else
-	    {
-		p = popPlugin ();
-		unloadPlugin (p);
-	    }
+	    plugin.list ().push_back (p->vTable->name ());
 	}
     }
 
-    for (j = 0; j < nPop; j++)
+    foreach (CompPlugin *pp, pop)
     {
-	if (pop[j])
-	    unloadPlugin (pop[j]);
+	unloadPlugin (pp);
     }
 
-    if (nPop)
-	free (pop);
-
-    core->setOptionForPlugin (display, "core", o->name, &plugin);
+    core->setOptionForPlugin (display, "core", o->name ().c_str (), plugin);
 }
 
 CompScreen *
@@ -2615,17 +2531,18 @@ PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     below (None),
     modMap (0),
     ignoredModMask (LockMask),
+    opt (COMP_DISPLAY_OPTION_NUM),
     autoRaiseTimer (),
     autoRaiseWindow (0),
     edgeDelayTimer (),
+    plugin (),
     dirtyPluginList (true)
 {
     for (int i = 0; i < CompModNum; i++)
 	modMask[i] = CompNoMask;
-
-    compInitOptionValue (&plugin);
 }
 
 PrivateDisplay::~PrivateDisplay ()
 {
+    CompOption::finiDisplayOptions (display, opt);
 }

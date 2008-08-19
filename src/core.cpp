@@ -460,10 +460,10 @@ CompCore::finiPluginForObject (CompPlugin *plugin, CompObject *object)
 
 	
 bool
-CompCore::setOptionForPlugin (CompObject      *object,
-			      const char      *plugin,
-			      const char      *name,
-			      CompOptionValue *value)
+CompCore::setOptionForPlugin (CompObject        *object,
+			      const char        *plugin,
+			      const char        *name,
+			      CompOption::Value &value)
 {
     WRAPABLE_HND_FUNC_RETURN(bool, setOptionForPlugin,
 			     object, plugin, name, value)
@@ -485,10 +485,9 @@ CompCore::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_HND_FUNC(objectRemove, parent, object)
 
 void
-CompCore::sessionEvent (CompSessionEvent event,
-			     CompOption       *arguments,
-			     unsigned int     nArguments)
-    WRAPABLE_HND_FUNC(sessionEvent, event, arguments, nArguments)
+CompCore::sessionEvent (CompSessionEvent   event,
+			CompOption::Vector &arguments)
+    WRAPABLE_HND_FUNC(sessionEvent, event, arguments)
 
 CoreInterface::CoreInterface ()
 {
@@ -520,10 +519,10 @@ CoreInterface::finiPluginForObject (CompPlugin *plugin, CompObject *object)
 
 	
 bool
-CoreInterface::setOptionForPlugin (CompObject      *object,
-				   const char      *plugin,
-				   const char	   *name,
-				   CompOptionValue *value)
+CoreInterface::setOptionForPlugin (CompObject        *object,
+				   const char        *plugin,
+				   const char	     *name,
+				   CompOption::Value &value)
     WRAPABLE_DEF_FUNC_RETURN(setOptionForPlugin,
 			     object, plugin, name, value)
 
@@ -536,10 +535,9 @@ CoreInterface::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_DEF_FUNC(objectRemove, parent, object)
 
 void
-CoreInterface::sessionEvent (CompSessionEvent event,
-			     CompOption       *arguments,
-			     unsigned int     nArguments)
-    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments, nArguments)
+CoreInterface::sessionEvent (CompSessionEvent   event,
+			     CompOption::Vector &arguments)
+    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments)
 
 	
 PrivateCore::PrivateCore (CompCore *core) :

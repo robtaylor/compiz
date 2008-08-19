@@ -29,937 +29,845 @@
 #include <ctype.h>
 #include <math.h>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <compiz-core.h>
+#include <compoption.h>
+#include "privateoption.h"
 
-struct _Modifier {
-    char *name;
-    int  modifier;
-} modifiers[] = {
-    { "<Shift>",      ShiftMask		 },
-    { "<Control>",    ControlMask	 },
-    { "<Mod1>",	      Mod1Mask		 },
-    { "<Mod2>",	      Mod2Mask		 },
-    { "<Mod3>",	      Mod3Mask		 },
-    { "<Mod4>",	      Mod4Mask		 },
-    { "<Mod5>",	      Mod5Mask		 },
-    { "<Alt>",	      CompAltMask        },
-    { "<Meta>",	      CompMetaMask       },
-    { "<Super>",      CompSuperMask      },
-    { "<Hyper>",      CompHyperMask	 },
-    { "<ModeSwitch>", CompModeSwitchMask }
-};
+CompOption::Vector noOptions (0);
 
-#define N_MODIFIERS (sizeof (modifiers) / sizeof (struct _Modifier))
+CompOption::Value::Value () :
+    priv (new PrivateValue ())
+{
+}
 
-struct _Edge {
-    char *name;
-    char *modifierName;
-} edges[] = {
-    { "Left",	     "<LeftEdge>"	 },
-    { "Right",	     "<RightEdge>"	 },
-    { "Top",	     "<TopEdge>"	 },
-    { "Bottom",	     "<BottomEdge>"	 },
-    { "TopLeft",     "<TopLeftEdge>"	 },
-    { "TopRight",    "<TopRightEdge>"	 },
-    { "BottomLeft",  "<BottomLeftEdge>"	 },
-    { "BottomRight", "<BottomRightEdge>" }
-};
+CompOption::Value::Value (const Value &v) :
+    priv (new PrivateValue (*v.priv))
+{
+}
+
+CompOption::Value::~Value ()
+{
+    delete priv;
+}
+
+CompOption::Value::Value (const bool b) :
+    priv (new PrivateValue ())
+{
+    set (b);
+}
+
+CompOption::Value::Value (const int i) :
+    priv (new PrivateValue ())
+{
+    set (i);
+}
+
+CompOption::Value::Value (const float f) :
+    priv (new PrivateValue ())
+{
+    set (f);
+}
+
+CompOption::Value::Value (const unsigned short *color) :
+    priv (new PrivateValue ())
+{
+    set (color);
+}
+
+CompOption::Value::Value (const CompString& s) :
+    priv (new PrivateValue ())
+{
+    set (s);
+}
+
+CompOption::Value::Value (const char *s) :
+    priv (new PrivateValue ())
+{
+    set (s);
+}
+
+
+CompOption::Value::Value (const CompMatch& m) :
+    priv (new PrivateValue ())
+{
+    set (m);
+}
+
+CompOption::Value::Value (const CompAction& a) :
+    priv (new PrivateValue ())
+{
+    set (a);
+}
+
+CompOption::Value::Value (CompOption::Type type, const Vector& l) :
+    priv (new PrivateValue ())
+{
+    set (type, l);
+}
+
 
 void
-compInitOptionValue (CompOptionValue *v)
+CompOption::Value::set (const bool b)
 {
-    memset (v, 0, sizeof (CompOptionValue));
+    priv->reset ();
+    priv->type = CompOption::TypeBool;
+    priv->value.b = b;
 }
 
 void
-compFiniOptionValue (CompOptionValue *v,
-		     CompOptionType  type)
+CompOption::Value::set (const int i)
 {
-    int i;
+    priv->reset ();
+    priv->type = CompOption::TypeInt;
+    priv->value.i = i;
+}
 
-    switch (type) {
-    case CompOptionTypeString:
-	if (v->s)
-	    free (v->s);
-	break;
-    case CompOptionTypeMatch:
-	delete (v->match);
-	v->match = NULL;
-	break;
-    case CompOptionTypeList:
-	for (i = 0; i < v->list.nValue; i++)
-	    compFiniOptionValue (&v->list.value[i], v->list.type);
+void
+CompOption::Value::set (const float f)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeFloat;
+    priv->value.f = f;
+}
 
-	if (v->list.value)
-	    free (v->list.value);
-	break;
-    default:
-	break;
+void
+CompOption::Value::set (const unsigned short *color)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeColor;
+    priv->value.c[0] = color[0];
+    priv->value.c[1] = color[1];
+    priv->value.c[2] = color[2];
+    priv->value.c[3] = color[3];
+}
+
+void
+CompOption::Value::set (const CompString& s)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeString;
+    priv->string = s;
+}
+
+void
+CompOption::Value::set (const char *s)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeString;
+    priv->string = CompString (s);
+}
+
+void
+CompOption::Value::set (const CompMatch& m)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeMatch;
+    priv->match = m;
+}
+
+void
+CompOption::Value::set (const CompAction& a)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeAction;
+    priv->action = a;
+}
+
+void
+CompOption::Value::set (CompOption::Type type, const Vector& l)
+{
+    priv->reset ();
+    priv->type = CompOption::TypeList;
+    priv->list = l;
+    priv->listType = type;
+}
+
+
+bool
+CompOption::Value::b ()
+{
+    if (priv->type != CompOption::TypeBool)
+	return false;
+    return priv->value.b;
+}
+
+int
+CompOption::Value::i ()
+{
+    if (priv->type != CompOption::TypeInt)
+	return 0;
+    return priv->value.i;
+}
+
+float
+CompOption::Value::f ()
+{
+    if (priv->type != CompOption::TypeFloat)
+	return 0.0;
+    return priv->value.f;
+}
+
+unsigned short*
+CompOption::Value::c ()
+{
+    if (priv->type != CompOption::TypeColor)
+	return reinterpret_cast<unsigned short *> (&defaultColor);
+    return priv->value.c;
+}
+
+CompString
+CompOption::Value::s ()
+{
+    return priv->string;
+}
+
+CompMatch &
+CompOption::Value::match ()
+{
+    return priv->match;
+}
+
+CompAction &
+CompOption::Value::action ()
+{
+    return priv->action;
+}
+
+CompOption::Type
+CompOption::Value::listType ()
+{
+    return priv->listType;
+}
+
+CompOption::Value::Vector &
+CompOption::Value::list ()
+{
+    return priv->list;
+}
+
+bool
+CompOption::Value::operator== (const CompOption::Value &val)
+{
+    if (priv->type != val.priv->type)
+	return false;
+    switch (priv->type)
+    {
+	case CompOption::TypeBool:
+	    return priv->value.b == val.priv->value.b;
+	    break;
+	case CompOption::TypeInt:
+	    return priv->value.i == val.priv->value.i;
+	    break;
+	case CompOption::TypeFloat:
+	    return priv->value.f == val.priv->value.f;
+	    break;
+	case CompOption::TypeColor:
+	    return (priv->value.c[0] == val.priv->value.c[0]) &&
+		   (priv->value.c[1] == val.priv->value.c[1]) &&
+		   (priv->value.c[2] == val.priv->value.c[2]) &&
+		   (priv->value.c[3] == val.priv->value.c[3]);
+	    break;
+	case CompOption::TypeString:
+	    return priv->string.compare (val.priv->string) == 0;
+	    break;
+	case CompOption::TypeMatch:
+	    return priv->match == val.priv->match;
+	    break;
+	case CompOption::TypeAction:
+	    return priv->action == val.priv->action;
+	    break;
+	case CompOption::TypeList:
+	    if (priv->listType != val.priv->listType)
+		return false;
+	    if (priv->list.size () != val.priv->list.size ())
+		return false;
+	    for (unsigned int i = 0; i < priv->list.size (); i++)
+		if (priv->list[i] != val.priv->list[i])
+		    return false;
+	    return true;
+	    break;
+	default:
+	    break;
     }
+
+    return true;
+}
+
+bool
+CompOption::Value::operator!= (const CompOption::Value &val)
+{
+    return !(*this == val);
+}
+
+CompOption::Value &
+CompOption::Value::operator= (const CompOption::Value &val)
+{
+    delete priv;
+    priv = new PrivateValue (*val.priv);
+    return *this;
+}
+
+PrivateValue::PrivateValue () :
+    type (CompOption::TypeBool),
+    string (""),
+    action (),
+    match (),
+    listType (CompOption::TypeBool),
+    list ()
+{
+    memset (&value, 0, sizeof (ValueUnion));
+}
+
+PrivateValue::PrivateValue (const PrivateValue& p) :
+    type (p.type),
+    string (p.string),
+    action (p.action),
+    match (p.match),
+    listType (p.listType),
+    list (p.list)
+{
+    memcpy (&value, &p.value, sizeof (ValueUnion));
 }
 
 void
-compInitOption (CompOption *o)
+PrivateValue::reset ()
 {
-    memset (o, 0, sizeof (CompOption));
+    switch (type) {
+	case CompOption::TypeString:
+	    string = "";
+	    break;
+	case CompOption::TypeMatch:
+	    match = CompMatch ();
+	    break;
+	case CompOption::TypeAction:
+	    action = CompAction ();
+	    break;
+	case CompOption::TypeList:
+	    list.clear ();
+	    listType = CompOption::TypeBool;
+	    break;
+	default:
+	    break;
+    }
+    type = CompOption::TypeBool;
+}
+
+CompOption::Restriction::Restriction () :
+    priv (new PrivateRestriction ())
+{
+}
+
+CompOption::Restriction::Restriction (const CompOption::Restriction::Restriction &r) :
+    priv (new PrivateRestriction (*r.priv))
+{
+}
+
+CompOption::Restriction::~Restriction ()
+{
+    delete priv;
+}
+
+int
+CompOption::Restriction::iMin ()
+{
+    if (priv->type == CompOption::TypeInt)
+	return priv->rest.i.min;
+    return MINSHORT;
+}
+
+int
+CompOption::Restriction::iMax ()
+{
+    if (priv->type == CompOption::TypeInt)
+	return priv->rest.i.max;
+    return MAXSHORT;
+}
+
+float
+CompOption::Restriction::fMin ()
+{
+    if (priv->type == CompOption::TypeFloat)
+	return priv->rest.f.min;
+    return MINSHORT;
+}
+
+float
+CompOption::Restriction::fMax ()
+{
+    if (priv->type == CompOption::TypeFloat)
+	return priv->rest.f.min;
+    return MINSHORT;
+}
+
+float
+CompOption::Restriction::fPrecision ()
+{
+    if (priv->type == CompOption::TypeFloat)
+	return priv->rest.f.precision;
+    return 0.1f;
+}
+
+
+void
+CompOption::Restriction::set (int min, int max)
+{
+    priv->type = CompOption::TypeInt;
+    priv->rest.i.min = min;
+    priv->rest.i.max = max;
 }
 
 void
-compFiniOption (CompOption *o)
+CompOption::Restriction::set (float min, float max, float precision)
 {
-    compFiniOptionValue (&o->value, o->type);
+    priv->type = CompOption::TypeFloat;
+    priv->rest.f.min       = min;
+    priv->rest.f.max       = max;
+    priv->rest.f.precision = precision;
 }
+
+bool
+CompOption::Restriction::inRange (int i)
+{
+    if (priv->type != CompOption::TypeInt)
+	return true;
+    if (i < priv->rest.i.min)
+	return false;
+    if (i > priv->rest.i.max)
+	return false;
+    return true;
+}
+
+bool
+CompOption::Restriction::inRange (float f)
+{
+    if (priv->type != CompOption::TypeFloat)
+	return true;
+    if (f < priv->rest.f.min)
+	return false;
+    if (f > priv->rest.f.max)
+	return false;
+    return true;
+}
+
+CompOption::Restriction &
+CompOption::Restriction::operator= (const CompOption::Restriction &rest)
+{
+    delete priv;
+    priv = new PrivateRestriction (*rest.priv);
+    return *this;
+}
+
 
 CompOption *
-compFindOption (CompOption *option,
-		int	    nOption,
-		const char  *name,
-		int	    *index)
+CompOption::findOption (CompOption::Vector &options,
+			CompString         name,
+			unsigned int       *index)
 {
-    int i;
+    unsigned int i;
 
-    for (i = 0; i < nOption; i++)
+    for (i = 0; i < options.size (); i++)
     {
-	if (strcmp (option[i].name, name) == 0)
+	if (options[i].priv->name.compare(name) == 0)
 	{
 	    if (index)
 		*index = i;
 
-	    return &option[i];
+	    return &options[i];
 	}
     }
 
-    return 0;
+    return NULL;
 }
 
-Bool
-compSetBoolOption (CompOption	   *option,
-		   CompOptionValue *value)
+CompOption::CompOption () :
+    priv (new PrivateOption ())
 {
-    int b;
-
-    b = (value->b) ? TRUE : FALSE;
-
-    if (option->value.b == b)
-	return FALSE;
-
-    option->value.b = b;
-
-    return TRUE;
 }
 
-Bool
-compSetIntOption (CompOption	  *option,
-		  CompOptionValue *value)
+CompOption::CompOption (const CompOption &o) :
+    priv (new PrivateOption (*o.priv))
 {
-    if (value->i < option->rest.i.min ||
-	value->i > option->rest.i.max ||
-	value->i == option->value.i)
-	return FALSE;
-
-    option->value.i = value->i;
-
-    return TRUE;
 }
 
-Bool
-compSetFloatOption (CompOption	    *option,
-		    CompOptionValue *value)
+CompOption::CompOption (CompString name, CompOption::Type type) :
+    priv (new PrivateOption ())
 {
-    float v, p;
-
-    /* Workaround for float rounding errors */
-    static float equalRange = 1e-5;
-
-    int sign = (value->f < 0 ? -1 : 1);
-
-    p = 1.0f / option->rest.f.precision;
-    v = ((int) (value->f * p + sign * 0.5f)) / p;
-
-    if (v < (option->rest.f.min - equalRange) ||
-	v > (option->rest.f.max + equalRange))
-	return FALSE;
-
-    if (v > (option->value.f - equalRange) &&
-	v < (option->value.f + equalRange))
-	return FALSE;
-
-    option->value.f = v;
-
-    return TRUE;
+    setName (name, type);
 }
 
-Bool
-compSetStringOption (CompOption	     *option,
-		     CompOptionValue *value)
+CompOption::~CompOption ()
 {
-    char *s;
+    delete priv;
+}
 
-    s = value->s;
-    if (!s)
-	s = "";
+void
+CompOption::setName (CompString name, CompOption::Type type)
+{
+    priv->name = name;
+    priv->type = type;
+}
+	
+CompString
+CompOption::name ()
+{
+    return priv->name;
+}
 
-    if (option->value.s == s)
-	return FALSE;
+CompOption::Type
+CompOption::type ()
+{
+    return priv->type;
+}
 
-    if (option->value.s && s)
+CompOption::Value &
+CompOption::value ()
+{
+    return priv->value;
+}
+
+CompOption::Restriction &
+CompOption::rest ()
+{
+    return priv->rest;
+}
+
+bool
+CompOption::set (CompOption::Value &val)
+{
+    if (priv->type == CompOption::TypeKey ||
+	priv->type == CompOption::TypeButton ||
+	priv->type == CompOption::TypeEdge ||
+	priv->type == CompOption::TypeBell)
+	val.action ().copyState (priv->value.action ());
+
+    if (priv->value == val)
+	return false;
+
+    switch (priv->type)
     {
-	if (strcmp (option->value.s, s) == 0)
-	    return FALSE;
-    }
-
-    if (option->value.s)
-	free (option->value.s);
-
-    option->value.s = strdup (s);
-
-    return TRUE;
-}
-
-Bool
-compSetColorOption (CompOption	    *option,
-		    CompOptionValue *value)
-{
-    if (memcmp (value->c, option->value.c, sizeof (value->c)) == 0)
-	return FALSE;
-
-    memcpy (option->value.c, value->c, sizeof (value->c));
-
-    return TRUE;
-}
-
-Bool
-compSetActionOption (CompOption      *option,
-		     CompOptionValue *value)
-{
-    CompAction	    *action = &option->value.action;
-    CompOptionValue v = *value;
-
-    /* initiate, terminate, priv and state should never be changed */
-    v.action.initiate  = action->initiate;
-    v.action.terminate = action->terminate;
-    v.action.state     = action->state;
-    v.action.priv      = action->priv;
-
-    if (action->type == v.action.type)
-    {
-	switch (option->type) {
-	case CompOptionTypeKey:
-	    if (!(action->type & CompBindingTypeKey))
-		return FALSE;
-
-	    if (action->key.keycode   == v.action.key.keycode &&
-		action->key.modifiers == v.action.key.modifiers)
-		return FALSE;
+	case CompOption::TypeInt:	    
+	    if (!priv->rest.inRange (val.i ()))
+		return false;
 	    break;
-	case CompOptionTypeButton:
-	    if (!(action->type & (CompBindingTypeButton |
-				  CompBindingTypeEdgeButton)))
-		return FALSE;
-
-	    if (action->type & CompBindingTypeEdgeButton)
-	    {
-		if (action->button.button    == v.action.button.button    &&
-		    action->button.modifiers == v.action.button.modifiers &&
-		    action->edgeMask         == v.action.edgeMask)
-		    return FALSE;
-	    }
-	    else if (action->type & CompBindingTypeButton)
-	    {
-		if (action->button.button    == v.action.button.button &&
-		    action->button.modifiers == v.action.button.modifiers)
-		    return FALSE;
-	    }
-	    break;
-	case CompOptionTypeEdge:
-	    if (v.action.edgeMask == action->edgeMask)
-		return FALSE;
-	    break;
-	case CompOptionTypeBell:
-	    if (v.action.bell == action->bell)
-		return FALSE;
-	    break;
-	default:
-	    return FALSE;
-	}
-    }
-
-    *action = v.action;
-
-    return TRUE;
-}
-
-Bool
-compSetMatchOption (CompOption      *option,
-		    CompOptionValue *value)
-{
-    CompDisplay *display = option->value.match->display ();
-    CompMatch	match;
-
-    if (*option->value.match == *value->match)
-	return FALSE;
-
-    match = *value->match;
-
-    delete option->value.match;
-
-    option->value.match = new CompMatch (*value->match);
-
-    if (display)
-	option->value.match->update (display);
-
-    return TRUE;
-}
-
-Bool
-compSetOptionList (CompOption      *option,
-		   CompOptionValue *value)
-{
-    CompOption o;
-    Bool       status = FALSE;
-    int        i, min;
-
-    if (value->list.nValue != option->value.list.nValue)
-    {
-	CompOptionValue *v;
-
-	v = (CompOptionValue *) malloc (sizeof (CompOptionValue) * value->list.nValue);
-	if (!v)
-	    return FALSE;
-
-	min = MIN (value->list.nValue, option->value.list.nValue);
-
-	for (i = min; i < option->value.list.nValue; i++)
+	case CompOption::TypeFloat:
 	{
-	    switch (option->value.list.type) {
-	    case CompOptionTypeString:
-		if (option->value.list.value[i].s)
-		    free (option->value.list.value[i].s);
-		break;
-	    case CompOptionTypeMatch:
-		delete option->value.list.value[i].match;
-		option->value.list.value[i].match = NULL;
-	    default:
-		break;
-	    }
+	    float v, p;
+	    int sign = (val.f () < 0 ? -1 : 1);
+
+	    if (!priv->rest.inRange (val.f ()))
+		return false;
+
+	    p = 1.0f / priv->rest.fPrecision ();
+	    v = ((int) (val.f () * p + sign * 0.5f)) / p;
+
+	    priv->value.set (v);
+	    return true;
 	}
-
-	memset (v, 0, sizeof (CompOptionValue) * value->list.nValue);
-
-	if (min)
-	    memcpy (v, option->value.list.value,
-		    sizeof (CompOptionValue) * min);
-
-	if (option->value.list.value)
-	    free (option->value.list.value);
-
-	option->value.list.value = v;
-	option->value.list.nValue = value->list.nValue;
-
-	status = TRUE;
-    }
-
-    o = *option;
-    o.type = option->value.list.type;
-
-    for (i = 0; i < value->list.nValue; i++)
-    {
-	o.value = option->value.list.value[i];
-
-	switch (o.type) {
-	case CompOptionTypeBool:
-	    status |= compSetBoolOption (&o, &value->list.value[i]);
+	case CompOption::TypeAction:
+	    return false;
+	case CompOption::TypeKey:
+	    if (!(val.action ().type () & CompAction::BindingTypeKey))
+		return false;
 	    break;
-	case CompOptionTypeInt:
-	    status |= compSetIntOption (&o, &value->list.value[i]);
+	case CompOption::TypeButton:
+	    if (!(val.action ().type () & (CompAction::BindingTypeButton |
+					   CompAction::BindingTypeEdgeButton)))
+		return false;
 	    break;
-	case CompOptionTypeFloat:
-	    status |= compSetFloatOption (&o, &value->list.value[i]);
-	    break;
-	case CompOptionTypeString:
-	    status |= compSetStringOption (&o, &value->list.value[i]);
-	    break;
-	case CompOptionTypeColor:
-	    status |= compSetColorOption (&o, &value->list.value[i]);
-	    break;
-	case CompOptionTypeMatch:
-	    status |= compSetMatchOption (&o, &value->list.value[i]);
 	default:
 	    break;
-	}
-
-	option->value.list.value[i] = o.value;
     }
-
-    return status;
+    priv->value = val;
+    return true;
 }
 
-Bool
-compSetOption (CompOption      *option,
-	       CompOptionValue *value)
+bool
+CompOption::isAction ()
 {
-    switch (option->type) {
-    case CompOptionTypeBool:
-	return compSetBoolOption (option, value);
-    case CompOptionTypeInt:
-	return compSetIntOption (option, value);
-    case CompOptionTypeFloat:
-	return compSetFloatOption (option, value);
-    case CompOptionTypeString:
-	return compSetStringOption (option, value);
-    case CompOptionTypeColor:
-	return compSetColorOption (option, value);
-    case CompOptionTypeMatch:
-	return compSetMatchOption (option, value);
-    case CompOptionTypeAction:
-    case CompOptionTypeKey:
-    case CompOptionTypeButton:
-    case CompOptionTypeEdge:
-    case CompOptionTypeBell:
-	return compSetActionOption (option, value);
-    case CompOptionTypeList:
-	return compSetOptionList (option, value);
+    switch (priv->type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    return true;
+	default:
+	    break;
     }
 
-    return FALSE;
+    return false;
 }
 
-Bool
-getBoolOptionNamed (CompOption *option,
-		    int	       nOption,
-		    const char *name,
-		    Bool       defaultValue)
+CompOption &
+CompOption::operator= (const CompOption &option)
 {
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeBool)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.b;
+    delete priv;
+    priv = new PrivateOption (*option.priv);
+    return *this;
+}
 
-	option++;
-    }
+
+bool
+CompOption::getBoolOptionNamed (Vector &options, CompString name,
+				bool defaultValue)
+{
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeBool &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.b ();
 
     return defaultValue;
 }
 
 int
-getIntOptionNamed (CompOption *option,
-		   int	      nOption,
-		   const char *name,
-		   int	      defaultValue)
+CompOption::getIntOptionNamed (Vector &options, CompString name,
+			       int defaultValue)
 {
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeInt)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.i;
-
-	option++;
-    }
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeInt &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.i ();
 
     return defaultValue;
 }
+
 
 float
-getFloatOptionNamed (CompOption *option,
-		     int	nOption,
-		     const char *name,
-		     float	defaultValue)
+CompOption::getFloatOptionNamed (Vector &options, CompString name,
+				 float defaultValue)
 {
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeFloat)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.f;
-
-	option++;
-    }
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeFloat &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.f ();
 
     return defaultValue;
 }
 
-char *
-getStringOptionNamed (CompOption *option,
-		      int	 nOption,
-		      const char *name,
-		      char	 *defaultValue)
-{
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeString)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.s;
 
-	option++;
-    }
+CompString
+CompOption::getStringOptionNamed (Vector &options, CompString name,
+				  CompString defaultValue)
+{
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeString &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.s ();
 
     return defaultValue;
 }
+
 
 unsigned short *
-getColorOptionNamed (CompOption	    *option,
-		     int	    nOption,
-		     const char     *name,
-		     unsigned short *defaultValue)
+CompOption::getColorOptionNamed (Vector &options, CompString name,
+				 unsigned short *defaultValue)
 {
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeColor)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.c;
-
-	option++;
-    }
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeColor &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.c ();
 
     return defaultValue;
 }
 
-CompMatch *
-getMatchOptionNamed (CompOption	*option,
-		     int	nOption,
-		     const char *name,
-		     CompMatch  *defaultValue)
-{
-    while (nOption--)
-    {
-	if (option->type == CompOptionTypeMatch)
-	    if (strcmp (option->name, name) == 0)
-		return option->value.match;
 
-	option++;
-    }
+CompMatch &
+CompOption::getMatchOptionNamed (Vector &options, CompString name,
+				 CompMatch &defaultValue)
+{
+    foreach (CompOption &o, options)
+	if (o.priv->type == CompOption::TypeMatch &&
+	    o.priv->name.compare(name) == 0)
+	    return o.priv->value.match ();
 
     return defaultValue;
 }
 
-static char *
-stringAppend (char	 *s,
-	      const char *a)
-{
-    char *r;
-    int  len;
 
-    len = strlen (a);
 
-    if (s)
-	len += strlen (s);
-
-    r = (char *) malloc (len + 1);
-    if (r)
-    {
-	if (s)
-	{
-	    sprintf (r, "%s%s", s, a);
-	    free (s);
-	}
-	else
-	{
-	    sprintf (r, "%s", a);
-	}
-
-	s = r;
-    }
-
-    return s;
-}
-
-static char *
-modifiersToString (CompDisplay  *d,
-		   unsigned int modMask)
-{
-    char *binding = NULL;
-    int  i;
-
-    for (i = 0; i < N_MODIFIERS; i++)
-    {
-	if (modMask & modifiers[i].modifier)
-	    binding = stringAppend (binding, modifiers[i].name);
-    }
-
-    return binding;
-}
-
-static char *
-edgeMaskToBindingString (CompDisplay  *d,
-			 unsigned int edgeMask)
-{
-    char *binding = NULL;
-    int  i;
-
-    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-	if (edgeMask & (1 << i))
-	    binding = stringAppend (binding, edges[i].modifierName);
-
-    return binding;
-}
-
-char *
-keyBindingToString (CompDisplay    *d,
-		    CompKeyBinding *key)
-{
-    char *binding;
-
-    binding = modifiersToString (d, key->modifiers);
-
-    if (key->keycode != 0)
-    {
-	KeySym keysym;
-	char   *keyname;
-
-	keysym  = XKeycodeToKeysym (d->dpy (), key->keycode, 0);
-	keyname = XKeysymToString (keysym);
-
-	if (keyname)
-	{
-	    binding = stringAppend (binding, keyname);
-	}
-	else
-	{
-	    char keyCodeStr[256];
-
-	    snprintf (keyCodeStr, 256, "0x%x", key->keycode);
-	    binding = stringAppend (binding, keyCodeStr);
-	}
-    }
-
-    return binding;
-}
-
-char *
-buttonBindingToString (CompDisplay       *d,
-		       CompButtonBinding *button)
-{
-    char *binding;
-    char buttonStr[256];
-
-    binding = modifiersToString (d, button->modifiers);
-
-    snprintf (buttonStr, 256, "Button%d", button->button);
-    binding = stringAppend (binding, buttonStr);
-
-    return binding;
-}
-
-char *
-keyActionToString (CompDisplay *d,
-		   CompAction  *action)
-{
-    char *binding;
-
-    binding = keyBindingToString (d, &action->key);
-    if (!binding)
-	return strdup ("Disabled");
-
-    return binding;
-}
-
-char *
-buttonActionToString (CompDisplay *d,
-		      CompAction  *action)
-{
-    char *binding, *edge;
-    char buttonStr[256];
-
-    binding = modifiersToString (d, action->button.modifiers);
-    edge    = edgeMaskToBindingString (d, action->edgeMask);
-
-    if (edge)
-    {
-	binding = stringAppend (binding, edge);
-	free (edge);
-    }
-
-    snprintf (buttonStr, 256, "Button%d", action->button.button);
-    binding = stringAppend (binding, buttonStr);
-
-    if (!binding)
-	return strdup ("Disabled");
-
-    return binding;
-}
-
-static unsigned int
-stringToModifiers (CompDisplay *d,
-		   const char  *binding)
-{
-    unsigned int mods = 0;
-    int		 i;
-
-    for (i = 0; i < N_MODIFIERS; i++)
-    {
-	if (strstr (binding, modifiers[i].name))
-	    mods |= modifiers[i].modifier;
-    }
-
-    return mods;
-}
-
-static unsigned int
-bindingStringToEdgeMask (CompDisplay *d,
-			 const char  *binding)
-{
-    unsigned int edgeMask = 0;
-    int		 i;
-
-    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-	if (strstr (binding, edges[i].modifierName))
-	    edgeMask |= 1 << i;
-
-    return edgeMask;
-}
-
-Bool
-stringToKeyBinding (CompDisplay    *d,
-		    const char     *binding,
-		    CompKeyBinding *key)
-{
-    char	  *ptr;
-    unsigned int  mods;
-    KeySym	  keysym;
-
-    mods = stringToModifiers (d, binding);
-
-    ptr = strrchr (binding, '>');
-    if (ptr)
-	binding = ptr + 1;
-
-    while (*binding && !isalnum (*binding))
-	binding++;
-
-    if (!*binding)
-    {
-	if (mods)
-	{
-	    key->keycode   = 0;
-	    key->modifiers = mods;
-
-	    return TRUE;
-	}
-
-	return FALSE;
-    }
-
-    keysym = XStringToKeysym (binding);
-    if (keysym != NoSymbol)
-    {
-	KeyCode keycode;
-
-	keycode = XKeysymToKeycode (d->dpy (), keysym);
-	if (keycode)
-	{
-	    key->keycode   = keycode;
-	    key->modifiers = mods;
-
-	    return TRUE;
-	}
-    }
-
-    if (strncmp (binding, "0x", 2) == 0)
-    {
-	key->keycode   = strtol (binding, NULL, 0);
-	key->modifiers = mods;
-
-	return TRUE;
-    }
-
-    return FALSE;
-}
-
-Bool
-stringToButtonBinding (CompDisplay	 *d,
-		       const char	 *binding,
-		       CompButtonBinding *button)
-{
-    char	 *ptr;
-    unsigned int mods;
-
-    mods = stringToModifiers (d, binding);
-
-    ptr = strrchr (binding, '>');
-    if (ptr)
-	binding = ptr + 1;
-
-    while (*binding && !isalnum (*binding))
-	binding++;
-
-    if (strncmp (binding, "Button", strlen ("Button")) == 0)
-    {
-	int buttonNum;
-
-	if (sscanf (binding + strlen ("Button"), "%d", &buttonNum) == 1)
-	{
-	    button->button    = buttonNum;
-	    button->modifiers = mods;
-
-	    return TRUE;
-	}
-    }
-
-    return FALSE;
-}
-
-void
-stringToKeyAction (CompDisplay *d,
-		   const char  *binding,
-		   CompAction  *action)
-{
-    if (stringToKeyBinding (d, binding, &action->key))
-	action->type = CompBindingTypeKey;
-    else
-	action->type = CompBindingTypeNone;
-}
-
-void
-stringToButtonAction (CompDisplay *d,
-		      const char  *binding,
-		      CompAction  *action)
-{
-    if (stringToButtonBinding (d, binding, &action->button))
-    {
-	action->edgeMask = bindingStringToEdgeMask (d, binding);
-	if (action->edgeMask)
-	    action->type = CompBindingTypeEdgeButton;
-	else
-	    action->type = CompBindingTypeButton;
-    }
-    else
-    {
-	action->type = CompBindingTypeNone;
-    }
-}
-
-const char *
-edgeToString (unsigned int edge)
-{
-    return edges[edge].name;
-}
-
-unsigned int
-stringToEdgeMask (const char *edge)
-{
-    unsigned int edgeMask = 0;
-    char	 *needle;
-    int		 i;
-
-    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-    {
-	needle = strstr (edge, edgeToString (i));
-	if (needle)
-	{
-	    if (needle != edge && isalnum (*(needle - 1)))
-		continue;
-
-	    needle += strlen (edgeToString (i));
-
-	    if (*needle && isalnum (*needle))
-		continue;
-
-	    edgeMask |= 1 << i;
-	}
-    }
-
-    return edgeMask;
-}
-
-char *
-edgeMaskToString (unsigned int edgeMask)
-{
-    char *edge = NULL;
-    int	 i;
-
-    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-    {
-	if (edgeMask & (1 << i))
-	{
-	    if (edge)
-		edge = stringAppend (edge, " | ");
-
-	    edge = stringAppend (edge, edgeToString (i));
-	}
-    }
-
-    if (!edge)
-	return strdup ("");
-
-    return edge;
-}
-
-Bool
-stringToColor (const char     *color,
-	       unsigned short *rgba)
+bool
+CompOption::stringToColor (CompString     color,
+			   unsigned short *rgba)
 {
     int c[4];
 
-    if (sscanf (color, "#%2x%2x%2x%2x", &c[0], &c[1], &c[2], &c[3]) == 4)
+    if (sscanf (color.c_str (), "#%2x%2x%2x%2x",
+		&c[0], &c[1], &c[2], &c[3]) == 4)
     {
 	rgba[0] = c[0] << 8 | c[0];
 	rgba[1] = c[1] << 8 | c[1];
 	rgba[2] = c[2] << 8 | c[2];
 	rgba[3] = c[3] << 8 | c[3];
 
-	return TRUE;
+	return true;
     }
 
-    return FALSE;
+    return false;
 }
 
-char *
-colorToString (unsigned short *rgba)
+CompString
+CompOption::colorToString (unsigned short *rgba)
 {
-    char tmp[256];
-
-    snprintf (tmp, 256, "#%.2x%.2x%.2x%.2x",
-	      rgba[0] / 256, rgba[1] / 256, rgba[2] / 256, rgba[3] / 256);
-
-    return strdup (tmp);
+    return compPrintf ("#%.2x%.2x%.2x%.2x", rgba[0] / 256, rgba[1] / 256,
+					    rgba[2] / 256, rgba[3] / 256);
 }
 
-const char *
-optionTypeToString (CompOptionType type)
+CompString
+CompOption::typeToString (CompOption::Type type)
 {
     switch (type) {
-    case CompOptionTypeBool:
-	return "bool";
-    case CompOptionTypeInt:
-	return "int";
-    case CompOptionTypeFloat:
-	return "float";
-    case CompOptionTypeString:
-	return "string";
-    case CompOptionTypeColor:
-	return "color";
-    case CompOptionTypeAction:
-	return "action";
-    case CompOptionTypeKey:
-	return "key";
-    case CompOptionTypeButton:
-	return "button";
-    case CompOptionTypeEdge:
-	return "edge";
-    case CompOptionTypeBell:
-	return "bell";
-    case CompOptionTypeMatch:
-	return "match";
-    case CompOptionTypeList:
-	return "list";
+	case CompOption::TypeBool:
+	    return "bool";
+	case CompOption::TypeInt:
+	    return "int";
+	case CompOption::TypeFloat:
+	    return "float";
+	case CompOption::TypeString:
+	    return "string";
+	case CompOption::TypeColor:
+	    return "color";
+	case CompOption::TypeAction:
+	    return "action";
+	case CompOption::TypeKey:
+	    return "key";
+	case CompOption::TypeButton:
+	    return "button";
+	case CompOption::TypeEdge:
+	    return "edge";
+	case CompOption::TypeBell:
+	    return "bell";
+	case CompOption::TypeMatch:
+	    return "match";
+	case CompOption::TypeList:
+	    return "list";
     }
 
     return "unknown";
 }
 
-Bool
-isActionOption (CompOption *option)
+bool
+CompOption::setScreenOption (CompScreen        *s,
+			     CompOption        &o,
+			     CompOption::Value &value)
 {
-    switch (option->type) {
-    case CompOptionTypeAction:
-    case CompOptionTypeKey:
-    case CompOptionTypeButton:
-    case CompOptionTypeEdge:
-    case CompOptionTypeBell:
-	return TRUE;
-    default:
-	break;
+    return o.set (value);
+}
+
+bool
+CompOption::setDisplayOption (CompDisplay       *d,
+			      CompOption        &o,
+			      CompOption::Value &value)
+{
+    if (o.isAction () &&
+    o.value ().action ().state () & CompAction::StateAutoGrab)
+    {
+	CompScreen *s;
+
+	for (s = d->screens (); s; s = s->next)
+	    if (!s->addAction (&value.action ()))
+		break;
+
+	if (s)
+	{
+	    CompScreen *failed = s;
+
+	    for (s = d->screens (); s && s != failed; s = s->next)
+		s->removeAction (&value.action ());
+
+	    return false;
+	}
+	else
+	{
+	    for (s = d->screens (); s; s = s->next)
+		s->removeAction (&o.value ().action ());
+	}
+
+	return o.set (value);
     }
 
-    return FALSE;
+    return o.set (value);
 }
+
+static void
+finiScreenOptionValue (CompScreen        *s,
+		       CompOption::Value &v,
+		       CompOption::Type  type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    if (v.action ().state () & CompAction::StateAutoGrab)
+		s->removeAction (&v.action ());
+	    break;
+	case CompOption::TypeList:
+	    foreach (CompOption::Value &val, v.list ())
+		finiScreenOptionValue (s, val, v.listType ());
+	default:
+	    break;
+    }
+}
+
+static void
+finiDisplayOptionValue (CompDisplay	  *d,
+			CompOption::Value &v,
+			CompOption::Type  type)
+{
+    CompScreen *s;
+
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    if (v.action ().state () & CompAction::StateAutoGrab)
+		for (s = d->screens (); s; s = s->next)
+		    s->removeAction (&v.action ());
+	    break;
+	case CompOption::TypeList:
+	    foreach (CompOption::Value &val, v.list ())
+		finiDisplayOptionValue (d, val, v.listType ());
+	default:
+	    break;
+    }
+}
+
+
+void
+CompOption::finiScreenOptions (CompScreen         *s,
+			       CompOption::Vector &options)
+{
+    foreach (CompOption &o, options)
+	finiScreenOptionValue (s, o.value (), o.type ());
+}
+
+void
+CompOption::finiDisplayOptions (CompDisplay        *d,
+				CompOption::Vector &options)
+{
+    foreach (CompOption &o, options)
+	finiDisplayOptionValue (d, o.value (), o.type ());
+}
+
+PrivateOption::PrivateOption () :
+    name (""),
+    type (CompOption::TypeBool),
+    value (),
+    rest ()
+{
+}
+
+PrivateOption::PrivateOption (const PrivateOption &p) :
+    name (p.name),
+    type (p.type),
+    value (p.value),
+    rest (p.rest)
+{
+}
+

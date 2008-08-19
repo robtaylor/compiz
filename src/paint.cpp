@@ -295,7 +295,7 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 
 		/* unredirect top most fullscreen windows. */
 		if (count == 0 &&
-		    opt[COMP_SCREEN_OPTION_UNREDIRECT_FS].value.b)
+		    opt[COMP_SCREEN_OPTION_UNREDIRECT_FS].value ().b ())
 		{
 		    if (XEqualRegion (w->region (), &this->region) &&
 			!REGION_NOT_EMPTY (tmpRegion))

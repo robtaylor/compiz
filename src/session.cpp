@@ -162,25 +162,19 @@ saveYourselfCallback (SmcConn	connection,
 		      int	interact_Style,
 		      Bool	fast)
 {
-    CompOption args[4];
+    CompOption::Vector args;
 
-    args[0].type    = CompOptionTypeInt;
-    args[0].name    = "save_type";
-    args[0].value.i = saveType;
+    args.push_back (CompOption ("save_type", CompOption::TypeInt));
+    args.push_back (CompOption ("shutdown", CompOption::TypeBool));
+    args.push_back (CompOption ("interact_style", CompOption::TypeInt));
+    args.push_back (CompOption ("fast", CompOption::TypeBool));
 
-    args[1].type    = CompOptionTypeBool;
-    args[1].name    = "shutdown";
-    args[1].value.b = shutdown;
+    args[0].value ().set (saveType);
+    args[1].value ().set ((bool) shutdown);
+    args[2].value ().set (interact_Style);
+    args[3].value ().set ((bool) fast);
 
-    args[2].type    = CompOptionTypeInt;
-    args[2].name    = "interact_style";
-    args[2].value.i = interact_Style;
-
-    args[3].type    = CompOptionTypeBool;
-    args[3].name    = "fast";
-    args[3].value.b = fast;
-
-    core->sessionEvent (CompSessionEventSaveYourself, args, 4);
+    core->sessionEvent (CompSessionEventSaveYourself, args);
 
     setCloneRestartCommands (connection);
     setRestartStyle (connection, SmRestartImmediately);
@@ -192,7 +186,7 @@ static void
 dieCallback (SmcConn   connection,
 	     SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventDie, NULL, 0);
+    core->sessionEvent (CompSessionEventDie, noOptions);
 
     closeSession ();
     exit (0);
@@ -202,14 +196,14 @@ static void
 saveCompleteCallback (SmcConn	connection,
 		      SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventSaveComplete, NULL, 0);
+    core->sessionEvent (CompSessionEventSaveComplete, noOptions);
 }
 
 static void
 shutdownCancelledCallback (SmcConn   connection,
 			   SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventShutdownCancelled, NULL, 0);
+    core->sessionEvent (CompSessionEventShutdownCancelled, noOptions);
 }
 
 void

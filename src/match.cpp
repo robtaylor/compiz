@@ -107,32 +107,26 @@ CompDisplay::matchInitExp (const CompString str)
 }
 
 static void
-matchUpdateMatchOptions (CompOption  *option,
-			 int	     nOption)
+matchUpdateMatchOptions (CompOption::Vector options)
 {
-    while (nOption--)
+    foreach (CompOption &option, options)
     {
-	switch (option->type) {
-	case CompOptionTypeMatch:
-	    if (option->value.match && option->value.match->display ())
-		option->value.match->update (option->value.match->display ());
-	    break;
-	case CompOptionTypeList:
-	    if (option->value.list.type == CompOptionTypeMatch)
-	    {
-		int i;
-
-		for (i = 0; i < option->value.list.nValue; i++)
-		    if (option->value.list.value[i].match &&
-		        option->value.list.value[i].match->display ())
-			option->value.list.value[i].match->update
-			    (option->value.list.value[i].match->display ());
-	    }
-	default:
-	    break;
+	switch (option.type ()) {
+	    case CompOption::TypeMatch:
+		if (option.value ().match ().display ())
+		    option.value ().match ().update (
+			option.value ().match ().display ());
+		break;
+	    case CompOption::TypeList:
+		if (option.value ().listType () == CompOption::TypeMatch)
+		{
+		    foreach (CompOption::Value &value, option.value ().list ())
+			if (value.match ().display ())
+			    value.match ().update (value.match ().display ());
+		}
+	    default:
+		break;
 	}
-
-	option++;
     }
 }
 
@@ -141,23 +135,21 @@ CompDisplay::matchExpHandlerChanged ()
 {
     WRAPABLE_HND_FUNC(matchExpHandlerChanged)
 
-    CompOption *option;
-    int	       nOption;
     CompPlugin *p;
     CompScreen *s;
 
     for (p = getPlugins (); p; p = p->next)
     {
-	option = p->vTable->getObjectOptions (this, &nOption);
-	matchUpdateMatchOptions (option, nOption);
+	CompOption::Vector &options = p->vTable->getObjectOptions (this);
+	matchUpdateMatchOptions (options);
     }
 
     for (s = priv->screens; s; s = s->next)
     {
 	for (p = getPlugins (); p; p = p->next)
 	{
-	    option = p->vTable->getObjectOptions (s, &nOption);
-	    matchUpdateMatchOptions (option, nOption);
+	    CompOption::Vector &options = p->vTable->getObjectOptions (s);
+	    matchUpdateMatchOptions (options);
 	}
     }
 }
@@ -688,5 +680,5 @@ CompMatch::operator| (const CompString &str)
 bool
 CompMatch::operator== (const CompMatch &match)
 {
-    matchOpsEqual (priv->op.op, match.priv->op.op);
+    return matchOpsEqual (priv->op.op, match.priv->op.op);
 }

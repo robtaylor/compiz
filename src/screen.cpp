@@ -40,6 +40,8 @@
 #include <algorithm>
 
 #include <boost/bind.hpp>
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
@@ -179,7 +181,9 @@ PrivateScreen::setVirtualScreenSize (int newh, int newv)
 void
 PrivateScreen::updateOutputDevices ()
 {
-    CompListValue *list = &opt[COMP_SCREEN_OPTION_OUTPUTS].value.list;
+    CompOption::Value::Vector &list =
+	opt[COMP_SCREEN_OPTION_OUTPUTS].value ().list ();
+
     unsigned int  nOutput = 0;
     int		  x, y, bits;
     unsigned int  width, height;
@@ -187,17 +191,14 @@ PrivateScreen::updateOutputDevices ()
     Region	  region;
     char          str[10];
 
-    for (int i = 0; i < list->nValue; i++)
+    foreach (CompOption::Value &value, list)
     {
-	if (!list->value[i].s)
-	    continue;
-
 	x      = 0;
 	y      = 0;
 	width  = size.width ();
 	height = size.height ();
 
-	bits = XParseGeometry (list->value[i].s, &x, &y, &width, &height);
+	bits = XParseGeometry (value.s ().c_str (), &x, &y, &width, &height);
 
 	if (bits & XNegative)
 	    x = size.width () + x - width;
@@ -317,58 +318,36 @@ PrivateScreen::updateOutputDevices ()
 void
 PrivateScreen::detectOutputDevices ()
 {
-    if (!noDetection && opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
+    if (!noDetection && opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value ().b ())
     {
-	char		*name;
-	CompOptionValue	value;
-	char		output[1024];
-	int		i, size = sizeof (output);
+	CompString	  name;
+	CompOption::Value value;
 
 	if (display->screenInfo ().size ())
 	{
-	    int n = display->screenInfo ().size ();
-
-	    value.list.nValue = n;
-	    value.list.value  = (CompOptionValue *)
-		malloc (sizeof (CompOptionValue) * n);
-	    if (!value.list.value)
-		return;
-
-	    for (i = 0; i < n; i++)
+	    CompOption::Value::Vector l;
+	    foreach (XineramaScreenInfo xi, display->screenInfo ())
 	    {
-		snprintf (output, size, "%dx%d+%d+%d",
-			  display->screenInfo()[i].width,
-			  display->screenInfo()[i].height,
-			  display->screenInfo()[i].x_org,
-			  display->screenInfo()[i].y_org);
-
-		value.list.value[i].s = strdup (output);
+		l.push_back (compPrintf ("%dx%d+%d+%d", xi.width, xi.height,
+					 xi.x_org, xi.y_org));
 	    }
+
+	    value.set (CompOption::TypeString, l);
 	}
 	else
 	{
-	    value.list.nValue = 1;
-	    value.list.value  = (CompOptionValue *) malloc (sizeof (CompOptionValue));
-	    if (!value.list.value)
-		return;
-
-	    snprintf (output, size, "%dx%d+%d+%d",
-		      this->size.width (), this->size.height (), 0, 0);
-
-	    value.list.value->s = strdup (output);
+	    CompOption::Value::Vector l;
+	    l.push_back (compPrintf ("%dx%d+%d+%d", this->size.width(),
+				     this->size.height (), 0, 0));
+	    value.set (CompOption::TypeString, l);
 	}
 
-	name = opt[COMP_SCREEN_OPTION_OUTPUTS].name;
+	name = opt[COMP_SCREEN_OPTION_OUTPUTS].name ();
 
-	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = false;
-	core->setOptionForPlugin (screen, "core", name, &value);
-	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b = true;
+	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value ().set (false);
+	core->setOptionForPlugin (screen, "core", name.c_str (), value);
+	opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value ().set (true);
 
-	for (i = 0; i < value.list.nValue; i++)
-	    if (value.list.value[i].s)
-		free (value.list.value[i].s);
-
-	free (value.list.value);
     }
     else
     {
@@ -376,131 +355,132 @@ PrivateScreen::detectOutputDevices ()
     }
 }
 
-CompOption *
-CompScreen::getScreenOptions (CompObject *object,
-			      int        *count)
+CompOption::Vector &
+CompScreen::getScreenOptions (CompObject *object)
 {
-    CompScreen *screen = (CompScreen *) object;
-    *count = NUM_OPTIONS (screen);
-    return screen->priv->opt;
+    CompScreen *screen = dynamic_cast<CompScreen *> (object);
+    if (screen)
+	return screen->priv->opt;
+    return noOptions;
 }
 
 bool
-setScreenOption (CompObject      *object,
-		 const char	 *name,
-		 CompOptionValue *value)
+CompScreen::setScreenOption (CompObject        *object,
+			     const char        *name,
+			     CompOption::Value &value)
 {
-    return ((CompScreen *) object)->setOption (name, value);
+    CompScreen *screen = dynamic_cast<CompScreen *> (object);
+    if (screen)
+	return screen->setOption (name, value);
+    return false;
 }
 
 bool
-CompScreen::setOption (const char      *name,
-		       CompOptionValue *value)
+CompScreen::setOption (const char        *name,
+		       CompOption::Value &value)
 {
-    CompOption *o;
-    int	       index;
+    CompOption   *o;
+    unsigned int index;
 
-    o = compFindOption (priv->opt, NUM_OPTIONS (this), name, &index);
+    o = CompOption::findOption (priv->opt, name, &index);
     if (!o)
 	return false;
 
     switch (index) {
     case COMP_SCREEN_OPTION_DETECT_REFRESH_RATE:
-	if (compSetBoolOption (o, value))
+	if (o->set (value))
 	{
-	    if (value->b)
+	    if (value.b ())
 		detectRefreshRate ();
 
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_DETECT_OUTPUTS:
-	if (compSetBoolOption (o, value))
+	if (o->set (value))
 	{
-	    if (value->b)
+	    if (value.b ())
 		priv->detectOutputDevices ();
 
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_REFRESH_RATE:
-	if (priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
+	if (priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().b ())
 	    return false;
 
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
-	    priv->redrawTime = 1000 / o->value.i;
+	    priv->redrawTime = 1000 / o->value ().i ();
 	    priv->optimalRedrawTime = priv->redrawTime;
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_HSIZE:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
 	    CompOption *vsize;
 
-	    vsize = compFindOption (priv->opt, NUM_OPTIONS (this),
-				    "vsize", NULL);
+	    vsize = CompOption::findOption (priv->opt, "vsize");
 
 	    if (!vsize)
 		return false;
 
-	    if (o->value.i * priv->size.width () > MAXSHORT)
+	    if (o->value ().i () * priv->size.width () > MAXSHORT)
 		return false;
 
-	    priv->setVirtualScreenSize (o->value.i, vsize->value.i);
+	    priv->setVirtualScreenSize (o->value ().i (), vsize->value ().i ());
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_VSIZE:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
 	    CompOption *hsize;
 
-	    hsize = compFindOption (priv->opt, NUM_OPTIONS (this),
-				    "hsize", NULL);
+	    hsize = CompOption::findOption (priv->opt, "hsize");
 
 	    if (!hsize)
 		return false;
 
-	    if (o->value.i * priv->size.height () > MAXSHORT)
+	    if (o->value ().i () * priv->size.height () > MAXSHORT)
 		return false;
 
-	    priv->setVirtualScreenSize (hsize->value.i, o->value.i);
+	    priv->setVirtualScreenSize (hsize->value ().i (), o->value ().i ());
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS:
-	if (compSetIntOption (o, value))
+	if (o->set (value))
 	{
-	    setNumberOfDesktops (o->value.i);
+	    setNumberOfDesktops (o->value ().i ());
 	    return true;
 	}
 	break;
     case COMP_SCREEN_OPTION_DEFAULT_ICON:
-	if (compSetStringOption (o, value))
+	if (o->set (value))
 	    return updateDefaultIcon ();
 	break;
     case COMP_SCREEN_OPTION_OUTPUTS:
 	if (!noDetection &&
-	    priv->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value.b)
+	    priv->opt[COMP_SCREEN_OPTION_DETECT_OUTPUTS].value ().b ())
 	    return false;
 
-	if (compSetOptionList (o, value))
+	if (o->set (value))
 	{
 	    priv->updateOutputDevices ();
 	    return true;
 	}
 	break;
      case COMP_SCREEN_OPTION_FORCE_INDEPENDENT:
-	if (compSetBoolOption (o, value))
+	if (o->set (value))
 	{
 	    priv->updateOutputDevices ();
 	    return true;
 	}
 	break;
     default:
-	if (compSetScreenOption (this, o, value))
+	if (CompOption::setScreenOption (this, *o, value))
 	    return true;
 	break;
     }
@@ -905,36 +885,36 @@ void
 CompScreen::detectRefreshRate ()
 {
     if (!noDetection &&
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b)
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().b ())
     {
-	char		*name;
-	CompOptionValue	value;
+	CompString        name;
+	CompOption::Value value;
 
-	value.i = 0;
+	value.set ((int) 0);
 
 	if (priv->display->XRandr())
 	{
 	    XRRScreenConfiguration *config;
 
 	    config  = XRRGetScreenInfo (priv->display->dpy (), priv->root);
-	    value.i = (int) XRRConfigCurrentRate (config);
+	    value.set ((int) XRRConfigCurrentRate (config));
 
 	    XRRFreeScreenConfigInfo (config);
 	}
 
-	if (value.i == 0)
-	    value.i = defaultRefreshRate;
+	if (value.i () == 0)
+	    value.set ((int) defaultRefreshRate);
 
-	name = priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].name;
+	name = priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].name ();
 
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = false;
-	core->setOptionForPlugin (this, "core", name, &value);
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value.b = true;
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (false);
+	core->setOptionForPlugin (this, "core", name.c_str (), value);
+	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (true);
     }
     else
     {
 	priv->redrawTime = 1000 /
-	    priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].value.i;
+	    priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].value ().i ();
 	priv->optimalRedrawTime = priv->redrawTime;
     }
 }
@@ -1284,7 +1264,7 @@ CompScreen::enterShowDesktopMode ()
     {
 	if ((priv->showingDesktopMask & w->wmType ()) &&
 	    (!(w->state () & CompWindowStateSkipTaskbarMask) ||
-	    (st && st->value.b)))
+	    (st && st->value ().b ())))
 	{
 	    if (!w->inShowDesktopMode () && !w->grabbed () &&
 		w->managed () && w->focus ())
@@ -1486,6 +1466,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
+    opt (COMP_SCREEN_OPTION_NUM),
     paintTimer (),
     getProcAddress (0)
 {
@@ -1495,6 +1476,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
 
 PrivateScreen::~PrivateScreen ()
 {
+    CompOption::finiScreenOptions (screen, opt);
 }
 
 bool
@@ -1702,16 +1684,15 @@ CompScreen::init (CompDisplay *display,
     if (!compInitScreenOptionsFromMetadata (this,
 					    &coreMetadata,
 					    coreScreenOptionInfo,
-					    priv->opt,
-					    COMP_SCREEN_OPTION_NUM))
+					    priv->opt))
 	return false;
 
     priv->damage = XCreateRegion ();
     if (!priv->damage)
 	return false;
 
-    priv->vpSize.setWidth (priv->opt[COMP_SCREEN_OPTION_HSIZE].value.i);
-    priv->vpSize.setHeight (priv->opt[COMP_SCREEN_OPTION_VSIZE].value.i);
+    priv->vpSize.setWidth (priv->opt[COMP_SCREEN_OPTION_HSIZE].value ().i ());
+    priv->vpSize.setHeight (priv->opt[COMP_SCREEN_OPTION_VSIZE].value ().i ());
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -2322,8 +2303,6 @@ CompScreen::~CompScreen ()
     if (priv->damage)
 	XDestroyRegion (priv->damage);
 
-    compFiniScreenOptions (this, priv->opt, COMP_SCREEN_OPTION_NUM);
-
     delete priv;
 }
 
@@ -2388,7 +2367,7 @@ CompScreen::focusDefaultWindow ()
     CompWindow  *w;
     CompWindow  *focus = NULL;
 
-    if (!d->getOption ("click_to_focus")->value.b)
+    if (!d->getOption ("click_to_focus")->value ().b ())
     {
 	w = d->findTopLevelWindow (d->below ());
 	if (w && !(w->type () & (CompWindowTypeDesktopMask |
@@ -2778,18 +2757,18 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 }
 
 bool
-PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
+PrivateScreen::addPassiveKeyGrab (CompAction::KeyBinding &key)
 {
     KeyGrab                      newKeyGrab;
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = display->virtualToRealModMask (key->modifiers);
+    mask = display->virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
-	if (key->keycode == (*it).keycode &&
-	    mask         == (*it).modifiers)
+	if (key.keycode () == (*it).keycode &&
+	    mask           == (*it).modifiers)
 	{
 	    (*it).count++;
 	    return true;
@@ -2800,11 +2779,11 @@ PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 
     if (!(mask & CompNoMask))
     {
-	if (!grabUngrabKeys (mask, key->keycode, true))
+	if (!grabUngrabKeys (mask, key.keycode (), true))
 	    return false;
     }
 
-    newKeyGrab.keycode   = key->keycode;
+    newKeyGrab.keycode   = key.keycode ();
     newKeyGrab.modifiers = mask;
     newKeyGrab.count     = 1;
 
@@ -2814,17 +2793,17 @@ PrivateScreen::addPassiveKeyGrab (CompKeyBinding *key)
 }
 
 void
-PrivateScreen::removePassiveKeyGrab (CompKeyBinding *key)
+PrivateScreen::removePassiveKeyGrab (CompAction::KeyBinding &key)
 {
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = display->virtualToRealModMask (key->modifiers);
+    mask = display->virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
-	if (key->keycode == (*it).keycode &&
-	    mask         == (*it).modifiers)
+	if (key.keycode () == (*it).keycode &&
+	    mask           == (*it).modifiers)
 	{
 	    (*it).count--;
 	    if ((*it).count)
@@ -2833,7 +2812,7 @@ PrivateScreen::removePassiveKeyGrab (CompKeyBinding *key)
 	    it = keyGrabs.erase (it);
 
 	    if (!(mask & CompNoMask))
-		grabUngrabKeys (mask, key->keycode, false);
+		grabUngrabKeys (mask, key.keycode (), false);
 	}
     }
 }
@@ -2856,23 +2835,23 @@ PrivateScreen::updatePassiveKeyGrabs ()
 }
 
 bool
-PrivateScreen::addPassiveButtonGrab (CompButtonBinding *button)
+PrivateScreen::addPassiveButtonGrab (CompAction::ButtonBinding &button)
 {
     ButtonGrab                      newButtonGrab;
     std::list<ButtonGrab>::iterator it;
 
     for (it = buttonGrabs.begin (); it != buttonGrabs.end (); it++)
     {
-	if (button->button    == (*it).button &&
-	    button->modifiers == (*it).modifiers)
+	if (button.button ()    == (*it).button &&
+	    button.modifiers () == (*it).modifiers)
 	{
 	    (*it).count++;
 	    return true;
 	}
     }
 
-    newButtonGrab.button    = button->button;
-    newButtonGrab.modifiers = button->modifiers;
+    newButtonGrab.button    = button.button ();
+    newButtonGrab.modifiers = button.modifiers ();
     newButtonGrab.count     = 1;
 
     buttonGrabs.push_back (newButtonGrab);
@@ -2881,14 +2860,14 @@ PrivateScreen::addPassiveButtonGrab (CompButtonBinding *button)
 }
 
 void
-PrivateScreen::removePassiveButtonGrab (CompButtonBinding *button)
+PrivateScreen::removePassiveButtonGrab (CompAction::ButtonBinding &button)
 {
     std::list<ButtonGrab>::iterator it;
 
     for (it = buttonGrabs.begin (); it != buttonGrabs.end (); it++)
     {
-	if (button->button    == (*it).button &&
-	    button->modifiers == (*it).modifiers)
+	if (button.button ()    == (*it).button &&
+	    button.modifiers () == (*it).modifiers)
 	{
 	    (*it).count--;
 	    if ((*it).count)
@@ -2902,29 +2881,29 @@ PrivateScreen::removePassiveButtonGrab (CompButtonBinding *button)
 bool
 CompScreen::addAction (CompAction *action)
 {
-    if (action->type & CompBindingTypeKey)
+    if (action->type () & CompAction::BindingTypeKey)
     {
-	if (!priv->addPassiveKeyGrab (&action->key))
+	if (!priv->addPassiveKeyGrab (action->key ()))
 	    return true;
     }
 
-    if (action->type & CompBindingTypeButton)
+    if (action->type () & CompAction::BindingTypeButton)
     {
-	if (!priv->addPassiveButtonGrab (&action->button))
+	if (!priv->addPassiveButtonGrab (action->button ()))
 	{
-	    if (action->type & CompBindingTypeKey)
-		priv->removePassiveKeyGrab (&action->key);
+	    if (action->type () & CompAction::BindingTypeKey)
+		priv->removePassiveKeyGrab (action->key ());
 
 	    return true;
 	}
     }
 
-    if (action->edgeMask)
+    if (action->edgeMask ())
     {
 	int i;
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
-	    if (action->edgeMask & (1 << i))
+	    if (action->edgeMask () & (1 << i))
 		enableEdge (i);
     }
 
@@ -2934,18 +2913,18 @@ CompScreen::addAction (CompAction *action)
 void
 CompScreen::removeAction (CompAction *action)
 {
-    if (action->type & CompBindingTypeKey)
-	priv->removePassiveKeyGrab (&action->key);
+    if (action->type () & CompAction::BindingTypeKey)
+	priv->removePassiveKeyGrab (action->key ());
 
-    if (action->type & CompBindingTypeButton)
-	priv->removePassiveButtonGrab (&action->button);
+    if (action->type () & CompAction::BindingTypeButton)
+	priv->removePassiveButtonGrab (action->button ());
 
-    if (action->edgeMask)
+    if (action->edgeMask ())
     {
 	int i;
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
-	    if (action->edgeMask & (1 << i))
+	    if (action->edgeMask () & (1 << i))
 		disableEdge (i);
     }
 }
@@ -3272,43 +3251,37 @@ CompScreen::toolkitAction (Atom   toolkitAction,
 }
 
 void
-CompScreen::runCommand (const char *command)
+CompScreen::runCommand (CompString command)
 {
-    if (*command == '\0')
+    if (command.size () == 0)
 	return;
 
     if (fork () == 0)
     {
-	/* build a display string that uses the right screen number */
-	/* 5 extra chars should be enough for pretty much every situation */
-	int  stringLen = strlen (priv->display->displayString ()) + 5;
-	char screenString[stringLen];
-	char *pos, *delimiter, *colon;
-	
+	unsigned int pos;
+	CompString   env = priv->display->displayString ();
+
 	setsid ();
-
-	strcpy (screenString, priv->display->displayString ());
-	delimiter = strrchr (screenString, ':');
-	if (delimiter)
+	
+	pos = env.find (':');
+	if (pos != std::string::npos)
 	{
-	    colon = "";
-	    delimiter = strchr (delimiter, '.');
-	    if (delimiter)
-		*delimiter = '\0';
+	    if (env.find ('.', pos) != std::string::npos)
+	    {
+		env.erase (env.find ('.', pos));
+	    }
+	    else
+	    {
+		env.erase (pos);
+		env.append (":0");
+	    }
 	}
-	else
-	{
-	    /* insert :0 to keep the syntax correct */
-	    colon = ":0";
-	}
-	pos = screenString + strlen (screenString);
 
-	snprintf (pos, stringLen - (pos - screenString),
-		  "%s.%d", colon, priv->screenNum);
+	env.append (compPrintf (".%d", priv->screenNum));
+	
+	putenv (const_cast<char *> (env.c_str ()));
 
-	putenv (screenString);
-
-	exit (execl ("/bin/sh", "/bin/sh", "-c", command, NULL));
+	exit (execl ("/bin/sh", "/bin/sh", "-c", command.c_str (), NULL));
     }
 }
 
@@ -3504,7 +3477,7 @@ CompScreen::setLighting (bool lighting)
 {
     if (priv->lighting != lighting)
     {
-	if (!priv->opt[COMP_SCREEN_OPTION_LIGHTING].value.b)
+	if (!priv->opt[COMP_SCREEN_OPTION_LIGHTING].value ().b ())
 	    lighting = false;
 
 	if (lighting)
@@ -3799,7 +3772,7 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
     if (priv->outputDevs.size () == 1)
 	return 0;
 
-    strategy = priv->opt[COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS].value.i;
+    strategy = priv->opt[COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS].value ().i ();
 
     if (strategy == OUTPUT_OVERLAP_MODE_SMART)
     {
@@ -3892,9 +3865,9 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 bool
 CompScreen::updateDefaultIcon ()
 {
-    char     *file = priv->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value.s;
-    void     *data;
-    int      width, height;
+    CompString file = priv->opt[COMP_SCREEN_OPTION_DEFAULT_ICON].value ().s ();
+    void       *data;
+    int        width, height;
 
     if (priv->defaultIcon)
     {
@@ -3902,7 +3875,8 @@ CompScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!priv->display->readImageFromFile (file, &width, &height, &data))
+    if (!priv->display->readImageFromFile (file.c_str (), &width,
+					   &height, &data))
 	return false;
 
     priv->defaultIcon = new CompIcon (this, width, height);
@@ -4067,9 +4041,7 @@ CompScreen::root ()
 CompOption *
 CompScreen::getOption (const char *name)
 {
-    int        index;
-    CompOption *o = compFindOption (priv->opt, NUM_OPTIONS (this),
-				    name, &index);
+    CompOption *o = CompOption::findOption (priv->opt, name);
     return o;
 }
 
@@ -4105,7 +4077,7 @@ CompScreen::getTimeToNextRedraw (struct timeval *tv)
 	diff = 0;
 
     if (priv->idle || (getVideoSync &&
-	priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value.b))
+	priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ()))
     {
 	if (priv->timeMult > 1)
 	{
@@ -4163,7 +4135,7 @@ CompScreen::waitForVideoSync ()
 {
     unsigned int sync;
 
-    if (!priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value.b)
+    if (!priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ())
 	return;
 
     if (getVideoSync)
@@ -4415,7 +4387,7 @@ CompScreen::handlePaintTimeout ()
 
 	CompOutput::ptrList outputs (0);
 	
-	if (priv->opt[COMP_SCREEN_OPTION_FORCE_INDEPENDENT].value.b
+	if (priv->opt[COMP_SCREEN_OPTION_FORCE_INDEPENDENT].value ().b ()
 	    || !priv->hasOverlappingOutputs)
 	{
 	    for (unsigned int i = 0; i < priv->outputDevs.size (); i++)

@@ -197,8 +197,8 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	handlePaintTimeout ();
 	
 	bool
-	setOption (const char	 *name,
-		   CompOptionValue *value);
+	setOption (const char       *name,
+		   CompOption::Value &value);
 
 	void
 	setCurrentOutput (unsigned int outputNum);
@@ -305,7 +305,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 		       long	  data2);
 
 	void
-	runCommand (const char *command);
+	runCommand (CompString command);
 
 	void
 	moveViewport (int tx, int ty, bool sync);
@@ -537,43 +537,41 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
     public :
 	static bool
-	mainMenu (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	mainMenu (CompDisplay        *d,
+		  CompAction         *action,
+		  CompAction::State  state,
+		  CompOption::Vector &options);
 
 	static bool
-	runDialog (CompDisplay     *d,
-		   CompAction      *action,
-		   CompActionState state,
-		   CompOption      *option,
-		   int		   nOption);
+	runDialog (CompDisplay        *d,
+		   CompAction         *action,
+		   CompAction::State  state,
+		   CompOption::Vector &options);
 
 	static bool
-	showDesktop (CompDisplay     *d,
-		     CompAction      *action,
-		     CompActionState state,
-		     CompOption      *option,
-		     int             nOption);
+	showDesktop (CompDisplay        *d,
+		     CompAction         *action,
+		     CompAction::State  state,
+		     CompOption::Vector &options);
 
 	static bool
-	toggleSlowAnimations (CompDisplay     *d,
-			      CompAction      *action,
-			      CompActionState state,
-			      CompOption      *option,
-			      int	      nOption);
+	toggleSlowAnimations (CompDisplay        *d,
+			      CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
 
 	static bool
-	windowMenu (CompDisplay     *d,
-		    CompAction      *action,
-		    CompActionState state,
-		    CompOption      *option,
-		    int		    nOption);
+	windowMenu (CompDisplay        *d,
+		    CompAction         *action,
+		    CompAction::State  state,
+		    CompOption::Vector &options);
 
-	static CompOption *
-	getScreenOptions ( CompObject *object,
-			  int	     *count);
+	static CompOption::Vector &
+	getScreenOptions (CompObject *object);
+
+	static bool setScreenOption (CompObject        *object,
+				     const char        *name,
+				     CompOption::Value &value);
 
 	static void
 	compScreenSnEvent (SnMonitorEvent *event,

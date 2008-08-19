@@ -75,6 +75,19 @@
 extern const CompMetadataOptionInfo
 coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM];
 
+
+typedef struct _CompDelayedEdgeSettings
+{
+    CompAction::CallBack initiate;
+    CompAction::CallBack terminate;
+
+    unsigned int edge;
+    unsigned int state;
+
+    CompOption::Vector options;
+} CompDelayedEdgeSettings;
+
+
 class PrivateDisplay {
 
     public:
@@ -85,45 +98,33 @@ class PrivateDisplay {
 	updatePlugins ();
 
 	bool
-	triggerButtonPressBindings (CompOption  *option,
-				    int		nOption,
-				    XEvent	*event,
-				    CompOption  *argument,
-				    int		nArgument);
+	triggerButtonPressBindings (CompOption::Vector &options,
+				    XEvent             *event,
+				    CompOption::Vector &arguments);
 
 	bool
-	triggerButtonReleaseBindings (CompOption  *option,
-				      int	  nOption,
-				      XEvent	  *event,
-				      CompOption  *argument,
-				      int	  nArgument);
+	triggerButtonReleaseBindings (CompOption::Vector &options,
+				      XEvent             *event,
+				      CompOption::Vector &arguments);
 
 	bool
-	triggerKeyPressBindings (CompOption  *option,
-				 int	     nOption,
-				 XEvent	     *event,
-				 CompOption  *argument,
-				 int	     nArgument);
+	triggerKeyPressBindings (CompOption::Vector &options,
+				 XEvent             *event,
+				 CompOption::Vector &arguments);
 
 	bool
-	triggerKeyReleaseBindings (CompOption  *option,
-				   int	       nOption,
-				   XEvent      *event,
-				   CompOption  *argument,
-				   int	       nArgument);
+	triggerKeyReleaseBindings (CompOption::Vector &options,
+				   XEvent             *event,
+				   CompOption::Vector &arguments);
 
 	bool
-	triggerStateNotifyBindings (CompOption		*option,
-				    int			nOption,
+	triggerStateNotifyBindings (CompOption::Vector  &options,
 				    XkbStateNotifyEvent *event,
-				    CompOption		*argument,
-				    int			nArgument);
-
+				    CompOption::Vector  &arguments);
 	bool
-	triggerEdgeEnter (unsigned int    edge,
-			  CompActionState state,
-			  CompOption      *argument,
-			  unsigned int    nArgument);
+	triggerEdgeEnter (unsigned int       edge,
+			  CompAction::State  state,
+     			  CompOption::Vector &arguments);
 
 	void
 	setAudibleBell (bool audible);
@@ -192,7 +193,7 @@ class PrivateDisplay {
 	KeyCode escapeKeyCode;
 	KeyCode returnKeyCode;
 
-	CompOption opt[COMP_DISPLAY_OPTION_NUM];
+	CompOption::Vector opt;
 
 	CompCore::Timer autoRaiseTimer;
 	Window	      autoRaiseWindow;
@@ -200,8 +201,8 @@ class PrivateDisplay {
 	CompCore::Timer edgeDelayTimer;
 	CompDelayedEdgeSettings edgeDelaySettings;
 
-	CompOptionValue plugin;
-	bool	    dirtyPluginList;
+	CompOption::Value plugin;
+	bool	          dirtyPluginList;
 
 	CompDisplay::Atoms atoms;
 };

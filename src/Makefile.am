@@ -12,6 +12,8 @@ bin_PROGRAMS = compiz
 compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
+	action.cpp \
+	option.cpp \
 	string.cpp \
 	fragment.cpp \
 	match.cpp    \
@@ -24,7 +26,6 @@ compiz_SOURCES =   \
 	event.cpp    \
 	texture.cpp  \
 	paint.cpp	   \
-	option.cpp   \
 	plugin.cpp   \
 	session.cpp  \
 	matrix.cpp   \

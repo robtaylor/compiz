@@ -115,7 +115,7 @@ PrivateTexture::loadImageData (const char   *image,
     glBindTexture (target, name);
 
     internalFormat =
-	(screen->getOption ("texture_compression")->value.b &&
+	(screen->getOption ("texture_compression")->value ().b () &&
 	 screen->textureCompression () ?
 	 GL_COMPRESSED_RGBA_ARB : GL_RGBA);
 

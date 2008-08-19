@@ -292,7 +292,7 @@ readPluginXmlCallback (void *context,
     return i;
 }
 
-Bool
+bool
 compInitPluginMetadataFromInfo (CompMetadata		     *metadata,
 				const char		     *plugin,
 				const CompMetadataOptionInfo *displayOptionInfo,
@@ -388,42 +388,42 @@ finiXPath (CompXPath *xPath)
     xmlXPathFreeContext (xPath->ctx);
 }
 
-static CompOptionType
+static CompOption::Type
 getOptionType (char *name)
 {
     static struct _TypeMap {
-	char	       *name;
-	CompOptionType type;
+	const char       *name;
+	CompOption::Type type;
     } map[] = {
-	{ "int",    CompOptionTypeInt    },
-	{ "float",  CompOptionTypeFloat  },
-	{ "string", CompOptionTypeString },
-	{ "color",  CompOptionTypeColor  },
-	{ "action", CompOptionTypeAction },
-	{ "key",    CompOptionTypeKey    },
-	{ "button", CompOptionTypeButton },
-	{ "edge",   CompOptionTypeEdge   },
-	{ "bell",   CompOptionTypeBell   },
-	{ "match",  CompOptionTypeMatch  },
-	{ "list",   CompOptionTypeList   }
+	{ "int",    CompOption::TypeInt    },
+	{ "float",  CompOption::TypeFloat  },
+	{ "string", CompOption::TypeString },
+	{ "color",  CompOption::TypeColor  },
+	{ "action", CompOption::TypeAction },
+	{ "key",    CompOption::TypeKey    },
+	{ "button", CompOption::TypeButton },
+	{ "edge",   CompOption::TypeEdge   },
+	{ "bell",   CompOption::TypeBell   },
+	{ "match",  CompOption::TypeMatch  },
+	{ "list",   CompOption::TypeList   }
     };
-    int i;
+    unsigned int i;
 
     for (i = 0; i < sizeof (map) / sizeof (map[0]); i++)
 	if (strcasecmp (name, map[i].name) == 0)
 	    return map[i].type;
 
-    return CompOptionTypeBool;
+    return CompOption::TypeBool;
 }
 
 static void
-initBoolValue (CompOptionValue *v,
-	       xmlDocPtr       doc,
-	       xmlNodePtr      node)
+initBoolValue (CompOption::Value &v,
+	       xmlDocPtr         doc,
+	       xmlNodePtr        node)
 {
     xmlChar *value;
 
-    v->b = FALSE;
+    v.set (false);
 
     if (!doc)
 	return;
@@ -432,21 +432,21 @@ initBoolValue (CompOptionValue *v,
     if (value)
     {
 	if (strcasecmp ((char *) value, "true") == 0)
-	    v->b = TRUE;
+	    v.set (true);
 
 	xmlFree (value);
     }
 }
 
 static void
-initIntValue (CompOptionValue	    *v,
-	      CompOptionRestriction *r,
-	      xmlDocPtr		    doc,
-	      xmlNodePtr	    node)
+initIntValue (CompOption::Value       &v,
+	      CompOption::Restriction &r,
+	      xmlDocPtr               doc,
+	      xmlNodePtr              node)
 {
     xmlChar *value;
 
-    v->i = (r->i.min + r->i.max) / 2;
+    v.set ((r.iMin () + r.iMax ()) / 2);
 
     if (!doc)
 	return;
@@ -456,22 +456,22 @@ initIntValue (CompOptionValue	    *v,
     {
 	int i = strtol ((char *) value, NULL, 0);
 
-	if (i >= r->i.min && i <= r->i.max)
-	    v->i = i;
+	if (r.inRange (i))
+	    v.set (i);
 
 	xmlFree (value);
     }
 }
 
 static void
-initFloatValue (CompOptionValue	      *v,
-		CompOptionRestriction *r,
-		xmlDocPtr	      doc,
-		xmlNodePtr	      node)
+initFloatValue (CompOption::Value       &v,
+		CompOption::Restriction &r,
+		xmlDocPtr               doc,
+		xmlNodePtr              node)
 {
     xmlChar *value;
 
-    v->f = (r->f.min + r->f.max) / 2;
+    v.set ((r.fMin () + r.fMax ()) / 2);
 
     if (!doc)
 	return;
@@ -481,22 +481,22 @@ initFloatValue (CompOptionValue	      *v,
     {
 	float f = strtod ((char *) value, NULL);
 
-	if (f >= r->f.min && f <= r->f.max)
-	    v->f = f;
+	if (r.inRange (f))
+	    v.set (f);
 
 	xmlFree (value);
     }
 }
 
 static void
-initStringValue (CompOptionValue       *v,
-		 CompOptionRestriction *r,
-		 xmlDocPtr	       doc,
-		 xmlNodePtr	       node)
+initStringValue (CompOption::Value       &v,
+		 CompOption::Restriction &r,
+		 xmlDocPtr               doc,
+		 xmlNodePtr              node)
 {
     xmlChar *value;
 
-    v->s = strdup ("");
+    v.set ("");
 
     if (!doc)
 	return;
@@ -504,24 +504,20 @@ initStringValue (CompOptionValue       *v,
     value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
     if (value)
     {
-	free (v->s);
-	v->s = strdup ((char *) value);
-
+	v.set (CompString ((char *) value));
 	xmlFree (value);
     }
 }
 
 static void
-initColorValue (CompOptionValue *v,
-		xmlDocPtr       doc,
-		xmlNodePtr      node)
+initColorValue (CompOption::Value &v,
+		xmlDocPtr         doc,
+		xmlNodePtr        node)
 {
     xmlNodePtr child;
 
-    v->c[0] = 0x0000;
-    v->c[1] = 0x0000;
-    v->c[2] = 0x0000;
-    v->c[3] = 0xffff;
+    unsigned short c[4] = { 0x0000, 0x0000, 0x0000, 0xffff};
+    v.set (c);
 
     if (!doc)
 	return;
@@ -547,111 +543,114 @@ initColorValue (CompOptionValue *v,
 	{
 	    int color = strtol ((char *) value, NULL , 0);
 
-	    v->c[index] = MAX (0, MIN (0xffff, color));
+	    c[index] = MAX (0, MIN (0xffff, color));
 
 	    xmlFree (value);
 	}
     }
+    v.set (c);
 }
 
 static void
-initActionValue (CompDisplay	 *d,
-		 CompOptionValue *v,
-		 CompActionState state,
-		 xmlDocPtr       doc,
-		 xmlNodePtr      node)
+initActionValue (CompDisplay       *d,
+		 CompOption::Value &v,
+		 CompAction::State state,
+		 xmlDocPtr         doc,
+		 xmlNodePtr        node)
 {
-    memset (&v->action, 0, sizeof (v->action));
-
-    v->action.state = state;
+    v.set (CompAction ());
+    v.action ().setState (state);
 }
 
 static void
-initKeyValue (CompDisplay     *d,
-	      CompOptionValue *v,
-	      CompActionState state,
-	      xmlDocPtr       doc,
-	      xmlNodePtr      node)
+initKeyValue (CompDisplay       *d,
+	      CompOption::Value &v,
+	      CompAction::State state,
+	      xmlDocPtr         doc,
+	      xmlNodePtr        node)
 {
-    xmlChar *value;
-
-    memset (&v->action, 0, sizeof (v->action));
-
-    v->action.state = state | CompActionStateInitKey;
-
-    if (!doc)
-	return;
-
-    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
-    if (value)
-    {
-	char *binding = (char *) value;
-
-	if (strcasecmp (binding, "disabled") && *binding)
-	    stringToKeyAction (d, binding, &v->action);
-
-	xmlFree (value);
-    }
-
-    if (state & CompActionStateAutoGrab)
-    {
-	CompScreen *s;
-
-	for (s = d->screens (); s; s = s->next)
-	    s->addAction (&v->action);
-    }
-}
-
-static void
-initButtonValue (CompDisplay     *d,
-		 CompOptionValue *v,
-		 CompActionState state,
-		 xmlDocPtr       doc,
-		 xmlNodePtr      node)
-{
-    xmlChar *value;
-
-    memset (&v->action, 0, sizeof (v->action));
-
-    v->action.state = state | CompActionStateInitButton |
-	CompActionStateInitEdge;
-
-    if (!doc)
-	return;
-
-    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
-    if (value)
-    {
-	char *binding = (char *) value;
-
-	if (strcasecmp (binding, "disabled") && *binding)
-	    stringToButtonAction (d, binding, &v->action);
-
-	xmlFree (value);
-    }
-
-    if (state & CompActionStateAutoGrab)
-    {
-	CompScreen *s;
-
-	for (s = d->screens (); s; s = s->next)
-	    s->addAction (&v->action);
-    }
-}
-
-static void
-initEdgeValue (CompDisplay     *d,
-	       CompOptionValue *v,
-	       CompActionState state,
-	       xmlDocPtr       doc,
-	       xmlNodePtr      node)
-{
-    xmlNodePtr child;
     xmlChar    *value;
+    CompAction action;
 
-    memset (&v->action, 0, sizeof (v->action));
+    action.setState (state | CompAction::StateInitKey);
 
-    v->action.state = state | CompActionStateInitEdge;
+    if (!doc)
+	return;
+
+    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
+    if (value)
+    {
+	char *binding = (char *) value;
+
+	if (strcasecmp (binding, "disabled") && *binding)
+	    action.keyFromString (d, binding);
+
+	xmlFree (value);
+    }
+
+    v.set (action);
+
+    if (state & CompAction::StateAutoGrab)
+    {
+	CompScreen *s;
+
+	for (s = d->screens (); s; s = s->next)
+	    s->addAction (&v.action ());
+    }
+}
+
+static void
+initButtonValue (CompDisplay       *d,
+		 CompOption::Value &v,
+		 CompAction::State state,
+		 xmlDocPtr         doc,
+		 xmlNodePtr        node)
+{
+    xmlChar    *value;
+    CompAction action;
+
+
+    action.setState (state | CompAction::StateInitButton |
+		     CompAction::StateInitEdge);
+
+    if (!doc)
+	return;
+
+    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
+    if (value)
+    {
+	char *binding = (char *) value;
+
+	if (strcasecmp (binding, "disabled") && *binding)
+	    action.buttonFromString (d, binding);
+
+	xmlFree (value);
+    }
+
+    v.set (action);
+
+    if (state & CompAction::StateAutoGrab)
+    {
+	CompScreen *s;
+
+	for (s = d->screens (); s; s = s->next)
+	    s->addAction (&v.action ());
+    }
+}
+
+static void
+initEdgeValue (CompDisplay       *d,
+	       CompOption::Value &v,
+	       CompAction::State state,
+	       xmlDocPtr         doc,
+	       xmlNodePtr        node)
+{
+    xmlNodePtr   child;
+    xmlChar      *value;
+    CompAction   action;
+    unsigned int edge = 0;
+
+    action.setState (state | CompAction::StateInitEdge);
 
     if (!doc)
 	return;
@@ -664,34 +663,37 @@ initEdgeValue (CompDisplay     *d,
 	    int i;
 
 	    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-		if (strcasecmp ((char *) value, edgeToString (i)) == 0)
-		    v->action.edgeMask |= (1 << i);
+		if (strcasecmp ((char *) value,
+				CompAction::edgeToString (i).c_str ()) == 0)
+		    edge |= (1 << i);
 
 	    xmlFree (value);
 	}
     }
 
-    if (state & CompActionStateAutoGrab)
+    action.setEdgeMask (edge);
+    v.set (action);
+
+    if (state & CompAction::StateAutoGrab)
     {
 	CompScreen *s;
 
 	for (s = d->screens (); s; s = s->next)
-	    s->addAction (&v->action);
+	    s->addAction (&v.action ());
     }
 }
 
 static void
-initBellValue (CompDisplay     *d,
-	       CompOptionValue *v,
-	       CompActionState state,
-	       xmlDocPtr       doc,
-	       xmlNodePtr      node)
+initBellValue (CompDisplay       *d,
+	       CompOption::Value &v,
+	       CompAction::State state,
+	       xmlDocPtr         doc,
+	       xmlNodePtr        node)
 {
-    xmlChar *value;
+    xmlChar    *value;
+    CompAction action;
 
-    memset (&v->action, 0, sizeof (v->action));
-
-    v->action.state = state | CompActionStateInitBell;
+    action.setState (state | CompAction::StateInitBell);
 
     if (!doc)
 	return;
@@ -700,22 +702,23 @@ initBellValue (CompDisplay     *d,
     if (value)
     {
 	if (strcasecmp ((char *) value, "true") == 0)
-	    v->action.bell = TRUE;
+	    action.setBell (true);
 
 	xmlFree (value);
     }
+    v.set (action);
 }
 
 static void
-initMatchValue (CompDisplay     *d,
-		CompOptionValue *v,
-		Bool		helper,
-		xmlDocPtr       doc,
-		xmlNodePtr      node)
+initMatchValue (CompDisplay       *d,
+		CompOption::Value &v,
+		bool		  helper,
+		xmlDocPtr         doc,
+		xmlNodePtr        node)
 {
     xmlChar *value;
 
-    v->match = new CompMatch ();
+    v.set (CompMatch ());
 
     if (!doc)
 	return;
@@ -723,82 +726,75 @@ initMatchValue (CompDisplay     *d,
     value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
     if (value)
     {
-	*v->match = (char *) value;
+	v.match () = (char *) value;
 	xmlFree (value);
     }
 
     if (!helper)
-	v->match->update (d);
+	v.match ().update (d);
 }
 
 static void
-initListValue (CompDisplay	     *d,
-	       CompOptionValue	     *v,
-	       CompOptionRestriction *r,
-	       CompActionState	     state,
-	       Bool		     helper,
-	       xmlDocPtr	     doc,
-	       xmlNodePtr	     node)
+initListValue (CompDisplay             *d,
+	       CompOption::Value       &v,
+	       CompOption::Restriction &r,
+	       CompAction::State       state,
+	       bool                    helper,
+	       xmlDocPtr               doc,
+	       xmlNodePtr              node)
 {
     xmlNodePtr child;
 
-    v->list.value  = NULL;
-    v->list.nValue = 0;
+    v.list ().clear ();
 
     if (!doc)
 	return;
 
     for (child = node->xmlChildrenNode; child; child = child->next)
     {
-	CompOptionValue *value;
+	CompOption::Value value;
 
 	if (xmlStrcmp (child->name, BAD_CAST "value"))
 	    continue;
 
-	value = (CompOptionValue *) realloc (v->list.value,
-			 sizeof (CompOptionValue) * (v->list.nValue + 1));
-	if (value)
-	{
-	    switch (v->list.type) {
-	    case CompOptionTypeBool:
-		initBoolValue (&value[v->list.nValue], doc, child);
+	switch (v.listType ()) {
+	    case CompOption::TypeBool:
+		initBoolValue (value, doc, child);
 		break;
-	    case CompOptionTypeInt:
-		initIntValue (&value[v->list.nValue], r, doc, child);
+	    case CompOption::TypeInt:
+		initIntValue (value, r, doc, child);
 		break;
-	    case CompOptionTypeFloat:
-		initFloatValue (&value[v->list.nValue], r, doc, child);
+	    case CompOption::TypeFloat:
+		initFloatValue (value, r, doc, child);
 		break;
-	    case CompOptionTypeString:
-		initStringValue (&value[v->list.nValue], r, doc, child);
+	    case CompOption::TypeString:
+		initStringValue (value, r, doc, child);
 		break;
-	    case CompOptionTypeColor:
-		initColorValue (&value[v->list.nValue], doc, child);
+	    case CompOption::TypeColor:
+		initColorValue (value, doc, child);
 		break;
-	    case CompOptionTypeAction:
-		initActionValue (d, &value[v->list.nValue], state, doc, child);
+	    case CompOption::TypeAction:
+		initActionValue (d, value, state, doc, child);
 		break;
-	    case CompOptionTypeKey:
-		initKeyValue (d, &value[v->list.nValue], state, doc, child);
+	    case CompOption::TypeKey:
+		initKeyValue (d, value, state, doc, child);
 		break;
-	    case CompOptionTypeButton:
-		initButtonValue (d, &value[v->list.nValue], state, doc, child);
+	    case CompOption::TypeButton:
+		initButtonValue (d, value, state, doc, child);
 		break;
-	    case CompOptionTypeEdge:
-		initEdgeValue (d, &value[v->list.nValue], state, doc, child);
+	    case CompOption::TypeEdge:
+		initEdgeValue (d, value, state, doc, child);
 		break;
-	    case CompOptionTypeBell:
-		initBellValue (d, &value[v->list.nValue], state, doc, child);
+	    case CompOption::TypeBell:
+		initBellValue (d, value, state, doc, child);
 		break;
-	    case CompOptionTypeMatch:
-		initMatchValue (d, &value[v->list.nValue], helper, doc, child);
+	    case CompOption::TypeMatch:
+		initMatchValue (d, value, helper, doc, child);
 	    default:
 		break;
-	    }
-
-	    v->list.value = value;
-	    v->list.nValue++;
 	}
+
+	v.list ().push_back (value);
     }
 }
 
@@ -836,84 +832,84 @@ boolFromMetadataPathElement (CompMetadata *metadata,
 }
 
 static void
-initIntRestriction (CompMetadata	  *metadata,
-		    CompOptionRestriction *r,
-		    const char		  *path)
+initIntRestriction (CompMetadata            *metadata,
+		    CompOption::Restriction &r,
+		    const char              *path)
 {
     char *value;
-
-    r->i.min = MINSHORT;
-    r->i.max = MAXSHORT;
+    int  min = MINSHORT, max = MAXSHORT;
 
     value = stringFromMetadataPathElement (metadata, path, "min");
     if (value)
     {
-	r->i.min = strtol ((char *) value, NULL, 0);
+	min = strtol ((char *) value, NULL, 0);
 	free (value);
     }
 
     value = stringFromMetadataPathElement (metadata, path, "max");
     if (value)
     {
-	r->i.max = strtol ((char *) value, NULL, 0);
+	max = strtol ((char *) value, NULL, 0);
 	free (value);
     }
+    r.set (min, max);
 }
 
 static void
-initFloatRestriction (CompMetadata	    *metadata,
-		      CompOptionRestriction *r,
-		      const char	    *path)
+initFloatRestriction (CompMetadata            *metadata,
+		      CompOption::Restriction &r,
+		      const char              *path)
 {
     char *value;
 
-    r->f.min	   = MINSHORT;
-    r->f.max	   = MAXSHORT;
-    r->f.precision = 0.1f;
+    float min       = MINSHORT;
+    float max       = MAXSHORT;
+    float precision = 0.1f;
 
     value = stringFromMetadataPathElement (metadata, path, "min");
     if (value)
     {
-	r->f.min = strtod ((char *) value, NULL);
+	min = strtod ((char *) value, NULL);
 	free (value);
     }
 
     value = stringFromMetadataPathElement (metadata, path, "max");
     if (value)
     {
-	r->f.max = strtod ((char *) value, NULL);
+	max = strtod ((char *) value, NULL);
 	free (value);
     }
 
     value = stringFromMetadataPathElement (metadata, path, "precision");
     if (value)
     {
-	r->f.precision = strtod ((char *) value, NULL);
+	precision = strtod ((char *) value, NULL);
 	free (value);
     }
+    r.set (min, max, precision);
 }
 
 static void
-initActionState (CompMetadata    *metadata,
-		 CompOptionType  type,
-		 CompActionState *state,
-		 const char      *path)
+initActionState (CompMetadata      *metadata,
+		 CompOption::Type  type,
+		 CompAction::State *state,
+		 const char        *path)
 {
     static struct _StateMap {
-	char	       *name;
-	CompActionState state;
+	const char        *name;
+	CompAction::State state;
     } map[] = {
-	{ "key",     CompActionStateInitKey     },
-	{ "button",  CompActionStateInitButton  },
-	{ "bell",    CompActionStateInitBell    },
-	{ "edge",    CompActionStateInitEdge    },
-	{ "edgednd", CompActionStateInitEdgeDnd }
+	{ "key",     CompAction::StateInitKey     },
+	{ "button",  CompAction::StateInitButton  },
+	{ "bell",    CompAction::StateInitBell    },
+	{ "edge",    CompAction::StateInitEdge    },
+	{ "edgednd", CompAction::StateInitEdgeDnd }
     };
-    int	      i;
+
     CompXPath xPath;
     char      *grab;
 
-    *state = CompActionStateAutoGrab;
+    *state = CompAction::StateAutoGrab;
 
     grab = stringFromMetadataPathElement (metadata, path, "passive_grab");
     if (grab)
@@ -924,7 +920,7 @@ initActionState (CompMetadata    *metadata,
 	free (grab);
     }
 
-    if (type == CompOptionTypeEdge)
+    if (type == CompOption::TypeEdge)
     {
 	char *noEdgeDelay;
 
@@ -932,7 +928,7 @@ initActionState (CompMetadata    *metadata,
 	if (noEdgeDelay)
 	{
 	    if (strcmp (noEdgeDelay, "true") == 0)
-		*state |= CompActionStateNoEdgeDelay;
+		*state |= CompAction::StateNoEdgeDelay;
 
 	    free (noEdgeDelay);
 	}
@@ -942,7 +938,7 @@ initActionState (CompMetadata    *metadata,
 					   BAD_CAST "allowed"))
 	return;
 
-    for (i = 0; i < sizeof (map) / sizeof (map[0]); i++)
+    for (unsigned int i = 0; i < sizeof (map) / sizeof (map[0]); i++)
     {
 	xmlChar *value;
 
@@ -959,19 +955,22 @@ initActionState (CompMetadata    *metadata,
     finiXPath (&xPath);
 }
 
-static Bool
+static bool
 initOptionFromMetadataPath (CompDisplay   *d,
 			    CompMetadata  *metadata,
 			    CompOption	  *option,
 			    const xmlChar *path)
 {
-    CompXPath	    xPath, xDefaultPath;
-    xmlNodePtr	    node, defaultNode;
-    xmlDocPtr	    defaultDoc;
-    xmlChar	    *name, *type;
-    char	    *value;
-    CompActionState state = 0;
-    Bool	    helper = FALSE;
+    CompXPath	      xPath, xDefaultPath;
+    xmlNodePtr	      node, defaultNode;
+    xmlDocPtr	      defaultDoc;
+    xmlChar	      *name, *type;
+    char	      *value;
+    CompAction::State state = 0;
+    bool	      helper = false;
+    CompOption::Type  oType = CompOption::TypeBool;
+
+    CompOption::Value::Vector emptyList (0);
 
     if (!initXPathFromMetadataPath (&xPath, metadata, path))
 	return FALSE;
@@ -981,16 +980,12 @@ initOptionFromMetadataPath (CompDisplay   *d,
     type = xmlGetProp (node, BAD_CAST "type");
     if (type)
     {
-	option->type = getOptionType ((char *) type);
+	oType = getOptionType ((char *) type);
 	xmlFree (type);
-    }
-    else
-    {
-	option->type = CompOptionTypeBool;
     }
 
     name = xmlGetProp (node, BAD_CAST "name");
-    option->name = strdup ((char *) name);
+    option->setName ((char *) name, oType);
     xmlFree (name);
 
     if (initXPathFromMetadataPathElement (&xDefaultPath, metadata, path,
@@ -1005,87 +1000,99 @@ initOptionFromMetadataPath (CompDisplay   *d,
 	defaultNode = NULL;
     }
 
-    switch (option->type) {
-    case CompOptionTypeBool:
-	initBoolValue (&option->value, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeInt:
-	initIntRestriction (metadata, &option->rest, (char *) path);
-	initIntValue (&option->value, &option->rest, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeFloat:
-	initFloatRestriction (metadata, &option->rest, (char *) path);
-	initFloatValue (&option->value, &option->rest, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeString:
-	initStringValue (&option->value, &option->rest,
-			 defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeColor:
-	initColorValue (&option->value, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeAction:
-	initActionState (metadata, option->type, &state, (char *) path);
-	initActionValue (d, &option->value, state, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeKey:
-	initActionState (metadata, option->type, &state, (char *) path);
-	initKeyValue (d, &option->value, state, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeButton:
-	initActionState (metadata, option->type, &state, (char *) path);
-	initButtonValue (d, &option->value, state, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeEdge:
-	initActionState (metadata, option->type, &state, (char *) path);
-	initEdgeValue (d, &option->value, state, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeBell:
-	initActionState (metadata, option->type, &state, (char *) path);
-	initBellValue (d, &option->value, state, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeMatch:
-	helper = boolFromMetadataPathElement (metadata, (char *) path, "helper",
-					      FALSE);
-	initMatchValue (d, &option->value, helper, defaultDoc, defaultNode);
-	break;
-    case CompOptionTypeList:
-	value = stringFromMetadataPathElement (metadata, (char *) path, "type");
-	if (value)
-	{
-	    option->value.list.type = getOptionType ((char *) value);
-	    free (value);
-	}
-	else
-	{
-	    option->value.list.type = CompOptionTypeBool;
-	}
-
-	switch (option->value.list.type) {
-	case CompOptionTypeInt:
-	    initIntRestriction (metadata, &option->rest, (char *) path);
+    switch (option->type ()) {
+	case CompOption::TypeBool:
+	    initBoolValue (option->value (), defaultDoc, defaultNode);
 	    break;
-	case CompOptionTypeFloat:
-	    initFloatRestriction (metadata, &option->rest, (char *) path);
+	case CompOption::TypeInt:
+	    initIntRestriction (metadata, option->rest (), (char *) path);
+	    initIntValue (option->value (), option->rest (),
+			  defaultDoc, defaultNode);
 	    break;
-	case CompOptionTypeAction:
-	case CompOptionTypeKey:
-	case CompOptionTypeButton:
-	case CompOptionTypeEdge:
-	case CompOptionTypeBell:
-	    initActionState (metadata, option->value.list.type,
-			     &state, (char *) path);
+	case CompOption::TypeFloat:
+	    initFloatRestriction (metadata, option->rest (), (char *) path);
+	    initFloatValue (option->value (), option->rest (),
+			    defaultDoc, defaultNode);
 	    break;
-	case CompOptionTypeMatch:
+	case CompOption::TypeString:
+	    initStringValue (option->value (), option->rest (),
+			     defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeColor:
+	    initColorValue (option->value (), defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeAction:
+	    initActionState (metadata, option->type (), &state, (char *) path);
+	    initActionValue (d, option->value (), state,
+			     defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeKey:
+	    initActionState (metadata, option->type (), &state, (char *) path);
+	    initKeyValue (d, option->value (), state,
+			  defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeButton:
+	    initActionState (metadata, option->type (), &state, (char *) path);
+	    initButtonValue (d, option->value (), state,
+			     defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeEdge:
+	    initActionState (metadata, option->type (), &state, (char *) path);
+	    initEdgeValue (d, option->value (), state,
+			   defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeBell:
+	    initActionState (metadata, option->type (), &state, (char *) path);
+	    initBellValue (d, option->value (), state,
+			   defaultDoc, defaultNode);
+	    break;
+	case CompOption::TypeMatch:
 	    helper = boolFromMetadataPathElement (metadata, (char *) path,
-						  "helper", FALSE);
-	default:
+						  "helper", false);
+	    initMatchValue (d, option->value (), helper,
+			    defaultDoc, defaultNode);
 	    break;
-	}
+	case CompOption::TypeList:
+	    value = stringFromMetadataPathElement (metadata, (char *) path,
+						   "type");
+	    if (value)
+	    {
+		option->value ().set (getOptionType ((char *) value), emptyList);
+		free (value);
+	    }
+	    else
+	    {
+		option->value ().set (CompOption::TypeBool, emptyList);
+	    }
 
-	initListValue (d, &option->value, &option->rest, state, helper,
-		       defaultDoc, defaultNode);
-	break;
+	    switch (option->value ().listType ()) {
+		case CompOption::TypeInt:
+		    initIntRestriction (metadata, option->rest (),
+					(char *) path);
+		    break;
+		case CompOption::TypeFloat:
+		    initFloatRestriction (metadata, option->rest (),
+					  (char *) path);
+		    break;
+		case CompOption::TypeAction:
+		case CompOption::TypeKey:
+		case CompOption::TypeButton:
+		case CompOption::TypeEdge:
+		case CompOption::TypeBell:
+		    initActionState (metadata, option->value ().listType (),
+				     &state, (char *) path);
+		    break;
+		case CompOption::TypeMatch:
+		    helper = boolFromMetadataPathElement (metadata,
+							  (char *) path,
+							  "helper", false);
+		default:
+		    break;
+	    }
+
+	    initListValue (d, option->value (), option->rest (), state, helper,
+			defaultDoc, defaultNode);
+	    break;
     }
 
     if (defaultDoc)
@@ -1096,7 +1103,7 @@ initOptionFromMetadataPath (CompDisplay   *d,
     return TRUE;
 }
 
-Bool
+bool
 compInitScreenOptionFromMetadata (CompScreen   *s,
 				  CompMetadata *m,
 				  CompOption   *o,
@@ -1109,89 +1116,7 @@ compInitScreenOptionFromMetadata (CompScreen   *s,
     return initOptionFromMetadataPath (s->display (), m, o, BAD_CAST str);
 }
 
-static void
-finiScreenOptionValue (CompScreen      *s,
-		       CompOptionValue *v,
-		       CompOptionType  type)
-{
-    int	i;
-
-    switch (type) {
-    case CompOptionTypeAction:
-    case CompOptionTypeKey:
-    case CompOptionTypeButton:
-    case CompOptionTypeEdge:
-    case CompOptionTypeBell:
-	if (v->action.state & CompActionStateAutoGrab)
-	    s->removeAction (&v->action);
-	break;
-    case CompOptionTypeList:
-	for (i = 0; i < v->list.nValue; i++)
-	    finiScreenOptionValue (s, &v->list.value[i], v->list.type);
-    default:
-	break;
-    }
-}
-
-void
-compFiniScreenOption (CompScreen *s,
-		      CompOption *o)
-{
-    finiScreenOptionValue (s, &o->value, o->type);
-    compFiniOption (o);
-    free (o->name);
-}
-
-Bool
-compInitScreenOptionsFromMetadata (CompScreen			*s,
-				   CompMetadata			*m,
-				   const CompMetadataOptionInfo *info,
-				   CompOption			*opt,
-				   int				n)
-{
-    int i;
-
-    for (i = 0; i < n; i++)
-    {
-	if (!compInitScreenOptionFromMetadata (s, m, &opt[i], info[i].name))
-	{
-	    compFiniScreenOptions (s, opt, i);
-	    return FALSE;
-	}
-
-	if (info[i].initiate)
-	    opt[i].value.action.initiate = info[i].initiate;
-
-	if (info[i].terminate)
-	    opt[i].value.action.terminate = info[i].terminate;
-    }
-
-    return TRUE;
-}
-
-void
-compFiniScreenOptions (CompScreen *s,
-		       CompOption *opt,
-		       int	  n)
-{
-    int i;
-
-    for (i = 0; i < n; i++)
-	compFiniScreenOption (s, &opt[i]);
-}
-
-Bool
-compSetScreenOption (CompScreen      *s,
-		     CompOption      *o,
-		     CompOptionValue *value)
-{
-    if (compSetOption (o, value))
-	return TRUE;
-
-    return FALSE;
-}
-
-Bool
+bool
 compInitDisplayOptionFromMetadata (CompDisplay  *d,
 				   CompMetadata *m,
 				   CompOption	*o,
@@ -1204,105 +1129,57 @@ compInitDisplayOptionFromMetadata (CompDisplay  *d,
     return initOptionFromMetadataPath (d, m, o, BAD_CAST str);
 }
 
-static void
-finiDisplayOptionValue (CompDisplay	*d,
-			CompOptionValue *v,
-			CompOptionType  type)
+
+
+bool
+compInitScreenOptionsFromMetadata (CompScreen			*s,
+				   CompMetadata			*m,
+				   const CompMetadataOptionInfo *info,
+				   CompOption::Vector		&opt)
 {
-    CompScreen *s;
-    int	       i;
-
-    switch (type) {
-    case CompOptionTypeAction:
-    case CompOptionTypeKey:
-    case CompOptionTypeButton:
-    case CompOptionTypeEdge:
-    case CompOptionTypeBell:
-	if (v->action.state & CompActionStateAutoGrab)
-	    for (s = d->screens (); s; s = s->next)
-		s->removeAction (&v->action);
-	break;
-    case CompOptionTypeList:
-	for (i = 0; i < v->list.nValue; i++)
-	    finiDisplayOptionValue (d, &v->list.value[i], v->list.type);
-    default:
-	break;
-    }
-}
-
-void
-compFiniDisplayOption (CompDisplay *d,
-		       CompOption  *o)
-{
-    finiDisplayOptionValue (d, &o->value, o->type);
-    compFiniOption (o);
-    free (o->name);
-}
-
-Bool
-compInitDisplayOptionsFromMetadata (CompDisplay			 *d,
-				    CompMetadata		 *m,
-				    const CompMetadataOptionInfo *info,
-				    CompOption			 *opt,
-				    int				 n)
-{
-    int i;
-
-    for (i = 0; i < n; i++)
+    for (unsigned int i = 0; i < opt.size (); i++)
     {
-	if (!compInitDisplayOptionFromMetadata (d, m, &opt[i], info[i].name))
+	if (!compInitScreenOptionFromMetadata (s, m, &opt[i], info[i].name))
 	{
-	    compFiniDisplayOptions (d, opt, i);
-	    return FALSE;
+	    CompOption::finiScreenOptions (s, opt);
+	    return false;
 	}
 
 	if (info[i].initiate)
-	    opt[i].value.action.initiate = info[i].initiate;
+	    opt[i].value ().action ().setInitiate (info[i].initiate);
 
 	if (info[i].terminate)
-	    opt[i].value.action.terminate = info[i].terminate;
+	    opt[i].value ().action ().setTerminate (info[i].terminate);
     }
 
-    return TRUE;
+    return true;
 }
 
-void
-compFiniDisplayOptions (CompDisplay *d,
-			CompOption  *opt,
-			int	    n)
+bool
+compInitDisplayOptionsFromMetadata (CompDisplay			 *d,
+				    CompMetadata		 *m,
+				    const CompMetadataOptionInfo *info,
+				    CompOption::Vector		 &opt)
 {
-    int i;
-
-    for (i = 0; i < n; i++)
-	compFiniDisplayOption (d, &opt[i]);
-}
-
-Bool
-compSetDisplayOption (CompDisplay     *d,
-		      CompOption      *o,
-		      CompOptionValue *value)
-{
-    if (isActionOption (o))
+    for (unsigned int i = 0; i < opt.size (); i++)
     {
-	if (o->value.action.state & CompActionStateAutoGrab)
+	if (!compInitDisplayOptionFromMetadata (d, m, &opt[i], info[i].name))
 	{
-	    if (setDisplayAction (d, o, value))
-		return TRUE;
+	    CompOption::finiDisplayOptions (d, opt);
+	    return false;
 	}
-	else
-	{
-	    if (compSetActionOption (o, value))
-		return TRUE;
-	}
-    }
-    else
-    {
-	if (compSetOption (o, value))
-	    return TRUE;
+	
+	if (info[i].initiate)
+	    opt[i].value ().action ().setInitiate  (info[i].initiate);
+
+	if (info[i].terminate)
+	    opt[i].value ().action ().setTerminate (info[i].terminate);
     }
 
-    return FALSE;
+    return true;
 }
+
+
 
 char *
 compGetStringFromMetadataPath (CompMetadata *metadata,
@@ -1351,7 +1228,7 @@ compGetShortScreenOptionDescription (CompMetadata *m,
     char str[1024];
 
     sprintf (str, "/compiz/%s/screen//option[@name=\"%s\"]/short/child::text()",
-	     m->path, o->name);
+	     m->path, o->name ().c_str ());
 
     return compGetStringFromMetadataPath (m, str);
 }
@@ -1363,7 +1240,7 @@ compGetLongScreenOptionDescription (CompMetadata *m,
     char str[1024];
 
     sprintf (str, "/compiz/%s/screen//option[@name=\"%s\"]/long/child::text()",
-	     m->path, o->name);
+	     m->path, o->name ().c_str ());
 
     return compGetStringFromMetadataPath (m, str);
 }
@@ -1377,7 +1254,7 @@ compGetShortDisplayOptionDescription (CompMetadata *m,
 
     sprintf (str,
 	     "/compiz/%s/display//option[@name=\"%s\"]/short/child::text()",
-	     m->path, o->name);
+	     m->path, o->name ().c_str ());
 
     return compGetStringFromMetadataPath (m, str);
 }
@@ -1390,7 +1267,7 @@ compGetLongDisplayOptionDescription (CompMetadata *m,
     char str[1024];
 
     sprintf (str, "/compiz/%s/display//option[@name=\"%s\"]/long/child::text()",
-	     m->path, o->name);
+	     m->path, o->name ().c_str ());
 
     return compGetStringFromMetadataPath (m, str);
 }

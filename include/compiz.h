@@ -30,16 +30,18 @@
 
 #include <compiz-common.h>
 
-COMPIZ_BEGIN_DECLS
+#include <string>
+#include <vector>
+#include <list>
+
+typedef std::string CompString;
+
 
 typedef int CompBool;
 typedef int CompTimeoutHandle;
 typedef int CompWatchFdHandle;
 
-typedef union _CompOptionValue CompOptionValue;
-
 typedef struct _CompMetadata CompMetadata;
-typedef struct _CompOption   CompOption;
 typedef struct _CompPlugin   CompPlugin;
 
 
@@ -48,78 +50,27 @@ class CompDisplay;
 class CompScreen;
 class CompWindow;
 class CompObject;
+class CompOption;
+
+typedef union _CompPrivate {
+    void	  *ptr;
+    long	  val;
+    unsigned long uval;
+    void	  *(*fptr) (void);
+} CompPrivate;
+
 
 typedef bool (*CallBackProc) (void *closure);
 
 typedef enum {
-    CompOptionTypeBool,
-    CompOptionTypeInt,
-    CompOptionTypeFloat,
-    CompOptionTypeString,
-    CompOptionTypeColor,
-    CompOptionTypeAction,
-    CompOptionTypeKey,
-    CompOptionTypeButton,
-    CompOptionTypeEdge,
-    CompOptionTypeBell,
-    CompOptionTypeMatch,
-    CompOptionTypeList
-} CompOptionType;
+    CompLogLevelFatal = 0,
+    CompLogLevelError,
+    CompLogLevelWarn,
+    CompLogLevelInfo,
+    CompLogLevelDebug
+} CompLogLevel;
 
-void
-compInitOptionValue (CompOptionValue *v);
 
-void
-compFiniOptionValue (CompOptionValue *v,
-		     CompOptionType  type);
-
-void
-compInitOption (CompOption *option);
-
-void
-compFiniOption (CompOption *option);
-
-CompOption *
-compFindOption (CompOption *option,
-		int	    nOption,
-		const char  *name,
-		int	    *index);
-
-CompBool
-compSetBoolOption (CompOption      *option,
-		   CompOptionValue *value);
-
-CompBool
-compSetIntOption (CompOption	  *option,
-		  CompOptionValue *value);
-
-CompBool
-compSetFloatOption (CompOption	    *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetStringOption (CompOption	     *option,
-		     CompOptionValue *value);
-
-CompBool
-compSetColorOption (CompOption	    *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetActionOption (CompOption      *option,
-		     CompOptionValue *value);
-
-CompBool
-compSetMatchOption (CompOption      *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetOptionList (CompOption      *option,
-		   CompOptionValue *value);
-
-CompBool
-compSetOption (CompOption      *option,
-	       CompOptionValue *value);
 
 CompBool
 compInitMetadata (CompMetadata *metadata);
@@ -156,6 +107,5 @@ compReadXmlChunk (const char *src,
 		  int	     length);
 
 
-COMPIZ_END_DECLS
 
 #endif

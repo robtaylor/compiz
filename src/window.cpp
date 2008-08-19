@@ -3343,7 +3343,7 @@ PrivateWindow::constrainNewWindowSize (int        width,
     long	     flags = hints->flags;
     long	     resizeIncFlags = (flags & PResizeInc) ? ~0 : 0;
 
-    if (d->getOption ("ignore_hints_when_maximized")->value.b)
+    if (d->getOption ("ignore_hints_when_maximized")->value ().b ())
     {
 	if (state & MAXIMIZE_STATE)
 	{
@@ -3729,10 +3729,9 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     CompWindow   *active;
     Time	 wUserTime, aUserTime;
     bool         gotTimestamp = false;
-    CompMatch    *match;
     int          level, vx, vy;
 
-    level = s->getOption ("focus_prevention_level")->value.i;
+    level = s->getOption ("focus_prevention_level")->value ().i ();
 
     if (level == FOCUS_PREVENTION_LEVEL_NONE)
 	return true;
@@ -3768,8 +3767,9 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* allow focus for excluded windows */
-    match = s->getOption ("focus_prevention_match")->value.match;
-    if (!match->evaluate (window))
+    CompMatch &match =
+	s->getOption ("focus_prevention_match")->value ().match ();
+    if (!match.evaluate (window))
 	return true;
 
     if (level == FOCUS_PREVENTION_LEVEL_VERYHIGH)
