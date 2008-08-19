@@ -35,4 +35,5 @@ compiz_SOURCES =   \
 	size.cpp     \
 	point.cpp    \
 	windowgeometry.cpp \
-	icon.cpp
+	icon.cpp     \
+	vector.cpp

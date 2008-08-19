@@ -5,6 +5,7 @@
 #include <comppoint.h>
 #include <comptexture.h>
 #include <compfragment.h>
+#include <compmatrix.h>
 
 class CompWindow;
 class PrivateWindow;

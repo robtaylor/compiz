@@ -4,6 +4,7 @@
 #include <compwindow.h>
 #include <comptexture.h>
 #include <compfragment.h>
+#include <compmatrix.h>
 
 class CompScreen;
 class PrivateScreen;
