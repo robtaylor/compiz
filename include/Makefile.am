@@ -1,7 +1,6 @@
 compizincludedir = $(includedir)/compiz
 compizinclude_HEADERS = \
 	compiz.h	\
-	compiz-plugin.h	\
 	compiz-core.h	\
 	compiz-cube.h   \
 	compiz-scale.h	\

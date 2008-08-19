@@ -486,20 +486,6 @@ eventTerminates (CompDisplay *display,
 
 #define DEG2RAD (M_PI / 180.0f)
 
-typedef struct _CompTransform {
-    float m[16];
-} CompTransform;
-
-typedef union _CompVector {
-    float v[4];
-    struct {
-	float x;
-	float y;
-	float z;
-	float w;
-    };
-} CompVector;
-
 /* XXX: ScreenPaintAttrib will be removed */
 typedef struct _ScreenPaintAttrib {
     GLfloat xRotate;
@@ -543,12 +529,6 @@ struct _CompWalker {
     WalkStepProc prev;
 };
 
-
-/* XXX: prepareXCoords will be removed */
-void
-prepareXCoords (CompScreen *screen,
-		CompOutput *output,
-		float      z);
 
 /* screen.c */
 
@@ -707,44 +687,6 @@ getPluginDisplayIndex (CompDisplay *d,
 
 /* fragment.c */
 
-
-
-/* matrix.c */
-
-void
-matrixMultiply (CompTransform       *product,
-		const CompTransform *transformA,
-		const CompTransform *transformB);
-
-void
-matrixMultiplyVector (CompVector          *product,
-		      const CompVector    *vector,
-		      const CompTransform *transform);
-
-void
-matrixVectorDiv (CompVector *v);
-
-void
-matrixRotate (CompTransform *transform,
-	      float	    angle,
-	      float	    x,
-	      float	    y,
-	      float	    z);
-
-void
-matrixScale (CompTransform *transform,
-	     float	   x,
-	     float	   y,
-	     float	   z);
-
-void
-matrixTranslate (CompTransform *transform,
-		 float	       x,
-		 float	       y,
-		 float	       z);
-
-void
-matrixGetIdentity (CompTransform *m);
 
 /* match.c */
 

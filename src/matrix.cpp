@@ -23,13 +23,13 @@
 
 #include <string.h>
 #include <math.h>
-
 #include <compiz-core.h>
+#include <compmatrix.h>
 
 /**
  * Identity matrix.
  */
-static float identity[16] = {
+static const float identity[16] = {
     1.0, 0.0, 0.0, 0.0,
     0.0, 1.0, 0.0, 0.0,
     0.0, 0.0, 1.0, 0.0,
@@ -71,48 +71,57 @@ matmul4 (float       *product,
     }
 }
 
-void
-matrixMultiply (CompTransform       *product,
-		const CompTransform *transformA,
-		const CompTransform *transformB)
+CompMatrix::CompMatrix ()
 {
-    matmul4 (product->m, transformA->m, transformB->m);
+    memcpy (m, identity, sizeof (m));
 }
 
-/**
- * Multiply the 1x4 vector v with the 4x4 matrix a.
- *
- * \param a matrix.
- * \param v vector.
- * \param product will receive the product of \p a and \p v.
- *
- */
 void
-matrixMultiplyVector (CompVector          *product,
-		      const CompVector    *vector,
-		      const CompTransform *transform)
+CompMatrix::reset ()
 {
-    float       vec[4];
-    const float *a = transform->m;
-    const float *b = vector->v;
+    memcpy (m, identity, sizeof (m));
+}
+
+const float * 
+CompMatrix::getMatrix () const
+{
+    return m;
+}
+
+CompMatrix&
+CompMatrix::operator*= (const CompMatrix& rhs)
+{
+    *this = *this * rhs;
+
+    return *this;
+}
+
+CompMatrix
+operator* (const CompMatrix& lhs,
+	   const CompMatrix& rhs)
+{
+    CompMatrix result;
+
+    matmul4 (result.m, lhs.m, rhs.m);
+
+    return result;
+}
+
+CompVector
+operator* (const CompMatrix& lhs,
+	   const CompVector& rhs)
+{
+    CompVector  result;
+    const float *a = lhs.m;
     int         i;
 
     for (i = 0; i < 4; i++)
     {
-	vec[i] = A(i,0) * B(0,0) + A(i,1) * B(1,0) +
-	         A(i,2) * B(2,0) + A(i,3) * B(3,0);
+	result[i] = A(i,0) * rhs[0] + A(i,1) * rhs[1] +
+	            A(i,2) * rhs[2] + A(i,3) * rhs[3];
     }
 
-    memcpy (product->v, vec, sizeof (vec));
-}
-
-void
-matrixVectorDiv (CompVector *vector)
-{
-    int i;
-
-    for (i = 0; i < 4; i++)
-	vector->v[i] /= vector->v[3];
+    return result;
 }
 
 #undef A
@@ -128,23 +137,23 @@ matrixVectorDiv (CompVector *vector)
  * Optimizations contributed by Rudolf Opalla (rudi@khm.de).
  */
 void
-matrixRotate (CompTransform *transform,
-	      float	    angle,
-	      float	    x,
-	      float	    y,
-	      float	    z)
+CompMatrix::rotate (const float angle,
+		    const float xRot,
+		    const float yRot,
+		    const float zRot)
 {
+    float x = xRot, y = yRot, z = zRot;
     float xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c, s, c;
-    float m[16];
+    float matrix[16];
     Bool  optimized;
 
     s = (float) sin (angle * DEG2RAD);
     c = (float) cos (angle * DEG2RAD);
 
-    memcpy (m, identity, sizeof (float) * 16);
+    memcpy (matrix, identity, sizeof (matrix));
     optimized = FALSE;
 
-#define M(row, col)  m[col * 4 + row]
+#define M(row, col)  matrix[col * 4 + row]
 
     if (x == 0.0f)
     {
@@ -311,7 +320,17 @@ matrixRotate (CompTransform *transform,
     }
 #undef M
 
-    matmul4 (transform->m, transform->m, m);
+    matmul4 (m, m, matrix);
+}
+
+void
+CompMatrix::rotate (const float       angle,
+		    const CompVector& vector)
+{
+    rotate (angle,
+	    vector[CompVector::x],
+	    vector[CompVector::y],
+	    vector[CompVector::z]);
 }
 
 /**
@@ -325,17 +344,22 @@ matrixRotate (CompTransform *transform,
  * Multiplies in-place the elements of \p matrix by the scale factors.
  */
 void
-matrixScale (CompTransform *transform,
-	     float	   x,
-	     float	   y,
-	     float	   z)
+CompMatrix::scale (const float x,
+		   const float y,
+		   const float z)
 {
-    float *m = transform->m;
-
     m[0] *= x; m[4] *= y; m[8]  *= z;
     m[1] *= x; m[5] *= y; m[9]  *= z;
     m[2] *= x; m[6] *= y; m[10] *= z;
     m[3] *= x; m[7] *= y; m[11] *= z;
+}
+
+void
+CompMatrix::scale (const CompVector& vector)
+{
+    scale (vector[CompVector::x],
+	   vector[CompVector::y],
+	   vector[CompVector::z]);
 }
 
 /**
@@ -349,13 +373,10 @@ matrixScale (CompTransform *transform,
  * Adds the translation coordinates to the elements of \p matrix in-place.
  */
 void
-matrixTranslate (CompTransform *transform,
-		 float	       x,
-		 float	       y,
-		 float	       z)
+CompMatrix::translate (const float x,
+		       const float y,
+		       const float z)
 {
-    float *m = transform->m;
-
     m[12] = m[0] * x + m[4] * y + m[8]  * z + m[12];
     m[13] = m[1] * x + m[5] * y + m[9]  * z + m[13];
     m[14] = m[2] * x + m[6] * y + m[10] * z + m[14];
@@ -363,7 +384,18 @@ matrixTranslate (CompTransform *transform,
 }
 
 void
-matrixGetIdentity (CompTransform *transform)
+CompMatrix::translate (const CompVector& vector)
 {
-    memcpy (transform->m, identity, sizeof (float) * 16);
+    translate (vector[CompVector::x],
+	       vector[CompVector::y],
+	       vector[CompVector::z]);
+}
+
+void
+CompMatrix::toScreenSpace (CompOutput *output,
+			   float      z)
+{
+    translate (-0.5f, -0.5f, z);
+    scale (1.0f / output->width (), -1.0f / output->height (), 1.0f);
+    translate (-output->x1 (), -output->y2 (), 0.0f);
 }

@@ -55,50 +55,15 @@ CompScreen::applyTransform (const ScreenPaintAttrib *sAttrib,
 {
     WRAPABLE_HND_FUNC(applyTransform, sAttrib, output, transform)
 
-    matrixTranslate (transform,
-		     sAttrib->xTranslate,
-		     sAttrib->yTranslate,
-		     sAttrib->zTranslate + sAttrib->zCamera);
-    matrixRotate (transform,
-		  sAttrib->xRotate, 0.0f, 1.0f, 0.0f);
-    matrixRotate (transform,
-		  sAttrib->vRotate,
-		  cosf (sAttrib->xRotate * DEG2RAD),
-		  0.0f,
-		  sinf (sAttrib->xRotate * DEG2RAD));
-    matrixRotate (transform,
-		  sAttrib->yRotate, 0.0f, 1.0f, 0.0f);
-}
-
-void
-transformToScreenSpace (CompScreen    *screen,
-			CompOutput    *output,
-			float         z,
-			CompTransform *transform)
-{
-    matrixTranslate (transform, -0.5f, -0.5f, z);
-    matrixScale (transform,
-		 1.0f  / output->width (),
-		 -1.0f / output->height (),
-		 1.0f);
-    matrixTranslate (transform,
-		     -output->x1 (),
-		     -output->y2 (),
-		     0.0f);
-}
-
-void
-prepareXCoords (CompScreen *screen,
-		CompOutput *output,
-		float      z)
-{
-    glTranslatef (-0.5f, -0.5f, z);
-    glScalef (1.0f  / output->width (),
-	      -1.0f / output->height (),
-	      1.0f);
-    glTranslatef (-output->x1 (),
-		  -output->y2 (),
-		  0.0f);
+    transform->translate (sAttrib->xTranslate,
+			  sAttrib->yTranslate,
+			  sAttrib->zTranslate + sAttrib->zCamera);
+    transform->rotate (sAttrib->xRotate, 0.0f, 1.0f, 0.0f);
+    transform->rotate (sAttrib->vRotate,
+		       cosf (sAttrib->xRotate * DEG2RAD),
+		       0.0f,
+		       sinf (sAttrib->xRotate * DEG2RAD));
+    transform->rotate (sAttrib->yRotate, 0.0f, 1.0f, 0.0f);
 }
 
 void
@@ -267,7 +232,7 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 					 &offX, &offY);
 
 		vTransform = *transform;
-		matrixTranslate (&vTransform, offX, offY, 0);
+		vTransform.translate (offX, offY, 0);
 	 
 		XOffsetRegion (w->clip (), -offX, -offY);
 
@@ -348,7 +313,7 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 				    &offX, &offY);
 
 	    vTransform = *transform;
-	    matrixTranslate (&vTransform, offX, offY, 0);
+	    vTransform.translate (offX, offY, 0);
 	    w->paint (&w->paintAttrib (), &vTransform, clip,
 		      windowMask | PAINT_WINDOW_WITH_OFFSET_MASK);
 	}
@@ -386,7 +351,7 @@ CompScreen::enableOutputClipping (const CompTransform *transform,
     GLdouble right[4]  = { halfW / (cx - p2[0]), 0.0, 0.0, 0.5 };
 
     glPushMatrix ();
-    glLoadMatrixf (transform->m);
+    glLoadMatrixf (transform->getMatrix ());
 
     glClipPlane (GL_CLIP_PLANE0, top);
     glClipPlane (GL_CLIP_PLANE1, bottom);
@@ -438,11 +403,10 @@ CompScreen::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
     {
 	enableOutputClipping (&sTransform, region, output);
 
-	transformToScreenSpace (this, output, -sAttrib->zTranslate,
-				&sTransform);
+	sTransform.toScreenSpace (output, -sAttrib->zTranslate);
 
 	glPushMatrix ();
-	glLoadMatrixf (sTransform.m);
+	glLoadMatrixf (sTransform.getMatrix ());
 
 	priv->paintOutputRegion (&sTransform, region, output, mask);
 
@@ -452,11 +416,10 @@ CompScreen::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
     }
     else
     {
-	transformToScreenSpace (this, output, -sAttrib->zTranslate,
-				&sTransform);
+	sTransform.toScreenSpace (output, -sAttrib->zTranslate);
 
 	glPushMatrix ();
-	glLoadMatrixf (sTransform.m);
+	glLoadMatrixf (sTransform.getMatrix ());
 
 	priv->paintOutputRegion (&sTransform, region, output, mask);
 
@@ -506,10 +469,10 @@ CompScreen::paintOutput (const ScreenPaintAttrib *sAttrib,
 
     setLighting (false);
 
-    transformToScreenSpace (this, output, -DEFAULT_Z_CAMERA, &sTransform);
+    sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
 
     glPushMatrix ();
-    glLoadMatrixf (sTransform.m);
+    glLoadMatrixf (sTransform.getMatrix ());
 
     priv->paintOutputRegion (&sTransform, region, output, mask);
 
@@ -1211,7 +1174,7 @@ CompWindow::paint (const WindowPaintAttrib *attrib,
         mask & PAINT_WINDOW_WITH_OFFSET_MASK)
     {
 	glPushMatrix ();
-	glLoadMatrixf (transform->m);
+	glLoadMatrixf (transform->getMatrix ());
     }
 
     status = draw (transform, fragment, region, mask);

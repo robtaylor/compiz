@@ -4175,15 +4175,6 @@ CompScreen::waitForVideoSync ()
     }
 }
 
-static const CompTransform identity = {
-    {
-	1.0, 0.0, 0.0, 0.0,
-	0.0, 1.0, 0.0, 0.0,
-	0.0, 0.0, 1.0, 0.0,
-	0.0, 0.0, 0.0, 1.0
-    }
-};
-
 void
 CompScreen::paint (CompOutput::ptrList &outputs,
 		   unsigned int        mask)
@@ -4216,6 +4207,8 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 
 	if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
 	{
+	    CompMatrix identity;
+
 	    paintOutput (&defaultScreenPaintAttrib,
 			 &identity,
 			 output->region (), output,
@@ -4224,6 +4217,8 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 	}
 	else if (mask & COMP_SCREEN_DAMAGE_REGION_MASK)
 	{
+	    CompMatrix identity;
+
 	    XIntersectRegion (priv->display->mTmpRegion,
 			      output->region (),
 			      priv->display->mOutputRegion);
@@ -4233,6 +4228,8 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 			      priv->display->mOutputRegion, output,
 			      PAINT_SCREEN_REGION_MASK))
 	    {
+		identity.reset ();
+
 		paintOutput (&defaultScreenPaintAttrib,
 			     &identity,
 			     output->region (), output,
