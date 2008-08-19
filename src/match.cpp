@@ -688,5 +688,5 @@ CompMatch::operator| (const CompString &str)
 bool
 CompMatch::operator== (const CompMatch &match)
 {
-    matchOpsEqual (priv->op.op, match.priv->op.op);
+    return matchOpsEqual (priv->op.op, match.priv->op.op);
 }
