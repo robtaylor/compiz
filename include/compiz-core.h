@@ -257,32 +257,6 @@ eventTerminates (CompDisplay *display,
 
 #define DEG2RAD (M_PI / 180.0f)
 
-/* XXX: ScreenPaintAttrib will be removed */
-typedef struct _ScreenPaintAttrib {
-    GLfloat xRotate;
-    GLfloat yRotate;
-    GLfloat vRotate;
-    GLfloat xTranslate;
-    GLfloat yTranslate;
-    GLfloat zTranslate;
-    GLfloat zCamera;
-} ScreenPaintAttrib;
-
-/* XXX: scale and translate fields will be removed */
-typedef struct _WindowPaintAttrib {
-    GLushort opacity;
-    GLushort brightness;
-    GLushort saturation;
-    GLfloat  xScale;
-    GLfloat  yScale;
-    GLfloat  xTranslate;
-    GLfloat  yTranslate;
-} WindowPaintAttrib;
-
-extern ScreenPaintAttrib defaultScreenPaintAttrib;
-extern WindowPaintAttrib defaultWindowPaintAttrib;
-
-
 
 typedef void (*WalkerFiniProc) (CompScreen *screen,
 				CompWalker *walker);

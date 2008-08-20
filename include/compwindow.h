@@ -158,6 +158,17 @@ class PrivateWindow;
 #define CompWindowGrabMoveMask   (1 << 2)
 #define CompWindowGrabResizeMask (1 << 3)
 
+struct WindowPaintAttrib {
+    GLushort opacity;
+    GLushort brightness;
+    GLushort saturation;
+    GLfloat  xScale;
+    GLfloat  yScale;
+    GLfloat  xTranslate;
+    GLfloat  yTranslate;
+};
+
+extern WindowPaintAttrib defaultWindowPaintAttrib;
 
 class WindowInterface : public WrapableInterface<CompWindow> {
     public:

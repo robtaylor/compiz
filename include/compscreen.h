@@ -122,6 +122,17 @@ typedef void (*GLFramebufferTexture2DProc) (GLenum target,
 					    GLint  level);
 typedef void (*GLGenerateMipmapProc) (GLenum target);
 
+struct ScreenPaintAttrib {
+    GLfloat xRotate;
+    GLfloat yRotate;
+    GLfloat vRotate;
+    GLfloat xTranslate;
+    GLfloat yTranslate;
+    GLfloat zTranslate;
+    GLfloat zCamera;
+};
+
+extern ScreenPaintAttrib defaultScreenPaintAttrib;
 
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
@@ -161,6 +172,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	int  windowPrivateLen;
 
 	typedef void* grabHandle;
+
     public:
 	CompScreen ();
 	~CompScreen ();

@@ -7,6 +7,8 @@
 #define COMP_FETCH_TARGET_RECT 1
 #define COMP_FETCH_TARGET_NUM  2
 
+struct WindowPaintAttrib;
+
 namespace CompFragment {
 
     class Storage;
