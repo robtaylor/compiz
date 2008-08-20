@@ -1237,10 +1237,10 @@ CompWindow::updateStruts ()
     {
 	int strutX1, strutY1, strutX2, strutY2;
 	int x1, y1, x2, y2;
-	int i;
 
 	/* applications expect us to clip struts to xinerama edges */
-	for (i = 0; i < priv->screen->display ()->screenInfo ().size (); i++)
+	for (unsigned int i = 0;
+	     i < priv->screen->display ()->screenInfo ().size (); i++)
 	{
 	    x1 = priv->screen->display ()->screenInfo ()[i].x_org;
 	    y1 = priv->screen->display ()->screenInfo ()[i].y_org;
@@ -1842,8 +1842,8 @@ CompWindow::focus ()
 
     if (priv->attrib.x + priv->width  <= 0	||
 	priv->attrib.y + priv->height <= 0	||
-	priv->attrib.x >= priv->screen->size().width ()||
-	priv->attrib.y >= priv->screen->size().height ())
+	priv->attrib.x >= (int) priv->screen->size().width ()||
+	priv->attrib.y >= (int) priv->screen->size().height ())
 	return false;
 
     return true;
@@ -3436,13 +3436,13 @@ PrivateWindow::constrainNewWindowSize (int        width,
 	{
 	    delta = FLOOR64 (height - width * min_aspect_y / min_aspect_x,
 			     yinc);
-	    if (height - delta >= min_height)
+	    if (height - (int) delta >= min_height)
 		height -= delta;
 	    else
 	    {
 		delta = FLOOR64 (height * min_aspect_x / min_aspect_y - width,
 				 xinc);
-		if (width + delta <= max_width)
+		if (width + (int) delta <= max_width)
 		    width += delta;
 	    }
 	}
@@ -3451,13 +3451,13 @@ PrivateWindow::constrainNewWindowSize (int        width,
 	{
 	    delta = FLOOR64 (width - height * max_aspect_x / max_aspect_y,
 			     xinc);
-	    if (width - delta >= min_width)
+	    if (width - (int) delta >= min_width)
 		width -= delta;
 	    else
 	    {
 		delta = FLOOR64 (width * min_aspect_y / min_aspect_x - height,
 				 yinc);
-		if (height + delta <= max_height)
+		if (height + (int) delta <= max_height)
 		    height += delta;
 	    }
 	}
@@ -3622,7 +3622,7 @@ CompWindow::unminimize ()
 }
 
 void
-CompWindow::maximize (int state)
+CompWindow::maximize (unsigned int state)
 {
     if (priv->attrib.override_redirect)
 	return;
@@ -3882,8 +3882,9 @@ CompWindow::defaultViewport (int *vx, int *vy)
 CompIcon *
 CompWindow::getIcon (int width, int height)
 {
-    CompIcon *icon;
-    int	     i, wh, diff, oldDiff;
+    CompIcon     *icon;
+    int          wh, diff, oldDiff;
+    unsigned int i;
 
     /* need to fetch icon property */
     if (priv->icons.size () == 0 && !priv->noIcons)
@@ -3902,7 +3903,6 @@ CompWindow::getIcon (int width, int height)
 
 	if (result == Success && n && data)
 	{
-	    CompIcon **pIcon;
 	    CARD32   *p;
 	    CARD32   alpha, red, green, blue;
 	    int      iw, ih, j;
@@ -3911,10 +3911,10 @@ CompWindow::getIcon (int width, int height)
 	    {
 		unsigned long *idata = (unsigned long *) data;
 
-		iw  = idata[i];
+		iw = idata[i];
 		ih = idata[i + 1];
 
-		if (iw * ih + 2 > n - i)
+		if (iw * ih + 2 > (int) (n - i))
 		    break;
 
 		if (iw && ih)
@@ -3967,8 +3967,8 @@ CompWindow::getIcon (int width, int height)
 
     for (i = 0; i < priv->icons.size (); i++)
     {
-	if (priv->icons[i]->width () > width ||
-	    priv->icons[i]->height () > height)
+	if ((int) priv->icons[i]->width () > width ||
+	    (int) priv->icons[i]->height () > height)
 	    continue;
 
 	if (icon)
@@ -3990,8 +3990,6 @@ CompWindow::getIcon (int width, int height)
 void
 CompWindow::freeIcons ()
 {
-    int i;
-
     for (unsigned int i = 0; i < priv->icons.size (); i++)
     {
 	delete priv->icons[i];
@@ -4120,7 +4118,7 @@ CompWindow::getMovementForOffset (int offX,
     else
     {
 	m = priv->attrib.x + offX;
-	if (m - priv->input.left < s->size().width () - vWidth)
+	if (m - priv->input.left < (int) s->size().width () - vWidth)
 	    *retX = offX + vWidth;
 	else if (m + priv->width + priv->input.right > vWidth)
 	    *retX = offX - vWidth;
@@ -4135,7 +4133,7 @@ CompWindow::getMovementForOffset (int offX,
     else
     {
 	m = priv->attrib.y + offY;
-	if (m - priv->input.top < s->size().height () - vHeight)
+	if (m - priv->input.top < (int) s->size().height () - vHeight)
 	    *retY = offY + vHeight;
 	else if (m + priv->height + priv->input.bottom > vHeight)
 	    *retY = offY - vHeight;
@@ -4336,7 +4334,7 @@ CompWindow::close (Time serverTime)
 }
 
 bool
-CompWindow::handlePingTimeout (int lastPing)
+CompWindow::handlePingTimeout (unsigned int lastPing)
 {
     if (priv->attrib.map_state != IsViewable)
 	return false;
@@ -4598,7 +4596,8 @@ CompWindow::moveToViewportPosition (int x, int y, bool sync)
 	{
 	    m = priv->attrib.x + tx;
 
-	    if (m - priv->output.left < priv->screen->size().width () - vWidth)
+	    if (m - priv->output.left <
+		(int) priv->screen->size().width () - vWidth)
 		wx = tx + vWidth;
 	    else if (m + priv->width + priv->output.right > vWidth)
 		wx = tx - vWidth;
@@ -4608,7 +4607,8 @@ CompWindow::moveToViewportPosition (int x, int y, bool sync)
 	{
 	    m = priv->attrib.y + ty;
 
-	    if (m - priv->output.top < priv->screen->size().height () - vHeight)
+	    if (m - priv->output.top <
+		(int) priv->screen->size().height () - vHeight)
 		wy = ty + vHeight;
 	    else if (m + priv->height + priv->output.bottom > vHeight)
 		wy = ty - vHeight;

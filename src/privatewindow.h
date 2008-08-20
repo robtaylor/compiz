@@ -11,8 +11,8 @@
      (!(w)->damaged)					       || \
      (w)->attrib.x + (w)->width  + (w)->output.right  <= 0     || \
      (w)->attrib.y + (w)->height + (w)->output.bottom <= 0     || \
-     (w)->attrib.x - (w)->output.left >= (w)->screen->size().width () || \
-     (w)->attrib.y - (w)->output.top >= (w)->screen->size().height () )
+     (w)->attrib.x - (w)->output.left >= (int) (w)->screen->size().width () || \
+     (w)->attrib.y - (w)->output.top >= (int) (w)->screen->size().height () )
 
 
 class PrivateWindow {

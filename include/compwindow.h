@@ -307,7 +307,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	close (Time serverTime);
 
 	bool
-	handlePingTimeout (int lastPing);
+	handlePingTimeout (unsigned int lastPing);
 
 	void
 	handlePing (int lastPing);
@@ -519,7 +519,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	unminimize ();
 
 	void
-	maximize (int state);
+	maximize (unsigned int state = 0);
 
 	bool
 	getUserTime (Time *time);

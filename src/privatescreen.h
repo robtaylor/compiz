@@ -24,7 +24,7 @@ extern bool	  useDesktopHints;
 extern bool       onlyCurrentScreen;
 
 extern int  defaultRefreshRate;
-extern char *defaultTextureFilter;
+extern const char *defaultTextureFilter;
 
 #define RED_SATURATION_WEIGHT   0.30f
 #define GREEN_SATURATION_WEIGHT 0.59f

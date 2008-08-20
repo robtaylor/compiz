@@ -53,7 +53,7 @@ GLushort defaultColor[4] = { 0xffff, 0xffff, 0xffff, 0xffff };
 Window   currentRoot = 0;
 
 int  defaultRefreshRate = 50;
-char *defaultTextureFilter = "Good";
+const char *defaultTextureFilter = "Good";
 
 bool shutDown = false;
 bool restartSignal = false;
@@ -259,7 +259,8 @@ main (int argc, char **argv)
 	}
 	else if (!strcmp (argv[i], "--fast-filter"))
 	{
-	    ctx.textureFilterData = "<default>Fast</default>";
+	    ctx.textureFilterData =
+		const_cast<char *> ("<default>Fast</default>");
 	    defaultTextureFilter = "Fast";
 	}
 	else if (!strcmp (argv[i], "--indirect-rendering"))

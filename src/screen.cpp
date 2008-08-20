@@ -219,9 +219,9 @@ PrivateScreen::updateOutputDevices ()
 	    x1 = 0;
 	if (y1 < 0)
 	    y1 = 0;
-	if (x2 > size.width ())
+	if (x2 > (int) size.width ())
 	    x2 = size.width ();
-	if (y2 > size.height ())
+	if (y2 > (int) size.height ())
 	    y2 = size.height ();
 
 	if (x1 < x2 && y1 < y2)
@@ -285,7 +285,7 @@ PrivateScreen::updateOutputDevices ()
 	
 	if (display->screenInfo ().size ())
 	{
-	    for (int i = 0; i < display->screenInfo ().size (); i++)
+	    for (unsigned int i = 0; i < display->screenInfo ().size (); i++)
 	    {
 		r.extents.x1 = display->screenInfo ()[i].x_org;
 		r.extents.y1 = display->screenInfo ()[i].y_org;
@@ -528,7 +528,6 @@ PrivateScreen::updateStartupFeedback ()
 bool
 PrivateScreen::handleStartupSequenceTimeout()
 {
-    CompStartupSequence *s;
     struct timeval	now, active;
     double		elapsed;
 
@@ -839,7 +838,7 @@ PrivateScreen::updateScreenBackground (CompTexture *texture)
 		    if (XGetGeometry (dpy, p, &w, &i, &i,
 				      &width, &height, &ui, &depth))
 		    {
-			if (depth == attrib.depth)
+			if ((int) depth == attrib.depth)
 			    pixmap = p;
 		    }
 		}
@@ -2177,7 +2176,7 @@ CompScreen::init (CompDisplay *display,
 		&rootReturn, &parentReturn,
 		&children, &nchildren);
 
-    for (i = 0; i < nchildren; i++)
+    for (unsigned int i = 0; i < nchildren; i++)
 	new CompWindow (this, children[i], i ? children[i - 1] : 0);
 
     foreach (CompWindow *w, priv->windows)
@@ -2482,7 +2481,6 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 void
 CompScreen::unhookWindow (CompWindow *w)
 {
-    CompWindow *prev, *next;
     CompWindowList::iterator it =
 	std::find (priv->windows.begin (), priv->windows.end (), w);
 
@@ -2659,7 +2657,8 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 			       bool         grab)
 {
     XModifierKeymap *modMap = display->modMap ();
-    int ignore, mod, k;
+    int             mod, k;
+    unsigned int    ignore;
 
     CompDisplay::checkForError (display->dpy ());
 
@@ -3590,8 +3589,8 @@ CompScreen::clearOutput (CompOutput   *output,
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != priv->size.width () ||
-	pBox->y2 != priv->size.height ())
+	pBox->x2 != (int) priv->size.width () ||
+	pBox->y2 != (int) priv->size.height ())
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
@@ -3627,8 +3626,8 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
     gm.setWidth  (gm.width () + (gm.border () * 2));
     gm.setHeight (gm.height () + (gm.border () * 2));
 
-    if ((gm.x () < priv->size.width ()  && gm.x () + gm.width () > 0) &&
-	(gm.y () < priv->size.height () && gm.y ()+ gm.height () > 0))
+    if ((gm.x () < (int) priv->size.width ()  && gm.x () + gm.width () > 0) &&
+	(gm.y () < (int) priv->size.height () && gm.y ()+ gm.height () > 0))
     {
 	if (viewportX)
 	    *viewportX = priv->vp.x ();
@@ -4148,12 +4147,12 @@ CompScreen::warpPointer (int dx, int dy)
     pointerX += dx;
     pointerY += dy;
 
-    if (pointerX >= priv->size.width ())
+    if (pointerX >= (int) priv->size.width ())
 	pointerX = priv->size.width () - 1;
     else if (pointerX < 0)
 	pointerX = 0;
 
-    if (pointerY >= priv->size.height ())
+    if (pointerY >= (int) priv->size.height ())
 	pointerY = priv->size.height () - 1;
     else if (pointerY < 0)
 	pointerY = 0;
@@ -4286,8 +4285,8 @@ CompScreen::handlePaintTimeout ()
 	    if (priv->tmpRegion->numRects  == 1	  &&
 		priv->tmpRegion->rects->x1 == 0	  &&
 		priv->tmpRegion->rects->y1 == 0	  &&
-		priv->tmpRegion->rects->x2 == priv->size.width () &&
-		priv->tmpRegion->rects->y2 == priv->size.height ())
+		priv->tmpRegion->rects->x2 == (int) priv->size.width () &&
+		priv->tmpRegion->rects->y2 == (int) priv->size.height ())
 		damageScreen ();
 	}
 

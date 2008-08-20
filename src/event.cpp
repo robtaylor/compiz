@@ -234,7 +234,7 @@ PrivateDisplay::triggerButtonPressBindings (CompOption::Vector &options,
 	if (isInitiateBinding (option, CompAction::BindingTypeButton, state,
 			       &action))
 	{
-	    if (action->button ().button () == event->xbutton.button)
+	    if (action->button ().button () == (int) event->xbutton.button)
 	    {
 		bindMods = display->virtualToRealModMask (
 		    action->button ().modifiers ());
@@ -251,7 +251,8 @@ PrivateDisplay::triggerButtonPressBindings (CompOption::Vector &options,
 	    if (isInitiateBinding (option, CompAction::BindingTypeEdgeButton,
 				   state | CompAction::StateInitEdge, &action))
 	    {
-		if ((action->button ().button () == event->xbutton.button) &&
+		if ((action->button ().button () ==
+		     (int) event->xbutton.button) &&
 		    (action->edgeMask () & edge))
 		{
 		    bindMods = display->virtualToRealModMask (
@@ -285,7 +286,7 @@ PrivateDisplay::triggerButtonReleaseBindings (CompOption::Vector &options,
     {
 	if (isTerminateBinding (option, type, state, &action))
 	{
-	    if (action->button ().button () == event->xbutton.button)
+	    if (action->button ().button () == (int) event->xbutton.button)
 	    {
 		if (action->terminate () (display, action, state,
 					  arguments))
@@ -338,7 +339,7 @@ PrivateDisplay::triggerKeyPressBindings (CompOption::Vector &options,
 	    bindMods = display->virtualToRealModMask (
 		action->key ().modifiers ());
 
-	    if (action->key ().keycode () == event->xkey.keycode)
+	    if (action->key ().keycode () == (int) event->xkey.keycode)
 	    {
 		if ((bindMods & modMask) == (event->xkey.state & modMask))
 		    if (action->initiate () (display, action, state,
@@ -1497,7 +1498,7 @@ CompDisplay::handleEvent (XEvent *event)
 	}
 	else if (event->xclient.message_type == priv->atoms.wmProtocols)
 	{
-	    if (event->xclient.data.l[0] == priv->atoms.wmPing)
+	    if ((unsigned long) event->xclient.data.l[0] == priv->atoms.wmPing)
 	    {
 		w = findWindow (event->xclient.data.l[2]);
 		if (w)
