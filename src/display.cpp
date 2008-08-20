@@ -58,11 +58,10 @@ static unsigned int virtualModMask[] = {
     CompModeSwitchMask, CompNumLockMask, CompScrollLockMask
 };
 
+bool inHandleEvent = false;
+
 CompScreen *targetScreen = NULL;
 CompOutput *targetOutput;
-
-Bool inHandleEvent = FALSE;
-
 
 int lastPointerX = 0;
 int lastPointerY = 0;
@@ -739,9 +738,6 @@ CompDisplay::~CompDisplay ()
     XSync (priv->dpy, False);
     XCloseDisplay (priv->dpy);
 
-    XDestroyRegion (mOutputRegion);
-    XDestroyRegion (mTmpRegion);
-
     if (priv->modMap)
 	XFreeModifiermap (priv->modMap);
 
@@ -759,17 +755,6 @@ CompDisplay::init (const char *name)
     int		firstScreen, lastScreen;
 
     CompOption::Value::Vector vList;
-
-    mTmpRegion = XCreateRegion ();
-    if (!mTmpRegion)
-	return false;
-
-    mOutputRegion = XCreateRegion ();
-    if (!mOutputRegion)
-    {
-	XDestroyRegion (mTmpRegion);
-	return false;
-    }
 
     vList.push_back ("core");
 

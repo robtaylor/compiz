@@ -151,7 +151,6 @@ struct CompScreenPaintAttrib {
 extern CompScreenPaintAttrib defaultScreenPaintAttrib;
 
 struct CompGroup {
-    struct _CompGroup *next;
     unsigned int      refCnt;
     Window	      id;
 };
@@ -236,10 +235,6 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
     public:
-	CompScreen  *next;
-	char *windowPrivateIndices;
-	int  windowPrivateLen;
-
 	typedef void* grabHandle;
 
     public:

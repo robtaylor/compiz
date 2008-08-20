@@ -78,6 +78,10 @@
 extern const CompMetadata::OptionInfo
 coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM];
 
+extern bool inHandleEvent;
+
+extern CompScreen *targetScreen;
+extern CompOutput *targetOutput;
 
 typedef struct _CompDelayedEdgeSettings
 {
@@ -208,6 +212,7 @@ class PrivateDisplay {
 	bool	          dirtyPluginList;
 
 	CompDisplay::Atoms atoms;
+
 };
 
 #endif

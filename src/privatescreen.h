@@ -310,6 +310,8 @@ class PrivateScreen {
 
 	GLXGetProcAddressProc    getProcAddress;
 
+	Region tmpRegion;
+	Region outputRegion;
 };
 
 #endif

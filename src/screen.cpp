@@ -58,6 +58,7 @@
 #include <compdisplay.h>
 #include <compicon.h>
 #include "privatescreen.h"
+#include "privatedisplay.h"
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
 
@@ -1365,10 +1366,6 @@ CompScreen::CompScreen ():
 
     priv = new PrivateScreen (this);
     assert (priv);
-    next = NULL;
-
-    windowPrivateIndices = 0;
-    windowPrivateLen     = 0;
 }
 
 PrivateScreen::PrivateScreen (CompScreen *screen) :
@@ -1438,7 +1435,9 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopHintSize (0),
     opt (COMP_SCREEN_OPTION_NUM),
     paintTimer (),
-    getProcAddress (0)
+    getProcAddress (0),
+    tmpRegion (NULL),
+    outputRegion (NULL)
 {
     memset (history, 0, sizeof (history));
     gettimeofday (&lastRedraw, 0);
@@ -1447,6 +1446,11 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
 PrivateScreen::~PrivateScreen ()
 {
     CompOption::finiScreenOptions (screen, opt);
+
+    if (outputRegion)
+	XDestroyRegion (outputRegion);
+    if (tmpRegion)
+	XDestroyRegion (tmpRegion);
 }
 
 bool
@@ -1461,6 +1465,14 @@ CompScreen::init (CompDisplay *display, int screenNum)
     Window               currentWmSnOwner, currentCmSnOwner;
     char                 buf[128];
     bool                 rv;
+
+    priv->tmpRegion = XCreateRegion ();
+    if (!priv->tmpRegion)
+	return false;
+
+    priv->outputRegion = XCreateRegion ();
+    if (!priv->outputRegion)
+	return false;
 
     sprintf (buf, "WM_S%d", screenNum);
     wmSnAtom = XInternAtom (dpy, buf, 0);
@@ -4102,13 +4114,13 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 	{
 	    CompMatrix identity;
 
-	    XIntersectRegion (priv->display->mTmpRegion,
+	    XIntersectRegion (priv->tmpRegion,
 			      output->region (),
-			      priv->display->mOutputRegion);
+			      priv->outputRegion);
 
 	    if (!paintOutput (&defaultScreenPaintAttrib,
 			      &identity,
-			      priv->display->mOutputRegion, output,
+			      priv->outputRegion, output,
 			      PAINT_SCREEN_REGION_MASK))
 	    {
 		identity.reset ();
@@ -4118,9 +4130,9 @@ CompScreen::paint (CompOutput::ptrList &outputs,
 			     output->region (), output,
 			     PAINT_SCREEN_FULL_MASK);
 
-		XUnionRegion (priv->display->mTmpRegion,
+		XUnionRegion (priv->tmpRegion,
 			      output->region (),
-			      priv->display->mTmpRegion);
+			      priv->tmpRegion);
 
 	    }
 	}
@@ -4269,13 +4281,13 @@ CompScreen::handlePaintTimeout ()
 	if (priv->damageMask & COMP_SCREEN_DAMAGE_REGION_MASK)
 	{
 	    XIntersectRegion (priv->damage, &priv->region,
-			      d->mTmpRegion);
+			      priv->tmpRegion);
 
-	    if (d->mTmpRegion->numRects  == 1	  &&
-		d->mTmpRegion->rects->x1 == 0	  &&
-		d->mTmpRegion->rects->y1 == 0	  &&
-		d->mTmpRegion->rects->x2 == priv->size.width () &&
-		d->mTmpRegion->rects->y2 == priv->size.height ())
+	    if (priv->tmpRegion->numRects  == 1	  &&
+		priv->tmpRegion->rects->x1 == 0	  &&
+		priv->tmpRegion->rects->y1 == 0	  &&
+		priv->tmpRegion->rects->x2 == priv->size.width () &&
+		priv->tmpRegion->rects->y2 == priv->size.height ())
 		damageScreen ();
 	}
 
@@ -4317,8 +4329,8 @@ CompScreen::handlePaintTimeout ()
 	    BoxPtr pBox;
 	    int    nBox, y;
 
-	    pBox = d->mTmpRegion->rects;
-	    nBox = d->mTmpRegion->numRects;
+	    pBox = priv->tmpRegion->rects;
+	    nBox = priv->tmpRegion->numRects;
 
 	    if (copySubBuffer)
 	    {

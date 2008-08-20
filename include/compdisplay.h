@@ -391,10 +391,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	WRAPABLE_HND(void, logMessage, const char *, CompLogLevel, const char*)
 
-    public:
-	Region mTmpRegion;
-	Region mOutputRegion;
-
     private:
 
 	PrivateDisplay *priv;
@@ -433,9 +429,5 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 				      CompOption::Value &value);
 };
 
-extern Bool inHandleEvent;
-
-extern CompScreen *targetScreen;
-extern CompOutput *targetOutput;
 
 #endif
