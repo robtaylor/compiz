@@ -12,6 +12,7 @@ bin_PROGRAMS = compiz
 compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
+	metadata.cpp \
 	action.cpp \
 	option.cpp \
 	string.cpp \
@@ -29,7 +30,6 @@ compiz_SOURCES =   \
 	plugin.cpp   \
 	session.cpp  \
 	matrix.cpp   \
-	metadata.cpp \
 	output.cpp   \
 	rect.cpp     \
 	size.cpp     \

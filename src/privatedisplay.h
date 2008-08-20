@@ -72,7 +72,7 @@
 #define COMP_DISPLAY_OPTION_EDGE_DELAY                       65
 #define COMP_DISPLAY_OPTION_NUM				     66
 
-extern const CompMetadataOptionInfo
+extern const CompMetadata::OptionInfo
 coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM];
 
 

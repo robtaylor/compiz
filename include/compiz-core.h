@@ -144,7 +144,7 @@ extern int pointerX;
 extern int pointerY;
 
 extern CompCore     *core;
-extern CompMetadata coreMetadata;
+extern CompMetadata *coreMetadata;
 
 #define RESTRICT_VALUE(value, min, max)				     \
     (((value) < (min)) ? (min): ((value) > (max)) ? (max) : (value))
@@ -457,95 +457,17 @@ getPluginDisplayIndex (CompDisplay *d,
 
 /* metadata.c */
 
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY (x)
-#define MINTOSTRING(x) "<min>" TOSTRING (x) "</min>"
-#define MAXTOSTRING(x) "<max>" TOSTRING (x) "</max>"
-#define RESTOSTRING(min, max) MINTOSTRING (min) MAXTOSTRING (max)
+
 
 #include <compaction.h>
 
-typedef struct _CompMetadataOptionInfo {
-    const char		 *name;
-    const char		 *type;
-    const char		 *data;
-    CompAction::CallBack initiate;
-    CompAction::CallBack terminate;
-} CompMetadataOptionInfo;
 
-struct _CompMetadata {
-    char   *path;
-    xmlDoc **doc;
-    int    nDoc;
-};
-
-bool
-compInitPluginMetadataFromInfo (CompMetadata		     *metadata,
-				const char		     *plugin,
-				const CompMetadataOptionInfo *displayOptionInfo,
-				int			     nDisplayOptionInfo,
-				const CompMetadataOptionInfo *screenOptionInfo,
-				int			     nScreenOptionInfo);
-
-bool
-compInitScreenOptionFromMetadata (CompScreen   *screen,
-				  CompMetadata *metadata,
-				  CompOption   *option,
-				  const char   *name);
-
-bool
-compInitScreenOptionsFromMetadata (CompScreen			*screen,
-				   CompMetadata			*metadata,
-				   const CompMetadataOptionInfo *info,
-				   CompOption::Vector		&options);
-
-
-bool
-compInitDisplayOptionFromMetadata (CompDisplay  *display,
-				   CompMetadata *metadata,
-				   CompOption   *option,
-				   const char   *name);
-
-
-bool
-compInitDisplayOptionsFromMetadata (CompDisplay			 *display,
-				    CompMetadata		 *metadata,
-				    const CompMetadataOptionInfo *info,
-				    CompOption::Vector	         &options);
-
-
-char *
-compGetShortPluginDescription (CompMetadata *metadata);
-
-char *
-compGetLongPluginDescription (CompMetadata *metadata);
-
-char *
-compGetShortScreenOptionDescription (CompMetadata *metadata,
-				     CompOption   *option);
-
-char *
-compGetLongScreenOptionDescription (CompMetadata *metadata,
-				    CompOption   *option);
-
-char *
-compGetShortDisplayOptionDescription (CompMetadata *metadata,
-				      CompOption   *option);
-
-char *
-compGetLongDisplayOptionDescription (CompMetadata *metadata,
-				     CompOption   *option);
-
-int
-compReadXmlChunkFromMetadataOptionInfo (const CompMetadataOptionInfo *info,
-					int			     *offset,
-					char			     *buffer,
-					int			     length);
 
 	
 CompString compPrintf (const char *format, ...);
 CompString compPrintf (const char *format, va_list ap);
 
+#include <compmetadata.h>
 #include <comprect.h>
 #include <compoutput.h>
 #include <compobject.h>

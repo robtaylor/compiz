@@ -73,7 +73,7 @@ CorePluginVTable::fini ()
 CompMetadata *
 CorePluginVTable::getMetadata ()
 {
-    return &coreMetadata;
+    return coreMetadata;
 }
 
 CompOption::Vector &

@@ -530,7 +530,7 @@ CompWindow::shade (CompDisplay        *d,
     return true;
 }
 
-const CompMetadataOptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
+const CompMetadata::OptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
     { "abi", "int", 0, 0, 0 },
     { "active_plugins", "list", "<type>string</type>", 0, 0 },
     { "texture_filter", "int", RESTOSTRING (0, 2), 0, 0 },
@@ -783,10 +783,8 @@ CompDisplay::init (const char *name)
 
 //    priv->connection = XGetXCBConnection (priv->dpy);
 
-    if (!compInitDisplayOptionsFromMetadata (this,
-					     &coreMetadata,
-					     coreDisplayOptionInfo,
-					     priv->opt))
+    if (!coreMetadata->initDisplayOptions (this, coreDisplayOptionInfo,
+					   COMP_DISPLAY_OPTION_NUM, priv->opt))
 	return true;
 
     priv->opt[COMP_DISPLAY_OPTION_ABI].value ().set ((int) CORE_ABIVERSION);

@@ -43,7 +43,7 @@
 #define COMP_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
 #define COMP_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
 
-extern const CompMetadataOptionInfo
+extern const CompMetadata::OptionInfo
 coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM];
 
 class PrivateScreen {

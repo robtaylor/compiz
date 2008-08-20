@@ -69,7 +69,7 @@ Bool onlyCurrentScreen = FALSE;
 Bool useCow = TRUE;
 #endif
 
-CompMetadata coreMetadata;
+CompMetadata *coreMetadata = NULL;
 
 static void
 usage (void)
@@ -122,10 +122,10 @@ signalHandler (int sig)
 }
 
 typedef struct _CompIOCtx {
-    int	 offset;
-    char *pluginData;
-    char *textureFilterData;
-    char *refreshRateData;
+    unsigned int offset;
+    char         *pluginData;
+    char         *textureFilterData;
+    char         *refreshRateData;
 } CompIOCtx;
 
 static int
@@ -133,15 +133,16 @@ readCoreXmlCallback (void *context,
 		     char *buffer,
 		     int  length)
 {
-    CompIOCtx *ctx = (CompIOCtx *) context;
-    int	      offset = ctx->offset;
-    int	      i, j;
+    CompIOCtx    *ctx = (CompIOCtx *) context;
+    unsigned int offset = ctx->offset;
+    unsigned int i, j;
 
-    i = compReadXmlChunk ("<compiz><core><display>", &offset, buffer, length);
+    i = CompMetadata::readXmlChunk ("<compiz><core><display>", &offset, buffer,
+				    length);
 
     for (j = 0; j < COMP_DISPLAY_OPTION_NUM; j++)
     {
-	CompMetadataOptionInfo info = coreDisplayOptionInfo[j];
+	CompMetadata::OptionInfo info = coreDisplayOptionInfo[j];
 
 	switch (j) {
 	case COMP_DISPLAY_OPTION_ACTIVE_PLUGINS:
@@ -155,18 +156,16 @@ readCoreXmlCallback (void *context,
 	    break;
 	}
 
-	i += compReadXmlChunkFromMetadataOptionInfo (&info,
-						     &offset,
-						     buffer + i,
-						     length - i);
+	i += CompMetadata::readXmlChunkFromOptionInfo (&info, &offset,
+						       buffer + i, length - i);
     }
 
-    i += compReadXmlChunk ("</display><screen>", &offset,
-			   buffer + i, length - 1);
+    i += CompMetadata::readXmlChunk ("</display><screen>", &offset,
+				     buffer + i, length - 1);
 
     for (j = 0; j < COMP_SCREEN_OPTION_NUM; j++)
     {
-	CompMetadataOptionInfo info = coreScreenOptionInfo[j];
+	CompMetadata::OptionInfo info = coreScreenOptionInfo[j];
 
 	switch (j) {
 	case COMP_SCREEN_OPTION_REFRESH_RATE:
@@ -176,16 +175,14 @@ readCoreXmlCallback (void *context,
 	    break;
 	}
 
-	i += compReadXmlChunkFromMetadataOptionInfo (&info,
-						     &offset,
-						     buffer + i,
-						     length - i);
+	i += CompMetadata::readXmlChunkFromOptionInfo (&info, &offset,
+						       buffer + i, length - i);
     }
 
-    i += compReadXmlChunk ("</screen></core></compiz>", &offset, buffer + i,
-			   length - i);
+    i += CompMetadata::readXmlChunk ("</screen></core></compiz>", &offset,
+				     buffer + i, length - i);
 
-    if (!offset && length > i)
+    if (!offset && length > (int)i)
 	buffer[i++] = '\0';
 
     ctx->offset += i;
@@ -354,16 +351,9 @@ main (int argc, char **argv)
 
     LIBXML_TEST_VERSION;
 
-    if (!compInitMetadata (&coreMetadata))
-    {
-	compLogMessage (NULL, "core", CompLogLevelFatal,
-			"Couldn't initialize core metadata");
-	return 1;
-    }
+    coreMetadata = new CompMetadata ();
 
-    if (!compAddMetadataFromIO (&coreMetadata,
-				readCoreXmlCallback, NULL,
-				&ctx))
+    if (!coreMetadata->addFromIO (readCoreXmlCallback, NULL, &ctx))
 	return 1;
 
     if (ctx.refreshRateData)
@@ -372,13 +362,13 @@ main (int argc, char **argv)
     if (ctx.pluginData)
 	free (ctx.pluginData);
 
-    compAddMetadataFromFile (&coreMetadata, "core");
+    coreMetadata->addFromFile ("core");
 
     core = new CompCore();
 
     if (!core)
 	return 1;
-    
+
     if (!core->init ())
 	return 1;
 
@@ -394,7 +384,7 @@ main (int argc, char **argv)
 	closeSession ();
 
     delete core;
-    compFiniMetadata (&coreMetadata);
+    delete coreMetadata;
 
     xmlCleanupParser ();
 

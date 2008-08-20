@@ -35,6 +35,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 
 #define COMP_FUNCTION_TYPE_ARB 0
 #define COMP_FUNCTION_TYPE_NUM 1

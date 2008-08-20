@@ -488,7 +488,7 @@ CompScreen::setOption (const char        *name,
     return false;
 }
 
-const CompMetadataOptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
+const CompMetadata::OptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
     { "detect_refresh_rate", "bool", 0, 0, 0 },
     { "lighting", "bool", 0, 0, 0 },
     { "refresh_rate", "int", "<min>1</min>", 0, 0 },
@@ -1681,10 +1681,8 @@ CompScreen::init (CompDisplay *display,
 
     priv->display = display;
 
-    if (!compInitScreenOptionsFromMetadata (this,
-					    &coreMetadata,
-					    coreScreenOptionInfo,
-					    priv->opt))
+    if (!coreMetadata->initScreenOptions (this, coreScreenOptionInfo,
+					  COMP_SCREEN_OPTION_NUM, priv->opt))
 	return false;
 
     priv->damage = XCreateRegion ();

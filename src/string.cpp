@@ -1,5 +1,7 @@
 #include <compiz-core.h>
 
+#include <stdarg.h>
+
 CompString compPrintf (const char *format, ...)
 {
     va_list    ap;

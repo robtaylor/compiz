@@ -26,8 +26,6 @@
 #ifndef _COMPIZ_H
 #define _COMPIZ_H
 
-#include <libxml/parser.h>
-
 #include <compiz-common.h>
 
 #include <string>
@@ -41,7 +39,6 @@ typedef int CompBool;
 typedef int CompTimeoutHandle;
 typedef int CompWatchFdHandle;
 
-typedef struct _CompMetadata CompMetadata;
 typedef struct _CompPlugin   CompPlugin;
 
 
@@ -51,6 +48,7 @@ class CompScreen;
 class CompWindow;
 class CompObject;
 class CompOption;
+class CompMetadata;
 
 typedef union _CompPrivate {
     void	  *ptr;
@@ -72,39 +70,6 @@ typedef enum {
 
 
 
-CompBool
-compInitMetadata (CompMetadata *metadata);
-
-CompBool
-compInitPluginMetadata (CompMetadata *metadata,
-			const char   *plugin);
-
-void
-compFiniMetadata (CompMetadata *metadata);
-
-CompBool
-compAddMetadataFromFile (CompMetadata *metadata,
-			 const char   *file);
-
-CompBool
-compAddMetadataFromString (CompMetadata *metadata,
-			   const char	*string);
-
-CompBool
-compAddMetadataFromIO (CompMetadata	     *metadata,
-		       xmlInputReadCallback  ioread,
-		       xmlInputCloseCallback ioclose,
-		       void		     *ioctx);
-
-char *
-compGetStringFromMetadataPath (CompMetadata *metadata,
-			       const char   *path);
-
-int
-compReadXmlChunk (const char *src,
-		  int	     *offset,
-		  char	     *buffer,
-		  int	     length);
 
 
 
