@@ -3975,27 +3975,27 @@ ScreenInterface::paint (CompOutput::ptrList &outputs,
     WRAPABLE_DEF_FUNC(paint, outputs, mask)
 
 bool
-ScreenInterface::paintOutput (const ScreenPaintAttrib *sAttrib,
-			      const CompTransform     *transform,
-			      Region	              region,
-			      CompOutput              *output,
-			      unsigned int            mask)
+ScreenInterface::paintOutput (const CompScreenPaintAttrib *sAttrib,
+			      const CompTransform         *transform,
+			      Region	                  region,
+			      CompOutput                  *output,
+			      unsigned int                mask)
     WRAPABLE_DEF_FUNC_RETURN(paintOutput, sAttrib, transform, region,
 			     output, mask)
 
 void
-ScreenInterface::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
-					 const CompTransform     *transform,
-					 Region                  region,
-					 CompOutput              *output,
-					 unsigned int            mask)
+ScreenInterface::paintTransformedOutput (const CompScreenPaintAttrib *sAttrib,
+					 const CompTransform         *transform,
+					 Region                      region,
+					 CompOutput                  *output,
+					 unsigned int                mask)
     WRAPABLE_DEF_FUNC(paintTransformedOutput, sAttrib, transform, region,
 		      output, mask)
 
 void
-ScreenInterface::applyTransform (const ScreenPaintAttrib *sAttrib,
-				 CompOutput              *output,
-				 CompTransform           *transform)
+ScreenInterface::applyTransform (const CompScreenPaintAttrib *sAttrib,
+				 CompOutput                  *output,
+				 CompTransform               *transform)
     WRAPABLE_DEF_FUNC(applyTransform, sAttrib, output, transform)
 
 void

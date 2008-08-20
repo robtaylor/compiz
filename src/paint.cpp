@@ -32,7 +32,7 @@
 #include "privatescreen.h"
 #include "privatewindow.h"
 
-ScreenPaintAttrib defaultScreenPaintAttrib = {
+CompScreenPaintAttrib defaultScreenPaintAttrib = {
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -DEFAULT_Z_CAMERA
 };
 
@@ -49,9 +49,9 @@ CompScreen::donePaint ()
     WRAPABLE_HND_FUNC(donePaint)
 
 void
-CompScreen::applyTransform (const ScreenPaintAttrib *sAttrib,
-			    CompOutput              *output,
-			    CompTransform           *transform)
+CompScreen::applyTransform (const CompScreenPaintAttrib *sAttrib,
+			    CompOutput                  *output,
+			    CompTransform               *transform)
 {
     WRAPABLE_HND_FUNC(applyTransform, sAttrib, output, transform)
 
@@ -381,11 +381,11 @@ CompScreen::disableOutputClipping ()
 			 PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK)
 
 void
-CompScreen::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
-				    const CompTransform     *transform,
-				    Region                  region,
-				    CompOutput              *output,
-				    unsigned int            mask)
+CompScreen::paintTransformedOutput (const CompScreenPaintAttrib *sAttrib,
+				    const CompTransform         *transform,
+				    Region                      region,
+				    CompOutput                  *output,
+				    unsigned int                mask)
 {
     WRAPABLE_HND_FUNC(paintTransformedOutput, sAttrib, transform,
 		      region, output, mask)
@@ -428,11 +428,11 @@ CompScreen::paintTransformedOutput (const ScreenPaintAttrib *sAttrib,
 }
 
 bool
-CompScreen::paintOutput (const ScreenPaintAttrib *sAttrib,
-			 const CompTransform     *transform,
-			 Region                  region,
-			 CompOutput              *output,
-			 unsigned int            mask)
+CompScreen::paintOutput (const CompScreenPaintAttrib *sAttrib,
+			 const CompTransform         *transform,
+			 Region                      region,
+			 CompOutput                  *output,
+			 unsigned int                mask)
 {
     WRAPABLE_HND_FUNC_RETURN(bool, paintOutput, sAttrib, transform,
 			     region, output, mask)

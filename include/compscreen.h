@@ -122,7 +122,7 @@ typedef void (*GLFramebufferTexture2DProc) (GLenum target,
 					    GLint  level);
 typedef void (*GLGenerateMipmapProc) (GLenum target);
 
-struct ScreenPaintAttrib {
+struct CompScreenPaintAttrib {
     GLfloat xRotate;
     GLfloat yRotate;
     GLfloat vRotate;
@@ -132,7 +132,7 @@ struct ScreenPaintAttrib {
     GLfloat zCamera;
 };
 
-extern ScreenPaintAttrib defaultScreenPaintAttrib;
+extern CompScreenPaintAttrib defaultScreenPaintAttrib;
 
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
@@ -142,13 +142,14 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 	WRAPABLE_DEF(void, donePaint);
 	WRAPABLE_DEF(void, paint, CompOutput::ptrList &outputs, unsigned int);
 
-	WRAPABLE_DEF(bool, paintOutput, const ScreenPaintAttrib *,
+	WRAPABLE_DEF(bool, paintOutput, const CompScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,
 		     unsigned int);
-	WRAPABLE_DEF(void, paintTransformedOutput, const ScreenPaintAttrib *,
+	WRAPABLE_DEF(void, paintTransformedOutput,
+		     const CompScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,
 		     unsigned int);
-	WRAPABLE_DEF(void, applyTransform, const ScreenPaintAttrib *,
+	WRAPABLE_DEF(void, applyTransform, const CompScreenPaintAttrib *,
 		     CompOutput *, CompTransform *);
 
 	WRAPABLE_DEF(void, enableOutputClipping, const CompTransform *,
@@ -496,13 +497,14 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	WRAPABLE_HND(void, donePaint);
 	WRAPABLE_HND(void, paint, CompOutput::ptrList &outputs, unsigned int);
 
-	WRAPABLE_HND(bool, paintOutput, const ScreenPaintAttrib *,
+	WRAPABLE_HND(bool, paintOutput, const CompScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,
 		     unsigned int);
-	WRAPABLE_HND(void, paintTransformedOutput, const ScreenPaintAttrib *,
+	WRAPABLE_HND(void, paintTransformedOutput,
+		     const CompScreenPaintAttrib *,
 		     const CompTransform *, Region, CompOutput *,
 		     unsigned int);
-	WRAPABLE_HND(void, applyTransform, const ScreenPaintAttrib *,
+	WRAPABLE_HND(void, applyTransform, const CompScreenPaintAttrib *,
 		     CompOutput *, CompTransform *);
 
 	WRAPABLE_HND(void, enableOutputClipping, const CompTransform *,
