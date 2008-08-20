@@ -23,6 +23,8 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
+#include <compiz.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
@@ -1684,7 +1686,7 @@ PrivateWindow::initializeSyncCounter ()
 
 	values.events = TRUE;
 
-	compCheckForError (screen->display ()->dpy ());
+	CompDisplay::checkForError (screen->display ()->dpy ());
 
 	/* Note that by default, the alarm increments the trigger value
 	 * when it fires until the condition (counter.value < trigger.value)
@@ -1699,7 +1701,7 @@ PrivateWindow::initializeSyncCounter ()
 				      XSyncCAEvents,
 				      &values);
 
-	if (!compCheckForError (screen->display ()->dpy ()))
+	if (CompDisplay::checkForError (screen->display ()->dpy ()))
 	    return true;
 
 	XSyncDestroyAlarm (screen->display ()->dpy (), syncAlarm);
@@ -3282,13 +3284,11 @@ PrivateWindow::reveal ()
 
 void
 PrivateWindow::revealAncestors (CompWindow *w,
-				void       *closure)
+				CompWindow *transient)
 {
-    CompWindow *transient = (CompWindow *) closure;
-
     if (isAncestorTo (transient, w))
     {
-	w->priv->screen->forEachWindow (revealAncestors, (void *) w);
+	w->priv->screen->forEachWindow (boost::bind (revealAncestors, _1, w));
 	w->priv->reveal ();
     }
 }
@@ -3300,7 +3300,8 @@ CompWindow::activate ()
 
     priv->screen->setCurrentDesktop (priv->desktop);
 
-    priv->screen->forEachWindow (PrivateWindow::revealAncestors, (void *) this);
+    priv->screen->forEachWindow (
+	boost::bind (PrivateWindow::revealAncestors, _1, this));
     priv->reveal ();
 
     if (priv->state & CompWindowStateHiddenMask)
@@ -3571,10 +3572,8 @@ CompWindow::show ()
 
 void
 PrivateWindow::minimizeTransients (CompWindow *w,
-				   void       *closure)
+				   CompWindow *ancestor)
 {
-    CompWindow *ancestor = (CompWindow *) closure;
-
     if (w->priv->transientFor == ancestor->priv->id ||
 	w->priv->isGroupTransient (ancestor->priv->clientLeader))
     {
@@ -3592,8 +3591,8 @@ CompWindow::minimize ()
     {
 	priv->minimized = true;
 
-	priv->screen->forEachWindow (PrivateWindow::minimizeTransients,
-				     (void *) this);
+	priv->screen->forEachWindow (
+	    boost::bind (PrivateWindow::minimizeTransients, _1, this));
 
 	hide ();
     }
@@ -3601,10 +3600,8 @@ CompWindow::minimize ()
 
 void
 PrivateWindow::unminimizeTransients (CompWindow *w,
-				     void       *closure)
+				     CompWindow *ancestor)
 {
-    CompWindow *ancestor = (CompWindow *) closure;
-
     if (w->priv->transientFor == ancestor->priv->id ||
 	w->priv->isGroupTransient (ancestor->priv->clientLeader))
 	w->unminimize ();
@@ -3619,8 +3616,8 @@ CompWindow::unminimize ()
 
 	show ();
 
-	priv->screen->forEachWindow (PrivateWindow::unminimizeTransients,
-				     (void *) this);
+	priv->screen->forEachWindow (
+	    boost::bind (PrivateWindow::unminimizeTransients, _1, this));
     }
 }
 

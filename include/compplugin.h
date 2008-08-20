@@ -29,6 +29,9 @@
 #include <compiz.h>
 #include <compoption.h>
 
+class CompObject;
+class CompMetadata;
+
 typedef bool (*InitPluginObjectProc) (CompObject *object);
 typedef void (*FiniPluginObjectProc) (CompObject *object);
 

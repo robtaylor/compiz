@@ -1,8 +1,11 @@
 #ifndef _PRIVATEDISPLAY_H
 #define _PRIVATEDISPLAY_H
 
+#include <X11/XKBlib.h>
+
 #include <compiz-core.h>
 #include <compdisplay.h>
+#include <compmetadata.h>
 
 #define COMP_DISPLAY_OPTION_ABI                              0
 #define COMP_DISPLAY_OPTION_ACTIVE_PLUGINS                   1

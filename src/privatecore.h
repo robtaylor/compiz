@@ -4,6 +4,15 @@
 #include <compiz-core.h>
 #include <compcore.h>
 
+extern bool shutDown;
+extern bool restartSignal;
+
+typedef struct _CompWatchFd {
+    int               fd;
+    FdWatchCallBack   callBack;
+    CompWatchFdHandle handle;
+} CompWatchFd;
+
 class PrivateCore {
 
     public:

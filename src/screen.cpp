@@ -34,6 +34,7 @@
 #include <dlfcn.h>
 #include <string.h>
 #include <sys/types.h>
+#include <sys/time.h>
 #include <unistd.h>
 #include <assert.h>
 #include <limits.h>
@@ -50,9 +51,11 @@
 #include <X11/extensions/shape.h>
 #include <X11/cursorfont.h>
 
+
 #include <compiz-core.h>
 
 #include <compscreen.h>
+#include <compdisplay.h>
 #include <compicon.h>
 #include "privatescreen.h"
 
@@ -1561,12 +1564,12 @@ CompScreen::init (CompDisplay *display, int screenNum)
 	} while (event.type != DestroyNotify);
     }
 
-    compCheckForError (dpy);
+    CompDisplay::checkForError (dpy);
 
     XCompositeRedirectSubwindows (dpy, XRootWindow (dpy, screenNum),
 				  CompositeRedirectManual);
 
-    if (compCheckForError (dpy))
+    if (CompDisplay::checkForError (dpy))
     {
 	compLogMessage (display, "core", CompLogLevelError,
 			"Another composite manager is already "
@@ -1603,7 +1606,7 @@ CompScreen::init (CompDisplay *display, int screenNum)
 		  FocusChangeMask          |
 		  ExposureMask);
 
-    if (compCheckForError (dpy))
+    if (CompDisplay::checkForError (dpy))
     {
 	compLogMessage (display, "core", CompLogLevelError,
 		        "Another window manager is "
@@ -2314,10 +2317,10 @@ CompScreen::damagePending ()
 }
 
 void
-CompScreen::forEachWindow (ForEachWindowProc proc, void *closure)
+CompScreen::forEachWindow (CompWindow::ForEach proc)
 {
     foreach (CompWindow *w, priv->windows)
-	(*proc) (w, closure);
+	proc (w);
 }
 
 void
@@ -2646,7 +2649,7 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
     XModifierKeymap *modMap = display->modMap ();
     int ignore, mod, k;
 
-    compCheckForError (display->dpy ());
+    CompDisplay::checkForError (display->dpy ());
 
     for (ignore = 0; ignore <= display->ignoredModMask (); ignore++)
     {
@@ -2679,7 +2682,7 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 	    }
 	}
 
-	if (compCheckForError (display->dpy ()))
+	if (CompDisplay::checkForError (display->dpy ()))
 	    return false;
     }
 
@@ -3033,13 +3036,11 @@ isClientListWindow (CompWindow *w)
 
 static void
 countClientListWindow (CompWindow *w,
-		       void       *closure)
+		       int        *n)
 {
     if (isClientListWindow (w))
     {
-	int *num = (int *) closure;
-
-	*num = *num + 1;
+	*n = *n + 1;
     }
 }
 
@@ -3060,7 +3061,7 @@ CompScreen::updateClientList ()
     Bool   updateClientListStacking = true;
     int	   i, n = 0;
 
-    forEachWindow (countClientListWindow, (void *) &n);
+    forEachWindow (boost::bind (countClientListWindow, _1, &n));
 
     if (n == 0)
     {

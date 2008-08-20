@@ -32,7 +32,10 @@
 #include <compiz-core.h>
 #include "privatedisplay.h"
 
+#include <compscreen.h>
 #include <compmatch.h>
+#include <compwindow.h>
+#include <compplugin.h>
 #include "privatematch.h"
 
 class CoreExp : public CompMatch::Expression {

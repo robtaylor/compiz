@@ -29,35 +29,39 @@
 #include <compiz-common.h>
 
 #include <string>
-#include <vector>
 #include <list>
+
+#define RESTRICT_VALUE(value, min, max)				     \
+    (((value) < (min)) ? (min): ((value) > (max)) ? (max) : (value))
+
+#define MOD(a,b) ((a) < 0 ? ((b) - ((-(a) - 1) % (b))) - 1 : (a) % (b))
+
+#define TIMEVALDIFF(tv1, tv2)						   \
+    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
+    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
+     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
+    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
+     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
+
+#define MULTIPLY_USHORT(us1, us2)		 \
+    (((GLuint) (us1) * (GLuint) (us2)) / 0xffff)
+
+#define DEG2RAD (M_PI / 180.0f)
+
+class CompDisplay;
 
 typedef std::string CompString;
 typedef std::list<CompString> CompStringList;
 
+CompString compPrintf (const char *format, ...);
+CompString compPrintf (const char *format, va_list ap);
 
-typedef int CompBool;
-typedef int CompTimeoutHandle;
-typedef int CompWatchFdHandle;
-
-
-class CompCore;
-class CompDisplay;
-class CompScreen;
-class CompWindow;
-class CompObject;
-class CompOption;
-class CompMetadata;
-
-typedef union _CompPrivate {
+union CompPrivate {
     void	  *ptr;
     long	  val;
     unsigned long uval;
     void	  *(*fptr) (void);
-} CompPrivate;
-
-
-typedef bool (*CallBackProc) (void *closure);
+};
 
 typedef enum {
     CompLogLevelFatal = 0,
@@ -67,9 +71,18 @@ typedef enum {
     CompLogLevelDebug
 } CompLogLevel;
 
+void
+compLogMessage (CompDisplay  *d,
+		const char   *componentName,
+		CompLogLevel level,
+		const char   *format,
+		...);
 
+const char *
+logLevelToString (CompLogLevel level);
 
-
-
+extern char       *programName;
+extern char       **programArgv;
+extern int        programArgc;
 
 #endif

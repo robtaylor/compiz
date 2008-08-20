@@ -1,5 +1,6 @@
-#include <compiz-core.h>
+#include <compiz.h>
 
+#include <string.h>
 #include <stdarg.h>
 
 CompString compPrintf (const char *format, ...)

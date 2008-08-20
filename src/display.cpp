@@ -48,7 +48,7 @@
 
 #include <boost/bind.hpp>
 
-
+#include "privatecore.h"
 #include "privatedisplay.h"
 #include "privatescreen.h"
 #include "privatewindow.h"
@@ -679,7 +679,7 @@ errorHandler (Display     *dpy,
 }
 
 int
-compCheckForError (Display *dpy)
+CompDisplay::checkForError (Display *dpy)
 {
     int e;
 
@@ -1519,14 +1519,6 @@ CompDisplay::findScreen (Window root)
     }
 
     return 0;
-}
-
-void
-CompDisplay::forEachWindow (ForEachWindowProc proc,
-			   void              *closure)
-{
-    foreach (CompScreen *s, priv->screens)
-	s->forEachWindow (proc, closure);
 }
 
 CompWindow *

@@ -3,11 +3,14 @@
 
 #include <compiz.h>
 
+#include <vector>
+
 class PrivateOption;
 class PrivateValue;
 class PrivateRestriction;
 class CompAction;
 class CompMatch;
+class CompScreen;
 
 class CompOption {
     public:

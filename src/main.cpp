@@ -27,6 +27,8 @@
 #  include "../config.h"
 #endif
 
+#include <compiz.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -37,6 +39,7 @@
 #include <compiz-core.h>
 #include "privatedisplay.h"
 #include "privatescreen.h"
+#include "privatecore.h"
 
 char *programName;
 char **programArgv;
@@ -52,21 +55,21 @@ Window   currentRoot = 0;
 int  defaultRefreshRate = 50;
 char *defaultTextureFilter = "Good";
 
-Bool shutDown = FALSE;
-Bool restartSignal = FALSE;
+bool shutDown = false;
+bool restartSignal = false;
 
 CompWindow *lastFoundWindow = 0;
 CompWindow *lastDamagedWindow = 0;
 
-Bool replaceCurrentWm = FALSE;
-Bool indirectRendering = FALSE;
-Bool strictBinding = TRUE;
-Bool noDetection = FALSE;
-Bool useDesktopHints = TRUE;
-Bool onlyCurrentScreen = FALSE;
+bool replaceCurrentWm = false;
+bool indirectRendering = false;
+bool strictBinding = true;
+bool noDetection = false;
+bool useDesktopHints = true;
+bool onlyCurrentScreen = false;
 
 #ifdef USE_COW
-Bool useCow = TRUE;
+bool useCow = true;
 #endif
 
 CompMetadata *coreMetadata = NULL;

@@ -33,8 +33,10 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include <compiz-core.h>
+#include <compiz.h>
 #include <compmetadata.h>
+#include <compdisplay.h>
+#include <compscreen.h>
 
 #define HOME_METADATADIR ".compiz/metadata"
 #define EXTENSION ".xml"

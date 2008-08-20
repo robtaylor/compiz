@@ -278,24 +278,23 @@ LoadPluginProc   loaderLoadPlugin   = dlloaderLoadPlugin;
 UnloadPluginProc loaderUnloadPlugin = dlloaderUnloadPlugin;
 ListPluginsProc  loaderListPlugins  = dlloaderListPlugins;
 
-typedef struct _InitObjectContext {
+struct InitObjectContext {
     CompPlugin *plugin;
     CompObject *object;
-} InitObjectContext;
+};
 
 static bool
-initObjectTree (CompObject *object,
-		void       *closure);
+initObjectTree (CompObject        *object,
+		InitObjectContext *pCtx);
 
 static bool
-finiObjectTree (CompObject *object,
-		void       *closure);
+finiObjectTree (CompObject        *object,
+		InitObjectContext *pCtx);
 
 static bool
-initObjectTree (CompObject *object,
-		void       *closure)
+initObjectTree (CompObject        *object,
+		InitObjectContext *pCtx)
 {
-    InitObjectContext     *pCtx = (InitObjectContext *) closure;
     CompPlugin		  *p = pCtx->plugin;
     InitObjectContext ctx;
 
@@ -312,16 +311,16 @@ initObjectTree (CompObject *object,
     ctx.plugin = pCtx->plugin;
     ctx.object = NULL;
 
-    if (!object->forEachChild (initObjectTree, static_cast<void *> (&ctx)))
+    if (!object->forEachChild (boost::bind (initObjectTree, _1, &ctx)))
     {
-	object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 
 	return false;
     }
 
     if (!core->initPluginForObject (p, object))
     {
-	object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 	p->vTable->finiObject (object);
 
 	return false;
@@ -331,10 +330,9 @@ initObjectTree (CompObject *object,
 }
 
 static bool
-finiObjectTree (CompObject *object,
-		void       *closure)
+finiObjectTree (CompObject        *object,
+		InitObjectContext *pCtx)
 {
-    InitObjectContext     *pCtx = (InitObjectContext *) closure;
     CompPlugin		  *p = pCtx->plugin;
     InitObjectContext     ctx;
 
@@ -345,7 +343,7 @@ finiObjectTree (CompObject *object,
     ctx.plugin = p;
     ctx.object = NULL;
 
-    object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+    object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 
     p->vTable->finiObject (object);
 
@@ -369,7 +367,7 @@ initPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    if (!initObjectTree (core, static_cast<void *> (&ctx)))
+    if (!initObjectTree (core, &ctx))
     {
 	p->vTable->fini ();
 	return false;
@@ -386,7 +384,7 @@ finiPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    finiObjectTree (core, (void *) &ctx);
+    finiObjectTree (core, &ctx);
 
     p->vTable->fini ();
 }
@@ -405,7 +403,7 @@ CompPlugin::objectInitPlugins (CompObject *o)
 
 	ctx.plugin = (*rit);
 
-	if (!initObjectTree (o, (void *) &ctx))
+	if (!initObjectTree (o, &ctx))
 	{
 	    if (rit == plugins.rbegin ())
 		return false;
@@ -414,12 +412,12 @@ CompPlugin::objectInitPlugins (CompObject *o)
 	    {
 		ctx.plugin = (*rit);
 
-		finiObjectTree (o, (void *) &ctx);
+		finiObjectTree (o, &ctx);
 	    }
 
 	    ctx.plugin = (*rit);
 
-	    finiObjectTree (o, (void *) &ctx);
+	    finiObjectTree (o, &ctx);
 	    return false;
 	}
 	rit++;
@@ -439,7 +437,7 @@ CompPlugin::objectFiniPlugins (CompObject *o)
     {
 	ctx.plugin = p;
 
-	finiObjectTree (o, (void *) &ctx);
+	finiObjectTree (o, &ctx);
     }
 }
 

@@ -107,7 +107,7 @@ class PrivateWindow {
 
 	static void
 	revealAncestors (CompWindow *w,
-			 void       *closure);
+			 CompWindow *transient);
 
 	bool
 	constrainNewWindowSize (int        width,
@@ -117,11 +117,11 @@ class PrivateWindow {
 
 	static void
 	minimizeTransients (CompWindow *w,
-			    void       *closure);
+			    CompWindow *ancestor);
 
 	static void
 	unminimizeTransients (CompWindow *w,
-			      void       *closure);
+			      CompWindow *ancestor);
 
 	bool
 	getUsageTimestamp (Time *timestamp);

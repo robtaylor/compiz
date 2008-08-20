@@ -3,13 +3,32 @@
 
 #include <list>
 
+#include <X11/Xlib-xcb.h>
+#include <X11/Xutil.h>
+#include <X11/Xregion.h>
+#include <X11/extensions/Xinerama.h>
+
+#include <GL/gl.h>
+
+#include <compobject.h>
 #include <compmatch.h>
+#include <compcore.h>
+#include <compaction.h>
 #include "wrapable.h"
 
 class CompDisplay;
 class CompScreen;
+class CompOutput;
 class PrivateDisplay;
 typedef std::list<CompScreen *> CompScreenList;
+
+extern REGION     emptyRegion;
+extern REGION     infiniteRegion;
+
+extern int lastPointerX;
+extern int lastPointerY;
+extern int pointerX;
+extern int pointerY;
 
 #define GET_CORE_DISPLAY(object) (dynamic_cast<CompDisplay *> (object))
 #define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
@@ -256,10 +275,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	CompScreen *
 	findScreen (Window root);
 
-	void
-	forEachWindow (ForEachWindowProc proc,
-		       void	         *closure);
-
 	CompWindow *
 	findWindow (Window id);
 
@@ -356,6 +371,8 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
+
+	static int checkForError (Display *dpy);
 	
 	// wrapable interface
 	WRAPABLE_HND(void, handleEvent, XEvent *event)

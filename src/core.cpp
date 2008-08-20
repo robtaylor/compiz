@@ -25,6 +25,7 @@
 
 #include <string.h>
 #include <sys/poll.h>
+#include <sys/time.h>
 #include <assert.h>
 #include <algorithm>
 
@@ -32,6 +33,8 @@
 #define foreach BOOST_FOREACH
 
 #include <compiz-core.h>
+#include <compplugin.h>
+#include <compdisplay.h>
 #include "privatecore.h"
 
 CompCore *core;
@@ -165,7 +168,7 @@ CompCore::eventLoop ()
 
     foreach (CompDisplay *d, priv->displays)
 	d->setWatchFdHandle (addWatchFd (ConnectionNumber (d->dpy()),
-			     		 POLLIN, NULL, NULL));
+			     		 POLLIN, NULL));
 
     for (;;)
     {
@@ -213,10 +216,9 @@ CompCore::eventLoop ()
 
 
 CompFileWatchHandle
-CompCore::addFileWatch (const char	      *path,
-			int		      mask,
-			FileWatchCallBackProc callBack,
-			void		      *closure)
+CompCore::addFileWatch (const char        *path,
+			int               mask,
+			FileWatchCallBack callBack)
 {
     CompFileWatch *fileWatch = new CompFileWatch();
     if (!fileWatch)
@@ -225,7 +227,6 @@ CompCore::addFileWatch (const char	      *path,
     fileWatch->path	= strdup (path);
     fileWatch->mask	= mask;
     fileWatch->callBack = callBack;
-    fileWatch->closure  = closure;
     fileWatch->handle   = priv->lastFileWatchHandle++;
 
     if (priv->lastFileWatchHandle == MAXSHORT)
@@ -295,10 +296,9 @@ PrivateCore::removeTimer (CompCore::Timer *timer)
 }
 
 CompWatchFdHandle
-CompCore::addWatchFd (int	   fd,
-		      short int    events,
-		      CallBackProc callBack,
-		      void	   *closure)
+CompCore::addWatchFd (int             fd,
+		      short int       events,
+		      FdWatchCallBack callBack)
 {
     CompWatchFd *watchFd = new CompWatchFd();
 
@@ -307,7 +307,6 @@ CompCore::addWatchFd (int	   fd,
 
     watchFd->fd	      = fd;
     watchFd->callBack = callBack;
-    watchFd->closure  = closure;
     watchFd->handle   = priv->lastWatchFdHandle++;
 
     if (priv->lastWatchFdHandle == MAXSHORT)
@@ -381,7 +380,7 @@ PrivateCore::doPoll (int timeout)
 	for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
 	    it++, i--)
 	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
-		(*(*it)->callBack) ((*it)->closure);
+		(*it)->callBack ();
     }
 
     return rv;

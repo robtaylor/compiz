@@ -28,9 +28,11 @@
 #include <string.h>
 
 #include <compiz.h>
-#include <compiz-core.h>
 
+#include <compoption.h>
 #include <compaction.h>
+#include <compscreen.h>
+#include <compdisplay.h>
 #include <privateaction.h>
 
 struct _Modifier {

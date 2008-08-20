@@ -9,6 +9,27 @@
 #include <compfragment.h>
 #include "privatefragment.h"
 
+extern char       *backgroundImage;
+
+extern Window     currentRoot;
+
+extern CompWindow *lastFoundWindow;
+extern CompWindow *lastDamagedWindow;
+extern bool       replaceCurrentWm;
+extern bool       indirectRendering;
+extern bool       strictBinding;
+extern bool       useCow;
+extern bool       noDetection;
+extern bool	  useDesktopHints;
+extern bool       onlyCurrentScreen;
+
+extern int  defaultRefreshRate;
+extern char *defaultTextureFilter;
+
+#define RED_SATURATION_WEIGHT   0.30f
+#define GREEN_SATURATION_WEIGHT 0.59f
+#define BLUE_SATURATION_WEIGHT  0.11f
+
 #define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
 #define COMP_SCREEN_OPTION_LIGHTING		  1
 #define COMP_SCREEN_OPTION_REFRESH_RATE		  2

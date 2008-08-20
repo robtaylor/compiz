@@ -27,6 +27,8 @@
 #  include "../config.h"
 #endif
 
+#include <compiz.h>
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <poll.h>
@@ -35,6 +37,8 @@
 #include <string.h>
 #include <X11/SM/SMlib.h>
 #include <X11/ICE/ICElib.h>
+
+#include <boost/bind.hpp>
 
 #include <compsession.h>
 #include <compiz-core.h>
@@ -303,9 +307,8 @@ CompSession::getSessionClientId (CompSession::ClientIdType type)
 
 /* This is called when data is available on an ICE connection. */
 static bool
-iceProcessMessages (void *data)
+iceProcessMessages (IceConn connection)
 {
-    IceConn		     connection = (IceConn) data;
     IceProcessMessagesStatus status;
 
     SM_DEBUG (printf ("ICE connection process messages\n"));
@@ -343,8 +346,8 @@ iceNewConnection (IceConn    connection,
 		      F_GETFD,0) | FD_CLOEXEC);
 
 	iceWatchFdHandle = core->addWatchFd (IceConnectionNumber (connection),
-					   POLLIN | POLLPRI | POLLHUP | POLLERR,
-					   iceProcessMessages, connection);
+	    POLLIN | POLLPRI | POLLHUP | POLLERR,
+	    boost::bind (iceProcessMessages, connection));
 
 	iceConnected = 1;
     }

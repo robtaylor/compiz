@@ -3,6 +3,8 @@
 
 #include <compvector.h>
 
+class CompOutput;
+
 class CompMatrix {
     public:
 	CompMatrix ();

@@ -1,6 +1,8 @@
 #ifndef _PRIVATEFRAGMENT_H
 #define _PRIVATEFRAGMENT_H
 
+#include <vector>
+
 #include <compfragment.h>
 
 namespace CompFragment {

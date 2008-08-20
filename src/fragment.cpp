@@ -31,6 +31,7 @@
 #include <compiz-core.h>
 #include <comptexture.h>
 #include <compfragment.h>
+#include <compscreen.h>
 #include "privatefragment.h"
 
 #include <string.h>

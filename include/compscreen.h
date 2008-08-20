@@ -5,10 +5,25 @@
 #include <comptexture.h>
 #include <compfragment.h>
 #include <compmatrix.h>
+#include <compoutput.h>
+#include <compsession.h>
 
 class CompScreen;
 class PrivateScreen;
 typedef std::list<CompWindow *> CompWindowList;
+
+extern GLushort   defaultColor[4];
+
+#if COMPOSITE_MAJOR > 0 || COMPOSITE_MINOR > 2
+#define USE_COW
+#endif
+
+/* camera distance from screen, 0.5 * tan (FOV) */
+#define DEFAULT_Z_CAMERA 0.866025404f
+
+#define OPAQUE 0xffff
+#define COLOR  0xffff
+#define BRIGHT 0xffff
 
 #define GET_CORE_SCREEN(object) (dynamic_cast<CompScreen *> (object))
 #define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
@@ -316,7 +331,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	damagePending ();
 
 	void
-	forEachWindow (ForEachWindowProc, void *);
+	forEachWindow (CompWindow::ForEach);
 
 	void
 	focusDefaultWindow ();
@@ -642,28 +657,5 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	compScreenSnEvent (SnMonitorEvent *event,
 			   void           *userData);
 };
-
-bool
-paintTimeout (void *closure);
-
-int
-getTimeToNextRedraw (CompScreen     *s,
-		     struct timeval *tv,
-		     struct timeval *lastTv,
-		     Bool	    idle);
-
-void
-waitForVideoSync (CompScreen *s);
-
-Bool
-initScreen (CompScreen *s,
-	   CompDisplay *display,
-	   int	       screenNum,
-	   Window      wmSnSelectionWindow,
-	   Atom	       wmSnAtom,
-	   Time	       wmSnTimestamp);
-
-void
-finiScreen (CompScreen *s);
 
 #endif

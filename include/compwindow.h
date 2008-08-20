@@ -1,13 +1,27 @@
 #ifndef _COMPWINDOW_H
 #define _COMPWINDOW_H
 
+#include <boost/function.hpp>
+
+#include <X11/Xregion.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/sync.h>
+
+#include <GL/gl.h>
+#include <GL/glx.h>
+
+#include <compaction.h>
+#include <compobject.h>
 #include <compsize.h>
 #include <comppoint.h>
 #include <comptexture.h>
 #include <compfragment.h>
 #include <compmatrix.h>
 
+#include <wrapable.h>
+
 class CompWindow;
+class CompIcon;
 class PrivateWindow;
 struct CompStartupSequence;
 
@@ -246,6 +260,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	};
 
 	static CompWindowPaintAttrib defaultPaintAttrib;
+
+	typedef boost::function<void (CompWindow *)> ForEach;
 	
     public:
 	CompWindow *next;
