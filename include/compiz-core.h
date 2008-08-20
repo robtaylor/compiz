@@ -280,11 +280,6 @@ struct _CompWalker {
 
 #define MAX_DEPTH 32
 
-typedef struct _CompGroup {
-    struct _CompGroup *next;
-    unsigned int      refCnt;
-    Window	      id;
-} CompGroup;
 
 typedef struct _CompStartupSequence {
     struct _CompStartupSequence *next;

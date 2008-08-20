@@ -233,7 +233,7 @@ class PrivateScreen {
 
 	CompTexture::Filter filter[3];
 
-	CompGroup *groups;
+	std::list<CompGroup *> groups;
 
 	CompIcon *defaultIcon;
 

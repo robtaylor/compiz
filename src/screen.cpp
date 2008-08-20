@@ -3350,17 +3350,12 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 CompGroup *
 CompScreen::addGroup (Window id)
 {
-    CompGroup *group;
+    CompGroup *group = new CompGroup ();
 
-    group = (CompGroup *) malloc (sizeof (CompGroup));
-    if (!group)
-	return NULL;
-
-    group->next   = priv->groups;
     group->refCnt = 1;
     group->id     = id;
 
-    priv->groups = group;
+    priv->groups.push_back (group);
 
     return group;
 }
@@ -3372,33 +3367,21 @@ CompScreen::removeGroup (CompGroup *group)
     if (group->refCnt)
 	return;
 
-    if (group == priv->groups)
-    {
-	priv->groups = group->next;
-    }
-    else
-    {
-	CompGroup *g;
+    std::list<CompGroup *>::iterator it =
+	std::find (priv->groups.begin (), priv->groups.end (), group);
 
-	for (g = priv->groups; g; g = g->next)
-	{
-	    if (g->next == group)
-	    {
-		g->next = group->next;
-		break;
-	    }
-	}
+    if (it != priv->groups.end ())
+    {
+	priv->groups.erase (it);
     }
 
-    free (group);
+    delete group;
 }
 
 CompGroup *
 CompScreen::findGroup (Window id)
 {
-    CompGroup *g;
-
-    for (g = priv->groups; g; g = g->next)
+    foreach (CompGroup *g, priv->groups)
 	if (g->id == id)
 	    return g;
 

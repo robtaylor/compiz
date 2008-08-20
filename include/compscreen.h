@@ -134,6 +134,12 @@ struct CompScreenPaintAttrib {
 
 extern CompScreenPaintAttrib defaultScreenPaintAttrib;
 
+struct CompGroup {
+    struct _CompGroup *next;
+    unsigned int      refCnt;
+    Window	      id;
+};
+
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
 	ScreenInterface ();
