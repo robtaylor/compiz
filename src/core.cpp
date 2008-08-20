@@ -28,6 +28,9 @@
 #include <assert.h>
 #include <algorithm>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <compiz-core.h>
 #include "privatecore.h"
 
@@ -95,10 +98,13 @@ CompCore::init ()
 
 CompCore::~CompCore ()
 {
-    CompPlugin *p;
+    CompPlugin  *p;
 
-    while (priv->displays)
-	removeDisplay (priv->displays);
+    while (!priv->displays.empty ())
+    {
+	removeDisplay (priv->displays.front ());
+	priv->displays.pop_front ();
+    }
 
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
@@ -115,7 +121,7 @@ CompCore::name ()
 }
 
 
-CompDisplay *
+CompDisplayList &
 CompCore::displays()
 {
     return priv->displays;
@@ -124,26 +130,16 @@ CompCore::displays()
 bool
 CompCore::addDisplay (const char *name)
 {
-
-    CompDisplay *prev;
     CompDisplay *d = new CompDisplay();
 
     if (!d)
 	return false;
 
-    for (prev = priv->displays; prev && prev->next; prev = prev->next);
-
-    if (prev)
-	prev->next = d;
-    else
-	priv->displays = d;
+    priv->displays.push_back (d);
 
     if (!d->init (name))
     {
-	if (prev)
-	    prev->next = NULL;
-    	else
-	    priv->displays = NULL;
+	priv->displays.pop_back ();
 	delete d;
 	return false;
     }
@@ -153,16 +149,9 @@ CompCore::addDisplay (const char *name)
 void
 CompCore::removeDisplay (CompDisplay *d)
 {
-    CompDisplay *p;
-
-    for (p = priv->displays; p; p = p->next)
-	if (p->next == d)
-	    break;
-
-    if (p)
-	p->next = d->next;
-    else
-	priv->displays = NULL;
+    CompDisplayList::iterator it;
+    it = std::find (priv->displays.begin (), priv->displays.end (), d);
+    priv->displays.erase (it);
 
     delete d;
 }
@@ -171,11 +160,10 @@ void
 CompCore::eventLoop ()
 {
     struct timeval  tv;
-    CompDisplay     *d;
     CompCore::Timer *t;
     int		    time;
 
-    for (d = priv->displays; d; d = d->next)
+    foreach (CompDisplay *d, priv->displays)
 	d->setWatchFdHandle (addWatchFd (ConnectionNumber (d->dpy()),
 			     		 POLLIN, NULL, NULL));
 
@@ -184,10 +172,8 @@ CompCore::eventLoop ()
 	if (restartSignal || shutDown)
 	    break;
 
-	for (d = priv->displays; d; d = d->next)
-	{
+	foreach (CompDisplay *d, priv->displays)
 	    d->processEvents ();
-	}
 
 	if (!priv->timers.empty())
 	{
@@ -220,7 +206,7 @@ CompCore::eventLoop ()
 	}
     }
 
-    for (d = priv->displays; d; d = d->next)
+    foreach (CompDisplay *d, priv->displays)
 	removeWatchFd (d->getWatchFdHandle());
 }
 

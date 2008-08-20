@@ -11,6 +11,7 @@
 class PrivateCore;
 class CompCore;
 class CompDisplay;
+typedef std::list<CompDisplay *> CompDisplayList;
 
 #define NOTIFY_CREATE_MASK (1 << 0)
 #define NOTIFY_DELETE_MASK (1 << 1)
@@ -139,7 +140,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	void
 	eventLoop ();
 
-	CompDisplay *
+	CompDisplayList &
 	displays();
 	
 	CompFileWatchHandle

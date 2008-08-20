@@ -9,6 +9,7 @@
 
 class CompWindow;
 class PrivateWindow;
+struct CompStartupSequence;
 
 #define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
 #define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)

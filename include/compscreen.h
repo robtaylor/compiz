@@ -140,6 +140,52 @@ struct CompGroup {
     Window	      id;
 };
 
+struct CompStartupSequence {
+    SnStartupSequence		*sequence;
+    unsigned int		viewportX;
+    unsigned int		viewportY;
+};
+
+#define MAX_DEPTH 32
+
+struct CompFBConfig {
+    GLXFBConfig fbConfig;
+    int         yInverted;
+    int         mipmap;
+    int         textureFormat;
+    int         textureTargets;
+};
+
+#define NOTHING_TRANS_FILTER 0
+#define SCREEN_TRANS_FILTER  1
+#define WINDOW_TRANS_FILTER  2
+
+#define SCREEN_EDGE_LEFT	0
+#define SCREEN_EDGE_RIGHT	1
+#define SCREEN_EDGE_TOP		2
+#define SCREEN_EDGE_BOTTOM	3
+#define SCREEN_EDGE_TOPLEFT	4
+#define SCREEN_EDGE_TOPRIGHT	5
+#define SCREEN_EDGE_BOTTOMLEFT	6
+#define SCREEN_EDGE_BOTTOMRIGHT 7
+#define SCREEN_EDGE_NUM		8
+
+struct CompScreenEdge {
+    Window	 id;
+    unsigned int count;
+};
+
+
+#define ACTIVE_WINDOW_HISTORY_SIZE 64
+#define ACTIVE_WINDOW_HISTORY_NUM  32
+
+struct CompActiveWindowHistory {
+    Window id[ACTIVE_WINDOW_HISTORY_SIZE];
+    int    x;
+    int    y;
+    int    activeNum;
+};
+
 class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
 	ScreenInterface ();

@@ -513,7 +513,7 @@ const CompMetadata::OptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
 void
 PrivateScreen::updateStartupFeedback ()
 {
-    if (startupSequences)
+    if (!startupSequences.empty ())
 	XDefineCursor (display->dpy (), root, busyCursor);
     else
 	XDefineCursor (display->dpy (), root, normalCursor);
@@ -530,7 +530,7 @@ PrivateScreen::handleStartupSequenceTimeout()
 
     gettimeofday (&now, NULL);
 
-    for (s = startupSequences; s; s = s->next)
+    foreach (CompStartupSequence *s, startupSequences)
     {
 	sn_startup_sequence_get_last_active_time (s->sequence,
 						  &active.tv_sec,
@@ -551,18 +551,17 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
 {
     CompStartupSequence *s;
 
-    s = (CompStartupSequence *) malloc (sizeof (CompStartupSequence));
+    s = new CompStartupSequence ();
     if (!s)
 	return;
 
     sn_startup_sequence_ref (sequence);
 
-    s->next     = startupSequences;
     s->sequence = sequence;
     s->viewportX = vp.x ();
     s->viewportY = vp.y ();
 
-    startupSequences = s;
+    startupSequences.push_front (s);
 
     if (!startupSequenceTimer.active ())
 	startupSequenceTimer.start (
@@ -575,14 +574,17 @@ PrivateScreen::addSequence (SnStartupSequence *sequence)
 void
 PrivateScreen::removeSequence (SnStartupSequence *sequence)
 {
-    CompStartupSequence *s, *p = NULL;
+    CompStartupSequence *s = NULL;
 
-    for (s = startupSequences; s; s = s->next)
+    std::list<CompStartupSequence *>::iterator it = startupSequences.begin ();
+
+    while (it != startupSequences.end ())
     {
-	if (s->sequence == sequence)
+	if ((*it)->sequence == sequence)
+	{
+	    s = (*it);
 	    break;
-
-	p = s;
+	}
     }
 
     if (!s)
@@ -590,14 +592,9 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     sn_startup_sequence_unref (sequence);
 
-    if (p)
-	p->next = s->next;
-    else
-	startupSequences = NULL;
+    startupSequences.erase (it);
 
-    free (s);
-
-    if (!startupSequences && startupSequenceTimer.active ())
+    if (startupSequences.empty () && startupSequenceTimer.active ())
 	startupSequenceTimer.stop ();
 
     updateStartupFeedback ();
@@ -3391,7 +3388,7 @@ CompScreen::findGroup (Window id)
 void
 CompScreen::applyStartupProperties (CompWindow *window)
 {
-    CompStartupSequence *s;
+    CompStartupSequence *s = NULL;
     const char	        *startupId = window->startupId ();
 
     if (!startupId)
@@ -3406,13 +3403,16 @@ CompScreen::applyStartupProperties (CompWindow *window)
 	    return;
     }
 
-    for (s = priv->startupSequences; s; s = s->next)
+    foreach (CompStartupSequence *ss, priv->startupSequences)
     {
 	const char *id;
 
-	id = sn_startup_sequence_get_id (s->sequence);
+	id = sn_startup_sequence_get_id (ss->sequence);
 	if (strcmp (id, startupId) == 0)
+	{
+	    s = ss;
 	    break;
+	}
     }
 
     if (s)

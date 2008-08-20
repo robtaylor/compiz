@@ -683,7 +683,7 @@ getPluginABI (const char *name)
 
     /* MULTIDPYERROR: ABI options should be moved into core */
     CompOption::Vector &options =
-	p->vTable->getObjectOptions (core->displays());
+	p->vTable->getObjectOptions (core->displays().front ());
 
     return CompOption::getIntOptionNamed (options, "abi");
 }

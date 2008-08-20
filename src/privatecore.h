@@ -24,8 +24,8 @@ class PrivateCore {
 
 
     public:
-	CompCore    *core;
-	CompDisplay *displays;
+	CompCore        *core;
+	CompDisplayList displays;
 
 	std::list<CompFileWatch *>  fileWatch;
 	CompFileWatchHandle         lastFileWatchHandle;

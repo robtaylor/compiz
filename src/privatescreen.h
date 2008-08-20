@@ -227,9 +227,9 @@ class PrivateScreen {
 
 	CompScreenEdge screenEdge[SCREEN_EDGE_NUM];
 
-	SnMonitorContext    *snContext;
-	CompStartupSequence *startupSequences;
-	CompCore::Timer     startupSequenceTimer;
+	SnMonitorContext                 *snContext;
+	std::list<CompStartupSequence *> startupSequences;
+	CompCore::Timer                  startupSequenceTimer;
 
 	CompTexture::Filter filter[3];
 
