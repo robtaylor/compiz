@@ -151,7 +151,7 @@ class PrivateDisplay {
 	xcb_connection_t *connection;
 
 	Display    *dpy;
-	CompScreen *screens;
+	CompScreenList screens;
 
 	CompWatchFdHandle watchFdHandle;
 

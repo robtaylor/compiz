@@ -764,25 +764,31 @@ CompOption::setDisplayOption (CompDisplay       *d,
     if (o.isAction () &&
     o.value ().action ().state () & CompAction::StateAutoGrab)
     {
-	CompScreen *s;
+	CompScreen *s = NULL;
 
-	for (s = d->screens (); s; s = s->next)
-	    if (!s->addAction (&value.action ()))
+	foreach (CompScreen *ss, d->screens ())
+	    if (!ss->addAction (&value.action ()))
+	    {
+		s = ss;
 		break;
+	    }
 
 	if (s)
 	{
-	    CompScreen *failed = s;
 
-	    for (s = d->screens (); s && s != failed; s = s->next)
-		s->removeAction (&value.action ());
+	    foreach (CompScreen *ss, d->screens ())
+	    {
+		if (s == ss)
+		    break;
+		ss->removeAction (&value.action ());
+	    }
 
 	    return false;
 	}
 	else
 	{
-	    for (s = d->screens (); s; s = s->next)
-		s->removeAction (&o.value ().action ());
+	    foreach (CompScreen *ss, d->screens ())
+		ss->removeAction (&o.value ().action ());
 	}
 
 	return o.set (value);
@@ -818,8 +824,6 @@ finiDisplayOptionValue (CompDisplay	  *d,
 			CompOption::Value &v,
 			CompOption::Type  type)
 {
-    CompScreen *s;
-
     switch (type) {
 	case CompOption::TypeAction:
 	case CompOption::TypeKey:
@@ -827,7 +831,7 @@ finiDisplayOptionValue (CompDisplay	  *d,
 	case CompOption::TypeEdge:
 	case CompOption::TypeBell:
 	    if (v.action ().state () & CompAction::StateAutoGrab)
-		for (s = d->screens (); s; s = s->next)
+		foreach (CompScreen *s, d->screens ())
 		    s->removeAction (&v.action ());
 	    break;
 	case CompOption::TypeList:

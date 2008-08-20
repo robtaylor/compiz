@@ -136,7 +136,6 @@ CompDisplay::matchExpHandlerChanged ()
     WRAPABLE_HND_FUNC(matchExpHandlerChanged)
 
     CompPlugin *p;
-    CompScreen *s;
 
     for (p = getPlugins (); p; p = p->next)
     {
@@ -144,7 +143,7 @@ CompDisplay::matchExpHandlerChanged ()
 	matchUpdateMatchOptions (options);
     }
 
-    for (s = priv->screens; s; s = s->next)
+    foreach (CompScreen *s, priv->screens)
     {
 	for (p = getPlugins (); p; p = p->next)
 	{

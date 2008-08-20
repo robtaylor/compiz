@@ -1075,7 +1075,7 @@ CompDisplay::handleEvent (XEvent *event)
 
     if (priv->handleActionEvent (event))
     {
-	if (!priv->screens->hasGrab ())
+	if (!priv->screens.front ()->hasGrab ())
 	    XAllowEvents (priv->dpy, AsyncPointer, event->xbutton.time);
 
 	return;
@@ -1083,7 +1083,7 @@ CompDisplay::handleEvent (XEvent *event)
 
     switch (event->type) {
     case Expose:
-	for (s = priv->screens; s; s = s->next)
+	foreach (s, priv->screens)
 	    s->handleExposeEvent (&event->xexpose);
 	break;
     case SelectionRequest:
@@ -1615,7 +1615,7 @@ CompDisplay::handleEvent (XEvent *event)
 	}
 	else if (event->xclient.message_type == priv->atoms.showingDesktop)
 	{
-	    for (s = priv->screens; s; s = s->next)
+	    foreach (s, priv->screens)
 	    {
 		if (event->xclient.window == s->root () ||
 		    event->xclient.window == None)
@@ -1799,7 +1799,7 @@ CompDisplay::handleEvent (XEvent *event)
 	}
 	break;
     case EnterNotify:
-	if (!priv->screens->hasGrab ()		    &&
+	if (!priv->screens.front ()->hasGrab ()	    &&
 	    event->xcrossing.mode   != NotifyGrab   &&
 	    event->xcrossing.mode   != NotifyUngrab &&
 	    event->xcrossing.detail != NotifyInferior)
@@ -1916,7 +1916,7 @@ CompDisplay::handleEvent (XEvent *event)
 
 	    sa = (XSyncAlarmNotifyEvent *) event;
 
-	    for (s = priv->screens; s; s = s->next)
+	    foreach (s, priv->screens)
 	    {
 		for (w = s->windows (); w; w = w->next)
 		{

@@ -9,6 +9,7 @@
 class CompDisplay;
 class CompScreen;
 class PrivateDisplay;
+typedef std::list<CompScreen *> CompScreenList;
 
 #define GET_CORE_DISPLAY(object) (dynamic_cast<CompDisplay *> (object))
 #define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
@@ -37,7 +38,6 @@ class DisplayInterface : public WrapableInterface<CompDisplay> {
 class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject {
 
     public:
-	CompDisplay *next;
 
 	class Atoms {
 	    public:
@@ -189,7 +189,7 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	Display *
 	dpy();
 	
-	CompScreen *
+	CompScreenList &
 	screens();
 
 	GLenum

@@ -707,8 +707,7 @@ CompDisplay::addScreenActions (CompScreen *s)
 }
 
 CompDisplay::CompDisplay () :
-    CompObject (COMP_OBJECT_TYPE_DISPLAY, "display", &displayPrivateIndices),
-    next (0)
+    CompObject (COMP_OBJECT_TYPE_DISPLAY, "display", &displayPrivateIndices)
 {
     WRAPABLE_INIT_HND(handleEvent);
     WRAPABLE_INIT_HND(handleCompizEvent);
@@ -726,8 +725,11 @@ CompDisplay::CompDisplay () :
 
 CompDisplay::~CompDisplay ()
 {
-    while (priv->screens)
-	removeScreen (priv->screens);
+    while (!priv->screens.empty ())
+    {
+	removeScreen (priv->screens.front ());
+	priv->screens.pop_front ();
+    }
 
     objectFiniPlugins (this);
 
@@ -908,7 +910,7 @@ CompDisplay::init (const char *name)
 	addScreen (i);
     }
 
-    if (!priv->screens)
+    if (priv->screens.empty ())
     {
 	compLogMessage (this, "core", CompLogLevelFatal,
 		        "No manageable screens found on display %s",
@@ -923,12 +925,12 @@ CompDisplay::init (const char *name)
 
     /* move input focus to root window so that we get a FocusIn event when
        moving it to the default window */
-    XSetInputFocus (priv->dpy, priv->screens->root (), RevertToPointerRoot,
-		    CurrentTime);
+    XSetInputFocus (priv->dpy, priv->screens.front ()->root (),
+		    RevertToPointerRoot, CurrentTime);
 
     if (focus == None || focus == PointerRoot)
     {
-	priv->screens->focusDefaultWindow ();
+	priv->screens.front ()->focusDefaultWindow ();
     }
     else
     {
@@ -940,7 +942,7 @@ CompDisplay::init (const char *name)
 	    w->moveInputFocusTo ();
 	}
 	else
-	    priv->screens->focusDefaultWindow ();
+	    priv->screens.front ()->focusDefaultWindow ();
     }
 
     priv->pingTimer.start (
@@ -969,7 +971,7 @@ CompDisplay::dpy ()
     return priv->dpy;
 }
 
-CompScreen *
+CompScreenList &
 CompDisplay::screens ()
 {
     return priv->screens;
@@ -1084,7 +1086,7 @@ CompDisplay::updateScreenInfo ()
 bool
 CompDisplay::addScreen (int screenNum)
 {
-    CompScreen           *s, *prev;
+    CompScreen           *s;
     Window               rootDummy, childDummy;
     int                  x, y, dummy;
     unsigned int	 uDummy;
@@ -1093,21 +1095,14 @@ CompDisplay::addScreen (int screenNum)
     if (!s)
 	return false;
 
-    for (prev = priv->screens; prev && prev->next; prev = prev->next);
-
-    if (prev)
-	prev->next = s;
-    else
-        priv->screens = s;
+    priv->screens.push_back (s);
 
     if (!s->init (this, screenNum))
     {
 	compLogMessage (this, "core", CompLogLevelError,
 			"Failed to manage screen: %d", screenNum);
-	if (prev)
-	    prev->next = NULL;
-	else
-	    priv->screens = NULL;
+
+	priv->screens.pop_back ();
     }
 
     if (XQueryPointer (priv->dpy, XRootWindow (priv->dpy, screenNum),
@@ -1123,16 +1118,10 @@ CompDisplay::addScreen (int screenNum)
 void
 CompDisplay::removeScreen (CompScreen *s)
 {
-    CompScreen  *p;
+    CompScreenList::iterator it =
+	std::find (priv->screens.begin (), priv->screens.end (), s);
 
-    for (p = priv->screens; p; p = p->next)
-	if (p->next == s)
-	    break;
-
-    if (p)
-	p->next = s->next;
-    else
-	priv->screens = NULL;
+    priv->screens.erase (it);
 
     delete s;
 }
@@ -1150,7 +1139,6 @@ PrivateDisplay::setAudibleBell (bool audible)
 bool
 PrivateDisplay::handlePingTimeout ()
 {
-    CompScreen  *s;
     CompWindow  *w;
     XEvent      ev;
     int		ping = lastPing + 1;
@@ -1165,7 +1153,7 @@ PrivateDisplay::handlePingTimeout ()
     ev.xclient.data.l[3]    = 0;
     ev.xclient.data.l[4]    = 0;
 
-    for (s = screens; s; s = s->next)
+    foreach (CompScreen *s, screens)
     {
 	for (w = s->windows (); w; w = w->next)
 	{
@@ -1208,9 +1196,7 @@ CompDisplay::setOption (const char        *name,
     case COMP_DISPLAY_OPTION_TEXTURE_FILTER:
 	if (o->set (value))
 	{
-	    CompScreen *s;
-
-	    for (s = priv->screens; s; s = s->next)
+	    foreach (CompScreen *s, priv->screens)
 		s->damageScreen ();
 
 	    if (!o->value ().i ())
@@ -1330,15 +1316,13 @@ CompDisplay::updateModifierMappings ()
 
 	if (memcmp (modMask, priv->modMask, sizeof (modMask)))
 	{
-	    CompScreen *s;
-
 	    memcpy (priv->modMask, modMask, sizeof (modMask));
 
 	    priv->ignoredModMask = LockMask |
 		(modMask[CompModNumLock]    & ~CompNoMask) |
 		(modMask[CompModScrollLock] & ~CompNoMask);
 
-	    for (s = priv->screens; s; s = s->next)
+	    foreach (CompScreen *s, priv->screens)
 		s->updatePassiveGrabs ();
 	}
     }
@@ -1529,9 +1513,7 @@ PrivateDisplay::updatePlugins ()
 CompScreen *
 CompDisplay::findScreen (Window root)
 {
-    CompScreen *s;
-
-    for (s = priv->screens; s; s = s->next)
+    foreach (CompScreen *s, priv->screens)
     {
 	if (s->root () == root)
 	    return s;
@@ -1544,19 +1526,16 @@ void
 CompDisplay::forEachWindow (ForEachWindowProc proc,
 			   void              *closure)
 {
-    CompScreen *s;
-
-    for (s = priv->screens; s; s = s->next)
+    foreach (CompScreen *s, priv->screens)
 	s->forEachWindow (proc, closure);
 }
 
 CompWindow *
 CompDisplay::findWindow (Window id)
 {
-    CompScreen *s;
     CompWindow *w;
 
-    for (s = priv->screens; s; s = s->next)
+    foreach (CompScreen *s, priv->screens)
     {
 	w = s->findWindow (id);
 	if (w)
@@ -1569,10 +1548,9 @@ CompDisplay::findWindow (Window id)
 CompWindow *
 CompDisplay::findTopLevelWindow (Window id)
 {
-    CompScreen *s;
     CompWindow *w;
 
-    for (s = priv->screens; s; s = s->next)
+    foreach (CompScreen *s, priv->screens)
     {
 	w = s->findTopLevelWindow (id);
 	if (w)
@@ -1587,9 +1565,7 @@ findScreenForSelection (CompDisplay *display,
 			Window       owner,
 			Atom         selection)
 {
-    CompScreen *s;
-
-    for (s = display->screens(); s; s = s->next)
+    foreach (CompScreen *s, display->screens ())
     {
 	if (s->selectionWindow () == owner && s->selectionAtom () == selection)
 	    return s;

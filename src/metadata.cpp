@@ -392,9 +392,7 @@ initKeyValue (CompDisplay       *d,
 
     if (state & CompAction::StateAutoGrab)
     {
-	CompScreen *s;
-
-	for (s = d->screens (); s; s = s->next)
+	foreach (CompScreen *s, d->screens ())
 	    s->addAction (&v.action ());
     }
 }
@@ -431,9 +429,7 @@ initButtonValue (CompDisplay       *d,
 
     if (state & CompAction::StateAutoGrab)
     {
-	CompScreen *s;
-
-	for (s = d->screens (); s; s = s->next)
+	foreach (CompScreen *s, d->screens ())
 	    s->addAction (&v.action ());
     }
 }
@@ -476,9 +472,7 @@ initEdgeValue (CompDisplay       *d,
 
     if (state & CompAction::StateAutoGrab)
     {
-	CompScreen *s;
-
-	for (s = d->screens (); s; s = s->next)
+	foreach (CompScreen *s, d->screens ())
 	    s->addAction (&v.action ());
     }
 }
