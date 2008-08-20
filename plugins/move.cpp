@@ -31,9 +31,9 @@
 
 #include <compiz-core.h>
 
-static CompMetadata moveMetadata;
+static CompMetadata *moveMetadata;
 
-class MovePluginVTable : public CompPluginVTable
+class MovePluginVTable : public CompPlugin::VTable
 {
     public:
 
@@ -155,7 +155,7 @@ class MoveWindow : public WindowInterface {
 	};
 
 	bool
-	paint (const WindowPaintAttrib *, const CompTransform *, Region,
+	paint (const CompWindowPaintAttrib *, const CompTransform *, Region,
 	       unsigned int);
 
 	CompWindow *window;
@@ -368,7 +368,7 @@ moveGetYConstrainRegion (CompScreen *s)
 	s->getWorkareaForOutput (i, &workArea);
 	extents = s->outputDevs ()[i].region ()->extents;
 
-	for (w = s->windows (); w; w = w->next)
+	foreach (w, s->windows ())
 	{
 	    if (!w->mapNum ())
 		continue;
@@ -790,12 +790,12 @@ MoveDisplay::handleEvent (XEvent *event)
 }
 
 bool
-MoveWindow::paint (const WindowPaintAttrib *attrib,
+MoveWindow::paint (const CompWindowPaintAttrib *attrib,
 		   const CompTransform	 *transform,
 		   Region			 region,
 		   unsigned int		 mask)
 {
-    WindowPaintAttrib sAttrib;
+    CompWindowPaintAttrib sAttrib;
     bool	      status;
 
     MOVE_SCREEN (window->screen ());
@@ -857,7 +857,7 @@ moveSetDisplayOption (CompObject      *object,
     return FALSE;
 }
 
-static const CompMetadataOptionInfo moveDisplayOptionInfo[] = {
+static const CompMetadata::OptionInfo moveDisplayOptionInfo[] = {
     { "initiate_button", "button", 0, moveInitiate, moveTerminate },
     { "initiate_key", "key", 0, moveInitiate, moveTerminate },
     { "opacity", "int", "<min>0</min><max>100</max>", 0, 0 },
@@ -874,17 +874,15 @@ moveInitDisplay (CompObject *o)
 
     CORE_DISPLAY (o);
 
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
     md = new MoveDisplay (d);
     if (!md)
 	return false;
 
-    if (!compInitDisplayOptionsFromMetadata (d,
-					     &moveMetadata,
-					     moveDisplayOptionInfo,
-					     md->opt))
+    if (!moveMetadata->initDisplayOptions (d, moveDisplayOptionInfo,
+					   MOVE_DISPLAY_OPTION_NUM, md->opt))
     {
 	delete md;
 	return false;
@@ -1033,24 +1031,24 @@ MovePluginVTable::setObjectOption (CompObject      *object,
 bool
 MovePluginVTable::init ()
 {
-    if (!compInitPluginMetadataFromInfo (&moveMetadata,
-					 name (),
-					 moveDisplayOptionInfo,
-					 MOVE_DISPLAY_OPTION_NUM,
-					 0, 0))
+    moveMetadata = new CompMetadata (name (),
+				     moveDisplayOptionInfo,
+				     MOVE_DISPLAY_OPTION_NUM,
+				     0, 0);
+    if (!moveMetadata)
 	return false;
 
     displayPrivateIndex = CompDisplay::allocPrivateIndex ();
     if (displayPrivateIndex < 0)
     {
-	compFiniMetadata (&moveMetadata);
+	delete moveMetadata;
 	return false;
     }
     screenPrivateIndex = CompScreen::allocPrivateIndex ();
     if (screenPrivateIndex < 0)
     {
 	CompDisplay::freePrivateIndex (displayPrivateIndex);
-	compFiniMetadata (&moveMetadata);
+	delete moveMetadata;
 	return false;
     }
     windowPrivateIndex = CompWindow::allocPrivateIndex ();
@@ -1058,11 +1056,11 @@ MovePluginVTable::init ()
     {
 	CompDisplay::freePrivateIndex (displayPrivateIndex);
 	CompScreen::freePrivateIndex (screenPrivateIndex);
-	compFiniMetadata (&moveMetadata);
+	delete moveMetadata;
 	return false;
     }
 
-    compAddMetadataFromFile (&moveMetadata, name ());
+    moveMetadata->addFromFile (name ());
 
     return true;
 }
@@ -1074,18 +1072,18 @@ MovePluginVTable::fini ()
     CompScreen::freePrivateIndex (screenPrivateIndex);
     CompWindow::freePrivateIndex (windowPrivateIndex);
 
-    compFiniMetadata (&moveMetadata);
+    delete moveMetadata;
 }
 
 CompMetadata *
 MovePluginVTable::getMetadata ()
 {
-    return &moveMetadata;
+    return moveMetadata;
 }
 
 MovePluginVTable moveVTable;
 
-CompPluginVTable *
+CompPlugin::VTable *
 getCompPluginInfo20080805 (void)
 {
     return &moveVTable;
