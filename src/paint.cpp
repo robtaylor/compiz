@@ -27,6 +27,9 @@
 #include <string.h>
 #include <math.h>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <compiz-core.h>
 
 #include "privatescreen.h"
@@ -174,12 +177,14 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
     CompWindow    *w;
     int		  count, windowMask, odMask;
     CompWindow	  *fullscreenWindow = NULL;
-    CompWalker    walk;
     bool          status;
     bool          withOffset = false;
     CompTransform vTransform;
     int           offX, offY;
     Region        clip = region;
+
+    CompWindowList                   pl;
+    CompWindowList::reverse_iterator rit;
 
     if (!tmpRegion)
     {
@@ -201,13 +206,15 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 
     XSubtractRegion (region, &emptyRegion, tmpRegion);
 
-    screen->initWindowWalker (&walk);
+    pl = screen->getWindowPaintList ();
 
     if (!(mask & PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK))
     {
 	/* detect occlusions */
-	for (w = (*walk.last) (screen); w; w = (*walk.prev) (w))
+	for (rit = pl.rbegin (); rit != pl.rend(); rit++)
 	{
+	    w = (*rit);
+
 	    if (w->destroyed ())
 		continue;
 
@@ -288,7 +295,7 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 	paintBackground (tmpRegion, (mask & PAINT_SCREEN_TRANSFORMED_MASK));
 
     /* paint all windows from bottom to top */
-    for (w = (*walk.first) (screen); w; w = (*walk.next) (w))
+    foreach (w, pl)
     {
 	if (w->destroyed ())
 	    continue;
@@ -322,9 +329,6 @@ PrivateScreen::paintOutputRegion (const CompTransform *transform,
 	    w->paint (&w->paintAttrib (), transform, clip, windowMask);
 	}
     }
-
-    if (walk.fini)
-	(*walk.fini) (screen, &walk);
 }
 
 void

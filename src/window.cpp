@@ -1922,7 +1922,7 @@ PrivateWindow::getModalTransient ()
 
     modalTransient = window;
 
-    for (w = window->priv->screen->reverseWindows (); w; w = w->prev)
+    for (w = window->priv->screen->windows ().back (); w; w = w->prev)
     {
 	if (w == modalTransient || w->priv->mapNum == 0)
 	    continue;
@@ -1932,7 +1932,7 @@ PrivateWindow::getModalTransient ()
 	    if (w->priv->state & CompWindowStateModalMask)
 	    {
 		modalTransient = w;
-		w = window->priv->screen->reverseWindows ();
+		w = window->priv->screen->windows ().back ();
 	    }
 	}
     }
@@ -1944,7 +1944,7 @@ PrivateWindow::getModalTransient ()
 	if (state & CompWindowStateModalMask)
 	    return NULL;
 
-	for (w = window->priv->screen->reverseWindows (); w; w = w->prev)
+	for (w = window->priv->screen->windows ().back (); w; w = w->prev)
 	{
 	    if (w == modalTransient || w->priv->mapNum == 0)
 		continue;
@@ -2026,7 +2026,8 @@ CompWindow::moveInputFocusTo ()
 	    CompWindow *ancestor;
 
 	    /* move input to closest ancestor */
-	    for (ancestor = s->windows (); ancestor; ancestor = ancestor->next)
+	    for (ancestor = s->windows ().front (); ancestor;
+		 ancestor = ancestor->next)
 	    {
 		if (PrivateWindow::isAncestorTo (this, ancestor))
 		{
@@ -2064,7 +2065,7 @@ CompWindow::moveInputFocusToOtherWindow ()
 	{
 	    CompWindow *a, *focus = NULL;
 
-	    for (a = priv->screen->reverseWindows (); a; a = a->prev)
+	    for (a = priv->screen->windows ().back (); a; a = a->prev)
 	    {
 		if (a->priv->clientLeader == priv->clientLeader)
 		{
@@ -2172,7 +2173,8 @@ PrivateWindow::findSiblingBelow (CompWindow *w,
     if (w->priv->transientFor || w->priv->isGroupTransient (clientLeader))
 	clientLeader = None;
 
-    for (below = w->priv->screen->reverseWindows (); below; below = below->prev)
+    for (below = w->priv->screen->windows ().back (); below;
+	 below = below->prev)
     {
 	if (below == w || avoidStackingRelativeTo (below))
 	    continue;
@@ -2218,7 +2220,7 @@ PrivateWindow::findSiblingBelow (CompWindow *w,
 CompWindow *
 PrivateWindow::findLowestSiblingBelow (CompWindow *w)
 {
-    CompWindow   *below, *lowest = w->priv->screen->reverseWindows ();
+    CompWindow   *below, *lowest = w->priv->screen->windows ().back ();
     Window	 clientLeader = w->priv->clientLeader;
     unsigned int type = w->priv->type;
 
@@ -2230,7 +2232,8 @@ PrivateWindow::findLowestSiblingBelow (CompWindow *w)
     if (w->priv->transientFor || w->priv->isGroupTransient (clientLeader))
 	clientLeader = None;
 
-    for (below = w->priv->screen->reverseWindows (); below; below = below->prev)
+    for (below = w->priv->screen->windows ().back (); below;
+	 below = below->prev)
     {
 	if (below == w || avoidStackingRelativeTo (below))
 	    continue;
@@ -2442,7 +2445,7 @@ PrivateWindow::stackTransients (CompWindow	*w,
     if (w->priv->transientFor || w->priv->isGroupTransient (clientLeader))
 	clientLeader = None;
 
-    for (t = w->priv->screen->reverseWindows (); t; t = t->prev)
+    for (t = w->priv->screen->windows ().back (); t; t = t->prev)
     {
 	if (t == w || t == avoid)
 	    continue;
@@ -2500,7 +2503,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
     {
 	CompWindow *a;
 
-	for (a = w->priv->screen->reverseWindows (); a; a = a->prev)
+	for (a = w->priv->screen->windows ().back (); a; a = a->prev)
 	{
 	    if (a->priv->clientLeader == w->priv->clientLeader &&
 		a->priv->transientFor == None		   &&
@@ -3044,7 +3047,7 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 	{
 	    CompWindow *dw;
 
-	    for (dw = screen->reverseWindows (); dw; dw = dw->prev)
+	    for (dw = screen->windows ().back (); dw; dw = dw->prev)
 		if (dw == sibling)
 		    break;
 
@@ -3110,7 +3113,7 @@ PrivateWindow::findValidStackSiblingBelow (CompWindow *w,
     lowest = last = findLowestSiblingBelow (w);
 
     /* walk from bottom up */
-    for (p = w->priv->screen->windows (); p; p = p->next)
+    for (p = w->priv->screen->windows ().front (); p; p = p->next)
     {
 	/* stop walking when we reach the sibling we should try to stack
 	   below */

@@ -257,27 +257,7 @@ eventTerminates (CompDisplay *display,
 
 #define DEG2RAD (M_PI / 180.0f)
 
-
-typedef void (*WalkerFiniProc) (CompScreen *screen,
-				CompWalker *walker);
-
-typedef CompWindow *(*WalkInitProc) (CompScreen *screen);
-typedef CompWindow *(*WalkStepProc) (CompWindow *window);
-
-struct _CompWalker {
-    WalkerFiniProc fini;
-    CompPrivate	   priv;
-
-    WalkInitProc first;
-    WalkInitProc last;
-    WalkStepProc next;
-    WalkStepProc prev;
-};
-
-
 /* screen.c */
-
-
 
 /* window.c */
 

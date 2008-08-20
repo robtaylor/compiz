@@ -1189,7 +1189,6 @@ CompScreen::updateOutputWindow ()
 	Display       *dpy = priv->display->dpy ();
 	XserverRegion region;
 	static Region tmpRegion = NULL;
-	CompWindow    *w;
 
 	if (!tmpRegion)
 	{
@@ -1200,10 +1199,12 @@ CompScreen::updateOutputWindow ()
 
 	XSubtractRegion (&priv->region, &emptyRegion, tmpRegion);
 
-	for (w = priv->reverseWindows; w; w = w->prev)
-	    if (w->overlayWindow ())
+	
+	for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	     rit != priv->windows.rend (); rit++)
+	    if ((*rit)->overlayWindow ())
 	    {
-		XSubtractRegion (tmpRegion, w->region (), tmpRegion);
+		XSubtractRegion (tmpRegion, (*rit)->region (), tmpRegion);
 	    }
 	
 	XShapeCombineRegion (dpy, priv->output, ShapeBounding,
@@ -1249,7 +1250,6 @@ CompScreen::enterShowDesktopMode ()
     WRAPABLE_HND_FUNC(enterShowDesktopMode)
 
     CompDisplay   *d = priv->display;
-    CompWindow    *w;
     unsigned long data = 1;
     int		  count = 0;
     CompOption    *st = d->getOption ("hide_skip_taskbar_windows");
@@ -1257,7 +1257,7 @@ CompScreen::enterShowDesktopMode ()
     priv->showingDesktopMask = ~(CompWindowTypeDesktopMask |
 				CompWindowTypeDockMask);
 
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
     {
 	if ((priv->showingDesktopMask & w->wmType ()) &&
 	    (!(w->state () & CompWindowStateSkipTaskbarMask) ||
@@ -1292,7 +1292,6 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 {
     WRAPABLE_HND_FUNC(leaveShowDesktopMode, window)
 
-    CompWindow    *w;
     unsigned long data = 0;
 
     if (window)
@@ -1304,7 +1303,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 	window->show ();
 
 	/* return if some other window is still in show desktop mode */
-	for (w = priv->windows; w; w = w->next)
+	foreach (CompWindow *w, priv->windows)
 	    if (w->inShowDesktopMode ())
 		return;
 
@@ -1314,7 +1313,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
     {
 	priv->showingDesktopMask = 0;
 
-	for (w = priv->windows; w; w = w->next)
+	foreach (CompWindow *w, priv->windows)
 	{
 	    if (!w->inShowDesktopMode ())
 		continue;
@@ -1334,40 +1333,12 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 		     (unsigned char *) &data, 1);
 }
 
-static CompWindow *
-walkFirst (CompScreen *s)
+CompWindowList
+CompScreen::getWindowPaintList ()
 {
-    return s->windows ();
-}
+    WRAPABLE_HND_FUNC_RETURN (CompWindowList, getWindowPaintList)
 
-static CompWindow *
-walkLast (CompScreen *s)
-{
-    return s->reverseWindows ();
-}
-
-static CompWindow *
-walkNext (CompWindow *w)
-{
-    return w->next;
-}
-
-static CompWindow *
-walkPrev (CompWindow *w)
-{
-    return w->prev;
-}
-
-void
-CompScreen::initWindowWalker (CompWalker *walker)
-{
-    WRAPABLE_HND_FUNC(initWindowWalker, walker)
-
-    walker->fini  = NULL;
-    walker->first = walkFirst;
-    walker->last  = walkLast;
-    walker->next  = walkNext;
-    walker->prev  = walkPrev;
+    return priv->windows;
 }
 
 CompScreen::CompScreen ():
@@ -1387,7 +1358,7 @@ CompScreen::CompScreen ():
 
     WRAPABLE_INIT_HND(outputChangeNotify);
 
-    WRAPABLE_INIT_HND(initWindowWalker);
+    WRAPABLE_INIT_HND(getWindowPaintList);
 
     priv = new PrivateScreen (this);
     assert (priv);
@@ -1400,8 +1371,7 @@ CompScreen::CompScreen ():
 PrivateScreen::PrivateScreen (CompScreen *screen) :
     screen(screen),
     display (0),
-    windows (0),
-    reverseWindows (0),
+    windows (),
     size (0, 0),
     vp (0, 0),
     vpSize (1, 1),
@@ -1674,7 +1644,6 @@ CompScreen::init (CompDisplay *display,
     GLfloat		 ambientLight[]   = { 0.0f, 0.0f,  0.0f, 0.0f };
     GLfloat		 diffuseLight[]   = { 0.9f, 0.9f,  0.9f, 0.9f };
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
-    CompWindow		 *w;
 
     priv->display = display;
 
@@ -2196,7 +2165,7 @@ CompScreen::init (CompDisplay *display,
     for (i = 0; i < nchildren; i++)
 	new CompWindow (this, children[i], i ? children[i - 1] : 0);
 
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
     {
 	if (w->attrib ().map_state == IsViewable)
 	{
@@ -2260,8 +2229,8 @@ CompScreen::~CompScreen ()
 {
     priv->paintTimer.stop ();
 
-    while (priv->windows)
-	delete priv->windows;
+    while (!priv->windows.empty ())
+	delete priv->windows.front ();
 
     objectFiniPlugins (this);
 
@@ -2283,8 +2252,6 @@ CompScreen::~CompScreen ()
     if (useCow)
 	XCompositeReleaseOverlayWindow (priv->display->dpy (), priv->root);
 #endif
-
-    int i, j;
 
     if (priv->clientList)
 	free (priv->clientList);
@@ -2349,9 +2316,7 @@ CompScreen::damagePending ()
 void
 CompScreen::forEachWindow (ForEachWindowProc proc, void *closure)
 {
-    CompWindow *w;
-
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
 	(*proc) (w, closure);
 }
 
@@ -2375,8 +2340,11 @@ CompScreen::focusDefaultWindow ()
 
     if (!focus)
     {
-	for (w = priv->reverseWindows; w; w = w->prev)
+	for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	     rit != priv->windows.rend (); rit++)
 	{
+	    w = (*rit);
+
 	    if (w->type () & CompWindowTypeDockMask)
 		continue;
 
@@ -2419,9 +2387,7 @@ CompScreen::findWindow (Window id)
     }
     else
     {
-	CompWindow *w;
-
-	for (w = priv->windows; w; w = w->next)
+	foreach (CompWindow *w, priv->windows)
 	    if (w->id () == id)
 		return (lastFoundWindow = w);
     }
@@ -2443,7 +2409,7 @@ CompScreen::findTopLevelWindow (Window id)
 	/* likely a frame window */
 	if (w->attrib ().c_class == InputOnly)
 	{
-	    for (w = priv->windows; w; w = w->next)
+	    foreach (w, priv->windows)
 		if (w->frame () == id)
 		    return w;
 	}
@@ -2457,95 +2423,64 @@ CompScreen::findTopLevelWindow (Window id)
 void
 CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 {
-    CompWindow *p;
-
-    if (priv->windows)
+    if (!aboveId || priv->windows.empty ())
     {
-	if (!aboveId)
+	if (!priv->windows.empty ())
 	{
-	    w->next = priv->windows;
-	    w->prev = NULL;
-	    priv->windows->prev = w;
-	    priv->windows = w;
+	    priv->windows.front ()->prev = w;
+	    w->next = priv->windows.front ();
 	}
-	else
-	{
-	    for (p = priv->windows; p; p = p->next)
-	    {
-		if (p->id () == aboveId)
-		{
-		    if (p->next)
-		    {
-			w->next = p->next;
-			w->prev = p;
-			p->next->prev = w;
-			p->next = w;
-		    }
-		    else
-		    {
-			p->next = w;
-			w->next = NULL;
-			w->prev = p;
-			priv->reverseWindows = w;
-		    }
-		    break;
-		}
-	    }
+	priv->windows.push_front (w);
 
+	return;
+    }
+
+    CompWindowList::iterator it = priv->windows.begin ();
+
+    while (it != priv->windows.end ())
+    {
+	if ((*it)->id () == aboveId)
+	    break;
+	it++;
+    }
+
+    if (it == priv->windows.end ())
+    {
 #ifdef DEBUG
-	    if (!p)
-		abort ();
+	abort ();
 #endif
+	return;
+    }
 
-	}
-    }
-    else
+    w->next = (*it)->next;
+    w->prev = (*it);
+    (*it)->next = w;
+
+    if (w->next)
     {
-	priv->reverseWindows = priv->windows = w;
-	w->prev = w->next = NULL;
+	w->next->prev = w;
     }
+
+    priv->windows.insert (++it, w);
 }
 
 void
 CompScreen::unhookWindow (CompWindow *w)
 {
-    CompWindow *next, *prev;
+    CompWindow *prev, *next;
+    CompWindowList::iterator it =
+	std::find (priv->windows.begin (), priv->windows.end (), w);
 
-    next = w->next;
-    prev = w->prev;
+    priv->windows.erase (it);
 
-    if (next || prev)
-    {
-	if (next)
-	{
-	    if (prev)
-	    {
-		next->prev = prev;
-	    }
-	    else
-	    {
-		priv->windows = next;
-		next->prev = NULL;
-	    }
-	}
+    if (w->next)
+	w->next->prev = w->prev;
 
-	if (prev)
-	{
-	    if (next)
-	    {
-		prev->next = next;
-	    }
-	    else
-	    {
-		priv->reverseWindows = prev;
-		prev->next = NULL;
-	    }
-	}
-    }
-    else
-    {
-	priv->windows = priv->reverseWindows = NULL;
-    }
+    if (w->prev)
+	w->prev->next = w->next;
+
+    w->next = NULL;
+    w->prev = NULL;
 
     if (w == lastFoundWindow)
 	lastFoundWindow = NULL;
@@ -2934,7 +2869,6 @@ void
 PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 				      XRectangle *area)
 {
-    CompWindow *w;
     Region     region;
     REGION     r;
     int	       x1, y1, x2, y2;
@@ -2956,7 +2890,7 @@ PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 
     XUnionRegion (&r, region, region);
 
-    for (w = windows; w; w = w->next)
+    foreach (CompWindow *w, windows)
     {
 	if (!w->mapNum ())
 	    continue;
@@ -3069,11 +3003,9 @@ CompScreen::updateWorkarea ()
 
     if (workAreaChanged)
     {
-	CompWindow *w;
-
 	/* as work area changed, update all maximized windows on this
 	   screen to snap to the new work area */
-	for (w = priv->windows; w; w = w->next)
+	foreach (CompWindow *w, priv->windows)
 	    w->updateSize ();
     }
 }
@@ -3172,7 +3104,7 @@ CompScreen::updateClientList ()
     clientListStacking = clientList + n;
 
     i = 0;
-    for (CompWindow *w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
 	if (isClientListWindow (w))
 	{
 	    priv->clientList[i] = w;
@@ -3283,7 +3215,6 @@ CompScreen::runCommand (CompString command)
 void
 CompScreen::moveViewport (int tx, int ty, bool sync)
 {
-    CompWindow *w;
     int         wx, wy;
 
     tx = priv->vp.x () - tx;
@@ -3303,7 +3234,7 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
     tx *= -priv->size.width ();
     ty *= -priv->size.height ();
 
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
     {
 	if (w->onAllViewports ())
 	    continue;
@@ -3325,6 +3256,8 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 
     if (sync)
     {
+	CompWindow *w;
+
 	priv->setDesktopHints ();
 
 	setCurrentActiveWindowHistory (priv->vp.x (), priv->vp.y ());
@@ -3497,13 +3430,12 @@ CompScreen::disableEdge (int edge)
 Window
 CompScreen::getTopWindow ()
 {
-    CompWindow *w;
-
     /* return first window that has not been destroyed */
-    for (w = priv->reverseWindows; w; w = w->prev)
+    for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	     rit != priv->windows.rend (); rit++)
     {
-	if (w->id () > 1)
-	    return w->id ();
+	if ((*rit)->id () > 1)
+	    return (*rit)->id ();
     }
 
     return None;
@@ -3558,8 +3490,6 @@ CompScreen::getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2)
 void
 CompScreen::setNumberOfDesktops (unsigned int nDesktop)
 {
-    CompWindow *w;
-
     if (nDesktop < 1 || nDesktop >= 0xffffffff)
 	return;
 
@@ -3569,7 +3499,7 @@ CompScreen::setNumberOfDesktops (unsigned int nDesktop)
     if (priv->currentDesktop >= nDesktop)
 	priv->currentDesktop = nDesktop - 1;
 
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
     {
 	if (w->desktop () == 0xffffffff)
 	    continue;
@@ -3587,7 +3517,6 @@ void
 CompScreen::setCurrentDesktop (unsigned int desktop)
 {
     unsigned long data;
-    CompWindow    *w;
 
     if (desktop >= priv->nDesktop)
 	return;
@@ -3597,7 +3526,7 @@ CompScreen::setCurrentDesktop (unsigned int desktop)
 
     priv->currentDesktop = desktop;
 
-    for (w = priv->windows; w; w = w->next)
+    foreach (CompWindow *w, priv->windows)
     {
 	if (w->desktop () == 0xffffffff)
 	    continue;
@@ -3941,7 +3870,7 @@ ScreenInterface::ScreenInterface ()
 
     WRAPABLE_INIT_FUNC(outputChangeNotify);
 
-    WRAPABLE_INIT_FUNC(initWindowWalker);
+    WRAPABLE_INIT_FUNC(getWindowPaintList);
 }
 
 void
@@ -4003,9 +3932,9 @@ void
 ScreenInterface::outputChangeNotify ()
     WRAPABLE_DEF_FUNC(outputChangeNotify)
 
-void
-ScreenInterface::initWindowWalker (CompWalker *walker)
-    WRAPABLE_DEF_FUNC(initWindowWalker, walker)
+CompWindowList
+ScreenInterface::getWindowPaintList ()
+    WRAPABLE_DEF_FUNC_WITH_RETURN(CompWindowList (), getWindowPaintList)
 
 CompDisplay *
 CompScreen::display ()
@@ -4236,16 +4165,10 @@ CompScreen::warpPointer (int dx, int dy)
     }
 }
 
-CompWindow *
+CompWindowList &
 CompScreen::windows ()
 {
     return priv->windows;
-}
-
-CompWindow *
-CompScreen::reverseWindows ()
-{
-    return priv->reverseWindows;
 }
 
 Time
@@ -4320,8 +4243,11 @@ CompScreen::handlePaintTimeout ()
 	/* substract top most overlay window region */
 	if (priv->overlayWindowCount)
 	{
-	    for (CompWindow *w = priv->reverseWindows; w; w = w->prev)
+	    for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	         rit != priv->windows.rend (); rit++)
 	    {
+		CompWindow *w = (*rit);
+
 		if (w->destroyed () || w->invisible ())
 		    continue;
 
@@ -4449,9 +4375,7 @@ CompScreen::handlePaintTimeout ()
 	/* remove destroyed windows */
 	while (priv->pendingDestroys)
 	{
-	    CompWindow *w;
-
-	    for (w = priv->windows; w; w = w->next)
+	    foreach (CompWindow *w, priv->windows)
 	    {
 		if (w->destroyed ())
 		{

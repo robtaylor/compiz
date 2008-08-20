@@ -8,6 +8,7 @@
 
 class CompScreen;
 class PrivateScreen;
+typedef std::list<CompWindow *> CompWindowList;
 
 #define GET_CORE_SCREEN(object) (dynamic_cast<CompScreen *> (object))
 #define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
@@ -213,7 +214,7 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
 
 	WRAPABLE_DEF(void, outputChangeNotify);
 
-	WRAPABLE_DEF(void, initWindowWalker, CompWalker *walker);
+	WRAPABLE_DEF(CompWindowList, getWindowPaintList);
 };
 
 
@@ -247,11 +248,8 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	int
 	screenNum ();
 
-	CompWindow *
+	CompWindowList &
 	windows ();
-
-	CompWindow *
-	reverseWindows ();
 
 	CompOption *
 	getOption (const char *name);
@@ -568,7 +566,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	WRAPABLE_HND(void, outputChangeNotify);
 
-	WRAPABLE_HND(void, initWindowWalker, CompWalker *walker);
+	WRAPABLE_HND(CompWindowList, getWindowPaintList);
 
 	GLXBindTexImageProc      bindTexImage;
 	GLXReleaseTexImageProc   releaseTexImage;

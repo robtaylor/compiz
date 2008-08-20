@@ -1918,7 +1918,7 @@ CompDisplay::handleEvent (XEvent *event)
 
 	    foreach (s, priv->screens)
 	    {
-		for (w = s->windows (); w; w = w->next)
+		foreach (w, s->windows ())
 		{
 		    if (w->syncAlarm () == sa->alarm)
 		    {

@@ -1139,7 +1139,6 @@ PrivateDisplay::setAudibleBell (bool audible)
 bool
 PrivateDisplay::handlePingTimeout ()
 {
-    CompWindow  *w;
     XEvent      ev;
     int		ping = lastPing + 1;
 
@@ -1155,7 +1154,7 @@ PrivateDisplay::handlePingTimeout ()
 
     foreach (CompScreen *s, screens)
     {
-	for (w = s->windows (); w; w = w->next)
+	foreach (CompWindow *w, s->windows ())
 	{
 	    if (w->handlePingTimeout (lastPing))
 	    {

@@ -24,6 +24,16 @@
     return 0; \
 }
 
+#define WRAPABLE_DEF_FUNC_WITH_RETURN(ret, func, ...) \
+{ \
+    if (mHandler) \
+    { \
+	func ## _enabled = false; \
+	return mHandler-> func (__VA_ARGS__); \
+    } \
+    return ret; \
+}
+
 #define WRAPABLE_HND(rtype, func, ...) public: rtype func (__VA_ARGS__); private: unsigned int mCurr_ ## func ; public:
 
 #define WRAPABLE_HND_FUNC(func, ...) \

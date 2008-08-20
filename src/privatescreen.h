@@ -170,9 +170,7 @@ class PrivateScreen {
 
 	CompScreen  *screen;
 	CompDisplay *display;
-	CompWindow	*windows;
-	CompWindow	*reverseWindows;
-
+	CompWindowList windows;
 
 	Colormap	      colormap;
 	int		      screenNum;

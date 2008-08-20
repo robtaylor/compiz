@@ -831,8 +831,10 @@ finiDisplayOptionValue (CompDisplay	  *d,
 	case CompOption::TypeEdge:
 	case CompOption::TypeBell:
 	    if (v.action ().state () & CompAction::StateAutoGrab)
+	    {
 		foreach (CompScreen *s, d->screens ())
 		    s->removeAction (&v.action ());
+	    }
 	    break;
 	case CompOption::TypeList:
 	    foreach (CompOption::Value &val, v.list ())
