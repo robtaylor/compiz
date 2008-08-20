@@ -845,7 +845,7 @@ namespace CompFragment {
 	return function->id;
     }
 
-    Attrib::Attrib (const WindowPaintAttrib *paint) :
+    Attrib::Attrib (const CompWindowPaintAttrib *paint) :
 	priv (new PrivateAttrib ())
     {
 	priv->opacity    = paint->opacity;

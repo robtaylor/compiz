@@ -209,8 +209,8 @@ class PrivateWindow {
 	GLushort brightness;
 	GLushort saturation;
 
-	WindowPaintAttrib paint;
-	WindowPaintAttrib lastPaint;
+	CompWindowPaintAttrib paint;
+	CompWindowPaintAttrib lastPaint;
 
 	unsigned int lastMask;
 

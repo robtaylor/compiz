@@ -36,7 +36,7 @@ ScreenPaintAttrib defaultScreenPaintAttrib = {
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -DEFAULT_Z_CAMERA
 };
 
-WindowPaintAttrib defaultWindowPaintAttrib = {
+CompWindowPaintAttrib defaultWindowPaintAttrib = {
     OPAQUE, BRIGHT, COLOR, 1.0f, 1.0f, 0.0f, 0.0f
 };
 
@@ -1133,10 +1133,10 @@ CompWindow::draw (const CompTransform  *transform,
 }
 
 bool
-CompWindow::paint (const WindowPaintAttrib *attrib,
-		   const CompTransform     *transform,
-		   Region                  region,
-		   unsigned int            mask)
+CompWindow::paint (const CompWindowPaintAttrib *attrib,
+		   const CompTransform         *transform,
+		   Region                      region,
+		   unsigned int                mask)
 {
     WRAPABLE_HND_FUNC_RETURN(bool, paint, attrib, transform, region, mask)
 

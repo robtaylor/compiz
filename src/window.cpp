@@ -4172,10 +4172,10 @@ WindowInterface::WindowInterface ()
 
 
 bool
-WindowInterface::paint (const WindowPaintAttrib *attrib,
-			const CompTransform     *transform,
-			Region                  region,
-			unsigned int            mask)
+WindowInterface::paint (const CompWindowPaintAttrib *attrib,
+			const CompTransform         *transform,
+			Region                      region,
+			unsigned int                mask)
     WRAPABLE_DEF_FUNC_RETURN(paint, attrib, transform, region, mask)
 
 bool
@@ -4858,7 +4858,7 @@ CompWindow::clip ()
     return priv->clip;
 }
 
-WindowPaintAttrib &
+CompWindowPaintAttrib &
 CompWindow::paintAttrib ()
 {
     return priv->paint;

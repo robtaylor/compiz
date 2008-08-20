@@ -79,7 +79,7 @@
 
 class CompTexture;
 class CompIcon;
-typedef struct _CompWindowExtents CompWindowExtents;
+//typedef struct _CompWindowExtents CompWindowExtents;
 class CompMatch;
 class CompOutput;
 typedef struct _CompWalker        CompWalker;
@@ -333,28 +333,6 @@ typedef struct _CompActiveWindowHistory {
 
 /* window.c */
 
-
-typedef enum {
-    CompStackingUpdateModeNone = 0,
-    CompStackingUpdateModeNormal,
-    CompStackingUpdateModeAboveFullscreen,
-    CompStackingUpdateModeInitialMap,
-    CompStackingUpdateModeInitialMapDeniedFocus
-} CompStackingUpdateMode;
-
-struct _CompWindowExtents {
-    int left;
-    int right;
-    int top;
-    int bottom;
-};
-
-typedef struct _CompStruts {
-    XRectangle left;
-    XRectangle right;
-    XRectangle top;
-    XRectangle bottom;
-} CompStruts;
 
 
 /* plugin.c */

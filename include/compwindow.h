@@ -158,7 +158,7 @@ class PrivateWindow;
 #define CompWindowGrabMoveMask   (1 << 2)
 #define CompWindowGrabResizeMask (1 << 3)
 
-struct WindowPaintAttrib {
+struct CompWindowPaintAttrib {
     GLushort opacity;
     GLushort brightness;
     GLushort saturation;
@@ -168,13 +168,33 @@ struct WindowPaintAttrib {
     GLfloat  yTranslate;
 };
 
-extern WindowPaintAttrib defaultWindowPaintAttrib;
+enum CompStackingUpdateMode {
+    CompStackingUpdateModeNone = 0,
+    CompStackingUpdateModeNormal,
+    CompStackingUpdateModeAboveFullscreen,
+    CompStackingUpdateModeInitialMap,
+    CompStackingUpdateModeInitialMapDeniedFocus
+};
+
+struct CompWindowExtents {
+    int left;
+    int right;
+    int top;
+    int bottom;
+};
+
+struct CompStruts {
+    XRectangle left;
+    XRectangle right;
+    XRectangle top;
+    XRectangle bottom;
+};
 
 class WindowInterface : public WrapableInterface<CompWindow> {
     public:
 	WindowInterface ();
 
-	WRAPABLE_DEF(bool, paint, const WindowPaintAttrib *,
+	WRAPABLE_DEF(bool, paint, const CompWindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_DEF(bool, draw, const CompTransform *,
 		     CompFragment::Attrib &, Region, unsigned int);
@@ -223,6 +243,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	    private:
 		unsigned int mBorder;
 	};
+
+	static CompWindowPaintAttrib defaultPaintAttrib;
 	
     public:
 	CompWindow *next;
@@ -594,7 +616,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	Region
 	clip ();
 
-	WindowPaintAttrib &
+	CompWindowPaintAttrib &
 	paintAttrib ();
 
 	bool
@@ -617,7 +639,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-    	WRAPABLE_HND(bool, paint, const WindowPaintAttrib *,
+    	WRAPABLE_HND(bool, paint, const CompWindowPaintAttrib *,
 		     const CompTransform *, Region, unsigned int);
 	WRAPABLE_HND(bool, draw, const CompTransform *,
 		     CompFragment::Attrib &, Region, unsigned int);
