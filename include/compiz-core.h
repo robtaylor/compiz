@@ -43,8 +43,6 @@
 #include <X11/Xregion.h>
 #include <X11/XKBlib.h>
 
-#define SN_API_NOT_YET_FROZEN
-#include <libsn/sn.h>
 
 #include <GL/gl.h>
 #include <GL/glx.h>
@@ -165,29 +163,7 @@ extern CompMetadata *coreMetadata;
 
 /* session.c */
 
-typedef enum {
-    CompSessionEventSaveYourself = 0,
-    CompSessionEventSaveComplete,
-    CompSessionEventDie,
-    CompSessionEventShutdownCancelled
-} CompSessionEvent;
 
-typedef enum {
-    CompSessionClientId = 0,
-    CompSessionPrevClientId
-} CompSessionClientIdType;
-
-
-
-void
-initSession (char *smPrevClientId);
-
-void
-closeSession (void);
-
-
-char *
-getSessionClientId (CompSessionClientIdType type);
 
 /* option.c */
 

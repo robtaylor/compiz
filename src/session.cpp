@@ -36,14 +36,15 @@
 #include <X11/SM/SMlib.h>
 #include <X11/ICE/ICElib.h>
 
+#include <compsession.h>
 #include <compiz-core.h>
 
 #define SM_DEBUG(x)
 
 static SmcConn		 smcConnection;
 static CompWatchFdHandle iceWatchFdHandle;
-static Bool		 connected = 0;
-static Bool		 iceConnected = 0;
+static bool		 connected = false;
+static bool		 iceConnected = false;
 static char		 *smClientId, *smPrevClientId;
 
 static void iceInit (void);
@@ -58,7 +59,7 @@ setStringListProperty (SmcConn	  connection,
     int	   i;
 
     prop.name = (char *) name;
-    prop.type = SmLISTofARRAY8;
+    prop.type = const_cast<char *> (SmLISTofARRAY8);
 
     prop.vals = (SmPropValue *) malloc (nValues * sizeof (SmPropValue));
     if (!prop.vals)
@@ -123,8 +124,8 @@ setRestartStyle (SmcConn connection,
     SmProp	prop, *pProp;
     SmPropValue propVal;
 
-    prop.name = SmRestartStyleHint;
-    prop.type = SmCARD8;
+    prop.name = const_cast<char *> (SmRestartStyleHint);
+    prop.type = const_cast<char *> (SmCARD8);
     prop.num_vals = 1;
     prop.vals = &propVal;
     propVal.value = &hint;
@@ -142,8 +143,8 @@ setProgram (SmcConn    connection,
     SmProp	prop, *pProp;
     SmPropValue propVal;
 
-    prop.name = SmProgram;
-    prop.type = SmARRAY8;
+    prop.name = const_cast<char *> (SmProgram);
+    prop.type = const_cast<char *> (SmARRAY8);
     prop.num_vals = 1;
     prop.vals = &propVal;
     propVal.value = (SmPointer) program;
@@ -174,7 +175,7 @@ saveYourselfCallback (SmcConn	connection,
     args[2].value ().set (interact_Style);
     args[3].value ().set ((bool) fast);
 
-    core->sessionEvent (CompSessionEventSaveYourself, args);
+    core->sessionEvent (CompSession::EventSaveYourself, args);
 
     setCloneRestartCommands (connection);
     setRestartStyle (connection, SmRestartImmediately);
@@ -186,9 +187,9 @@ static void
 dieCallback (SmcConn   connection,
 	     SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventDie, noOptions);
+    core->sessionEvent (CompSession::EventDie, noOptions);
 
-    closeSession ();
+    CompSession::closeSession ();
     exit (0);
 }
 
@@ -196,18 +197,18 @@ static void
 saveCompleteCallback (SmcConn	connection,
 		      SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventSaveComplete, noOptions);
+    core->sessionEvent (CompSession::EventSaveComplete, noOptions);
 }
 
 static void
 shutdownCancelledCallback (SmcConn   connection,
 			   SmPointer clientData)
 {
-    core->sessionEvent (CompSessionEventShutdownCancelled, noOptions);
+    core->sessionEvent (CompSession::EventShutdownCancelled, noOptions);
 }
 
 void
-initSession (char *prevClientId)
+CompSession::initSession (char *prevClientId)
 {
     static SmcCallbacks callbacks;
 
@@ -256,7 +257,7 @@ initSession (char *prevClientId)
 }
 
 void
-closeSession (void)
+CompSession::closeSession (void)
 {
     if (connected)
     {
@@ -278,21 +279,20 @@ closeSession (void)
 }
 
 char *
-getSessionClientId (CompSessionClientIdType type)
+CompSession::getSessionClientId (CompSession::ClientIdType type)
 {
     if (!connected)
 	return NULL;
 
     switch (type) {
-    case CompSessionClientId:
-	if (smClientId)
-	    return strdup (smClientId);
-	break;
-
-    case CompSessionPrevClientId:
-	if (smPrevClientId)
-	    return strdup (smPrevClientId);
-	break;
+	case CompSession::ClientId:
+	    if (smClientId)
+		return strdup (smClientId);
+	    break;
+	case CompSession::PrevClientId:
+	    if (smPrevClientId)
+		return strdup (smPrevClientId);
+	    break;
     }
 
     return NULL;

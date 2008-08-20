@@ -471,7 +471,7 @@ CompCore::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_HND_FUNC(objectRemove, parent, object)
 
 void
-CompCore::sessionEvent (CompSessionEvent   event,
+CompCore::sessionEvent (CompSession::Event event,
 			CompOption::Vector &arguments)
     WRAPABLE_HND_FUNC(sessionEvent, event, arguments)
 
@@ -521,7 +521,7 @@ CoreInterface::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_DEF_FUNC(objectRemove, parent, object)
 
 void
-CoreInterface::sessionEvent (CompSessionEvent   event,
+CoreInterface::sessionEvent (CompSession::Event event,
 			     CompOption::Vector &arguments)
     WRAPABLE_DEF_FUNC(sessionEvent, event, arguments)
 

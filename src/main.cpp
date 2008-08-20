@@ -373,7 +373,7 @@ main (int argc, char **argv)
 	return 1;
 
     if (!disableSm)
-	initSession (clientId);
+	CompSession::initSession (clientId);
 
     if (!core->addDisplay (displayName))
 	return 1;
@@ -381,7 +381,7 @@ main (int argc, char **argv)
     core->eventLoop ();
 
     if (!disableSm)
-	closeSession ();
+	CompSession::closeSession ();
 
     delete core;
     delete coreMetadata;

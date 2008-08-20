@@ -6,6 +6,7 @@
 #include "wrapable.h"
 
 #include <compoption.h>
+#include <compsession.h>
 
 
 class PrivateCore;
@@ -79,7 +80,7 @@ class CoreInterface : public WrapableInterface<CompCore> {
     WRAPABLE_DEF(void, objectAdd, CompObject *, CompObject *)
     WRAPABLE_DEF(void, objectRemove, CompObject *, CompObject *)
 
-    WRAPABLE_DEF(void, sessionEvent, CompSessionEvent, CompOption::Vector &)
+    WRAPABLE_DEF(void, sessionEvent, CompSession::Event, CompOption::Vector &)
 };
 
 class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
@@ -178,7 +179,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	WRAPABLE_HND(void, objectAdd, CompObject *, CompObject *)
 	WRAPABLE_HND(void, objectRemove, CompObject *, CompObject *)
 
-	WRAPABLE_HND(void, sessionEvent, CompSessionEvent, CompOption::Vector &)
+	WRAPABLE_HND(void, sessionEvent, CompSession::Event, CompOption::Vector &)
 
 	friend class Timer;
     private:
