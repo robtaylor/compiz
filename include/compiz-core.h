@@ -241,68 +241,7 @@ eventTerminates (CompDisplay *display,
 
 /* plugin.c */
 
-#define HOME_PLUGINDIR ".compiz/plugins"
 
-typedef CompPluginVTable *(*PluginGetInfoProc) (void);
-
-typedef Bool (*LoadPluginProc) (CompPlugin *p,
-				const char *path,
-				const char *name);
-
-typedef void (*UnloadPluginProc) (CompPlugin *p);
-
-typedef char **(*ListPluginsProc) (const char *path,
-				   int	      *n);
-
-extern LoadPluginProc   loaderLoadPlugin;
-extern UnloadPluginProc loaderUnloadPlugin;
-extern ListPluginsProc  loaderListPlugins;
-
-struct _CompPlugin {
-    CompPlugin       *next;
-    CompPrivate	     devPrivate;
-    char	     *devType;
-    CompPluginVTable *vTable;
-};
-
-bool
-objectInitPlugins (CompObject *o);
-
-void
-objectFiniPlugins (CompObject *o);
-
-CompPlugin *
-findActivePlugin (const char *name);
-
-CompPlugin *
-loadPlugin (const char *plugin);
-
-void
-unloadPlugin (CompPlugin *p);
-
-Bool
-pushPlugin (CompPlugin *p);
-
-CompPlugin *
-popPlugin (void);
-
-CompPlugin *
-getPlugins (void);
-
-char **
-availablePlugins (int *n);
-
-int
-getPluginABI (const char *name);
-
-Bool
-checkPluginABI (const char *name,
-		int	   abi);
-
-Bool
-getPluginDisplayIndex (CompDisplay *d,
-		       const char  *name,
-		       int	   *index);
 
 
 /* fragment.c */

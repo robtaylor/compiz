@@ -2154,7 +2154,7 @@ CompScreen::init (CompDisplay *display,
     display->addChild (this);
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (objectInitPlugins (this));
+    assert (CompPlugin::objectInitPlugins (this));
 
 
 
@@ -2232,7 +2232,7 @@ CompScreen::~CompScreen ()
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
 
-    objectFiniPlugins (this);
+    CompPlugin::objectFiniPlugins (this);
 
     XUngrabKey (priv->display->dpy (), AnyKey, AnyModifier, priv->root);
 

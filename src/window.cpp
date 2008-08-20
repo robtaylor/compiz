@@ -5103,7 +5103,7 @@ CompWindow::CompWindow (CompScreen *screen,
     screen->addChild (this);
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (objectInitPlugins (this));
+    assert (CompPlugin::objectInitPlugins (this));
 
 
     recalcActions ();
@@ -5175,7 +5175,7 @@ CompWindow::~CompWindow ()
 
     core->objectRemove (priv->screen, this);
 
-    objectFiniPlugins (this);
+    CompPlugin::objectFiniPlugins (this);
 
     release ();
 

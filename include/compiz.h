@@ -33,13 +33,12 @@
 #include <list>
 
 typedef std::string CompString;
+typedef std::list<CompString> CompStringList;
 
 
 typedef int CompBool;
 typedef int CompTimeoutHandle;
 typedef int CompWatchFdHandle;
-
-typedef struct _CompPlugin   CompPlugin;
 
 
 class CompCore;

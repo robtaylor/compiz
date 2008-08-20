@@ -618,9 +618,7 @@ triggerAllEdgeEnterBindings (CompDisplay        *d,
 			     unsigned int       edge,
 			     CompOption::Vector &arguments)
 {
-    CompPlugin *p;
-
-    for (p = getPlugins (); p; p = p->next)
+    foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
 	CompOption::Vector &options = p->vTable->getObjectOptions (d);
 	if (triggerEdgeEnterBindings (d, options, state, delayState, edge,
@@ -684,7 +682,6 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 {
     CompObject *obj = display;
     CompOption::Vector o (0);
-    CompPlugin *p;
 
     o.push_back (CompOption ("event_window", CompOption::TypeInt));
     o.push_back (CompOption ("window", CompOption::TypeInt));
@@ -708,7 +705,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	o[6].value ().set ((int) event->xbutton.button);
 	o[7].value ().set ((int) event->xbutton.time);
 
-	for (p = getPlugins (); p; p = p->next)
+	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getObjectOptions (obj);
 	    if (triggerButtonPressBindings (options, event, o))
@@ -729,7 +726,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	o[6].value ().set ((int) event->xbutton.button);
 	o[7].value ().set ((int) event->xbutton.time);
 
-	for (p = getPlugins (); p; p = p->next)
+	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getObjectOptions (obj);
 	    if (triggerButtonReleaseBindings (options, event, o))
@@ -750,7 +747,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	o[6].value ().set ((int) event->xkey.keycode);
 	o[7].value ().set ((int) event->xkey.time);
 
-	for (p = getPlugins (); p; p = p->next)
+	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getObjectOptions (obj);
 	    if (triggerKeyPressBindings (options, event, o))
@@ -771,7 +768,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 	o[6].value ().set ((int) event->xkey.keycode);
 	o[7].value ().set ((int) event->xkey.time);
 
-	for (p = getPlugins (); p; p = p->next)
+	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getObjectOptions (obj);
 	    if (triggerKeyReleaseBindings (options, event, o))
@@ -820,7 +817,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 		o.push_back (CompOption ("time", CompOption::TypeInt));
 		o[6].value ().set ((int) event->xcrossing.time);
 
-		for (p = getPlugins (); p; p = p->next)
+		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
 		    CompOption::Vector &options =
 			p->vTable->getObjectOptions (obj);
@@ -906,7 +903,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 		o[4].value ().set ((int) 0); /* fixme */
 		o[5].value ().set ((int) root);
 
-		for (p = getPlugins (); p; p = p->next)
+		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
 		    CompOption::Vector &options =
 			p->vTable->getObjectOptions (obj);
@@ -980,7 +977,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 
 		o.resize (4);
 
-		for (p = getPlugins (); p; p = p->next)
+		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
 		    CompOption::Vector &options =
 			p->vTable->getObjectOptions (obj);
@@ -998,7 +995,7 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 
 		o.resize (3);
 
-		for (p = getPlugins (); p; p = p->next)
+		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
 		    CompOption::Vector &options =
 			p->vTable->getObjectOptions (obj);

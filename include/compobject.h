@@ -20,7 +20,7 @@ typedef bool (*ObjectCallBackProc) (CompObject *object,
     (sizeof (array) / sizeof (array[0]))
 
 #define DISPATCH_CHECK(object, dispTab, tabSize)	      \
-    ((object)->type () < (tabSize) && (dispTab)[(object)->type ()])
+    ((object)->type () < (int) (tabSize) && (dispTab)[(object)->type ()])
 
 #define DISPATCH(object, dispTab, tabSize, args)   \
     if (DISPATCH_CHECK (object, dispTab, tabSize)) \

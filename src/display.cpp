@@ -731,7 +731,7 @@ CompDisplay::~CompDisplay ()
 	priv->screens.pop_front ();
     }
 
-    objectFiniPlugins (this);
+    CompPlugin::objectFiniPlugins (this);
 
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
@@ -892,7 +892,7 @@ CompDisplay::init (const char *name)
     core->addChild (this);
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (objectInitPlugins (this));
+    assert (CompPlugin::objectInitPlugins (this));
 
     if (onlyCurrentScreen)
     {
@@ -1458,10 +1458,10 @@ PrivateDisplay::updatePlugins ()
     nPop = plugin.list ().size () - j;
 
     printf("We have to pop %d plugins\n",nPop);
-    
+
     for (j = 0; j < nPop; j++)
     {
-	pop.push_back (popPlugin ());
+	pop.push_back (CompPlugin::pop ());
 	plugin.list ().pop_back ();
     }
 
@@ -1472,7 +1472,7 @@ PrivateDisplay::updatePlugins ()
 	{
 	    if (o->value ().list ()[i]. s ().compare (pp->vTable->name ()) == 0)
 	    {
-		if (pushPlugin (pp))
+		if (CompPlugin::push (pp))
 		{
 		    p = pp;
 		    pop.erase (std::find (pop.begin (), pop.end (), pp));
@@ -1484,12 +1484,12 @@ PrivateDisplay::updatePlugins ()
 	if (p == 0)
 	{
 	    printf("Loading %d \"%s\"\n",i, o->value ().list ()[i].s ().c_str ());
-	    p = loadPlugin (o->value ().list ()[i].s ().c_str ());
+	    p = CompPlugin::load (o->value ().list ()[i].s ().c_str ());
 	    if (p)
 	    {
-		if (!pushPlugin (p))
+		if (!CompPlugin::push (p))
 		{
-		    unloadPlugin (p);
+		    CompPlugin::unload (p);
 		    p = 0;
 		}
 	    }
@@ -1503,7 +1503,7 @@ PrivateDisplay::updatePlugins ()
 
     foreach (CompPlugin *pp, pop)
     {
-	unloadPlugin (pp);
+	CompPlugin::unload (pp);
     }
 
     core->setOptionForPlugin (display, "core", o->name ().c_str (), plugin);

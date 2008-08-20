@@ -135,9 +135,7 @@ CompDisplay::matchExpHandlerChanged ()
 {
     WRAPABLE_HND_FUNC(matchExpHandlerChanged)
 
-    CompPlugin *p;
-
-    for (p = getPlugins (); p; p = p->next)
+    foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
 	CompOption::Vector &options = p->vTable->getObjectOptions (this);
 	matchUpdateMatchOptions (options);
@@ -145,7 +143,7 @@ CompDisplay::matchExpHandlerChanged ()
 
     foreach (CompScreen *s, priv->screens)
     {
-	for (p = getPlugins (); p; p = p->next)
+	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getObjectOptions (s);
 	    matchUpdateMatchOptions (options);

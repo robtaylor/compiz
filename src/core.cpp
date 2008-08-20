@@ -78,7 +78,7 @@ CompCore::init ()
     WRAPABLE_INIT_HND(objectRemove);
     WRAPABLE_INIT_HND(sessionEvent);
 
-    CompPlugin *corePlugin = loadPlugin ("core");
+    CompPlugin *corePlugin = CompPlugin::load ("core");
     if (!corePlugin)
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
@@ -86,7 +86,7 @@ CompCore::init ()
 	return false;
     }
 
-    if (!pushPlugin (corePlugin))
+    if (!CompPlugin::push (corePlugin))
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
 			"Couldn't activate core plugin");
@@ -109,8 +109,8 @@ CompCore::~CompCore ()
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
 
-    while ((p = popPlugin ()))
-	unloadPlugin (p);
+    while ((p = CompPlugin::pop ()))
+	CompPlugin::unload (p);
 
 }
 
@@ -454,7 +454,7 @@ CompCore::setOptionForPlugin (CompObject        *object,
     WRAPABLE_HND_FUNC_RETURN(bool, setOptionForPlugin,
 			     object, plugin, name, value)
 
-    CompPlugin *p = findActivePlugin (plugin);
+    CompPlugin *p = CompPlugin::find (plugin);
     if (p)
 	return p->vTable->setObjectOption (object, name, value);
 
