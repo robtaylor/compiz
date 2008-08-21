@@ -112,6 +112,7 @@ CompCore::~CompCore ()
     while ((p = CompPlugin::pop ()))
 	CompPlugin::unload (p);
 
+    delete priv;
 }
 
 CompString

@@ -78,6 +78,7 @@ CompObject::~CompObject ()
 	    core->objectRemove (priv->parent, this);
 	}
     }
+    delete priv;
 }
 
 const char *
