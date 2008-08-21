@@ -1417,18 +1417,12 @@ PrivateDisplay::updatePlugins ()
        we don't unnecessarily unload plugins if the new plugin list does not
        contain the core plugin, we have to use an offset */
 
-    printf ("Loading plugin list with %d values\n",o->value ().list ().size ());
-    foreach (CompOption::Value &v, o->value ().list ())
-	printf("Value is \"%s\"\n",v.s ().c_str());
     if (o->value ().list ().size () > 0 &&
 	o->value ().list ()[0]. s (). compare ("core"))
 	i = 0;
     else
 	i = 1;
 
-    printf ("Old plugin list has %d values\n",plugin.list ().size ());
-    foreach (CompOption::Value &v, plugin.list ())
-	printf("Value is \"%s\"\n",v.s ().c_str ());
     /* j is initialized to 1 to make sure we never pop the core plugin */
     for (j = 1; j < plugin.list ().size () &&
 	 i < o->value ().list ().size (); i++, j++)
@@ -1438,8 +1432,6 @@ PrivateDisplay::updatePlugins ()
     }
 
     nPop = plugin.list ().size () - j;
-
-    printf("We have to pop %d plugins\n",nPop);
 
     for (j = 0; j < nPop; j++)
     {
@@ -1465,7 +1457,6 @@ PrivateDisplay::updatePlugins ()
 
 	if (p == 0)
 	{
-	    printf("Loading %d \"%s\"\n",i, o->value ().list ()[i].s ().c_str ());
 	    p = CompPlugin::load (o->value ().list ()[i].s ().c_str ());
 	    if (p)
 	    {
