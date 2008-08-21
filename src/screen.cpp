@@ -2437,6 +2437,9 @@ CompScreen::findTopLevelWindow (Window id)
 void
 CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 {
+    w->prev = NULL;
+    w->next = NULL;
+
     if (!aboveId || priv->windows.empty ())
     {
 	if (!priv->windows.empty ())

@@ -725,10 +725,7 @@ CompDisplay::CompDisplay () :
 CompDisplay::~CompDisplay ()
 {
     while (!priv->screens.empty ())
-    {
 	removeScreen (priv->screens.front ());
-	priv->screens.pop_front ();
-    }
 
     CompPlugin::objectFiniPlugins (this);
 
@@ -2473,7 +2470,7 @@ DisplayInterface::logMessage (const char   *componentName,
 
 PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     display (display),
-    screens (0),
+    screens (),
     watchFdHandle (0),
     screenInfo (0),
     textureFilter (GL_LINEAR),

@@ -534,6 +534,9 @@ CompPlugin::push (CompPlugin *p)
 CompPlugin *
 CompPlugin::pop (void)
 {
+    if (plugins.empty ())
+	return NULL;
+
     CompPlugin *p = plugins.front ();
 
     if (!p)

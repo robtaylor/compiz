@@ -1156,7 +1156,7 @@ CompMetadata::getStringFromPath (CompString path)
     CompString v = "";
 
     if (!initXPathFromMetadataPath (&xPath, this, BAD_CAST path.c_str ()))
-	return NULL;
+	return "";
 
     xPath.obj = xmlXPathConvertString (xPath.obj);
 

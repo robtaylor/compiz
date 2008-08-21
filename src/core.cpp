@@ -104,10 +104,7 @@ CompCore::~CompCore ()
     CompPlugin  *p;
 
     while (!priv->displays.empty ())
-    {
 	removeDisplay (priv->displays.front ());
-	priv->displays.pop_front ();
-    }
 
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
@@ -527,7 +524,7 @@ CoreInterface::sessionEvent (CompSession::Event event,
 	
 PrivateCore::PrivateCore (CompCore *core) :
     core (core),
-    displays (0),
+    displays (),
     fileWatch (0),
     lastFileWatchHandle (1),
     timers (0),
