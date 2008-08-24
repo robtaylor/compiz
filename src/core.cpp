@@ -96,6 +96,10 @@ CompCore::init ()
 	return false;
     }
 
+    CompPrivate p;
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
     return true;
 }
 

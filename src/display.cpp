@@ -530,7 +530,6 @@ CompWindow::shade (CompDisplay        *d,
 }
 
 const CompMetadata::OptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
-    { "abi", "int", 0, 0, 0 },
     { "active_plugins", "list", "<type>string</type>", 0, 0 },
     { "texture_filter", "int", RESTOSTRING (0, 2), 0, 0 },
     { "click_to_focus", "bool", 0, 0, 0 },
@@ -770,8 +769,6 @@ CompDisplay::init (const char *name)
     if (!coreMetadata->initDisplayOptions (this, coreDisplayOptionInfo,
 					   COMP_DISPLAY_OPTION_NUM, priv->opt))
 	return true;
-
-    priv->opt[COMP_DISPLAY_OPTION_ABI].value ().set ((int) CORE_ABIVERSION);
 
     snprintf (priv->displayString, 255, "DISPLAY=%s",
 	      DisplayString (priv->dpy));
@@ -1165,8 +1162,6 @@ CompDisplay::setOption (const char        *name,
 	return false;
 
     switch (index) {
-    case COMP_DISPLAY_OPTION_ABI:
-	break;
     case COMP_DISPLAY_OPTION_ACTIVE_PLUGINS:
 	if (o->set (value))
 	{
