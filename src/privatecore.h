@@ -1,6 +1,8 @@
 #ifndef _PRIVATECORE_H
 #define _PRIVATECORE_H
 
+#include <map>
+
 #include <compiz-core.h>
 #include <compcore.h>
 
@@ -46,6 +48,8 @@ class PrivateCore {
 	CompWatchFdHandle        lastWatchFdHandle;
 	struct pollfd            *watchPollFds;
 	int                      nWatchFds;
+
+	std::map<CompString, CompPrivate> valueMap;
 };
 
 #endif
