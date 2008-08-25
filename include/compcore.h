@@ -133,6 +133,11 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	void
 	removeWatchFd (CompWatchFdHandle handle);
 
+	void storeValue (CompString key, CompPrivate value);
+	bool hasValue (CompString key);
+	CompPrivate getValue (CompString key);
+	void eraseValue (CompString key);
+
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);

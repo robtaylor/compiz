@@ -107,7 +107,7 @@ CorePluginVTable::setObjectOption (CompObject        *object,
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
 		     (object, name, value));
 }
-// 
+
 CorePluginVTable coreVTable;
 
 static bool
@@ -615,15 +615,17 @@ int
 CompPlugin::getPluginABI (const char *name)
 {
     CompPlugin *p = find (name);
+    CompString s = name;
 
     if (!p)
 	return 0;
 
-    /* MULTIDPYERROR: ABI options should be moved into core */
-    CompOption::Vector &options =
-	p->vTable->getObjectOptions (core->displays().front ());
+    s += "_ABI";
 
-    return CompOption::getIntOptionNamed (options, "abi");
+    if (!core->hasValue (s))
+	return 0;
+
+    return core->getValue (s).uval;
 }
 
 bool
@@ -650,29 +652,6 @@ CompPlugin::checkPluginABI (const char *name,
 
     return true;
 }
-
-bool
-CompPlugin::getPluginDisplayIndex (CompDisplay *d,
-				   const char  *name,
-				   int         *index)
-{
-    CompPlugin *p = find (name);
-    int        value;
-
-    if (!p)
-	return false;
-
-    CompOption::Vector &options = p->vTable->getObjectOptions (d);
-
-    value = CompOption::getIntOptionNamed (options, "index", -1);
-    if (value < 0)
-	return false;
-
-    *index = value;
-
-    return true;
-}
-
 
 CompPlugin::VTable::~VTable ()
 {

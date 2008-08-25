@@ -118,11 +118,7 @@ class CompPlugin {
 	static int getPluginABI (const char *name);
 
 	static bool checkPluginABI (const char *name,
-			int	   abi);
-
-	static bool getPluginDisplayIndex (CompDisplay *d,
-			    const char  *name,
-			    int	   *index);
+				    int	        abi);
 
 };
 

@@ -96,6 +96,10 @@ CompCore::init ()
 	return false;
     }
 
+    CompPrivate p;
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
     return true;
 }
 
@@ -350,6 +354,58 @@ CompCore::removeWatchFd (CompWatchFdHandle handle)
     delete w;
 }
 
+void
+CompCore::storeValue (CompString key, CompPrivate value)
+{
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+    if (it != priv->valueMap.end ())
+    {
+	it->second = value;
+    }
+    else
+    {
+	priv->valueMap.insert (std::pair<CompString,CompPrivate> (key, value));
+    }
+}
+
+bool
+CompCore::hasValue (CompString key)
+{
+    return (priv->valueMap.find (key) != priv->valueMap.end ());
+}
+
+CompPrivate
+CompCore::getValue (CompString key)
+{
+    CompPrivate p;
+
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+
+    if (it != priv->valueMap.end ())
+    {
+	return it->second;
+    }
+    else
+    {
+	p.uval = 0;
+	return p;
+    }
+}
+
+void
+CompCore::eraseValue (CompString key)
+{
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+
+    if (it != priv->valueMap.end ())
+    {
+	priv->valueMap.erase (key);
+    }
+}
+
 short int
 PrivateCore::watchFdEvents (CompWatchFdHandle handle)
 {
@@ -532,7 +588,8 @@ PrivateCore::PrivateCore (CompCore *core) :
     watchFds (0),
     lastWatchFdHandle (1),
     watchPollFds (0),
-    nWatchFds (0)
+    nWatchFds (0),
+    valueMap ()
 {
     gettimeofday (&lastTimeout, 0);
 }
