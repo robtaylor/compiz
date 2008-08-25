@@ -88,7 +88,7 @@ CLASSNAME<Tp,Tb,ABI>::CLASSNAME (Tb *base) :
 		else
 		{
 		    compLogMessage (0, "core", CompLogLevelFatal,
-			"Private index value \"%s\" alredy stored in core.",
+			"Private index value \"%s\" already stored in core.",
 			keyName ().c_str ());
 		}
 	    }
