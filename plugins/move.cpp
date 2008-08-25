@@ -85,11 +85,6 @@ struct _MoveKeys {
 #define SNAP_BACK 20
 #define SNAP_OFF  100
 
-static int displayPrivateIndex;
-static int screenPrivateIndex;
-static int windowPrivateIndex;
-
-
 #define MOVE_DISPLAY_OPTION_INITIATE_BUTTON   0
 #define MOVE_DISPLAY_OPTION_INITIATE_KEY      1
 #define MOVE_DISPLAY_OPTION_OPACITY	      2
@@ -174,25 +169,15 @@ class MoveWindow :
 	CompWindow *window;
 };
 
-#define GET_MOVE_DISPLAY(d)					  \
-    static_cast<MoveDisplay *> ((d)->privates[displayPrivateIndex].ptr)
+#define MOVE_DISPLAY(d)	\
+    MoveDisplay *md = MoveDisplay::get (d)
 
-#define MOVE_DISPLAY(d)		           \
-    MoveDisplay *md = GET_MOVE_DISPLAY (d)
+#define MOVE_SCREEN(s) \
+    MoveScreen *ms = MoveScreen::get (s)
 
-#define GET_MOVE_SCREEN(s)					      \
-    static_cast<MoveScreen *> ((s)->privates[screenPrivateIndex].ptr)
+#define MOVE_WINDOW(w) \
+    MoveWindow *mw = MoveWindow::get (w)
 
-#define MOVE_SCREEN(s)						        \
-    MoveScreen *ms = GET_MOVE_SCREEN (s)
-
-#define GET_MOVE_WINDOW(w)					      \
-    static_cast<MoveWindow *> ((w)->privates[windowPrivateIndex].ptr)
-
-#define MOVE_WINDOW(w)						        \
-    MoveWindow *mw = GET_MOVE_WINDOW (w)
-
-#define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
 
 static bool
 moveInitiate (CompDisplay     *d,
@@ -894,6 +879,12 @@ moveInitDisplay (CompObject *o)
     if (!md)
 	return false;
 
+    if (md->loadFailed ())
+    {
+	delete md;
+	return false;
+    }
+
     if (!moveMetadata->initDisplayOptions (d, moveDisplayOptionInfo,
 					   MOVE_DISPLAY_OPTION_NUM, md->opt))
     {
@@ -912,9 +903,6 @@ moveInitDisplay (CompObject *o)
     for (i = 0; i < NUM_KEYS; i++)
 	md->key[i] = XKeysymToKeycode (d->dpy (),
 				       XStringToKeysym (mKeys[i].name));
-
-
-    d->privates[displayPrivateIndex].ptr = md;
 
     return true;
 }
@@ -941,11 +929,15 @@ moveInitScreen (CompObject *o)
     if (!ms)
 	return false;
 
+    if (ms->loadFailed ())
+    {
+	delete ms;
+	return false;
+    }
+
     ms->grab = NULL;
 
     ms->moveCursor = XCreateFontCursor (s->display ()->dpy (), XC_fleur);
-
-    s->privates[screenPrivateIndex].ptr = ms;
 
     return true;
 }
@@ -967,15 +959,17 @@ moveInitWindow (CompObject *o)
 {
     MoveWindow *mw;
 
-    printf("Init window %d %s (%s)\n",o->type (),o->typeName (),o->name().c_str());
     CORE_WINDOW (o);
 
-    printf("Init window %d %s (%s)\n",w->type (),w->typeName (),w->name().c_str());
     mw = new MoveWindow (w);
     if (!mw)
 	return false;
 
-    w->privates[windowPrivateIndex].ptr = mw;
+    if (mw->loadFailed ())
+    {
+	delete mw;
+	return false;
+    }
 
     return true;
 }
@@ -1051,28 +1045,6 @@ MovePluginVTable::init ()
     if (!moveMetadata)
 	return false;
 
-    displayPrivateIndex = CompDisplay::allocPrivateIndex ();
-    if (displayPrivateIndex < 0)
-    {
-	delete moveMetadata;
-	return false;
-    }
-    screenPrivateIndex = CompScreen::allocPrivateIndex ();
-    if (screenPrivateIndex < 0)
-    {
-	CompDisplay::freePrivateIndex (displayPrivateIndex);
-	delete moveMetadata;
-	return false;
-    }
-    windowPrivateIndex = CompWindow::allocPrivateIndex ();
-    if (windowPrivateIndex < 0)
-    {
-	CompDisplay::freePrivateIndex (displayPrivateIndex);
-	CompScreen::freePrivateIndex (screenPrivateIndex);
-	delete moveMetadata;
-	return false;
-    }
-
     moveMetadata->addFromFile (name ());
 
     return true;
@@ -1081,10 +1053,6 @@ MovePluginVTable::init ()
 void
 MovePluginVTable::fini ()
 {
-    CompDisplay::freePrivateIndex (displayPrivateIndex);
-    CompScreen::freePrivateIndex (screenPrivateIndex);
-    CompWindow::freePrivateIndex (windowPrivateIndex);
-
     delete moveMetadata;
 }
 
