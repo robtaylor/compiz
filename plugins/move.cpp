@@ -67,9 +67,9 @@ class MovePluginVTable : public CompPlugin::VTable
 
 
 struct _MoveKeys {
-    char *name;
-    int  dx;
-    int  dy;
+    const char *name;
+    int        dx;
+    int        dy;
 } mKeys[] = {
     { "Left",  -1,  0 },
     { "Right",  1,  0 },
@@ -335,12 +335,12 @@ moveTerminate (CompDisplay     *d,
 static Region
 moveGetYConstrainRegion (CompScreen *s)
 {
-    CompWindow *w;
-    Region     region;
-    REGION     r;
-    XRectangle workArea;
-    BoxRec     extents;
-    int	       i;
+    CompWindow   *w;
+    Region       region;
+    REGION       r;
+    XRectangle   workArea;
+    BoxRec       extents;
+    unsigned int i;
 
     region = XCreateRegion ();
     if (!region)
@@ -430,10 +430,10 @@ moveHandleMotionEvent (CompScreen *s,
 
     if (ms->grab)
     {
-	int	   dx, dy;
-	int	   wX, wY;
-	int	   wWidth, wHeight;
-	CompWindow *w;
+	int	     dx, dy;
+	int	     wX, wY;
+	unsigned int wWidth, wHeight;
+	CompWindow   *w;
 
 	MOVE_DISPLAY (s->display ());
 
@@ -586,7 +586,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (w->state () & CompWindowStateMaximizedHorzMask)
 	    {
-		if (wX > s->size ().width () || wX + w->width () < 0)
+		if (wX > (int) s->size ().width () || wX + w->width () < 0)
 		    return;
 
 		if (wX + wWidth < 0)
@@ -644,7 +644,7 @@ MoveDisplay::handleEvent (XEvent *event)
 	    if (ms->grab)
 	    {
 		if (releaseButton == -1 ||
-		    releaseButton == event->xbutton.button)
+		    releaseButton == (int) event->xbutton.button)
 		{
 		    CompAction *action;
 
@@ -663,7 +663,7 @@ MoveDisplay::handleEvent (XEvent *event)
 
 	    if (ms->grab)
 	    {
-		int i;
+		unsigned int i;
 
 		for (i = 0; i < NUM_KEYS; i++)
 		{
@@ -869,8 +869,8 @@ static const CompMetadata::OptionInfo moveDisplayOptionInfo[] = {
 static bool
 moveInitDisplay (CompObject *o)
 {
-    MoveDisplay *md;
-    int	        i;
+    MoveDisplay  *md;
+    unsigned int i;
 
     CORE_DISPLAY (o);
 
@@ -923,7 +923,6 @@ moveInitScreen (CompObject *o)
     MoveScreen *ms;
 
     CORE_SCREEN (o);
-    MOVE_DISPLAY (s->display ());
 
     ms = new MoveScreen (s);
     if (!ms)
@@ -956,7 +955,6 @@ moveInitWindow (CompObject *o)
     MoveWindow *mw;
 
     CORE_WINDOW (o);
-    MOVE_SCREEN (w->screen ());
 
     mw = new MoveWindow (w);
     if (!mw)
