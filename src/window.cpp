@@ -5339,7 +5339,7 @@ PrivateWindow::~PrivateWindow ()
 }
 
 CompString
-CompWindow::name ()
+CompWindow::objectName ()
 {
     char tmp[256];
 

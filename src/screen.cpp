@@ -2283,7 +2283,7 @@ CompScreen::~CompScreen ()
 }
 
 CompString
-CompScreen::name ()
+CompScreen::objectName ()
 {
     char tmp[256];
 

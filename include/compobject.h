@@ -17,15 +17,15 @@
     (sizeof (array) / sizeof (array[0]))
 
 #define DISPATCH_CHECK(object, dispTab, tabSize)	      \
-    ((object)->type () < (int) (tabSize) && (dispTab)[(object)->type ()])
+    ((object)->objectType () < (int) (tabSize) && (dispTab)[(object)->objectType ()])
 
 #define DISPATCH(object, dispTab, tabSize, args)   \
     if (DISPATCH_CHECK (object, dispTab, tabSize)) \
-	(*(dispTab)[(object)->type ()]) args
+	(*(dispTab)[(object)->objectType ()]) args
 
 #define RETURN_DISPATCH(object, dispTab, tabSize, def, args) \
     if (DISPATCH_CHECK (object, dispTab, tabSize))	     \
-	return (*(dispTab)[(object)->type ()]) args;	     \
+	return (*(dispTab)[(object)->objectType ()]) args;	     \
     else						     \
 	return (def)
 
@@ -43,15 +43,15 @@ class CompObject {
 		    indices *iList = NULL);
 	virtual ~CompObject ();
 
-        const char *typeName ();
-	Type type ();
+        const char *objectTypeName ();
+	Type objectType ();
 
 	void addChild (CompObject *);
 
         bool forEachChild (CallBack proc,
 			   Type     type = COMP_OBJECT_TYPE_ALL);
 
-	virtual CompString name () = 0;
+	virtual CompString objectName () = 0;
 
     public:
 

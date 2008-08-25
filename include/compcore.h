@@ -100,7 +100,7 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 	CompCore ();
 	~CompCore ();
 
-	CompString name ();
+	CompString objectName ();
 
 	bool
 	init ();

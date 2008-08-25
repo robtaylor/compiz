@@ -191,7 +191,7 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	CompDisplay ();
 	~CompDisplay ();
 
-	CompString name ();
+	CompString objectName ();
 
 	bool
 	init (const char *name);

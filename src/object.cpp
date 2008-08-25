@@ -82,13 +82,13 @@ CompObject::~CompObject ()
 }
 
 const char *
-CompObject::typeName ()
+CompObject::objectTypeName ()
 {
     return priv->typeName;
 }
 
 CompObject::Type
-CompObject::type ()
+CompObject::objectType ()
 {
     return priv->type;
 }
@@ -112,7 +112,7 @@ CompObject::forEachChild (CompObject::CallBack proc,
     std::list<CompObject *>::iterator it;
     for (it = priv->children.begin (); it != priv->children.end (); it++)
     {
-	if (type > 0 && (*it)->type () != type)
+	if (type > 0 && (*it)->objectType () != type)
 	    continue;
 	rv &= proc ((*it));
     }
@@ -123,7 +123,7 @@ CompObject::forEachChild (CompObject::CallBack proc,
 static bool
 resizePrivates (CompObject *o, CompObject::Type type, unsigned int size)
 {
-    if (o->type () == type)
+    if (o->objectType () == type)
     {
 	o->privates.resize (size);
     }

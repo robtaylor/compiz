@@ -241,7 +241,7 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	CompScreen ();
 	~CompScreen ();
 
-	CompString name ();
+	CompString objectName ();
 
 	bool
 	init (CompDisplay *, int);

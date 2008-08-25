@@ -933,7 +933,7 @@ CompDisplay::init (const char *name)
 }
 
 CompString
-CompDisplay::name ()
+CompDisplay::objectName ()
 {
     return CompString ("");
 }

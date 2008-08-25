@@ -120,7 +120,7 @@ CompCore::~CompCore ()
 }
 
 CompString
-CompCore::name ()
+CompCore::objectName ()
 {
     return CompString ("");
 }

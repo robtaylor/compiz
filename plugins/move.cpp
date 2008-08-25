@@ -30,6 +30,7 @@
 #include <X11/cursorfont.h>
 
 #include <compiz-core.h>
+#include <compprivatehandler.h>
 
 static CompMetadata *moveMetadata;
 
@@ -97,11 +98,16 @@ static int windowPrivateIndex;
 #define MOVE_DISPLAY_OPTION_LAZY_POSITIONING  5
 #define MOVE_DISPLAY_OPTION_NUM		      6
 
-class MoveDisplay : public DisplayInterface {
+class MoveDisplay :
+    public DisplayInterface,
+    public PrivateHandler<MoveDisplay,CompDisplay>
+{
 
     public:
-	MoveDisplay (CompDisplay *display) : display (display),
-		     opt(MOVE_DISPLAY_OPTION_NUM)
+	MoveDisplay (CompDisplay *display) :
+	    PrivateHandler<MoveDisplay,CompDisplay> (display),
+	    display (display),
+	    opt(MOVE_DISPLAY_OPTION_NUM)
 	{
 	    display->add (this);
 	    DisplayInterface::setHandler (display);
@@ -130,10 +136,12 @@ class MoveDisplay : public DisplayInterface {
 
 
 
-class MoveScreen {
+class MoveScreen : public PrivateHandler<MoveScreen,CompScreen> {
     public:
 	
-	MoveScreen (CompScreen *screen) : screen (screen) {};
+	MoveScreen (CompScreen *screen) :
+	    PrivateHandler<MoveScreen,CompScreen> (screen),
+	    screen (screen) {};
 
         CompScreen *screen;
 	CompScreen::grabHandle grab;
@@ -146,9 +154,14 @@ class MoveScreen {
 	int	snapBackY;
 };
 
-class MoveWindow : public WindowInterface {
+class MoveWindow :
+    public WindowInterface,
+    public PrivateHandler<MoveWindow,CompWindow>
+{
     public:
-	MoveWindow (CompWindow *window) : window (window)
+	MoveWindow (CompWindow *window) :
+	    PrivateHandler<MoveWindow,CompWindow> (window),
+	    window (window)
 	{
 	    window->add (this);
 	    WindowInterface::setHandler (window);
@@ -954,8 +967,10 @@ moveInitWindow (CompObject *o)
 {
     MoveWindow *mw;
 
+    printf("Init window %d %s (%s)\n",o->type (),o->typeName (),o->name().c_str());
     CORE_WINDOW (o);
 
+    printf("Init window %d %s (%s)\n",w->type (),w->typeName (),w->name().c_str());
     mw = new MoveWindow (w);
     if (!mw)
 	return false;

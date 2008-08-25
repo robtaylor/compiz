@@ -274,7 +274,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	            Window     aboveId);
 	~CompWindow ();
 
-	CompString name ();
+	CompString objectName ();
 
 	CompScreen *
 	screen ();
