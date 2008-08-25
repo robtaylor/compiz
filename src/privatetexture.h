@@ -32,5 +32,4 @@ class PrivateTexture {
 	unsigned int        height;
 };
 
-
 #endif

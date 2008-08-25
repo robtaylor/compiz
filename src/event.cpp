@@ -661,7 +661,7 @@ PrivateDisplay::triggerEdgeEnter (unsigned int       edge,
 
 	edgeDelayTimer.start  (
 	    boost::bind (delayedEdgeTimeout, display, &edgeDelaySettings),
-			 delay, (float) delay * 1.2);
+			 delay, (unsigned int)((float) delay * 1.2));
 
 	delayState = CompAction::StateNoEdgeDelay;
 	if (triggerAllEdgeEnterBindings (display, state, delayState,
@@ -1842,7 +1842,7 @@ CompDisplay::handleEvent (XEvent *event)
 				priv->autoRaiseWindow = w->id ();
 				priv->autoRaiseTimer.start (
 				    boost::bind (autoRaiseTimeout, this),
-				    delay, (float) delay * 1.2);
+				    delay, (unsigned int)((float) delay * 1.2));
 			    }
 			    else
 			    {

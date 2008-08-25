@@ -11,6 +11,7 @@
 #define COMP_OBJECT_TYPE_DISPLAY 1
 #define COMP_OBJECT_TYPE_SCREEN  2
 #define COMP_OBJECT_TYPE_WINDOW  3
+#define COMP_OBJECT_TYPE_NUM     4
 
 #define ARRAY_SIZE(array)		 \
     (sizeof (array) / sizeof (array[0]))

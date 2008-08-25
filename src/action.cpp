@@ -154,7 +154,8 @@ bool
 CompAction::KeyBinding::fromString (CompDisplay *d, const CompString str)
 {
     CompString   sStr;
-    unsigned int mods, pos;
+    unsigned int mods;
+    size_t       pos;
     KeySym	 keysym;
 
     mods = stringToModifiers (d, str);
@@ -261,7 +262,8 @@ CompAction::ButtonBinding::button ()
 bool
 CompAction::ButtonBinding::fromString (CompDisplay *d, const CompString str)
 {
-    unsigned int mods, pos;
+    unsigned int mods;
+    size_t       pos;
 
     mods = stringToModifiers (d, str);
 
@@ -467,7 +469,8 @@ CompAction::buttonFromString (CompDisplay *d, const CompString str)
 void
 CompAction::edgeMaskFromString (const CompString str)
 {
-    unsigned int edgeMask = 0, pos;
+    unsigned int edgeMask = 0;
+    size_t       pos;
 
     for (int i = 0; i < SCREEN_EDGE_NUM; i++)
     {

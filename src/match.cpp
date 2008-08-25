@@ -40,6 +40,8 @@
 
 class CoreExp : public CompMatch::Expression {
     public:
+	virtual ~CoreExp () {};
+
 	typedef enum {
 	    TypeXid,
 	    TypeState,

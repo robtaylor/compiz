@@ -639,7 +639,7 @@ namespace CompFragment {
 
 	foreach (HeaderOp &h, header)
 	{
-	    unsigned int pos = data.find (h.name);
+	    size_t pos = data.find (h.name);
 	    while (pos != std::string::npos)
 	    {
 		data.insert (pos,inPrefix);

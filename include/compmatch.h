@@ -12,6 +12,7 @@ class CompMatch {
 
 	class Expression {
 	    public:
+		virtual ~Expression () {};
 		virtual bool evaluate (CompWindow *window) = 0;
 	};
 	

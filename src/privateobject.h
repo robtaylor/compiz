@@ -17,5 +17,4 @@ class PrivateObject {
 	std::list<CompObject *> children;
 };
 
-
 #endif

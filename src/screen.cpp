@@ -3200,8 +3200,8 @@ CompScreen::runCommand (CompString command)
 
     if (fork () == 0)
     {
-	unsigned int pos;
-	CompString   env = priv->display->displayString ();
+	size_t     pos;
+	CompString env = priv->display->displayString ();
 
 	setsid ();
 	
