@@ -25,10 +25,16 @@
 
 #include <string.h>
 #include <sys/poll.h>
+#include <sys/time.h>
 #include <assert.h>
 #include <algorithm>
 
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
+
 #include <compiz-core.h>
+#include <compplugin.h>
+#include <compdisplay.h>
 #include "privatecore.h"
 
 CompCore *core;
@@ -75,7 +81,7 @@ CompCore::init ()
     WRAPABLE_INIT_HND(objectRemove);
     WRAPABLE_INIT_HND(sessionEvent);
 
-    CompPlugin *corePlugin = loadPlugin ("core");
+    CompPlugin *corePlugin = CompPlugin::load ("core");
     if (!corePlugin)
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
@@ -83,39 +89,44 @@ CompCore::init ()
 	return false;
     }
 
-    if (!pushPlugin (corePlugin))
+    if (!CompPlugin::push (corePlugin))
     {
 	compLogMessage (0, "core", CompLogLevelFatal,
 			"Couldn't activate core plugin");
 	return false;
     }
 
+    CompPrivate p;
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
     return true;
 }
 
 CompCore::~CompCore ()
 {
-    CompPlugin *p;
+    CompPlugin  *p;
 
-    while (priv->displays)
-	removeDisplay (priv->displays);
+    while (!priv->displays.empty ())
+	removeDisplay (priv->displays.front ());
 
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
 
-    while ((p = popPlugin ()))
-	unloadPlugin (p);
+    while ((p = CompPlugin::pop ()))
+	CompPlugin::unload (p);
 
+    delete priv;
 }
 
 CompString
-CompCore::name ()
+CompCore::objectName ()
 {
     return CompString ("");
 }
 
 
-CompDisplay *
+CompDisplayList &
 CompCore::displays()
 {
     return priv->displays;
@@ -124,26 +135,16 @@ CompCore::displays()
 bool
 CompCore::addDisplay (const char *name)
 {
-
-    CompDisplay *prev;
     CompDisplay *d = new CompDisplay();
 
     if (!d)
 	return false;
 
-    for (prev = priv->displays; prev && prev->next; prev = prev->next);
-
-    if (prev)
-	prev->next = d;
-    else
-	priv->displays = d;
+    priv->displays.push_back (d);
 
     if (!d->init (name))
     {
-	if (prev)
-	    prev->next = NULL;
-    	else
-	    priv->displays = NULL;
+	priv->displays.pop_back ();
 	delete d;
 	return false;
     }
@@ -153,16 +154,9 @@ CompCore::addDisplay (const char *name)
 void
 CompCore::removeDisplay (CompDisplay *d)
 {
-    CompDisplay *p;
-
-    for (p = priv->displays; p; p = p->next)
-	if (p->next == d)
-	    break;
-
-    if (p)
-	p->next = d->next;
-    else
-	priv->displays = NULL;
+    CompDisplayList::iterator it;
+    it = std::find (priv->displays.begin (), priv->displays.end (), d);
+    priv->displays.erase (it);
 
     delete d;
 }
@@ -171,23 +165,20 @@ void
 CompCore::eventLoop ()
 {
     struct timeval  tv;
-    CompDisplay     *d;
     CompCore::Timer *t;
     int		    time;
 
-    for (d = priv->displays; d; d = d->next)
+    foreach (CompDisplay *d, priv->displays)
 	d->setWatchFdHandle (addWatchFd (ConnectionNumber (d->dpy()),
-			     		 POLLIN, NULL, NULL));
+			     		 POLLIN, NULL));
 
     for (;;)
     {
 	if (restartSignal || shutDown)
 	    break;
 
-	for (d = priv->displays; d; d = d->next)
-	{
+	foreach (CompDisplay *d, priv->displays)
 	    d->processEvents ();
-	}
 
 	if (!priv->timers.empty())
 	{
@@ -220,17 +211,16 @@ CompCore::eventLoop ()
 	}
     }
 
-    for (d = priv->displays; d; d = d->next)
+    foreach (CompDisplay *d, priv->displays)
 	removeWatchFd (d->getWatchFdHandle());
 }
 
 
 
 CompFileWatchHandle
-CompCore::addFileWatch (const char	      *path,
-			int		      mask,
-			FileWatchCallBackProc callBack,
-			void		      *closure)
+CompCore::addFileWatch (const char        *path,
+			int               mask,
+			FileWatchCallBack callBack)
 {
     CompFileWatch *fileWatch = new CompFileWatch();
     if (!fileWatch)
@@ -239,7 +229,6 @@ CompCore::addFileWatch (const char	      *path,
     fileWatch->path	= strdup (path);
     fileWatch->mask	= mask;
     fileWatch->callBack = callBack;
-    fileWatch->closure  = closure;
     fileWatch->handle   = priv->lastFileWatchHandle++;
 
     if (priv->lastFileWatchHandle == MAXSHORT)
@@ -309,10 +298,9 @@ PrivateCore::removeTimer (CompCore::Timer *timer)
 }
 
 CompWatchFdHandle
-CompCore::addWatchFd (int	   fd,
-		      short int    events,
-		      CallBackProc callBack,
-		      void	   *closure)
+CompCore::addWatchFd (int             fd,
+		      short int       events,
+		      FdWatchCallBack callBack)
 {
     CompWatchFd *watchFd = new CompWatchFd();
 
@@ -321,7 +309,6 @@ CompCore::addWatchFd (int	   fd,
 
     watchFd->fd	      = fd;
     watchFd->callBack = callBack;
-    watchFd->closure  = closure;
     watchFd->handle   = priv->lastWatchFdHandle++;
 
     if (priv->lastWatchFdHandle == MAXSHORT)
@@ -367,6 +354,58 @@ CompCore::removeWatchFd (CompWatchFdHandle handle)
     delete w;
 }
 
+void
+CompCore::storeValue (CompString key, CompPrivate value)
+{
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+    if (it != priv->valueMap.end ())
+    {
+	it->second = value;
+    }
+    else
+    {
+	priv->valueMap.insert (std::pair<CompString,CompPrivate> (key, value));
+    }
+}
+
+bool
+CompCore::hasValue (CompString key)
+{
+    return (priv->valueMap.find (key) != priv->valueMap.end ());
+}
+
+CompPrivate
+CompCore::getValue (CompString key)
+{
+    CompPrivate p;
+
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+
+    if (it != priv->valueMap.end ())
+    {
+	return it->second;
+    }
+    else
+    {
+	p.uval = 0;
+	return p;
+    }
+}
+
+void
+CompCore::eraseValue (CompString key)
+{
+    std::map<CompString,CompPrivate>::iterator it;
+    it = priv->valueMap.find (key);
+
+    if (it != priv->valueMap.end ())
+    {
+	priv->valueMap.erase (key);
+    }
+}
+
 short int
 PrivateCore::watchFdEvents (CompWatchFdHandle handle)
 {
@@ -395,7 +434,7 @@ PrivateCore::doPoll (int timeout)
 	for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
 	    it++, i--)
 	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
-		(*(*it)->callBack) ((*it)->closure);
+		(*it)->callBack ();
     }
 
     return rv;
@@ -460,15 +499,15 @@ CompCore::finiPluginForObject (CompPlugin *plugin, CompObject *object)
 
 	
 bool
-CompCore::setOptionForPlugin (CompObject      *object,
-			      const char      *plugin,
-			      const char      *name,
-			      CompOptionValue *value)
+CompCore::setOptionForPlugin (CompObject        *object,
+			      const char        *plugin,
+			      const char        *name,
+			      CompOption::Value &value)
 {
     WRAPABLE_HND_FUNC_RETURN(bool, setOptionForPlugin,
 			     object, plugin, name, value)
 
-    CompPlugin *p = findActivePlugin (plugin);
+    CompPlugin *p = CompPlugin::find (plugin);
     if (p)
 	return p->vTable->setObjectOption (object, name, value);
 
@@ -485,10 +524,9 @@ CompCore::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_HND_FUNC(objectRemove, parent, object)
 
 void
-CompCore::sessionEvent (CompSessionEvent event,
-			     CompOption       *arguments,
-			     unsigned int     nArguments)
-    WRAPABLE_HND_FUNC(sessionEvent, event, arguments, nArguments)
+CompCore::sessionEvent (CompSession::Event event,
+			CompOption::Vector &arguments)
+    WRAPABLE_HND_FUNC(sessionEvent, event, arguments)
 
 CoreInterface::CoreInterface ()
 {
@@ -520,10 +558,10 @@ CoreInterface::finiPluginForObject (CompPlugin *plugin, CompObject *object)
 
 	
 bool
-CoreInterface::setOptionForPlugin (CompObject      *object,
-				   const char      *plugin,
-				   const char	   *name,
-				   CompOptionValue *value)
+CoreInterface::setOptionForPlugin (CompObject        *object,
+				   const char        *plugin,
+				   const char	     *name,
+				   CompOption::Value &value)
     WRAPABLE_DEF_FUNC_RETURN(setOptionForPlugin,
 			     object, plugin, name, value)
 
@@ -536,22 +574,22 @@ CoreInterface::objectRemove (CompObject *parent, CompObject *object)
     WRAPABLE_DEF_FUNC(objectRemove, parent, object)
 
 void
-CoreInterface::sessionEvent (CompSessionEvent event,
-			     CompOption       *arguments,
-			     unsigned int     nArguments)
-    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments, nArguments)
+CoreInterface::sessionEvent (CompSession::Event event,
+			     CompOption::Vector &arguments)
+    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments)
 
 	
 PrivateCore::PrivateCore (CompCore *core) :
     core (core),
-    displays (0),
+    displays (),
     fileWatch (0),
     lastFileWatchHandle (1),
     timers (0),
     watchFds (0),
     lastWatchFdHandle (1),
     watchPollFds (0),
-    nWatchFds (0)
+    nWatchFds (0),
+    valueMap ()
 {
     gettimeofday (&lastTimeout, 0);
 }

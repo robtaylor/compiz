@@ -27,6 +27,8 @@
 #  include "../config.h"
 #endif
 
+#include <compiz.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -37,6 +39,7 @@
 #include <compiz-core.h>
 #include "privatedisplay.h"
 #include "privatescreen.h"
+#include "privatecore.h"
 
 char *programName;
 char **programArgv;
@@ -46,30 +49,22 @@ char *backgroundImage = NULL;
 
 REGION   emptyRegion;
 REGION   infiniteRegion;
-GLushort defaultColor[4] = { 0xffff, 0xffff, 0xffff, 0xffff };
-Window   currentRoot = 0;
 
-int  defaultRefreshRate = 50;
-char *defaultTextureFilter = "Good";
-
-Bool shutDown = FALSE;
-Bool restartSignal = FALSE;
+bool shutDown = false;
+bool restartSignal = false;
 
 CompWindow *lastFoundWindow = 0;
-CompWindow *lastDamagedWindow = 0;
 
-Bool replaceCurrentWm = FALSE;
-Bool indirectRendering = FALSE;
-Bool strictBinding = TRUE;
-Bool noDetection = FALSE;
-Bool useDesktopHints = TRUE;
-Bool onlyCurrentScreen = FALSE;
+bool replaceCurrentWm = false;
+bool indirectRendering = false;
+bool strictBinding = true;
+bool noDetection = false;
+bool useDesktopHints = true;
+bool onlyCurrentScreen = false;
 
-#ifdef USE_COW
-Bool useCow = TRUE;
-#endif
+bool useCow = true;
 
-CompMetadata coreMetadata;
+CompMetadata *coreMetadata = NULL;
 
 static void
 usage (void)
@@ -77,8 +72,6 @@ usage (void)
     printf ("Usage: %s "
 	    "[--display DISPLAY] "
 	    "[--bg-image PNG] "
-	    "[--refresh-rate RATE]\n       "
-	    "[--fast-filter] "
 	    "[--indirect-rendering] "
 	    "[--loose-binding] "
 	    "[--replace]\n       "
@@ -87,13 +80,7 @@ usage (void)
 	    "[--no-detection]\n       "
 	    "[--ignore-desktop-hints] "
 	    "[--only-current-screen]"
-
-#ifdef USE_COW
 	    " [--use-root-window]\n       "
-#else
-	    "\n       "
-#endif
-
 	    "[--version] "
 	    "[--help] "
 	    "[PLUGIN]...\n",
@@ -122,10 +109,8 @@ signalHandler (int sig)
 }
 
 typedef struct _CompIOCtx {
-    int	 offset;
-    char *pluginData;
-    char *textureFilterData;
-    char *refreshRateData;
+    unsigned int offset;
+    char         *pluginData;
 } CompIOCtx;
 
 static int
@@ -133,59 +118,34 @@ readCoreXmlCallback (void *context,
 		     char *buffer,
 		     int  length)
 {
-    CompIOCtx *ctx = (CompIOCtx *) context;
-    int	      offset = ctx->offset;
-    int	      i, j;
+    CompIOCtx    *ctx = (CompIOCtx *) context;
+    unsigned int offset = ctx->offset;
+    unsigned int i, j;
 
-    i = compReadXmlChunk ("<compiz><core><display>", &offset, buffer, length);
+    i = CompMetadata::readXmlChunk ("<compiz><core><display>", &offset, buffer,
+				    length);
 
     for (j = 0; j < COMP_DISPLAY_OPTION_NUM; j++)
     {
-	CompMetadataOptionInfo info = coreDisplayOptionInfo[j];
+	CompMetadata::OptionInfo info = coreDisplayOptionInfo[j];
 
 	switch (j) {
 	case COMP_DISPLAY_OPTION_ACTIVE_PLUGINS:
 	    if (ctx->pluginData)
 		info.data = ctx->pluginData;
 	    break;
-	case COMP_DISPLAY_OPTION_TEXTURE_FILTER:
-	    if (ctx->textureFilterData)
-		info.data = ctx->textureFilterData;
 	default:
 	    break;
 	}
 
-	i += compReadXmlChunkFromMetadataOptionInfo (&info,
-						     &offset,
-						     buffer + i,
-						     length - i);
+	i += CompMetadata::readXmlChunkFromOptionInfo (&info, &offset,
+						       buffer + i, length - i);
     }
 
-    i += compReadXmlChunk ("</display><screen>", &offset,
-			   buffer + i, length - 1);
+    i += CompMetadata::readXmlChunk ("</display></core></compiz>", &offset,
+				     buffer + i, length - 1);
 
-    for (j = 0; j < COMP_SCREEN_OPTION_NUM; j++)
-    {
-	CompMetadataOptionInfo info = coreScreenOptionInfo[j];
-
-	switch (j) {
-	case COMP_SCREEN_OPTION_REFRESH_RATE:
-	    if (ctx->refreshRateData)
-		info.data = ctx->refreshRateData;
-	default:
-	    break;
-	}
-
-	i += compReadXmlChunkFromMetadataOptionInfo (&info,
-						     &offset,
-						     buffer + i,
-						     length - i);
-    }
-
-    i += compReadXmlChunk ("</screen></core></compiz>", &offset, buffer + i,
-			   length - i);
-
-    if (!offset && length > i)
+    if (!offset && length > (int)i)
 	buffer[i++] = '\0';
 
     ctx->offset += i;
@@ -202,7 +162,6 @@ main (int argc, char **argv)
     int	      i, nPlugin = 0;
     Bool      disableSm = FALSE;
     char      *clientId = NULL;
-    char      *refreshRateArg = NULL;
 
     programName = argv[0];
     programArgc = argc;
@@ -247,21 +206,6 @@ main (int argc, char **argv)
 	    if (i + 1 < argc)
 		displayName = argv[++i];
 	}
-	else if (!strcmp (argv[i], "--refresh-rate"))
-	{
-	    if (i + 1 < argc)
-	    {
-		refreshRateArg = programArgv[++i];
-		defaultRefreshRate = atoi (refreshRateArg);
-		defaultRefreshRate = RESTRICT_VALUE (defaultRefreshRate,
-						     1, 1000);
-	    }
-	}
-	else if (!strcmp (argv[i], "--fast-filter"))
-	{
-	    ctx.textureFilterData = "<default>Fast</default>";
-	    defaultTextureFilter = "Fast";
-	}
 	else if (!strcmp (argv[i], "--indirect-rendering"))
 	{
 	    indirectRendering = TRUE;
@@ -278,14 +222,10 @@ main (int argc, char **argv)
 	{
 	    onlyCurrentScreen = TRUE;
 	}
-
-#ifdef USE_COW
 	else if (!strcmp (argv[i], "--use-root-window"))
 	{
 	    useCow = FALSE;
 	}
-#endif
-
 	else if (!strcmp (argv[i], "--replace"))
 	{
 	    replaceCurrentWm = TRUE;
@@ -320,15 +260,6 @@ main (int argc, char **argv)
 	}
     }
 
-    if (refreshRateArg)
-    {
-	ctx.refreshRateData = (char *) malloc (strlen (refreshRateArg) + 256);
-	if (ctx.refreshRateData)
-	    sprintf (ctx.refreshRateData,
-		     "<min>1</min><default>%s</default>",
-		     refreshRateArg);
-    }
-
     if (nPlugin)
     {
 	int size = 256;
@@ -354,36 +285,26 @@ main (int argc, char **argv)
 
     LIBXML_TEST_VERSION;
 
-    if (!compInitMetadata (&coreMetadata))
-    {
-	compLogMessage (NULL, "core", CompLogLevelFatal,
-			"Couldn't initialize core metadata");
-	return 1;
-    }
+    coreMetadata = new CompMetadata ();
 
-    if (!compAddMetadataFromIO (&coreMetadata,
-				readCoreXmlCallback, NULL,
-				&ctx))
+    if (!coreMetadata->addFromIO (readCoreXmlCallback, NULL, &ctx))
 	return 1;
-
-    if (ctx.refreshRateData)
-	free (ctx.refreshRateData);
 
     if (ctx.pluginData)
 	free (ctx.pluginData);
 
-    compAddMetadataFromFile (&coreMetadata, "core");
+    coreMetadata->addFromFile ("core");
 
     core = new CompCore();
 
     if (!core)
 	return 1;
-    
+
     if (!core->init ())
 	return 1;
 
     if (!disableSm)
-	initSession (clientId);
+	CompSession::initSession (clientId);
 
     if (!core->addDisplay (displayName))
 	return 1;
@@ -391,10 +312,10 @@ main (int argc, char **argv)
     core->eventLoop ();
 
     if (!disableSm)
-	closeSession ();
+	CompSession::closeSession ();
 
     delete core;
-    compFiniMetadata (&coreMetadata);
+    delete coreMetadata;
 
     xmlCleanupParser ();
 

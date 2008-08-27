@@ -23,9 +23,13 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
+#include <compiz.h>
+
 #include <algorithm>
+#include <boost/bind.hpp>
 
 #include <compiz-core.h>
+#include <compcore.h>
 #include "privateobject.h"
 
 PrivateObject::PrivateObject () :
@@ -36,7 +40,7 @@ PrivateObject::PrivateObject () :
 }
 
 
-CompObject::CompObject (CompObjectType type, const char* typeName,
+CompObject::CompObject (CompObject::Type type, const char* typeName,
 		        CompObject::indices *iList) :
     privates (0)
 {
@@ -74,16 +78,17 @@ CompObject::~CompObject ()
 	    core->objectRemove (priv->parent, this);
 	}
     }
+    delete priv;
 }
 
 const char *
-CompObject::typeName ()
+CompObject::objectTypeName ()
 {
     return priv->typeName;
 }
 
-CompObjectType
-CompObject::type ()
+CompObject::Type
+CompObject::objectType ()
 {
     return priv->type;
 }
@@ -99,44 +104,36 @@ CompObject::addChild (CompObject *object)
 }
 
 bool
-CompObject::forEachChild (ObjectCallBackProc proc,
-			  void	             *closure,
-			  CompObjectType     type)
+CompObject::forEachChild (CompObject::CallBack proc,
+			  CompObject::Type     type)
 {
     bool rv = true;
 
     std::list<CompObject *>::iterator it;
     for (it = priv->children.begin (); it != priv->children.end (); it++)
     {
-	if (type > 0 && (*it)->type () != type)
+	if (type > 0 && (*it)->objectType () != type)
 	    continue;
-	rv &= (*proc) ((*it), closure);
+	rv &= proc ((*it));
     }
 
     return rv;
 }
 
-typedef struct _ResizeInfo {
-    CompObjectType type;
-    unsigned int   size;
-} ResizeInfo;
-
 static bool
-resizePrivates (CompObject *o, void * closure)
+resizePrivates (CompObject *o, CompObject::Type type, unsigned int size)
 {
-    ResizeInfo *info = static_cast<ResizeInfo *> (closure);
-
-    if (o->type () == info->type)
+    if (o->objectType () == type)
     {
-	o->privates.resize (info->size);
+	o->privates.resize (size);
     }
-    o->forEachChild (resizePrivates, info);
+    o->forEachChild (boost::bind (resizePrivates, _1, type, size));
 
     return true;
 }
 
 int
-CompObject::allocatePrivateIndex (CompObjectType      type,
+CompObject::allocatePrivateIndex (CompObject::Type    type,
 				  CompObject::indices *iList)
 {
     if (!iList)
@@ -154,18 +151,13 @@ CompObject::allocatePrivateIndex (CompObjectType      type,
     iList->resize (i + 1);
     iList->at (i) = true;
 
-    ResizeInfo info;
-    info.type = type;
-    info.size = i + 1;
-
-
-    resizePrivates (core, static_cast<void *> (&info));
+    resizePrivates (core, type, i + 1);
 
     return i;
 }
 
 void
-CompObject::freePrivateIndex (CompObjectType type,
+CompObject::freePrivateIndex (CompObject::Type    type,
 			      CompObject::indices *iList,
 	 		      int idx)
 {
@@ -181,10 +173,6 @@ CompObject::freePrivateIndex (CompObjectType type,
     unsigned int i = iList->size () - 1;
     iList->resize (i);
 
-    ResizeInfo info;
-    info.type = type;
-    info.size = i;
-
-    resizePrivates (core, static_cast<void *> (&info));
+    resizePrivates (core, type, i);
 }
 

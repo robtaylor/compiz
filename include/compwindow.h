@@ -1,13 +1,25 @@
 #ifndef _COMPWINDOW_H
 #define _COMPWINDOW_H
 
+#include <boost/function.hpp>
+
+#include <X11/Xlib-xcb.h>
+#include <X11/Xutil.h>
+#include <X11/Xregion.h>
+#include <X11/extensions/Xdamage.h>
+#include <X11/extensions/sync.h>
+
+#include <compaction.h>
+#include <compobject.h>
 #include <compsize.h>
 #include <comppoint.h>
-#include <comptexture.h>
-#include <compfragment.h>
+
+#include <wrapable.h>
 
 class CompWindow;
+class CompIcon;
 class PrivateWindow;
+struct CompStartupSequence;
 
 #define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
 #define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
@@ -158,20 +170,42 @@ class PrivateWindow;
 #define CompWindowGrabResizeMask (1 << 3)
 
 
+
+enum CompStackingUpdateMode {
+    CompStackingUpdateModeNone = 0,
+    CompStackingUpdateModeNormal,
+    CompStackingUpdateModeAboveFullscreen,
+    CompStackingUpdateModeInitialMap,
+    CompStackingUpdateModeInitialMapDeniedFocus
+};
+
+enum CompWindowNotify {
+   CompWindowNotifyMap,
+   CompWindowNotifyUnmap,
+   CompWindowNotifyRestack,
+   CompWindowNotifyHide,
+   CompWindowNotifyShow,
+   CompWindowNotifyAliveChanged,
+   CompWindowNotifySyncAlarm
+};
+
+struct CompWindowExtents {
+    int left;
+    int right;
+    int top;
+    int bottom;
+};
+
+struct CompStruts {
+    XRectangle left;
+    XRectangle right;
+    XRectangle top;
+    XRectangle bottom;
+};
+
 class WindowInterface : public WrapableInterface<CompWindow> {
     public:
 	WindowInterface ();
-
-	WRAPABLE_DEF(bool, paint, const WindowPaintAttrib *,
-		     const CompTransform *, Region, unsigned int);
-	WRAPABLE_DEF(bool, draw, const CompTransform *,
-		     CompFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_DEF(void, addGeometry, CompTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_DEF(void, drawTexture, CompTexture *texture,
-		     CompFragment::Attrib &, unsigned int);
-	WRAPABLE_DEF(void, drawGeometry);
-	WRAPABLE_DEF(bool, damageRect, bool, BoxPtr);
 
 	WRAPABLE_DEF(void, getOutputExtents, CompWindowExtents *);
 	WRAPABLE_DEF(void, getAllowedActions, unsigned int *,
@@ -185,6 +219,7 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 
 	WRAPABLE_DEF(void, resizeNotify, int, int, int, int);
 	WRAPABLE_DEF(void, moveNotify, int, int, bool);
+	WRAPABLE_DEF(void, windowNotify, CompWindowNotify);
 	WRAPABLE_DEF(void, grabNotify, int, int,
 		     unsigned int, unsigned int);
 	WRAPABLE_DEF(void, ungrabNotify);
@@ -211,6 +246,10 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	    private:
 		unsigned int mBorder;
 	};
+
+
+
+	typedef boost::function<void (CompWindow *)> ForEach;
 	
     public:
 	CompWindow *next;
@@ -223,7 +262,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	            Window     aboveId);
 	~CompWindow ();
 
-	CompString name ();
+	CompString objectName ();
 
 	CompScreen *
 	screen ();
@@ -256,13 +295,12 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	close (Time serverTime);
 
 	bool
-	handlePingTimeout (int lastPing);
+	handlePingTimeout (unsigned int lastPing);
 
 	void
 	handlePing (int lastPing);
 
-	bool
-	overlayWindow ();
+
 
 	Region
 	region ();
@@ -347,28 +385,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	void
 	updateWindowOutputExtents ();
-
-	bool
-	bind ();
-
-	void
-	release ();
-
-	void
-	damageTransformedRect (float  xScale,
-			       float  yScale,
-			       float  xTranslate,
-			       float  yTranslate,
-			       BoxPtr rect);
-
-	void
-	damageOutputExtents ();
-
-	void
-	addDamageRect (BoxPtr rect);
-
-	void
-	addDamage ();
 
 	void
 	updateRegion ();
@@ -468,7 +484,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	unminimize ();
 
 	void
-	maximize (int state);
+	maximize (unsigned int state = 0);
 
 	bool
 	getUserTime (Time *time);
@@ -479,12 +495,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	bool
 	allowWindowFocus (unsigned int noFocusMask,
 			  Time         timestamp);
-
-	void
-	unredirect ();
-
-	void
-	redirect ();
 
 	void
 	defaultViewport (int *vx, int *vy);
@@ -540,17 +550,13 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	CompWindowExtents
 	input ();
 
+	CompWindowExtents
+	output ();
+
 	XSizeHints
 	sizeHints ();
 
-	void
-	updateOpacity ();
 
-	void
-	updateBrightness ();
-
-	void
-	updateSaturation ();
 
 	void
 	updateMwmHints ();
@@ -561,8 +567,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	void
 	processMap ();
 
-	void
-	processDamage (XDamageNotifyEvent *de);
+
 
 	XSyncAlarm
 	syncAlarm ();
@@ -570,26 +575,18 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	bool
 	destroyed ();
 
-	bool
-	damaged ();
 
 	bool
 	invisible ();
 
 	bool
-	redirected ();
+	syncWait ();
 
-	Region
-	clip ();
+	bool alpha ();
 
-	WindowPaintAttrib &
-	paintAttrib ();
+	bool alive ();
 
-	bool
-	moreVertices (int newSize);
 
-	bool
-	moreIndices (int newSize);
 	
 	static unsigned int
 	constrainWindowState (unsigned int state,
@@ -605,19 +602,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-    	WRAPABLE_HND(bool, paint, const WindowPaintAttrib *,
-		     const CompTransform *, Region, unsigned int);
-	WRAPABLE_HND(bool, draw, const CompTransform *,
-		     CompFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_HND(void, addGeometry, CompTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_HND(void, drawTexture, CompTexture *texture,
-		     CompFragment::Attrib &, unsigned int);
-	WRAPABLE_HND(void, drawGeometry);
-
-	
-	WRAPABLE_HND(bool, damageRect, bool, BoxPtr);
-
 	WRAPABLE_HND(void, getOutputExtents, CompWindowExtents *);
 	WRAPABLE_HND(void, getAllowedActions, unsigned int *,
 		     unsigned int *);
@@ -630,6 +614,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	WRAPABLE_HND(void, resizeNotify, int, int, int, int);
 	WRAPABLE_HND(void, moveNotify, int, int, bool);
+	WRAPABLE_HND(void, windowNotify, CompWindowNotify);
 	WRAPABLE_HND(void, grabNotify, int, int,
 		     unsigned int, unsigned int);
 	WRAPABLE_HND(void, ungrabNotify);
@@ -645,90 +630,74 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	// static action functions
 	static bool
-	closeWin (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	closeWin (CompDisplay        *d,
+		  CompAction         *action,
+		  CompAction::State  state,
+		  CompOption::Vector &options);
 
 	static bool
-	unmaximize (CompDisplay     *d,
-		    CompAction      *action,
-		    CompActionState state,
-		    CompOption      *option,
-		    int		    nOption);
+	unmaximizeAction (CompDisplay        *d,
+			  CompAction         *action,
+			  CompAction::State  state,
+			  CompOption::Vector &options);
 
 	static bool
-	minimize (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	minimizeAction (CompDisplay        *d,
+			CompAction         *action,
+			CompAction::State  state,
+			CompOption::Vector &options);
 
 	static bool
-	maximize (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int		  nOption);
+	maximizeAction (CompDisplay        *d,
+			CompAction         *action,
+			CompAction::State  state,
+			CompOption::Vector &options);
 
 	static bool
-	maximizeHorizontally (CompDisplay     *d,
-			      CompAction      *action,
-			      CompActionState state,
-			      CompOption      *option,
-			      int	      nOption);
+	maximizeHorizontally (CompDisplay        *d,
+			      CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
 
 	static bool
-	maximizeVertically (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int		    nOption);
+	maximizeVertically (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
+	static bool
+	raiseInitiate (CompDisplay        *d,
+		       CompAction         *action,
+		       CompAction::State  state,
+		       CompOption::Vector &options);
+	static bool
+	lowerInitiate (CompDisplay        *d,
+		       CompAction         *action,
+		       CompAction::State  state,
+		       CompOption::Vector &options);
 
 	static bool
-	raiseInitiate (CompDisplay     *d,
-		       CompAction      *action,
-		       CompActionState state,
-		       CompOption      *option,
-		       int	       nOption);
+	toggleMaximized (CompDisplay        *d,
+			 CompAction         *action,
+			 CompAction::State  state,
+			 CompOption::Vector &options);
 
 	static bool
-	lowerInitiate (CompDisplay     *d,
-		       CompAction      *action,
-		       CompActionState state,
-		       CompOption      *option,
-		       int	       nOption);
+	toggleMaximizedHorizontally (CompDisplay        *d,
+				     CompAction         *action,
+				     CompAction::State  state,
+				     CompOption::Vector &options);
 
 	static bool
-	toggleMaximized (CompDisplay     *d,
-			 CompAction      *action,
-			 CompActionState state,
-			 CompOption      *option,
-			 int		 nOption);
-
+	toggleMaximizedVertically (CompDisplay        *d,
+				   CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options);
 
 	static bool
-	toggleMaximizedHorizontally (CompDisplay     *d,
-				     CompAction      *action,
-				     CompActionState state,
-				     CompOption      *option,
-				     int	     nOption);
-
-	static bool
-	toggleMaximizedVertically (CompDisplay     *d,
-				   CompAction      *action,
-				   CompActionState state,
-				   CompOption      *option,
-				   int		   nOption);
-
-	static bool
-	shade (CompDisplay     *d,
-	       CompAction      *action,
-	       CompActionState state,
-	       CompOption      *option,
-	       int	       nOption);
-
+	shade (CompDisplay        *d,
+	       CompAction         *action,
+	       CompAction::State  state,
+	       CompOption::Vector &options);
 		
 };
 

@@ -1,6 +1,7 @@
 #ifndef _COMPOUTPUT_H
 #define _COMPOUTPUT_H
 
+#include <compiz-core.h>
 #include <comprect.h>
 
 class CompOutput : public CompRect {

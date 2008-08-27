@@ -1,9 +1,11 @@
 #ifndef _PRIVATEFRAGMENT_H
 #define _PRIVATEFRAGMENT_H
 
-#include <compfragment.h>
+#include <vector>
 
-namespace CompFragment {
+#include <opengl/fragment.h>
+
+namespace GLFragment {
 
     class Function;
     class Program;

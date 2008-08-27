@@ -28,13 +28,17 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <dirent.h>
+#include <list>
+
+#include <boost/foreach.hpp>
+#define foreach BOOST_FOREACH
 
 #include <compiz-core.h>
 #include <compobject.h>
 
-CompPlugin *plugins = 0;
+std::list<CompPlugin *> plugins;
 
-class CorePluginVTable : public CompPluginVTable
+class CorePluginVTable : public CompPlugin::VTable
 {
     public:
 
@@ -50,13 +54,13 @@ class CorePluginVTable : public CompPluginVTable
 	virtual void
 	fini ();
 
-	CompOption *
-	getObjectOptions (CompObject *object, int *count);
+	CompOption::Vector &
+	getObjectOptions (CompObject *object);
 
 	bool
-	setObjectOption (CompObject *object,
-			 const char *name,
-			 CompOptionValue *value);
+	setObjectOption (CompObject        *object,
+			 const char        *name,
+			 CompOption::Value &value);
 };
 
 bool
@@ -73,12 +77,11 @@ CorePluginVTable::fini ()
 CompMetadata *
 CorePluginVTable::getMetadata ()
 {
-    return &coreMetadata;
+    return coreMetadata;
 }
 
-CompOption *
-CorePluginVTable::getObjectOptions (CompObject *object,
-				    int	 *count)
+CompOption::Vector &
+CorePluginVTable::getObjectOptions (CompObject *object)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
 	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
@@ -87,44 +90,42 @@ CorePluginVTable::getObjectOptions (CompObject *object,
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (object, count));
+		     noOptions, (object));
 }
 
 bool
-CorePluginVTable::setObjectOption (CompObject      *object,
-				   const char      *name,
-				   CompOptionValue *value)
+CorePluginVTable::setObjectOption (CompObject        *object,
+				   const char        *name,
+				   CompOption::Value &value)
 {
     static SetPluginObjectOptionProc dispTab[] = {
 	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) setDisplayOption,
-	(SetPluginObjectOptionProc) setScreenOption
+	(SetPluginObjectOptionProc) CompDisplay::setDisplayOption,
+	(SetPluginObjectOptionProc) CompScreen::setScreenOption
     };
 
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
+    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
 		     (object, name, value));
 }
 
-
-
 CorePluginVTable coreVTable;
 
-static Bool
+static bool
 cloaderLoadPlugin (CompPlugin *p,
 		   const char *path,
 		   const char *name)
 {
     if (path)
-	return FALSE;
+	return false;
 
     if (strcmp (name, coreVTable.name ()))
-	return FALSE;
+	return false;
 
     p->vTable	      = &coreVTable;
     p->devPrivate.ptr = NULL;
     p->devType	      = "cloader";
 
-    return TRUE;
+    return true;
 }
 
 static void
@@ -132,32 +133,20 @@ cloaderUnloadPlugin (CompPlugin *p)
 {
 }
 
-static char **
-cloaderListPlugins (const char *path,
-		    int	       *n)
+static CompStringList
+cloaderListPlugins (const char *path)
 {
-    char **list;
+    CompStringList rv;
 
     if (path)
-	return 0;
+	return CompStringList ();
 
-    list = (char **) malloc (sizeof (char *));
-    if (!list)
-	return 0;
+    rv.push_back (CompString (coreVTable.name ()));
 
-    *list = strdup (coreVTable.name ());
-    if (!*list)
-    {
-	free (list);
-	return 0;
-    }
-
-    *n = 1;
-
-    return list;
+    return rv;
 }
 
-static Bool
+static bool
 dlloaderLoadPlugin (CompPlugin *p,
 		    const char *path,
 		    const char *name)
@@ -167,7 +156,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 
     file = (char *) malloc ((path ? strlen (path) : 0) + strlen (name) + 8);
     if (!file)
-	return FALSE;
+	return false;
 
     if (path)
 	sprintf (file, "%s/lib%s.so", path, name);
@@ -206,7 +195,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 		dlclose (dlhand);
 		free (file);
 
-		return FALSE;
+		return false;
 	    }
 	}
 	else
@@ -214,7 +203,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 	    dlclose (dlhand);
 	    free (file);
 
-	    return FALSE;
+	    return false;
 	}
     }
     else
@@ -229,13 +218,13 @@ dlloaderLoadPlugin (CompPlugin *p,
     p->devPrivate.ptr = dlhand;
     p->devType	      = "dlloader";
 
-    return TRUE;
+    return true;
 }
 
 static void
 dlloaderUnloadPlugin (CompPlugin *p)
 {
-    if (strcmp (p->devType, "dlloader") == 0)
+    if (p->devType.compare ("dlloader") == 0)
 	dlclose (p->devPrivate.ptr);
     else
 	cloaderUnloadPlugin (p);
@@ -256,78 +245,56 @@ dlloaderFilter (const struct dirent *name)
     return 1;
 }
 
-static char **
-dlloaderListPlugins (const char *path,
-		     int	*n)
+static CompStringList
+dlloaderListPlugins (const char *path)
 {
     struct dirent **nameList;
-    char	  **list, **cList;
-    char	  *name;
-    int		  length, nFile, i, j = 0;
+    char	  name[1024];
+    int		  length, nFile, i;
 
-    cList = cloaderListPlugins (path, n);
-    if (cList)
-	j = *n;
+    CompStringList rv = cloaderListPlugins (path);
 
     if (!path)
 	path = ".";
 
     nFile = scandir (path, &nameList, dlloaderFilter, alphasort);
     if (!nFile)
-	return cList;
-
-    list = (char **) realloc (cList, (j + nFile) * sizeof (char *));
-    if (!list)
-	return cList;
+	return rv;
 
     for (i = 0; i < nFile; i++)
     {
 	length = strlen (nameList[i]->d_name);
 
-	name = (char *) malloc ((length - 5) * sizeof (char));
-	if (name)
-	{
-	    strncpy (name, nameList[i]->d_name + 3, length - 6);
-	    name[length - 6] = '\0';
+	strncpy (name, nameList[i]->d_name + 3, length - 6);
+	name[length - 6] = '\0';
 
-	    list[j++] = name;
-	}
+	rv.push_back (CompString (name));
     }
 
-    if (j)
-    {
-	*n = j;
-
-	return list;
-    }
-
-    free (list);
-
-    return NULL;
+    return rv;
 }
 
 LoadPluginProc   loaderLoadPlugin   = dlloaderLoadPlugin;
 UnloadPluginProc loaderUnloadPlugin = dlloaderUnloadPlugin;
 ListPluginsProc  loaderListPlugins  = dlloaderListPlugins;
 
-typedef struct _InitObjectContext {
+struct InitObjectContext {
     CompPlugin *plugin;
     CompObject *object;
-} InitObjectContext;
+};
 
 static bool
-initObjectTree (CompObject *object,
-		void       *closure);
+initObjectTree (CompObject        *object,
+		InitObjectContext *pCtx);
 
 static bool
-finiObjectTree (CompObject *object,
-		void       *closure);
+finiObjectTree (CompObject        *object,
+		InitObjectContext *pCtx);
 
 static bool
-initObjectTree (CompObject *object,
-		void       *closure)
+initObjectTree (CompObject        *object,
+		InitObjectContext *pCtx)
 {
-    InitObjectContext     *pCtx = (InitObjectContext *) closure;
     CompPlugin		  *p = pCtx->plugin;
     InitObjectContext ctx;
 
@@ -344,16 +311,16 @@ initObjectTree (CompObject *object,
     ctx.plugin = pCtx->plugin;
     ctx.object = NULL;
 
-    if (!object->forEachChild (initObjectTree, static_cast<void *> (&ctx)))
+    if (!object->forEachChild (boost::bind (initObjectTree, _1, &ctx)))
     {
-	object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 
 	return false;
     }
 
     if (!core->initPluginForObject (p, object))
     {
-	object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 	p->vTable->finiObject (object);
 
 	return false;
@@ -363,10 +330,9 @@ initObjectTree (CompObject *object,
 }
 
 static bool
-finiObjectTree (CompObject *object,
-		void       *closure)
+finiObjectTree (CompObject        *object,
+		InitObjectContext *pCtx)
 {
-    InitObjectContext     *pCtx = (InitObjectContext *) closure;
     CompPlugin		  *p = pCtx->plugin;
     InitObjectContext     ctx;
 
@@ -377,7 +343,7 @@ finiObjectTree (CompObject *object,
     ctx.plugin = p;
     ctx.object = NULL;
 
-    object->forEachChild (finiObjectTree, static_cast<void *> (&ctx));
+    object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 
     p->vTable->finiObject (object);
 
@@ -401,7 +367,7 @@ initPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    if (!initObjectTree (core, static_cast<void *> (&ctx)))
+    if (!initObjectTree (core, &ctx))
     {
 	p->vTable->fini ();
 	return false;
@@ -418,98 +384,95 @@ finiPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    finiObjectTree (core, (void *) &ctx);
+    finiObjectTree (core, &ctx);
 
     p->vTable->fini ();
 }
 
 bool
-objectInitPlugins (CompObject *o)
+CompPlugin::objectInitPlugins (CompObject *o)
 {
     InitObjectContext ctx;
-    CompPlugin	      *p;
-    int		      i, j = 0;
+
+    CompPlugin::List::reverse_iterator rit = plugins.rbegin ();
 
     ctx.object = NULL;
 
-    for (p = plugins; p; p = p->next)
-	j++;
-
-    while (j--)
+    while (rit != plugins.rend ())
     {
-	i = 0;
-	for (p = plugins; i < j; p = p->next)
-	    i++;
 
-	ctx.plugin = p;
+	ctx.plugin = (*rit);
 
-	if (!initObjectTree (o, (void *) &ctx))
+	if (!initObjectTree (o, &ctx))
 	{
-	    for (p = p->next; p; p = p->next)
+	    if (rit == plugins.rbegin ())
+		return false;
+	    --rit;
+	    for (; rit != plugins.rbegin (); --rit)
 	    {
-		ctx.plugin = p;
+		ctx.plugin = (*rit);
 
-		finiObjectTree (o, (void *) &ctx);
+		finiObjectTree (o, &ctx);
 	    }
 
+	    ctx.plugin = (*rit);
+
+	    finiObjectTree (o, &ctx);
 	    return false;
 	}
+	rit++;
     }
 
     return true;
 }
 
 void
-objectFiniPlugins (CompObject *o)
+CompPlugin::objectFiniPlugins (CompObject *o)
 {
     InitObjectContext ctx;
-    CompPlugin	      *p;
 
     ctx.object = NULL;
 
-    for (p = plugins; p; p = p->next)
+    foreach (CompPlugin *p, plugins)
     {
 	ctx.plugin = p;
 
-	finiObjectTree (o, (void *) &ctx);
+	finiObjectTree (o, &ctx);
     }
 }
 
 CompPlugin *
-findActivePlugin (const char *name)
+CompPlugin::find (const char *name)
 {
-    CompPlugin *p;
-
-    for (p = plugins; p; p = p->next)
+    foreach (CompPlugin *p, plugins)
     {
 	if (strcmp (p->vTable->name (), name) == 0)
 	    return p;
     }
 
-    return 0;
+    return NULL;
 }
 
 void
-unloadPlugin (CompPlugin *p)
+CompPlugin::unload (CompPlugin *p)
 {
     (*loaderUnloadPlugin) (p);
-    free (p);
+    delete p;
 }
 
 CompPlugin *
-loadPlugin (const char *name)
+CompPlugin::load (const char *name)
 {
     CompPlugin *p;
     char       *home, *plugindir;
     Bool       status;
 
-    p = (CompPlugin *) malloc (sizeof (CompPlugin));
+    p = new CompPlugin ();
     if (!p)
 	return 0;
 
-    p->next	       = 0;
     p->devPrivate.uval = 0;
-    p->devType	       = NULL;
+    p->devType	       = "";
     p->vTable	       = 0;
 
     home = getenv ("HOME");
@@ -541,75 +504,73 @@ loadPlugin (const char *name)
     return 0;
 }
 
-Bool
-pushPlugin (CompPlugin *p)
+bool
+CompPlugin::push (CompPlugin *p)
 {
-    if (findActivePlugin (p->vTable->name ()))
+    if (find (p->vTable->name ()))
     {
 	compLogMessage (NULL, "core", CompLogLevelWarn,
 			"Plugin '%s' already active",
 			p->vTable->name ());
 
-	return FALSE;
+	return false;
     }
 
-    p->next = plugins;
-    plugins = p;
+    plugins.push_front (p);
 
     if (!initPlugin (p))
     {
 	compLogMessage (NULL, "core", CompLogLevelError,
 			"Couldn't activate plugin '%s'", p->vTable->name ());
-	plugins = p->next;
 
-	return FALSE;
+	plugins.pop_front ();
+
+	return false;
     }
 
-    return TRUE;
+    return true;
 }
 
 CompPlugin *
-popPlugin (void)
+CompPlugin::pop (void)
 {
-    CompPlugin *p = plugins;
+    if (plugins.empty ())
+	return NULL;
+
+    CompPlugin *p = plugins.front ();
 
     if (!p)
 	return 0;
 
     finiPlugin (p);
 
-    plugins = p->next;
+    plugins.pop_front ();
 
     return p;
 }
 
-CompPlugin *
-getPlugins (void)
+CompPlugin::List &
+CompPlugin::getPlugins (void)
 {
     return plugins;
 }
 
-static Bool
-stringExist (char **list,
-	     int  nList,
-	     char *s)
+static bool
+stringExist (CompStringList &list,
+	     CompString     s)
 {
-    int i;
+    foreach (CompString &l, list)
+	if (s.compare (l) == 0)
+	    return true;
 
-    for (i = 0; i < nList; i++)
-	if (strcmp (list[i], s) == 0)
-	    return TRUE;
-
-    return FALSE;
+    return false;
 }
 
-char **
-availablePlugins (int *n)
+CompStringList
+CompPlugin::availablePlugins ()
 {
     char *home, *plugindir;
-    char **list, **currentList, **pluginList, **homeList = NULL;
-    int  nCurrentList, nPluginList, nHomeList;
-    int  count, i, j;
+    CompStringList list, currentList, pluginList, homeList;
 
     home = getenv ("HOME");
     if (home)
@@ -618,82 +579,58 @@ availablePlugins (int *n)
 	if (plugindir)
 	{
 	    sprintf (plugindir, "%s/%s", home, HOME_PLUGINDIR);
-	    homeList = (*loaderListPlugins) (plugindir, &nHomeList);
+	    homeList = (*loaderListPlugins) (plugindir);
 	    free (plugindir);
 	}
     }
 
-    pluginList  = (*loaderListPlugins) (PLUGINDIR, &nPluginList);
-    currentList = (*loaderListPlugins) (NULL, &nCurrentList);
+    pluginList  = (*loaderListPlugins) (PLUGINDIR);
+    currentList = (*loaderListPlugins) (NULL);
 
-    count = 0;
-    if (homeList)
-	count += nHomeList;
-    if (pluginList)
-	count += nPluginList;
-    if (currentList)
-	count += nCurrentList;
-
-    if (!count)
-	return NULL;
-
-    list = (char **) malloc (count * sizeof (char *));
-    if (!list)
-	return NULL;
-
-    j = 0;
-    if (homeList)
+    if (!homeList.empty ())
     {
-	for (i = 0; i < nHomeList; i++)
-	    if (!stringExist (list, j, homeList[i]))
-		list[j++] = homeList[i];
-
-	free (homeList);
+	foreach (CompString &s, homeList)
+	    if (!stringExist (list, s))
+		list.push_back (s);
     }
 
-    if (pluginList)
+    if (!pluginList.empty ())
     {
-	for (i = 0; i < nPluginList; i++)
-	    if (!stringExist (list, j, pluginList[i]))
-		list[j++] = pluginList[i];
-
-	free (pluginList);
+	foreach (CompString &s, pluginList)
+	    if (!stringExist (list, s))
+		list.push_back (s);
     }
 
-    if (currentList)
+    if (!currentList.empty ())
     {
-	for (i = 0; i < nCurrentList; i++)
-	    if (!stringExist (list, j, currentList[i]))
-		list[j++] = currentList[i];
-
-	free (currentList);
+	foreach (CompString &s, currentList)
+	    if (!stringExist (list, s))
+		list.push_back (s);
     }
-
-    *n = j;
 
     return list;
 }
 
 int
-getPluginABI (const char *name)
+CompPlugin::getPluginABI (const char *name)
 {
-    CompPlugin *p = findActivePlugin (name);
-    CompOption	*option;
-    int		nOption;
+    CompPlugin *p = find (name);
+    CompString s = name;
 
     if (!p)
 	return 0;
 
-    /* MULTIDPYERROR: ABI options should be moved into core */
-    option = p->vTable->getObjectOptions (core->displays(),
-					     &nOption);
+    s += "_ABI";
 
-    return getIntOptionNamed (option, nOption, "abi", 0);
+    if (!core->hasValue (s))
+	return 0;
+
+    return core->getValue (s).uval;
 }
 
-Bool
-checkPluginABI (const char *name,
-		int	   abi)
+bool
+CompPlugin::checkPluginABI (const char *name,
+			    int        abi)
 {
     int pluginABI;
 
@@ -702,7 +639,7 @@ checkPluginABI (const char *name,
     {
 	compLogMessage (NULL, "core", CompLogLevelError,
 			"Plugin '%s' not loaded.\n", name);
-	return FALSE;
+	return false;
     }
     else if (pluginABI != abi)
     {
@@ -710,69 +647,44 @@ checkPluginABI (const char *name,
 			"Plugin '%s' has ABI version '%d', expected "
 			"ABI version '%d'.\n",
 			name, pluginABI, abi);
-	return FALSE;
+	return false;
     }
 
-    return TRUE;
+    return true;
 }
 
-Bool
-getPluginDisplayIndex (CompDisplay *d,
-		       const char  *name,
-		       int	   *index)
-{
-    CompPlugin *p = findActivePlugin (name);
-    CompOption	*option;
-    int		nOption, value;
-
-    if (!p)
-	return FALSE;
-
-    option = p->vTable->getObjectOptions (d, &nOption);
-
-    value = getIntOptionNamed (option, nOption, "index", -1);
-    if (value < 0)
-	return FALSE;
-
-    *index = value;
-
-    return TRUE;
-}
-
-
-CompPluginVTable::~CompPluginVTable ()
+CompPlugin::VTable::~VTable ()
 {
 }
 
 CompMetadata *
-CompPluginVTable::getMetadata ()
+CompPlugin::VTable::getMetadata ()
 {
     return NULL;
 }
 
 
 bool
-CompPluginVTable::initObject (CompObject *object)
+CompPlugin::VTable::initObject (CompObject *object)
 {
     return true;
 }
 
 void
-CompPluginVTable::finiObject (CompObject *object)
+CompPlugin::VTable::finiObject (CompObject *object)
 {
 }
 	
-CompOption *
-CompPluginVTable::getObjectOptions (CompObject *object, int *count)
+CompOption::Vector &
+CompPlugin::VTable::getObjectOptions (CompObject *object)
 {
-    (*count) = 0;
-    return NULL;
+    return noOptions;
 }
 
 bool
-CompPluginVTable::setObjectOption (CompObject *object,
-				   const char *name,
-				   CompOptionValue *value)
+CompPlugin::VTable::setObjectOption (CompObject        *object,
+				   const char        *name,
+				   CompOption::Value &value)
 {
     return false;
 }

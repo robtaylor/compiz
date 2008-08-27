@@ -3,7 +3,6 @@
 	<_short>General Options</_short>
 	<_long>General compiz options</_long>
 	<display>
-	    <option name="abi" type="int" read_only="true"/>
 	    <option name="active_plugins" type="list">
 		<_short>Active Plugins</_short>
 		<_long>List of currently active plugins</_long>
@@ -11,25 +10,6 @@
 		<default>
 		    <value>core</value>
 		</default>
-	    </option>
-	    <option name="texture_filter" type="int">
-		<_short>Texture Filter</_short>
-		<_long>Texture filtering</_long>
-		<default>1</default>
-		<min>0</min>
-		<max>2</max>
-		<desc>
-		    <value>0</value>
-		    <_name>Fast</_name>
-		</desc>
-		<desc>
-		    <value>1</value>
-		    <_name>Good</_name>
-		</desc>
-		<desc>
-		    <value>2</value>
-		    <_name>Best</_name>
-		</desc>
 	    </option>
 	    <option name="click_to_focus" type="bool">
 		<_short>Click To Focus</_short>
@@ -182,10 +162,6 @@
 		<_short>Run command 11</_short>
 		<_long>A keybinding that when invoked, will run the shell command identified by command11</_long>
 	    </option>
-	    <option name="slow_animations_key" type="key">
-		<_short>Slow Animations</_short>
-		<_long>Toggle use of slow animations</_long>
-	    </option>
 	    <option name="raise_window_key" type="key">
 		<_short>Raise Window</_short>
 		<_long>Raise window above other windows</_long>
@@ -330,23 +306,6 @@
 	    </option>
 	</display>
 	<screen>
-	    <option name="detect_refresh_rate" type="bool">
-		<_short>Detect Refresh Rate</_short>
-		<_long>Automatic detection of refresh rate</_long>
-		<default>true</default>
-	    </option>
-	    <option name="lighting" type="bool">
-		<_short>Lighting</_short>
-		<_long>Use diffuse light when screen is transformed</_long>
-		<default>true</default>
-	    </option>
-	    <option name="refresh_rate" type="int">
-		<_short>Refresh Rate</_short>
-		<_long>The rate at which the screen is redrawn (times/second)</_long>
-		<default>50</default>
-		<min>1</min>
-		<max>200</max>
-	    </option>
 	    <option name="hsize" type="int">
 		<_short>Horizontal Virtual Size</_short>
 		<_long>Screen size multiplier for horizontal virtual size</_long>
@@ -361,20 +320,10 @@
 		<min>1</min>
 		<max>32</max>
 	    </option>
-	    <option name="unredirect_fullscreen_windows" type="bool">
-		<_short>Unredirect Fullscreen Windows</_short>
-		<_long>Allow drawing of fullscreen windows to not be redirected to offscreen pixmaps</_long>
-		<default>false</default>
-	    </option>
 	    <option name="default_icon" type="string">
 		<_short>Default Icon</_short>
 		<_long>Default window icon image</_long>
 		<default>icon</default>
-	    </option>
-	    <option name="sync_to_vblank" type="bool">
-		<_short>Sync To VBlank</_short>
-		<_long>Only perform screen updates during vertical blanking period</_long>
-		<default>true</default>
 	    </option>
 	    <option name="number_of_desktops" type="int">
 		<_short>Number of Desktops</_short>
@@ -415,11 +364,6 @@
 		    <_name>Prefer smaller output</_name>
 		</desc>
 	    </option>
-	    <option name="force_independent_output_painting" type="bool">
-		<_short>Force independent output painting.</_short>
-		<_long>Paint each output device independly, even if the output devices overlap</_long>
-		<default>false</default>
-	    </option>
 	    <option name="focus_prevention_level" type="int">
 		<_short>Focus Prevention Level</_short>
 		<_long>Level of focus stealing prevention</_long>
@@ -447,11 +391,6 @@
 		<_short>Focus Prevention Windows</_short>
 		<_long>Focus prevention windows</_long>
 		<default>any</default>
-	    </option>
-	    <option name="texture_compression" type="bool">
-		<_short>Texture Compression</_short>
-		<_long>If available use compression for textures converted from images</_long>
-		<default>true</default>
 	    </option>
 	</screen>
     </core>

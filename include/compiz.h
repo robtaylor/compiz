@@ -26,136 +26,63 @@
 #ifndef _COMPIZ_H
 #define _COMPIZ_H
 
-#include <libxml/parser.h>
-
 #include <compiz-common.h>
 
-COMPIZ_BEGIN_DECLS
+#include <string>
+#include <list>
 
-typedef int CompBool;
-typedef int CompTimeoutHandle;
-typedef int CompWatchFdHandle;
+#define RESTRICT_VALUE(value, min, max)				     \
+    (((value) < (min)) ? (min): ((value) > (max)) ? (max) : (value))
 
-typedef union _CompOptionValue CompOptionValue;
+#define MOD(a,b) ((a) < 0 ? ((b) - ((-(a) - 1) % (b))) - 1 : (a) % (b))
 
-typedef struct _CompMetadata CompMetadata;
-typedef struct _CompOption   CompOption;
-typedef struct _CompPlugin   CompPlugin;
+#define TIMEVALDIFF(tv1, tv2)						   \
+    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
+    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
+     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
+    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
+     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
 
+#define MULTIPLY_USHORT(us1, us2)		 \
+    (((GLuint) (us1) * (GLuint) (us2)) / 0xffff)
 
-class CompCore;
+#define DEG2RAD (M_PI / 180.0f)
+
 class CompDisplay;
-class CompScreen;
-class CompWindow;
-class CompObject;
 
-typedef bool (*CallBackProc) (void *closure);
+typedef std::string CompString;
+typedef std::list<CompString> CompStringList;
+
+CompString compPrintf (const char *format, ...);
+CompString compPrintf (const char *format, va_list ap);
+
+union CompPrivate {
+    void	  *ptr;
+    long	  val;
+    unsigned long uval;
+    void	  *(*fptr) (void);
+};
 
 typedef enum {
-    CompOptionTypeBool,
-    CompOptionTypeInt,
-    CompOptionTypeFloat,
-    CompOptionTypeString,
-    CompOptionTypeColor,
-    CompOptionTypeAction,
-    CompOptionTypeKey,
-    CompOptionTypeButton,
-    CompOptionTypeEdge,
-    CompOptionTypeBell,
-    CompOptionTypeMatch,
-    CompOptionTypeList
-} CompOptionType;
+    CompLogLevelFatal = 0,
+    CompLogLevelError,
+    CompLogLevelWarn,
+    CompLogLevelInfo,
+    CompLogLevelDebug
+} CompLogLevel;
 
 void
-compInitOptionValue (CompOptionValue *v);
+compLogMessage (CompDisplay  *d,
+		const char   *componentName,
+		CompLogLevel level,
+		const char   *format,
+		...);
 
-void
-compFiniOptionValue (CompOptionValue *v,
-		     CompOptionType  type);
+const char *
+logLevelToString (CompLogLevel level);
 
-void
-compInitOption (CompOption *option);
-
-void
-compFiniOption (CompOption *option);
-
-CompOption *
-compFindOption (CompOption *option,
-		int	    nOption,
-		const char  *name,
-		int	    *index);
-
-CompBool
-compSetBoolOption (CompOption      *option,
-		   CompOptionValue *value);
-
-CompBool
-compSetIntOption (CompOption	  *option,
-		  CompOptionValue *value);
-
-CompBool
-compSetFloatOption (CompOption	    *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetStringOption (CompOption	     *option,
-		     CompOptionValue *value);
-
-CompBool
-compSetColorOption (CompOption	    *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetActionOption (CompOption      *option,
-		     CompOptionValue *value);
-
-CompBool
-compSetMatchOption (CompOption      *option,
-		    CompOptionValue *value);
-
-CompBool
-compSetOptionList (CompOption      *option,
-		   CompOptionValue *value);
-
-CompBool
-compSetOption (CompOption      *option,
-	       CompOptionValue *value);
-
-CompBool
-compInitMetadata (CompMetadata *metadata);
-
-CompBool
-compInitPluginMetadata (CompMetadata *metadata,
-			const char   *plugin);
-
-void
-compFiniMetadata (CompMetadata *metadata);
-
-CompBool
-compAddMetadataFromFile (CompMetadata *metadata,
-			 const char   *file);
-
-CompBool
-compAddMetadataFromString (CompMetadata *metadata,
-			   const char	*string);
-
-CompBool
-compAddMetadataFromIO (CompMetadata	     *metadata,
-		       xmlInputReadCallback  ioread,
-		       xmlInputCloseCallback ioclose,
-		       void		     *ioctx);
-
-char *
-compGetStringFromMetadataPath (CompMetadata *metadata,
-			       const char   *path);
-
-int
-compReadXmlChunk (const char *src,
-		  int	     *offset,
-		  char	     *buffer,
-		  int	     length);
-
-
-COMPIZ_END_DECLS
+extern char       *programName;
+extern char       **programArgv;
+extern int        programArgc;
 
 #endif

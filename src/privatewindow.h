@@ -4,15 +4,13 @@
 #include <compiz-core.h>
 #include <compwindow.h>
 #include <comppoint.h>
-#include <comptexture.h>
 
 #define WINDOW_INVISIBLE(w)				          \
     ((w)->attrib.map_state != IsViewable		       || \
-     (!(w)->damaged)					       || \
      (w)->attrib.x + (w)->width  + (w)->output.right  <= 0     || \
      (w)->attrib.y + (w)->height + (w)->output.bottom <= 0     || \
-     (w)->attrib.x - (w)->output.left >= (w)->screen->size().width () || \
-     (w)->attrib.y - (w)->output.top >= (w)->screen->size().height () )
+     (w)->attrib.x - (w)->output.left >= (int) (w)->screen->size().width () || \
+     (w)->attrib.y - (w)->output.top >= (int) (w)->screen->size().height () )
 
 
 class PrivateWindow {
@@ -107,7 +105,7 @@ class PrivateWindow {
 
 	static void
 	revealAncestors (CompWindow *w,
-			 void       *closure);
+			 CompWindow *transient);
 
 	bool
 	constrainNewWindowSize (int        width,
@@ -117,11 +115,11 @@ class PrivateWindow {
 
 	static void
 	minimizeTransients (CompWindow *w,
-			    void       *closure);
+			    CompWindow *ancestor);
 
 	static void
 	unminimizeTransients (CompWindow *w,
-			      void       *closure);
+			      CompWindow *ancestor);
 
 	bool
 	getUsageTimestamp (Time *timestamp);
@@ -152,16 +150,13 @@ class PrivateWindow {
 	Window	      transientFor;
 	Window	      clientLeader;
 	XSizeHints	      sizeHints;
-	Pixmap	      pixmap;
-	CompTexture       texture;
-	CompTexture::Matrix matrix;
-	Damage	      damage;
+
 	bool	      inputHint;
 	bool	      alpha;
-	GLint	      width;
-	GLint	      height;
+	int	      width;
+	int	      height;
 	Region	      region;
-	Region	      clip;
+
 	unsigned int      wmType;
 	unsigned int      type;
 	unsigned int      state;
@@ -171,11 +166,9 @@ class PrivateWindow {
 	unsigned int      mwmFunc;
 	bool	      invisible;
 	bool	      destroyed;
-	bool	      damaged;
-	bool	      redirected;
+
 	bool	      managed;
-	bool	      bindFailed;
-	bool	      overlayWindow;
+
 	int		      destroyRefCnt;
 	int		      unmapRefCnt;
 
@@ -205,14 +198,6 @@ class PrivateWindow {
 	unsigned int lastPong;
 	bool	 alive;
 
-	GLushort opacity;
-	GLushort brightness;
-	GLushort saturation;
-
-	WindowPaintAttrib paint;
-	WindowPaintAttrib lastPaint;
-
-	unsigned int lastMask;
 
 	CompWindowExtents input;
 	CompWindowExtents output;
@@ -240,19 +225,9 @@ class PrivateWindow {
 	bool closeRequests;
 	Time lastCloseRequestTime;
 
-	XRectangle *damageRects;
-	int	       sizeDamage;
-	int	       nDamage;
 
-	GLfloat  *vertices;
-	int      vertexSize;
-	int      vertexStride;
-	GLushort *indices;
-	int      indexSize;
-	int      vCount;
-	int      texUnits;
-	int      texCoordSize;
-	int      indexCount;
+
+
 };
 
 #endif

@@ -3,12 +3,30 @@
 
 #include <list>
 
+#include <X11/Xlib-xcb.h>
+#include <X11/Xutil.h>
+#include <X11/Xregion.h>
+#include <X11/extensions/Xinerama.h>
+
+#include <compobject.h>
 #include <compmatch.h>
+#include <compcore.h>
+#include <compaction.h>
 #include "wrapable.h"
 
 class CompDisplay;
 class CompScreen;
+class CompOutput;
 class PrivateDisplay;
+typedef std::list<CompScreen *> CompScreenList;
+
+extern REGION     emptyRegion;
+extern REGION     infiniteRegion;
+
+extern int lastPointerX;
+extern int lastPointerY;
+extern int pointerX;
+extern int pointerY;
 
 #define GET_CORE_DISPLAY(object) (dynamic_cast<CompDisplay *> (object))
 #define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
@@ -37,7 +55,6 @@ class DisplayInterface : public WrapableInterface<CompDisplay> {
 class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject {
 
     public:
-	CompDisplay *next;
 
 	class Atoms {
 	    public:
@@ -172,7 +189,7 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	CompDisplay ();
 	~CompDisplay ();
 
-	CompString name ();
+	CompString objectName ();
 
 	bool
 	init (const char *name);
@@ -189,18 +206,15 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	Display *
 	dpy();
 	
-	CompScreen *
+	CompScreenList &
 	screens();
-
-	GLenum
-	textureFilter ();
 
 	CompOption *
 	getOption (const char *);
 
 	bool
-	setOption (const char      *name,
-		   CompOptionValue *value);
+	setOption (const char        *name,
+		   CompOption::Value &value);
 
 	std::vector<XineramaScreenInfo> &
 	screenInfo ();
@@ -256,10 +270,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	CompScreen *
 	findScreen (Window root);
 
-	void
-	forEachWindow (ForEachWindowProc proc,
-		       void	         *closure);
-
 	CompWindow *
 	findWindow (Window id);
 
@@ -267,8 +277,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	findTopLevelWindow (Window id);
 
 
-	void
-	clearTargetOutput (unsigned int mask);
 
 	bool
 	readImageFromFile (const char  *name,
@@ -356,6 +364,8 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
+
+	static int checkForError (Display *dpy);
 	
 	// wrapable interface
 	WRAPABLE_HND(void, handleEvent, XEvent *event)
@@ -374,10 +384,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	WRAPABLE_HND(void, logMessage, const char *, CompLogLevel, const char*)
 
-    public:
-	Region mTmpRegion;
-	Region mOutputRegion;
-
     private:
 
 	PrivateDisplay *priv;
@@ -385,41 +391,36 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
     public:
 
 	static bool
-	runCommandDispatch (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int		    nOption);
+	runCommandDispatch (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
 
 	static bool
-	runCommandScreenshot (CompDisplay     *d,
-			      CompAction      *action,
-			      CompActionState state,
-			      CompOption      *option,
-			      int	      nOption);
+	runCommandScreenshot(CompDisplay        *d,
+			     CompAction         *action,
+			     CompAction::State  state,
+			     CompOption::Vector &options);
 
 	static bool
-	runCommandWindowScreenshot (CompDisplay     *d,
-				    CompAction      *action,
-				    CompActionState state,
-				    CompOption      *option,
-				    int	            nOption);
+	runCommandWindowScreenshot(CompDisplay        *d,
+				   CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options);
 
 	static bool
-	runCommandTerminal (CompDisplay     *d,
-			    CompAction      *action,
-			    CompActionState state,
-			    CompOption      *option,
-			    int	            nOption);
+	runCommandTerminal (CompDisplay        *d,
+			    CompAction         *action,
+			    CompAction::State  state,
+			    CompOption::Vector &options);
 
-	static CompOption *
-	getDisplayOptions (CompObject  *object,
-			   int	       *count);
+	static CompOption::Vector &
+	getDisplayOptions (CompObject  *object);
+
+	static bool setDisplayOption (CompObject        *object,
+				      const char        *name,
+				      CompOption::Value &value);
 };
 
-extern Bool inHandleEvent;
-
-extern CompScreen *targetScreen;
-extern CompOutput *targetOutput;
 
 #endif

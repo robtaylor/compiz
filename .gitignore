@@ -26,5 +26,13 @@ Makefile.in
 /po/Makefile.in.in
 /po/POTFILES
 /po/stamp-it
+/po/*.gmo
+/metadata/*.xml
+/metadata/*.schemas
 /src/compiz
 /stamp-h1
+/config.h.in~
+/gtk/gnome/compiz.desktop
+/gtk/window-decorator/gtk-window-decorator
+/gtk/window-decorator/gwd.schemas
+/po/.*

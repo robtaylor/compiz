@@ -1,8 +1,19 @@
 #ifndef _PRIVATECORE_H
 #define _PRIVATECORE_H
 
+#include <map>
+
 #include <compiz-core.h>
 #include <compcore.h>
+
+extern bool shutDown;
+extern bool restartSignal;
+
+typedef struct _CompWatchFd {
+    int               fd;
+    FdWatchCallBack   callBack;
+    CompWatchFdHandle handle;
+} CompWatchFd;
 
 class PrivateCore {
 
@@ -24,8 +35,8 @@ class PrivateCore {
 
 
     public:
-	CompCore    *core;
-	CompDisplay *displays;
+	CompCore        *core;
+	CompDisplayList displays;
 
 	std::list<CompFileWatch *>  fileWatch;
 	CompFileWatchHandle         lastFileWatchHandle;
@@ -37,6 +48,8 @@ class PrivateCore {
 	CompWatchFdHandle        lastWatchFdHandle;
 	struct pollfd            *watchPollFds;
 	int                      nWatchFds;
+
+	std::map<CompString, CompPrivate> valueMap;
 };
 
 #endif

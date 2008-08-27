@@ -1,5 +1,5 @@
-#ifndef _COMPTEXTURE_H
-#define _COMPTEXTURE_H
+#ifndef _GLTEXTURE_H
+#define _GLTEXTURE_H
 
 #include <X11/Xlib-xcb.h>
 
@@ -21,7 +21,7 @@
 class CompScreen;
 class PrivateTexture;
 
-class CompTexture {
+class GLTexture {
     public:
 
 	typedef enum {
@@ -36,46 +36,43 @@ class CompTexture {
 	} Matrix;
 
     public:
-	CompTexture (CompScreen *);
-	~CompTexture ();
+	GLTexture (CompScreen *);
+	~GLTexture ();
 
+	void reset ();
+	
 	GLuint name ();
 	GLenum target ();
 
+	Matrix & matrix ();
+
 	void damage ();
 
-	Matrix & matrix ();
-	
-	void reset ();
-
 	bool bindPixmap (Pixmap	pixmap, int width, int height, int depth);
-
 	void releasePixmap ();
-
+	bool hasPixmap ();
+	
 	void enable (Filter filter);
-
 	void disable ();
 
-	bool hasPixmap ();
 
-	static bool imageBufferToTexture (CompTexture  *texture,
+	static bool imageBufferToTexture (GLTexture    *texture,
 					  const char   *image,
 					  unsigned int width,
 					  unsigned int height);
 
-	static bool imageDataToTexture (CompTexture  *texture,
+	static bool imageDataToTexture (GLTexture    *texture,
 					const char   *image,
 					unsigned int width,
 					unsigned int height,
 					GLenum       format,
 					GLenum       type);
 
-	static bool
-	readImageToTexture (CompScreen   *screen,
-			    CompTexture  *texture,
-			    const char	 *imageFileName,
-			    unsigned int *returnWidth,
-			    unsigned int *returnHeight);
+	static bool readImageToTexture (CompScreen   *screen,
+					GLTexture    *texture,
+					const char   *imageFileName,
+					unsigned int *returnWidth,
+					unsigned int *returnHeight);
 
 
     private:

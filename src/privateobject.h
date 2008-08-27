@@ -9,13 +9,12 @@ class PrivateObject {
     public :
 	PrivateObject ();
 
-	CompObjectType type;
+	CompObject::Type type;
 
 	const char *typeName;
 
 	CompObject	        *parent;
 	std::list<CompObject *> children;
 };
-
 
 #endif
