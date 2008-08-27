@@ -55,6 +55,8 @@ class GLTexture {
 	void enable (Filter filter);
 	void disable ();
 
+	bool & mipmap ();
+
 
 	static bool imageBufferToTexture (GLTexture    *texture,
 					  const char   *image,

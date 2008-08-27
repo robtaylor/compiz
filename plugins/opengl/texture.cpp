@@ -511,3 +511,9 @@ GLTexture::hasPixmap ()
 {
     return (priv->pixmap != None);
 }
+
+bool &
+GLTexture::mipmap ()
+{
+    return priv->mipmap;
+}
