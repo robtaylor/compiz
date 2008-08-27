@@ -189,7 +189,7 @@ PrivateGLWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyUnmap:
 	    gWindow->release ();
 	    break;
-	case CompWindowNotifySyncAlarm:
+	case CompWindowNotifyAliveChanged:
 	    gWindow->updatePaintAttribs ();
 	    break;
 	default:
