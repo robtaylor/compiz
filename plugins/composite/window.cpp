@@ -52,6 +52,8 @@ CompositeWindow::~CompositeWindow ()
 
     release ();
 
+    addDamage ();
+
     if (lastDamagedWindow == priv->window)
 	lastDamagedWindow = NULL;
 
@@ -304,12 +306,12 @@ CompositeWindow::addDamageRect (BoxPtr rect)
 }
 
 void
-CompositeWindow::addDamage ()
+CompositeWindow::addDamage (bool force)
 {
     if (priv->cScreen->damageMask () & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
-    if (priv->window->shaded () ||
+    if (priv->window->shaded () || force ||
 	(priv->window->attrib ().map_state == IsViewable && priv->damaged))
     {
 	BoxRec box;
@@ -486,7 +488,7 @@ PrivateCompositeWindow::windowNotify (CompWindowNotify n)
 	    damaged = false;
 	    break;
 	case CompWindowNotifyUnmap:
-	    cWindow->addDamage ();
+	    cWindow->addDamage (true);
 	    cWindow->release ();
 
 	    if (!redirected && cScreen->compositingActive ())
@@ -496,7 +498,7 @@ PrivateCompositeWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyHide:
 	case CompWindowNotifyShow:
 	case CompWindowNotifyAliveChanged:
-	    cWindow->addDamage ();
+	    cWindow->addDamage (true);
 	    break;
 	case CompWindowNotifySyncAlarm:
 	{

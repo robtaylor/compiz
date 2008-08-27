@@ -184,9 +184,17 @@ PrivateGLWindow::moveNotify (int dx, int dy, bool now)
 void
 PrivateGLWindow::windowNotify (CompWindowNotify n)
 {
-    if (n == CompWindowNotifyAliveChanged)
+    switch (n)
     {
-        gWindow->updatePaintAttribs ();
+	case CompWindowNotifyUnmap:
+	    gWindow->release ();
+	    break;
+	case CompWindowNotifyAliveChanged:
+	    gWindow->updatePaintAttribs ();
+	    break;
+	default:
+	    break;
+	
     }
 
     window->windowNotify (n);

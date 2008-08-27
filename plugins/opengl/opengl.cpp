@@ -109,96 +109,20 @@ class OpenglPluginVTable : public CompPlugin::VTable
 bool
 OpenglPluginVTable::initObject (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    {
-		GLDisplay *d = new GLDisplay (GET_CORE_DISPLAY (o));
-		if (!d)
-		    return false;
-		if (d->loadFailed ())
-		{
-		    delete d;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_SCREEN:
-	    {
-		GLScreen *s = new GLScreen (GET_CORE_SCREEN (o));
-		if (!s)
-		    return false;
-		if (s->loadFailed ())
-		{
-		    delete s;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_WINDOW:
-	    {
-		GLWindow *w = new GLWindow (GET_CORE_WINDOW (o));
-		if (!w)
-		    return false;
-		if (w->loadFailed ())
-		{
-		    delete w;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	default:
-	    break;
-    }
+    INIT_OBJECT (o,_,X,X,X,,GLDisplay, GLScreen, GLWindow)
     return true;
 }
 
 void
 OpenglPluginVTable::finiObject (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    {
-		GLDisplay *d = GLDisplay::get (GET_CORE_DISPLAY (o));
-		if (d)
-		    delete d;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_SCREEN:
-	    {
-		GLScreen *s = GLScreen::get (GET_CORE_SCREEN (o));
-		if (s)
-		    delete s;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_WINDOW:
-	    {
-		GLWindow *w = GLWindow::get (GET_CORE_WINDOW (o));
-		if (w)
-		    delete w;
-	    }
-	    break;
-	default:
-	    break;
-    }
+    FINI_OBJECT (o,_,X,X,X,,GLDisplay, GLScreen, GLWindow)
 }
 
 CompOption::Vector &
 OpenglPluginVTable::getObjectOptions (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    return GLDisplay::get (GET_CORE_DISPLAY (o))->getOptions ();
-	case COMP_OBJECT_TYPE_SCREEN:
-	    return GLScreen::get (GET_CORE_SCREEN (o))->getOptions ();
-	default:
-	    break;
-    }
+    GET_OBJECT_OPTIONS (o,X,X,GLDisplay, GLScreen)
     return noOptions;
 }
 
@@ -207,16 +131,7 @@ OpenglPluginVTable::setObjectOption (CompObject      *o,
 				     const char      *name,
 				     CompOption::Value &value)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    return GLDisplay::get (GET_CORE_DISPLAY (o))->
-		setOption (name, value);
-	case COMP_OBJECT_TYPE_SCREEN:
-	    return GLScreen::get (GET_CORE_SCREEN (o))->setOption (name, value);
-	default:
-	    break;
-    }
+    SET_OBJECT_OPTION (o,X,X,GLDisplay, GLScreen)
     return false;
 }
 

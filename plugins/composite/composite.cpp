@@ -121,102 +121,20 @@ CompositeScreen::setOption (const char        *name,
 bool
 CompositePluginVTable::initObject (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    {
-		CompositeDisplay *d =
-		    new CompositeDisplay (GET_CORE_DISPLAY (o));
-		if (!d)
-		    return false;
-		if (d->loadFailed ())
-		{
-		    delete d;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_SCREEN:
-	    {
-		CompositeScreen *s =
-		    new CompositeScreen (GET_CORE_SCREEN (o));
-		if (!s)
-		    return false;
-		if (s->loadFailed ())
-		{
-		    delete s;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_WINDOW:
-	    {
-		CompositeWindow *w =
-		    new CompositeWindow (GET_CORE_WINDOW (o));
-		if (!w)
-		    return false;
-		if (w->loadFailed ())
-		{
-		    delete w;
-		    return false;
-		}
-		return true;
-	    }
-	    break;
-	default:
-	    break;
-    }
+    INIT_OBJECT (o,_,X,X,X,,CompositeDisplay, CompositeScreen, CompositeWindow)
     return true;
 }
 
 void
 CompositePluginVTable::finiObject (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    {
-		CompositeDisplay *d =
-		    CompositeDisplay::get (GET_CORE_DISPLAY (o));
-		if (d)
-		    delete d;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_SCREEN:
-	    {
-		CompositeScreen *s =
-		    CompositeScreen::get (GET_CORE_SCREEN (o));
-		if (s)
-		    delete s;
-	    }
-	    break;
-	case COMP_OBJECT_TYPE_WINDOW:
-	    {
-		CompositeWindow *w =
-		    CompositeWindow::get (GET_CORE_WINDOW (o));
-		if (w)
-		    delete w;
-	    }
-	    break;
-	default:
-	    break;
-    }
+    FINI_OBJECT (o,_,X,X,X,,CompositeDisplay, CompositeScreen, CompositeWindow)
 }
 
 CompOption::Vector &
 CompositePluginVTable::getObjectOptions (CompObject *o)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    return CompositeDisplay::get (GET_CORE_DISPLAY (o))->getOptions ();
-	case COMP_OBJECT_TYPE_SCREEN:
-	    return CompositeScreen::get (GET_CORE_SCREEN (o))->getOptions ();
-	default:
-	    break;
-    }
+    GET_OBJECT_OPTIONS (o,X,X,CompositeDisplay, CompositeScreen)
     return noOptions;
 }
 
@@ -225,17 +143,7 @@ CompositePluginVTable::setObjectOption (CompObject      *o,
 					const char      *name,
 					CompOption::Value &value)
 {
-    switch (o->objectType ())
-    {
-	case COMP_OBJECT_TYPE_DISPLAY:
-	    return CompositeDisplay::get (GET_CORE_DISPLAY (o))->
-		setOption (name, value);
-	case COMP_OBJECT_TYPE_SCREEN:
-	    return CompositeScreen::get (GET_CORE_SCREEN (o))->
-		setOption (name, value);
-	default:
-	    break;
-    }
+    SET_OBJECT_OPTION (o,X,X,CompositeDisplay, CompositeScreen)
     return false;
 }
 

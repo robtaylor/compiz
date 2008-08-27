@@ -155,7 +155,7 @@ class CompositeWindow :
 
 	void damageOutputExtents ();
 	void addDamageRect (BoxPtr rect);
-	void addDamage ();
+	void addDamage (bool force = false);
 
 	bool damaged ();
 
