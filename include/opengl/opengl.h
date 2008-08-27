@@ -308,8 +308,31 @@ class GLWindow :
     public WrapableHandler<GLWindowInterface>,
     public OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
 {
-	public:
-	    static GLWindowPaintAttrib defaultPaintAttrib;
+    public:
+
+	class Geometry {
+	    public:
+		Geometry ();
+		~Geometry ();
+
+		void reset ();
+		
+		bool moreVertices (int newSize);
+		bool moreIndices (int newSize);
+
+	    public:
+		GLfloat  *vertices;
+		int      vertexSize;
+		int      vertexStride;
+		GLushort *indices;
+		int      indexSize;
+		int      vCount;
+		int      texUnits;
+		int      texCoordSize;
+		int      indexCount;
+	};
+	
+	static GLWindowPaintAttrib defaultPaintAttrib;
     public:
 
 	GLWindow (CompWindow *w);
@@ -319,14 +342,12 @@ class GLWindow :
 
 	GLWindowPaintAttrib & paintAttrib ();
 
-	bool moreVertices (int newSize);
-
-	bool moreIndices (int newSize);
-
 	bool bind ();
 	void release ();
 
 	void updatePaintAttribs ();
+
+	Geometry & geometry ();
 
 	WRAPABLE_HND(bool, glPaint, const GLWindowPaintAttrib &,
 		     const GLMatrix &, Region, unsigned int);

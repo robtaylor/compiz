@@ -38,15 +38,7 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     texture (screen),
     clip (0),
     bindFailed (false),
-    vertices (0),
-    vertexSize (0),
-    vertexStride (0),
-    indices (0),
-    indexSize (0),
-    vCount (0),
-    texUnits (0),
-    texCoordSize (2),
-    indexCount (0)
+    geometry ()
 {
     paint.xScale	= 1.0f;
     paint.yScale	= 1.0f;
@@ -62,14 +54,8 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
 
 PrivateGLWindow::~PrivateGLWindow ()
 {
-	
     if (clip)
 	XDestroyRegion (clip);
-		if (vertices)
-	free (vertices);
-
-    if (indices)
-	free (indices);
 }
 
 void
@@ -224,4 +210,76 @@ PrivateGLWindow::damageRect (bool initial, BoxPtr box)
 {
     texture.damage ();
     return cWindow->damageRect (initial, box);
+}
+
+GLWindow::Geometry &
+GLWindow::geometry ()
+{
+    return priv->geometry;
+}
+
+GLWindow::Geometry::Geometry () :
+    vertices (NULL),
+    vertexSize (0),
+    vertexStride (0),
+    indices (NULL),
+    indexSize (0),
+    vCount (0),
+    texUnits (0),
+    texCoordSize (0),
+    indexCount (0)
+{
+}
+
+GLWindow::Geometry::~Geometry ()
+{
+    if (vertices)
+	free (vertices);
+
+    if (indices)
+	free (indices);
+}
+
+void
+GLWindow::Geometry::reset ()
+{
+    vCount = indexCount = 0;
+}
+
+bool
+GLWindow::Geometry::moreVertices (int newSize)
+{
+    if (newSize > vertexSize)
+    {
+	GLfloat *nVertices;
+
+	nVertices = (GLfloat *)
+	    realloc (vertices, sizeof (GLfloat) * newSize);
+	if (!nVertices)
+	    return false;
+
+	vertices = nVertices;
+	vertexSize = newSize;
+    }
+
+    return true;
+}
+
+bool
+GLWindow::Geometry::moreIndices (int newSize)
+{
+    if (newSize > indexSize)
+    {
+	GLushort *nIndices;
+
+	nIndices = (GLushort *)
+	    realloc (indices, sizeof (GLushort) * newSize);
+	if (!nIndices)
+	    return false;
+
+	indices = nIndices;
+	indexSize = newSize;
+    }
+
+    return true;
 }

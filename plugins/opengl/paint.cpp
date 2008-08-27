@@ -556,54 +556,15 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
     *(data)++ = (y1);					\
     *(data)++ = 0.0;
 
-
-bool
-GLWindow::moreVertices (int newSize)
-{
-    if (newSize > priv->vertexSize)
-    {
-	GLfloat *vertices;
-
-	vertices = (GLfloat *)
-	    realloc (priv->vertices, sizeof (GLfloat) * newSize);
-	if (!vertices)
-	    return false;
-
-	priv->vertices = vertices;
-	priv->vertexSize = newSize;
-    }
-
-    return true;
-}
-
-bool
-GLWindow::moreIndices (int newSize)
-{
-    if (newSize > priv->indexSize)
-    {
-	GLushort *indices;
-
-	indices = (GLushort *)
-	    realloc (priv->indices, sizeof (GLushort) * newSize);
-	if (!indices)
-	    return false;
-
-	priv->indices = indices;
-	priv->indexSize = newSize;
-    }
-
-    return true;
-}
-
 void
 GLWindow::glDrawGeometry ()
 {
     WRAPABLE_HND_FUNC(glDrawGeometry)
 
-    int     texUnit = priv->texUnits;
+    int     texUnit = priv->geometry.texUnits;
     int     currentTexUnit = 0;
-    int     stride = priv->vertexStride;
-    GLfloat *vertices = priv->vertices + (stride - 3);
+    int     stride = priv->geometry.vertexStride;
+    GLfloat *vertices = priv->geometry.vertices + (stride - 3);
 
     stride *= sizeof (GLfloat);
 
@@ -617,14 +578,15 @@ GLWindow::glDrawGeometry ()
 	    glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 	    currentTexUnit = texUnit;
 	}
-	vertices -= priv->texCoordSize;
-	glTexCoordPointer (priv->texCoordSize, GL_FLOAT, stride, vertices);
+	vertices -= priv->geometry.texCoordSize;
+	glTexCoordPointer (priv->geometry.texCoordSize,
+			   GL_FLOAT, stride, vertices);
     }
 
-    glDrawArrays (GL_QUADS, 0, priv->vCount);
+    glDrawArrays (GL_QUADS, 0, priv->geometry.vCount);
 
     /* disable all texture coordinate arrays except 0 */
-    texUnit = priv->texUnits;
+    texUnit = priv->geometry.texUnits;
     if (texUnit > 1)
     {
 	while (--texUnit)
@@ -647,7 +609,7 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 
     BoxRec full;
 
-    priv->texUnits = nMatrix;
+    priv->geometry.texUnits = nMatrix;
 
     full = clip->extents;
     if (region->extents.x1 > full.x1)
@@ -685,15 +647,15 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 
 	vSize = 3 + nMatrix * 2;
 
-	n = priv->vCount / 4;
+	n = priv->geometry.vCount / 4;
 
-	if ((n + nBox) * vSize * 4 > priv->vertexSize)
+	if ((n + nBox) * vSize * 4 > priv->geometry.vertexSize)
 	{
-	    if (!moreVertices ((n + nBox) * vSize * 4))
+	    if (!priv->geometry.moreVertices ((n + nBox) * vSize * 4))
 		return;
 	}
 
-	d = priv->vertices + (priv->vCount * vSize);
+	d = priv->geometry.vertices + (priv->geometry.vCount * vSize);
 
 	while (nBox--)
 	{
@@ -734,12 +696,13 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 		{
 		    pClip = clip->rects;
 
-		    if (((n + nClip) * vSize * 4) > priv->vertexSize)
+		    if (((n + nClip) * vSize * 4) > priv->geometry.vertexSize)
 		    {
-			if (!moreVertices ((n + nClip) * vSize * 4))
+			if (!priv->geometry.moreVertices ((n + nClip) *
+							  vSize * 4))
 			    return;
 
-			d = priv->vertices + (n * vSize * 4);
+			d = priv->geometry.vertices + (n * vSize * 4);
 		    }
 
 		    while (nClip--)
@@ -777,9 +740,9 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 	    }
 	}
 
-	priv->vCount	   = n * 4;
-	priv->vertexStride = vSize;
-	priv->texCoordSize = 2;
+	priv->geometry.vCount       = n * 4;
+	priv->geometry.vertexStride = vSize;
+	priv->geometry.texCoordSize = 2;
     }
 }
 
@@ -1124,9 +1087,9 @@ GLWindow::glDraw (const GLMatrix     &transform,
     if (mask & PAINT_WINDOW_TRANSLUCENT_MASK)
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
-    priv->vCount = priv->indexCount = 0;
+    priv->geometry.reset ();
     glAddGeometry (&priv->matrix, 1, priv->window->region (), region);
-    if (priv->vCount)
+    if (priv->geometry.vCount)
 	glDrawTexture (&priv->texture, fragment, mask);
 
     return true;
