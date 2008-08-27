@@ -1,3 +1,5 @@
+SUBDIRS = composite opengl
+
 # libfade_la_LDFLAGS = -module -avoid-version -no-undefined
 # libfade_la_SOURCES = fade.cpp
 # 
@@ -20,6 +22,9 @@ libzoom_la_SOURCES = zoom.cpp
 # libminimize_la_SOURCES = minimize.cpp
 
 libmove_la_LDFLAGS = -module -avoid-version -no-undefined
+libmove_la_LIBADD = \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
 libmove_la_SOURCES = move.cpp
 
 libresize_la_LDFLAGS = -module -avoid-version -no-undefined

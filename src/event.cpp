@@ -44,46 +44,7 @@
 static Window xdndWindow = None;
 static Window edgeWindow = None;
 
-void
-PrivateWindow::handleDamageRect (CompWindow *w,
-				 int	   x,
-				 int	   y,
-				 int	   width,
-				 int	   height)
-{
-    REGION region;
-    bool   initial = false;
 
-    if (!w->priv->redirected || w->priv->bindFailed)
-	return;
-
-    if (!w->priv->damaged)
-    {
-	w->priv->damaged = initial = true;
-	w->priv->invisible = WINDOW_INVISIBLE (w->priv);
-    }
-
-    region.extents.x1 = x;
-    region.extents.y1 = y;
-    region.extents.x2 = region.extents.x1 + width;
-    region.extents.y2 = region.extents.y1 + height;
-
-    if (!w->damageRect (initial, &region.extents))
-    {
-	region.extents.x1 += w->priv->attrib.x + w->priv->attrib.border_width;
-	region.extents.y1 += w->priv->attrib.y + w->priv->attrib.border_width;
-	region.extents.x2 += w->priv->attrib.x + w->priv->attrib.border_width;
-	region.extents.y2 += w->priv->attrib.y + w->priv->attrib.border_width;
-
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	w->priv->screen->damageRegion (&region);
-    }
-
-    if (initial)
-	w->damageOutputExtents ();
-}
 
 bool
 CompWindow::handleSyncAlarm ()
@@ -94,21 +55,7 @@ CompWindow::handleSyncAlarm ()
 
 	if (resize (priv->syncGeometry))
 	{
-	    XRectangle *rects;
-	    int	       nDamage;
-
-	    nDamage = priv->nDamage;
-	    rects   = priv->damageRects;
-	    while (nDamage--)
-	    {
-		PrivateWindow::handleDamageRect (this,
-						 rects[nDamage].x,
-						 rects[nDamage].y,
-						 rects[nDamage].width,
-						 rects[nDamage].height);
-	    }
-
-	    priv->nDamage = 0;
+	    windowNotify (CompWindowNotifySyncAlarm);
 	}
 	else
 	{
@@ -1012,28 +959,6 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 }
 
 void
-CompScreen::handleExposeEvent (XExposeEvent *event)
-{
-    if (priv->output == event->window)
-	return;
-
-    priv->exposeRects.push_back (CompRect (event->x, event->x + event->width,
-				 	   event->y, event->y + event->height));
-
-    if (event->count == 0)
-    {
-	CompRect rect;
-	while (!priv->exposeRects.empty())
-	{
-	    rect = priv->exposeRects.front ();
-	    priv->exposeRects.pop_front ();
-
-	    damageRegion (rect.region ());
-	}
-    }
-}
-
-void
 CompDisplay::handleCompizEvent (const char  *plugin,
 				const char  *event,
 				CompOption  *option,
@@ -1080,10 +1005,6 @@ CompDisplay::handleEvent (XEvent *event)
     }
 
     switch (event->type) {
-    case Expose:
-	foreach (s, priv->screens)
-	    s->handleExposeEvent (&event->xexpose);
-	break;
     case SelectionRequest:
 	priv->handleSelectionRequest (event);
 	break;
@@ -1107,13 +1028,8 @@ CompDisplay::handleEvent (XEvent *event)
 	s = findScreen (event->xcreatewindow.parent);
 	if (s)
 	{
-	    /* The first time some client asks for the composite
-	     * overlay window, the X server creates it, which causes
-	     * an errorneous CreateNotify event.  We catch it and
-	     * ignore it. */
-	    if (s->overlay () != event->xcreatewindow.window)
-		new CompWindow (s, event->xcreatewindow.window,
-				s->getTopWindow ());
+	    new CompWindow (s, event->xcreatewindow.window,
+			    s->getTopWindow ());
 	}
 	break;
     case DestroyNotify:
@@ -1320,31 +1236,6 @@ CompDisplay::handleEvent (XEvent *event)
 	    if (w)
 		w->updateIconGeometry ();
 	}
-	else if (event->xproperty.atom == priv->atoms.winOpacity)
-	{
-	    w = findWindow (event->xproperty.window);
-	    if (w)
-		w->updateOpacity ();
-	}
-	else if (event->xproperty.atom == priv->atoms.winBrightness)
-	{
-	    w = findWindow (event->xproperty.window);
-	    if (w)
-		w->updateBrightness ();
-	}
-	else if (event->xproperty.atom == priv->atoms.winSaturation)
-	{
-	    w = findWindow (event->xproperty.window);
-	    if (w)
-		w->updateSaturation ();
-	}
-	else if (event->xproperty.atom == priv->atoms.xBackground[0] ||
-		 event->xproperty.atom == priv->atoms.xBackground[1])
-	{
-	    s = findScreen (event->xproperty.window);
-	    if (s)
-		s->updateBackground ();
-	}
 	else if (event->xproperty.atom == priv->atoms.wmStrut ||
 		 event->xproperty.atom == priv->atoms.wmStrutPartial)
 	{
@@ -1401,38 +1292,6 @@ CompDisplay::handleEvent (XEvent *event)
 		{
 		    w->activate ();
 		}
-	    }
-	}
-	else if (event->xclient.message_type == priv->atoms.winOpacity)
-	{
-	    w = findWindow (event->xclient.window);
-	    if (w && (w->type () & CompWindowTypeDesktopMask) == 0)
-	    {
-		GLushort opacity = event->xclient.data.l[0] >> 16;
-
-		setWindowProp32 (w->id (), priv->atoms.winOpacity, opacity);
-	    }
-	}
-	else if (event->xclient.message_type == priv->atoms.winBrightness)
-	{
-	    w = findWindow (event->xclient.window);
-	    if (w)
-	    {
-		GLushort brightness = event->xclient.data.l[0] >> 16;
-
-		setWindowProp32 (w->id (), priv->atoms.winBrightness,
-				 brightness);
-	    }
-	}
-	else if (event->xclient.message_type == priv->atoms.winSaturation)
-	{
-	    w = findWindow (event->xclient.window);
-	    if (w)
-	    {
-		GLushort saturation = event->xclient.data.l[0] >> 16;
-
-		setWindowProp32 (w->id (), priv->atoms.winSaturation,
-				 saturation);
 	    }
 	}
 	else if (event->xclient.message_type == priv->atoms.winState)
@@ -1865,48 +1724,15 @@ CompDisplay::handleEvent (XEvent *event)
 	}
 	break;
     default:
-	if (event->type == priv->damageEvent + XDamageNotify)
-	{
-	    XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
-
-	    if (lastDamagedWindow && de->drawable == lastDamagedWindow->id ())
-	    {
-		w = lastDamagedWindow;
-	    }
-	    else
-	    {
-		w = findWindow (de->drawable);
-		if (w)
-		    lastDamagedWindow = w;
-	    }
-
-	    if (w)
-		w->processDamage (de);
-	}
-	else if (priv->shapeExtension &&
+	if (priv->shapeExtension &&
 		 event->type == priv->shapeEvent + ShapeNotify)
 	{
 	    w = findWindow (((XShapeEvent *) event)->window);
 	    if (w)
 	    {
 		if (w->mapNum ())
-		{
-		    w->addDamage ();
 		    w->updateRegion ();
-		    w->addDamage ();
-		}
 	    }
-	}
-	else if (priv->randrExtension &&
-		 event->type == priv->randrEvent + RRScreenChangeNotify)
-	{
-	    XRRScreenChangeNotifyEvent *rre;
-
-	    rre = (XRRScreenChangeNotifyEvent *) event;
-
-	    s = findScreen (rre->root);
-	    if (s)
-		s->detectRefreshRate ();
 	}
 	else if (event->type == priv->syncEvent + XSyncAlarmNotify)
 	{

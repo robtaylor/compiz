@@ -34,14 +34,10 @@
 #include <X11/Xlib-xcb.h>
 #include <X11/Xutil.h>
 #include <X11/extensions/Xdamage.h>
-#include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xinerama.h>
 #include <X11/extensions/sync.h>
 #include <X11/Xregion.h>
 #include <X11/XKBlib.h>
-
-#include <GL/gl.h>
-#include <GL/glx.h>
 
 // X11 Bool defination breaks BOOST_FOREACH. Convert it to a typedef */
 #ifdef Bool
@@ -79,16 +75,13 @@ typedef XBool Bool;
 #include <compoption.h>
 #include <compmetadata.h>
 #include <compaction.h>
-#include <compfragment.h>
 #include <compicon.h>
 #include <compmatch.h>
-#include <compmatrix.h>
 #include <compoutput.h>
 #include <comppoint.h>
 #include <comprect.h>
 #include <compsession.h>
 #include <compsize.h>
-#include <comptexture.h>
-#include <compvector.h>
+
 
 #endif

@@ -639,6 +639,8 @@ kde/window-decorator/Makefile
 kde/window-decorator-kde4/Makefile
 po/Makefile.in
 metadata/Makefile
+plugins/composite/Makefile
+plugins/opengl/Makefile
 ])
 
 echo ""

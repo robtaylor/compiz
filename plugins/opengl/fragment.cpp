@@ -29,10 +29,11 @@
 #define foreach BOOST_FOREACH
 
 #include <compiz-core.h>
-#include <comptexture.h>
-#include <compfragment.h>
+#include <opengl/texture.h>
+#include <opengl/fragment.h>
 #include <compscreen.h>
 #include "privatefragment.h"
+#include "privates.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -44,11 +45,11 @@
 #define COMP_FUNCTION_ARB_MASK (1 << 0)
 #define COMP_FUNCTION_MASK     (COMP_FUNCTION_ARB_MASK)
 
-namespace CompFragment {
+namespace GLFragment {
 
     class Program {
 	public:
-	    Program (CompScreen *s) :
+	    Program (GLScreen *s) :
 		s (s),
 		signature (0),
 		blending (false),
@@ -62,7 +63,7 @@ namespace CompFragment {
 	    };
 
 	public:
-	    CompScreen *s;
+	    GLScreen *s;
 
 	    std::list<FunctionId> signature;
 
@@ -189,7 +190,7 @@ namespace CompFragment {
     static InitialLoadFunction initialLoadFunction;
 
     static Function *
-    findFragmentFunction (CompScreen *s,
+    findFragmentFunction (GLScreen   *s,
 			  FunctionId id)
     {
 	foreach (Function *f, s->fragmentStorage ()->functions)
@@ -199,7 +200,7 @@ namespace CompFragment {
     }
 
     static Function *
-    findFragmentFunctionWithName (CompScreen *s,
+    findFragmentFunctionWithName (GLScreen   *s,
 				  CompString name)
     {
 	foreach (Function *f, s->fragmentStorage ()->functions)
@@ -209,9 +210,9 @@ namespace CompFragment {
     }
 
     static Program *
-    findFragmentProgram (CompScreen            *s,
-			 FunctionId            *signature,
-			 unsigned int          nSignature)
+    findFragmentProgram (GLScreen     *s,
+			 FunctionId   *signature,
+			 unsigned int nSignature)
     {
 	unsigned int i;
 
@@ -510,7 +511,7 @@ namespace CompFragment {
     }
 
     static Program *
-    buildFragmentProgram (CompScreen    *s,
+    buildFragmentProgram (GLScreen      *s,
 			  PrivateAttrib *attrib)
     {
 	Program	                *program;
@@ -594,7 +595,7 @@ namespace CompFragment {
     }
 
     static GLuint
-    getFragmentProgram (CompScreen    *s,
+    getFragmentProgram (GLScreen       *s,
 			PrivateAttrib *attrib,
 			GLenum	      *type,
 			bool	      *blending)
@@ -822,7 +823,7 @@ namespace CompFragment {
     }
 
     FunctionId
-    FunctionData::createFragmentFunction (CompScreen *s, const char *name)
+    FunctionData::createFragmentFunction (GLScreen *s, const char *name)
     {
 	Function     *function = new Function ();
 	CompString   validName = name;
@@ -846,12 +847,12 @@ namespace CompFragment {
 	return function->id;
     }
 
-    Attrib::Attrib (const CompWindowPaintAttrib *paint) :
+    Attrib::Attrib (const GLWindowPaintAttrib &paint) :
 	priv (new PrivateAttrib ())
     {
-	priv->opacity    = paint->opacity;
-	priv->brightness = paint->brightness;
-	priv->saturation = paint->saturation;
+	priv->opacity    = paint.opacity;
+	priv->brightness = paint.brightness;
+	priv->saturation = paint.saturation;
 	priv->nTexture   = 0;
 	priv->nFunction  = 0;
 	priv->nParam     = 0;
@@ -908,7 +909,7 @@ namespace CompFragment {
     }
 
     bool
-    Attrib::enable (CompScreen  *s, bool *blending)
+    Attrib::enable (GLScreen *s, bool *blending)
     {
 	GLuint name;
 	GLenum type;
@@ -931,7 +932,7 @@ namespace CompFragment {
     }
 
     void
-    Attrib::disable (CompScreen *s)
+    Attrib::disable (GLScreen *s)
     {
 	glDisable (GL_FRAGMENT_PROGRAM_ARB);
     }
@@ -979,7 +980,7 @@ namespace CompFragment {
 	return priv->nFunction > 0;
     }
 
-    void destroyFragmentFunction (CompScreen *s, FunctionId id)
+    void destroyFragmentFunction (GLScreen *s, FunctionId id)
     {
 	Function *function;
 	Program  *program;
@@ -1022,8 +1023,8 @@ namespace CompFragment {
     }
 
     FunctionId
-    getSaturateFragmentFunction (CompScreen  *s,
-				 CompTexture *texture,
+    getSaturateFragmentFunction (GLScreen  *s,
+				 GLTexture *texture,
 				 int         param)
     {
 	int target;

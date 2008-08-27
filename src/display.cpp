@@ -42,7 +42,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
-#include <X11/extensions/Xcomposite.h>
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/shape.h>
 
@@ -268,24 +267,6 @@ CompScreen::showDesktop (CompDisplay        *d,
 	else
 	    s->leaveShowDesktopMode (NULL);
     }
-
-    return true;
-}
-
-bool
-CompScreen::toggleSlowAnimations (CompDisplay        *d,
-				  CompAction         *action,
-				  CompAction::State  state,
-				  CompOption::Vector &options)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = CompOption::getIntOptionNamed (options, "root");
-
-    s = d->findScreen (xid);
-    if (s)
-	s->priv->slowAnimations = !s->priv->slowAnimations;
 
     return true;
 }
@@ -531,7 +512,6 @@ CompWindow::shade (CompDisplay        *d,
 
 const CompMetadata::OptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = {
     { "active_plugins", "list", "<type>string</type>", 0, 0 },
-    { "texture_filter", "int", RESTOSTRING (0, 2), 0, 0 },
     { "click_to_focus", "bool", 0, 0, 0 },
     { "autoraise", "bool", 0, 0, 0 },
     { "autoraise_delay", "int", 0, 0, 0 },
@@ -563,7 +543,6 @@ const CompMetadata::OptionInfo coreDisplayOptionInfo[COMP_DISPLAY_OPTION_NUM] = 
     { "run_command9_key", "key", 0, CompDisplay::runCommandDispatch, 0 },
     { "run_command10_key", "key", 0, CompDisplay::runCommandDispatch, 0 },
     { "run_command11_key", "key", 0, CompDisplay::runCommandDispatch, 0 },
-    { "slow_animations_key", "key", 0, CompScreen::toggleSlowAnimations, 0 },
     { "raise_window_key", "key", 0, CompWindow::raiseInitiate, 0 },
     { "raise_window_button", "button", 0, CompWindow::raiseInitiate, 0 },
     { "lower_window_key", "key", 0, CompWindow::lowerInitiate, 0 },
@@ -745,8 +724,6 @@ CompDisplay::init (const char *name)
 {
     Window	focus;
     int		revertTo, i;
-    int		compositeMajor, compositeMinor;
-    int		fixesMinor;
     int		xkbOpcode;
     int		firstScreen, lastScreen;
 
@@ -789,48 +766,12 @@ CompDisplay::init (const char *name)
 
     priv->lastPing = 1;
 
-    if (!XQueryExtension (priv->dpy,
-			  COMPOSITE_NAME,
-			  &priv->compositeOpcode,
-			  &priv->compositeEvent,
-			  &priv->compositeError))
-    {
-	compLogMessage (this, "core", CompLogLevelFatal,
-		        "No composite extension");
-	return false;
-    }
-
-    XCompositeQueryVersion (priv->dpy, &compositeMajor, &compositeMinor);
-    if (compositeMajor == 0 && compositeMinor < 2)
-    {
-	compLogMessage (this, "core", CompLogLevelFatal,
-		        "Old composite extension");
-	return false;
-    }
-
-    if (!XDamageQueryExtension (priv->dpy, &priv->damageEvent,
-	 			&priv->damageError))
-    {
-	compLogMessage (this, "core", CompLogLevelFatal,
-		        "No damage extension");
-	return false;
-    }
-
     if (!XSyncQueryExtension (priv->dpy, &priv->syncEvent, &priv->syncError))
     {
 	compLogMessage (this, "core", CompLogLevelFatal,
 		        "No sync extension");
 	return false;
     }
-
-    if (!XFixesQueryExtension (priv->dpy, &priv->fixesEvent, &priv->fixesError))
-    {
-	compLogMessage (this, "core", CompLogLevelFatal,
-		        "No fixes extension");
-	return false;
-    }
-
-    XFixesQueryVersion (priv->dpy, &priv->fixesVersion, &fixesMinor);
 
     priv->randrExtension = XRRQueryExtension (priv->dpy, &priv->randrEvent,
 					      &priv->randrError);
@@ -954,12 +895,6 @@ CompScreenList &
 CompDisplay::screens ()
 {
     return priv->screens;
-}
-
-GLenum
-CompDisplay::textureFilter ()
-{
-    return priv->textureFilter;
 }
 
 CompOption *
@@ -1169,20 +1104,6 @@ CompDisplay::setOption (const char        *name,
 	    return true;
 	}
 	break;
-    case COMP_DISPLAY_OPTION_TEXTURE_FILTER:
-	if (o->set (value))
-	{
-	    foreach (CompScreen *s, priv->screens)
-		s->damageScreen ();
-
-	    if (!o->value ().i ())
-		priv->textureFilter = GL_NEAREST;
-	    else
-		priv->textureFilter = GL_LINEAR;
-
-	    return true;
-	}
-	break;
     case COMP_DISPLAY_OPTION_PING_DELAY:
 	if (o->set (value))
 	{
@@ -1347,6 +1268,10 @@ void
 CompDisplay::processEvents ()
 {
     XEvent event;
+
+    /* remove destroyed windows */
+    foreach (CompScreen *s, priv->screens)
+	s->removeDestroyed ();
 
     if (priv->dirtyPluginList)
 	priv->updatePlugins ();
@@ -1669,13 +1594,6 @@ PrivateDisplay::handleSelectionClear (XEvent *event)
 	shutDown = TRUE;
 }
 
-
-void
-CompDisplay::clearTargetOutput (unsigned int mask)
-{
-    if (targetScreen)
-	targetScreen->clearOutput (targetOutput, mask);
-}
 
 #define HOME_IMAGEDIR ".compiz/images"
 
@@ -2459,7 +2377,6 @@ PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     screens (),
     watchFdHandle (0),
     screenInfo (0),
-    textureFilter (GL_LINEAR),
     activeWindow (0),
     below (None),
     modMap (0),

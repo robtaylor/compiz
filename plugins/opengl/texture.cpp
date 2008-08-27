@@ -34,27 +34,29 @@
 #include <string.h>
 
 #include <compiz-core.h>
-#include <comptexture.h>
+#include <opengl/texture.h>
 #include <privatetexture.h>
-#include "privatescreen.h"
+#include "privates.h"
 
-static CompTexture::Matrix _identity_matrix = {
+static GLTexture::Matrix _identity_matrix = {
     1.0f, 0.0f,
     0.0f, 1.0f,
     0.0f, 0.0f
 };
 
-CompTexture::CompTexture (CompScreen *screen) :
+GLTexture::GLTexture (CompScreen *screen) :
     priv (new PrivateTexture (this, screen))
 {
 }
 
-CompTexture::~CompTexture ()
+GLTexture::~GLTexture ()
 {
 }
 
-PrivateTexture::PrivateTexture (CompTexture *texture, CompScreen *screen) :
+PrivateTexture::PrivateTexture (GLTexture *texture, CompScreen *screen) :
     screen (screen),
+    gScreen (GLScreen::get (screen)),
+    gDisplay (GLDisplay::get (screen->display ())),
     texture (texture),
     name (0),
     target (GL_TEXTURE_2D),
@@ -71,8 +73,23 @@ PrivateTexture::~PrivateTexture ()
 {
     if (name)
     {
-	screen->makeCurrent ();
-	texture->releasePixmap ();
+	gScreen->makeCurrent ();
+	if (pixmap)
+	{
+	    glEnable (target);
+	    if (!strictBinding)
+	    {
+		glBindTexture (target, name);
+
+		(*gScreen->releaseTexImage) (screen->display ()->dpy (),
+					     pixmap, GLX_FRONT_LEFT_EXT);
+	    }
+
+	    glBindTexture (target, 0);
+	    glDisable (target);
+
+	    glXDestroyGLXPixmap (screen->display ()->dpy (), pixmap);
+	}
 	glDeleteTextures (1, &name);
     }
 }
@@ -87,10 +104,10 @@ PrivateTexture::loadImageData (const char   *image,
 {
     GLint internalFormat;
 
-    screen->makeCurrent ();
+    gScreen->makeCurrent ();
     texture->releasePixmap ();
 
-    if (screen->textureNonPowerOfTwo () ||
+    if (gScreen->textureNonPowerOfTwo () ||
 	(POWER_OF_TWO (width) && POWER_OF_TWO (height)))
     {
 	target = GL_TEXTURE_2D;
@@ -117,8 +134,8 @@ PrivateTexture::loadImageData (const char   *image,
     glBindTexture (target, name);
 
     internalFormat =
-	(screen->getOption ("texture_compression")->value ().b () &&
-	 screen->textureCompression () ?
+	(gScreen->getOption ("texture_compression")->value ().b () &&
+	 gScreen->textureCompression () ?
 	 GL_COMPRESSED_RGBA_ARB : GL_RGBA);
 
     glTexImage2D (target, 0, internalFormat, width, height, 0,
@@ -140,7 +157,7 @@ PrivateTexture::loadImageData (const char   *image,
 }
 
 bool
-CompTexture::imageBufferToTexture (CompTexture  *texture,
+GLTexture::imageBufferToTexture (GLTexture  *texture,
 				   const char   *image,
 				   unsigned int width,
 				   unsigned int height)
@@ -155,7 +172,7 @@ CompTexture::imageBufferToTexture (CompTexture  *texture,
 }
 
 bool
-CompTexture::imageDataToTexture (CompTexture  *texture,
+GLTexture::imageDataToTexture (GLTexture  *texture,
 				 const char   *image,
 				 unsigned int width,
 				 unsigned int height,
@@ -167,8 +184,8 @@ CompTexture::imageDataToTexture (CompTexture  *texture,
 
 
 bool
-CompTexture::readImageToTexture (CompScreen   *screen,
-				 CompTexture  *texture,
+GLTexture::readImageToTexture (CompScreen   *screen,
+				 GLTexture  *texture,
 				 const char   *imageFileName,
 				 unsigned int *returnWidth,
 				 unsigned int *returnHeight)
@@ -181,7 +198,7 @@ CompTexture::readImageToTexture (CompScreen   *screen,
 					    &image))
 	return false;
 
-    status = CompTexture::imageBufferToTexture (texture, (char *)image,
+    status = GLTexture::imageBufferToTexture (texture, (char *)image,
 						width, height);
 
     free (image);
@@ -195,13 +212,13 @@ CompTexture::readImageToTexture (CompScreen   *screen,
 }
 
 bool
-CompTexture::bindPixmap (Pixmap pixmap,
-			 int    width,
-			 int    height,
-			 int    depth)
+GLTexture::bindPixmap (Pixmap pixmap,
+		       int    width,
+		       int    height,
+		       int    depth)
 {
     unsigned int target = 0;
-    CompFBConfig *config = priv->screen->glxPixmapFBConfig (depth);
+    GLFBConfig   *config = priv->gScreen->glxPixmapFBConfig (depth);
     int          attribs[7], i = 0;
 
     if (!config->fbConfig)
@@ -222,7 +239,7 @@ CompTexture::bindPixmap (Pixmap pixmap,
        TEXTURE_2D target is specified and GL_texture_non_power_of_two
        is not supported, then allow the server to choose the texture target. */
     if (config->textureTargets & GLX_TEXTURE_2D_BIT_EXT &&
-       (priv->screen->textureNonPowerOfTwo () ||
+       (priv->gScreen->textureNonPowerOfTwo () ||
        (POWER_OF_TWO (width) && POWER_OF_TWO (height))))
 	target = GLX_TEXTURE_2D_EXT;
     else if (config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT)
@@ -246,8 +263,8 @@ CompTexture::bindPixmap (Pixmap pixmap,
 
     attribs[i++] = None;
 
-    priv->screen->makeCurrent ();
-    priv->pixmap = (*priv->screen->createPixmap) (
+    priv->gScreen->makeCurrent ();
+    priv->pixmap = (*priv->gScreen->createPixmap) (
 	priv->screen->display ()->dpy (), config->fbConfig, pixmap, attribs);
 
     if (!priv->pixmap)
@@ -259,9 +276,9 @@ CompTexture::bindPixmap (Pixmap pixmap,
     }
 
     if (!target)
-	(*priv->screen->queryDrawable) (priv->screen->display ()->dpy (),
-					priv->pixmap,
-					GLX_TEXTURE_TARGET_EXT, &target);
+	(*priv->gScreen->queryDrawable) (priv->screen->display ()->dpy (),
+					 priv->pixmap,
+					 GLX_TEXTURE_TARGET_EXT, &target);
 
     switch (target) {
     case GLX_TEXTURE_2D_EXT:
@@ -314,10 +331,10 @@ CompTexture::bindPixmap (Pixmap pixmap,
 
     if (!strictBinding)
     {
-	(*priv->screen->bindTexImage) (priv->screen->display ()->dpy (),
-				       priv->pixmap,
-				       GLX_FRONT_LEFT_EXT,
-				       NULL);
+	(*priv->gScreen->bindTexImage) (priv->screen->display ()->dpy (),
+				        priv->pixmap,
+				        GLX_FRONT_LEFT_EXT,
+				        NULL);
     }
 
     priv->filter = GL_NEAREST;
@@ -336,19 +353,19 @@ CompTexture::bindPixmap (Pixmap pixmap,
 }
 
 void
-CompTexture::releasePixmap ()
+GLTexture::releasePixmap ()
 {
     if (priv->pixmap)
     {
-	priv->screen->makeCurrent ();
+	priv->gScreen->makeCurrent ();
 	glEnable (priv->target);
 	if (!strictBinding)
 	{
 	    glBindTexture (priv->target, priv->name);
 
-	    (*priv->screen->releaseTexImage) (priv->screen->display ()->dpy (),
-					      priv->pixmap,
-					      GLX_FRONT_LEFT_EXT);
+	    (*priv->gScreen->releaseTexImage) (priv->screen->display ()->dpy (),
+					       priv->pixmap,
+					       GLX_FRONT_LEFT_EXT);
 	}
 
 	glBindTexture (priv->target, 0);
@@ -361,17 +378,17 @@ CompTexture::releasePixmap ()
 }
 
 void
-CompTexture::enable (CompTexture::Filter filter)
+GLTexture::enable (GLTexture::Filter filter)
 {
-    priv->screen->makeCurrent ();
+    priv->gScreen->makeCurrent ();
     glEnable (priv->target);
     glBindTexture (priv->target, priv->name);
 
     if (strictBinding && priv->pixmap)
     {
-	(*priv->screen->bindTexImage) (priv->screen->display ()->dpy (),
-				       priv->pixmap,
-				       GLX_FRONT_LEFT_EXT, NULL);
+	(*priv->gScreen->bindTexImage) (priv->screen->display ()->dpy (),
+				        priv->pixmap,
+				        GLX_FRONT_LEFT_EXT, NULL);
     }
 
     if (filter == Fast)
@@ -388,13 +405,13 @@ CompTexture::enable (CompTexture::Filter filter)
 	    priv->filter = GL_NEAREST;
 	}
     }
-    else if (priv->filter != priv->screen->display ()->textureFilter ())
+    else if (priv->filter != priv->gDisplay->textureFilter ())
     {
-	if (priv->screen->display ()->textureFilter () ==
+	if (priv->gDisplay->textureFilter () ==
 	    GL_LINEAR_MIPMAP_LINEAR)
 	{
-	    if (priv->screen->textureNonPowerOfTwo () &&
-		priv->screen->framebufferObject () && priv->mipmap)
+	    if (priv->gScreen->textureNonPowerOfTwo () &&
+		priv->gScreen->framebufferObject () && priv->mipmap)
 	    {
 		glTexParameteri (priv->target,
 				 GL_TEXTURE_MIN_FILTER,
@@ -423,12 +440,12 @@ CompTexture::enable (CompTexture::Filter filter)
 	{
 	    glTexParameteri (priv->target,
 			     GL_TEXTURE_MIN_FILTER,
-			     priv->screen->display ()->textureFilter ());
+			     priv->gDisplay->textureFilter ());
 	    glTexParameteri (priv->target,
 			     GL_TEXTURE_MAG_FILTER,
-			     priv->screen->display ()->textureFilter ());
+			     priv->gDisplay->textureFilter ());
 
-	    priv->filter = priv->screen->display ()->textureFilter ();
+	    priv->filter = priv->gDisplay->textureFilter ();
 	}
     }
 
@@ -436,22 +453,22 @@ CompTexture::enable (CompTexture::Filter filter)
     {
 	if (priv->damaged)
 	{
-	    (*priv->screen->generateMipmap) (priv->target);
+	    (*priv->gScreen->generateMipmap) (priv->target);
 	    priv->damaged = false;
 	}
     }
 }
 
 void
-CompTexture::disable ()
+GLTexture::disable ()
 {
-    priv->screen->makeCurrent ();
+    priv->gScreen->makeCurrent ();
     if (strictBinding && priv->pixmap)
     {
 	glBindTexture (priv->target, priv->name);
 
-	(*priv->screen->releaseTexImage) (priv->screen->display ()->dpy (),
-					  priv->pixmap, GLX_FRONT_LEFT_EXT);
+	(*priv->gScreen->releaseTexImage) (priv->screen->display ()->dpy (),
+					   priv->pixmap, GLX_FRONT_LEFT_EXT);
     }
 
     glBindTexture (priv->target, 0);
@@ -459,38 +476,38 @@ CompTexture::disable ()
 }
 
 GLuint
-CompTexture::name ()
+GLTexture::name ()
 {
     return priv->name;
 }
 
 GLenum
-CompTexture::target ()
+GLTexture::target ()
 {
     return priv->target;
 }
 
 void
-CompTexture::damage ()
+GLTexture::damage ()
 {
     priv->damaged = true;
 }
 
-CompTexture::Matrix &
-CompTexture::matrix ()
+GLTexture::Matrix &
+GLTexture::matrix ()
 {
     return priv->matrix;
 }
 	
 void
-CompTexture::reset ()
+GLTexture::reset ()
 {
     priv = boost::shared_ptr <PrivateTexture>
 		(new PrivateTexture (this, priv->screen));
 }
 
 bool
-CompTexture::hasPixmap ()
+GLTexture::hasPixmap ()
 {
     return (priv->pixmap != None);
 }

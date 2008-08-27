@@ -3,20 +3,16 @@
 
 #include <boost/function.hpp>
 
+#include <X11/Xlib-xcb.h>
+#include <X11/Xutil.h>
 #include <X11/Xregion.h>
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/sync.h>
-
-#include <GL/gl.h>
-#include <GL/glx.h>
 
 #include <compaction.h>
 #include <compobject.h>
 #include <compsize.h>
 #include <comppoint.h>
-#include <comptexture.h>
-#include <compfragment.h>
-#include <compmatrix.h>
 
 #include <wrapable.h>
 
@@ -173,15 +169,7 @@ struct CompStartupSequence;
 #define CompWindowGrabMoveMask   (1 << 2)
 #define CompWindowGrabResizeMask (1 << 3)
 
-struct CompWindowPaintAttrib {
-    GLushort opacity;
-    GLushort brightness;
-    GLushort saturation;
-    GLfloat  xScale;
-    GLfloat  yScale;
-    GLfloat  xTranslate;
-    GLfloat  yTranslate;
-};
+
 
 enum CompStackingUpdateMode {
     CompStackingUpdateModeNone = 0,
@@ -189,6 +177,16 @@ enum CompStackingUpdateMode {
     CompStackingUpdateModeAboveFullscreen,
     CompStackingUpdateModeInitialMap,
     CompStackingUpdateModeInitialMapDeniedFocus
+};
+
+enum CompWindowNotify {
+   CompWindowNotifyMap,
+   CompWindowNotifyUnmap,
+   CompWindowNotifyRestack,
+   CompWindowNotifyHide,
+   CompWindowNotifyShow,
+   CompWindowNotifyAliveChanged,
+   CompWindowNotifySyncAlarm
 };
 
 struct CompWindowExtents {
@@ -209,17 +207,6 @@ class WindowInterface : public WrapableInterface<CompWindow> {
     public:
 	WindowInterface ();
 
-	WRAPABLE_DEF(bool, paint, const CompWindowPaintAttrib *,
-		     const CompTransform *, Region, unsigned int);
-	WRAPABLE_DEF(bool, draw, const CompTransform *,
-		     CompFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_DEF(void, addGeometry, CompTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_DEF(void, drawTexture, CompTexture *texture,
-		     CompFragment::Attrib &, unsigned int);
-	WRAPABLE_DEF(void, drawGeometry);
-	WRAPABLE_DEF(bool, damageRect, bool, BoxPtr);
-
 	WRAPABLE_DEF(void, getOutputExtents, CompWindowExtents *);
 	WRAPABLE_DEF(void, getAllowedActions, unsigned int *,
 		     unsigned int *);
@@ -232,6 +219,7 @@ class WindowInterface : public WrapableInterface<CompWindow> {
 
 	WRAPABLE_DEF(void, resizeNotify, int, int, int, int);
 	WRAPABLE_DEF(void, moveNotify, int, int, bool);
+	WRAPABLE_DEF(void, windowNotify, CompWindowNotify);
 	WRAPABLE_DEF(void, grabNotify, int, int,
 		     unsigned int, unsigned int);
 	WRAPABLE_DEF(void, ungrabNotify);
@@ -259,7 +247,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 		unsigned int mBorder;
 	};
 
-	static CompWindowPaintAttrib defaultPaintAttrib;
+
 
 	typedef boost::function<void (CompWindow *)> ForEach;
 	
@@ -312,8 +300,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	void
 	handlePing (int lastPing);
 
-	bool
-	overlayWindow ();
+
 
 	Region
 	region ();
@@ -398,28 +385,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	void
 	updateWindowOutputExtents ();
-
-	bool
-	bind ();
-
-	void
-	release ();
-
-	void
-	damageTransformedRect (float  xScale,
-			       float  yScale,
-			       float  xTranslate,
-			       float  yTranslate,
-			       BoxPtr rect);
-
-	void
-	damageOutputExtents ();
-
-	void
-	addDamageRect (BoxPtr rect);
-
-	void
-	addDamage ();
 
 	void
 	updateRegion ();
@@ -532,12 +497,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 			  Time         timestamp);
 
 	void
-	unredirect ();
-
-	void
-	redirect ();
-
-	void
 	defaultViewport (int *vx, int *vy);
 
 	CompIcon *
@@ -591,17 +550,13 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	CompWindowExtents
 	input ();
 
+	CompWindowExtents
+	output ();
+
 	XSizeHints
 	sizeHints ();
 
-	void
-	updateOpacity ();
 
-	void
-	updateBrightness ();
-
-	void
-	updateSaturation ();
 
 	void
 	updateMwmHints ();
@@ -612,8 +567,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	void
 	processMap ();
 
-	void
-	processDamage (XDamageNotifyEvent *de);
+
 
 	XSyncAlarm
 	syncAlarm ();
@@ -621,26 +575,18 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	bool
 	destroyed ();
 
-	bool
-	damaged ();
 
 	bool
 	invisible ();
 
 	bool
-	redirected ();
+	syncWait ();
 
-	Region
-	clip ();
+	bool alpha ();
 
-	CompWindowPaintAttrib &
-	paintAttrib ();
+	bool alive ();
 
-	bool
-	moreVertices (int newSize);
 
-	bool
-	moreIndices (int newSize);
 	
 	static unsigned int
 	constrainWindowState (unsigned int state,
@@ -656,19 +602,6 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-    	WRAPABLE_HND(bool, paint, const CompWindowPaintAttrib *,
-		     const CompTransform *, Region, unsigned int);
-	WRAPABLE_HND(bool, draw, const CompTransform *,
-		     CompFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_HND(void, addGeometry, CompTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_HND(void, drawTexture, CompTexture *texture,
-		     CompFragment::Attrib &, unsigned int);
-	WRAPABLE_HND(void, drawGeometry);
-
-	
-	WRAPABLE_HND(bool, damageRect, bool, BoxPtr);
-
 	WRAPABLE_HND(void, getOutputExtents, CompWindowExtents *);
 	WRAPABLE_HND(void, getAllowedActions, unsigned int *,
 		     unsigned int *);
@@ -681,6 +614,7 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	WRAPABLE_HND(void, resizeNotify, int, int, int, int);
 	WRAPABLE_HND(void, moveNotify, int, int, bool);
+	WRAPABLE_HND(void, windowNotify, CompWindowNotify);
 	WRAPABLE_HND(void, grabNotify, int, int,
 		     unsigned int, unsigned int);
 	WRAPABLE_HND(void, ungrabNotify);

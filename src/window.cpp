@@ -29,7 +29,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xproto.h>
 #include <X11/extensions/shape.h>
-#include <X11/extensions/Xcomposite.h>
 
 #include <stdio.h>
 #include <string.h>
@@ -42,7 +41,6 @@
 #include <boost/bind.hpp>
 
 #include <compiz-core.h>
-#include <comptexture.h>
 #include <compicon.h>
 #include "privatewindow.h"
 #include "privatescreen.h"
@@ -87,7 +85,8 @@ PrivateWindow::recalcNormalHints ()
 {
     int maxSize;
 
-    maxSize = screen->maxTextureSize ();
+#warning fixme to max Texture size
+    maxSize = MAXSHORT;
     maxSize -= serverGeometry.border () * 2;
 
     sizeHints.x      = serverGeometry.x ();
@@ -665,9 +664,6 @@ CompWindow::recalcType ()
 	(priv->state & CompWindowStateModalMask))
 	type = CompWindowTypeModalDialogMask;
 
-    if (type & CompWindowTypeDesktopMask)
-	priv->paint.opacity = OPAQUE;
-
     priv->type = type;
 }
 
@@ -829,180 +825,6 @@ CompWindow::updateWindowOutputExtents ()
 }
 
 void
-PrivateWindow::setWindowMatrix ()
-{
-    matrix = texture.matrix ();
-    matrix.x0 -= (attrib.x * matrix.xx);
-    matrix.y0 -= (attrib.y * matrix.yy);
-}
-
-bool
-CompWindow::bind ()
-{
-    redirect ();
-
-    if (!priv->pixmap)
-    {
-	XWindowAttributes attr;
-
-	/* don't try to bind window again if it failed previously */
-	if (priv->bindFailed)
-	    return false;
-
-	/* We have to grab the server here to make sure that window
-	   is mapped when getting the window pixmap */
-	XGrabServer (priv->screen->display ()->dpy ());
-	XGetWindowAttributes (priv->screen->display ()->dpy (), priv->id, &attr);
-	if (attr.map_state != IsViewable)
-	{
-	    XUngrabServer (priv->screen->display ()->dpy ());
-	    priv->texture.reset ();
-	    priv->bindFailed = true;
-	    return false;
-	}
-
-	priv->pixmap = XCompositeNameWindowPixmap (priv->screen->display ()->dpy (),
-						priv->id);
-
-	XUngrabServer (priv->screen->display ()->dpy ());
-    }
-
-    if (!priv->texture.bindPixmap (priv->pixmap, priv->width, priv->height,
-				   priv->attrib.depth))
-    {
-	compLogMessage (priv->screen->display (), "core", CompLogLevelInfo,
-			"Couldn't bind redirected window 0x%x to "
-			"texture\n", (int) priv->id);
-    }
-
-    priv->setWindowMatrix ();
-
-    return true;
-}
-
-void
-CompWindow::release ()
-{
-    if (priv->pixmap)
-    {
-	priv->texture = CompTexture (priv->screen);
-
-	XFreePixmap (priv->screen->display ()->dpy (), priv->pixmap);
-
-	priv->pixmap = None;
-    }
-}
-
-void
-CompWindow::damageTransformedRect (float  xScale,
-				   float  yScale,
-				   float  xTranslate,
-				   float  yTranslate,
-				   BoxPtr rect)
-{
-    REGION reg;
-
-    reg.rects    = &reg.extents;
-    reg.numRects = 1;
-
-    reg.extents.x1 = (short) (rect->x1 * xScale) - 1;
-    reg.extents.y1 = (short) (rect->y1 * yScale) - 1;
-    reg.extents.x2 = (short) (rect->x2 * xScale + 0.5f) + 1;
-    reg.extents.y2 = (short) (rect->y2 * yScale + 0.5f) + 1;
-
-    reg.extents.x1 += (short) xTranslate;
-    reg.extents.y1 += (short) yTranslate;
-    reg.extents.x2 += (short) (xTranslate + 0.5f);
-    reg.extents.y2 += (short) (yTranslate + 0.5f);
-
-    if (reg.extents.x2 > reg.extents.x1 && reg.extents.y2 > reg.extents.y1)
-    {
-	reg.extents.x1 += priv->attrib.x + priv->attrib.border_width;
-	reg.extents.y1 += priv->attrib.y + priv->attrib.border_width;
-	reg.extents.x2 += priv->attrib.x + priv->attrib.border_width;
-	reg.extents.y2 += priv->attrib.y + priv->attrib.border_width;
-
-	priv->screen->damageRegion (&reg);
-    }
-}
-
-void
-CompWindow::damageOutputExtents ()
-{
-    if (priv->screen->damageMask () & COMP_SCREEN_DAMAGE_ALL_MASK)
-	return;
-
-    if (priv->shaded || (priv->attrib.map_state == IsViewable && priv->damaged))
-    {
-	BoxRec box;
-
-	/* top */
-	box.x1 = -priv->output.left - priv->attrib.border_width;
-	box.y1 = -priv->output.top - priv->attrib.border_width;
-	box.x2 = priv->width + priv->output.right - priv->attrib.border_width;
-	box.y2 = -priv->attrib.border_width;
-
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
-
-	/* bottom */
-	box.y1 = priv->height - priv->attrib.border_width;
-	box.y2 = box.y1 + priv->output.bottom - priv->attrib.border_width;
-
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
-
-	/* left */
-	box.x1 = -priv->output.left - priv->attrib.border_width;
-	box.y1 = -priv->attrib.border_width;
-	box.x2 = -priv->attrib.border_width;
-	box.y2 = priv->height - priv->attrib.border_width;
-
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
-
-	/* right */
-	box.x1 = priv->width - priv->attrib.border_width;
-	box.x2 = box.x1 + priv->output.right - priv->attrib.border_width;
-
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
-    }
-}
-
-bool
-CompWindow::damageRect (bool       initial,
-			BoxPtr     rect)
-{
-    WRAPABLE_HND_FUNC_RETURN(bool, damageRect, initial, rect)
-    return false;
-}
-
-void
-CompWindow::addDamageRect (BoxPtr rect)
-{
-    REGION region;
-
-    if (priv->screen->damageMask () & COMP_SCREEN_DAMAGE_ALL_MASK)
-	return;
-
-    region.extents = *rect;
-
-    if (!damageRect (false, &region.extents))
-    {
-	region.extents.x1 += priv->attrib.x + priv->attrib.border_width;
-	region.extents.y1 += priv->attrib.y + priv->attrib.border_width;
-	region.extents.x2 += priv->attrib.x + priv->attrib.border_width;
-	region.extents.y2 += priv->attrib.y + priv->attrib.border_width;
-
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	priv->screen->damageRegion (&region);
-    }
-}
-
-void
 CompWindow::getOutputExtents (CompWindowExtents *output)
 {
     WRAPABLE_HND_FUNC(getOutputExtents, output)
@@ -1010,25 +832,6 @@ CompWindow::getOutputExtents (CompWindowExtents *output)
     output->right  = 0;
     output->top    = 0;
     output->bottom = 0;
-}
-
-void
-CompWindow::addDamage ()
-{
-    if (priv->screen->damageMask () & COMP_SCREEN_DAMAGE_ALL_MASK)
-	return;
-
-    if (priv->shaded || (priv->attrib.map_state == IsViewable && priv->damaged))
-    {
-	BoxRec box;
-
-	box.x1 = -priv->output.left - priv->attrib.border_width;
-	box.y1 = -priv->output.top - priv->attrib.border_width;
-	box.x2 = priv->width + priv->output.right;
-	box.y2 = priv->height + priv->output.bottom;
-
-	addDamageRect (&box);
-    }
 }
 
 void
@@ -1435,9 +1238,7 @@ CompWindow::map ()
 	priv->screen->display ()->setWmState (NormalState, priv->id);
 
     priv->invisible  = true;
-    priv->damaged    = false;
     priv->alive      = true;
-    priv->bindFailed = false;
 
     priv->lastPong = priv->screen->display ()->lastPing ();
 
@@ -1465,6 +1266,8 @@ CompWindow::map ()
 	    resize (priv->attrib.x, priv->attrib.y, priv->attrib.width,
 		    ++priv->attrib.height - 1, priv->attrib.border_width);
     }
+
+    windowNotify (CompWindowNotifyMap);
 }
 
 void
@@ -1491,13 +1294,10 @@ CompWindow::unmap ()
     if (priv->type == CompWindowTypeDesktopMask)
 	priv->screen->desktopWindowCount ()--;
 
-    addDamage ();
-
     priv->attrib.map_state = IsUnmapped;
 
     priv->invisible = true;
 
-    release ();
 
     if (priv->shaded && priv->height)
 	resize (priv->attrib.x, priv->attrib.y,
@@ -1506,8 +1306,7 @@ CompWindow::unmap ()
 
     priv->screen->updateClientList ();
 
-    if (!priv->redirected)
-	redirect ();
+    windowNotify (CompWindowNotifyUnmap);
 }
 
 bool
@@ -1525,6 +1324,8 @@ PrivateWindow::restack (Window aboveId)
     screen->insertWindow (window, aboveId);
 
     screen->updateClientList ();
+
+    window->windowNotify (CompWindowNotifyRestack);
 
     return true;
 }
@@ -1550,37 +1351,16 @@ CompWindow::resize (CompWindow::Geometry gm)
 	priv->attrib.height       != (int) gm.height () ||
 	priv->attrib.border_width != (int) gm.border ())
     {
-	unsigned int pw, ph, actualWidth, actualHeight, ui;
+	unsigned int pw, ph;
 	int	     dx, dy, dwidth, dheight;
-	Pixmap	     pixmap = None;
-	Window	     root;
-	Status	     result;
-	int	     i;
 
 	pw = gm.width () + gm.border () * 2;
 	ph = gm.height () + gm.border () * 2;
 
-	if (priv->mapNum && priv->redirected)
-	{
-	    pixmap = XCompositeNameWindowPixmap (priv->screen->display ()->dpy (),
-						 priv->id);
-	    result = XGetGeometry (priv->screen->display ()->dpy (), pixmap, &root,
-				   &i, &i, &actualWidth, &actualHeight,
-				   &ui, &ui);
-
-	    if (!result || actualWidth != pw || actualHeight != ph)
-	    {
-		XFreePixmap (priv->screen->display ()->dpy (), pixmap);
-
-		return false;
-	    }
-	}
-	else if (priv->shaded)
+	if (priv->shaded)
 	{
 	    ph = 0;
 	}
-
-	addDamage ();
 
 	dx      = gm.x () - priv->attrib.x;
 	dy      = gm.y () - priv->attrib.y;
@@ -1596,16 +1376,10 @@ CompWindow::resize (CompWindow::Geometry gm)
 	priv->width  = pw;
 	priv->height = ph;
 
-	release ();
-
-	priv->pixmap = pixmap;
-
 	if (priv->mapNum)
 	    updateRegion ();
 
 	resizeNotify (dx, dy, dwidth, dheight);
-
-	addDamage ();
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
 
@@ -1766,8 +1540,7 @@ CompWindow::configure (XConfigureEvent *ce)
 
     priv->attrib.override_redirect = ce->override_redirect;
 
-    if (priv->restack (ce->above))
-	addDamage ();
+    priv->restack (ce->above);
 }
 
 void
@@ -1780,8 +1553,7 @@ CompWindow::circulate (XCirculateEvent *ce)
     else
 	newAboveId = 0;
 
-    if (priv->restack (newAboveId))
-	addDamage ();
+    priv->restack (newAboveId);
 }
 
 void
@@ -1789,22 +1561,14 @@ CompWindow::move (int dx, int dy, Bool damage, Bool immediate)
 {
     if (dx || dy)
     {
-	if (damage)
-	    addDamage ();
-
 	priv->attrib.x += dx;
 	priv->attrib.y += dy;
 
 	XOffsetRegion (priv->region, dx, dy);
 
-	priv->setWindowMatrix ();
-
 	priv->invisible = WINDOW_INVISIBLE (priv);
 
 	moveNotify (dx, dy, immediate);
-
-	if (damage)
-	    addDamage ();
     }
 }
 
@@ -1876,6 +1640,10 @@ CompWindow::moveNotify (int  dx,
 			int  dy,
 			bool immediate)
     WRAPABLE_HND_FUNC(moveNotify, dx, dy, immediate)
+
+void
+CompWindow::windowNotify (CompWindowNotify n)
+    WRAPABLE_HND_FUNC (windowNotify, n)
 
 void
 CompWindow::grabNotify (int	       x,
@@ -3500,12 +3268,12 @@ CompWindow::hide ()
     }
     else
     {
-	addDamage ();
-
 	priv->shaded = false;
 
 	if ((priv->state & CompWindowStateShadedMask) && priv->frame)
 	    XUnmapWindow (priv->screen->display ()->dpy (), priv->frame);
+
+	windowNotify (CompWindowNotifyHide);
     }
 
     if (!priv->pendingMaps && priv->attrib.map_state != IsViewable)
@@ -3554,8 +3322,7 @@ CompWindow::show ()
 		    priv->attrib.width, ++priv->attrib.height - 1,
 		    priv->attrib.border_width);
 
-	addDamage ();
-
+	windowNotify (CompWindowNotifyShow);
 	return;
     }
     else
@@ -3827,48 +3594,6 @@ CompWindow::allowWindowFocus (unsigned int noFocusMask,
     }
 
     return retval;
-}
-
-void
-CompWindow::unredirect ()
-{
-    if (!priv->redirected)
-	return;
-
-    release ();
-
-    XCompositeUnredirectWindow (priv->screen->display ()->dpy (), priv->id,
-				CompositeRedirectManual);
-
-    priv->redirected   = false;
-    priv->overlayWindow = true;
-    priv->screen->overlayWindowCount ()++;
-
-    if (priv->screen->overlayWindowCount () > 0)
-	priv->screen->updateOutputWindow ();
-}
-
-void
-CompWindow::redirect ()
-{
-    if (priv->redirected)
-	return;
-
-    XCompositeRedirectWindow (priv->screen->display ()->dpy (), priv->id,
-			      CompositeRedirectManual);
-
-    priv->redirected = true;
-
-    if (priv->overlayWindow)
-    {
-	priv->screen->overlayWindowCount ()--;
-	priv->overlayWindow = false;
-    }
-
-    if (priv->screen->overlayWindowCount () < 1)
-	priv->screen->showOutputWindow ();
-    else
-	priv->screen->updateOutputWindow ();
 }
 
 void
@@ -4145,13 +3870,6 @@ CompWindow::getMovementForOffset (int offX,
 
 WindowInterface::WindowInterface ()
 {
-    WRAPABLE_INIT_FUNC(paint);
-    WRAPABLE_INIT_FUNC(draw);
-    WRAPABLE_INIT_FUNC(addGeometry);
-    WRAPABLE_INIT_FUNC(drawTexture);
-    WRAPABLE_INIT_FUNC(drawGeometry);
-
-    WRAPABLE_INIT_FUNC(damageRect);
     WRAPABLE_INIT_FUNC(getOutputExtents);
     WRAPABLE_INIT_FUNC(getAllowedActions);
 
@@ -4162,47 +3880,12 @@ WindowInterface::WindowInterface ()
 
     WRAPABLE_INIT_FUNC(resizeNotify);
     WRAPABLE_INIT_FUNC(moveNotify);
+    WRAPABLE_INIT_FUNC(windowNotify);
     WRAPABLE_INIT_FUNC(grabNotify);
     WRAPABLE_INIT_FUNC(ungrabNotify);
 
     WRAPABLE_INIT_FUNC(stateChangeNotify);
 }
-
-
-bool
-WindowInterface::paint (const CompWindowPaintAttrib *attrib,
-			const CompTransform         *transform,
-			Region                      region,
-			unsigned int                mask)
-    WRAPABLE_DEF_FUNC_RETURN(paint, attrib, transform, region, mask)
-
-bool
-WindowInterface::draw (const CompTransform  *transform,
-		       CompFragment::Attrib &fragment,
-		       Region               region,
-		       unsigned int         mask)
-    WRAPABLE_DEF_FUNC_RETURN(draw, transform, fragment, region, mask)
-
-void
-WindowInterface::addGeometry (CompTexture::Matrix *matrix,
-			      int	          nMatrix,
-			      Region	          region,
-			      Region	          clip)
-    WRAPABLE_DEF_FUNC(addGeometry, matrix, nMatrix, region, clip)
-
-void
-WindowInterface::drawTexture (CompTexture          *texture,
-			      CompFragment::Attrib &fragment,
-			      unsigned int         mask)
-    WRAPABLE_DEF_FUNC(drawTexture, texture, fragment, mask)
-
-void
-WindowInterface::drawGeometry ()
-    WRAPABLE_DEF_FUNC(drawGeometry)
-
-bool
-WindowInterface::damageRect (bool initial, BoxPtr rect)
-    WRAPABLE_DEF_FUNC_RETURN(damageRect, initial, rect)
 
 void
 WindowInterface::getOutputExtents (CompWindowExtents *output)
@@ -4238,6 +3921,11 @@ void
 WindowInterface::moveNotify (int dx, int dy, bool immediate)
     WRAPABLE_DEF_FUNC(moveNotify, dx, dy, immediate)
 
+void
+WindowInterface::windowNotify (CompWindowNotify n)
+    WRAPABLE_DEF_FUNC(windowNotify, n)
+
+		
 void
 WindowInterface::grabNotify (int x,
 			     int y,
@@ -4351,9 +4039,9 @@ CompWindow::handlePingTimeout (unsigned int lastPing)
 	{
 	    if (priv->alive)
 	    {
-		priv->alive	       = false;
-		priv->paint.brightness = 0xa8a8;
-		priv->paint.saturation = 0;
+		priv->alive = false;
+
+		windowNotify (CompWindowNotifyAliveChanged);
 
 		if (priv->closeRequests)
 		{
@@ -4365,8 +4053,6 @@ CompWindow::handlePingTimeout (unsigned int lastPing)
 
 		    priv->closeRequests = 0;
 		}
-
-		addDamage ();
 	    }
 	}
 
@@ -4380,9 +4066,9 @@ CompWindow::handlePing (int lastPing)
 {
     if (!priv->alive)
     {
-	priv->alive	    = true;
-	priv->paint.saturation = priv->saturation;
-	priv->paint.brightness = priv->brightness;
+	priv->alive = true;
+
+	windowNotify (CompWindowNotifyAliveChanged);
 
 	if (priv->lastCloseRequestTime)
 	{
@@ -4396,8 +4082,6 @@ CompWindow::handlePing (int lastPing)
 
 	    priv->lastCloseRequestTime = 0;
 	}
-
-	addDamage ();
     }
     priv->lastPong = lastPing;
 }
@@ -4467,11 +4151,6 @@ CompWindow::processMap ()
 	moveInputFocusTo ();
 }
 
-bool
-CompWindow::overlayWindow ()
-{
-    return priv->overlayWindow;
-}
 
 Region
 CompWindow::region ()
@@ -4710,70 +4389,16 @@ CompWindow::input ()
     return priv->input;
 }
 
+CompWindowExtents
+CompWindow::output ()
+{
+    return priv->output;
+}
+
 XSizeHints
 CompWindow::sizeHints ()
 {
     return priv->sizeHints;
-}
-
-void
-CompWindow::updateOpacity ()
-{
-    GLushort opacity;
-
-    if (priv->type & CompWindowTypeDesktopMask)
-	return;
-
-    opacity = priv->screen->display ()->getWindowProp32 (priv->id,
-	priv->screen->display ()->atoms ().winOpacity, OPAQUE);
-
-    if (opacity != priv->opacity)
-    {
-	priv->opacity = opacity;
-	if (priv->alive)
-	{
-	    priv->paint.opacity = priv->opacity;
-	    addDamage ();
-	}
-    }
-}
-
-void
-CompWindow::updateBrightness ()
-{
-    GLushort brightness;
-
-    brightness = priv->screen->display ()->getWindowProp32 (priv->id,
-	priv->screen->display ()->atoms ().winBrightness, BRIGHT);
-
-    if (brightness != priv->brightness)
-    {
-	priv->brightness = brightness;
-	if (priv->alive)
-	{
-	    priv->paint.brightness = priv->brightness;
-	    addDamage ();
-	}
-    }
-}
-
-void
-CompWindow::updateSaturation ()
-{
-    GLushort saturation;
-
-    saturation = priv->screen->display ()->getWindowProp32 (priv->id,
-	priv->screen->display ()->atoms ().winSaturation, COLOR);
-
-    if (saturation != priv->saturation)
-    {
-	priv->saturation = saturation;
-	if (priv->alive)
-	{
-	    priv->paint.saturation = priv->saturation;
-	    addDamage ();
-	}
-    }
 }
 
 void
@@ -4794,34 +4419,6 @@ CompWindow::updateStartupId ()
     priv->startupId = getStartupId ();
 }
 
-void
-CompWindow::processDamage (XDamageNotifyEvent *de)
-{
-    priv->texture.damage ();
-
-    if (priv->syncWait)
-    {
-	if (priv->nDamage == priv->sizeDamage)
-	{
-	    priv->damageRects = (XRectangle *) realloc (priv->damageRects,
-				 (priv->sizeDamage + 1) *
-				 sizeof (XRectangle));
-	    priv->sizeDamage += 1;
-	}
-
-	priv->damageRects[priv->nDamage].x      = de->area.x;
-	priv->damageRects[priv->nDamage].y      = de->area.y;
-	priv->damageRects[priv->nDamage].width  = de->area.width;
-	priv->damageRects[priv->nDamage].height = de->area.height;
-	priv->nDamage++;
-    }
-    else
-    {
-        priv->handleDamageRect (this, de->area.x, de->area.y,
-				de->area.width, de->area.height);
-    }
-}
-
 XSyncAlarm
 CompWindow::syncAlarm ()
 {
@@ -4835,34 +4432,11 @@ CompWindow::destroyed ()
 }
 
 bool
-CompWindow::damaged ()
-{
-    return priv->damaged;
-}
-
-bool
 CompWindow::invisible ()
 {
     return priv->invisible;
 }
 
-bool
-CompWindow::redirected ()
-{
-    return priv->redirected;
-}
-
-Region
-CompWindow::clip ()
-{
-    return priv->clip;
-}
-
-CompWindowPaintAttrib &
-CompWindow::paintAttrib ()
-{
-    return priv->paint;
-}
 
 
 CompWindow::CompWindow (CompScreen *screen,
@@ -4870,13 +4444,7 @@ CompWindow::CompWindow (CompScreen *screen,
 			Window     aboveId) :
    CompObject (COMP_OBJECT_TYPE_WINDOW, "window", &windowPrivateIndices)
 {
-    WRAPABLE_INIT_HND(paint);
-    WRAPABLE_INIT_HND(draw);
-    WRAPABLE_INIT_HND(addGeometry);
-    WRAPABLE_INIT_HND(drawTexture);
-    WRAPABLE_INIT_HND(drawGeometry);
 
-    WRAPABLE_INIT_HND(damageRect);
     WRAPABLE_INIT_HND(getOutputExtents);
     WRAPABLE_INIT_HND(getAllowedActions);
 
@@ -4887,6 +4455,7 @@ CompWindow::CompWindow (CompScreen *screen,
 
     WRAPABLE_INIT_HND(resizeNotify);
     WRAPABLE_INIT_HND(moveNotify);
+    WRAPABLE_INIT_HND(windowNotify);
     WRAPABLE_INIT_HND(grabNotify);
     WRAPABLE_INIT_HND(ungrabNotify);
 
@@ -4900,8 +4469,7 @@ CompWindow::CompWindow (CompScreen *screen,
     priv->region = XCreateRegion ();
     assert (priv->region);
 
-    priv->clip = XCreateRegion ();
-    assert (priv->clip);
+
 
     /* Failure means that window has been destroyed. We still have to add the
        window to the window list as we might get configure requests which
@@ -4963,9 +4531,6 @@ CompWindow::CompWindow (CompScreen *screen,
 
 	XUnionRegion (&rect, priv->region, priv->region);
 
-	priv->damage = XDamageCreate (d->dpy (), id,
-				   XDamageReportRawRectangles);
-
 	/* need to check for DisplayModal state on all windows */
 	priv->state = d->getWindowState (priv->id);
 
@@ -4973,7 +4538,6 @@ CompWindow::CompWindow (CompScreen *screen,
     }
     else
     {
-	priv->damage = None;
 	priv->attrib.map_state = IsUnmapped;
     }
 
@@ -5010,23 +4574,6 @@ CompWindow::CompWindow (CompScreen *screen,
     {
 	recalcType ();
     }
-
-    priv->opacity = OPAQUE;
-    if (!(priv->type & CompWindowTypeDesktopMask))
- 	priv->opacity = d->getWindowProp32 (priv->id,
-					    d->atoms ().winOpacity, OPAQUE);
-
-    priv->brightness = d->getWindowProp32 (priv->id,
-					   d->atoms ().winBrightness, BRIGHT);
-
-    priv->saturation = d->getWindowProp32 (priv->id,
-					   d->atoms ().winSaturation, COLOR);
-	
-    priv->paint.opacity    = priv->opacity;
-    priv->paint.brightness = priv->brightness;
-    priv->paint.saturation = priv->saturation;
-
-    priv->lastPaint = priv->paint;
 
     if (priv->attrib.map_state == IsViewable)
     {
@@ -5113,7 +4660,6 @@ CompWindow::CompWindow (CompScreen *screen,
 
     if (priv->attrib.map_state == IsViewable)
     {
-	priv->damaged   = true;
 	priv->invisible = WINDOW_INVISIBLE (priv);
     }
 }
@@ -5139,9 +4685,6 @@ CompWindow::~CompWindow ()
 	    }
 	}
 
-	if (priv->damage)
-	    XDamageDestroy (d->dpy (), priv->damage);
-
 	if (d->XShape ())
 	    XShapeSelectInput (d->dpy (), priv->id, NoEventMask);
 
@@ -5150,7 +4693,7 @@ CompWindow::~CompWindow ()
 	XUngrabButton (d->dpy (), AnyButton, AnyModifier, priv->id);
     }
 
-    if (priv->attrib.map_state == IsViewable && priv->damaged)
+    if (priv->attrib.map_state == IsViewable)
     {
 	if (priv->type == CompWindowTypeDesktopMask)
 	    priv->screen->desktopWindowCount ()--;
@@ -5162,19 +4705,9 @@ CompWindow::~CompWindow ()
     if (priv->destroyed)
 	priv->screen->updateClientList ();
 
-    if (!priv->redirected)
-    {
-	priv->screen->overlayWindowCount ()--;
-
-	if (priv->screen->overlayWindowCount () < 1)
-	    priv->screen->showOutputWindow ();
-    }
-
     core->objectRemove (priv->screen, this);
 
     CompPlugin::objectFiniPlugins (this);
-
-    release ();
 
     delete priv;
 }
@@ -5189,15 +4722,11 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     activeNum (0),
     transientFor (None),
     clientLeader (None),
-    pixmap (None),
-    texture (screen),
-    damage (None),
     inputHint (true),
     alpha (false),
     width (0),
     height (0),
     region (0),
-    clip (0),
     wmType (0),
     type (CompWindowTypeUnknownMask),
     state (0),
@@ -5207,11 +4736,7 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     mwmFunc (MwmFuncAll),
     invisible (true),
     destroyed (false),
-    damaged (false),
-    redirected (true),
     managed (false),
-    bindFailed (false),
-    overlayWindow (false),
     destroyRefCnt (1),
     unmapRefCnt (1),
 
@@ -5241,12 +4766,6 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     lastPong (0),
     alive (true),
 
-    opacity (OPAQUE),
-    brightness (BRIGHT),
-    saturation (COLOR),
-
-    lastMask (0),
-
     struts (0),
 
     icons (0),
@@ -5261,19 +4780,7 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
 
     syncWait (false),
     closeRequests (false),
-    lastCloseRequestTime (0),
-    damageRects (0),
-    sizeDamage (0),
-    nDamage (0),
-    vertices (0),
-    vertexSize (0),
-    vertexStride (0),
-    indices (0),
-    indexSize (0),
-    vCount (0),
-    texUnits (0),
-    texCoordSize (2),
-    indexCount (0)
+    lastCloseRequestTime (0)
 {
     iconGeometry.x      = 0;
     iconGeometry.y      = 0;
@@ -5290,11 +4797,6 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     output.right  = 0;
     output.top    = 0;
     output.bottom = 0;
-
-    paint.xScale	= 1.0f;
-    paint.yScale	= 1.0f;
-    paint.xTranslate	= 0.0f;
-    paint.yTranslate	= 0.0f;
 }
 
 PrivateWindow::~PrivateWindow ()
@@ -5307,20 +4809,8 @@ PrivateWindow::~PrivateWindow ()
     if (frame)
 	XDestroyWindow (screen->display ()->dpy (), frame);
 
-    if (clip)
-	XDestroyRegion (clip);
-
     if (region)
 	XDestroyRegion (region);
-
-    if (sizeDamage)
-	free (damageRects);
-
-    if (vertices)
-	free (vertices);
-
-    if (indices)
-	free (indices);
 
     if (struts)
 	free (struts);
@@ -5348,3 +4838,22 @@ CompWindow::objectName ()
     return CompString (tmp);
 
 }
+
+bool
+CompWindow::syncWait ()
+{
+    return priv->syncWait;
+}
+
+bool
+CompWindow::alpha ()
+{
+    return priv->alpha;
+}
+
+bool
+CompWindow::alive ()
+{
+    return priv->alive;
+}
+

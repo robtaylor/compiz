@@ -3,9 +3,9 @@
 
 #include <vector>
 
-#include <compfragment.h>
+#include <opengl/fragment.h>
 
-namespace CompFragment {
+namespace GLFragment {
 
     class Function;
     class Program;

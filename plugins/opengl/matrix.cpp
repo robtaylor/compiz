@@ -25,7 +25,7 @@
 #include <string.h>
 #include <math.h>
 #include <compiz-core.h>
-#include <compmatrix.h>
+#include <opengl/matrix.h>
 
 /**
  * Identity matrix.
@@ -72,47 +72,47 @@ matmul4 (float       *product,
     }
 }
 
-CompMatrix::CompMatrix ()
+GLMatrix::GLMatrix ()
 {
     memcpy (m, identity, sizeof (m));
 }
 
 void
-CompMatrix::reset ()
+GLMatrix::reset ()
 {
     memcpy (m, identity, sizeof (m));
 }
 
 const float * 
-CompMatrix::getMatrix () const
+GLMatrix::getMatrix () const
 {
     return m;
 }
 
-CompMatrix&
-CompMatrix::operator*= (const CompMatrix& rhs)
+GLMatrix&
+GLMatrix::operator*= (const GLMatrix& rhs)
 {
     *this = *this * rhs;
 
     return *this;
 }
 
-CompMatrix
-operator* (const CompMatrix& lhs,
-	   const CompMatrix& rhs)
+GLMatrix
+operator* (const GLMatrix& lhs,
+	   const GLMatrix& rhs)
 {
-    CompMatrix result;
+    GLMatrix result;
 
     matmul4 (result.m, lhs.m, rhs.m);
 
     return result;
 }
 
-CompVector
-operator* (const CompMatrix& lhs,
-	   const CompVector& rhs)
+GLVector
+operator* (const GLMatrix& lhs,
+	   const GLVector& rhs)
 {
-    CompVector  result;
+    GLVector  result;
     const float *a = lhs.m;
     int         i;
 
@@ -138,7 +138,7 @@ operator* (const CompMatrix& lhs,
  * Optimizations contributed by Rudolf Opalla (rudi@khm.de).
  */
 void
-CompMatrix::rotate (const float angle,
+GLMatrix::rotate (const float angle,
 		    const float xRot,
 		    const float yRot,
 		    const float zRot)
@@ -325,13 +325,13 @@ CompMatrix::rotate (const float angle,
 }
 
 void
-CompMatrix::rotate (const float       angle,
-		    const CompVector& vector)
+GLMatrix::rotate (const float       angle,
+		    const GLVector& vector)
 {
     rotate (angle,
-	    vector[CompVector::x],
-	    vector[CompVector::y],
-	    vector[CompVector::z]);
+	    vector[GLVector::x],
+	    vector[GLVector::y],
+	    vector[GLVector::z]);
 }
 
 /**
@@ -345,7 +345,7 @@ CompMatrix::rotate (const float       angle,
  * Multiplies in-place the elements of \p matrix by the scale factors.
  */
 void
-CompMatrix::scale (const float x,
+GLMatrix::scale (const float x,
 		   const float y,
 		   const float z)
 {
@@ -356,11 +356,11 @@ CompMatrix::scale (const float x,
 }
 
 void
-CompMatrix::scale (const CompVector& vector)
+GLMatrix::scale (const GLVector& vector)
 {
-    scale (vector[CompVector::x],
-	   vector[CompVector::y],
-	   vector[CompVector::z]);
+    scale (vector[GLVector::x],
+	   vector[GLVector::y],
+	   vector[GLVector::z]);
 }
 
 /**
@@ -374,7 +374,7 @@ CompMatrix::scale (const CompVector& vector)
  * Adds the translation coordinates to the elements of \p matrix in-place.
  */
 void
-CompMatrix::translate (const float x,
+GLMatrix::translate (const float x,
 		       const float y,
 		       const float z)
 {
@@ -385,15 +385,15 @@ CompMatrix::translate (const float x,
 }
 
 void
-CompMatrix::translate (const CompVector& vector)
+GLMatrix::translate (const GLVector& vector)
 {
-    translate (vector[CompVector::x],
-	       vector[CompVector::y],
-	       vector[CompVector::z]);
+    translate (vector[GLVector::x],
+	       vector[GLVector::y],
+	       vector[GLVector::z]);
 }
 
 void
-CompMatrix::toScreenSpace (CompOutput *output,
+GLMatrix::toScreenSpace (CompOutput *output,
 			   float      z)
 {
     translate (-0.5f, -0.5f, z);

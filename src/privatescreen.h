@@ -5,49 +5,25 @@
 #include <compscreen.h>
 #include <compsize.h>
 #include <comppoint.h>
-#include <comptexture.h>
-#include <compfragment.h>
-#include "privatefragment.h"
-
-extern char       *backgroundImage;
-
-extern Window     currentRoot;
 
 extern CompWindow *lastFoundWindow;
 extern CompWindow *lastDamagedWindow;
-extern bool       replaceCurrentWm;
-extern bool       indirectRendering;
-extern bool       strictBinding;
-extern bool       useCow;
-extern bool       noDetection;
 extern bool	  useDesktopHints;
 extern bool       onlyCurrentScreen;
 
 extern int  defaultRefreshRate;
 extern const char *defaultTextureFilter;
 
-#define RED_SATURATION_WEIGHT   0.30f
-#define GREEN_SATURATION_WEIGHT 0.59f
-#define BLUE_SATURATION_WEIGHT  0.11f
-
-#define COMP_SCREEN_OPTION_DETECT_REFRESH_RATE	  0
-#define COMP_SCREEN_OPTION_LIGHTING		  1
-#define COMP_SCREEN_OPTION_REFRESH_RATE		  2
-#define COMP_SCREEN_OPTION_HSIZE		  3
-#define COMP_SCREEN_OPTION_VSIZE		  4
-#define COMP_SCREEN_OPTION_OPACITY_STEP		  5
-#define COMP_SCREEN_OPTION_UNREDIRECT_FS	  6
-#define COMP_SCREEN_OPTION_DEFAULT_ICON		  7
-#define COMP_SCREEN_OPTION_SYNC_TO_VBLANK	  8
-#define COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS	  9
-#define COMP_SCREEN_OPTION_DETECT_OUTPUTS	  10
-#define COMP_SCREEN_OPTION_OUTPUTS		  11
-#define COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS	  12
-#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_LEVEL 13
-#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_MATCH 14
-#define COMP_SCREEN_OPTION_TEXTURE_COMPRESSION	  15
-#define COMP_SCREEN_OPTION_FORCE_INDEPENDENT      16
-#define COMP_SCREEN_OPTION_NUM		          17
+#define COMP_SCREEN_OPTION_HSIZE		  0
+#define COMP_SCREEN_OPTION_VSIZE		  1
+#define COMP_SCREEN_OPTION_DEFAULT_ICON		  2
+#define COMP_SCREEN_OPTION_NUMBER_OF_DESKTOPS	  3
+#define COMP_SCREEN_OPTION_DETECT_OUTPUTS	  4
+#define COMP_SCREEN_OPTION_OUTPUTS		  5
+#define COMP_SCREEN_OPTION_OVERLAPPING_OUTPUTS	  6
+#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_LEVEL 7
+#define COMP_SCREEN_OPTION_FOCUS_PREVENTION_MATCH 8
+#define COMP_SCREEN_OPTION_NUM		          9
 
 #define OUTPUT_OVERLAP_MODE_SMART          0
 #define OUTPUT_OVERLAP_MODE_PREFER_LARGER  1
@@ -59,10 +35,6 @@ extern const char *defaultTextureFilter;
 #define FOCUS_PREVENTION_LEVEL_HIGH     2
 #define FOCUS_PREVENTION_LEVEL_VERYHIGH 3
 #define FOCUS_PREVENTION_LEVEL_LAST     FOCUS_PREVENTION_LEVEL_VERYHIGH
-
-#define COMP_SCREEN_DAMAGE_PENDING_MASK (1 << 0)
-#define COMP_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
-#define COMP_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
 
 extern const CompMetadata::OptionInfo
 coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM];
@@ -124,9 +96,6 @@ class PrivateScreen {
 	void
 	reshape (int w, int h);
 
-	void
-	updateScreenBackground (CompTexture *texture);
-
 	bool
 	handleStartupSequenceTimeout();
 
@@ -144,9 +113,6 @@ class PrivateScreen {
 
 	void
 	getDesktopHints ();
-
-	void
-	makeOutputWindow ();
 
 	void
 	grabUngrabOneKey (unsigned int modifiers,
@@ -177,15 +143,7 @@ class PrivateScreen {
 	void
 	computeWorkareaForBox (BoxPtr pBox, XRectangle *area);
 
-	void
-	paintBackground (Region	      region,
-			 bool	      transformed);
 
-	void
-	paintOutputRegion (const CompTransform *transform,
-			   Region	       region,
-			   CompOutput	       *output,
-			   unsigned int	       mask);
 
     public:
 
@@ -202,29 +160,14 @@ class PrivateScreen {
 	unsigned int      nDesktop;
 	unsigned int      currentDesktop;
 	REGION	      region;
-	Region	      damage;
-	unsigned long     damageMask;
+
 	Window	      root;
-	Window	      overlay;
-	Window	      output;
+
 	XWindowAttributes attrib;
 	Window	      grabWindow;
-	CompFBConfig      glxPixmapFBConfigs[MAX_DEPTH + 1];
-	int		      textureRectangle;
-	int		      textureNonPowerOfTwo;
-	int		      textureEnvCombine;
-	int		      textureEnvCrossbar;
-	int		      textureBorderClamp;
-	int		      textureCompression;
-	GLint	      maxTextureSize;
-	int		      fbo;
-	int		      fragmentProgram;
-	int		      maxTextureUnits;
+
 	Cursor	      invisibleCursor;
-	std::list <CompRect> exposeRects;
-	CompTexture       backgroundTexture;
-	Bool	      backgroundLoaded;
-	unsigned int      pendingDestroys;
+
 	int		      desktopWindowCount;
 	unsigned int      mapNum;
 	unsigned int      activeNum;
@@ -234,15 +177,10 @@ class PrivateScreen {
 	CompOutput         fullscreenOutput;
 	bool               hasOverlappingOutputs;
 
-
-	CompPoint windowPaintOffset;
-
 	XRectangle lastViewport;
 
 	CompActiveWindowHistory history[ACTIVE_WINDOW_HISTORY_NUM];
 	int			    currentHistory;
-
-	int overlayWindowCount;
 
 	CompScreenEdge screenEdge[SCREEN_EDGE_NUM];
 
@@ -250,14 +188,9 @@ class PrivateScreen {
 	std::list<CompStartupSequence *> startupSequences;
 	CompCore::Timer                  startupSequenceTimer;
 
-	CompTexture::Filter filter[3];
-
 	std::list<CompGroup *> groups;
 
 	CompIcon *defaultIcon;
-
-	Bool canDoSaturated;
-	Bool canDoSlightlySaturated;
 
 	Window wmSnSelectionWindow;
 	Atom   wmSnAtom;
@@ -274,25 +207,8 @@ class PrivateScreen {
 
 	std::list<Grab *> grabs;
 
-	CompPoint rasterPos;
-	struct timeval lastRedraw;
-	int		   nextRedraw;
-	int		   redrawTime;
-	int		   optimalRedrawTime;
-	int		   frameStatus;
-	int		   timeMult;
-	Bool	   idle;
-	int		   timeLeft;
-	Bool	   pendingCommands;
-
-	CompFragment::Storage fragmentStorage;
-
-	GLfloat projection[16];
-
-	Bool clearBuffers;
-
-	Bool lighting;
-	Bool slowAnimations;
+	unsigned int    pendingDestroys;
+	
 
 	XRectangle workArea;
 
@@ -301,17 +217,10 @@ class PrivateScreen {
 	unsigned long *desktopHintData;
 	int           desktopHintSize;
 
-	GLXContext ctx;
+
 
 	CompOption::Vector opt;
 
-
-	CompCore::Timer paintTimer;
-
-	GLXGetProcAddressProc    getProcAddress;
-
-	Region tmpRegion;
-	Region outputRegion;
 };
 
 #endif

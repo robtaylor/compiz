@@ -210,6 +210,8 @@ CompOption::Value::f ()
     return priv->value.f;
 }
 
+static unsigned short defaultColor[4] = { 0x0, 0x0, 0x0, 0xffff};
+
 unsigned short*
 CompOption::Value::c ()
 {

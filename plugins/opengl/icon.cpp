@@ -2,6 +2,7 @@
 
 CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 		    unsigned int height) :
+    mTexture (screen),
     mWidth (width),
     mHeight (height),
     mData (new unsigned char[width * height * 4]),
@@ -11,7 +12,21 @@ CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 
 CompIcon::~CompIcon ()
 {
-    delete mData;
+    free (mData);
+}
+
+CompTexture &
+CompIcon::texture ()
+{
+    if (mUpdateTex)
+    {
+	mUpdateTex = false;
+	mTexture.reset ();
+	if (!mTexture.imageBufferToTexture (&mTexture,
+	    	reinterpret_cast<const char *> (mData), mWidth, mHeight))
+	    mTexture.reset ();
+    }
+    return mTexture;
 }
 
 unsigned int

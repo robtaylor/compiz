@@ -2,9 +2,6 @@
 #define _COMPSCREEN_H
 
 #include <compwindow.h>
-#include <comptexture.h>
-#include <compfragment.h>
-#include <compmatrix.h>
 #include <compoutput.h>
 #include <compsession.h>
 
@@ -12,11 +9,11 @@ class CompScreen;
 class PrivateScreen;
 typedef std::list<CompWindow *> CompWindowList;
 
-extern GLushort   defaultColor[4];
-
-#if COMPOSITE_MAJOR > 0 || COMPOSITE_MINOR > 2
-#define USE_COW
-#endif
+extern char       *backgroundImage;
+extern bool       replaceCurrentWm;
+extern bool       indirectRendering;
+extern bool       strictBinding;
+extern bool       noDetection;
 
 /* camera distance from screen, 0.5 * tan (FOV) */
 #define DEFAULT_Z_CAMERA 0.866025404f
@@ -36,119 +33,7 @@ extern GLushort   defaultColor[4];
 #define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
 #define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
 
-#ifndef GLX_EXT_texture_from_pixmap
-#define GLX_BIND_TO_TEXTURE_RGB_EXT        0x20D0
-#define GLX_BIND_TO_TEXTURE_RGBA_EXT       0x20D1
-#define GLX_BIND_TO_MIPMAP_TEXTURE_EXT     0x20D2
-#define GLX_BIND_TO_TEXTURE_TARGETS_EXT    0x20D3
-#define GLX_Y_INVERTED_EXT                 0x20D4
-#define GLX_TEXTURE_FORMAT_EXT             0x20D5
-#define GLX_TEXTURE_TARGET_EXT             0x20D6
-#define GLX_MIPMAP_TEXTURE_EXT             0x20D7
-#define GLX_TEXTURE_FORMAT_NONE_EXT        0x20D8
-#define GLX_TEXTURE_FORMAT_RGB_EXT         0x20D9
-#define GLX_TEXTURE_FORMAT_RGBA_EXT        0x20DA
-#define GLX_TEXTURE_1D_BIT_EXT             0x00000001
-#define GLX_TEXTURE_2D_BIT_EXT             0x00000002
-#define GLX_TEXTURE_RECTANGLE_BIT_EXT      0x00000004
-#define GLX_TEXTURE_1D_EXT                 0x20DB
-#define GLX_TEXTURE_2D_EXT                 0x20DC
-#define GLX_TEXTURE_RECTANGLE_EXT          0x20DD
-#define GLX_FRONT_LEFT_EXT                 0x20DE
-#endif
 
-typedef void (*FuncPtr) (void);
-typedef FuncPtr (*GLXGetProcAddressProc) (const GLubyte *procName);
-
-typedef void    (*GLXBindTexImageProc)    (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer,
-					   int		 *attribList);
-typedef void    (*GLXReleaseTexImageProc) (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer);
-typedef void    (*GLXQueryDrawableProc)   (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 attribute,
-					   unsigned int  *value);
-
-typedef void (*GLXCopySubBufferProc) (Display     *display,
-				      GLXDrawable drawable,
-				      int	  x,
-				      int	  y,
-				      int	  width,
-				      int	  height);
-
-typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
-typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
-				     int	  remainder,
-				     unsigned int *count);
-
-#ifndef GLX_VERSION_1_3
-typedef struct __GLXFBConfigRec *GLXFBConfig;
-#endif
-
-typedef GLXFBConfig *(*GLXGetFBConfigsProc) (Display *display,
-					     int     screen,
-					     int     *nElements);
-typedef int (*GLXGetFBConfigAttribProc) (Display     *display,
-					 GLXFBConfig config,
-					 int	     attribute,
-					 int	     *value);
-typedef GLXPixmap (*GLXCreatePixmapProc) (Display     *display,
-					  GLXFBConfig config,
-					  Pixmap      pixmap,
-					  const int   *attribList);
-
-typedef void (*GLActiveTextureProc) (GLenum texture);
-typedef void (*GLClientActiveTextureProc) (GLenum texture);
-typedef void (*GLMultiTexCoord2fProc) (GLenum, GLfloat, GLfloat);
-
-typedef void (*GLGenProgramsProc) (GLsizei n,
-				   GLuint  *programs);
-typedef void (*GLDeleteProgramsProc) (GLsizei n,
-				      GLuint  *programs);
-typedef void (*GLBindProgramProc) (GLenum target,
-				   GLuint program);
-typedef void (*GLProgramStringProc) (GLenum	  target,
-				     GLenum	  format,
-				     GLsizei	  len,
-				     const GLvoid *string);
-typedef void (*GLProgramParameter4fProc) (GLenum  target,
-					  GLuint  index,
-					  GLfloat x,
-					  GLfloat y,
-					  GLfloat z,
-					  GLfloat w);
-typedef void (*GLGetProgramivProc) (GLenum target,
-				    GLenum pname,
-				    int    *params);
-
-typedef void (*GLGenFramebuffersProc) (GLsizei n,
-				       GLuint  *framebuffers);
-typedef void (*GLDeleteFramebuffersProc) (GLsizei n,
-					  GLuint  *framebuffers);
-typedef void (*GLBindFramebufferProc) (GLenum target,
-				       GLuint framebuffer);
-typedef GLenum (*GLCheckFramebufferStatusProc) (GLenum target);
-typedef void (*GLFramebufferTexture2DProc) (GLenum target,
-					    GLenum attachment,
-					    GLenum textarget,
-					    GLuint texture,
-					    GLint  level);
-typedef void (*GLGenerateMipmapProc) (GLenum target);
-
-struct CompScreenPaintAttrib {
-    GLfloat xRotate;
-    GLfloat yRotate;
-    GLfloat vRotate;
-    GLfloat xTranslate;
-    GLfloat yTranslate;
-    GLfloat zTranslate;
-    GLfloat zCamera;
-};
-
-extern CompScreenPaintAttrib defaultScreenPaintAttrib;
 
 struct CompGroup {
     unsigned int      refCnt;
@@ -161,19 +46,6 @@ struct CompStartupSequence {
     unsigned int		viewportY;
 };
 
-#define MAX_DEPTH 32
-
-struct CompFBConfig {
-    GLXFBConfig fbConfig;
-    int         yInverted;
-    int         mipmap;
-    int         textureFormat;
-    int         textureTargets;
-};
-
-#define NOTHING_TRANS_FILTER 0
-#define SCREEN_TRANS_FILTER  1
-#define WINDOW_TRANS_FILTER  2
 
 #define SCREEN_EDGE_LEFT	0
 #define SCREEN_EDGE_RIGHT	1
@@ -205,30 +77,10 @@ class ScreenInterface : public WrapableInterface<CompScreen> {
     public:
 	ScreenInterface ();
 
-	WRAPABLE_DEF(void, preparePaint, int);
-	WRAPABLE_DEF(void, donePaint);
-	WRAPABLE_DEF(void, paint, CompOutput::ptrList &outputs, unsigned int);
-
-	WRAPABLE_DEF(bool, paintOutput, const CompScreenPaintAttrib *,
-		     const CompTransform *, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_DEF(void, paintTransformedOutput,
-		     const CompScreenPaintAttrib *,
-		     const CompTransform *, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_DEF(void, applyTransform, const CompScreenPaintAttrib *,
-		     CompOutput *, CompTransform *);
-
-	WRAPABLE_DEF(void, enableOutputClipping, const CompTransform *,
-		     Region, CompOutput *);
-	WRAPABLE_DEF(void, disableOutputClipping);
-
 	WRAPABLE_DEF(void, enterShowDesktopMode);
 	WRAPABLE_DEF(void, leaveShowDesktopMode, CompWindow *);
 
 	WRAPABLE_DEF(void, outputChangeNotify);
-
-	WRAPABLE_DEF(CompWindowList, getWindowPaintList);
 };
 
 
@@ -255,6 +107,9 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	Window
 	root ();
 
+	XWindowAttributes
+	attrib ();
+
 	int
 	screenNum ();
 
@@ -266,9 +121,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	unsigned int
 	showingDesktopMask ();
-	
-	bool
-	handlePaintTimeout ();
 	
 	bool
 	setOption (const char       *name,
@@ -300,30 +152,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	void
 	updateWorkareaForScreen ();
-
-	void
-	setDefaultViewport ();
-
-	void
-	damageScreen ();
-
-	FuncPtr
-	getProcAddress (const char *name);
-
-	void
-	showOutputWindow ();
-
-	void
-	hideOutputWindow ();
-
-	void
-	updateOutputWindow ();
-
-	void
-	damageRegion (Region);
-
-	void
-	damagePending ();
 
 	void
 	forEachWindow (CompWindow::ForEach);
@@ -399,11 +227,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	void
 	sendWindowActivationRequest (Window id);
 
-	void
-	setTexEnvMode (GLenum mode);
-
-	void
-	setLighting (bool lighting);
 
 	void
 	enableEdge (int edge);
@@ -413,12 +236,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 
 	Window
 	getTopWindow ();
-
-	void
-	makeCurrent ();
-
-	void
-	finishDrawing ();
 
 	int
 	outputDeviceForPoint (int x, int y);
@@ -435,8 +252,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	void
 	getWorkareaForOutput (int output, XRectangle *area);
 
-	void
-	clearOutput (CompOutput *output, unsigned int mask);
 
 	void
 	viewportForGeometry (CompWindow::Geometry gm,
@@ -455,21 +270,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	void
 	addToCurrentActiveWindowHistory (Window id);
 
-	void
-	setWindowPaintOffset (int x, int y);
-
-	int
-	getTimeToNextRedraw (struct timeval *tv);
-
-	void
-	waitForVideoSync ();
-
-	int
-	maxTextureSize ();
-
-	unsigned int
-	damageMask ();
-
 	CompPoint vp ();
 
 	CompSize vpSize ();
@@ -479,14 +279,14 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	unsigned int &
 	pendingDestroys ();
 
+	void
+	removeDestroyed ();
+
 	unsigned int &
 	mapNum ();
 
 	int &
 	desktopWindowCount ();
-
-	int &
-	overlayWindowCount ();
 
 	CompOutput::vector &
 	outputDevs ();
@@ -506,106 +306,23 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	CompScreenEdge &
 	screenEdge (int);
 
-	Window
-	overlay ();
-
 	unsigned int &
 	activeNum ();
 
-	void
-	handleExposeEvent (XExposeEvent *event);
+	Region region ();
 
-	void
-	detectRefreshRate ();
+	bool hasOverlappingOutputs ();
 
-	void
-	updateBackground ();
-
-	bool
-	textureNonPowerOfTwo ();
-
-	bool
-	textureCompression ();
-
-	bool
-	canDoSaturated ();
-
-	bool
-	canDoSlightlySaturated ();
-
-	bool
-	lighting ();
-
-	CompTexture::Filter
-	filter (int);
-
-	CompFragment::Storage *
-	fragmentStorage ();
-
-	bool
-	fragmentProgram ();
-
-	bool
-	framebufferObject ();
-	
-	CompFBConfig * glxPixmapFBConfig (unsigned int depth);
+	CompOutput & fullscreenOutput ();
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
-
-	WRAPABLE_HND(void, preparePaint, int);
-	WRAPABLE_HND(void, donePaint);
-	WRAPABLE_HND(void, paint, CompOutput::ptrList &outputs, unsigned int);
-
-	WRAPABLE_HND(bool, paintOutput, const CompScreenPaintAttrib *,
-		     const CompTransform *, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_HND(void, paintTransformedOutput,
-		     const CompScreenPaintAttrib *,
-		     const CompTransform *, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_HND(void, applyTransform, const CompScreenPaintAttrib *,
-		     CompOutput *, CompTransform *);
-
-	WRAPABLE_HND(void, enableOutputClipping, const CompTransform *,
-		     Region, CompOutput *);
-	WRAPABLE_HND(void, disableOutputClipping);
 
 	WRAPABLE_HND(void, enterShowDesktopMode);
 	WRAPABLE_HND(void, leaveShowDesktopMode, CompWindow *);
 
 	WRAPABLE_HND(void, outputChangeNotify);
 
-	WRAPABLE_HND(CompWindowList, getWindowPaintList);
-
-	GLXBindTexImageProc      bindTexImage;
-	GLXReleaseTexImageProc   releaseTexImage;
-	GLXQueryDrawableProc     queryDrawable;
-	GLXCopySubBufferProc     copySubBuffer;
-	GLXGetVideoSyncProc      getVideoSync;
-	GLXWaitVideoSyncProc     waitVideoSync;
-	GLXGetFBConfigsProc      getFBConfigs;
-	GLXGetFBConfigAttribProc getFBConfigAttrib;
-	GLXCreatePixmapProc      createPixmap;
-
-	GLActiveTextureProc       activeTexture;
-	GLClientActiveTextureProc clientActiveTexture;
-	GLMultiTexCoord2fProc     multiTexCoord2f;
-
-	GLGenProgramsProc	     genPrograms;
-	GLDeleteProgramsProc     deletePrograms;
-	GLBindProgramProc	     bindProgram;
-	GLProgramStringProc	     programString;
-	GLProgramParameter4fProc programEnvParameter4f;
-	GLProgramParameter4fProc programLocalParameter4f;
-	GLGetProgramivProc       getProgramiv;
-
-	GLGenFramebuffersProc        genFramebuffers;
-	GLDeleteFramebuffersProc     deleteFramebuffers;
-	GLBindFramebufferProc        bindFramebuffer;
-	GLCheckFramebufferStatusProc checkFramebufferStatus;
-	GLFramebufferTexture2DProc   framebufferTexture2D;
-	GLGenerateMipmapProc         generateMipmap;
 
     private:
 	PrivateScreen *priv;
@@ -628,12 +345,6 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 		     CompAction         *action,
 		     CompAction::State  state,
 		     CompOption::Vector &options);
-
-	static bool
-	toggleSlowAnimations (CompDisplay        *d,
-			      CompAction         *action,
-			      CompAction::State  state,
-			      CompOption::Vector &options);
 
 	static bool
 	windowMenu (CompDisplay        *d,

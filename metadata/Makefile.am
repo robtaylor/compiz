@@ -28,7 +28,9 @@ xml_in_files =		  \
 	video.xml.in      \
 	water.xml.in      \
 	wobbly.xml.in     \
-	zoom.xml.in
+	zoom.xml.in       \
+	composite.xml.in  \
+	opengl.xml.in
 xml_files    = $(xml_in_files:.xml.in=.xml)
 xml_DATA     = $(xml_files)
 

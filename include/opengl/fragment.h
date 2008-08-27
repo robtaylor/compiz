@@ -1,5 +1,5 @@
-#ifndef _COMPFRAGMENT_H
-#define _COMPFRAGMENT_H
+#ifndef _GLFRAGMENT_H
+#define _GLFRAGMENT_H
 
 #define MAX_FRAGMENT_FUNCTIONS 16
 
@@ -7,9 +7,10 @@
 #define COMP_FETCH_TARGET_RECT 1
 #define COMP_FETCH_TARGET_NUM  2
 
-struct CompWindowPaintAttrib;
+struct GLWindowPaintAttrib;
+class GLScreen;
 
-namespace CompFragment {
+namespace GLFragment {
 
     class Storage;
 
@@ -40,7 +41,7 @@ namespace CompFragment {
 
 	    void addBlendOp (const char *str, ...);
 
-	    FunctionId createFragmentFunction (CompScreen *s,const char *name);
+	    FunctionId createFragmentFunction (GLScreen *s,const char *name);
 
 	private:
 	    PrivateFunctionData *priv;
@@ -48,7 +49,7 @@ namespace CompFragment {
 
     class Attrib {
 	public:
-	    Attrib (const CompWindowPaintAttrib *paint);
+	    Attrib (const GLWindowPaintAttrib &paint);
 	    Attrib (const Attrib&);
 	    ~Attrib ();
 
@@ -58,8 +59,8 @@ namespace CompFragment {
 
 	    void addFunction (FunctionId function);
 
-	    bool enable (CompScreen  *s, bool *blending);
-	    void disable (CompScreen *s);
+	    bool enable (GLScreen  *s, bool *blending);
+	    void disable (GLScreen *s);
 
 	    unsigned short getSaturation ();
 	    unsigned short getBrightness ();
@@ -75,11 +76,11 @@ namespace CompFragment {
 	    PrivateAttrib *priv;
     };
 
-    void destroyFragmentFunction (CompScreen *s, FunctionId id);
+    void destroyFragmentFunction (GLScreen *s, FunctionId id);
 
-    FunctionId getSaturateFragmentFunction (CompScreen  *s,
-					    CompTexture *texture,
-					    int         param);
+    FunctionId getSaturateFragmentFunction (GLScreen  *s,
+					    GLTexture *texture,
+					    int       param);
 };
 
 

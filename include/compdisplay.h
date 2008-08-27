@@ -8,8 +8,6 @@
 #include <X11/Xregion.h>
 #include <X11/extensions/Xinerama.h>
 
-#include <GL/gl.h>
-
 #include <compobject.h>
 #include <compmatch.h>
 #include <compcore.h>
@@ -211,9 +209,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	CompScreenList &
 	screens();
 
-	GLenum
-	textureFilter ();
-
 	CompOption *
 	getOption (const char *);
 
@@ -282,8 +277,6 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	findTopLevelWindow (Window id);
 
 
-	void
-	clearTargetOutput (unsigned int mask);
 
 	bool
 	readImageFromFile (const char  *name,

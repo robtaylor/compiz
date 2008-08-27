@@ -192,7 +192,6 @@ PrivateScreen::updateOutputDevices ()
     int		  x, y, bits;
     unsigned int  width, height;
     int		  x1, y1, x2, y2;
-    Region	  region;
     char          str[10];
 
     foreach (CompOption::Value &value, list)
@@ -260,61 +259,6 @@ PrivateScreen::updateOutputDevices ()
     screen->setCurrentOutput (currentOutputDev);
 
     screen->updateWorkarea ();
-
-    screen->setDefaultViewport ();
-    screen->damageScreen ();
-
-    region = XCreateRegion ();
-    if (region)
-    {
-	REGION r;
-
-	r.rects = &r.extents;
-	r.numRects = 1;
-
-	for (unsigned int i = 0; i < outputDevs.size () - 1; i++)
-	    for (unsigned int j = i + 1; j < outputDevs.size (); j++)
-            {
-		XIntersectRegion (outputDevs[i].region (),
-				  outputDevs[j].region (),
-				  region);
-		if (REGION_NOT_EMPTY (region))
-		    hasOverlappingOutputs = true;
-	    }
-	XSubtractRegion (&emptyRegion, &emptyRegion, region);
-	
-	if (display->screenInfo ().size ())
-	{
-	    for (unsigned int i = 0; i < display->screenInfo ().size (); i++)
-	    {
-		r.extents.x1 = display->screenInfo ()[i].x_org;
-		r.extents.y1 = display->screenInfo ()[i].y_org;
-		r.extents.x2 = r.extents.x1 + display->screenInfo ()[i].width;
-		r.extents.y2 = r.extents.y1 + display->screenInfo ()[i].height;
-
-		XUnionRegion (region, &r, region);
-	    }
-	}
-	else
-	{
-	    r.extents.x1 = 0;
-	    r.extents.y1 = 0;
-	    r.extents.x2 = size.width ();
-	    r.extents.y2 = size.height ();
-
-	    XUnionRegion (region, &r, region);
-	}
-
-	/* remove all output regions from visible screen region */
-	for (unsigned int i = 0; i < outputDevs.size (); i++)
-	    XSubtractRegion (region, outputDevs[i].region (), region);
-
-	/* we should clear color buffers before swapping if we have visible
-	   regions without output */
-	clearBuffers = REGION_NOT_EMPTY (region);
-
-	XDestroyRegion (region);
-    }
 
     screen->outputChangeNotify ();
 }
@@ -391,32 +335,13 @@ CompScreen::setOption (const char        *name,
 	return false;
 
     switch (index) {
-    case COMP_SCREEN_OPTION_DETECT_REFRESH_RATE:
-	if (o->set (value))
-	{
-	    if (value.b ())
-		detectRefreshRate ();
 
-	    return true;
-	}
-	break;
     case COMP_SCREEN_OPTION_DETECT_OUTPUTS:
 	if (o->set (value))
 	{
 	    if (value.b ())
 		priv->detectOutputDevices ();
 
-	    return true;
-	}
-	break;
-    case COMP_SCREEN_OPTION_REFRESH_RATE:
-	if (priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().b ())
-	    return false;
-
-	if (o->set (value))
-	{
-	    priv->redrawTime = 1000 / o->value ().i ();
-	    priv->optimalRedrawTime = priv->redrawTime;
 	    return true;
 	}
 	break;
@@ -476,13 +401,6 @@ CompScreen::setOption (const char        *name,
 	    return true;
 	}
 	break;
-     case COMP_SCREEN_OPTION_FORCE_INDEPENDENT:
-	if (o->set (value))
-	{
-	    priv->updateOutputDevices ();
-	    return true;
-	}
-	break;
     default:
 	if (CompOption::setScreenOption (this, *o, value))
 	    return true;
@@ -493,15 +411,9 @@ CompScreen::setOption (const char        *name,
 }
 
 const CompMetadata::OptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
-    { "detect_refresh_rate", "bool", 0, 0, 0 },
-    { "lighting", "bool", 0, 0, 0 },
-    { "refresh_rate", "int", "<min>1</min>", 0, 0 },
     { "hsize", "int", "<min>1</min><max>32</max>", 0, 0 },
     { "vsize", "int", "<min>1</min><max>32</max>", 0, 0 },
-    { "opacity_step", "int", "<min>1</min>", 0, 0 },
-    { "unredirect_fullscreen_windows", "bool", 0, 0, 0 },
     { "default_icon", "string", 0, 0, 0 },
-    { "sync_to_vblank", "bool", 0, 0, 0 },
     { "number_of_desktops", "int", "<min>1</min>", 0, 0 },
     { "detect_outputs", "bool", 0, 0, 0 },
     { "outputs", "list", "<type>string</type>", 0, 0 },
@@ -510,8 +422,6 @@ const CompMetadata::OptionInfo coreScreenOptionInfo[COMP_SCREEN_OPTION_NUM] = {
     { "focus_prevention_level", "int",
       RESTOSTRING (0, FOCUS_PREVENTION_LEVEL_LAST), 0, 0 },
     { "focus_prevention_match", "match", 0, 0, 0 },
-    { "texture_compression", "bool", 0, 0, 0 },
-    { "force_independent_output_painting", "bool", 0, 0, 0 }
 };
 
 void
@@ -656,49 +566,6 @@ PrivateScreen::updateScreenEdges ()
     }
 }
 
-static void
-frustum (GLfloat *m,
-	 GLfloat left,
-	 GLfloat right,
-	 GLfloat bottom,
-	 GLfloat top,
-	 GLfloat nearval,
-	 GLfloat farval)
-{
-    GLfloat x, y, a, b, c, d;
-
-    x = (2.0 * nearval) / (right - left);
-    y = (2.0 * nearval) / (top - bottom);
-    a = (right + left) / (right - left);
-    b = (top + bottom) / (top - bottom);
-    c = -(farval + nearval) / ( farval - nearval);
-    d = -(2.0 * farval * nearval) / (farval - nearval);
-
-#define M(row,col)  m[col*4+row]
-    M(0,0) = x;     M(0,1) = 0.0f;  M(0,2) = a;      M(0,3) = 0.0f;
-    M(1,0) = 0.0f;  M(1,1) = y;     M(1,2) = b;      M(1,3) = 0.0f;
-    M(2,0) = 0.0f;  M(2,1) = 0.0f;  M(2,2) = c;      M(2,3) = d;
-    M(3,0) = 0.0f;  M(3,1) = 0.0f;  M(3,2) = -1.0f;  M(3,3) = 0.0f;
-#undef M
-
-}
-
-static void
-perspective (GLfloat *m,
-	     GLfloat fovy,
-	     GLfloat aspect,
-	     GLfloat zNear,
-	     GLfloat zFar)
-{
-    GLfloat xmin, xmax, ymin, ymax;
-
-    ymax = zNear * tan (fovy * M_PI / 360.0);
-    ymin = -ymax;
-    xmin = ymin * aspect;
-    xmax = ymax * aspect;
-
-    frustum (m, xmin, xmax, ymin, ymax, zNear, zFar);
-}
 
 void
 CompScreen::setCurrentOutput (unsigned int outputNum)
@@ -712,30 +579,7 @@ CompScreen::setCurrentOutput (unsigned int outputNum)
 void
 PrivateScreen::reshape (int w, int h)
 {
-
-#ifdef USE_COW
-    if (useCow)
-	XMoveResizeWindow (display->dpy (), overlay, 0, 0, w, h);
-#endif
-
     display->updateScreenInfo();
-
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    glMatrixMode (GL_MODELVIEW);
-    glLoadIdentity ();
-    glDepthRange (0, 1);
-    glViewport (-1, -1, 2, 2);
-    glRasterPos2f (0, 0);
-
-    rasterPos = CompPoint (0, 0);
-
-    perspective (projection, 60.0f, 1.0f, 0.1f, 100.0f);
-
-    glMatrixMode (GL_PROJECTION);
-    glLoadIdentity ();
-    glMultMatrixf (projection);
-    glMatrixMode (GL_MODELVIEW);
 
     region.rects = &region.extents;
     region.numRects = 1;
@@ -766,158 +610,10 @@ CompScreen::configure (XConfigureEvent *ce)
 	priv->reshape (ce->width, ce->height);
 
 	priv->detectOutputDevices ();
-
-	damageScreen ();
     }
 }
 
-FuncPtr
-CompScreen::getProcAddress (const char *name)
-{
-    static void *dlhand = NULL;
-    FuncPtr     funcPtr = NULL;
 
-    if (priv->getProcAddress)
-	funcPtr = priv->getProcAddress ((GLubyte *) name);
-
-    if (!funcPtr)
-    {
-	if (!dlhand)
-	    dlhand = dlopen (NULL, RTLD_LAZY);
-
-	if (dlhand)
-	{
-	    dlerror ();
-	    funcPtr = (FuncPtr) dlsym (dlhand, name);
-	    if (dlerror () != NULL)
-		funcPtr = NULL;
-	}
-    }
-
-    return funcPtr;
-}
-
-void
-PrivateScreen::updateScreenBackground (CompTexture *texture)
-{
-    Display	  *dpy = display->dpy ();
-    Atom	  pixmapAtom, actualType;
-    int		  actualFormat, i, status;
-    unsigned int  width = 1, height = 1, depth = 0;
-    unsigned long nItems;
-    unsigned long bytesAfter;
-    unsigned char *prop;
-    Pixmap	  pixmap = 0;
-
-    pixmapAtom = XInternAtom (dpy, "PIXMAP", FALSE);
-
-    for (i = 0; pixmap == 0 && i < 2; i++)
-    {
-	status = XGetWindowProperty (dpy, root,
-				     display->atoms ().xBackground[i],
-				     0, 4, FALSE, AnyPropertyType,
-				     &actualType, &actualFormat, &nItems,
-				     &bytesAfter, &prop);
-
-	if (status == Success && nItems && prop)
-	{
-	    if (actualType   == pixmapAtom &&
-		actualFormat == 32         &&
-		nItems	     == 1)
-	    {
-		Pixmap p;
-
-		memcpy (&p, prop, 4);
-
-		if (p)
-		{
-		    unsigned int ui;
-		    int		 i;
-		    Window	 w;
-
-		    if (XGetGeometry (dpy, p, &w, &i, &i,
-				      &width, &height, &ui, &depth))
-		    {
-			if ((int) depth == attrib.depth)
-			    pixmap = p;
-		    }
-		}
-	    }
-
-	    XFree (prop);
-	}
-    }
-
-    if (pixmap)
-    {
-/* FIXME:
-	if (pixmap == texture->pixmap)
-	    return;
-*/
-	texture->reset ();
-
-	if (!texture->bindPixmap (pixmap, width, height, depth))
-	{
-	    compLogMessage (NULL, "core", CompLogLevelWarn,
-			    "Couldn't bind background pixmap 0x%x to "
-			    "texture", (int) pixmap);
-	}
-    }
-    else
-    {
-	texture->reset ();
-    }
-
-    if (!texture->name () && backgroundImage)
-	CompTexture::readImageToTexture (screen, texture, backgroundImage,
-					 &width, &height);
-
-    if (texture->target () == GL_TEXTURE_2D)
-    {
-	glBindTexture (texture->target (), texture->name ());
-	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture (texture->target (), 0);
-    }
-}
-
-void
-CompScreen::detectRefreshRate ()
-{
-    if (!noDetection &&
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().b ())
-    {
-	CompString        name;
-	CompOption::Value value;
-
-	value.set ((int) 0);
-
-	if (priv->display->XRandr())
-	{
-	    XRRScreenConfiguration *config;
-
-	    config  = XRRGetScreenInfo (priv->display->dpy (), priv->root);
-	    value.set ((int) XRRConfigCurrentRate (config));
-
-	    XRRFreeScreenConfigInfo (config);
-	}
-
-	if (value.i () == 0)
-	    value.set ((int) defaultRefreshRate);
-
-	name = priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].name ();
-
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (false);
-	core->setOptionForPlugin (this, "core", name.c_str (), value);
-	priv->opt[COMP_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (true);
-    }
-    else
-    {
-	priv->redrawTime = 1000 /
-	    priv->opt[COMP_SCREEN_OPTION_REFRESH_RATE].value ().i ();
-	priv->optimalRedrawTime = priv->redrawTime;
-    }
-}
 
 void
 PrivateScreen::setSupportingWmCheck ()
@@ -1003,11 +699,14 @@ PrivateScreen::setSupported ()
     data[i++] = display->atoms ().winOpacity;
     data[i++] = display->atoms ().winBrightness;
 
+#warning fixme
+#if 0
     if (canDoSaturated)
     {
 	data[i++] = display->atoms ().winSaturation;
 	data[i++] = display->atoms ().winStateDisplayModal;
     }
+#endif
 
     data[i++] = display->atoms ().wmAllowedActions;
 
@@ -1131,123 +830,6 @@ PrivateScreen::getDesktopHints ()
 }
 
 void
-CompScreen::showOutputWindow ()
-{
-
-#ifdef USE_COW
-    if (useCow)
-    {
-	Display       *dpy = priv->display->dpy ();
-	XserverRegion region;
-
-	region = XFixesCreateRegion (dpy, NULL, 0);
-
-	XFixesSetWindowShapeRegion (dpy,
-				    priv->output,
-				    ShapeBounding,
-				    0, 0, 0);
-	XFixesSetWindowShapeRegion (dpy,
-				    priv->output,
-				    ShapeInput,
-				    0, 0, region);
-
-	XFixesDestroyRegion (dpy, region);
-
-	damageScreen ();
-    }
-#endif
-
-}
-
-void
-CompScreen::hideOutputWindow ()
-{
-
-#ifdef USE_COW
-    if (useCow)
-    {
-	Display       *dpy = priv->display->dpy ();
-	XserverRegion region;
-
-	region = XFixesCreateRegion (dpy, NULL, 0);
-
-	XFixesSetWindowShapeRegion (dpy,
-				    priv->output,
-				    ShapeBounding,
-				    0, 0, region);
-
-	XFixesDestroyRegion (dpy, region);
-    }
-#endif
-
-}
-
-void
-CompScreen::updateOutputWindow ()
-{
-
-#ifdef USE_COW
-    if (useCow)
-    {
-	Display       *dpy = priv->display->dpy ();
-	XserverRegion region;
-	static Region tmpRegion = NULL;
-
-	if (!tmpRegion)
-	{
-	    tmpRegion = XCreateRegion ();
-	    if (!tmpRegion)
-		return;
-	}
-
-	XSubtractRegion (&priv->region, &emptyRegion, tmpRegion);
-
-	
-	for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
-	     rit != priv->windows.rend (); rit++)
-	    if ((*rit)->overlayWindow ())
-	    {
-		XSubtractRegion (tmpRegion, (*rit)->region (), tmpRegion);
-	    }
-	
-	XShapeCombineRegion (dpy, priv->output, ShapeBounding,
-			     0, 0, tmpRegion, ShapeSet);
-
-
-	region = XFixesCreateRegion (dpy, NULL, 0);
-
-	XFixesSetWindowShapeRegion (dpy,
-				    priv->output,
-				    ShapeInput,
-				    0, 0, region);
-
-	XFixesDestroyRegion (dpy, region);
-    }
-#endif
-
-}
-
-void
-PrivateScreen::makeOutputWindow ()
-{
-
-#ifdef USE_COW
-    if (useCow)
-    {
-	overlay = XCompositeGetOverlayWindow (display->dpy (), root);
-	output  = overlay;
-
-	XSelectInput (display->dpy (), output, ExposureMask);
-    }
-    else
-#endif
-
-	output = overlay = root;
-
-    screen->showOutputWindow ();
-}
-
-void
 CompScreen::enterShowDesktopMode ()
 {
     WRAPABLE_HND_FUNC(enterShowDesktopMode)
@@ -1336,32 +918,15 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 		     (unsigned char *) &data, 1);
 }
 
-CompWindowList
-CompScreen::getWindowPaintList ()
-{
-    WRAPABLE_HND_FUNC_RETURN (CompWindowList, getWindowPaintList)
 
-    return priv->windows;
-}
 
 CompScreen::CompScreen ():
     CompObject (COMP_OBJECT_TYPE_SCREEN, "screen", &screenPrivateIndices)
 {
-    WRAPABLE_INIT_HND(preparePaint);
-    WRAPABLE_INIT_HND(donePaint);
-    WRAPABLE_INIT_HND(paint);
-    WRAPABLE_INIT_HND(paintOutput);
-    WRAPABLE_INIT_HND(paintTransformedOutput);
-    WRAPABLE_INIT_HND(enableOutputClipping);
-    WRAPABLE_INIT_HND(disableOutputClipping);
-    WRAPABLE_INIT_HND(applyTransform);
-
     WRAPABLE_INIT_HND(enterShowDesktopMode);
     WRAPABLE_INIT_HND(leaveShowDesktopMode);
 
     WRAPABLE_INIT_HND(outputChangeNotify);
-
-    WRAPABLE_INIT_HND(getWindowPaintList);
 
     priv = new PrivateScreen (this);
     assert (priv);
@@ -1376,102 +941,51 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     vpSize (1, 1),
     nDesktop (1),
     currentDesktop (0),
-    damageMask (COMP_SCREEN_DAMAGE_ALL_MASK),
     root (None),
-    overlay (None),
-    output (None),
     grabWindow (None),
-    textureRectangle (false),
-    textureNonPowerOfTwo (false),
-    textureEnvCombine (false),
-    textureEnvCrossbar (false),
-    textureBorderClamp (false),
-    textureCompression (false),
-    maxTextureSize (0),
-    fbo (false),
-    fragmentProgram (false),
-    maxTextureUnits (1),
-    exposeRects (0),
-    backgroundTexture (screen),
-    backgroundLoaded (false),
-    pendingDestroys (0),
     desktopWindowCount (0),
     mapNum (1),
     activeNum (1),
     outputDevs (0),
     currentOutputDev (0),
     hasOverlappingOutputs (false),
-    windowPaintOffset (0, 0),
     currentHistory (0),
-    overlayWindowCount (0),
     snContext (0),
     startupSequences (0),
     startupSequenceTimer (),
     groups (0),
     defaultIcon (0),
-    canDoSaturated (false),
-    canDoSlightlySaturated (false),
     clientList (0),
     nClientList (0),
     buttonGrabs (0),
     keyGrabs (0),
     grabs (0),
-    rasterPos (0, 0),
-    nextRedraw (0),
-    redrawTime (1000 / defaultRefreshRate),
-    optimalRedrawTime (1000 / defaultRefreshRate),
-    frameStatus (0),
-    timeMult (1),
-    idle (true),
-    timeLeft (0),
-    pendingCommands (true),
-    fragmentStorage (),
-    clearBuffers (true),
-    lighting (false),
-    slowAnimations (false),
+    pendingDestroys (0),
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
-    opt (COMP_SCREEN_OPTION_NUM),
-    paintTimer (),
-    getProcAddress (0),
-    tmpRegion (NULL),
-    outputRegion (NULL)
+    opt (COMP_SCREEN_OPTION_NUM)
 {
     memset (history, 0, sizeof (history));
-    gettimeofday (&lastRedraw, 0);
 }
 
 PrivateScreen::~PrivateScreen ()
 {
     CompOption::finiScreenOptions (screen, opt);
-
-    if (outputRegion)
-	XDestroyRegion (outputRegion);
-    if (tmpRegion)
-	XDestroyRegion (tmpRegion);
 }
 
 bool
 CompScreen::init (CompDisplay *display, int screenNum)
 {
     Display              *dpy = display->dpy ();
-    Window               newWmSnOwner = None, newCmSnOwner = None;
-    Atom                 wmSnAtom = 0, cmSnAtom = 0;
+    Window               newWmSnOwner = None;
+    Atom                 wmSnAtom = 0;
     Time                 wmSnTimestamp = 0;
     XEvent               event;
     XSetWindowAttributes attr;
-    Window               currentWmSnOwner, currentCmSnOwner;
+    Window               currentWmSnOwner;
     char                 buf[128];
     bool                 rv;
-
-    priv->tmpRegion = XCreateRegion ();
-    if (!priv->tmpRegion)
-	return false;
-
-    priv->outputRegion = XCreateRegion ();
-    if (!priv->outputRegion)
-	return false;
 
     sprintf (buf, "WM_S%d", screenNum);
     wmSnAtom = XInternAtom (dpy, buf, 0);
@@ -1495,30 +1009,10 @@ CompScreen::init (CompDisplay *display, int screenNum)
 	XSelectInput (dpy, currentWmSnOwner, StructureNotifyMask);
     }
 
-    sprintf (buf, "_NET_WM_CM_S%d", screenNum);
-    cmSnAtom = XInternAtom (dpy, buf, 0);
-
-    currentCmSnOwner = XGetSelectionOwner (dpy, cmSnAtom);
-
-    if (currentCmSnOwner != None)
-    {
-	if (!replaceCurrentWm)
-	{
-	    compLogMessage (display, "core", CompLogLevelError,
-			    "Screen %d on display \"%s\" already "
-			    "has a compositing manager; try using the "
-			    "--replace option to replace the current "
-			    "compositing manager.",
-			    screenNum, DisplayString (dpy));
-
-	    return false;
-	}
-    }
-
     attr.override_redirect = TRUE;
     attr.event_mask	       = PropertyChangeMask;
 
-    newCmSnOwner = newWmSnOwner =
+    newWmSnOwner =
 	XCreateWindow (dpy, XRootWindow (dpy, screenNum),
 		       -100, -100, 1, 1, 0,
 		       CopyFromParent, CopyFromParent,
@@ -1577,30 +1071,6 @@ CompScreen::init (CompDisplay *display, int screenNum)
 
     CompDisplay::checkForError (dpy);
 
-    XCompositeRedirectSubwindows (dpy, XRootWindow (dpy, screenNum),
-				  CompositeRedirectManual);
-
-    if (CompDisplay::checkForError (dpy))
-    {
-	compLogMessage (display, "core", CompLogLevelError,
-			"Another composite manager is already "
-			"running on screen: %d", screenNum);
-
-	return false;
-    }
-
-    XSetSelectionOwner (dpy, cmSnAtom, newCmSnOwner, wmSnTimestamp);
-
-    if (XGetSelectionOwner (dpy, cmSnAtom) != newCmSnOwner)
-    {
-	compLogMessage (display, "core", CompLogLevelError,
-			"Could not acquire compositing manager "
-			"selection on screen %d display \"%s\"",
-			screenNum, DisplayString (dpy));
-
-	return false;
-    }
-
     XGrabServer (dpy);
 
     XSelectInput (dpy, XRootWindow (dpy, screenNum),
@@ -1647,26 +1117,16 @@ CompScreen::init (CompDisplay *display,
     Pixmap		 bitmap;
     XVisualInfo		 templ;
     XVisualInfo		 *visinfo;
-    GLXFBConfig		 *fbConfigs;
     Window		 rootReturn, parentReturn;
     Window		 *children;
     unsigned int	 nchildren;
-    int			 defaultDepth, nvisinfo, nElements, value, i;
-    const char		 *glxExtensions, *glExtensions;
+    int			 defaultDepth, nvisinfo, i;
     XSetWindowAttributes attrib;
-    GLfloat		 globalAmbient[]  = { 0.1f, 0.1f,  0.1f, 0.1f };
-    GLfloat		 ambientLight[]   = { 0.0f, 0.0f,  0.0f, 0.0f };
-    GLfloat		 diffuseLight[]   = { 0.9f, 0.9f,  0.9f, 0.9f };
-    GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
 
     priv->display = display;
 
     if (!coreMetadata->initScreenOptions (this, coreScreenOptionInfo,
 					  COMP_SCREEN_OPTION_NUM, priv->opt))
-	return false;
-
-    priv->damage = XCreateRegion ();
-    if (!priv->damage)
 	return false;
 
     priv->vpSize.setWidth (priv->opt[COMP_SCREEN_OPTION_HSIZE].value ().i ());
@@ -1699,8 +1159,6 @@ CompScreen::init (CompDisplay *display,
     priv->workArea.width  = priv->attrib.width;
     priv->workArea.height = priv->attrib.height;
     priv->grabWindow = None;
-
-    priv->makeOutputWindow ();
 
     templ.visualid = XVisualIDFromVisual (priv->attrib.visual);
 
@@ -1746,420 +1204,12 @@ CompScreen::init (CompDisplay *display,
     XFreePixmap (dpy, bitmap);
     XFreeColors (dpy, priv->colormap, &black.pixel, 1, 0);
 
-    glXGetConfig (dpy, visinfo, GLX_USE_GL, &value);
-    if (!value)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"Root visual is not a GL visual");
-	XFree (visinfo);
-	return false;
-    }
-
-    glXGetConfig (dpy, visinfo, GLX_DOUBLEBUFFER, &value);
-    if (!value)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"Root visual is not a double buffered GL visual");
-	XFree (visinfo);
-	return false;
-    }
-
-    priv->ctx = glXCreateContext (dpy, visinfo, NULL, !indirectRendering);
-    if (!priv->ctx)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"glXCreateContext failed");
-	XFree (visinfo);
-
-	return false;
-    }
-
-    glxExtensions = glXQueryExtensionsString (dpy, screenNum);
-    if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap"))
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"GLX_EXT_texture_from_pixmap is missing");
-	XFree (visinfo);
-
-	return false;
-    }
-
     XFree (visinfo);
-
-    if (!strstr (glxExtensions, "GLX_SGIX_fbconfig"))
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"GLX_SGIX_fbconfig is missing");
-	return false;
-    }
-
-    priv->getProcAddress = (GLXGetProcAddressProc)
-	getProcAddress ("glXGetProcAddressARB");
-    bindTexImage = (GLXBindTexImageProc)
-	getProcAddress ("glXBindTexImageEXT");
-    releaseTexImage = (GLXReleaseTexImageProc)
-	getProcAddress ("glXReleaseTexImageEXT");
-    queryDrawable = (GLXQueryDrawableProc)
-	getProcAddress ("glXQueryDrawable");
-    getFBConfigs = (GLXGetFBConfigsProc)
-	getProcAddress ("glXGetFBConfigs");
-    getFBConfigAttrib = (GLXGetFBConfigAttribProc)
-	getProcAddress ("glXGetFBConfigAttrib");
-    createPixmap = (GLXCreatePixmapProc)
-	getProcAddress ("glXCreatePixmap");
-
-    if (!bindTexImage)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"glXBindTexImageEXT is missing");
-	return false;
-    }
-
-    if (!releaseTexImage)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"glXReleaseTexImageEXT is missing");
-	return false;
-    }
-
-    if (!queryDrawable     ||
-	!getFBConfigs      ||
-	!getFBConfigAttrib ||
-	!createPixmap)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"fbconfig functions missing");
-	return false;
-    }
-
-    copySubBuffer = NULL;
-    if (strstr (glxExtensions, "GLX_MESA_copy_sub_buffer"))
-	copySubBuffer = (GLXCopySubBufferProc)
-	    getProcAddress ("glXCopySubBufferMESA");
-
-    getVideoSync = NULL;
-    waitVideoSync = NULL;
-    if (strstr (glxExtensions, "GLX_SGI_video_sync"))
-    {
-	getVideoSync = (GLXGetVideoSyncProc)
-	    getProcAddress ("glXGetVideoSyncSGI");
-
-	waitVideoSync = (GLXWaitVideoSyncProc)
-	    getProcAddress ("glXWaitVideoSyncSGI");
-    }
-
-    glXMakeCurrent (dpy, priv->output, priv->ctx);
-    currentRoot = priv->root;
-
-    glExtensions = (const char *) glGetString (GL_EXTENSIONS);
-    if (!glExtensions)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"No valid GL extensions string found.");
-	return false;
-    }
-
-    priv->textureNonPowerOfTwo = false;
-    if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))
-	priv->textureNonPowerOfTwo = true;
-
-    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &priv->maxTextureSize);
-
-    priv->textureRectangle = false;
-    if (strstr (glExtensions, "GL_NV_texture_rectangle")  ||
-	strstr (glExtensions, "GL_EXT_texture_rectangle") ||
-	strstr (glExtensions, "GL_ARB_texture_rectangle"))
-    {
-	priv->textureRectangle = true;
-
-	if (!priv->textureNonPowerOfTwo)
-	{
-	    GLint maxTextureSize;
-
-	    glGetIntegerv (GL_MAX_RECTANGLE_TEXTURE_SIZE_NV, &maxTextureSize);
-	    if (maxTextureSize > priv->maxTextureSize)
-		priv->maxTextureSize = maxTextureSize;
-	}
-    }
-
-    if (!(priv->textureRectangle || priv->textureNonPowerOfTwo))
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"Support for non power of two textures missing");
-	return false;
-    }
-
-    priv->textureEnvCombine = priv->textureEnvCrossbar = false;
-    if (strstr (glExtensions, "GL_ARB_texture_env_combine"))
-    {
-	priv->textureEnvCombine = true;
-
-	/* XXX: GL_NV_texture_env_combine4 need special code but it seams to
-	   be working anyway for now... */
-	if (strstr (glExtensions, "GL_ARB_texture_env_crossbar") ||
-	    strstr (glExtensions, "GL_NV_texture_env_combine4"))
-	    priv->textureEnvCrossbar = true;
-    }
-
-    priv->textureBorderClamp = false;
-    if (strstr (glExtensions, "GL_ARB_texture_border_clamp") ||
-	strstr (glExtensions, "GL_SGIS_texture_border_clamp"))
-	priv->textureBorderClamp = true;
-
-    priv->maxTextureUnits = 1;
-    if (strstr (glExtensions, "GL_ARB_multitexture"))
-    {
-	activeTexture = (GLActiveTextureProc)
-	    getProcAddress ("glActiveTexture");
-	clientActiveTexture = (GLClientActiveTextureProc)
-	    getProcAddress ("glClientActiveTexture");
-	multiTexCoord2f = (GLMultiTexCoord2fProc)
-	    getProcAddress ("glMultiTexCoord2f");
-
-	if (activeTexture && clientActiveTexture && multiTexCoord2f)
-	    glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &priv->maxTextureUnits);
-    }
-
-    priv->fragmentProgram = false;
-    if (strstr (glExtensions, "GL_ARB_fragment_program"))
-    {
-	genPrograms = (GLGenProgramsProc)
-	    getProcAddress ("glGenProgramsARB");
-	deletePrograms = (GLDeleteProgramsProc)
-	    getProcAddress ("glDeleteProgramsARB");
-	bindProgram = (GLBindProgramProc)
-	    getProcAddress ("glBindProgramARB");
-	programString = (GLProgramStringProc)
-	    getProcAddress ("glProgramStringARB");
-	programEnvParameter4f = (GLProgramParameter4fProc)
-	    getProcAddress ("glProgramEnvParameter4fARB");
-	programLocalParameter4f = (GLProgramParameter4fProc)
-	    getProcAddress ("glProgramLocalParameter4fARB");
-	getProgramiv = (GLGetProgramivProc)
-	    getProcAddress ("glGetProgramivARB");
-
-	if (genPrograms             &&
-	    deletePrograms          &&
-	    bindProgram             &&
-	    programString           &&
-	    programEnvParameter4f   &&
-	    programLocalParameter4f &&
-	    getProgramiv)
-	    priv->fragmentProgram = true;
-    }
-
-    priv->fbo = false;
-    if (strstr (glExtensions, "GL_EXT_framebuffer_object"))
-    {
-	genFramebuffers = (GLGenFramebuffersProc)
-	    getProcAddress ("glGenFramebuffersEXT");
-	deleteFramebuffers = (GLDeleteFramebuffersProc)
-	    getProcAddress ("glDeleteFramebuffersEXT");
-	bindFramebuffer = (GLBindFramebufferProc)
-	    getProcAddress ("glBindFramebufferEXT");
-	checkFramebufferStatus = (GLCheckFramebufferStatusProc)
-	    getProcAddress ("glCheckFramebufferStatusEXT");
-	framebufferTexture2D = (GLFramebufferTexture2DProc)
-	    getProcAddress ("glFramebufferTexture2DEXT");
-	generateMipmap = (GLGenerateMipmapProc)
-	    getProcAddress ("glGenerateMipmapEXT");
-
-	if (genFramebuffers        &&
-	    deleteFramebuffers     &&
-	    bindFramebuffer        &&
-	    checkFramebufferStatus &&
-	    framebufferTexture2D   &&
-	    generateMipmap)
-	    priv->fbo = true;
-    }
-
-    priv->textureCompression = false;
-    if (strstr (glExtensions, "GL_ARB_texture_compression"))
-	priv->textureCompression = true;
-
-    fbConfigs = (*getFBConfigs) (dpy, screenNum, &nElements);
-
-    for (i = 0; i <= MAX_DEPTH; i++)
-    {
-	int j, db, stencil, depth, alpha, mipmap, rgba;
-
-	priv->glxPixmapFBConfigs[i].fbConfig       = NULL;
-	priv->glxPixmapFBConfigs[i].mipmap         = 0;
-	priv->glxPixmapFBConfigs[i].yInverted      = 0;
-	priv->glxPixmapFBConfigs[i].textureFormat  = 0;
-	priv->glxPixmapFBConfigs[i].textureTargets = 0;
-
-	db      = MAXSHORT;
-	stencil = MAXSHORT;
-	depth   = MAXSHORT;
-	mipmap  = 0;
-	rgba    = 0;
-
-	for (j = 0; j < nElements; j++)
-	{
-	    XVisualInfo *vi;
-	    int		visualDepth;
-
-	    vi = glXGetVisualFromFBConfig (dpy, fbConfigs[j]);
-	    if (vi == NULL)
-		continue;
-
-	    visualDepth = vi->depth;
-
-	    XFree (vi);
-
-	    if (visualDepth != i)
-		continue;
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_ALPHA_SIZE,
-				  &alpha);
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_BUFFER_SIZE,
-				  &value);
-	    if (value != i && (value - alpha) != i)
-		continue;
-
-	    value = 0;
-	    if (i == 32)
-	    {
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_TEXTURE_RGBA_EXT,
-				      &value);
-
-		if (value)
-		{
-		    rgba = 1;
-
-		    priv->glxPixmapFBConfigs[i].textureFormat =
-			GLX_TEXTURE_FORMAT_RGBA_EXT;
-		}
-	    }
-
-	    if (!value)
-	    {
-		if (rgba)
-		    continue;
-
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_TEXTURE_RGB_EXT,
-				      &value);
-		if (!value)
-		    continue;
-
-		priv->glxPixmapFBConfigs[i].textureFormat =
-		    GLX_TEXTURE_FORMAT_RGB_EXT;
-	    }
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_DOUBLEBUFFER,
-				  &value);
-	    if (value > db)
-		continue;
-
-	    db = value;
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_STENCIL_SIZE,
-				  &value);
-	    if (value > stencil)
-		continue;
-
-	    stencil = value;
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_DEPTH_SIZE,
-				  &value);
-	    if (value > depth)
-		continue;
-
-	    depth = value;
-
-	    if (priv->fbo)
-	    {
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_MIPMAP_TEXTURE_EXT,
-				      &value);
-		if (value < mipmap)
-		    continue;
-
-		mipmap = value;
-	    }
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_Y_INVERTED_EXT,
-				  &value);
-
-	    priv->glxPixmapFBConfigs[i].yInverted = value;
-
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_BIND_TO_TEXTURE_TARGETS_EXT,
-				  &value);
-
-	    priv->glxPixmapFBConfigs[i].textureTargets = value;
-
-	    priv->glxPixmapFBConfigs[i].fbConfig = fbConfigs[j];
-	    priv->glxPixmapFBConfigs[i].mipmap   = mipmap;
-	}
-    }
-
-    if (nElements)
-	XFree (fbConfigs);
-
-    if (!priv->glxPixmapFBConfigs[defaultDepth].fbConfig)
-    {
-	compLogMessage (display, "core", CompLogLevelFatal,
-			"No GLXFBConfig for default depth, "
-			"this isn't going to work.");
-	return false;
-    }
-
-    glClearColor (0.0, 0.0, 0.0, 1.0);
-    glBlendFunc (GL_ONE, GL_ONE_MINUS_SRC_ALPHA);
-    glEnable (GL_CULL_FACE);
-    glDisable (GL_BLEND);
-    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
-    glColor4usv (defaultColor);
-    glEnableClientState (GL_VERTEX_ARRAY);
-    glEnableClientState (GL_TEXTURE_COORD_ARRAY);
-
-    priv->canDoSaturated = priv->canDoSlightlySaturated = false;
-    if (priv->textureEnvCombine && priv->maxTextureUnits >= 2)
-    {
-	priv->canDoSaturated = true;
-	if (priv->textureEnvCrossbar && priv->maxTextureUnits >= 4)
-	    priv->canDoSlightlySaturated = true;
-    }
 
     priv->reshape (priv->attrib.width, priv->attrib.height);
 
-    detectRefreshRate ();
     priv->detectOutputDevices ();
     priv->updateOutputDevices ();
-
-    glLightModelfv (GL_LIGHT_MODEL_AMBIENT, globalAmbient);
-
-    glEnable (GL_LIGHT0);
-    glLightfv (GL_LIGHT0, GL_AMBIENT, ambientLight);
-    glLightfv (GL_LIGHT0, GL_DIFFUSE, diffuseLight);
-    glLightfv (GL_LIGHT0, GL_POSITION, light0Position);
-
-    glColorMaterial (GL_FRONT, GL_AMBIENT_AND_DIFFUSE);
-
-    glNormal3f (0.0f, 0.0f, -1.0f);
-
-    priv->lighting	      = false;
-    priv->slowAnimations = false;
 
     priv->display->addScreenActions (this);
 
@@ -2230,19 +1280,11 @@ CompScreen::init (CompDisplay *display,
 
     XDefineCursor (dpy, priv->root, priv->normalCursor);
 
-    priv->filter[NOTHING_TRANS_FILTER] = CompTexture::Fast;
-    priv->filter[SCREEN_TRANS_FILTER]  = CompTexture::Good;
-    priv->filter[WINDOW_TRANS_FILTER]  = CompTexture::Good;
-
-    priv->paintTimer.start (boost::bind(&CompScreen::handlePaintTimeout, this),
-			    priv->optimalRedrawTime, MAXSHORT);
     return true;
 }
 
 CompScreen::~CompScreen ()
 {
-    priv->paintTimer.stop ();
-
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
 
@@ -2258,14 +1300,7 @@ CompScreen::~CompScreen ()
     if (priv->defaultIcon)
 	delete priv->defaultIcon;
 
-    glXDestroyContext (priv->display->dpy (), priv->ctx);
-
     XFreeCursor (priv->display->dpy (), priv->invisibleCursor);
-
-#ifdef USE_COW
-    if (useCow)
-	XCompositeReleaseOverlayWindow (priv->display->dpy (), priv->root);
-#endif
 
     if (priv->clientList)
 	free (priv->clientList);
@@ -2275,9 +1310,6 @@ CompScreen::~CompScreen ()
 
     if (priv->snContext)
 	sn_monitor_context_unref (priv->snContext);
-
-    if (priv->damage)
-	XDestroyRegion (priv->damage);
 
     delete priv;
 }
@@ -2293,39 +1325,6 @@ CompScreen::objectName ()
 
 }
 
-void
-CompScreen::damageRegion (Region region)
-{
-    if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
-	return;
-
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
-    XUnionRegion (priv->damage, region, priv->damage);
-
-    priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
-
-}
-
-void
-CompScreen::damageScreen ()
-{
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
-    priv->damageMask |= COMP_SCREEN_DAMAGE_ALL_MASK;
-    priv->damageMask &= ~COMP_SCREEN_DAMAGE_REGION_MASK;
-}
-
-void
-CompScreen::damagePending ()
-{
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
-    priv->damageMask |= COMP_SCREEN_DAMAGE_PENDING_MASK;
-}
 
 void
 CompScreen::forEachWindow (CompWindow::ForEach proc)
@@ -2500,8 +1499,6 @@ CompScreen::unhookWindow (CompWindow *w)
 
     if (w == lastFoundWindow)
 	lastFoundWindow = NULL;
-    if (w == lastDamagedWindow)
-	lastDamagedWindow = NULL;
 }
 
 #define POINTER_GRAB_MASK (ButtonReleaseMask | \
@@ -3392,39 +2389,6 @@ CompScreen::sendWindowActivationRequest (Window id)
 		&xev);
 }
 
-void
-CompScreen::setTexEnvMode (GLenum mode)
-{
-    if (priv->lighting)
-	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
-    else
-	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, mode);
-}
-
-void
-CompScreen::setLighting (bool lighting)
-{
-    if (priv->lighting != lighting)
-    {
-	if (!priv->opt[COMP_SCREEN_OPTION_LIGHTING].value ().b ())
-	    lighting = false;
-
-	if (lighting)
-	{
-	    glEnable (GL_COLOR_MATERIAL);
-	    glEnable (GL_LIGHTING);
-	}
-	else
-	{
-	    glDisable (GL_COLOR_MATERIAL);
-	    glDisable (GL_LIGHTING);
-	}
-
-	priv->lighting = lighting;
-
-	setTexEnvMode (GL_REPLACE);
-    }
-}
 
 void
 CompScreen::enableEdge (int edge)
@@ -3456,29 +2420,9 @@ CompScreen::getTopWindow ()
     return None;
 }
 
-void
-CompScreen::makeCurrent ()
-{
-    if (currentRoot != priv->root)
-    {
-	glXMakeCurrent (priv->display->dpy (), priv->output, priv->ctx);
-	currentRoot = priv->root;
-    }
 
-    priv->pendingCommands = true;
-}
 
-void
-CompScreen::finishDrawing ()
-{
-    if (priv->pendingCommands)
-    {
-	makeCurrent ();
-	glFinish ();
 
-	priv->pendingCommands = true;
-    }
-}
 
 int
 CompScreen::outputDeviceForPoint (int x, int y)
@@ -3566,51 +2510,13 @@ CompScreen::getWorkareaForOutput (int output, XRectangle *area)
     *area = priv->outputDevs[output].workArea ();
 }
 
-void
-CompScreen::setDefaultViewport ()
-{
-    priv->lastViewport.x      = priv->outputDevs[0].x1 ();
-    priv->lastViewport.y      = priv->size.height () - priv->outputDevs[0].y2 ();
-    priv->lastViewport.width  = priv->outputDevs[0].width ();
-    priv->lastViewport.height = priv->outputDevs[0].height ();
 
-    glViewport (priv->lastViewport.x,
-		priv->lastViewport.y,
-		priv->lastViewport.width,
-		priv->lastViewport.height);
-}
 
 void
 CompScreen::outputChangeNotify ()
     WRAPABLE_HND_FUNC(outputChangeNotify)
 
-void
-CompScreen::clearOutput (CompOutput   *output,
-			 unsigned int mask)
-{
-    BoxPtr pBox = &output->region ()->extents;
 
-    if (pBox->x1 != 0	     ||
-	pBox->y1 != 0	     ||
-	pBox->x2 != (int) priv->size.width () ||
-	pBox->y2 != (int) priv->size.height ())
-    {
-	glPushAttrib (GL_SCISSOR_BIT);
-
-	glEnable (GL_SCISSOR_TEST);
-	glScissor (pBox->x1,
-		   priv->size.height () - pBox->y2,
-		   pBox->x2 - pBox->x1,
-		   pBox->y2 - pBox->y1);
-	glClear (mask);
-
-	glPopAttrib ();
-    }
-    else
-    {
-	glClear (mask);
-    }
-}
 
 /* Returns default viewport for some window geometry. If the window spans
    more than one viewport the most appropriate viewport is returned. How the
@@ -3862,79 +2768,15 @@ CompScreen::addToCurrentActiveWindowHistory (Window id)
     history->activeNum = priv->activeNum;
 }
 
-void
-CompScreen::setWindowPaintOffset (int x, int y)
-{
-    priv->windowPaintOffset = CompPoint (x, y);
-}
 
 
 ScreenInterface::ScreenInterface ()
 {
-    WRAPABLE_INIT_FUNC(preparePaint);
-    WRAPABLE_INIT_FUNC(donePaint);
-    WRAPABLE_INIT_FUNC(paint);
-    WRAPABLE_INIT_FUNC(paintOutput);
-    WRAPABLE_INIT_FUNC(paintTransformedOutput);
-    WRAPABLE_INIT_FUNC(enableOutputClipping);
-    WRAPABLE_INIT_FUNC(disableOutputClipping);
-    WRAPABLE_INIT_FUNC(applyTransform);
-
     WRAPABLE_INIT_FUNC(enterShowDesktopMode);
     WRAPABLE_INIT_FUNC(leaveShowDesktopMode);
 
     WRAPABLE_INIT_FUNC(outputChangeNotify);
-
-    WRAPABLE_INIT_FUNC(getWindowPaintList);
 }
-
-void
-ScreenInterface::preparePaint (int msSinceLastPaint)
-    WRAPABLE_DEF_FUNC(preparePaint, msSinceLastPaint)
-
-void
-ScreenInterface::donePaint ()
-    WRAPABLE_DEF_FUNC(donePaint)
-
-void
-ScreenInterface::paint (CompOutput::ptrList &outputs,
-			unsigned int        mask)
-    WRAPABLE_DEF_FUNC(paint, outputs, mask)
-
-bool
-ScreenInterface::paintOutput (const CompScreenPaintAttrib *sAttrib,
-			      const CompTransform         *transform,
-			      Region	                  region,
-			      CompOutput                  *output,
-			      unsigned int                mask)
-    WRAPABLE_DEF_FUNC_RETURN(paintOutput, sAttrib, transform, region,
-			     output, mask)
-
-void
-ScreenInterface::paintTransformedOutput (const CompScreenPaintAttrib *sAttrib,
-					 const CompTransform         *transform,
-					 Region                      region,
-					 CompOutput                  *output,
-					 unsigned int                mask)
-    WRAPABLE_DEF_FUNC(paintTransformedOutput, sAttrib, transform, region,
-		      output, mask)
-
-void
-ScreenInterface::applyTransform (const CompScreenPaintAttrib *sAttrib,
-				 CompOutput                  *output,
-				 CompTransform               *transform)
-    WRAPABLE_DEF_FUNC(applyTransform, sAttrib, output, transform)
-
-void
-ScreenInterface::enableOutputClipping (const CompTransform *transform,
-				       Region              region,
-				       CompOutput          *output)
-    WRAPABLE_DEF_FUNC(enableOutputClipping, transform, region, output)
-
-void
-ScreenInterface::disableOutputClipping ()
-    WRAPABLE_DEF_FUNC(disableOutputClipping)
-
 void
 ScreenInterface::enterShowDesktopMode ()
     WRAPABLE_DEF_FUNC(enterShowDesktopMode)
@@ -3947,9 +2789,6 @@ void
 ScreenInterface::outputChangeNotify ()
     WRAPABLE_DEF_FUNC(outputChangeNotify)
 
-CompWindowList
-ScreenInterface::getWindowPaintList ()
-    WRAPABLE_DEF_FUNC_WITH_RETURN(CompWindowList (), getWindowPaintList)
 
 CompDisplay *
 CompScreen::display ()
@@ -3982,164 +2821,9 @@ CompScreen::showingDesktopMask ()
     return priv->showingDesktopMask;
 }
 
-bool
-paintTimeout (void *closure)
-{
-    CompScreen *s = (CompScreen *) closure;
-    return s->handlePaintTimeout ();
-}
 
 
-int
-CompScreen::getTimeToNextRedraw (struct timeval *tv)
-{
-    int diff, next;
 
-    diff = TIMEVALDIFF (tv, &priv->lastRedraw);
-
-    /* handle clock rollback */
-    if (diff < 0)
-	diff = 0;
-
-    if (priv->idle || (getVideoSync &&
-	priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ()))
-    {
-	if (priv->timeMult > 1)
-	{
-	    priv->frameStatus = -1;
-	    priv->redrawTime = priv->optimalRedrawTime;
-	    priv->timeMult--;
-	}
-    }
-    else
-    {
-	if (diff > priv->redrawTime)
-	{
-	    if (priv->frameStatus > 0)
-		priv->frameStatus = 0;
-
-	    next = priv->optimalRedrawTime * (priv->timeMult + 1);
-	    if (diff > next)
-	    {
-		priv->frameStatus--;
-		if (priv->frameStatus < -1)
-		{
-		    priv->timeMult++;
-		    priv->redrawTime = diff = next;
-		}
-	    }
-	}
-	else if (diff < priv->redrawTime)
-	{
-	    if (priv->frameStatus < 0)
-		priv->frameStatus = 0;
-
-	    if (priv->timeMult > 1)
-	    {
-		next = priv->optimalRedrawTime * (priv->timeMult - 1);
-		if (diff < next)
-		{
-		    priv->frameStatus++;
-		    if (priv->frameStatus > 4)
-		    {
-			priv->timeMult--;
-			priv->redrawTime = next;
-		    }
-		}
-	    }
-	}
-    }
-    if (diff >= priv->redrawTime)
-	return 1;
-
-    return priv->redrawTime - diff;
-}
-
-void
-CompScreen::waitForVideoSync ()
-{
-    unsigned int sync;
-
-    if (!priv->opt[COMP_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ())
-	return;
-
-    if (getVideoSync)
-    {
-	glFlush ();
-
-	(*getVideoSync) (&sync);
-	(*waitVideoSync) (2, (sync + 1) % 2, &sync);
-    }
-}
-
-void
-CompScreen::paint (CompOutput::ptrList &outputs,
-		   unsigned int        mask)
-{
-    WRAPABLE_HND_FUNC(paint, outputs, mask)
-
-    XRectangle                    r;
-    CompOutput::ptrList::iterator it;
-    CompOutput                    *output;
-
-    for (it = outputs.begin (); it != outputs.end (); it++)
-    {
-	output = (*it);
-	targetScreen = this;
-	targetOutput = output;
-
-	r.x	 = output->x1 ();
-	r.y	 = priv->size.height () - output->y2 ();
-	r.width  = output->width ();
-	r.height = output->height ();
-
-	if (priv->lastViewport.x	   != r.x     ||
-	    priv->lastViewport.y	   != r.y     ||
-	    priv->lastViewport.width  != r.width ||
-	    priv->lastViewport.height != r.height)
-	{
-	    glViewport (r.x, r.y, r.width, r.height);
-	    priv->lastViewport = r;
-	}
-
-	if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
-	{
-	    CompMatrix identity;
-
-	    paintOutput (&defaultScreenPaintAttrib,
-			 &identity,
-			 output->region (), output,
-			 PAINT_SCREEN_REGION_MASK |
-			 PAINT_SCREEN_FULL_MASK);
-	}
-	else if (mask & COMP_SCREEN_DAMAGE_REGION_MASK)
-	{
-	    CompMatrix identity;
-
-	    XIntersectRegion (priv->tmpRegion,
-			      output->region (),
-			      priv->outputRegion);
-
-	    if (!paintOutput (&defaultScreenPaintAttrib,
-			      &identity,
-			      priv->outputRegion, output,
-			      PAINT_SCREEN_REGION_MASK))
-	    {
-		identity.reset ();
-
-		paintOutput (&defaultScreenPaintAttrib,
-			     &identity,
-			     output->region (), output,
-			     PAINT_SCREEN_FULL_MASK);
-
-		XUnionRegion (priv->tmpRegion,
-			      output->region (),
-			      priv->tmpRegion);
-
-	    }
-	}
-    }
-}
 
 void
 CompScreen::warpPointer (int dx, int dy)
@@ -4225,209 +2909,6 @@ CompScreen::screenNum ()
     return priv->screenNum;
 }
 
-bool
-CompScreen::handlePaintTimeout ()
-{
-    int         timeDiff;
-    struct      timeval tv;
-    CompDisplay *d = priv->display;
-
-    gettimeofday (&tv, 0);
-
-    if (priv->damageMask)
-    {
-	finishDrawing ();
- 
-	targetScreen = this;
-
-	timeDiff = TIMEVALDIFF (&tv, &priv->lastRedraw);
-
-	/* handle clock rollback */
-	if (timeDiff < 0)
-	    timeDiff = 0;
-
-	makeCurrent ();
-
-	if (priv->slowAnimations)
-	{
-	    preparePaint (priv->idle ? 2 : (timeDiff * 2) / priv->redrawTime);
-	}
-	else
-	    preparePaint (priv->idle ? priv->redrawTime : timeDiff);
-
-	/* substract top most overlay window region */
-	if (priv->overlayWindowCount)
-	{
-	    for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
-	         rit != priv->windows.rend (); rit++)
-	    {
-		CompWindow *w = (*rit);
-
-		if (w->destroyed () || w->invisible ())
-		    continue;
-
-		if (!w->redirected ())
-		    XSubtractRegion (priv->damage, w->region (),
-				     priv->damage);
-
-		break;
-	    }
-
-	    if (priv->damageMask & COMP_SCREEN_DAMAGE_ALL_MASK)
-	    {
-		priv->damageMask &= ~COMP_SCREEN_DAMAGE_ALL_MASK;
-		priv->damageMask |= COMP_SCREEN_DAMAGE_REGION_MASK;
-	    }
-	}
-
-	if (priv->damageMask & COMP_SCREEN_DAMAGE_REGION_MASK)
-	{
-	    XIntersectRegion (priv->damage, &priv->region,
-			      priv->tmpRegion);
-
-	    if (priv->tmpRegion->numRects  == 1	  &&
-		priv->tmpRegion->rects->x1 == 0	  &&
-		priv->tmpRegion->rects->y1 == 0	  &&
-		priv->tmpRegion->rects->x2 == (int) priv->size.width () &&
-		priv->tmpRegion->rects->y2 == (int) priv->size.height ())
-		damageScreen ();
-	}
-
-	EMPTY_REGION (priv->damage);
-
-	int mask = priv->damageMask;
-	priv->damageMask = 0;
-
-	if (priv->clearBuffers)
-	{
-	    if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
-		glClear (GL_COLOR_BUFFER_BIT);
-	}
-
-	CompOutput::ptrList outputs (0);
-	
-	if (priv->opt[COMP_SCREEN_OPTION_FORCE_INDEPENDENT].value ().b ()
-	    || !priv->hasOverlappingOutputs)
-	{
-	    for (unsigned int i = 0; i < priv->outputDevs.size (); i++)
-		outputs.push_back (&priv->outputDevs[i]);
-	}
-	else
-	    outputs.push_back (&priv->fullscreenOutput);
-
-	paint (outputs, mask);
-	
-	targetScreen = NULL;
-	targetOutput = &priv->outputDevs[0];
-
-	waitForVideoSync ();
-
-	if (mask & COMP_SCREEN_DAMAGE_ALL_MASK)
-	{
-	    glXSwapBuffers (d->dpy (), priv->output);
-	}
-	else
-	{
-	    BoxPtr pBox;
-	    int    nBox, y;
-
-	    pBox = priv->tmpRegion->rects;
-	    nBox = priv->tmpRegion->numRects;
-
-	    if (copySubBuffer)
-	    {
-		while (nBox--)
-		{
-		    y = priv->size.height () - pBox->y2;
-
-		    (*copySubBuffer) (d->dpy (),
-				      priv->output,
-				      pBox->x1, y,
-				      pBox->x2 - pBox->x1,
-				      pBox->y2 - pBox->y1);
-
-		    pBox++;
-		}
-	    }
-	    else
-	    {
-		glEnable (GL_SCISSOR_TEST);
-		glDrawBuffer (GL_FRONT);
-
-		while (nBox--)
-		{
-		    y = priv->size.height () - pBox->y2;
-
-		    glBitmap (0, 0, 0, 0,
-			      pBox->x1 - priv->rasterPos.x (),
-			      y - priv->rasterPos.y (),
-			      NULL);
-
-		    priv->rasterPos = CompPoint (pBox->x1, y);
-
-		    glScissor (pBox->x1, y,
-			       pBox->x2 - pBox->x1,
-			       pBox->y2 - pBox->y1);
-
-		    glCopyPixels (pBox->x1, y,
-				  pBox->x2 - pBox->x1,
-				  pBox->y2 - pBox->y1,
-				  GL_COLOR);
-
-		    pBox++;
-		}
-
-		glDrawBuffer (GL_BACK);
-		glDisable (GL_SCISSOR_TEST);
-		glFlush ();
-	    }
-	}
-
-	priv->lastRedraw = tv;
-
-	donePaint ();
-
-	/* remove destroyed windows */
-	while (priv->pendingDestroys)
-	{
-	    foreach (CompWindow *w, priv->windows)
-	    {
-		if (w->destroyed ())
-		{
-		    w->addDamage ();
-		    delete w;
-		    break;
-		}
-	    }
-
-	    priv->pendingDestroys--;
-	}
-
-	priv->idle = false;
-    }
-    else
-    {
-	priv->idle = true;
-    }
-
-    gettimeofday (&tv, 0);
-
-    priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
-    return true;
-}
-
-int
-CompScreen::maxTextureSize ()
-{
-    return priv->maxTextureSize;
-}
-
-unsigned int
-CompScreen::damageMask ()
-{
-    return priv->damageMask;
-}
-
 CompPoint
 CompScreen::vp ()
 {
@@ -4447,12 +2928,6 @@ CompScreen::size ()
 }
 
 unsigned int &
-CompScreen::pendingDestroys ()
-{
-    return priv->pendingDestroys;
-}
-
-unsigned int &
 CompScreen::mapNum ()
 {
     return priv->mapNum;
@@ -4462,12 +2937,6 @@ int &
 CompScreen::desktopWindowCount ()
 {
     return priv->desktopWindowCount;
-}
-
-int &
-CompScreen::overlayWindowCount ()
-{
-    return priv->overlayWindowCount;
 }
 
 CompOutput::vector &
@@ -4507,86 +2976,57 @@ CompScreen::screenEdge (int edge)
     return priv->screenEdge[edge];
 }
 
-Window
-CompScreen::overlay ()
-{
-    return priv->overlay;
-}
-
 unsigned int &
 CompScreen::activeNum ()
 {
     return priv->activeNum;
 }
 
-void
-CompScreen::updateBackground ()
+unsigned int &
+CompScreen::pendingDestroys ()
 {
-    priv->backgroundTexture.reset ();
+    return priv->pendingDestroys;
+}
 
-    if (priv->backgroundLoaded)
+void
+CompScreen::removeDestroyed ()
+{
+    while (priv->pendingDestroys)
     {
-	priv->backgroundLoaded = false;
-	damageScreen ();
+	foreach (CompWindow *w, priv->windows)
+	{
+	    if (w->destroyed ())
+	    {
+		delete w;
+		break;
+	    }
+	}
+
+	priv->pendingDestroys--;
     }
 }
 
-bool
-CompScreen::textureNonPowerOfTwo ()
+Region
+CompScreen::region ()
 {
-    return priv->textureNonPowerOfTwo;
+    return &priv->region;
 }
 
 bool
-CompScreen::textureCompression ()
+CompScreen::hasOverlappingOutputs ()
 {
-    return priv->textureCompression;
+    return priv->hasOverlappingOutputs;
 }
 
-bool
-CompScreen::canDoSaturated ()
+CompOutput &
+CompScreen::fullscreenOutput ()
 {
-    return priv->canDoSaturated;
+    return priv->fullscreenOutput;
 }
 
-bool
-CompScreen::canDoSlightlySaturated ()
-{
-    return priv->canDoSlightlySaturated;
-}
 
-bool
-CompScreen::lighting ()
+XWindowAttributes
+CompScreen::attrib ()
 {
-    return priv->lighting;
-}
-
-CompTexture::Filter
-CompScreen::filter (int filter)
-{
-    return priv->filter[filter];
-}
-
-CompFragment::Storage *
-CompScreen::fragmentStorage ()
-{
-    return &priv->fragmentStorage;
-}
-
-bool
-CompScreen::fragmentProgram ()
-{
-    return priv->fragmentProgram;
-}
-
-CompFBConfig*
-CompScreen::glxPixmapFBConfig (unsigned int depth)
-{
-    return &priv->glxPixmapFBConfigs[depth];
-}
-
-bool
-CompScreen::framebufferObject ()
-{
-    return priv->fbo;
+    return priv->attrib;
 }

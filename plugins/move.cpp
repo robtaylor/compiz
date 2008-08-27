@@ -32,6 +32,9 @@
 #include <compiz-core.h>
 #include <compprivatehandler.h>
 
+#include <composite/composite.h>
+#include <opengl/opengl.h>
+
 static CompMetadata *moveMetadata;
 
 class MovePluginVTable : public CompPlugin::VTable
@@ -129,14 +132,16 @@ class MoveDisplay :
 	GLushort moveOpacity;
 };
 
-
-
 class MoveScreen : public PrivateHandler<MoveScreen,CompScreen> {
     public:
 	
 	MoveScreen (CompScreen *screen) :
 	    PrivateHandler<MoveScreen,CompScreen> (screen),
-	    screen (screen) {};
+	    screen (screen) {
+		if (CompositeScreen::get (screen))
+		    hasCompositing =
+			CompositeScreen::get (screen)->compositingActive ();
+	    };
 
         CompScreen *screen;
 	CompScreen::grabHandle grab;
@@ -147,26 +152,34 @@ class MoveScreen : public PrivateHandler<MoveScreen,CompScreen> {
 
 	int	snapOffY;
 	int	snapBackY;
+
+	bool hasCompositing;
 };
 
 class MoveWindow :
-    public WindowInterface,
+    public GLWindowInterface,
     public PrivateHandler<MoveWindow,CompWindow>
 {
     public:
 	MoveWindow (CompWindow *window) :
 	    PrivateHandler<MoveWindow,CompWindow> (window),
-	    window (window)
+	    window (window),
+	    gWindow (GLWindow::get (window)),
+	    cWindow (CompositeWindow::get (window))
 	{
-	    window->add (this);
-	    WindowInterface::setHandler (window);
+	    if (gWindow)
+	    {
+		gWindow->add (this);
+		GLWindowInterface::setHandler (gWindow);
+	    }
 	};
 
-	bool
-	paint (const CompWindowPaintAttrib *, const CompTransform *, Region,
-	       unsigned int);
+	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &, Region,
+		      unsigned int);
 
-	CompWindow *window;
+	CompWindow      *window;
+	GLWindow        *gWindow;
+	CompositeWindow *cWindow;
 };
 
 #define MOVE_DISPLAY(d)	\
@@ -277,7 +290,12 @@ moveInitiate (CompDisplay     *d,
 	    }
 
 	    if (md->moveOpacity != OPAQUE)
-		w->addDamage ();
+	    {
+		MOVE_WINDOW (w);
+
+		if (mw->cWindow)
+		    mw->cWindow->addDamage ();
+	    }
 	}
     }
 
@@ -317,7 +335,12 @@ moveTerminate (CompDisplay     *d,
 	}
 
 	if (md->moveOpacity != OPAQUE)
-	    md->w->addDamage ();
+	{
+	    MOVE_WINDOW (md->w);
+
+	    if (mw->cWindow)
+		mw->cWindow->addDamage ();
+	}
 
 	md->w             = 0;
 	md->releaseButton = 0;
@@ -606,7 +629,8 @@ moveHandleMotionEvent (CompScreen *s,
 			wY + dy - w->attrib ().y,
 			TRUE, FALSE);
 
-	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value ().b ())
+	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value ().b () &&
+	        MoveScreen::get (w->screen())->hasCompositing)
 	    {
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
@@ -788,13 +812,13 @@ MoveDisplay::handleEvent (XEvent *event)
 }
 
 bool
-MoveWindow::paint (const CompWindowPaintAttrib *attrib,
-		   const CompTransform	 *transform,
-		   Region			 region,
-		   unsigned int		 mask)
+MoveWindow::glPaint (const GLWindowPaintAttrib &attrib,
+		     const GLMatrix            &transform,
+		     Region                    region,
+		     unsigned int              mask)
 {
-    CompWindowPaintAttrib sAttrib;
-    bool	      status;
+    GLWindowPaintAttrib sAttrib = attrib;
+    bool                status;
 
     MOVE_SCREEN (window->screen ());
 
@@ -805,14 +829,11 @@ MoveWindow::paint (const CompWindowPaintAttrib *attrib,
 	if (md->w == window && md->moveOpacity != OPAQUE)
 	{
 	    /* modify opacity of windows that are not active */
-	    sAttrib = *attrib;
-	    attrib  = &sAttrib;
-
 	    sAttrib.opacity = (sAttrib.opacity * md->moveOpacity) >> 16;
 	}
     }
 
-    status = window->paint (attrib, transform, region, mask);
+    status = gWindow->glPaint (sAttrib, transform, region, mask);
 
     return status;
 }

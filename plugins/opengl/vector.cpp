@@ -23,14 +23,14 @@
 
 #include <string.h>
 #include <math.h>
-#include <compvector.h>
+#include <opengl/vector.h>
 
-CompVector::CompVector ()
+GLVector::GLVector ()
 {
     memset (v, 0, sizeof (v));
 }
 
-CompVector::CompVector (float x,
+GLVector::GLVector (float x,
 			float y,
 			float z,
 			float w)
@@ -42,33 +42,33 @@ CompVector::CompVector (float x,
 }
 
 float&
-CompVector::operator[] (int item)
+GLVector::operator[] (int item)
 {
     return v[item];
 }
 
 float&
-CompVector::operator[] (VectorCoordsEnum coord)
+GLVector::operator[] (VectorCoordsEnum coord)
 {
     int item = (int) coord;
     return v[item];
 }
 
 const float
-CompVector::operator[] (int item) const
+GLVector::operator[] (int item) const
 {
     return v[item];
 }
 
 const float
-CompVector::operator[] (VectorCoordsEnum coord) const
+GLVector::operator[] (VectorCoordsEnum coord) const
 {
     int item = (int) coord;
     return v[item];
 }
 
-CompVector&
-CompVector::operator+= (const CompVector& rhs)
+GLVector&
+GLVector::operator+= (const GLVector& rhs)
 {
     int i;
 
@@ -78,11 +78,11 @@ CompVector::operator+= (const CompVector& rhs)
     return *this;
 }
 
-CompVector
-operator+ (const CompVector& lhs,
-	   const CompVector& rhs)
+GLVector
+operator+ (const GLVector& lhs,
+	   const GLVector& rhs)
 {
-    CompVector result;
+    GLVector result;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -91,8 +91,8 @@ operator+ (const CompVector& lhs,
     return result;
 }
 
-CompVector&
-CompVector::operator-= (const CompVector& rhs)
+GLVector&
+GLVector::operator-= (const GLVector& rhs)
 {
     int i;
 
@@ -102,11 +102,11 @@ CompVector::operator-= (const CompVector& rhs)
     return *this;
 }
 
-CompVector
-operator- (const CompVector& lhs,
-	   const CompVector& rhs)
+GLVector
+operator- (const GLVector& lhs,
+	   const GLVector& rhs)
 {
-    CompVector result;
+    GLVector result;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -115,10 +115,10 @@ operator- (const CompVector& lhs,
     return result;
 }
 
-CompVector
-operator- (const CompVector& vector)
+GLVector
+operator- (const GLVector& vector)
 {
-    CompVector result;
+    GLVector result;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -127,8 +127,8 @@ operator- (const CompVector& vector)
     return result;
 }
 
-CompVector&
-CompVector::operator*= (const float k)
+GLVector&
+GLVector::operator*= (const float k)
 {
     int i;
 
@@ -139,8 +139,8 @@ CompVector::operator*= (const float k)
 }
 
 float
-operator* (const CompVector& lhs,
-	   const CompVector& rhs)
+operator* (const GLVector& lhs,
+	   const GLVector& rhs)
 {
     float result = 0;
     int   i;
@@ -151,11 +151,11 @@ operator* (const CompVector& lhs,
     return result;
 }
 
-CompVector
+GLVector
 operator* (const float       k,
-	   const CompVector& vector)
+	   const GLVector& vector)
 {
-    CompVector result;
+    GLVector result;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -164,15 +164,15 @@ operator* (const float       k,
     return result;
 }
 
-CompVector
-operator* (const CompVector& vector,
+GLVector
+operator* (const GLVector& vector,
 	   const float       k)
 {
     return k * vector;
 }
 
-CompVector&
-CompVector::operator/= (const float k)
+GLVector&
+GLVector::operator/= (const float k)
 {
     int i;
 
@@ -182,11 +182,11 @@ CompVector::operator/= (const float k)
     return *this;
 }
 
-CompVector
-operator/ (const CompVector& vector,
+GLVector
+operator/ (const GLVector& vector,
 	   const float       k)
 {
-    CompVector result;
+    GLVector result;
     int        i;
 
     for (i = 0; i < 4; i++)
@@ -195,18 +195,18 @@ operator/ (const CompVector& vector,
     return result;
 }
 
-CompVector&
-CompVector::operator^= (const CompVector& vector)
+GLVector&
+GLVector::operator^= (const GLVector& vector)
 {
     *this = *this ^ vector;
     return *this;
 }
 
-CompVector
-operator^ (const CompVector& lhs,
-	   const CompVector& rhs)
+GLVector
+operator^ (const GLVector& lhs,
+	   const GLVector& rhs)
 {
-    CompVector result;
+    GLVector result;
 
     result[0] = lhs[1] * rhs[2] - lhs[2] * rhs[1];
     result[1] = lhs[2] * rhs[0] - lhs[0] * rhs[2];
