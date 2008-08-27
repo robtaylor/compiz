@@ -41,31 +41,21 @@ class MovePluginVTable : public CompPlugin::VTable
 {
     public:
 
-	const char *
-	name () { return "move"; };
+	const char * name () { return "move"; };
 
-	CompMetadata *
-	getMetadata ();
+	CompMetadata * getMetadata ();
 
-	virtual bool
-	init ();
+	bool init ();
+	void fini ();
 
-	virtual void
-	fini ();
+	bool initObject (CompObject *object);
+	void finiObject (CompObject *object);
 
-	virtual bool
-	initObject (CompObject *object);
+	CompOption::Vector & getObjectOptions (CompObject *object);
 
-	virtual void
-	finiObject (CompObject *object);
-
-	CompOption::Vector &
-	getObjectOptions (CompObject *object);
-
-	bool
-	setObjectOption (CompObject        *object,
-			 const char        *name,
-			 CompOption::Value &value);
+	bool setObjectOption (CompObject        *object,
+			      const char        *name,
+			      CompOption::Value &value);
 };
 
 
@@ -100,16 +90,12 @@ class MoveDisplay :
     public DisplayInterface,
     public PrivateHandler<MoveDisplay,CompDisplay>
 {
-
     public:
-	MoveDisplay (CompDisplay *display) :
-	    PrivateHandler<MoveDisplay,CompDisplay> (display),
-	    display (display),
-	    opt(MOVE_DISPLAY_OPTION_NUM)
-	{
-	    display->add (this);
-	    DisplayInterface::setHandler (display);
-	};
+	MoveDisplay (CompDisplay *display);
+	~MoveDisplay ();
+ 
+	CompOption::Vector & getOptions ();
+	bool setOption (const char *name, CompOption::Value &value);	
 
 	void
 	handleEvent (XEvent *);
@@ -137,11 +123,20 @@ class MoveScreen : public PrivateHandler<MoveScreen,CompScreen> {
 	
 	MoveScreen (CompScreen *screen) :
 	    PrivateHandler<MoveScreen,CompScreen> (screen),
-	    screen (screen) {
-		if (CompositeScreen::get (screen))
-		    hasCompositing =
-			CompositeScreen::get (screen)->compositingActive ();
-	    };
+	    screen (screen), grab(NULL)
+	{
+	    moveCursor = XCreateFontCursor (screen->display ()->dpy (),
+					    XC_fleur);
+	    if (CompositeScreen::get (screen))
+		hasCompositing =
+		    CompositeScreen::get (screen)->compositingActive ();
+	}
+
+	~MoveScreen ()
+	{
+	     if (moveCursor)
+		XFreeCursor (screen->display ()->dpy (), moveCursor);
+	}
 
         CompScreen *screen;
 	CompScreen::grabHandle grab;
@@ -190,7 +185,6 @@ class MoveWindow :
 
 #define MOVE_WINDOW(w) \
     MoveWindow *mw = MoveWindow::get (w)
-
 
 static bool
 moveInitiate (CompDisplay     *d,
@@ -838,42 +832,36 @@ MoveWindow::glPaint (const GLWindowPaintAttrib &attrib,
     return status;
 }
 
-static CompOption::Vector &
-moveGetDisplayOptions (CompObject  *object)
+CompOption::Vector &
+MoveDisplay::getOptions ()
 {
-    CORE_DISPLAY (object);
-    MOVE_DISPLAY (d);
-    return md->opt;
+    return opt;
 }
-
-static bool
-moveSetDisplayOption (CompObject      *object,
-		      const char      *name,
-		      CompOption::Value &value)
+ 
+bool
+MoveDisplay::setOption (const char        *name,
+		        CompOption::Value &value)
 {
     CompOption *o;
     unsigned int index;
-
-    CORE_DISPLAY (object);
-    MOVE_DISPLAY (d);
-
-    o = CompOption::findOption (md->opt, name, &index);
+ 
+    o = CompOption::findOption (opt, name, &index);
     if (!o)
-	return FALSE;
-
-    switch (index) {
-    case MOVE_DISPLAY_OPTION_OPACITY:
-	if (o->set (value))
-	{
-	    md->moveOpacity = (o->value ().i () * OPAQUE) / 100;
-	    return TRUE;
-	}
-	break;
-    default:
-	return CompOption::setDisplayOption (d, *o, value);
-    }
-
-    return FALSE;
+	return false;
+ 
+     switch (index) {
+     case MOVE_DISPLAY_OPTION_OPACITY:
+ 	if (o->set (value))
+ 	{
+	    moveOpacity = (o->value ().i () * OPAQUE) / 100;
+	    return true;
+ 	}
+ 	break;
+     default:
+	return CompOption::setDisplayOption (display, *o, value);
+     }
+ 
+    return false;
 }
 
 static const CompMetadata::OptionInfo moveDisplayOptionInfo[] = {
@@ -885,180 +873,73 @@ static const CompMetadata::OptionInfo moveDisplayOptionInfo[] = {
     { "lazy_positioning", "bool", 0, 0, 0 }
 };
 
-static bool
-moveInitDisplay (CompObject *o)
+MoveDisplay::MoveDisplay (CompDisplay *d) :
+    PrivateHandler<MoveDisplay,CompDisplay> (d),
+    display (d),
+    opt(MOVE_DISPLAY_OPTION_NUM),
+    w (0),
+    region (NULL),
+    status (RectangleOut),
+    releaseButton (0)
 {
-    MoveDisplay  *md;
-    unsigned int i;
-
-    CORE_DISPLAY (o);
-
-    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
-	return false;
-
-    md = new MoveDisplay (d);
-    if (!md)
-	return false;
-
-    if (md->loadFailed ())
-    {
-	delete md;
-	return false;
-    }
-
     if (!moveMetadata->initDisplayOptions (d, moveDisplayOptionInfo,
-					   MOVE_DISPLAY_OPTION_NUM, md->opt))
+					    MOVE_DISPLAY_OPTION_NUM, opt))
     {
-	delete md;
-	return false;
+	setFailed ();
+	return;
     }
-
-    md->moveOpacity =
-	(md->opt[MOVE_DISPLAY_OPTION_OPACITY].value ().i () * OPAQUE) / 100;
-
-    md->w             = 0;
-    md->region        = NULL;
-    md->status        = RectangleOut;
-    md->releaseButton = 0;
-
-    for (i = 0; i < NUM_KEYS; i++)
-	md->key[i] = XKeysymToKeycode (d->dpy (),
-				       XStringToKeysym (mKeys[i].name));
-
-    return true;
+ 
+    moveOpacity =
+	(opt[MOVE_DISPLAY_OPTION_OPACITY].value ().i () * OPAQUE) / 100;
+ 
+    for (unsigned int i = 0; i < NUM_KEYS; i++)
+	key[i] = XKeysymToKeycode (d->dpy (), XStringToKeysym (mKeys[i].name));
+ 
+    display->add (this);
+    DisplayInterface::setHandler (display);
 }
 
-static void
-moveFiniDisplay (CompObject *o)
+
+MoveDisplay::~MoveDisplay ()
 {
-    CORE_DISPLAY (o);
-    MOVE_DISPLAY (d);
-
-    CompOption::finiDisplayOptions (d, md->opt);
-
-    delete md;
-}
-
-static bool
-moveInitScreen (CompObject *o)
-{
-    MoveScreen *ms;
-
-    CORE_SCREEN (o);
-
-    ms = new MoveScreen (s);
-    if (!ms)
-	return false;
-
-    if (ms->loadFailed ())
-    {
-	delete ms;
-	return false;
-    }
-
-    ms->grab = NULL;
-
-    ms->moveCursor = XCreateFontCursor (s->display ()->dpy (), XC_fleur);
-
-    return true;
-}
-
-static void
-moveFiniScreen (CompObject *o)
-{
-    CORE_SCREEN (o);
-    MOVE_SCREEN (s);
-
-    if (ms->moveCursor)
-	XFreeCursor (s->display ()->dpy (), ms->moveCursor);
-
-    delete ms;
-}
-
-static bool
-moveInitWindow (CompObject *o)
-{
-    MoveWindow *mw;
-
-    CORE_WINDOW (o);
-
-    mw = new MoveWindow (w);
-    if (!mw)
-	return false;
-
-    if (mw->loadFailed ())
-    {
-	delete mw;
-	return false;
-    }
-
-    return true;
-}
-
-static void
-moveFiniWindow (CompObject *o)
-{
-    CORE_WINDOW (o);
-    MOVE_WINDOW (w);
-
-    delete mw;
+    CompOption::finiDisplayOptions (display, opt);
 }
 
 bool
 MovePluginVTable::initObject (CompObject *o)
 {
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) 0, /* InitCore */
-	(InitPluginObjectProc) moveInitDisplay,
-	(InitPluginObjectProc) moveInitScreen,
-	(InitPluginObjectProc) moveInitWindow
-    };
-
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (o));
+    INIT_OBJECT (o,_,X,X,X,,MoveDisplay,MoveScreen,MoveWindow)
+    return true;
 }
 
 void
 MovePluginVTable::finiObject (CompObject *o)
 {
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) 0, /* FiniCore */
-	(FiniPluginObjectProc) moveFiniDisplay,
-	(FiniPluginObjectProc) moveFiniScreen,
-	(FiniPluginObjectProc) moveFiniWindow
-    };
-
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (o));
+    FINI_OBJECT (o,_,X,X,X,,MoveDisplay,MoveScreen,MoveWindow)
 }
 
 CompOption::Vector &
 MovePluginVTable::getObjectOptions (CompObject *object)
 {
-    static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) moveGetDisplayOptions
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     noOptions, (object));
+    GET_OBJECT_OPTIONS (object,X,_,MoveDisplay,)
+    return noOptions;
 }
 
 bool
-MovePluginVTable::setObjectOption (CompObject      *object,
-		     const char      *name,
-		     CompOption::Value &value)
+MovePluginVTable::setObjectOption (CompObject        *object,
+				   const char        *name,
+				   CompOption::Value &value)
 {
-    static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) moveSetDisplayOption
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
-		     (object, name, value));
+    SET_OBJECT_OPTION (object,X,_,MoveDisplay,)
+    return false;
 }
 
 bool
 MovePluginVTable::init ()
 {
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
+	 return false;
+
     moveMetadata = new CompMetadata (name (),
 				     moveDisplayOptionInfo,
 				     MOVE_DISPLAY_OPTION_NUM,

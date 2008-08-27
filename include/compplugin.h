@@ -29,6 +29,106 @@
 #include <compiz.h>
 #include <compoption.h>
 
+#define __GET_PLUGIN_OBJECT_OPTIONS__(name, object)
+#define __GET_PLUGIN_OBJECT_OPTIONS_X(name, object) \
+    return name::get(object)->getOptions ();
+
+#define __SET_PLUGIN_OBJECT_OPTION__(name, object, oName, oValue)
+#define __SET_PLUGIN_OBJECT_OPTION_X(name, object, oName, oValue) \
+    return name::get(object)->setOption (oName, oValue);
+
+#define __INIT_PLUGIN_OBJECT__(name, object) 
+#define __INIT_PLUGIN_OBJECT_X(name, object) \
+{                                            \
+    name *obj = new name (object);           \
+    if (!obj)                                \
+	return false;                        \
+    if (obj->loadFailed ())                  \
+    {                                        \
+	delete obj;                          \
+	return false;                        \
+    }                                        \
+    return true;                             \
+}
+
+#define __FINI_PLUGIN_OBJECT__(name, object)
+#define __FINI_PLUGIN_OBJECT_X(name, object) \
+{                                            \
+    name *obj = name::get (object);          \
+    if (obj)                                 \
+        delete obj;                          \
+}
+
+#define INIT_OBJECT(obj, hasCore, hasDisplay, hasScreen, hasWindow, 			\
+                    coreName, displayName, screenName, windowName) 			\
+    switch ( obj ->objectType ())							\
+    {											\
+	case COMP_OBJECT_TYPE_CORE:							\
+	    __INIT_PLUGIN_OBJECT_ ## hasCore (coreName, GET_CORE_CORE (obj))		\
+	    break;									\
+	case COMP_OBJECT_TYPE_DISPLAY:							\
+	    __INIT_PLUGIN_OBJECT_ ## hasDisplay (displayName, GET_CORE_DISPLAY (obj)) 	\
+	    break;									\
+	case COMP_OBJECT_TYPE_SCREEN:							\
+	    __INIT_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj)) 	\
+	    break;									\
+	case COMP_OBJECT_TYPE_WINDOW:							\
+	    __INIT_PLUGIN_OBJECT_ ## hasWindow (windowName, GET_CORE_WINDOW (obj)) 	\
+	    break;									\
+	default:									\
+	    break;									\
+    }
+
+#define FINI_OBJECT(obj, hasCore, hasDisplay, hasScreen, hasWindow, 			\
+                    coreName, displayName, screenName, windowName) 			\
+    switch ( obj ->objectType ())							\
+    {											\
+	case COMP_OBJECT_TYPE_CORE:							\
+	    __FINI_PLUGIN_OBJECT_ ## hasCore (coreName, GET_CORE_CORE (obj))		\
+	    break;									\
+	case COMP_OBJECT_TYPE_DISPLAY:							\
+	    __FINI_PLUGIN_OBJECT_ ## hasDisplay (displayName, GET_CORE_DISPLAY (obj)) 	\
+	    break;									\
+	case COMP_OBJECT_TYPE_SCREEN:							\
+	    __FINI_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj))	\
+	    break;									\
+	case COMP_OBJECT_TYPE_WINDOW:							\
+	    __FINI_PLUGIN_OBJECT_ ## hasWindow (windowName, GET_CORE_WINDOW (obj))	\
+	    break;									\
+	default:									\
+	    break;									\
+    }
+
+#define GET_OBJECT_OPTIONS(obj, hasDisplay, hasScreen, displayName, screenName) \
+    switch ( obj ->objectType ())						\
+    {										\
+	case COMP_OBJECT_TYPE_DISPLAY:						\
+	    __GET_PLUGIN_OBJECT_OPTIONS_ ## hasDisplay				\
+		(displayName, GET_CORE_DISPLAY (obj)) 				\
+	    break;								\
+	case COMP_OBJECT_TYPE_SCREEN:						\
+	    __GET_PLUGIN_OBJECT_OPTIONS_ ## hasScreen 				\
+		(screenName, GET_CORE_SCREEN (obj)) 				\
+	    break;								\
+	default:								\
+	    break;								\
+    }
+
+#define SET_OBJECT_OPTION(obj, hasDisplay, hasScreen, displayName, screenName)	\
+    switch ( obj ->objectType ())						\
+    {										\
+	case COMP_OBJECT_TYPE_DISPLAY:						\
+	    __SET_PLUGIN_OBJECT_OPTION_ ## hasDisplay				\
+		(displayName, GET_CORE_DISPLAY (obj), name, value) 		\
+	    break;								\
+	case COMP_OBJECT_TYPE_SCREEN:						\
+	    __SET_PLUGIN_OBJECT_OPTION_ ## hasScreen				\
+		(screenName, GET_CORE_SCREEN (obj), name, value) 		\
+	    break;								\
+	default:								\
+	    break;								\
+    }
+
 class CompObject;
 class CompMetadata;
 
