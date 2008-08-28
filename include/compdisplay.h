@@ -12,7 +12,7 @@
 #include <compmatch.h>
 #include <compcore.h>
 #include <compaction.h>
-#include "wrapable.h"
+#include <compwrapsystem.h>
 
 class CompDisplay;
 class CompScreen;
@@ -35,26 +35,32 @@ class DisplayInterface :
     public WrapableInterface<CompDisplay, DisplayInterface>
 {
     public:
-	DisplayInterface ();
 
-    WRAPABLE_DEF(void, handleEvent, XEvent *event);
-    WRAPABLE_DEF(void, handleCompizEvent, const char *,
-		 const char *, CompOption *, int nOption);
+	virtual void handleEvent (XEvent *event);
+        virtual void handleCompizEvent (const char * plugin, const char *event,
+					CompOption::Vector &options);
 
-    WRAPABLE_DEF(bool, fileToImage, const char *, const char *,
-		 int *, int *, int *, void **data);
-    WRAPABLE_DEF(bool, imageToFile, const char *, const char *,
-		 const char *, int, int, int, void *);
+        virtual bool fileToImage (const char *path, const char *name,
+				  int *width, int *height,
+				  int *stride, void **data);
+	virtual bool imageToFile (const char *path, const char *name,
+				  const char *format, int width, int height,
+				  int stride, void *data);
 
-	
-    WRAPABLE_DEF(CompMatch::Expression *, matchInitExp, const CompString);
-    WRAPABLE_DEF(void, matchExpHandlerChanged)
-    WRAPABLE_DEF(void, matchPropertyChanged, CompWindow *)
+	virtual CompMatch::Expression *matchInitExp (const CompString value);
 
-    WRAPABLE_DEF(void, logMessage, const char *, CompLogLevel, const char*)
+	virtual void matchExpHandlerChanged ();
+	virtual void matchPropertyChanged (CompWindow *window);
+
+	virtual void logMessage (const char   *componentName,
+				 CompLogLevel level,
+				 const char   *message);		
 };
 
-class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject {
+class CompDisplay :
+    public WrapableHandler<DisplayInterface, 8>,
+    public CompObject
+{
 
     public:
 
@@ -374,21 +380,24 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 	static int checkForError (Display *dpy);
 	
 	// wrapable interface
-	WRAPABLE_HND(void, handleEvent, XEvent *event)
-	WRAPABLE_HND(void, handleCompizEvent, const char *,
-		     const char *, CompOption *, int nOption)
+	WRAPABLE_HND (0, DisplayInterface, void, handleEvent, XEvent *event)
+	WRAPABLE_HND (1, DisplayInterface, void, handleCompizEvent,
+		      const char *, const char *, CompOption::Vector &)
 
-	WRAPABLE_HND(bool, fileToImage, const char *, const char *,
-		     int *, int *, int *, void **data)
-	WRAPABLE_HND(bool, imageToFile, const char *, const char *,
-		     const char *, int, int, int, void *)
+	WRAPABLE_HND (2, DisplayInterface, bool, fileToImage, const char *,
+		     const char *,  int *, int *, int *, void **data)
+	WRAPABLE_HND (3, DisplayInterface, bool, imageToFile, const char *,
+		      const char *, const char *, int, int, int, void *)
 
 	
-	WRAPABLE_HND(CompMatch::Expression *, matchInitExp, const CompString);
-	WRAPABLE_HND(void, matchExpHandlerChanged)
-	WRAPABLE_HND(void, matchPropertyChanged, CompWindow *)
+	WRAPABLE_HND (4, DisplayInterface, CompMatch::Expression *,
+		      matchInitExp, const CompString);
+	WRAPABLE_HND (5, DisplayInterface, void, matchExpHandlerChanged)
+	WRAPABLE_HND (6, DisplayInterface, void, matchPropertyChanged,
+		      CompWindow *)
 
-	WRAPABLE_HND(void, logMessage, const char *, CompLogLevel, const char*)
+	WRAPABLE_HND (7, DisplayInterface, void, logMessage, const char *,
+		      CompLogLevel, const char*)
 
     private:
 

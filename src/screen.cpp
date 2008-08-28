@@ -832,7 +832,7 @@ PrivateScreen::getDesktopHints ()
 void
 CompScreen::enterShowDesktopMode ()
 {
-    WRAPABLE_HND_FUNC(enterShowDesktopMode)
+    WRAPABLE_HND_FUNC(0, enterShowDesktopMode)
 
     CompDisplay   *d = priv->display;
     unsigned long data = 1;
@@ -875,7 +875,7 @@ CompScreen::enterShowDesktopMode ()
 void
 CompScreen::leaveShowDesktopMode (CompWindow *window)
 {
-    WRAPABLE_HND_FUNC(leaveShowDesktopMode, window)
+    WRAPABLE_HND_FUNC(1, leaveShowDesktopMode, window)
 
     unsigned long data = 0;
 
@@ -923,11 +923,6 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 CompScreen::CompScreen ():
     CompObject (COMP_OBJECT_TYPE_SCREEN, "screen", &screenPrivateIndices)
 {
-    WRAPABLE_INIT_HND(enterShowDesktopMode);
-    WRAPABLE_INIT_HND(leaveShowDesktopMode);
-
-    WRAPABLE_INIT_HND(outputChangeNotify);
-
     priv = new PrivateScreen (this);
     assert (priv);
 }
@@ -2515,7 +2510,7 @@ CompScreen::getWorkareaForOutput (int output, XRectangle *area)
 
 void
 CompScreen::outputChangeNotify ()
-    WRAPABLE_HND_FUNC(outputChangeNotify)
+    WRAPABLE_HND_FUNC(2, outputChangeNotify)
 
 
 
@@ -2769,26 +2764,17 @@ CompScreen::addToCurrentActiveWindowHistory (Window id)
     history->activeNum = priv->activeNum;
 }
 
-
-
-ScreenInterface::ScreenInterface ()
-{
-    WRAPABLE_INIT_FUNC(enterShowDesktopMode);
-    WRAPABLE_INIT_FUNC(leaveShowDesktopMode);
-
-    WRAPABLE_INIT_FUNC(outputChangeNotify);
-}
 void
 ScreenInterface::enterShowDesktopMode ()
-    WRAPABLE_DEF_FUNC(enterShowDesktopMode)
+    WRAPABLE_DEF (enterShowDesktopMode)
 
 void
 ScreenInterface::leaveShowDesktopMode (CompWindow *window)
-    WRAPABLE_DEF_FUNC(leaveShowDesktopMode, window)
+    WRAPABLE_DEF (leaveShowDesktopMode, window)
 
 void
 ScreenInterface::outputChangeNotify ()
-    WRAPABLE_DEF_FUNC(outputChangeNotify)
+    WRAPABLE_DEF (outputChangeNotify)
 
 
 CompDisplay *

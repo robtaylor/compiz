@@ -75,16 +75,17 @@ struct CompActiveWindowHistory {
 
 class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
     public:
-	ScreenInterface ();
+	virtual void enterShowDesktopMode ();
+	virtual void leaveShowDesktopMode (CompWindow *window);
 
-	WRAPABLE_DEF(void, enterShowDesktopMode);
-	WRAPABLE_DEF(void, leaveShowDesktopMode, CompWindow *);
-
-	WRAPABLE_DEF(void, outputChangeNotify);
+	virtual void outputChangeNotify ();
 };
 
 
-class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
+class CompScreen :
+    public WrapableHandler<ScreenInterface, 3>,
+    public CompObject
+{
 
     public:
 	typedef void* grabHandle;
@@ -318,10 +319,11 @@ class CompScreen : public WrapableHandler<ScreenInterface>, public CompObject {
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-	WRAPABLE_HND(void, enterShowDesktopMode);
-	WRAPABLE_HND(void, leaveShowDesktopMode, CompWindow *);
+	WRAPABLE_HND (0, ScreenInterface, void, enterShowDesktopMode);
+	WRAPABLE_HND (1, ScreenInterface, void, leaveShowDesktopMode,
+		      CompWindow *);
 
-	WRAPABLE_HND(void, outputChangeNotify);
+	WRAPABLE_HND (2, ScreenInterface, void, outputChangeNotify);
 
 
     private:

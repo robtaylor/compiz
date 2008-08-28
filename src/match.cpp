@@ -106,7 +106,7 @@ class CoreExp : public CompMatch::Expression {
 CompMatch::Expression *
 CompDisplay::matchInitExp (const CompString str)
 {
-    WRAPABLE_HND_FUNC_RETURN(CompMatch::Expression *, matchInitExp, str)
+    WRAPABLE_HND_FUNC_RETURN(4, CompMatch::Expression *, matchInitExp, str)
 
     return new CoreExp (str);
 }
@@ -138,7 +138,7 @@ matchUpdateMatchOptions (CompOption::Vector options)
 void
 CompDisplay::matchExpHandlerChanged ()
 {
-    WRAPABLE_HND_FUNC(matchExpHandlerChanged)
+    WRAPABLE_HND_FUNC(5, matchExpHandlerChanged)
 
     foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
@@ -159,7 +159,7 @@ CompDisplay::matchExpHandlerChanged ()
 void
 CompDisplay::matchPropertyChanged (CompWindow *w)
 {
-    WRAPABLE_HND_FUNC(matchPropertyChanged, w)
+    WRAPABLE_HND_FUNC(6, matchPropertyChanged, w)
 }
 
 

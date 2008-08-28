@@ -5,8 +5,6 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 			    COMPIZ_COMPOSITE_ABI> (w),
     priv (new PrivateCompositeWindow (w, this))
 {
-    WRAPABLE_INIT_HND(damageRect);
-
     CompDisplay *d = w->screen ()->display ();
 
     if (w->attrib ().c_class != InputOnly)
@@ -473,7 +471,7 @@ bool
 CompositeWindow::damageRect (bool       initial,
  			     BoxPtr     rect)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, damageRect, initial, rect)
+    WRAPABLE_HND_FUNC_RETURN(0, bool, damageRect, initial, rect)
     return false;
 }
 
@@ -603,21 +601,6 @@ PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
     window->moveNotify (dx, dy, now);
 }
 
-CompositeWindowInterface::CompositeWindowInterface ()
-{
-    WRAPABLE_INIT_FUNC(damageRect);
-}
-
 bool
 CompositeWindowInterface::damageRect (bool initial, BoxPtr rect)
-    WRAPABLE_DEF_FUNC_RETURN(damageRect, initial, rect)
-
-
-
-
-
-
-
-
-
-
+    WRAPABLE_DEF (damageRect, initial, rect)
