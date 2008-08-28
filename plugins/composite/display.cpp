@@ -232,3 +232,9 @@ PrivateCompositeDisplay::handleEvent (XEvent *event)
 	    break;
     }
 }
+
+int
+CompositeDisplay::damageEvent ()
+{
+    return priv->damageEvent;
+}

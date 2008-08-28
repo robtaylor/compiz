@@ -30,6 +30,8 @@ class CompositeDisplay :
 	CompOption::Vector & getOptions ();
         bool setOption (const char *name, CompOption::Value &value);
 
+	int damageEvent ();
+
     private:
 	PrivateCompositeDisplay *priv;
 };
