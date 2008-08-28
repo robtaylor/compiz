@@ -21,6 +21,10 @@ libzoom_la_SOURCES = zoom.cpp
 # libminimize_la_LDFLAGS = -module -avoid-version -no-undefined
 # libminimize_la_SOURCES = minimize.cpp
 
+libdecor_la_DEPENDENCIES = \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
+
 libmove_la_LDFLAGS = -module -avoid-version -no-undefined
 libmove_la_LIBADD = \
 	$(top_builddir)/plugins/composite/libcomposite.la \
@@ -33,10 +37,18 @@ libresize_la_SOURCES = resize.cpp
 # libplace_la_LDFLAGS = -module -avoid-version -no-undefined
 # libplace_la_SOURCES = place.cpp
 
-libdecoration_la_DEPENDENCIES = $(top_builddir)/libdecoration/libdecoration.la
-libdecoration_la_LDFLAGS = -module -avoid-version -no-undefined
-libdecoration_la_LIBADD = $(top_builddir)/libdecoration/libdecoration.la
-libdecoration_la_SOURCES = decoration.cpp
+libdecor_la_DEPENDENCIES = \
+	$(top_builddir)/libdecoration/libdecoration.la \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
+
+libdecor_la_LDFLAGS = -module -avoid-version -no-undefined
+libdecor_la_LIBADD = \
+	$(top_builddir)/libdecoration/libdecoration.la \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
+
+libdecor_la_SOURCES = decor.cpp
 
 # libswitcher_la_LDFLAGS = -module -avoid-version -no-undefined
 # libswitcher_la_SOURCES = switcher.cpp
@@ -150,7 +162,8 @@ INCLUDES =					\
 moduledir = $(plugindir)
 
 module_LTLIBRARIES =		\
-	libmove.la
+	libmove.la		\
+	libdecor.la
 
 
 #module_LTLIBRARIES =		\

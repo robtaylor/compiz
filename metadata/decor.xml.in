@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="decoration">
+    <plugin name="decor">
 	<_short>Window Decoration</_short>
 	<_long>Window decorations</_long>
 	<feature>decorations</feature>
