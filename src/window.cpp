@@ -4644,11 +4644,10 @@ CompWindow::CompWindow (CompScreen *screen,
 	}
     }
 
-    screen->addChild (this);
-
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (CompPlugin::objectInitPlugins (this));
 
+    screen->addChild (this);
 
     recalcActions ();
     updateIconGeometry ();

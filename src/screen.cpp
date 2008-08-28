@@ -1215,11 +1215,10 @@ CompScreen::init (CompDisplay *display,
 
     priv->getDesktopHints ();
 
-    display->addChild (this);
-
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (CompPlugin::objectInitPlugins (this));
 
+    display->addChild (this);
 
 
     XQueryTree (dpy, priv->root,

@@ -811,10 +811,10 @@ CompDisplay::init (const char *name)
     priv->returnKeyCode =
 	XKeysymToKeycode (priv->dpy, XStringToKeysym ("Return"));
 
-    core->addChild (this);
-
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (CompPlugin::objectInitPlugins (this));
+
+    core->addChild (this);
 
     if (onlyCurrentScreen)
     {
