@@ -3272,9 +3272,9 @@ CompWindow::hide ()
 
 	if ((priv->state & CompWindowStateShadedMask) && priv->frame)
 	    XUnmapWindow (priv->screen->display ()->dpy (), priv->frame);
-
-	windowNotify (CompWindowNotifyHide);
     }
+
+    windowNotify (CompWindowNotifyHide);
 
     if (!priv->pendingMaps && priv->attrib.map_state != IsViewable)
 	return;
@@ -3322,13 +3322,14 @@ CompWindow::show ()
 		    priv->attrib.width, ++priv->attrib.height - 1,
 		    priv->attrib.border_width);
 
-	windowNotify (CompWindowNotifyShow);
 	return;
     }
     else
     {
 	priv->shaded = false;
     }
+
+    windowNotify (CompWindowNotifyShow);
 
     priv->pendingMaps++;
 
