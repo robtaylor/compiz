@@ -20,6 +20,9 @@ typedef std::list<CompDisplay *> CompDisplayList;
 extern CompCore     *core;
 extern CompMetadata *coreMetadata;
 
+#define GET_CORE_CORE(object) (dynamic_cast<CompCore *> (object))
+#define CORE_CORE(object) CompCore *c = GET_CORE_SCREEN (object)
+
 #define NOTIFY_CREATE_MASK (1 << 0)
 #define NOTIFY_DELETE_MASK (1 << 1)
 #define NOTIFY_MOVE_MASK   (1 << 2)
