@@ -916,10 +916,22 @@ CompDisplay::XRandr ()
     return priv->randrExtension;
 }
 
+int
+CompDisplay::randrEvent ()
+{
+    return priv->randrEvent;
+}
+
 bool
 CompDisplay::XShape ()
 {
     return priv->shapeExtension;
+}
+
+int
+CompDisplay::shapeEvent ()
+{
+    return priv->shapeEvent;
 }
 
 SnDisplay *

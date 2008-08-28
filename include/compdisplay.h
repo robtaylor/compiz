@@ -221,9 +221,13 @@ class CompDisplay : public WrapableHandler<DisplayInterface>, public CompObject 
 
 	bool
 	XRandr ();
+
+	int randrEvent ();
 	
 	bool
 	XShape ();
+
+	int shapeEvent ();
 
 	SnDisplay *
 	snDisplay ();
