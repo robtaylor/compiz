@@ -1288,6 +1288,8 @@ CompScreen::~CompScreen ()
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
 
+    removeFromParent ();
+    
     CompPlugin::objectFiniPlugins (this);
 
     XUngrabKey (priv->display->dpy (), AnyKey, AnyModifier, priv->root);

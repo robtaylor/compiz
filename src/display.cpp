@@ -705,6 +705,8 @@ CompDisplay::~CompDisplay ()
     while (!priv->screens.empty ())
 	removeScreen (priv->screens.front ());
 
+    removeFromParent ();
+
     CompPlugin::objectFiniPlugins (this);
 
     if (priv->snDisplay)

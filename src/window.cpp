@@ -4705,7 +4705,7 @@ CompWindow::~CompWindow ()
     if (priv->destroyed)
 	priv->screen->updateClientList ();
 
-    core->objectRemove (priv->screen, this);
+    removeFromParent ();
 
     CompPlugin::objectFiniPlugins (this);
 
