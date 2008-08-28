@@ -1682,7 +1682,7 @@ PrivateWindow::isGroupTransient (Window clientLeader)
 	}
     }
 
-    return true;
+    return false;
 }
 
 CompWindow *
