@@ -586,6 +586,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	bool alive ();
 
+	unsigned int mwmDecor ();
+	unsigned int mwmFunc ();
 
 	
 	static unsigned int

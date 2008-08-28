@@ -4857,3 +4857,14 @@ CompWindow::alive ()
     return priv->alive;
 }
 
+unsigned int
+CompWindow::mwmDecor ()
+{
+    return priv->mwmDecor;
+}
+
+unsigned int
+CompWindow::mwmFunc ()
+{
+    return priv->mwmFunc;
+}
