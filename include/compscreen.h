@@ -73,7 +73,7 @@ struct CompActiveWindowHistory {
     int    activeNum;
 };
 
-class ScreenInterface : public WrapableInterface<CompScreen> {
+class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
     public:
 	ScreenInterface ();
 

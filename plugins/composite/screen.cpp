@@ -99,7 +99,6 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompScreen      *s,
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
-    s->add (this);
     ScreenInterface::setHandler (s);
 }
 

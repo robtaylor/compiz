@@ -113,7 +113,6 @@ class DecorCore :
 	DecorCore (CompCore *c) :
 	    PrivateHandler<DecorCore,CompCore> (c)
 	{
-	    c->add (this);
 	    CoreInterface::setHandler (c);
 	}
 	

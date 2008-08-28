@@ -203,7 +203,7 @@ struct CompStruts {
     XRectangle bottom;
 };
 
-class WindowInterface : public WrapableInterface<CompWindow> {
+class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
     public:
 	WindowInterface ();
 

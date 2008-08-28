@@ -79,7 +79,6 @@ PrivateCompositeWindow::PrivateCompositeWindow (CompWindow      *w,
     sizeDamage (0),
     nDamage (0)
 {
-    w->add (this);
     WindowInterface::setHandler (w);
 }
 

@@ -36,7 +36,9 @@ class CompositeDisplay :
 	PrivateCompositeDisplay *priv;
 };
 
-class CompositeScreenInterface : public WrapableInterface<CompositeScreen> {
+class CompositeScreenInterface :
+    public WrapableInterface<CompositeScreen, CompositeScreenInterface>
+{
     public:
 	CompositeScreenInterface ();
 
@@ -123,7 +125,9 @@ class CompositeScreen :
 					  CompOption::Vector &options);
 };
 
-class CompositeWindowInterface : public WrapableInterface<CompositeWindow> {
+class CompositeWindowInterface :
+    public WrapableInterface<CompositeWindow, CompositeWindowInterface>
+{
     public:
 	CompositeWindowInterface ();
 

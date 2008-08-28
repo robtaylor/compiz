@@ -41,7 +41,7 @@ struct CompFileWatch {
     CompFileWatchHandle handle;
 };
 
-class CoreInterface : public WrapableInterface<CompCore> {
+class CoreInterface : public WrapableInterface<CompCore, CoreInterface> {
     public:
 	CoreInterface ();
 

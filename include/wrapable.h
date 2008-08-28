@@ -73,14 +73,22 @@
 #define WRAPABLE_INIT_HND(func) \
     mCurr_ ## func = 0
 
-template <typename T>
+template <typename T, typename T2>
 class WrapableInterface {
     protected:
 	WrapableInterface () : mHandler(0) {};
-	virtual ~WrapableInterface () {};
+	virtual ~WrapableInterface ()
+	{
+	    if (mHandler)
+		mHandler->unregisterWrap (static_cast<T2*> (this));
+	};
 
 	void setHandler (T *handler)
 	{
+	    if (mHandler)
+		mHandler->unregisterWrap (static_cast<T2*> (this));
+	    if (handler)
+		handler->registerWrap (static_cast<T2*> (this));
 	    mHandler = handler;
 	}
         T *mHandler;
@@ -89,8 +97,8 @@ class WrapableInterface {
 template <typename T>
 class WrapableHandler : public T {
     public:
-	void add (T *);
-	void remove (T *);
+	void registerWrap (T *);
+	void unregisterWrap (T *);
 	
     protected:
 	
@@ -98,13 +106,13 @@ class WrapableHandler : public T {
 };
 
 template <typename T>
-void WrapableHandler<T>::add (T *obj)
+void WrapableHandler<T>::registerWrap (T *obj)
 {
     ifce.insert (ifce.begin(), obj);
 };
 
 template <typename T>
-void WrapableHandler<T>::remove (T *obj)
+void WrapableHandler<T>::unregisterWrap (T *obj)
 {
     typename std::vector<T *>::iterator it;
     for (it = ifce.begin(); it != ifce.end(); it++)

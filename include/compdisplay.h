@@ -31,7 +31,9 @@ extern int pointerY;
 #define GET_CORE_DISPLAY(object) (dynamic_cast<CompDisplay *> (object))
 #define CORE_DISPLAY(object) CompDisplay *d = GET_CORE_DISPLAY (object)
 
-class DisplayInterface : public WrapableInterface<CompDisplay> {
+class DisplayInterface :
+    public WrapableInterface<CompDisplay, DisplayInterface>
+{
     public:
 	DisplayInterface ();
 

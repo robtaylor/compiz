@@ -45,10 +45,7 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     paint.xTranslate	= 0.0f;
     paint.yTranslate	= 0.0f;
 
-    w->add (this);
     WindowInterface::setHandler (w);
-
-    cWindow->add (this);
     CompositeWindowInterface::setHandler (cWindow);
 }
 

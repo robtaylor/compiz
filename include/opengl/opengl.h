@@ -169,7 +169,9 @@ extern GLScreenPaintAttrib defaultScreenPaintAttrib;
 
 class GLScreen;
 
-class GLScreenInterface : public WrapableInterface<GLScreen> {
+class GLScreenInterface :
+    public WrapableInterface<GLScreen, GLScreenInterface>
+{
     public:
 	GLScreenInterface ();
 
@@ -289,7 +291,9 @@ struct GLWindowPaintAttrib {
 
 class GLWindow;
 
-class GLWindowInterface : public WrapableInterface<GLWindow> {
+class GLWindowInterface :
+    public WrapableInterface<GLWindow, GLWindowInterface>
+{
     public:
 	GLWindowInterface ();
 

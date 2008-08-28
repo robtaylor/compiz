@@ -163,10 +163,7 @@ class MoveWindow :
 	    cWindow (CompositeWindow::get (window))
 	{
 	    if (gWindow)
-	    {
-		gWindow->add (this);
 		GLWindowInterface::setHandler (gWindow);
-	    }
 	};
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &, Region,
@@ -895,7 +892,6 @@ MoveDisplay::MoveDisplay (CompDisplay *d) :
     for (unsigned int i = 0; i < NUM_KEYS; i++)
 	key[i] = XKeysymToKeycode (d->dpy (), XStringToKeysym (mKeys[i].name));
  
-    display->add (this);
     DisplayInterface::setHandler (display);
 }
 

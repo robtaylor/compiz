@@ -1122,7 +1122,6 @@ DecorDisplay::DecorDisplay (CompDisplay *d) :
     decorAtom[DECOR_ACTIVE] =
 	XInternAtom (d->dpy (), DECOR_ACTIVE_ATOM_NAME, 0);
 
-    d->add (this);
     DisplayInterface::setHandler (d);
 }
 
@@ -1172,11 +1171,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     if (w->shaded () || w->attrib ().map_state == IsViewable)
 	update (true);
 
-    window->add (this);
     WindowInterface::setHandler (window);
-    cWindow->add (this);
     CompositeWindowInterface::setHandler (cWindow);
-    gWindow->add (this);
     GLWindowInterface::setHandler (gWindow);
 }
 
