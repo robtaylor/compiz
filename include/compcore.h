@@ -4,7 +4,7 @@
 #include <list>
 #include <boost/function.hpp>
 
-#include "wrapable.h"
+#include <compwrapsystem.h>
 
 #include <compoption.h>
 #include <compobject.h>
@@ -19,6 +19,9 @@ typedef std::list<CompDisplay *> CompDisplayList;
 
 extern CompCore     *core;
 extern CompMetadata *coreMetadata;
+
+#define GET_CORE_CORE(object) (dynamic_cast<CompCore *> (object))
+#define CORE_CORE(object) CompCore *c = GET_CORE_SCREEN (object)
 
 #define NOTIFY_CREATE_MASK (1 << 0)
 #define NOTIFY_DELETE_MASK (1 << 1)
@@ -38,25 +41,27 @@ struct CompFileWatch {
     CompFileWatchHandle handle;
 };
 
-class CoreInterface : public WrapableInterface<CompCore> {
+class CoreInterface : public WrapableInterface<CompCore, CoreInterface> {
     public:
-	CoreInterface ();
 
-    WRAPABLE_DEF(void, fileWatchAdded, CompFileWatch *)
-    WRAPABLE_DEF(void, fileWatchRemoved, CompFileWatch *)
+	virtual void fileWatchAdded (CompFileWatch *fw);
+	virtual void fileWatchRemoved (CompFileWatch *fw);
 
-    WRAPABLE_DEF(bool, initPluginForObject, CompPlugin *, CompObject *)
-    WRAPABLE_DEF(void, finiPluginForObject, CompPlugin *, CompObject *)
+	virtual bool initPluginForObject (CompPlugin *p, CompObject *o);
+	virtual void finiPluginForObject (CompPlugin *p, CompObject *o);
 
-    WRAPABLE_DEF(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOption::Value &)
+	virtual bool setOptionForPlugin (CompObject *o, const char *plugin,
+					 const char *name,
+					 CompOption::Value &v);
 
-    WRAPABLE_DEF(void, objectAdd, CompObject *, CompObject *)
-    WRAPABLE_DEF(void, objectRemove, CompObject *, CompObject *)
+	virtual void objectAdd (CompObject *parent, CompObject *child);
+	virtual void objectRemove (CompObject *parent, CompObject *child);
 
-    WRAPABLE_DEF(void, sessionEvent, CompSession::Event, CompOption::Vector &)
+	virtual void sessionEvent (CompSession::Event event,
+				   CompOption::Vector &options);
 };
 
-class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
+class CompCore : public WrapableHandler<CoreInterface, 8>, public CompObject {
 
     public:
 	class Timer {
@@ -144,18 +149,24 @@ class CompCore : public WrapableHandler<CoreInterface>, public CompObject {
 
         // Wrapable interface
 
-	WRAPABLE_HND(void, fileWatchAdded, CompFileWatch *)
-	WRAPABLE_HND(void, fileWatchRemoved, CompFileWatch *)
+	WRAPABLE_HND(0, CoreInterface, void, fileWatchAdded, CompFileWatch *)
+	WRAPABLE_HND(1, CoreInterface, void, fileWatchRemoved, CompFileWatch *)
 
-	WRAPABLE_HND(bool, initPluginForObject, CompPlugin *, CompObject *)
-	WRAPABLE_HND(void, finiPluginForObject, CompPlugin *, CompObject *)
+	WRAPABLE_HND(2, CoreInterface, bool, initPluginForObject,
+		     CompPlugin *, CompObject *)
+	WRAPABLE_HND(3, CoreInterface, void, finiPluginForObject,
+		     CompPlugin *, CompObject *)
 
-	WRAPABLE_HND(bool, setOptionForPlugin, CompObject *, const char *, const char *, CompOption::Value &)
+	WRAPABLE_HND(4, CoreInterface, bool, setOptionForPlugin, CompObject *,
+		     const char *, const char *, CompOption::Value &)
 
-	WRAPABLE_HND(void, objectAdd, CompObject *, CompObject *)
-	WRAPABLE_HND(void, objectRemove, CompObject *, CompObject *)
+	WRAPABLE_HND(5, CoreInterface, void, objectAdd,
+		     CompObject *, CompObject *)
+	WRAPABLE_HND(6, CoreInterface, void, objectRemove,
+		     CompObject *, CompObject *)
 
-	WRAPABLE_HND(void, sessionEvent, CompSession::Event, CompOption::Vector &)
+	WRAPABLE_HND(7, CoreInterface, void, sessionEvent, CompSession::Event,
+		     CompOption::Vector &)
 
 	friend class Timer;
     private:

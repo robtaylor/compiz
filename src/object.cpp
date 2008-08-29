@@ -63,7 +63,6 @@ CompObject::~CompObject ()
 	CompObject *o = priv->children.front ();
 	priv->children.pop_front ();
 	o->priv->parent = NULL;
-	core->objectRemove (this, o);
 	delete o;
     }
     if (priv->parent)
@@ -75,7 +74,6 @@ CompObject::~CompObject ()
 	if (it != priv->parent->priv->children.end ())
 	{
 	    priv->parent->priv->children.erase (it);
-	    core->objectRemove (priv->parent, this);
 	}
     }
     delete priv;
@@ -101,6 +99,25 @@ CompObject::addChild (CompObject *object)
     object->priv->parent = this;
     priv->children.push_back (object);
     core->objectAdd (this, object);
+}
+
+void
+CompObject::removeFromParent ()
+{
+    std::list<CompObject *>::iterator it;
+
+    if (priv->parent)
+    {
+	it = std::find (priv->parent->priv->children.begin (),
+			priv->parent->priv->children.end (),
+			this);
+
+	if (it != priv->parent->priv->children.end ())
+	{
+	    priv->parent->priv->children.erase (it);
+	    core->objectRemove (priv->parent, this);
+	}
+    }
 }
 
 bool

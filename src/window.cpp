@@ -571,7 +571,7 @@ void
 CompWindow::getAllowedActions (unsigned int *setActions,
 			       unsigned int *clearActions)
 {
-    WRAPABLE_HND_FUNC(getAllowedActions, setActions, clearActions)
+    WRAPABLE_HND_FUNC(1, getAllowedActions, setActions, clearActions)
     *setActions   = 0;
     *clearActions = 0;
 }
@@ -827,7 +827,7 @@ CompWindow::updateWindowOutputExtents ()
 void
 CompWindow::getOutputExtents (CompWindowExtents *output)
 {
-    WRAPABLE_HND_FUNC(getOutputExtents, output)
+    WRAPABLE_HND_FUNC(0, getOutputExtents, output)
     output->left   = 0;
     output->right  = 0;
     output->top    = 0;
@@ -1590,7 +1590,7 @@ CompWindow::syncPosition ()
 bool
 CompWindow::focus ()
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, focus)
+    WRAPABLE_HND_FUNC_RETURN(2, bool, focus)
 
     if (priv->attrib.override_redirect)
 	return false;
@@ -1619,31 +1619,31 @@ CompWindow::place (int        x,
 		   int        *newX,
 		   int        *newY)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, place, x, y, newX, newY)
+    WRAPABLE_HND_FUNC_RETURN(4, bool, place, x, y, newX, newY)
     return false;
 }
 
 void
 CompWindow::validateResizeRequest (unsigned int   *mask,
 				   XWindowChanges *xwc)
-    WRAPABLE_HND_FUNC(validateResizeRequest, mask, xwc)
+    WRAPABLE_HND_FUNC(5, validateResizeRequest, mask, xwc)
 
 void
 CompWindow::resizeNotify (int dx,
 			  int dy,
 			  int dwidth,
 			  int dheight)
-    WRAPABLE_HND_FUNC(resizeNotify, dx, dy, dwidth, dheight)
+    WRAPABLE_HND_FUNC(6, resizeNotify, dx, dy, dwidth, dheight)
 
 void
 CompWindow::moveNotify (int  dx,
 			int  dy,
 			bool immediate)
-    WRAPABLE_HND_FUNC(moveNotify, dx, dy, immediate)
+    WRAPABLE_HND_FUNC(7, moveNotify, dx, dy, immediate)
 
 void
 CompWindow::windowNotify (CompWindowNotify n)
-    WRAPABLE_HND_FUNC (windowNotify, n)
+    WRAPABLE_HND_FUNC (8, windowNotify, n)
 
 void
 CompWindow::grabNotify (int	       x,
@@ -1651,20 +1651,20 @@ CompWindow::grabNotify (int	       x,
 			unsigned int state,
 			unsigned int mask)
 {
-    WRAPABLE_HND_FUNC(grabNotify, x, y, state, mask)
+    WRAPABLE_HND_FUNC(9, grabNotify, x, y, state, mask)
     priv->grabbed = true;
 }
 
 void
 CompWindow::ungrabNotify ()
 {
-    WRAPABLE_HND_FUNC(ungrabNotify)
+    WRAPABLE_HND_FUNC(10, ungrabNotify)
     priv->grabbed = false;
 }
 
 void
 CompWindow::stateChangeNotify (unsigned int lastState)
-    WRAPABLE_HND_FUNC(stateChangeNotify, lastState);
+    WRAPABLE_HND_FUNC(11, stateChangeNotify, lastState);
 
 bool
 PrivateWindow::isGroupTransient (Window clientLeader)
@@ -1682,7 +1682,7 @@ PrivateWindow::isGroupTransient (Window clientLeader)
 	}
     }
 
-    return true;
+    return false;
 }
 
 CompWindow *
@@ -3064,7 +3064,7 @@ PrivateWindow::revealAncestors (CompWindow *w,
 void
 CompWindow::activate ()
 {
-    WRAPABLE_HND_FUNC(activate)
+    WRAPABLE_HND_FUNC(3, activate)
 
     priv->screen->setCurrentDesktop (priv->desktop);
 
@@ -3272,9 +3272,9 @@ CompWindow::hide ()
 
 	if ((priv->state & CompWindowStateShadedMask) && priv->frame)
 	    XUnmapWindow (priv->screen->display ()->dpy (), priv->frame);
-
-	windowNotify (CompWindowNotifyHide);
     }
+
+    windowNotify (CompWindowNotifyHide);
 
     if (!priv->pendingMaps && priv->attrib.map_state != IsViewable)
 	return;
@@ -3322,13 +3322,14 @@ CompWindow::show ()
 		    priv->attrib.width, ++priv->attrib.height - 1,
 		    priv->attrib.border_width);
 
-	windowNotify (CompWindowNotifyShow);
 	return;
     }
     else
     {
 	priv->shaded = false;
     }
+
+    windowNotify (CompWindowNotifyShow);
 
     priv->pendingMaps++;
 
@@ -3868,62 +3869,43 @@ CompWindow::getMovementForOffset (int offX,
 
 }
 
-WindowInterface::WindowInterface ()
-{
-    WRAPABLE_INIT_FUNC(getOutputExtents);
-    WRAPABLE_INIT_FUNC(getAllowedActions);
-
-    WRAPABLE_INIT_FUNC(focus);
-    WRAPABLE_INIT_FUNC(activate);
-    WRAPABLE_INIT_FUNC(place);
-    WRAPABLE_INIT_FUNC(validateResizeRequest);
-
-    WRAPABLE_INIT_FUNC(resizeNotify);
-    WRAPABLE_INIT_FUNC(moveNotify);
-    WRAPABLE_INIT_FUNC(windowNotify);
-    WRAPABLE_INIT_FUNC(grabNotify);
-    WRAPABLE_INIT_FUNC(ungrabNotify);
-
-    WRAPABLE_INIT_FUNC(stateChangeNotify);
-}
-
 void
 WindowInterface::getOutputExtents (CompWindowExtents *output)
-    WRAPABLE_DEF_FUNC(getOutputExtents, output)
+    WRAPABLE_DEF (getOutputExtents, output)
 
 void
 WindowInterface::getAllowedActions (unsigned int *setActions,
 				    unsigned int *clearActions)
-    WRAPABLE_DEF_FUNC(getAllowedActions, setActions, clearActions)
+    WRAPABLE_DEF (getAllowedActions, setActions, clearActions)
 
 bool
 WindowInterface::focus ()
-    WRAPABLE_DEF_FUNC_RETURN(focus)
+    WRAPABLE_DEF (focus)
 
 void
 WindowInterface::activate ()
-    WRAPABLE_DEF_FUNC(activate)
+    WRAPABLE_DEF (activate)
 
 bool
 WindowInterface::place (int x, int y, int *newX, int *newY)
-    WRAPABLE_DEF_FUNC_RETURN(place, x, y, newX, newY)
+    WRAPABLE_DEF (place, x, y, newX, newY)
 
 void
 WindowInterface::validateResizeRequest (unsigned int   *mask,
 					XWindowChanges *xwc)
-    WRAPABLE_DEF_FUNC(validateResizeRequest, mask, xwc)
+    WRAPABLE_DEF (validateResizeRequest, mask, xwc)
 
 void
 WindowInterface::resizeNotify (int dx, int dy, int dwidth, int dheight)
-    WRAPABLE_DEF_FUNC(resizeNotify, dx, dy, dwidth, dheight)
+    WRAPABLE_DEF (resizeNotify, dx, dy, dwidth, dheight)
 
 void
 WindowInterface::moveNotify (int dx, int dy, bool immediate)
-    WRAPABLE_DEF_FUNC(moveNotify, dx, dy, immediate)
+    WRAPABLE_DEF (moveNotify, dx, dy, immediate)
 
 void
 WindowInterface::windowNotify (CompWindowNotify n)
-    WRAPABLE_DEF_FUNC(windowNotify, n)
+    WRAPABLE_DEF (windowNotify, n)
 
 		
 void
@@ -3931,15 +3913,15 @@ WindowInterface::grabNotify (int x,
 			     int y,
 			     unsigned int state,
 			     unsigned int mask)
-    WRAPABLE_DEF_FUNC(grabNotify, x, y, state, mask)
+    WRAPABLE_DEF (grabNotify, x, y, state, mask)
 
 void
 WindowInterface::ungrabNotify ()
-    WRAPABLE_DEF_FUNC(ungrabNotify)
+    WRAPABLE_DEF (ungrabNotify)
 
 void
 WindowInterface::stateChangeNotify (unsigned int lastState)
-    WRAPABLE_DEF_FUNC(stateChangeNotify, lastState)
+    WRAPABLE_DEF (stateChangeNotify, lastState)
 
 Window
 CompWindow::id ()
@@ -4444,23 +4426,6 @@ CompWindow::CompWindow (CompScreen *screen,
 			Window     aboveId) :
    CompObject (COMP_OBJECT_TYPE_WINDOW, "window", &windowPrivateIndices)
 {
-
-    WRAPABLE_INIT_HND(getOutputExtents);
-    WRAPABLE_INIT_HND(getAllowedActions);
-
-    WRAPABLE_INIT_HND(focus);
-    WRAPABLE_INIT_HND(activate);
-    WRAPABLE_INIT_HND(place);
-    WRAPABLE_INIT_HND(validateResizeRequest);
-
-    WRAPABLE_INIT_HND(resizeNotify);
-    WRAPABLE_INIT_HND(moveNotify);
-    WRAPABLE_INIT_HND(windowNotify);
-    WRAPABLE_INIT_HND(grabNotify);
-    WRAPABLE_INIT_HND(ungrabNotify);
-
-    WRAPABLE_INIT_HND(stateChangeNotify);
-
     priv = new PrivateWindow (this, screen);
     assert (priv);
 
@@ -4644,11 +4609,10 @@ CompWindow::CompWindow (CompScreen *screen,
 	}
     }
 
-    screen->addChild (this);
-
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (CompPlugin::objectInitPlugins (this));
 
+    screen->addChild (this);
 
     recalcActions ();
     updateIconGeometry ();
@@ -4705,7 +4669,7 @@ CompWindow::~CompWindow ()
     if (priv->destroyed)
 	priv->screen->updateClientList ();
 
-    core->objectRemove (priv->screen, this);
+    removeFromParent ();
 
     CompPlugin::objectFiniPlugins (this);
 
@@ -4857,3 +4821,14 @@ CompWindow::alive ()
     return priv->alive;
 }
 
+unsigned int
+CompWindow::mwmDecor ()
+{
+    return priv->mwmDecor;
+}
+
+unsigned int
+CompWindow::mwmFunc ()
+{
+    return priv->mwmFunc;
+}

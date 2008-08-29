@@ -14,7 +14,7 @@
 #include <compsize.h>
 #include <comppoint.h>
 
-#include <wrapable.h>
+#include <compwrapsystem.h>
 
 class CompWindow;
 class CompIcon;
@@ -203,31 +203,35 @@ struct CompStruts {
     XRectangle bottom;
 };
 
-class WindowInterface : public WrapableInterface<CompWindow> {
+class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
     public:
-	WindowInterface ();
+	virtual void getOutputExtents (CompWindowExtents *output);
 
-	WRAPABLE_DEF(void, getOutputExtents, CompWindowExtents *);
-	WRAPABLE_DEF(void, getAllowedActions, unsigned int *,
-		     unsigned int *);
+	virtual void getAllowedActions (unsigned int *setActions,
+					unsigned int *clearActions);
 
-	WRAPABLE_DEF(bool, focus);
-	WRAPABLE_DEF(void, activate);
-	WRAPABLE_DEF(bool, place, int, int, int*, int*);
-	WRAPABLE_DEF(void, validateResizeRequest,
-		     unsigned int *, XWindowChanges *);
+	virtual bool focus ();
+	virtual void activate ();
+	virtual bool place (int x, int y, int *newX, int *newY);
 
-	WRAPABLE_DEF(void, resizeNotify, int, int, int, int);
-	WRAPABLE_DEF(void, moveNotify, int, int, bool);
-	WRAPABLE_DEF(void, windowNotify, CompWindowNotify);
-	WRAPABLE_DEF(void, grabNotify, int, int,
-		     unsigned int, unsigned int);
-	WRAPABLE_DEF(void, ungrabNotify);
-	WRAPABLE_DEF(void, stateChangeNotify, unsigned int);
+	virtual void validateResizeRequest (unsigned int   *mask,
+					    XWindowChanges *xwc);
 
+	virtual void resizeNotify (int dx, int dy, int dwidth, int dheight);
+	virtual void moveNotify (int dx, int dy, bool immediate);
+	virtual void windowNotify (CompWindowNotify n);
+	
+	virtual void grabNotify (int x, int y,
+				 unsigned int state, unsigned int mask);
+	virtual void ungrabNotify ();
+
+	virtual void stateChangeNotify (unsigned int lastState);
 };
 
-class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
+class CompWindow :
+    public WrapableHandler<WindowInterface, 12>,
+    public CompObject
+{
 
     public:
 
@@ -586,6 +590,8 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 
 	bool alive ();
 
+	unsigned int mwmDecor ();
+	unsigned int mwmFunc ();
 
 	
 	static unsigned int
@@ -602,23 +608,26 @@ class CompWindow : public WrapableHandler<WindowInterface>, public CompObject {
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-	WRAPABLE_HND(void, getOutputExtents, CompWindowExtents *);
-	WRAPABLE_HND(void, getAllowedActions, unsigned int *,
-		     unsigned int *);
+	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
+		      CompWindowExtents *);
+	WRAPABLE_HND (1, WindowInterface, void, getAllowedActions,
+		      unsigned int *, unsigned int *);
 
-	WRAPABLE_HND(bool, focus);
-	WRAPABLE_HND(void, activate);
-	WRAPABLE_HND(bool, place, int, int, int*, int*);
-	WRAPABLE_HND(void, validateResizeRequest,
-		     unsigned int *, XWindowChanges *);
+	WRAPABLE_HND (2, WindowInterface, bool, focus);
+	WRAPABLE_HND (3, WindowInterface, void, activate);
+	WRAPABLE_HND (4, WindowInterface, bool, place, int, int, int*, int*);
+	WRAPABLE_HND (5, WindowInterface, void, validateResizeRequest,
+		      unsigned int *, XWindowChanges *);
 
-	WRAPABLE_HND(void, resizeNotify, int, int, int, int);
-	WRAPABLE_HND(void, moveNotify, int, int, bool);
-	WRAPABLE_HND(void, windowNotify, CompWindowNotify);
-	WRAPABLE_HND(void, grabNotify, int, int,
-		     unsigned int, unsigned int);
-	WRAPABLE_HND(void, ungrabNotify);
-	WRAPABLE_HND(void, stateChangeNotify, unsigned int);
+	WRAPABLE_HND (6, WindowInterface, void, resizeNotify,
+		      int, int, int, int);
+	WRAPABLE_HND (7, WindowInterface, void, moveNotify, int, int, bool);
+	WRAPABLE_HND (8, WindowInterface, void, windowNotify, CompWindowNotify);
+	WRAPABLE_HND (9, WindowInterface, void, grabNotify, int, int,
+		      unsigned int, unsigned int);
+	WRAPABLE_HND (10, WindowInterface, void, ungrabNotify);
+	WRAPABLE_HND (11, WindowInterface, void, stateChangeNotify,
+		      unsigned int);
 
 	friend class PrivateWindow;
 	

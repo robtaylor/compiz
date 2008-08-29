@@ -47,6 +47,7 @@ class CompObject {
 	Type objectType ();
 
 	void addChild (CompObject *);
+	void removeFromParent ();
 
         bool forEachChild (CallBack proc,
 			   Type     type = COMP_OBJECT_TYPE_ALL);

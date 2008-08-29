@@ -77,7 +77,6 @@ PrivateCompositeDisplay::PrivateCompositeDisplay (CompDisplay      *d,
     opt (COMPOSITE_DISPLAY_OPTION_NUM)
 {
     // Wrap handleEvent
-    d->add (this);
     DisplayInterface::setHandler (d);
 }
 
@@ -231,4 +230,10 @@ PrivateCompositeDisplay::handleEvent (XEvent *event)
 	    }
 	    break;
     }
+}
+
+int
+CompositeDisplay::damageEvent ()
+{
+    return priv->damageEvent;
 }

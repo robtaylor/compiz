@@ -18,11 +18,6 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
 			    COMPIZ_COMPOSITE_ABI> (s),
     priv (new PrivateCompositeScreen (s, this))
 {
-    WRAPABLE_INIT_HND(preparePaint);
-    WRAPABLE_INIT_HND(donePaint);
-    WRAPABLE_INIT_HND(paint);
-    WRAPABLE_INIT_HND(getWindowPaintList);
-
     priv->tmpRegion = XCreateRegion ();
     if (!priv->tmpRegion)
     {
@@ -99,7 +94,6 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompScreen      *s,
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
-    s->add (this);
     ScreenInterface::setHandler (s);
 }
 
@@ -656,17 +650,17 @@ CompositeScreen::handlePaintTimeout ()
 
 void
 CompositeScreen::preparePaint (int msSinceLastPaint)
-    WRAPABLE_HND_FUNC(preparePaint, msSinceLastPaint)
+    WRAPABLE_HND_FUNC(0, preparePaint, msSinceLastPaint)
 
 void
 CompositeScreen::donePaint ()
-    WRAPABLE_HND_FUNC(donePaint)
+    WRAPABLE_HND_FUNC(1, donePaint)
 
 void
 CompositeScreen::paint (CompOutput::ptrList &outputs,
 		        unsigned int        mask)
 {
-    WRAPABLE_HND_FUNC(paint, outputs, mask)
+    WRAPABLE_HND_FUNC(2, paint, outputs, mask)
 
     if (priv->pHnd)
 	priv->pHnd->paintOutputs (outputs, mask, priv->tmpRegion);
@@ -675,7 +669,7 @@ CompositeScreen::paint (CompOutput::ptrList &outputs,
 CompWindowList
 CompositeScreen::getWindowPaintList ()
 {
-    WRAPABLE_HND_FUNC_RETURN (CompWindowList, getWindowPaintList)
+    WRAPABLE_HND_FUNC_RETURN (3, CompWindowList, getWindowPaintList)
 
     return priv->screen->windows ();
 }
@@ -733,28 +727,20 @@ CompositeScreen::toggleSlowAnimations (CompDisplay        *d,
     return true;
 }
 
-CompositeScreenInterface::CompositeScreenInterface ()
-{
-    WRAPABLE_INIT_FUNC(preparePaint);
-    WRAPABLE_INIT_FUNC(donePaint);
-    WRAPABLE_INIT_FUNC(paint);
-
-    WRAPABLE_INIT_FUNC(getWindowPaintList);
-}
 
 void
 CompositeScreenInterface::preparePaint (int msSinceLastPaint)
-    WRAPABLE_DEF_FUNC(preparePaint, msSinceLastPaint)
+    WRAPABLE_DEF (preparePaint, msSinceLastPaint)
 
 void
 CompositeScreenInterface::donePaint ()
-    WRAPABLE_DEF_FUNC(donePaint)
+    WRAPABLE_DEF (donePaint)
 
 void
 CompositeScreenInterface::paint (CompOutput::ptrList &outputs,
 				 unsigned int        mask)
-    WRAPABLE_DEF_FUNC(paint, outputs, mask)
+    WRAPABLE_DEF (paint, outputs, mask)
 
 CompWindowList
 CompositeScreenInterface::getWindowPaintList ()
-    WRAPABLE_DEF_FUNC_WITH_RETURN(CompWindowList (), getWindowPaintList)
+    WRAPABLE_DEF (getWindowPaintList)

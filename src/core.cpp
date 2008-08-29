@@ -72,15 +72,6 @@ CompCore::CompCore () :
 bool
 CompCore::init ()
 {
-    WRAPABLE_INIT_HND(fileWatchAdded);
-    WRAPABLE_INIT_HND(fileWatchRemoved);
-    WRAPABLE_INIT_HND(initPluginForObject);
-    WRAPABLE_INIT_HND(finiPluginForObject);
-    WRAPABLE_INIT_HND(setOptionForPlugin);
-    WRAPABLE_INIT_HND(objectAdd);
-    WRAPABLE_INIT_HND(objectRemove);
-    WRAPABLE_INIT_HND(sessionEvent);
-
     CompPlugin *corePlugin = CompPlugin::load ("core");
     if (!corePlugin)
     {
@@ -480,22 +471,22 @@ PrivateCore::handleTimers (struct timeval *tv)
 
 void
 CompCore::fileWatchAdded (CompFileWatch *watch)
-    WRAPABLE_HND_FUNC(fileWatchAdded, watch)
+    WRAPABLE_HND_FUNC(0, fileWatchAdded, watch)
 
 void
 CompCore::fileWatchRemoved (CompFileWatch *watch)
-    WRAPABLE_HND_FUNC(fileWatchRemoved, watch)
+    WRAPABLE_HND_FUNC(1, fileWatchRemoved, watch)
 
 bool
 CompCore::initPluginForObject (CompPlugin *plugin, CompObject *object)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, initPluginForObject, plugin, object)
+    WRAPABLE_HND_FUNC_RETURN(2, bool, initPluginForObject, plugin, object)
     return true;
 }
 
 void
 CompCore::finiPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_HND_FUNC(finiPluginForObject, plugin, object)
+    WRAPABLE_HND_FUNC(3, finiPluginForObject, plugin, object)
 
 	
 bool
@@ -504,7 +495,7 @@ CompCore::setOptionForPlugin (CompObject        *object,
 			      const char        *name,
 			      CompOption::Value &value)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, setOptionForPlugin,
+    WRAPABLE_HND_FUNC_RETURN(4, bool, setOptionForPlugin,
 			     object, plugin, name, value)
 
     CompPlugin *p = CompPlugin::find (plugin);
@@ -516,45 +507,33 @@ CompCore::setOptionForPlugin (CompObject        *object,
 
 void
 CompCore::objectAdd (CompObject *parent, CompObject *object)
-    WRAPABLE_HND_FUNC(objectAdd, parent, object)
+    WRAPABLE_HND_FUNC(5, objectAdd, parent, object)
 
 
 void
 CompCore::objectRemove (CompObject *parent, CompObject *object)
-    WRAPABLE_HND_FUNC(objectRemove, parent, object)
+    WRAPABLE_HND_FUNC(6, objectRemove, parent, object)
 
 void
 CompCore::sessionEvent (CompSession::Event event,
 			CompOption::Vector &arguments)
-    WRAPABLE_HND_FUNC(sessionEvent, event, arguments)
-
-CoreInterface::CoreInterface ()
-{
-    WRAPABLE_INIT_FUNC(fileWatchAdded);
-    WRAPABLE_INIT_FUNC(fileWatchRemoved);
-    WRAPABLE_INIT_FUNC(initPluginForObject);
-    WRAPABLE_INIT_FUNC(finiPluginForObject);
-    WRAPABLE_INIT_FUNC(setOptionForPlugin);
-    WRAPABLE_INIT_FUNC(objectAdd);
-    WRAPABLE_INIT_FUNC(objectRemove);
-    WRAPABLE_INIT_FUNC(sessionEvent);
-}
+    WRAPABLE_HND_FUNC(7, sessionEvent, event, arguments)
 
 void
 CoreInterface::fileWatchAdded (CompFileWatch *watch)
-    WRAPABLE_DEF_FUNC(fileWatchAdded, watch)
+    WRAPABLE_DEF (fileWatchAdded, watch)
 
 void
 CoreInterface::fileWatchRemoved (CompFileWatch *watch)
-    WRAPABLE_DEF_FUNC(fileWatchRemoved, watch)
+    WRAPABLE_DEF (fileWatchRemoved, watch)
 
 bool
 CoreInterface::initPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_DEF_FUNC_RETURN(initPluginForObject, plugin, object)
+    WRAPABLE_DEF (initPluginForObject, plugin, object)
 
 void
 CoreInterface::finiPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_DEF_FUNC(finiPluginForObject, plugin, object)
+    WRAPABLE_DEF (finiPluginForObject, plugin, object)
 
 	
 bool
@@ -562,21 +541,20 @@ CoreInterface::setOptionForPlugin (CompObject        *object,
 				   const char        *plugin,
 				   const char	     *name,
 				   CompOption::Value &value)
-    WRAPABLE_DEF_FUNC_RETURN(setOptionForPlugin,
-			     object, plugin, name, value)
+    WRAPABLE_DEF (setOptionForPlugin, object, plugin, name, value)
 
 void
 CoreInterface::objectAdd (CompObject *parent, CompObject *object)
-    WRAPABLE_DEF_FUNC(objectAdd, parent, object)
+    WRAPABLE_DEF (objectAdd, parent, object)
 
 void
 CoreInterface::objectRemove (CompObject *parent, CompObject *object)
-    WRAPABLE_DEF_FUNC(objectRemove, parent, object)
+    WRAPABLE_DEF (objectRemove, parent, object)
 
 void
 CoreInterface::sessionEvent (CompSession::Event event,
 			     CompOption::Vector &arguments)
-    WRAPABLE_DEF_FUNC(sessionEvent, event, arguments)
+    WRAPABLE_DEF (sessionEvent, event, arguments)
 
 	
 PrivateCore::PrivateCore (CompCore *core) :

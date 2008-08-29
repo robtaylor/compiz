@@ -30,24 +30,27 @@ class CompositeDisplay :
 	CompOption::Vector & getOptions ();
         bool setOption (const char *name, CompOption::Value &value);
 
+	int damageEvent ();
+
     private:
 	PrivateCompositeDisplay *priv;
 };
 
-class CompositeScreenInterface : public WrapableInterface<CompositeScreen> {
+class CompositeScreenInterface :
+    public WrapableInterface<CompositeScreen, CompositeScreenInterface>
+{
     public:
-	CompositeScreenInterface ();
 
-	WRAPABLE_DEF(void, preparePaint, int);
-	WRAPABLE_DEF(void, donePaint);
-	WRAPABLE_DEF(void, paint, CompOutput::ptrList &outputs, unsigned int);
+	virtual void preparePaint (int);
+	virtual void donePaint ();
+	virtual void paint (CompOutput::ptrList &outputs, unsigned int);
 
-	WRAPABLE_DEF(CompWindowList, getWindowPaintList);
+	virtual CompWindowList getWindowPaintList ();
 };
 
 
 class CompositeScreen :
-    public WrapableHandler<CompositeScreenInterface>,
+    public WrapableHandler<CompositeScreenInterface, 4>,
     public CompositePrivateHandler<CompositeScreen, CompScreen,
 				   COMPIZ_COMPOSITE_ABI>
 {
@@ -103,11 +106,13 @@ class CompositeScreen :
 	
 	bool handlePaintTimeout ();
 
-	WRAPABLE_HND(void, preparePaint, int);
-	WRAPABLE_HND(void, donePaint);
-	WRAPABLE_HND(void, paint, CompOutput::ptrList &outputs, unsigned int);
+	WRAPABLE_HND (0, CompositeScreenInterface, void, preparePaint, int);
+	WRAPABLE_HND (1, CompositeScreenInterface, void, donePaint);
+	WRAPABLE_HND (2, CompositeScreenInterface, void, paint,
+		      CompOutput::ptrList &outputs, unsigned int);
 
-	WRAPABLE_HND(CompWindowList, getWindowPaintList);
+	WRAPABLE_HND (3, CompositeScreenInterface, CompWindowList,
+		      getWindowPaintList);
 
 	friend class PrivateCompositeDisplay;
 
@@ -121,15 +126,15 @@ class CompositeScreen :
 					  CompOption::Vector &options);
 };
 
-class CompositeWindowInterface : public WrapableInterface<CompositeWindow> {
+class CompositeWindowInterface :
+    public WrapableInterface<CompositeWindow, CompositeWindowInterface>
+{
     public:
-	CompositeWindowInterface ();
-
-	WRAPABLE_DEF(bool, damageRect, bool, BoxPtr);
+	virtual bool damageRect (bool, BoxPtr);
 };
 
 class CompositeWindow :
-    public WrapableHandler<CompositeWindowInterface>,
+    public WrapableHandler<CompositeWindowInterface, 1>,
     public CompositePrivateHandler<CompositeWindow, CompWindow,
 				   COMPIZ_COMPOSITE_ABI>
 {
@@ -169,7 +174,8 @@ class CompositeWindow :
 	unsigned short brightness ();
 	unsigned short saturation ();
 
-	WRAPABLE_HND(bool, damageRect, bool, BoxPtr);
+	WRAPABLE_HND (0, CompositeWindowInterface, bool, damageRect,
+		      bool, BoxPtr);
 
 	friend class PrivateCompositeWindow;
 	friend class CompositeScreen;

@@ -959,16 +959,15 @@ PrivateDisplay::handleActionEvent (XEvent *event)
 }
 
 void
-CompDisplay::handleCompizEvent (const char  *plugin,
-				const char  *event,
-				CompOption  *option,
-				int         nOption)
-    WRAPABLE_HND_FUNC(handleCompizEvent, plugin, event, option, nOption)
+CompDisplay::handleCompizEvent (const char         *plugin,
+				const char         *event,
+				CompOption::Vector &options)
+    WRAPABLE_HND_FUNC(1, handleCompizEvent, plugin, event, options)
 
 void
 CompDisplay::handleEvent (XEvent *event)
 {
-    WRAPABLE_HND_FUNC(handleEvent, event)
+    WRAPABLE_HND_FUNC(0, handleEvent, event)
 
     CompScreen *s;
     CompWindow *w;

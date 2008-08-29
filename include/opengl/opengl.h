@@ -169,29 +169,28 @@ extern GLScreenPaintAttrib defaultScreenPaintAttrib;
 
 class GLScreen;
 
-class GLScreenInterface : public WrapableInterface<GLScreen> {
+class GLScreenInterface :
+    public WrapableInterface<GLScreen, GLScreenInterface>
+{
     public:
-	GLScreenInterface ();
+	virtual bool glPaintOutput (const GLScreenPaintAttrib &,
+				    const GLMatrix &, Region, CompOutput *,
+				    unsigned int);
+	virtual void glPaintTransformedOutput (const GLScreenPaintAttrib &,
+					       const GLMatrix &, Region,
+					       CompOutput *, unsigned int);
+	virtual void glApplyTransform (const GLScreenPaintAttrib &,
+				       CompOutput *, GLMatrix *);
 
-	WRAPABLE_DEF(bool, glPaintOutput, const GLScreenPaintAttrib &,
-		     const GLMatrix &, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_DEF(void, glPaintTransformedOutput,
-		     const GLScreenPaintAttrib &,
-		     const GLMatrix &, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_DEF(void, glApplyTransform, const GLScreenPaintAttrib &,
-		     CompOutput *, GLMatrix *);
-
-	WRAPABLE_DEF(void, glEnableOutputClipping, const GLMatrix &,
-		     Region, CompOutput *);
-	WRAPABLE_DEF(void, glDisableOutputClipping);
+	virtual void glEnableOutputClipping (const GLMatrix &, Region,
+					     CompOutput *);
+	virtual void glDisableOutputClipping ();
 
 };
 
 
 class GLScreen :
-    public WrapableHandler<GLScreenInterface>,
+    public WrapableHandler<GLScreenInterface, 5>,
     public OpenGLPrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
 {
     public:
@@ -230,19 +229,19 @@ class GLScreen :
 	
 	GLFBConfig * glxPixmapFBConfig (unsigned int depth);
 
-	WRAPABLE_HND(bool, glPaintOutput, const GLScreenPaintAttrib &,
-		     const GLMatrix &, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_HND(void, glPaintTransformedOutput,
-		     const GLScreenPaintAttrib &,
-		     const GLMatrix &, Region, CompOutput *,
-		     unsigned int);
-	WRAPABLE_HND(void, glApplyTransform, const GLScreenPaintAttrib &,
-		     CompOutput *, GLMatrix *);
+	WRAPABLE_HND (0, GLScreenInterface, bool, glPaintOutput,
+		      const GLScreenPaintAttrib &, const GLMatrix &, Region,
+		      CompOutput *, unsigned int);
+	WRAPABLE_HND (1, GLScreenInterface, void, glPaintTransformedOutput,
+		      const GLScreenPaintAttrib &,
+		      const GLMatrix &, Region, CompOutput *,
+		      unsigned int);
+	WRAPABLE_HND (2, GLScreenInterface, void, glApplyTransform,
+		      const GLScreenPaintAttrib &, CompOutput *, GLMatrix *);
 
-	WRAPABLE_HND(void, glEnableOutputClipping, const GLMatrix &,
-		     Region, CompOutput *);
-	WRAPABLE_HND(void, glDisableOutputClipping);
+	WRAPABLE_HND (3, GLScreenInterface, void, glEnableOutputClipping,
+		      const GLMatrix &, Region, CompOutput *);
+	WRAPABLE_HND (4, GLScreenInterface, void, glDisableOutputClipping);
 
 	GLXBindTexImageProc      bindTexImage;
 	GLXReleaseTexImageProc   releaseTexImage;
@@ -289,27 +288,50 @@ struct GLWindowPaintAttrib {
 
 class GLWindow;
 
-class GLWindowInterface : public WrapableInterface<GLWindow> {
+class GLWindowInterface :
+    public WrapableInterface<GLWindow, GLWindowInterface>
+{
     public:
-	GLWindowInterface ();
-
-	WRAPABLE_DEF(bool, glPaint, const GLWindowPaintAttrib &,
-		     const GLMatrix &, Region, unsigned int);
-	WRAPABLE_DEF(bool, glDraw, const GLMatrix &,
-		     GLFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_DEF(void, glAddGeometry, GLTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_DEF(void, glDrawTexture, GLTexture *texture,
-		     GLFragment::Attrib &, unsigned int);
-	WRAPABLE_DEF(void, glDrawGeometry);
+	virtual bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
+			      Region, unsigned int);
+	virtual bool glDraw (const GLMatrix &, GLFragment::Attrib &, Region,
+			     unsigned int);
+	virtual void glAddGeometry (GLTexture::Matrix *matrix, int, Region,
+				    Region);
+	virtual void glDrawTexture (GLTexture *texture, GLFragment::Attrib &,
+				    unsigned int);
+	virtual void glDrawGeometry ();
 };
 
 class GLWindow :
-    public WrapableHandler<GLWindowInterface>,
+    public WrapableHandler<GLWindowInterface, 5>,
     public OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
 {
-	public:
-	    static GLWindowPaintAttrib defaultPaintAttrib;
+    public:
+
+	class Geometry {
+	    public:
+		Geometry ();
+		~Geometry ();
+
+		void reset ();
+		
+		bool moreVertices (int newSize);
+		bool moreIndices (int newSize);
+
+	    public:
+		GLfloat  *vertices;
+		int      vertexSize;
+		int      vertexStride;
+		GLushort *indices;
+		int      indexSize;
+		int      vCount;
+		int      texUnits;
+		int      texCoordSize;
+		int      indexCount;
+	};
+	
+	static GLWindowPaintAttrib defaultPaintAttrib;
     public:
 
 	GLWindow (CompWindow *w);
@@ -319,24 +341,23 @@ class GLWindow :
 
 	GLWindowPaintAttrib & paintAttrib ();
 
-	bool moreVertices (int newSize);
-
-	bool moreIndices (int newSize);
-
 	bool bind ();
 	void release ();
 
 	void updatePaintAttribs ();
 
-	WRAPABLE_HND(bool, glPaint, const GLWindowPaintAttrib &,
-		     const GLMatrix &, Region, unsigned int);
-	WRAPABLE_HND(bool, glDraw, const GLMatrix &,
-		     GLFragment::Attrib &, Region, unsigned int);
-	WRAPABLE_HND(void, glAddGeometry, GLTexture::Matrix *matrix,
-		     int, Region, Region);
-	WRAPABLE_HND(void, glDrawTexture, GLTexture *texture,
-		     GLFragment::Attrib &, unsigned int);
-	WRAPABLE_HND(void, glDrawGeometry);
+	Geometry & geometry ();
+
+	WRAPABLE_HND (0, GLWindowInterface, bool, glPaint,
+		      const GLWindowPaintAttrib &, const GLMatrix &, Region,
+		      unsigned int);
+	WRAPABLE_HND (1, GLWindowInterface, bool, glDraw, const GLMatrix &,
+		      GLFragment::Attrib &, Region, unsigned int);
+	WRAPABLE_HND (2, GLWindowInterface, void, glAddGeometry,
+		      GLTexture::Matrix *matrix, int, Region, Region);
+	WRAPABLE_HND (3, GLWindowInterface, void, glDrawTexture,
+		      GLTexture *texture, GLFragment::Attrib &, unsigned int);
+	WRAPABLE_HND (4, GLWindowInterface, void, glDrawGeometry);
 
     private:
 	PrivateGLWindow *priv;

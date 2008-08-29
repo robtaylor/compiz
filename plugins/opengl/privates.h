@@ -169,15 +169,7 @@ class PrivateGLWindow :
 
 	unsigned int lastMask;
 
-	GLfloat  *vertices;
-	int      vertexSize;
-	int      vertexStride;
-	GLushort *indices;
-	int      indexSize;
-	int      vCount;
-	int      texUnits;
-	int      texCoordSize;
-	int      indexCount;
+	GLWindow::Geometry geometry;
 };
 
 

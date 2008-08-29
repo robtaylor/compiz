@@ -25,12 +25,6 @@ GLScreen::GLScreen (CompScreen *s) :
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     XWindowAttributes    attr;
 
-    WRAPABLE_INIT_HND(glPaintOutput);
-    WRAPABLE_INIT_HND(glPaintTransformedOutput);
-    WRAPABLE_INIT_HND(glApplyTransform);
-    WRAPABLE_INIT_HND(glEnableOutputClipping);
-    WRAPABLE_INIT_HND(glDisableOutputClipping);
-
     priv->tmpRegion = XCreateRegion ();
     if (!priv->tmpRegion)
     {
@@ -794,24 +788,13 @@ GLScreen::makeCurrent ()
     priv->pendingCommands = true;
 }
 
-GLScreenInterface::GLScreenInterface ()
-{
-    WRAPABLE_INIT_FUNC(glPaintOutput);
-    WRAPABLE_INIT_FUNC(glPaintTransformedOutput);
-    WRAPABLE_INIT_FUNC(glEnableOutputClipping);
-    WRAPABLE_INIT_FUNC(glDisableOutputClipping);
-    WRAPABLE_INIT_FUNC(glApplyTransform);
-}
-
-
 bool
 GLScreenInterface::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 			          const GLMatrix            &transform,
 			          Region                    region,
 			          CompOutput                *output,
 			          unsigned int              mask)
-    WRAPABLE_DEF_FUNC_RETURN(glPaintOutput, sAttrib, transform, region,
-			     output, mask)
+    WRAPABLE_DEF (glPaintOutput, sAttrib, transform, region, output, mask)
 
 void
 GLScreenInterface::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
@@ -819,24 +802,24 @@ GLScreenInterface::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 					     Region                    region,
 					     CompOutput                *output,
 					     unsigned int              mask)
-    WRAPABLE_DEF_FUNC(glPaintTransformedOutput, sAttrib, transform, region,
-		      output, mask)
+    WRAPABLE_DEF (glPaintTransformedOutput, sAttrib, transform, region,
+		  output, mask)
 
 void
 GLScreenInterface::glApplyTransform (const GLScreenPaintAttrib &sAttrib,
 				     CompOutput                *output,
 				     GLMatrix                  *transform)
-    WRAPABLE_DEF_FUNC(glApplyTransform, sAttrib, output, transform)
+    WRAPABLE_DEF (glApplyTransform, sAttrib, output, transform)
 
 void
 GLScreenInterface::glEnableOutputClipping (const GLMatrix &transform,
 				           Region         region,
 				           CompOutput     *output)
-    WRAPABLE_DEF_FUNC(glEnableOutputClipping, transform, region, output)
+    WRAPABLE_DEF (glEnableOutputClipping, transform, region, output)
 
 void
 GLScreenInterface::glDisableOutputClipping ()
-    WRAPABLE_DEF_FUNC(glDisableOutputClipping)
+    WRAPABLE_DEF (glDisableOutputClipping)
 
 int
 GLScreen::maxTextureSize ()

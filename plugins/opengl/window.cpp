@@ -4,12 +4,6 @@ GLWindow::GLWindow (CompWindow *w) :
     OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI> (w),
     priv (new PrivateGLWindow (w, this))
 {
-    WRAPABLE_INIT_HND(glPaint);
-    WRAPABLE_INIT_HND(glDraw);
-    WRAPABLE_INIT_HND(glAddGeometry);
-    WRAPABLE_INIT_HND(glDrawTexture);
-    WRAPABLE_INIT_HND(glDrawGeometry);
-
     priv->clip = XCreateRegion ();
     assert (priv->clip);
 
@@ -38,38 +32,21 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     texture (screen),
     clip (0),
     bindFailed (false),
-    vertices (0),
-    vertexSize (0),
-    vertexStride (0),
-    indices (0),
-    indexSize (0),
-    vCount (0),
-    texUnits (0),
-    texCoordSize (2),
-    indexCount (0)
+    geometry ()
 {
     paint.xScale	= 1.0f;
     paint.yScale	= 1.0f;
     paint.xTranslate	= 0.0f;
     paint.yTranslate	= 0.0f;
 
-    w->add (this);
     WindowInterface::setHandler (w);
-
-    cWindow->add (this);
     CompositeWindowInterface::setHandler (cWindow);
 }
 
 PrivateGLWindow::~PrivateGLWindow ()
 {
-	
     if (clip)
 	XDestroyRegion (clip);
-		if (vertices)
-	free (vertices);
-
-    if (indices)
-	free (indices);
 }
 
 void
@@ -112,47 +89,36 @@ GLWindow::release ()
     }
 }
 
-GLWindowInterface::GLWindowInterface ()
-{
-    WRAPABLE_INIT_FUNC(glPaint);
-    WRAPABLE_INIT_FUNC(glDraw);
-    WRAPABLE_INIT_FUNC(glAddGeometry);
-    WRAPABLE_INIT_FUNC(glDrawTexture);
-    WRAPABLE_INIT_FUNC(glDrawGeometry);
-
-}
-
-
 bool
 GLWindowInterface::glPaint (const GLWindowPaintAttrib &attrib,
 			    const GLMatrix            &transform,
 			    Region                    region,
 			    unsigned int              mask)
-    WRAPABLE_DEF_FUNC_RETURN(glPaint, attrib, transform, region, mask)
+    WRAPABLE_DEF (glPaint, attrib, transform, region, mask)
 
 bool
 GLWindowInterface::glDraw (const GLMatrix     &transform,
 			   GLFragment::Attrib &fragment,
 			   Region             region,
 			   unsigned int       mask)
-    WRAPABLE_DEF_FUNC_RETURN(glDraw, transform, fragment, region, mask)
+    WRAPABLE_DEF (glDraw, transform, fragment, region, mask)
 
 void
 GLWindowInterface::glAddGeometry (GLTexture::Matrix *matrix,
 				  int	            nMatrix,
 				  Region	    region,
 				  Region	    clip)
-    WRAPABLE_DEF_FUNC(glAddGeometry, matrix, nMatrix, region, clip)
+    WRAPABLE_DEF (glAddGeometry, matrix, nMatrix, region, clip)
 
 void
 GLWindowInterface::glDrawTexture (GLTexture          *texture,
 				  GLFragment::Attrib &fragment,
 				  unsigned int       mask)
-    WRAPABLE_DEF_FUNC(glDrawTexture, texture, fragment, mask)
+    WRAPABLE_DEF (glDrawTexture, texture, fragment, mask)
 
 void
 GLWindowInterface::glDrawGeometry ()
-    WRAPABLE_DEF_FUNC(glDrawGeometry)
+    WRAPABLE_DEF (glDrawGeometry)
 
 Region
 GLWindow::clip ()
@@ -224,4 +190,76 @@ PrivateGLWindow::damageRect (bool initial, BoxPtr box)
 {
     texture.damage ();
     return cWindow->damageRect (initial, box);
+}
+
+GLWindow::Geometry &
+GLWindow::geometry ()
+{
+    return priv->geometry;
+}
+
+GLWindow::Geometry::Geometry () :
+    vertices (NULL),
+    vertexSize (0),
+    vertexStride (0),
+    indices (NULL),
+    indexSize (0),
+    vCount (0),
+    texUnits (0),
+    texCoordSize (0),
+    indexCount (0)
+{
+}
+
+GLWindow::Geometry::~Geometry ()
+{
+    if (vertices)
+	free (vertices);
+
+    if (indices)
+	free (indices);
+}
+
+void
+GLWindow::Geometry::reset ()
+{
+    vCount = indexCount = 0;
+}
+
+bool
+GLWindow::Geometry::moreVertices (int newSize)
+{
+    if (newSize > vertexSize)
+    {
+	GLfloat *nVertices;
+
+	nVertices = (GLfloat *)
+	    realloc (vertices, sizeof (GLfloat) * newSize);
+	if (!nVertices)
+	    return false;
+
+	vertices = nVertices;
+	vertexSize = newSize;
+    }
+
+    return true;
+}
+
+bool
+GLWindow::Geometry::moreIndices (int newSize)
+{
+    if (newSize > indexSize)
+    {
+	GLushort *nIndices;
+
+	nIndices = (GLushort *)
+	    realloc (indices, sizeof (GLushort) * newSize);
+	if (!nIndices)
+	    return false;
+
+	indices = nIndices;
+	indexSize = newSize;
+    }
+
+    return true;
 }

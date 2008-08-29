@@ -6,7 +6,7 @@ xml_in_files =		  \
 	clone.xml.in	  \
 	cube.xml.in	  \
 	dbus.xml.in	  \
-	decoration.xml.in \
+	decor.xml.in      \
 	fade.xml.in	  \
 	fs.xml.in	  \
 	gconf.xml.in	  \

@@ -686,15 +686,6 @@ CompDisplay::addScreenActions (CompScreen *s)
 CompDisplay::CompDisplay () :
     CompObject (COMP_OBJECT_TYPE_DISPLAY, "display", &displayPrivateIndices)
 {
-    WRAPABLE_INIT_HND(handleEvent);
-    WRAPABLE_INIT_HND(handleCompizEvent);
-    WRAPABLE_INIT_HND(fileToImage);
-    WRAPABLE_INIT_HND(imageToFile);
-    WRAPABLE_INIT_HND(matchInitExp);
-    WRAPABLE_INIT_HND(matchExpHandlerChanged);
-    WRAPABLE_INIT_HND(matchPropertyChanged);
-    WRAPABLE_INIT_HND(logMessage);
-
     priv = new PrivateDisplay (this);
     assert (priv);
 }
@@ -704,6 +695,8 @@ CompDisplay::~CompDisplay ()
 {
     while (!priv->screens.empty ())
 	removeScreen (priv->screens.front ());
+
+    removeFromParent ();
 
     CompPlugin::objectFiniPlugins (this);
 
@@ -809,10 +802,10 @@ CompDisplay::init (const char *name)
     priv->returnKeyCode =
 	XKeysymToKeycode (priv->dpy, XStringToKeysym ("Return"));
 
-    core->addChild (this);
-
     /* TODO: bailout properly when objectInitPlugins fails */
     assert (CompPlugin::objectInitPlugins (this));
+
+    core->addChild (this);
 
     if (onlyCurrentScreen)
     {
@@ -916,10 +909,22 @@ CompDisplay::XRandr ()
     return priv->randrExtension;
 }
 
+int
+CompDisplay::randrEvent ()
+{
+    return priv->randrEvent;
+}
+
 bool
 CompDisplay::XShape ()
 {
     return priv->shapeExtension;
+}
+
+int
+CompDisplay::shapeEvent ()
+{
+    return priv->shapeEvent;
 }
 
 SnDisplay *
@@ -1848,7 +1853,7 @@ CompDisplay::fileToImage (const char *path,
 			       int	  *stride,
 			       void	  **data)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, fileToImage, path, name, width, height,
+    WRAPABLE_HND_FUNC_RETURN(2, bool, fileToImage, path, name, width, height,
 			     stride, data)
     return false;
 }
@@ -1862,7 +1867,7 @@ CompDisplay::imageToFile (const char *path,
 			  int	     stride,
 			  void	     *data)
 {
-    WRAPABLE_HND_FUNC_RETURN(bool, imageToFile, path, name, format, width,
+    WRAPABLE_HND_FUNC_RETURN(3, bool, imageToFile, path, name, format, width,
 			     height, stride, data)
     return false;
 }
@@ -1872,7 +1877,7 @@ CompDisplay::logMessage (const char   *componentName,
 			 CompLogLevel level,
 			 const char   *message)
 {
-    WRAPABLE_HND_FUNC(logMessage, componentName, level, message)
+    WRAPABLE_HND_FUNC(7, logMessage, componentName, level, message)
     compLogMessage (NULL, componentName, level, message);
 }
 
@@ -2309,29 +2314,15 @@ CompDisplay::setWindowProp32 (Window         id,
 		     (unsigned char *) &value32, 1);
 }
 
-
-DisplayInterface::DisplayInterface ()
-{
-    WRAPABLE_INIT_FUNC(handleEvent);
-    WRAPABLE_INIT_FUNC(handleCompizEvent);
-    WRAPABLE_INIT_FUNC(fileToImage);
-    WRAPABLE_INIT_FUNC(imageToFile);
-    WRAPABLE_INIT_FUNC(matchInitExp);
-    WRAPABLE_INIT_FUNC(matchExpHandlerChanged);
-    WRAPABLE_INIT_FUNC(matchPropertyChanged);
-    WRAPABLE_INIT_FUNC(logMessage);
-}
-
 void
 DisplayInterface::handleEvent (XEvent *event)
-    WRAPABLE_DEF_FUNC(handleEvent, event)
+    WRAPABLE_DEF (handleEvent, event)
 
 void
-DisplayInterface::handleCompizEvent (const char  *plugin,
-				     const char  *event,
-				     CompOption  *option,
-				     int         nOption)
-    WRAPABLE_DEF_FUNC(handleCompizEvent, plugin, event, option, nOption)
+DisplayInterface::handleCompizEvent (const char         *plugin,
+				     const char         *event,
+				     CompOption::Vector &options)
+    WRAPABLE_DEF (handleCompizEvent, plugin, event, options)
 
 bool
 DisplayInterface::fileToImage (const char *path,
@@ -2340,8 +2331,7 @@ DisplayInterface::fileToImage (const char *path,
 			       int	  *height,
 			       int	  *stride,
 			       void	  **data)
-    WRAPABLE_DEF_FUNC_RETURN(fileToImage, path, name, width, height,
-			     stride, data)
+    WRAPABLE_DEF (fileToImage, path, name, width, height, stride, data)
 
 bool
 DisplayInterface::imageToFile (const char *path,
@@ -2351,26 +2341,25 @@ DisplayInterface::imageToFile (const char *path,
 			       int	  height,
 			       int	  stride,
 			       void	  *data)
-    WRAPABLE_DEF_FUNC_RETURN(imageToFile, path, name, format, width, height,
-			     stride, data)
+    WRAPABLE_DEF (imageToFile, path, name, format, width, height, stride, data)
 
 CompMatch::Expression *
 DisplayInterface::matchInitExp (const CompString value)
-    WRAPABLE_DEF_FUNC_RETURN(matchInitExp, value)
+    WRAPABLE_DEF (matchInitExp, value)
 
 void
 DisplayInterface::matchExpHandlerChanged ()
-    WRAPABLE_DEF_FUNC(matchExpHandlerChanged)
+    WRAPABLE_DEF (matchExpHandlerChanged)
 
 void
 DisplayInterface::matchPropertyChanged (CompWindow *window)
-    WRAPABLE_DEF_FUNC(matchPropertyChanged, window)
+    WRAPABLE_DEF (matchPropertyChanged, window)
 
 void
 DisplayInterface::logMessage (const char   *componentName,
 			      CompLogLevel level,
 			      const char   *message)
-    WRAPABLE_DEF_FUNC(logMessage, componentName, level, message)
+    WRAPABLE_DEF (logMessage, componentName, level, message)
 
 PrivateDisplay::PrivateDisplay (CompDisplay *display) :
     display (display),
