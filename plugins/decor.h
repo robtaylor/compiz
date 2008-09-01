@@ -183,6 +183,7 @@ class DecorWindow :
 	void resizeNotify (int, int, int, int);
 	void moveNotify (int, int, bool);
 	void stateChangeNotify (unsigned int);
+	void updateFrameRegion (Region region);
 
 	bool damageRect (bool, BoxPtr);
 
@@ -217,6 +218,8 @@ class DecorWindow :
 	
 	WindowDecoration *wd;
 	Decoration	 *decor;
+
+	Region frameRegion;
 
 	Window inputFrame;
 

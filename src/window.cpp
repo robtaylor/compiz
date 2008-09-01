@@ -675,9 +675,7 @@ PrivateWindow::updateFrameWindow ()
 
     if (input.left || input.right || input.top || input.bottom)
     {
-	XRectangle rects[4];
 	int	   x, y, width, height;
-	int	   i = 0;
 	int	   bw = serverGeometry.border () * 2;
 
 	x      = serverGeometry.x () - input.left;
@@ -723,47 +721,8 @@ PrivateWindow::updateFrameWindow ()
 
 	XMoveResizeWindow (d->dpy (), frame, x, y, width, height);
 
-	rects[i].x	= 0;
-	rects[i].y	= 0;
-	rects[i].width  = width;
-	rects[i].height = input.top;
-
-	if (rects[i].width && rects[i].height)
-	    i++;
-
-	rects[i].x	= 0;
-	rects[i].y	= input.top;
-	rects[i].width  = input.left;
-	rects[i].height = height - input.top - input.bottom;
-
-	if (rects[i].width && rects[i].height)
-	    i++;
-
-	rects[i].x	= width - input.right;
-	rects[i].y	= input.top;
-	rects[i].width  = input.right;
-	rects[i].height = height - input.top - input.bottom;
-
-	if (rects[i].width && rects[i].height)
-	    i++;
-
-	rects[i].x	= 0;
-	rects[i].y	= height - input.bottom;
-	rects[i].width  = width;
-	rects[i].height = input.bottom;
-
-	if (rects[i].width && rects[i].height)
-	    i++;
-
-	XShapeCombineRectangles (d->dpy (),
-				 frame,
-				 ShapeInput,
-				 0,
-				 0,
-				 rects,
-				 i,
-				 ShapeSet,
-				 YXBanded);
+	XShapeCombineRegion (d->dpy (), frame, ShapeInput,
+			     -x, -y, frameRegion, ShapeSet);
     }
     else
     {
@@ -772,39 +731,14 @@ PrivateWindow::updateFrameWindow ()
 	    XDeleteProperty (d->dpy (), id, d->atoms ().frameWindow);
 	    XDestroyWindow (d->dpy (), frame);
 	    frame = None;
+	    XSubtractRegion (&emptyRegion, &emptyRegion, frameRegion);
 	}
     }
 
     window->recalcActions ();
 }
 
-void
-CompWindow::setWindowFrameExtents (CompWindowExtents *input)
-{
-    if (input->left   != priv->input.left  ||
-	input->right  != priv->input.right ||
-	input->top    != priv->input.top   ||
-	input->bottom != priv->input.bottom)
-    {
-	unsigned long data[4];
 
-	priv->input = *input;
-
-	data[0] = input->left;
-	data[1] = input->right;
-	data[2] = input->top;
-	data[3] = input->bottom;
-
-	updateSize ();
-	priv->updateFrameWindow ();
-	recalcActions ();
-
-	XChangeProperty (priv->screen->display ()->dpy (), priv->id,
-			 priv->screen->display ()->atoms ().frameExtents,
-			 XA_CARDINAL, 32, PropModeReplace,
-			 (unsigned char *) data, 4);
-    }
-}
 
 void
 CompWindow::updateWindowOutputExtents ()
@@ -1383,7 +1317,7 @@ CompWindow::resize (CompWindow::Geometry gm)
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
 
-	priv->updateFrameWindow ();
+	updateFrameRegion ();
     }
     else if (priv->attrib.x != gm.x () || priv->attrib.y != gm.y ())
     {
@@ -3923,6 +3857,10 @@ void
 WindowInterface::stateChangeNotify (unsigned int lastState)
     WRAPABLE_DEF (stateChangeNotify, lastState)
 
+void
+WindowInterface::updateFrameRegion (Region region)
+    WRAPABLE_DEF (updateFrameRegion, region)
+
 Window
 CompWindow::id ()
 {
@@ -4138,6 +4076,12 @@ Region
 CompWindow::region ()
 {
     return priv->region;
+}
+
+Region
+CompWindow::frameRegion ()
+{
+    return priv->frameRegion;
 }
 
 bool
@@ -4433,6 +4377,8 @@ CompWindow::CompWindow (CompScreen *screen,
 
     priv->region = XCreateRegion ();
     assert (priv->region);
+    priv->frameRegion = XCreateRegion ();
+    assert (priv->frameRegion);
 
 
 
@@ -4776,6 +4722,9 @@ PrivateWindow::~PrivateWindow ()
     if (region)
 	XDestroyRegion (region);
 
+    if (frameRegion)
+	XDestroyRegion (frameRegion);
+
     if (struts)
 	free (struts);
 
@@ -4832,3 +4781,64 @@ CompWindow::mwmFunc ()
 {
     return priv->mwmFunc;
 }
+
+void
+CompWindow::updateFrameRegion ()
+{
+    REGION            r;
+
+    if (priv->input.left || priv->input.right ||
+	priv->input.top || priv->input.bottom)
+    {
+
+	XSubtractRegion (&emptyRegion, &emptyRegion, priv->frameRegion);
+
+	updateFrameRegion (priv->frameRegion);
+
+	r.numRects = 1;
+	r.rects = &r.extents;
+	r.extents = priv->region->extents;
+	XSubtractRegion (priv->frameRegion, &r, priv->frameRegion);
+
+	r.extents.x1 -= priv->input.left;
+	r.extents.x2 += priv->input.right;
+	r.extents.y1 -= priv->input.top;
+	r.extents.y2 += priv->input.bottom;
+
+	XIntersectRegion (priv->frameRegion, &r, priv->frameRegion);
+
+	priv->updateFrameWindow ();
+    }
+}
+
+void
+CompWindow::setWindowFrameExtents (CompWindowExtents *i)
+{
+    if (priv->input.left   != i->left  ||
+	priv->input.right  != i->right ||
+	priv->input.top    != i->top   ||
+	priv->input.bottom != i->bottom)
+    {
+	unsigned long data[4];
+
+	priv->input = *i;
+
+	updateSize ();
+	updateFrameRegion ();
+	recalcActions ();
+
+	data[0] = i->left;
+	data[1] = i->right;
+	data[2] = i->top;
+	data[3] = i->bottom;
+
+	XChangeProperty (priv->screen->display ()->dpy (), priv->id,
+			 priv->screen->display ()->atoms ().frameExtents,
+			 XA_CARDINAL, 32, PropModeReplace,
+			 (unsigned char *) data, 4);
+    }
+}
+
+void
+CompWindow::updateFrameRegion (Region region)
+    WRAPABLE_HND_FUNC(12, updateFrameRegion, region)

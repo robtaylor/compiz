@@ -134,7 +134,6 @@ class PrivateWindow {
 			  int	   width,
 			  int	   height);
 
-
     public:
 
 	CompWindow *window;
@@ -155,7 +154,8 @@ class PrivateWindow {
 	bool	      alpha;
 	int	      width;
 	int	      height;
-	Region	      region;
+	Region        region;
+	Region        frameRegion;
 
 	unsigned int      wmType;
 	unsigned int      type;

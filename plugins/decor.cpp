@@ -646,9 +646,9 @@ DecorWindow::update (bool allowDecoration)
 	    return false;
 
 	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
-	    window->setWindowFrameExtents (&decor->maxInput);
+	    window->setWindowFrameExtents (&wd->decor->maxInput);
 	else
-	    window->setWindowFrameExtents (&decor->input);
+	    window->setWindowFrameExtents (&wd->decor->input);
 
 	moveDx = shiftX () - oldShiftX;
 	moveDy = shiftY () - oldShiftY;
@@ -660,12 +660,12 @@ DecorWindow::update (bool allowDecoration)
     }
     else
     {
-	CompWindowExtents emptyInput;
-
-	memset (&emptyInput, 0, sizeof (emptyInput));
-	window->setWindowFrameExtents (&emptyInput);
-
+	CompWindowExtents emptyExtents;
 	wd = NULL;
+
+	memset (&emptyExtents, 0, sizeof (CompWindowExtents));
+
+	window->setWindowFrameExtents (&emptyExtents);
 
 	moveDx = -oldShiftX;
 	moveDy = -oldShiftY;
@@ -753,45 +753,54 @@ DecorWindow::updateFrame ()
 	    XChangeProperty (display->dpy (), window->id (),
 			     dDisplay->inputFrameAtom, XA_WINDOW, 32,
 			     PropModeReplace, (unsigned char *) &inputFrame, 1);
+
+	    if (display->XShape ())
+        	XShapeSelectInput (display->dpy (), inputFrame,
+				   ShapeNotifyMask);
 	}
 
 	XMoveResizeWindow (display->dpy (), inputFrame, x, y, width, height);
 	XLowerWindow (display->dpy (), inputFrame);
 
-	rects[i].x	= 0;
-	rects[i].y	= 0;
-	rects[i].width  = width;
-	rects[i].height = input.top;
+	if (!REGION_NOT_EMPTY (frameRegion))
+	{
+	    rects[i].x	= 0;
+	    rects[i].y	= 0;
+	    rects[i].width  = width;
+	    rects[i].height = input.top;
 
-	if (rects[i].width && rects[i].height)
-	    i++;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-	rects[i].x	= 0;
-	rects[i].y	= input.top;
-	rects[i].width  = input.left;
-	rects[i].height = height - input.top - input.bottom;
+	    rects[i].x	= 0;
+	    rects[i].y	= input.top;
+	    rects[i].width  = input.left;
+	    rects[i].height = height - input.top - input.bottom;
 
-	if (rects[i].width && rects[i].height)
-	    i++;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-	rects[i].x	= width - input.right;
-	rects[i].y	= input.top;
-	rects[i].width  = input.right;
-	rects[i].height = height - input.top - input.bottom;
+	    rects[i].x	= width - input.right;
+	    rects[i].y	= input.top;
+	    rects[i].width  = input.right;
+	    rects[i].height = height - input.top - input.bottom;
 
-	if (rects[i].width && rects[i].height)
-	    i++;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-	rects[i].x	= 0;
-	rects[i].y	= height - input.bottom;
-	rects[i].width  = width;
-	rects[i].height = input.bottom;
+	    rects[i].x	= 0;
+	    rects[i].y	= height - input.bottom;
+	    rects[i].width  = width;
+	    rects[i].height = input.bottom;
 
-	if (rects[i].width && rects[i].height)
-	    i++;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-	XShapeCombineRectangles (display->dpy (), inputFrame, ShapeInput,
-				 0, 0, rects, i, ShapeSet, YXBanded);
+	    XShapeCombineRectangles (display->dpy (), inputFrame, ShapeInput,
+				    0, 0, rects, i, ShapeSet, YXBanded);
+
+	    EMPTY_REGION (frameRegion);
+	}
     }
     else
     {
@@ -801,6 +810,7 @@ DecorWindow::updateFrame ()
 			     dDisplay->inputFrameAtom);
 	    XDestroyWindow (display->dpy (), inputFrame);
 	    inputFrame = None;
+	    EMPTY_REGION (frameRegion);
 	}
     }
 }
@@ -881,6 +891,30 @@ DecorScreen::checkForDm (bool updateWindows)
 }
 
 void
+DecorWindow::updateFrameRegion (Region region)
+{
+    window->updateFrameRegion (region);
+    if (wd)
+    {
+	if (REGION_NOT_EMPTY (frameRegion))
+	{
+	    XOffsetRegion (frameRegion,
+			   window->attrib ().x - window->input ().left,
+			   window->attrib ().y - window->input ().top);
+	    XUnionRegion (frameRegion, region, region);
+	    XOffsetRegion (frameRegion,
+			   - (window->attrib ().x - window->input ().left),
+			   - (window->attrib ().y - window->input ().top));
+	}
+	else
+	{
+	    XUnionRegion (&infiniteRegion, region, region);
+	}
+    }
+
+}
+
+void
 DecorDisplay::handleEvent (XEvent *event)
 {
     Window  activeWindow = display->activeWindow ();
@@ -946,7 +980,7 @@ DecorDisplay::handleEvent (XEvent *event)
     }
 
     switch (event->type) {
-    case PropertyNotify:
+	case PropertyNotify:
 	    if (event->xproperty.atom == winDecorAtom)
 	    {
 		w = display->findWindow (event->xproperty.window);
@@ -1029,6 +1063,38 @@ DecorDisplay::handleEvent (XEvent *event)
 		w = display->findWindow (((XShapeEvent *) event)->window);
 		if (w)
 		    DecorWindow::get (w)->update (true);
+		else
+		{
+		    foreach (CompScreen *s, display->screens ())
+			foreach (w, s->windows ())
+			{
+			    DECOR_WINDOW (w);
+			    if (dw->inputFrame ==
+				((XShapeEvent *) event)->window)
+			    {
+				XRectangle *shapeRects = 0;
+				int order, n;
+
+				EMPTY_REGION (dw->frameRegion);
+
+				shapeRects =
+				    XShapeGetRectangles (display->dpy (),
+					dw->inputFrame, ShapeInput,
+					&n, &order);
+				if (!n)
+				    break;
+
+				for (int i = 0; i < n; i++)
+				    XUnionRectWithRegion (&shapeRects[i],
+							  dw->frameRegion,
+							  dw->frameRegion);
+
+				w->updateFrameRegion ();
+
+				XFree (shapeRects);
+			    }
+			}
+		}
 	    }
 	    break;
     }
@@ -1166,6 +1232,7 @@ DecorWindow::stateChangeNotify (unsigned int lastState)
 		window->setWindowFrameExtents (&wd->decor->maxInput);
 	    else
 		window->setWindowFrameExtents (&wd->decor->input);
+
 	    updateFrame ();
 	}
     }
@@ -1296,6 +1363,12 @@ DecorWindow::DecorWindow (CompWindow *w) :
     decor (NULL),
     inputFrame (None)
 {
+    frameRegion = XCreateRegion ();
+    if (!frameRegion)
+    {
+	setFailed ();
+	return;
+    }
 
     if (!w->attrib ().override_redirect)
 	updateDecoration ();
@@ -1311,6 +1384,9 @@ DecorWindow::DecorWindow (CompWindow *w) :
 
 DecorWindow::~DecorWindow ()
 {
+
+    if (frameRegion)
+	XDestroyRegion (frameRegion);
 
     if (!window->destroyed ())
 	update (false);

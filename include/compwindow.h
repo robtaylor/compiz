@@ -226,10 +226,12 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 	virtual void ungrabNotify ();
 
 	virtual void stateChangeNotify (unsigned int lastState);
+
+	virtual void updateFrameRegion (Region region);
 };
 
 class CompWindow :
-    public WrapableHandler<WindowInterface, 12>,
+    public WrapableHandler<WindowInterface, 13>,
     public CompObject
 {
 
@@ -271,11 +273,16 @@ class CompWindow :
 	CompScreen *
 	screen ();
 
-	Window
-	id ();
+	Window id ();
 
-	Window
-	frame ();
+	Window frame ();
+
+	Region region ();
+
+	Region frameRegion ();
+
+	void updateFrameRegion ();
+	void setWindowFrameExtents (CompWindowExtents *input);
 
 	unsigned int &
 	wmType ();
@@ -303,11 +310,6 @@ class CompWindow :
 
 	void
 	handlePing (int lastPing);
-
-
-
-	Region
-	region ();
 
 	bool
 	inShowDesktopMode ();
@@ -383,9 +385,6 @@ class CompWindow :
 
 	void
 	recalcType ();
-
-	void
-	setWindowFrameExtents (CompWindowExtents *input);
 
 	void
 	updateWindowOutputExtents ();
@@ -628,6 +627,8 @@ class CompWindow :
 	WRAPABLE_HND (10, WindowInterface, void, ungrabNotify);
 	WRAPABLE_HND (11, WindowInterface, void, stateChangeNotify,
 		      unsigned int);
+
+	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion, Region);
 
 	friend class PrivateWindow;
 	
