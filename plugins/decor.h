@@ -143,9 +143,10 @@ class DecorDisplay :
 
 	std::list<DecorTexture *> textures;
 
-	Atom		     supportingDmCheckAtom;
-	Atom		     winDecorAtom;
-	Atom		     decorAtom[DECOR_NUM];
+	Atom supportingDmCheckAtom;
+	Atom winDecorAtom;
+	Atom decorAtom[DECOR_NUM];
+	Atom inputFrameAtom; 
 
 	CompOption::Vector opt;
 };
@@ -194,6 +195,8 @@ class DecorWindow :
 
 	void updateDecorationScale ();
 
+	void updateFrame ();
+
 	bool checkSize (Decoration *decor);
 
 	int shiftX ();
@@ -209,10 +212,13 @@ class DecorWindow :
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
 	DecorScreen     *dScreen;
+	CompDisplay     *display;
 	DecorDisplay    *dDisplay;
 	
 	WindowDecoration *wd;
 	Decoration	 *decor;
+
+	Window inputFrame;
 
 	CompCore::Timer resizeUpdate;
 };

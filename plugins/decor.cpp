@@ -653,6 +653,7 @@ DecorWindow::update (bool allowDecoration)
 	moveDx = shiftX () - oldShiftX;
 	moveDy = shiftY () - oldShiftY;
 
+	updateFrame ();
 	window->updateWindowOutputExtents ();
 	cWindow->damageOutputExtents ();
 	updateDecorationScale ();
@@ -668,6 +669,8 @@ DecorWindow::update (bool allowDecoration)
 
 	moveDx = -oldShiftX;
 	moveDy = -oldShiftY;
+
+	updateFrame ();
     }
 
     if (window->placed () && !window->attrib ().override_redirect &&
@@ -699,6 +702,107 @@ DecorWindow::update (bool allowDecoration)
     }
 
     return true;
+}
+
+void
+DecorWindow::updateFrame ()
+{
+    if (wd && (window->input ().left || window->input ().right ||
+	window->input ().top || window->input ().bottom))
+    {
+	XRectangle           rects[4];
+	int	             x, y, width, height;
+	int	             i = 0;
+	CompWindow::Geometry server = window->serverGeometry ();
+	int                  bw = server.border () * 2;
+	CompWindowExtents    input;
+
+	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
+	    input = wd->decor->maxInput;
+	else
+	    input = wd->decor->input;
+	
+	x      = window->input ().left - input.left;
+	y      = window->input ().top - input.top;
+	width  = server.width () + input.left + input.right + bw;
+	height = server.height ()+ input.top  + input.bottom + bw;
+
+	if (window->shaded ())
+	    height = input.top + input.bottom;
+
+	if (!inputFrame)
+	{
+	    XSetWindowAttributes attr;
+
+	    attr.event_mask	   = StructureNotifyMask;
+	    attr.override_redirect = TRUE;
+
+	    inputFrame = XCreateWindow (display->dpy (), window->frame (),
+					x, y, width, height, 0, CopyFromParent,
+					InputOnly, CopyFromParent,
+					CWOverrideRedirect | CWEventMask,
+					&attr);
+
+	    XGrabButton (display->dpy (), AnyButton, AnyModifier, inputFrame,
+			 TRUE, ButtonPressMask | ButtonReleaseMask |
+			 ButtonMotionMask, GrabModeSync, GrabModeSync, None,
+			 None);
+
+	    XMapWindow (display->dpy (), inputFrame);
+
+	    XChangeProperty (display->dpy (), window->id (),
+			     dDisplay->inputFrameAtom, XA_WINDOW, 32,
+			     PropModeReplace, (unsigned char *) &inputFrame, 1);
+	}
+
+	XMoveResizeWindow (display->dpy (), inputFrame, x, y, width, height);
+	XLowerWindow (display->dpy (), inputFrame);
+
+	rects[i].x	= 0;
+	rects[i].y	= 0;
+	rects[i].width  = width;
+	rects[i].height = input.top;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= input.top;
+	rects[i].width  = input.left;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= width - input.right;
+	rects[i].y	= input.top;
+	rects[i].width  = input.right;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= height - input.bottom;
+	rects[i].width  = width;
+	rects[i].height = input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	XShapeCombineRectangles (display->dpy (), inputFrame, ShapeInput,
+				 0, 0, rects, i, ShapeSet, YXBanded);
+    }
+    else
+    {
+	if (inputFrame)
+	{
+	    XDeleteProperty (display->dpy (), window->id (),
+			     dDisplay->inputFrameAtom);
+	    XDestroyWindow (display->dpy (), inputFrame);
+	    inputFrame = None;
+	}
+    }
 }
 
 void
@@ -895,6 +999,29 @@ DecorDisplay::handleEvent (XEvent *event)
 		}
 	    }
 	    break;
+	case ConfigureNotify:
+	    w = display->findTopLevelWindow (event->xproperty.window);
+	    if (w)
+	    {
+		DECOR_WINDOW (w);
+		if (dw->decor)
+		    dw->updateFrame ();
+	    }
+	    break;
+	case DestroyNotify:
+	    w = display->findTopLevelWindow (event->xproperty.window);
+	    if (w)
+	    {
+		DECOR_WINDOW (w);
+		if (dw->inputFrame &&
+		    dw->inputFrame == event->xdestroywindow.window)
+		{
+		    XDeleteProperty (display->dpy (), w->id (),
+				     inputFrameAtom);
+		    dw->inputFrame = None;
+		}
+	    }
+	    break;
 	default:
 	    if (display->XShape () && event->type ==
 		display->shapeEvent () + ShapeNotify)
@@ -1039,6 +1166,7 @@ DecorWindow::stateChangeNotify (unsigned int lastState)
 		window->setWindowFrameExtents (&wd->decor->maxInput);
 	    else
 		window->setWindowFrameExtents (&wd->decor->input);
+	    updateFrame ();
 	}
     }
 
@@ -1121,6 +1249,8 @@ DecorDisplay::DecorDisplay (CompDisplay *d) :
 	XInternAtom (d->dpy (), DECOR_NORMAL_ATOM_NAME, 0);
     decorAtom[DECOR_ACTIVE] =
 	XInternAtom (d->dpy (), DECOR_ACTIVE_ATOM_NAME, 0);
+    inputFrameAtom =
+	XInternAtom (d->dpy (), DECOR_INPUT_FRAME_ATOM_NAME, 0);
 
     DisplayInterface::setHandler (d);
 }
@@ -1160,9 +1290,11 @@ DecorWindow::DecorWindow (CompWindow *w) :
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),
     dScreen (DecorScreen::get (w->screen ())),
+    display (w->screen ()->display ()),
     dDisplay (DecorDisplay::get (w->screen ()->display ())),
     wd (NULL),
-    decor (NULL)
+    decor (NULL),
+    inputFrame (None)
 {
 
     if (!w->attrib ().override_redirect)
