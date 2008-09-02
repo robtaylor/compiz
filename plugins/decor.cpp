@@ -1081,7 +1081,7 @@ DecorDisplay::handleEvent (XEvent *event)
 				    XShapeGetRectangles (display->dpy (),
 					dw->inputFrame, ShapeInput,
 					&n, &order);
-				if (!n)
+				if (!n || !shapeRects)
 				    break;
 
 				for (int i = 0; i < n; i++)

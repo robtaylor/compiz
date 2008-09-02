@@ -687,49 +687,24 @@ PrivateWindow::updateFrameWindow ()
 	    height = input.top + input.bottom;
 
 	if (!frame)
-	{
-	    XSetWindowAttributes attr;
-	    XWindowChanges	 xwc;
-
-	    attr.event_mask	   = 0;
-	    attr.override_redirect = TRUE;
-
-	    frame = XCreateWindow (d->dpy (), screen->root (),
-				   x, y, width, height, 0,
-				   CopyFromParent,
-				   InputOnly,
-				   CopyFromParent,
-				   CWOverrideRedirect | CWEventMask, &attr);
-
-	    XGrabButton (d->dpy (), AnyButton, AnyModifier, frame, TRUE,
-			 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-			 GrabModeSync, GrabModeSync, None, None);
-
-	    xwc.stack_mode = Below;
-	    xwc.sibling    = id;
-
-	    XConfigureWindow (d->dpy (), frame,
-			      CWSibling | CWStackMode, &xwc);
-
-	    if (mapNum || shaded)
-		XMapWindow (d->dpy (), frame);
-
-	    XChangeProperty (d->dpy (), id, d->atoms ().frameWindow,
-			     XA_WINDOW, 32, PropModeReplace,
-			     (unsigned char *) &frame, 1);
-	}
+	    reparent ();
 
 	XMoveResizeWindow (d->dpy (), frame, x, y, width, height);
+	XMoveResizeWindow (d->dpy (), wrapper, input.left, input.top,
+			   serverGeometry.width (), serverGeometry.height ());
+        XMoveResizeWindow (d->dpy (), id, 0, 0,
+			   serverGeometry.width (), serverGeometry.height ());
+        window->sendConfigureNotify ();
 
-	XShapeCombineRegion (d->dpy (), frame, ShapeInput,
+	XShapeCombineRegion (d->dpy (), frame, ShapeBounding,
 			     -x, -y, frameRegion, ShapeSet);
+	window->windowNotify (CompWindowNotifyFrameUpdate);
     }
     else
     {
 	if (frame)
 	{
-	    XDeleteProperty (d->dpy (), id, d->atoms ().frameWindow);
-	    XDestroyWindow (d->dpy (), frame);
+	    unreparent ();
 	    frame = None;
 	    XSubtractRegion (&emptyRegion, &emptyRegion, frameRegion);
 	}
@@ -1088,6 +1063,9 @@ CompWindow::destroy ()
     if (priv->destroyRefCnt)
 	return;
 
+    if (priv->frame)
+	priv->unreparent ();
+
     if (!priv->destroyed)
     {
 	priv->destroyed = true;
@@ -1180,7 +1158,10 @@ CompWindow::map ()
     updateSize ();
 
     if (priv->frame)
+    {
 	XMapWindow (priv->screen->display ()->dpy (), priv->frame);
+	XMapWindow (priv->screen->display ()->dpy (), priv->wrapper);
+    }
 
     priv->screen->updateClientList ();
 
@@ -1208,12 +1189,7 @@ void
 CompWindow::unmap ()
 {
     if (priv->mapNum)
-    {
-	if (priv->frame && !priv->shaded)
-	    XUnmapWindow (priv->screen->display ()->dpy (), priv->frame);
-
 	priv->mapNum = 0;
-    }
 
     priv->unmapRefCnt--;
     if (priv->unmapRefCnt > 0)
@@ -1248,11 +1224,15 @@ PrivateWindow::restack (Window aboveId)
 {
     if (window->prev)
     {
-	if (aboveId && aboveId == window->prev->id ())
+	if (aboveId && (aboveId == window->prev->id () ||
+		        aboveId == window->prev->frame ()))
 	    return false;
     }
     else if (aboveId == None && !window->next)
 	return false;
+
+    if (aboveId && !screen->findTopLevelWindow (aboveId))
+        return false;
 
     screen->unhookWindow (window);
     screen->insertWindow (window, aboveId);
@@ -1327,11 +1307,6 @@ CompWindow::resize (CompWindow::Geometry gm)
 	dy = gm.y () - priv->attrib.y;
 
 	move (dx, dy, true, true);
-
-	if (priv->frame)
-	    XMoveWindow (priv->screen->display ()->dpy (), priv->frame,
-			 priv->attrib.x - priv->input.left,
-			 priv->attrib.y - priv->input.top);
     }
 
     return true;
@@ -1456,6 +1431,11 @@ CompWindow::sendSyncRequest ()
 void
 CompWindow::configure (XConfigureEvent *ce)
 {
+    if (priv->frame)
+	return;
+
+    priv->attrib.override_redirect = ce->override_redirect;
+
     if (priv->syncWait)
     {
 	priv->syncGeometry.set (ce->x, ce->y, ce->width, ce->height,
@@ -1472,7 +1452,37 @@ CompWindow::configure (XConfigureEvent *ce)
 	resize (ce->x, ce->y, ce->width, ce->height, ce->border_width);
     }
 
-    priv->attrib.override_redirect = ce->override_redirect;
+    if (ce->event == priv->screen->root ())
+	priv->restack (ce->above);
+}
+
+void
+CompWindow::configureFrame (XConfigureEvent *ce)
+{
+    int x, y, width, height;
+
+    if (!priv->frame)
+	return;
+
+    x      = ce->x + priv->input.left;
+    y      = ce->y + priv->input.top;
+    width  = ce->width - priv->input.left - priv->input.right;
+    height = ce->height - priv->input.top - priv->input.bottom;
+
+
+    if (priv->syncWait)
+    {
+	priv->syncGeometry.set (x, y, width, height, ce->border_width);
+    }
+    else
+    {
+	if (ce->override_redirect)
+	{
+	    priv->serverGeometry.set (x, y, width, height, ce->border_width);
+	}
+
+	resize (x, y, width, height, ce->border_width);
+    }
 
     priv->restack (ce->above);
 }
@@ -1512,13 +1522,16 @@ CompWindow::syncPosition ()
     priv->serverGeometry.setX (priv->attrib.x);
     priv->serverGeometry.setY (priv->attrib.y);
 
-    XMoveWindow (priv->screen->display ()->dpy (), priv->id,
-		 priv->attrib.x, priv->attrib.y);
+    XMoveWindow (priv->screen->display ()->dpy (), ROOTPARENT (this),
+		 priv->attrib.x - priv->input.left,
+		 priv->attrib.y - priv->input.top);
 
     if (priv->frame)
-	XMoveWindow (priv->screen->display ()->dpy (), priv->frame,
-		     priv->serverGeometry.x () - priv->input.left,
-		     priv->serverGeometry.y () - priv->input.top);
+    {
+	XMoveWindow (priv->screen->display ()->dpy (), priv->wrapper,
+		     priv->input.left, priv->input.top);
+	sendConfigureNotify ();
+    }
 }
 
 bool
@@ -2131,11 +2144,25 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
     if (valueMask & CWBorderWidth)
 	serverGeometry.setBorder (xwc->border_width);
 
-    XConfigureWindow (screen->display ()->dpy (), id, valueMask, xwc);
-
-    if (frame && (valueMask & (CWSibling | CWStackMode)))
+    if (frame)
+    {
+	XWindowChanges wc = *xwc;
+	wc.x      -= input.left;
+	wc.y      -= input.top;
+	wc.width  += input.left + input.right;
+	wc.height += input.top + input.bottom;
 	XConfigureWindow (screen->display ()->dpy (), frame,
-			  valueMask & (CWSibling | CWStackMode), xwc);
+			  valueMask, &wc);
+	valueMask &= ~(CWSibling | CWStackMode);
+	xwc->x = input.left;
+	xwc->y = input.top;
+	XConfigureWindow (screen->display ()->dpy (), wrapper,
+			  valueMask, xwc);
+	xwc->x = 0;
+	xwc->y = 0;
+    }
+
+    XConfigureWindow (screen->display ()->dpy (), id, valueMask, xwc);
 }
 
 bool
@@ -2726,7 +2753,7 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 		mask |= CWSibling | CWStackMode;
 
 		xwc->stack_mode = Above;
-		xwc->sibling    = sibling->priv->id;
+		xwc->sibling    = ROOTPARENT (sibling);
 	    }
 	}
 	else if (sibling)
@@ -2734,7 +2761,7 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 	    mask |= CWSibling | CWStackMode;
 
 	    xwc->stack_mode = Above;
-	    xwc->sibling    = sibling->priv->id;
+	    xwc->sibling    = ROOTPARENT (sibling);
 	}
     }
 
@@ -3214,6 +3241,9 @@ CompWindow::hide ()
 	return;
 
     priv->pendingUnmaps++;
+
+    if (priv->frame && !priv->shaded)
+        XUnmapWindow (priv->screen->display ()->dpy (), priv->frame);
 
     XUnmapWindow (priv->screen->display ()->dpy (), priv->id);
 
@@ -4132,6 +4162,13 @@ CompWindow::frame ()
     return priv->frame;
 }
 
+Window
+CompWindow::wrapper ()
+{
+    return priv->wrapper;
+}
+
+
 int
 CompWindow::mapNum ()
 {
@@ -4582,6 +4619,9 @@ CompWindow::~CompWindow ()
     {
 	CompDisplay *d = priv->screen->display ();
 
+	if (priv->frame)
+	    priv->unreparent ();
+
 	/* restore saved geometry and map if hidden */
 	if (!priv->attrib.override_redirect)
 	{
@@ -4628,6 +4668,7 @@ PrivateWindow::PrivateWindow (CompWindow *window, CompScreen *screen) :
     refcnt (1),
     id (None),
     frame (None),
+    wrapper (None),
     mapNum (0),
     activeNum (0),
     transientFor (None),
@@ -4806,7 +4847,13 @@ CompWindow::updateFrameRegion ()
 	r.extents.y2 += priv->input.bottom;
 
 	XIntersectRegion (priv->frameRegion, &r, priv->frameRegion);
+	
+	XUnionRegion (priv->frameRegion, priv->region, priv->frameRegion);
 
+	priv->updateFrameWindow ();
+    }
+    else if (priv->frame)
+    {
 	priv->updateFrameWindow ();
     }
 }
@@ -4842,3 +4889,127 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 void
 CompWindow::updateFrameRegion (Region region)
     WRAPABLE_HND_FUNC(12, updateFrameRegion, region)
+
+bool
+PrivateWindow::reparent ()
+{
+    XSetWindowAttributes attr;
+    XWindowChanges	 xwc;
+    int                  mask;
+    XEvent               e;
+
+    Display              *dpy = screen->display ()->dpy ();
+
+    if (frame)
+	return false;
+
+    XSync (dpy, FALSE);
+
+    if (XCheckTypedWindowEvent (dpy, id, DestroyNotify, &e))
+    {
+        XPutBackEvent (dpy, &e);
+        return false;
+    }
+
+    mask = CWOverrideRedirect | CWEventMask | CWColormap | CWBackPixmap;
+
+    attr.background_pixmap = None;
+    attr.border_pixel      = 0;
+    mask |= CWBorderPixel;
+    attr.colormap          = attrib.colormap;
+    attr.override_redirect = TRUE;
+    attr.event_mask        = SubstructureRedirectMask | StructureNotifyMask |
+			     SubstructureNotifyMask | EnterWindowMask |
+			     LeaveWindowMask;
+
+    frame = XCreateWindow(dpy, screen->root (), attrib.x - input.left,
+			  attrib.y - input.top,
+			  attrib.width + input.left + input.right,
+			  attrib.height + input.top + input.bottom,
+			  0, attrib.depth,
+			  InputOutput, attrib.visual, mask, &attr);
+
+    wrapper = XCreateWindow(dpy, frame, input.left, input.top,
+			    attrib.width, attrib.height, 0, attrib.depth,
+			    InputOutput, attrib.visual, mask, &attr);
+
+    attr.event_mask = PropertyChangeMask | FocusChangeMask |
+		      EnterWindowMask | LeaveWindowMask;
+    attr.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask |
+				 ButtonMotionMask;
+
+    XGrabButton (dpy, AnyButton, AnyModifier, frame, TRUE,
+		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
+		 GrabModeSync, GrabModeSync, None, None);
+
+    xwc.stack_mode = Below;
+    xwc.sibling    = id;
+
+    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
+
+    XMapWindow (dpy, wrapper);
+
+    XReparentWindow (dpy, id, wrapper, 0, 0);
+    XChangeSaveSet (dpy, id, SetModeInsert);
+    XFlush (dpy);
+
+    XChangeWindowAttributes(dpy, id, CWEventMask | CWDontPropagate, &attr);
+
+
+    if (mapNum || shaded)
+    {
+	XMapWindow (dpy, frame);
+	pendingUnmaps++;
+	pendingMaps++;
+    }
+
+    window->windowNotify (CompWindowNotifyReparent);
+
+    return true;
+}
+
+void
+PrivateWindow::unreparent ()
+{
+    Display *dpy = screen->display ()->dpy ();
+    XEvent         e;
+    XWindowChanges xwc;
+
+    bool alive = true;
+
+    if (!frame)
+	return;
+
+    XSync (dpy, FALSE);
+
+    if (XCheckTypedWindowEvent (dpy, id, DestroyNotify, &e))
+    {
+        XPutBackEvent (dpy, &e);
+        alive = false;
+    }
+
+    if ((!destroyed) && alive)
+    {
+        XChangeSaveSet (dpy, id, SetModeDelete);
+        XSelectInput (dpy, frame, NoEventMask);
+        XReparentWindow (dpy, id, screen->root (), attrib.x, attrib.y);
+	xwc.stack_mode = Above;
+        xwc.sibling    = frame;
+        XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
+        XUnmapWindow (dpy, frame);
+	XFlush (dpy);
+	
+	if (mapNum || shaded)
+	{
+	    pendingUnmaps++;
+	    pendingMaps++;
+	}
+    }
+
+    XDestroyWindow (dpy, frame);
+    XDestroyWindow (dpy, wrapper);
+    wrapper = None;
+    frame = None;
+
+    window->windowNotify (CompWindowNotifyUnreparent);
+}

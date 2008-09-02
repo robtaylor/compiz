@@ -491,7 +491,6 @@ GLScreen::GLScreen (CompScreen *s) :
     priv->filter[SCREEN_TRANS_FILTER]  = GLTexture::Good;
     priv->filter[WINDOW_TRANS_FILTER]  = GLTexture::Good;
 
-
     if (!CompositeScreen::get (s)->registerPaintHandler (priv))
 	setFailed ();
 

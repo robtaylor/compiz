@@ -286,7 +286,7 @@ class CompDisplay :
 	findWindow (Window id);
 
 	CompWindow *
-	findTopLevelWindow (Window id);
+	findTopLevelWindow (Window id, bool override_redirect = false);
 
 
 

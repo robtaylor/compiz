@@ -134,6 +134,9 @@ class PrivateWindow {
 			  int	   width,
 			  int	   height);
 
+	bool reparent ();
+	void unreparent ();
+
     public:
 
 	CompWindow *window;
@@ -142,6 +145,7 @@ class PrivateWindow {
 	int		      refcnt;
 	Window	      id;
 	Window	      frame;
+	Window        wrapper;
 	unsigned int      mapNum;
 	unsigned int      activeNum;
 	XWindowAttributes attrib;

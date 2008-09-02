@@ -1435,13 +1435,13 @@ CompDisplay::findWindow (Window id)
 }
 
 CompWindow *
-CompDisplay::findTopLevelWindow (Window id)
+CompDisplay::findTopLevelWindow (Window id, bool override_redirect)
 {
     CompWindow *w;
 
     foreach (CompScreen *s, priv->screens)
     {
-	w = s->findTopLevelWindow (id);
+	w = s->findTopLevelWindow (id, override_redirect);
 	if (w)
 	    return w;
     }

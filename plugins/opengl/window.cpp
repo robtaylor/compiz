@@ -53,20 +53,21 @@ void
 PrivateGLWindow::setWindowMatrix ()
 {
     matrix = texture.matrix ();
-    matrix.x0 -= (window->attrib ().x * matrix.xx);
-    matrix.y0 -= (window->attrib ().y * matrix.yy);
+    matrix.x0 -= ((window->attrib ().x - window->input ().left) * matrix.xx);
+    matrix.y0 -= ((window->attrib ().y - window->input ().top) * matrix.yy);
 }
 
 bool
 GLWindow::bind ()
 {
+    CompWindowExtents i = priv->window->input ();
 
     if (!priv->cWindow->pixmap () && !priv->cWindow->bind ())
 	return false;
 
     if (!priv->texture.bindPixmap (priv->cWindow->pixmap (),
-				   priv->window->width (),
-				   priv->window->height (),
+				   priv->window->width () + i.left + i.right,
+				   priv->window->height () + i.top + i.bottom,
 				   priv->window->attrib ().depth))
     {
 	compLogMessage (priv->screen->display (), "opengl", CompLogLevelInfo,
@@ -153,6 +154,9 @@ PrivateGLWindow::windowNotify (CompWindowNotify n)
     switch (n)
     {
 	case CompWindowNotifyUnmap:
+	case CompWindowNotifyReparent:
+	case CompWindowNotifyUnreparent:
+	case CompWindowNotifyFrameUpdate:
 	    gWindow->release ();
 	    break;
 	case CompWindowNotifyAliveChanged:

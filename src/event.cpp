@@ -1012,20 +1012,31 @@ CompDisplay::handleEvent (XEvent *event)
 	break;
     case ConfigureNotify:
 	w = findWindow (event->xconfigure.window);
-	if (w)
+	if (w && !w->frame ())
 	{
 	    w->configure (&event->xconfigure);
 	}
 	else
 	{
-	    s = findScreen (event->xconfigure.window);
-	    if (s)
-		s->configure (&event->xconfigure);
+	    w = findTopLevelWindow (event->xconfigure.window);
+
+	    if (w && w->frame () == event->xconfigure.window)
+	    {
+		w->configureFrame (&event->xconfigure);
+	    }
+	    else
+	    {
+		s = findScreen (event->xconfigure.window);
+		if (s)
+		    s->configure (&event->xconfigure);
+	    }
 	}
 	break;
     case CreateNotify:
 	s = findScreen (event->xcreatewindow.parent);
-	if (s)
+	w = findTopLevelWindow (event->xcreatewindow.window, true);
+
+        if (s && (!w || w->frame () != event->xcreatewindow.window))
 	{
 	    new CompWindow (s, event->xcreatewindow.window,
 			    s->getTopWindow ());
@@ -1098,7 +1109,7 @@ CompDisplay::handleEvent (XEvent *event)
 	{
 	    new CompWindow (s, event->xreparent.window, s->getTopWindow ());
 	}
-	else if (w)
+	else if (w && !s && event->xreparent.parent != w->wrapper ())
 	{
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive

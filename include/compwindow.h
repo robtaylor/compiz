@@ -24,6 +24,8 @@ struct CompStartupSequence;
 #define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
 #define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
 
+#define ROOTPARENT(x) (((x)->frame ()) ? (x)->frame () : (x)->id ())
+
 #define CompWindowProtocolDeleteMask	  (1 << 0)
 #define CompWindowProtocolTakeFocusMask	  (1 << 1)
 #define CompWindowProtocolPingMask	  (1 << 2)
@@ -186,7 +188,10 @@ enum CompWindowNotify {
    CompWindowNotifyHide,
    CompWindowNotifyShow,
    CompWindowNotifyAliveChanged,
-   CompWindowNotifySyncAlarm
+   CompWindowNotifySyncAlarm,
+   CompWindowNotifyReparent,
+   CompWindowNotifyUnreparent,
+   CompWindowNotifyFrameUpdate
 };
 
 struct CompWindowExtents {
@@ -276,6 +281,7 @@ class CompWindow :
 	Window id ();
 
 	Window frame ();
+	Window wrapper ();
 
 	Region region ();
 
@@ -423,8 +429,8 @@ class CompWindow :
 	void
 	sendSyncRequest ();
 
-	void
-	configure (XConfigureEvent *ce);
+	void configure (XConfigureEvent *ce);
+	void configureFrame (XConfigureEvent *ce);
 
 	void
 	circulate (XCirculateEvent *ce);
