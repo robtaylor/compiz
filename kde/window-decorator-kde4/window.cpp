@@ -784,7 +784,11 @@ KWD::Window::createDecoration (void)
 		  StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
+    XSync (QX11Info::display(), FALSE);
+    XSynchronize (QX11Info::display(), TRUE);
     resizeDecoration (true);
+    XSynchronize (QX11Info::display(), FALSE);
+
 }
 
 static void
