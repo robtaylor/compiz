@@ -155,7 +155,7 @@ KWD::Window::Window (WId  parentId,
 	mGeometry = QRect (50, 50, 30, 1);
     }
 
-    createDecoration ();
+    QTimer::singleShot (0, this, SLOT (createDecoration ()));
 
     mActiveChild = NULL;
 }
@@ -784,11 +784,7 @@ KWD::Window::createDecoration (void)
 		  StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
-    XSync (QX11Info::display(), FALSE);
-    XSynchronize (QX11Info::display(), TRUE);
     resizeDecoration (true);
-    XSynchronize (QX11Info::display(), FALSE);
-
 }
 
 static void
