@@ -224,5 +224,6 @@ class DecorWindow :
 	Window inputFrame;
 
 	CompCore::Timer resizeUpdate;
+	CompCore::Timer moveUpdate;
 };
 

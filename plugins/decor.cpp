@@ -551,6 +551,13 @@ DecorWindow::shiftY ()
     return 0;
 }
 
+static bool
+decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
+{
+    w->configureXWindow (mask, &xwc);
+    return false;
+}
+
 bool
 DecorWindow::update (bool allowDecoration)
 {
@@ -679,6 +686,8 @@ DecorWindow::update (bool allowDecoration)
 	XWindowChanges xwc;
 	unsigned int   mask = CWX | CWY;
 
+	memset (&xwc, 0, sizeof (XWindowChanges));
+
 	xwc.x = window->serverGeometry ().x () + moveDx;
 	xwc.y = window->serverGeometry ().y () + moveDy;
 
@@ -698,7 +707,7 @@ DecorWindow::update (bool allowDecoration)
 	    window->saveWc ().y += moveDy;
 
 	if (mask)
-	    window->configureXWindow (mask, &xwc);
+	    moveUpdate.start (boost::bind (decorOffsetMove, window, xwc, mask), 0);
     }
 
     return true;
