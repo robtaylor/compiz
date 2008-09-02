@@ -885,7 +885,8 @@ DecorScreen::checkForDm (bool updateWindows)
 	if (updateWindows)
 	{
 	    foreach (CompWindow *w, screen->windows ())
-		DecorWindow::get (w)->update (true);
+		if (w->shaded () || w->attrib ().map_state == IsViewable)
+		    DecorWindow::get (w)->update (true);
 	}
     }
 }
