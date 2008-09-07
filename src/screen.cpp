@@ -1396,9 +1396,10 @@ CompScreen::findWindow (Window id)
     }
     else
     {
-	foreach (CompWindow *w, priv->windows)
-	    if (w->id () == id)
-		return (lastFoundWindow = w);
+        CompWindow::Map::iterator it = priv->windowsMap.find (id);
+
+        if (it != priv->windowsMap.end ())
+            return (lastFoundWindow = it->second);
     }
 
     return 0;
@@ -1445,6 +1446,8 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 	    w->next = priv->windows.front ();
 	}
 	priv->windows.push_front (w);
+        if (w->id () != 1)
+            priv->windowsMap[w->id ()] = w;
 
 	return;
     }
@@ -1476,6 +1479,15 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
     }
 
     priv->windows.insert (++it, w);
+    if (w->id () != 1)
+        priv->windowsMap[w->id ()] = w;
+}
+
+void
+CompScreen::eraseWindowFromMap (Window id)
+{
+    if (id != 1)
+        priv->windowsMap.erase (id);
 }
 
 void
@@ -1485,6 +1497,7 @@ CompScreen::unhookWindow (CompWindow *w)
 	std::find (priv->windows.begin (), priv->windows.end (), w);
 
     priv->windows.erase (it);
+    eraseWindowFromMap (w->id ());
 
     if (w->next)
 	w->next->prev = w->prev;

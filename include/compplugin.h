@@ -29,6 +29,8 @@
 #include <compiz.h>
 #include <compoption.h>
 
+#include <map>
+
 #define __GET_PLUGIN_OBJECT_OPTIONS__(name, object)
 #define __GET_PLUGIN_OBJECT_OPTIONS_X(name, object) \
     return name::get(object)->getOptions ();
@@ -188,6 +190,15 @@ class CompPlugin {
 				CompOption::Value &value);
         };
 
+	struct cmpStr
+	{
+	    bool operator() (const char *a, const char *b) const
+	    {
+		return strcmp (a, b) < 0;
+	    }
+	};
+
+	typedef std::map<const char *, CompPlugin *, cmpStr> Map;
 	typedef std::list<CompPlugin *> List;
 
     public:

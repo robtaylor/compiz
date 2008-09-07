@@ -36,6 +36,7 @@
 #include <compiz-core.h>
 #include <compobject.h>
 
+CompPlugin::Map pluginsMap;
 std::list<CompPlugin *> plugins;
 
 class CorePluginVTable : public CompPlugin::VTable
@@ -444,11 +445,10 @@ CompPlugin::objectFiniPlugins (CompObject *o)
 CompPlugin *
 CompPlugin::find (const char *name)
 {
-    foreach (CompPlugin *p, plugins)
-    {
-	if (strcmp (p->vTable->name (), name) == 0)
-	    return p;
-    }
+    CompPlugin::Map::iterator it = pluginsMap.find (name);
+
+    if (it != pluginsMap.end ())
+        return it->second;
 
     return NULL;
 }
@@ -507,7 +507,12 @@ CompPlugin::load (const char *name)
 bool
 CompPlugin::push (CompPlugin *p)
 {
-    if (find (p->vTable->name ()))
+    const char *name = p->vTable->name ();
+
+    std::pair<CompPlugin::Map::iterator, bool> insertRet =
+        pluginsMap.insert (std::pair<const char *, CompPlugin *> (name, p));
+
+    if (!insertRet.second)
     {
 	compLogMessage (NULL, "core", CompLogLevelWarn,
 			"Plugin '%s' already active",
@@ -521,8 +526,9 @@ CompPlugin::push (CompPlugin *p)
     if (!initPlugin (p))
     {
 	compLogMessage (NULL, "core", CompLogLevelError,
-			"Couldn't activate plugin '%s'", p->vTable->name ());
+			"Couldn't activate plugin '%s'", name);
 
+        pluginsMap.erase (name);
 	plugins.pop_front ();
 
 	return false;
@@ -541,6 +547,8 @@ CompPlugin::pop (void)
 
     if (!p)
 	return 0;
+
+    pluginsMap.erase (p->vTable->name ());
 
     finiPlugin (p);
 

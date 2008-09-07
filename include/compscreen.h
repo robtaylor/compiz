@@ -172,6 +172,9 @@ class CompScreen :
 	void
 	unhookWindow (CompWindow *w);
 
+	void
+	eraseWindowFromMap (Window id);
+
 	grabHandle
 	pushGrab (Cursor cursor, const char *name);
 

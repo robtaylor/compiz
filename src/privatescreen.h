@@ -150,6 +150,7 @@ class PrivateScreen {
 	CompScreen  *screen;
 	CompDisplay *display;
 	CompWindowList windows;
+	CompWindow::Map windowsMap;
 
 	Colormap	      colormap;
 	int		      screenNum;

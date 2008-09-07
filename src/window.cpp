@@ -1056,6 +1056,8 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
 void
 CompWindow::destroy ()
 {
+    screen ()->eraseWindowFromMap (id ());
+
     priv->id = 1;
     priv->mapNum = 0;
 

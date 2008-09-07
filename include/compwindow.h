@@ -16,6 +16,8 @@
 
 #include <compwrapsystem.h>
 
+#include <map>
+
 class CompWindow;
 class CompIcon;
 class PrivateWindow;
@@ -261,6 +263,8 @@ class CompWindow :
 
 
 	typedef boost::function<void (CompWindow *)> ForEach;
+
+	typedef std::map<Window, CompWindow *> Map;
 	
     public:
 	CompWindow *next;
