@@ -37,7 +37,7 @@
 #include <compobject.h>
 
 CompPlugin::Map pluginsMap;
-std::list<CompPlugin *> plugins;
+CompPlugin::List plugins;
 
 class CorePluginVTable : public CompPlugin::VTable
 {

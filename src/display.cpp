@@ -1332,7 +1332,7 @@ PrivateDisplay::updatePlugins ()
     CompOption              *o;
     CompPlugin              *p;
     unsigned int            nPop, i, j;
-    std::list<CompPlugin *> pop;
+    CompPlugin::List        pop;
 
     dirtyPluginList = false;
 
