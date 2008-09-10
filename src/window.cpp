@@ -696,8 +696,7 @@ PrivateWindow::updateFrameWindow ()
 			   serverGeometry.width (), serverGeometry.height ());
         window->sendConfigureNotify ();
 
-	XShapeCombineRegion (d->dpy (), frame, ShapeBounding,
-			     -x, -y, frameRegion, ShapeSet);
+	window->updateFrameRegion ();
 	window->windowNotify (CompWindowNotifyFrameUpdate);
     }
     else
@@ -4876,7 +4875,6 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 
 	updateSize ();
 	priv->updateFrameWindow ();
-	updateFrameRegion ();
 	recalcActions ();
 
 	data[0] = i->left;
