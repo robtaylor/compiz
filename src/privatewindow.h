@@ -107,12 +107,6 @@ class PrivateWindow {
 	revealAncestors (CompWindow *w,
 			 CompWindow *transient);
 
-	bool
-	constrainNewWindowSize (int        width,
-				int        height,
-				int        *newWidth,
-				int        *newHeight);
-
 	static void
 	minimizeTransients (CompWindow *w,
 			    CompWindow *ancestor);

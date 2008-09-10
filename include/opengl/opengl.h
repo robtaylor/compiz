@@ -340,6 +340,7 @@ class GLWindow :
 	Region clip ();
 
 	GLWindowPaintAttrib & paintAttrib ();
+	GLWindowPaintAttrib & lastPaintAttrib ();
 
 	bool bind ();
 	void release ();

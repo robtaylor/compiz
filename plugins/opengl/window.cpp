@@ -133,6 +133,13 @@ GLWindow::paintAttrib ()
     return priv->paint;
 }
 
+GLWindowPaintAttrib &
+GLWindow::lastPaintAttrib ()
+{
+    return priv->lastPaint;
+}
+
+
 void
 PrivateGLWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 {

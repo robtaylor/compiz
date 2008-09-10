@@ -766,49 +766,64 @@ DecorWindow::updateFrame ()
 	    if (display->XShape ())
         	XShapeSelectInput (display->dpy (), inputFrame,
 				   ShapeNotifyMask);
+
+	    oldX = 0;
+	    oldY = 0;
+	    oldWidth  = 0;
+	    oldHeight = 0;
 	}
 
-	XMoveResizeWindow (display->dpy (), inputFrame, x, y, width, height);
-	XLowerWindow (display->dpy (), inputFrame);
-
-	if (!REGION_NOT_EMPTY (frameRegion))
+	if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
 	{
-	    rects[i].x	= 0;
-	    rects[i].y	= 0;
-	    rects[i].width  = width;
-	    rects[i].height = input.top;
+	    oldX = x;
+	    oldY = y;
+	    oldWidth  = width;
+	    oldHeight = height;
 
-	    if (rects[i].width && rects[i].height)
-		i++;
+	    XMoveResizeWindow (display->dpy (), inputFrame, x, y,
+			       width, height);
+	    XLowerWindow (display->dpy (), inputFrame);
 
-	    rects[i].x	= 0;
-	    rects[i].y	= input.top;
-	    rects[i].width  = input.left;
-	    rects[i].height = height - input.top - input.bottom;
+	    if (!REGION_NOT_EMPTY (frameRegion))
+	    {
+		rects[i].x	= 0;
+		rects[i].y	= 0;
+		rects[i].width  = width;
+		rects[i].height = input.top;
 
-	    if (rects[i].width && rects[i].height)
-		i++;
+		if (rects[i].width && rects[i].height)
+		    i++;
 
-	    rects[i].x	= width - input.right;
-	    rects[i].y	= input.top;
-	    rects[i].width  = input.right;
-	    rects[i].height = height - input.top - input.bottom;
+		rects[i].x	= 0;
+		rects[i].y	= input.top;
+		rects[i].width  = input.left;
+		rects[i].height = height - input.top - input.bottom;
 
-	    if (rects[i].width && rects[i].height)
-		i++;
+		if (rects[i].width && rects[i].height)
+		    i++;
 
-	    rects[i].x	= 0;
-	    rects[i].y	= height - input.bottom;
-	    rects[i].width  = width;
-	    rects[i].height = input.bottom;
+		rects[i].x	= width - input.right;
+		rects[i].y	= input.top;
+		rects[i].width  = input.right;
+		rects[i].height = height - input.top - input.bottom;
 
-	    if (rects[i].width && rects[i].height)
-		i++;
+		if (rects[i].width && rects[i].height)
+		    i++;
 
-	    XShapeCombineRectangles (display->dpy (), inputFrame, ShapeInput,
-				    0, 0, rects, i, ShapeSet, YXBanded);
+		rects[i].x	= 0;
+		rects[i].y	= height - input.bottom;
+		rects[i].width  = width;
+		rects[i].height = input.bottom;
 
-	    EMPTY_REGION (frameRegion);
+		if (rects[i].width && rects[i].height)
+		    i++;
+
+		XShapeCombineRectangles (display->dpy (), inputFrame,
+					 ShapeInput, 0, 0, rects, i,
+					 ShapeSet, YXBanded);
+
+		EMPTY_REGION (frameRegion);
+	    }
 	}
     }
     else
@@ -820,6 +835,11 @@ DecorWindow::updateFrame ()
 	    XDestroyWindow (display->dpy (), inputFrame);
 	    inputFrame = None;
 	    EMPTY_REGION (frameRegion);
+
+	    oldX = 0;
+	    oldY = 0;
+	    oldWidth  = 0;
+	    oldHeight = 0;
 	}
     }
 }
@@ -1044,12 +1064,14 @@ DecorDisplay::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ConfigureNotify:
-	    w = display->findTopLevelWindow (event->xproperty.window);
+	    w = display->findTopLevelWindow (event->xconfigure.window);
 	    if (w)
 	    {
 		DECOR_WINDOW (w);
 		if (dw->decor)
+		{
 		    dw->updateFrame ();
+		}
 	    }
 	    break;
 	case DestroyNotify:
