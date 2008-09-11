@@ -143,9 +143,10 @@ class DecorDisplay :
 
 	std::list<DecorTexture *> textures;
 
-	Atom		     supportingDmCheckAtom;
-	Atom		     winDecorAtom;
-	Atom		     decorAtom[DECOR_NUM];
+	Atom supportingDmCheckAtom;
+	Atom winDecorAtom;
+	Atom decorAtom[DECOR_NUM];
+	Atom inputFrameAtom; 
 
 	CompOption::Vector opt;
 };
@@ -182,6 +183,7 @@ class DecorWindow :
 	void resizeNotify (int, int, int, int);
 	void moveNotify (int, int, bool);
 	void stateChangeNotify (unsigned int);
+	void updateFrameRegion (Region region);
 
 	bool damageRect (bool, BoxPtr);
 
@@ -193,6 +195,8 @@ class DecorWindow :
 	void setDecorationMatrices ();
 
 	void updateDecorationScale ();
+
+	void updateFrame ();
 
 	bool checkSize (Decoration *decor);
 
@@ -209,11 +213,21 @@ class DecorWindow :
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
 	DecorScreen     *dScreen;
+	CompDisplay     *display;
 	DecorDisplay    *dDisplay;
 	
 	WindowDecoration *wd;
 	Decoration	 *decor;
 
+	Region frameRegion;
+
+	Window inputFrame;
+	int    oldX;
+	int    oldY;
+	int    oldWidth;
+	int    oldHeight;
+
 	CompCore::Timer resizeUpdate;
+	CompCore::Timer moveUpdate;
 };
 

@@ -106,7 +106,7 @@ CompositeWindow::bind ()
 	   is mapped when getting the window pixmap */
 	XGrabServer (priv->screen->display ()->dpy ());
 	XGetWindowAttributes (priv->screen->display ()->dpy (),
-			      priv->window->id (), &attr);
+			      ROOTPARENT (priv->window), &attr);
 	if (attr.map_state != IsViewable)
 	{
 	    XUngrabServer (priv->screen->display ()->dpy ());
@@ -115,7 +115,7 @@ CompositeWindow::bind ()
 	}
 
 	priv->pixmap = XCompositeNameWindowPixmap
-	    (priv->screen->display ()->dpy (), priv->window->id ());
+	    (priv->screen->display ()->dpy (), ROOTPARENT (priv->window));
 
 	XUngrabServer (priv->screen->display ()->dpy ());
     }
@@ -145,7 +145,7 @@ CompositeWindow::redirect ()
 	return;
 
     XCompositeRedirectWindow (priv->screen->display ()->dpy (),
-			      priv->window->id (),
+			      ROOTPARENT (priv->window),
 			      CompositeRedirectManual);
 
     priv->redirected = true;
@@ -171,7 +171,7 @@ CompositeWindow::unredirect ()
     release ();
 
     XCompositeUnredirectWindow (priv->screen->display ()->dpy (),
-				priv->window->id (),
+				ROOTPARENT (priv->window),
 				CompositeRedirectManual);
 
     priv->redirected   = false;
@@ -313,13 +313,18 @@ CompositeWindow::addDamage (bool force)
     {
 	BoxRec box;
 
-	box.x1 = -priv->window->output ().left -
+	box.x1 = -MAX (priv->window->output ().left,
+		       priv->window->input ().left) -
 		 priv->window->attrib ().border_width;
-	box.y1 = -priv->window->output ().top -
+	box.y1 = -MAX (priv->window->output ().top,
+		       priv->window->input ().top) -
 		 priv->window->attrib ().border_width;
 	box.x2 = priv->window->width () +
-		 priv->window->output ().right;
-	box.y2 = priv->window->height () + priv->window->output ().bottom;
+		 MAX (priv->window->output ().right,
+		       priv->window->input ().right);
+	box.y2 = priv->window->height () +
+		 MAX (priv->window->output ().bottom,
+		       priv->window->input ().bottom);
 
 	addDamageRect (&box);
     }
@@ -496,6 +501,18 @@ PrivateCompositeWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyShow:
 	case CompWindowNotifyAliveChanged:
 	    cWindow->addDamage (true);
+	    break;
+	case CompWindowNotifyReparent:
+	case CompWindowNotifyUnreparent:
+	    if (redirected)
+	    {
+		cWindow->release ();
+	    }
+	    cScreen->damageScreen ();
+	    cWindow->addDamage (true);
+	    break;
+	case CompWindowNotifyFrameUpdate:
+	    cWindow->release ();
 	    break;
 	case CompWindowNotifySyncAlarm:
 	{

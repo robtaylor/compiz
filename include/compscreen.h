@@ -164,13 +164,16 @@ class CompScreen :
 	findWindow (Window id);
 
 	CompWindow *
-	findTopLevelWindow (Window id);
+	findTopLevelWindow (Window id, bool override_redirect = false);
 
 	void
 	insertWindow (CompWindow *w, Window aboveId);
 
 	void
 	unhookWindow (CompWindow *w);
+
+	void
+	eraseWindowFromMap (Window id);
 
 	grabHandle
 	pushGrab (Cursor cursor, const char *name);

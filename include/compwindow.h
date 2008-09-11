@@ -16,6 +16,8 @@
 
 #include <compwrapsystem.h>
 
+#include <map>
+
 class CompWindow;
 class CompIcon;
 class PrivateWindow;
@@ -23,6 +25,8 @@ struct CompStartupSequence;
 
 #define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
 #define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
+
+#define ROOTPARENT(x) (((x)->frame ()) ? (x)->frame () : (x)->id ())
 
 #define CompWindowProtocolDeleteMask	  (1 << 0)
 #define CompWindowProtocolTakeFocusMask	  (1 << 1)
@@ -186,7 +190,10 @@ enum CompWindowNotify {
    CompWindowNotifyHide,
    CompWindowNotifyShow,
    CompWindowNotifyAliveChanged,
-   CompWindowNotifySyncAlarm
+   CompWindowNotifySyncAlarm,
+   CompWindowNotifyReparent,
+   CompWindowNotifyUnreparent,
+   CompWindowNotifyFrameUpdate
 };
 
 struct CompWindowExtents {
@@ -226,10 +233,12 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 	virtual void ungrabNotify ();
 
 	virtual void stateChangeNotify (unsigned int lastState);
+
+	virtual void updateFrameRegion (Region region);
 };
 
 class CompWindow :
-    public WrapableHandler<WindowInterface, 12>,
+    public WrapableHandler<WindowInterface, 13>,
     public CompObject
 {
 
@@ -254,6 +263,8 @@ class CompWindow :
 
 
 	typedef boost::function<void (CompWindow *)> ForEach;
+
+	typedef std::map<Window, CompWindow *> Map;
 	
     public:
 	CompWindow *next;
@@ -271,11 +282,17 @@ class CompWindow :
 	CompScreen *
 	screen ();
 
-	Window
-	id ();
+	Window id ();
 
-	Window
-	frame ();
+	Window frame ();
+	Window wrapper ();
+
+	Region region ();
+
+	Region frameRegion ();
+
+	void updateFrameRegion ();
+	void setWindowFrameExtents (CompWindowExtents *input);
 
 	unsigned int &
 	wmType ();
@@ -303,11 +320,6 @@ class CompWindow :
 
 	void
 	handlePing (int lastPing);
-
-
-
-	Region
-	region ();
 
 	bool
 	inShowDesktopMode ();
@@ -385,9 +397,6 @@ class CompWindow :
 	recalcType ();
 
 	void
-	setWindowFrameExtents (CompWindowExtents *input);
-
-	void
 	updateWindowOutputExtents ();
 
 	void
@@ -424,8 +433,8 @@ class CompWindow :
 	void
 	sendSyncRequest ();
 
-	void
-	configure (XConfigureEvent *ce);
+	void configure (XConfigureEvent *ce);
+	void configureFrame (XConfigureEvent *ce);
 
 	void
 	circulate (XCirculateEvent *ce);
@@ -593,6 +602,10 @@ class CompWindow :
 	unsigned int mwmDecor ();
 	unsigned int mwmFunc ();
 
+	bool constrainNewWindowSize (int width,
+				     int height,
+				     int *newWidth,
+				     int *newHeight);
 	
 	static unsigned int
 	constrainWindowState (unsigned int state,
@@ -628,6 +641,8 @@ class CompWindow :
 	WRAPABLE_HND (10, WindowInterface, void, ungrabNotify);
 	WRAPABLE_HND (11, WindowInterface, void, stateChangeNotify,
 		      unsigned int);
+
+	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion, Region);
 
 	friend class PrivateWindow;
 	

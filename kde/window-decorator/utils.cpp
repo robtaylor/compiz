@@ -180,7 +180,7 @@ KWD::Atoms::init (void)
 {
     Display *xdisplay = qt_xdisplay ();
 
-    netFrameWindow = XInternAtom (xdisplay, "_NET_FRAME_WINDOW", false);
+    netFrameWindow = XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, false);
     netWindowDecor = XInternAtom (xdisplay, DECOR_WINDOW_ATOM_NAME, false);
     netWindowDecorNormal =
 	XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, false);

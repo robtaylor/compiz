@@ -29,6 +29,7 @@
 
 #include <qpixmap.h>
 #include <qwidget.h>
+#include <qprocess.h>
 
 #include <decoration.h>
 
@@ -186,7 +187,6 @@ class Window:public QWidget, public KDecorationBridge {
 	
 
     private:
-	void createDecoration (void);
 	bool resizeDecoration (bool force = false);
 	void updateBlurProperty (int topOffset,
 				 int bottomOffset,
@@ -202,12 +202,12 @@ class Window:public QWidget, public KDecorationBridge {
 
 
     private slots:
+	void createDecoration (void);
 	void updateShadow (void);
 	void handlePopupActivated (QAction *action);
 	void handleOpacityPopupActivated (QAction *action);
 	void handleDesktopPopupActivated (QAction *action);
 	void handlePopupAboutToShow (void);
-	void handleProcessKillerExited (void);
 
     private:
 	Type mType;
@@ -250,7 +250,7 @@ class Window:public QWidget, public KDecorationBridge {
 	int mPendingMap;
 	int mPendingConfigure;
 	QSize mSize;
-	QProcess *mProcessKiller;
+	QProcess mProcessKiller;
 	KActionCollection mKeys;
 	bool mFakeRelease;
 

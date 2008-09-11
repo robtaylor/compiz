@@ -927,6 +927,13 @@ CompDisplay::shapeEvent ()
     return priv->shapeEvent;
 }
 
+int
+CompDisplay::syncEvent ()
+{
+    return priv->syncEvent;
+}
+
+
 SnDisplay *
 CompDisplay::snDisplay ()
 {
@@ -1332,7 +1339,7 @@ PrivateDisplay::updatePlugins ()
     CompOption              *o;
     CompPlugin              *p;
     unsigned int            nPop, i, j;
-    std::list<CompPlugin *> pop;
+    CompPlugin::List        pop;
 
     dirtyPluginList = false;
 
@@ -1435,13 +1442,13 @@ CompDisplay::findWindow (Window id)
 }
 
 CompWindow *
-CompDisplay::findTopLevelWindow (Window id)
+CompDisplay::findTopLevelWindow (Window id, bool override_redirect)
 {
     CompWindow *w;
 
     foreach (CompScreen *s, priv->screens)
     {
-	w = s->findTopLevelWindow (id);
+	w = s->findTopLevelWindow (id, override_redirect);
 	if (w)
 	    return w;
     }

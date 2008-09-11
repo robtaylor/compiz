@@ -107,12 +107,6 @@ class PrivateWindow {
 	revealAncestors (CompWindow *w,
 			 CompWindow *transient);
 
-	bool
-	constrainNewWindowSize (int        width,
-				int        height,
-				int        *newWidth,
-				int        *newHeight);
-
 	static void
 	minimizeTransients (CompWindow *w,
 			    CompWindow *ancestor);
@@ -134,6 +128,8 @@ class PrivateWindow {
 			  int	   width,
 			  int	   height);
 
+	bool reparent ();
+	void unreparent ();
 
     public:
 
@@ -143,6 +139,7 @@ class PrivateWindow {
 	int		      refcnt;
 	Window	      id;
 	Window	      frame;
+	Window        wrapper;
 	unsigned int      mapNum;
 	unsigned int      activeNum;
 	XWindowAttributes attrib;
@@ -155,7 +152,8 @@ class PrivateWindow {
 	bool	      alpha;
 	int	      width;
 	int	      height;
-	Region	      region;
+	Region        region;
+	Region        frameRegion;
 
 	unsigned int      wmType;
 	unsigned int      type;

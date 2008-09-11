@@ -1396,37 +1396,40 @@ CompScreen::findWindow (Window id)
     }
     else
     {
-	foreach (CompWindow *w, priv->windows)
-	    if (w->id () == id)
-		return (lastFoundWindow = w);
+        CompWindow::Map::iterator it = priv->windowsMap.find (id);
+
+        if (it != priv->windowsMap.end ())
+            return (lastFoundWindow = it->second);
     }
 
     return 0;
 }
 
 CompWindow *
-CompScreen::findTopLevelWindow (Window id)
+CompScreen::findTopLevelWindow (Window id, bool override_redirect)
 {
     CompWindow *w;
 
     w = findWindow (id);
-    if (!w)
-	return NULL;
 
-    if (w->attrib ().override_redirect)
+    if (w)
     {
-	/* likely a frame window */
-	if (w->attrib ().c_class == InputOnly)
-	{
-	    foreach (w, priv->windows)
-		if (w->frame () == id)
-		    return w;
-	}
-
-	return NULL;
+	if (w->attrib ().override_redirect && !override_redirect)
+	    return NULL;
+	else
+	    return w;
     }
 
-    return w;
+    foreach (CompWindow *w, priv->windows)
+	if (w->frame () == id)
+	{
+	    if (w->attrib ().override_redirect && !override_redirect)
+		return NULL;
+	    else
+		return w;
+	}
+
+    return NULL;
 }
 
 void
@@ -1443,6 +1446,8 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 	    w->next = priv->windows.front ();
 	}
 	priv->windows.push_front (w);
+        if (w->id () != 1)
+            priv->windowsMap[w->id ()] = w;
 
 	return;
     }
@@ -1451,7 +1456,7 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 
     while (it != priv->windows.end ())
     {
-	if ((*it)->id () == aboveId)
+	if ((*it)->id () == aboveId || ((*it)->frame () && (*it)->frame () == aboveId))
 	    break;
 	it++;
     }
@@ -1474,6 +1479,15 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
     }
 
     priv->windows.insert (++it, w);
+    if (w->id () != 1)
+        priv->windowsMap[w->id ()] = w;
+}
+
+void
+CompScreen::eraseWindowFromMap (Window id)
+{
+    if (id != 1)
+        priv->windowsMap.erase (id);
 }
 
 void
@@ -1483,6 +1497,7 @@ CompScreen::unhookWindow (CompWindow *w)
 	std::find (priv->windows.begin (), priv->windows.end (), w);
 
     priv->windows.erase (it);
+    eraseWindowFromMap (w->id ());
 
     if (w->next)
 	w->next->prev = w->prev;

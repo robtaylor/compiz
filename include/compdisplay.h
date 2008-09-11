@@ -237,6 +237,8 @@ class CompDisplay :
 
 	int shapeEvent ();
 
+	int syncEvent ();
+
 	SnDisplay *
 	snDisplay ();
 
@@ -286,7 +288,7 @@ class CompDisplay :
 	findWindow (Window id);
 
 	CompWindow *
-	findTopLevelWindow (Window id);
+	findTopLevelWindow (Window id, bool override_redirect = false);
 
 
 
