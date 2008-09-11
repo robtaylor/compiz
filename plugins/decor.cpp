@@ -784,46 +784,44 @@ DecorWindow::updateFrame ()
 			       width, height);
 	    XLowerWindow (display->dpy (), inputFrame);
 
-	    if (!REGION_NOT_EMPTY (frameRegion))
-	    {
-		rects[i].x	= 0;
-		rects[i].y	= 0;
-		rects[i].width  = width;
-		rects[i].height = input.top;
 
-		if (rects[i].width && rects[i].height)
-		    i++;
+	    rects[i].x	= 0;
+	    rects[i].y	= 0;
+	    rects[i].width  = width;
+	    rects[i].height = input.top;
 
-		rects[i].x	= 0;
-		rects[i].y	= input.top;
-		rects[i].width  = input.left;
-		rects[i].height = height - input.top - input.bottom;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-		if (rects[i].width && rects[i].height)
-		    i++;
+	    rects[i].x	= 0;
+	    rects[i].y	= input.top;
+	    rects[i].width  = input.left;
+	    rects[i].height = height - input.top - input.bottom;
 
-		rects[i].x	= width - input.right;
-		rects[i].y	= input.top;
-		rects[i].width  = input.right;
-		rects[i].height = height - input.top - input.bottom;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-		if (rects[i].width && rects[i].height)
-		    i++;
+	    rects[i].x	= width - input.right;
+	    rects[i].y	= input.top;
+	    rects[i].width  = input.right;
+	    rects[i].height = height - input.top - input.bottom;
 
-		rects[i].x	= 0;
-		rects[i].y	= height - input.bottom;
-		rects[i].width  = width;
-		rects[i].height = input.bottom;
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-		if (rects[i].width && rects[i].height)
-		    i++;
+	    rects[i].x	= 0;
+	    rects[i].y	= height - input.bottom;
+	    rects[i].width  = width;
+	    rects[i].height = input.bottom;
 
-		XShapeCombineRectangles (display->dpy (), inputFrame,
-					 ShapeInput, 0, 0, rects, i,
-					 ShapeSet, YXBanded);
+	    if (rects[i].width && rects[i].height)
+		i++;
 
-		EMPTY_REGION (frameRegion);
-	    }
+	    XShapeCombineRectangles (display->dpy (), inputFrame,
+					ShapeInput, 0, 0, rects, i,
+					ShapeSet, YXBanded);
+
+	    EMPTY_REGION (frameRegion);
 	}
     }
     else
