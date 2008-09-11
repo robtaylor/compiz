@@ -807,6 +807,8 @@ CompWindow::updateRegion ()
 
     if (shapeRects)
 	XFree (shapeRects);
+
+    updateFrameRegion ();
 }
 
 bool
@@ -1297,8 +1299,6 @@ CompWindow::resize (CompWindow::Geometry gm)
 	resizeNotify (dx, dy, dwidth, dheight);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
-
-	updateFrameRegion ();
     }
     else if (priv->attrib.x != gm.x () || priv->attrib.y != gm.y ())
     {
