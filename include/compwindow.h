@@ -602,6 +602,10 @@ class CompWindow :
 	unsigned int mwmDecor ();
 	unsigned int mwmFunc ();
 
+	bool constrainNewWindowSize (int width,
+				     int height,
+				     int *newWidth,
+				     int *newHeight);
 	
 	static unsigned int
 	constrainWindowState (unsigned int state,

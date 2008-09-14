@@ -766,13 +766,25 @@ DecorWindow::updateFrame ()
 	    if (display->XShape ())
         	XShapeSelectInput (display->dpy (), inputFrame,
 				   ShapeNotifyMask);
+
+	    oldX = 0;
+	    oldY = 0;
+	    oldWidth  = 0;
+	    oldHeight = 0;
 	}
 
-	XMoveResizeWindow (display->dpy (), inputFrame, x, y, width, height);
-	XLowerWindow (display->dpy (), inputFrame);
-
-	if (!REGION_NOT_EMPTY (frameRegion))
+	if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
 	{
+	    oldX = x;
+	    oldY = y;
+	    oldWidth  = width;
+	    oldHeight = height;
+
+	    XMoveResizeWindow (display->dpy (), inputFrame, x, y,
+			       width, height);
+	    XLowerWindow (display->dpy (), inputFrame);
+
+
 	    rects[i].x	= 0;
 	    rects[i].y	= 0;
 	    rects[i].width  = width;
@@ -805,8 +817,9 @@ DecorWindow::updateFrame ()
 	    if (rects[i].width && rects[i].height)
 		i++;
 
-	    XShapeCombineRectangles (display->dpy (), inputFrame, ShapeInput,
-				    0, 0, rects, i, ShapeSet, YXBanded);
+	    XShapeCombineRectangles (display->dpy (), inputFrame,
+					ShapeInput, 0, 0, rects, i,
+					ShapeSet, YXBanded);
 
 	    EMPTY_REGION (frameRegion);
 	}
@@ -820,6 +833,11 @@ DecorWindow::updateFrame ()
 	    XDestroyWindow (display->dpy (), inputFrame);
 	    inputFrame = None;
 	    EMPTY_REGION (frameRegion);
+
+	    oldX = 0;
+	    oldY = 0;
+	    oldWidth  = 0;
+	    oldHeight = 0;
 	}
     }
 }
@@ -1044,12 +1062,14 @@ DecorDisplay::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ConfigureNotify:
-	    w = display->findTopLevelWindow (event->xproperty.window);
+	    w = display->findTopLevelWindow (event->xconfigure.window);
 	    if (w)
 	    {
 		DECOR_WINDOW (w);
 		if (dw->decor)
+		{
 		    dw->updateFrame ();
+		}
 	    }
 	    break;
 	case DestroyNotify:

@@ -927,6 +927,13 @@ CompDisplay::shapeEvent ()
     return priv->shapeEvent;
 }
 
+int
+CompDisplay::syncEvent ()
+{
+    return priv->syncEvent;
+}
+
+
 SnDisplay *
 CompDisplay::snDisplay ()
 {

@@ -237,6 +237,8 @@ class CompDisplay :
 
 	int shapeEvent ();
 
+	int syncEvent ();
+
 	SnDisplay *
 	snDisplay ();
 

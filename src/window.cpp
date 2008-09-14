@@ -696,8 +696,7 @@ PrivateWindow::updateFrameWindow ()
 			   serverGeometry.width (), serverGeometry.height ());
         window->sendConfigureNotify ();
 
-	XShapeCombineRegion (d->dpy (), frame, ShapeBounding,
-			     -x, -y, frameRegion, ShapeSet);
+	window->updateFrameRegion ();
 	window->windowNotify (CompWindowNotifyFrameUpdate);
     }
     else
@@ -808,6 +807,8 @@ CompWindow::updateRegion ()
 
     if (shapeRects)
 	XFree (shapeRects);
+
+    updateFrameRegion ();
 }
 
 bool
@@ -1298,8 +1299,6 @@ CompWindow::resize (CompWindow::Geometry gm)
 	resizeNotify (dx, dy, dwidth, dheight);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
-
-	updateFrameRegion ();
     }
     else if (priv->attrib.x != gm.x () || priv->attrib.y != gm.y ())
     {
@@ -1470,7 +1469,6 @@ CompWindow::configureFrame (XConfigureEvent *ce)
     y      = ce->y + priv->input.top;
     width  = ce->width - priv->input.left - priv->input.right;
     height = ce->height - priv->input.top - priv->input.bottom;
-
 
     if (priv->syncWait)
     {
@@ -2153,6 +2151,7 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
 	wc.y      -= input.top;
 	wc.width  += input.left + input.right;
 	wc.height += input.top + input.bottom;
+	
 	XConfigureWindow (screen->display ()->dpy (), frame,
 			  valueMask, &wc);
 	valueMask &= ~(CWSibling | CWStackMode);
@@ -2392,7 +2391,7 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	    xwc->width  = old.width ();
 	    xwc->height = old.height ();
 
-	    constrainNewWindowSize (width, height, &width, &height);
+	    window->constrainNewWindowSize (width, height, &width, &height);
 
 	    if (width != (int) old.width ())
 	    {
@@ -2596,8 +2595,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
     {
 	int width, height;
 
-	if (priv->constrainNewWindowSize (xwc->width, xwc->height,
-					  &width, &height))
+	if (constrainNewWindowSize (xwc->width, xwc->height, &width, &height))
 	{
 	    if (width != xwc->width)
 		xwcm |= CWWidth;
@@ -3058,13 +3056,13 @@ CompWindow::activate ()
 #define PHorzResizeInc (1 << 1)
 
 bool
-PrivateWindow::constrainNewWindowSize (int        width,
-				       int        height,
-				       int        *newWidth,
-				       int        *newHeight)
+CompWindow::constrainNewWindowSize (int        width,
+				    int        height,
+				    int        *newWidth,
+				    int        *newHeight)
 {
-    CompDisplay      *d = screen->display ();
-    const XSizeHints *hints = &sizeHints;
+    CompDisplay      *d = priv->screen->display ();
+    const XSizeHints *hints = &priv->sizeHints;
     int              oldWidth = width;
     int              oldHeight = height;
     int		     min_width = 0;
@@ -3080,14 +3078,14 @@ PrivateWindow::constrainNewWindowSize (int        width,
 
     if (d->getOption ("ignore_hints_when_maximized")->value ().b ())
     {
-	if (state & MAXIMIZE_STATE)
+	if (priv->state & MAXIMIZE_STATE)
 	{
 	    flags &= ~PAspect;
 
-	    if (state & CompWindowStateMaximizedHorzMask)
+	    if (priv->state & CompWindowStateMaximizedHorzMask)
 		resizeIncFlags &= ~PHorzResizeInc;
 
-	    if (state & CompWindowStateMaximizedVertMask)
+	    if (priv->state & CompWindowStateMaximizedVertMask)
 		resizeIncFlags &= ~PVertResizeInc;
 	}
     }
@@ -4828,10 +4826,11 @@ CompWindow::mwmFunc ()
 void
 CompWindow::updateFrameRegion ()
 {
-    REGION            r;
+    REGION r;
+    int    x, y;
 
-    if (priv->input.left || priv->input.right ||
-	priv->input.top || priv->input.bottom)
+    if ((priv->input.left || priv->input.right ||
+	priv->input.top || priv->input.bottom) && priv->frame)
     {
 
 	XSubtractRegion (&emptyRegion, &emptyRegion, priv->frameRegion);
@@ -4852,11 +4851,13 @@ CompWindow::updateFrameRegion ()
 	
 	XUnionRegion (priv->frameRegion, priv->region, priv->frameRegion);
 
-	priv->updateFrameWindow ();
-    }
-    else if (priv->frame)
-    {
-	priv->updateFrameWindow ();
+	x = priv->serverGeometry.x () - priv->input.left;
+	y = priv->serverGeometry.y () - priv->input.top;
+
+
+	XShapeCombineRegion (priv->screen->display ()->dpy (), priv->frame,
+			     ShapeBounding, -x, -y, priv->frameRegion,
+			     ShapeSet);
     }
 }
 
@@ -4873,7 +4874,7 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 	priv->input = *i;
 
 	updateSize ();
-	updateFrameRegion ();
+	priv->updateFrameWindow ();
 	recalcActions ();
 
 	data[0] = i->left;

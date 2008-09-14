@@ -222,6 +222,10 @@ class DecorWindow :
 	Region frameRegion;
 
 	Window inputFrame;
+	int    oldX;
+	int    oldY;
+	int    oldWidth;
+	int    oldHeight;
 
 	CompCore::Timer resizeUpdate;
 	CompCore::Timer moveUpdate;
