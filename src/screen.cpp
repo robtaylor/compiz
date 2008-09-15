@@ -491,7 +491,7 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     std::list<CompStartupSequence *>::iterator it = startupSequences.begin ();
 
-    while (it != startupSequences.end ())
+    for (; it != startupSequences.end (); it++)
     {
 	if ((*it)->sequence == sequence)
 	{
