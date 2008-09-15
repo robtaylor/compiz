@@ -72,8 +72,7 @@ typedef enum {
 } CompLogLevel;
 
 void
-compLogMessage (CompDisplay  *d,
-		const char   *componentName,
+compLogMessage (const char   *componentName,
 		CompLogLevel level,
 		const char   *format,
 		...);

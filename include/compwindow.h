@@ -656,84 +656,13 @@ class CompWindow :
 	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion, Region);
 
 	friend class PrivateWindow;
+	friend class CompScreen;
+	friend class PrivateScreen;
 	
     private:
 	PrivateWindow *priv;
 
 
-    public:
-
-	// static action functions
-	static bool
-	closeWin (CompDisplay        *d,
-		  CompAction         *action,
-		  CompAction::State  state,
-		  CompOption::Vector &options);
-
-	static bool
-	unmaximizeAction (CompDisplay        *d,
-			  CompAction         *action,
-			  CompAction::State  state,
-			  CompOption::Vector &options);
-
-	static bool
-	minimizeAction (CompDisplay        *d,
-			CompAction         *action,
-			CompAction::State  state,
-			CompOption::Vector &options);
-
-	static bool
-	maximizeAction (CompDisplay        *d,
-			CompAction         *action,
-			CompAction::State  state,
-			CompOption::Vector &options);
-
-	static bool
-	maximizeHorizontally (CompDisplay        *d,
-			      CompAction         *action,
-			      CompAction::State  state,
-			      CompOption::Vector &options);
-
-	static bool
-	maximizeVertically (CompDisplay        *d,
-			    CompAction         *action,
-			    CompAction::State  state,
-			    CompOption::Vector &options);
-	static bool
-	raiseInitiate (CompDisplay        *d,
-		       CompAction         *action,
-		       CompAction::State  state,
-		       CompOption::Vector &options);
-	static bool
-	lowerInitiate (CompDisplay        *d,
-		       CompAction         *action,
-		       CompAction::State  state,
-		       CompOption::Vector &options);
-
-	static bool
-	toggleMaximized (CompDisplay        *d,
-			 CompAction         *action,
-			 CompAction::State  state,
-			 CompOption::Vector &options);
-
-	static bool
-	toggleMaximizedHorizontally (CompDisplay        *d,
-				     CompAction         *action,
-				     CompAction::State  state,
-				     CompOption::Vector &options);
-
-	static bool
-	toggleMaximizedVertically (CompDisplay        *d,
-				   CompAction         *action,
-				   CompAction::State  state,
-				   CompOption::Vector &options);
-
-	static bool
-	shade (CompDisplay        *d,
-	       CompAction         *action,
-	       CompAction::State  state,
-	       CompOption::Vector &options);
-		
 };
 
 #endif

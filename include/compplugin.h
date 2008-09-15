@@ -61,16 +61,9 @@
         delete obj;                          \
 }
 
-#define INIT_OBJECT(obj, hasCore, hasDisplay, hasScreen, hasWindow, 			\
-                    coreName, displayName, screenName, windowName) 			\
+#define INIT_OBJECT(obj, hasScreen, hasWindow, screenName, windowName) 			\
     switch ( obj ->objectType ())							\
     {											\
-	case COMP_OBJECT_TYPE_CORE:							\
-	    __INIT_PLUGIN_OBJECT_ ## hasCore (coreName, GET_CORE_CORE (obj))		\
-	    break;									\
-	case COMP_OBJECT_TYPE_DISPLAY:							\
-	    __INIT_PLUGIN_OBJECT_ ## hasDisplay (displayName, GET_CORE_DISPLAY (obj)) 	\
-	    break;									\
 	case COMP_OBJECT_TYPE_SCREEN:							\
 	    __INIT_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj)) 	\
 	    break;									\
@@ -81,16 +74,9 @@
 	    break;									\
     }
 
-#define FINI_OBJECT(obj, hasCore, hasDisplay, hasScreen, hasWindow, 			\
-                    coreName, displayName, screenName, windowName) 			\
+#define FINI_OBJECT(obj, hasScreen, hasWindow, screenName, windowName) 			\
     switch ( obj ->objectType ())							\
     {											\
-	case COMP_OBJECT_TYPE_CORE:							\
-	    __FINI_PLUGIN_OBJECT_ ## hasCore (coreName, GET_CORE_CORE (obj))		\
-	    break;									\
-	case COMP_OBJECT_TYPE_DISPLAY:							\
-	    __FINI_PLUGIN_OBJECT_ ## hasDisplay (displayName, GET_CORE_DISPLAY (obj)) 	\
-	    break;									\
 	case COMP_OBJECT_TYPE_SCREEN:							\
 	    __FINI_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj))	\
 	    break;									\
@@ -101,13 +87,9 @@
 	    break;									\
     }
 
-#define GET_OBJECT_OPTIONS(obj, hasDisplay, hasScreen, displayName, screenName) \
+#define GET_OBJECT_OPTIONS(obj, hasScreen, screenName) \
     switch ( obj ->objectType ())						\
     {										\
-	case COMP_OBJECT_TYPE_DISPLAY:						\
-	    __GET_PLUGIN_OBJECT_OPTIONS_ ## hasDisplay				\
-		(displayName, GET_CORE_DISPLAY (obj)) 				\
-	    break;								\
 	case COMP_OBJECT_TYPE_SCREEN:						\
 	    __GET_PLUGIN_OBJECT_OPTIONS_ ## hasScreen 				\
 		(screenName, GET_CORE_SCREEN (obj)) 				\
@@ -116,13 +98,9 @@
 	    break;								\
     }
 
-#define SET_OBJECT_OPTION(obj, hasDisplay, hasScreen, displayName, screenName)	\
+#define SET_OBJECT_OPTION(obj, hasScreen, screenName)	\
     switch ( obj ->objectType ())						\
     {										\
-	case COMP_OBJECT_TYPE_DISPLAY:						\
-	    __SET_PLUGIN_OBJECT_OPTION_ ## hasDisplay				\
-		(displayName, GET_CORE_DISPLAY (obj), name, value) 		\
-	    break;								\
 	case COMP_OBJECT_TYPE_SCREEN:						\
 	    __SET_PLUGIN_OBJECT_OPTION_ ## hasScreen				\
 		(screenName, GET_CORE_SCREEN (obj), name, value) 		\

@@ -500,8 +500,54 @@ CompOption::CompOption (CompString name, CompOption::Type type) :
     setName (name, type);
 }
 
+static void
+finiScreenOptionValue (CompScreen        *s,
+		       CompOption::Value &v,
+		       CompOption::Type  type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+if (v.action ().state () & CompAction::StateAutoGrab)
+		s->removeAction (&v.action ());
+	    break;
+	case CompOption::TypeList:
+	    foreach (CompOption::Value &val, v.list ())
+		finiScreenOptionValue (s, val, v.listType ());
+	default:
+	    break;
+    }
+}
+
+static void
+finiOptionValue (CompOption::Value &v,
+		 CompOption::Type  type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    if (v.action ().state () & CompAction::StateAutoGrab && screen)
+	    {
+		screen->removeAction (&v.action ());
+	    }
+	    break;
+	case CompOption::TypeList:
+	    foreach (CompOption::Value &val, v.list ())
+		finiOptionValue (val, v.listType ());
+	default:
+	    break;
+    }
+}
+
 CompOption::~CompOption ()
 {
+    finiOptionValue (priv->value, priv->type);
     delete priv;
 }
 
@@ -751,116 +797,25 @@ CompOption::typeToString (CompOption::Type type)
 }
 
 bool
-CompOption::setScreenOption (CompScreen        *s,
-			     CompOption        &o,
-			     CompOption::Value &value)
-{
-    return o.set (value);
-}
-
-bool
-CompOption::setDisplayOption (CompDisplay       *d,
-			      CompOption        &o,
-			      CompOption::Value &value)
+CompOption::setOption (CompOption        &o,
+		       CompOption::Value &value)
 {
     if (o.isAction () &&
-    o.value ().action ().state () & CompAction::StateAutoGrab)
+        o.value ().action ().state () & CompAction::StateAutoGrab && screen)
     {
-	CompScreen *s = NULL;
-
-	foreach (CompScreen *ss, d->screens ())
-	    if (!ss->addAction (&value.action ()))
-	    {
-		s = ss;
-		break;
-	    }
-
-	if (s)
+	if (!screen->addAction (&value.action ()))
 	{
-
-	    foreach (CompScreen *ss, d->screens ())
-	    {
-		if (s == ss)
-		    break;
-		ss->removeAction (&value.action ());
-	    }
-
 	    return false;
 	}
 	else
 	{
-	    foreach (CompScreen *ss, d->screens ())
-		ss->removeAction (&o.value ().action ());
+    	    screen->removeAction (&o.value ().action ());
 	}
 
 	return o.set (value);
     }
 
     return o.set (value);
-}
-
-static void
-finiScreenOptionValue (CompScreen        *s,
-		       CompOption::Value &v,
-		       CompOption::Type  type)
-{
-    switch (type) {
-	case CompOption::TypeAction:
-	case CompOption::TypeKey:
-	case CompOption::TypeButton:
-	case CompOption::TypeEdge:
-	case CompOption::TypeBell:
-	    if (v.action ().state () & CompAction::StateAutoGrab)
-		s->removeAction (&v.action ());
-	    break;
-	case CompOption::TypeList:
-	    foreach (CompOption::Value &val, v.list ())
-		finiScreenOptionValue (s, val, v.listType ());
-	default:
-	    break;
-    }
-}
-
-static void
-finiDisplayOptionValue (CompDisplay	  *d,
-			CompOption::Value &v,
-			CompOption::Type  type)
-{
-    switch (type) {
-	case CompOption::TypeAction:
-	case CompOption::TypeKey:
-	case CompOption::TypeButton:
-	case CompOption::TypeEdge:
-	case CompOption::TypeBell:
-	    if (v.action ().state () & CompAction::StateAutoGrab)
-	    {
-		foreach (CompScreen *s, d->screens ())
-		    s->removeAction (&v.action ());
-	    }
-	    break;
-	case CompOption::TypeList:
-	    foreach (CompOption::Value &val, v.list ())
-		finiDisplayOptionValue (d, val, v.listType ());
-	default:
-	    break;
-    }
-}
-
-
-void
-CompOption::finiScreenOptions (CompScreen         *s,
-			       CompOption::Vector &options)
-{
-    foreach (CompOption &o, options)
-	finiScreenOptionValue (s, o.value (), o.type ());
-}
-
-void
-CompOption::finiDisplayOptions (CompDisplay        *d,
-				CompOption::Vector &options)
-{
-    foreach (CompOption &o, options)
-	finiDisplayOptionValue (d, o.value (), o.type ());
 }
 
 PrivateOption::PrivateOption () :

@@ -67,8 +67,6 @@ typedef XBool Bool;
 #endif
 
 #include <compobject.h>
-#include <compcore.h>
-#include <compdisplay.h>
 #include <compscreen.h>
 #include <compwindow.h>
 #include <compplugin.h>

@@ -32,7 +32,6 @@
 #include <compoption.h>
 #include <compaction.h>
 #include <compscreen.h>
-#include <compdisplay.h>
 #include <privateaction.h>
 
 struct _Modifier {
@@ -70,8 +69,7 @@ struct _Edge {
 };
 
 static CompString
-modifiersToString (CompDisplay  *d,
-		   unsigned int modMask)
+modifiersToString (unsigned int modMask)
 {
     CompString binding = "";
 
@@ -85,8 +83,7 @@ modifiersToString (CompDisplay  *d,
 }
 
 static unsigned int
-stringToModifiers (CompDisplay *d,
-		   CompString  str)
+stringToModifiers (CompString  str)
 {
     unsigned int mods = 0;
 
@@ -100,8 +97,7 @@ stringToModifiers (CompDisplay *d,
 }
 
 static unsigned int
-bindingStringToEdgeMask (CompDisplay *d,
-			 CompString  str)
+bindingStringToEdgeMask (CompString  str)
 {
     unsigned int edgeMask = 0;
 
@@ -113,8 +109,7 @@ bindingStringToEdgeMask (CompDisplay *d,
 }
 
 static CompString
-edgeMaskToBindingString (CompDisplay  *d,
-			 unsigned int edgeMask)
+edgeMaskToBindingString (unsigned int edgeMask)
 {
     CompString binding = "";
     int  i;
@@ -151,14 +146,17 @@ CompAction::KeyBinding::keycode ()
 }
 
 bool
-CompAction::KeyBinding::fromString (CompDisplay *d, const CompString str)
+CompAction::KeyBinding::fromString (const CompString str)
 {
     CompString   sStr;
     unsigned int mods;
     size_t       pos;
     KeySym	 keysym;
 
-    mods = stringToModifiers (d, str);
+    if (!screen)
+	return false;
+
+    mods = stringToModifiers (str);
 
     pos = str.rfind ('>');
     if (pos != std::string::npos)
@@ -186,7 +184,7 @@ CompAction::KeyBinding::fromString (CompDisplay *d, const CompString str)
     {
 	KeyCode keycode;
 
-	keycode = XKeysymToKeycode (d->dpy (), keysym);
+	keycode = XKeysymToKeycode (screen->dpy (), keysym);
 	if (keycode)
 	{
 	    mKeycode   = keycode;
@@ -208,18 +206,21 @@ CompAction::KeyBinding::fromString (CompDisplay *d, const CompString str)
 }
 
 CompString
-CompAction::KeyBinding::toString (CompDisplay *d)
+CompAction::KeyBinding::toString ()
 {
     CompString binding = "";
 
-    binding = modifiersToString (d, mModifiers);
+    if (!screen)
+	return "";
+
+    binding = modifiersToString (mModifiers);
 
     if (mKeycode != 0)
     {
 	KeySym keysym;
 	char   *keyname;
 
-	keysym  = XKeycodeToKeysym (d->dpy (), mKeycode, 0);
+	keysym  = XKeycodeToKeysym (screen->dpy (), mKeycode, 0);
 	keyname = XKeysymToString (keysym);
 
 	if (keyname)
@@ -260,12 +261,12 @@ CompAction::ButtonBinding::button ()
 }
 
 bool
-CompAction::ButtonBinding::fromString (CompDisplay *d, const CompString str)
+CompAction::ButtonBinding::fromString (const CompString str)
 {
     unsigned int mods;
     size_t       pos;
 
-    mods = stringToModifiers (d, str);
+    mods = stringToModifiers (str);
 
     pos = str.rfind ('>');
     if (pos != std::string::npos)
@@ -292,14 +293,14 @@ CompAction::ButtonBinding::fromString (CompDisplay *d, const CompString str)
 }
 
 CompString
-CompAction::ButtonBinding::toString (CompDisplay *d)
+CompAction::ButtonBinding::toString ()
 {
     CompString binding;
 
     if (!mModifiers && !mButton)
 	return "";
 
-    binding = modifiersToString (d, mModifiers);
+    binding = modifiersToString (mModifiers);
     binding += compPrintf ("Button%d", mButton);
 
     return binding;
@@ -441,20 +442,20 @@ CompAction::operator= (const CompAction &action)
 }
 
 void
-CompAction::keyFromString (CompDisplay *d, const CompString str)
+CompAction::keyFromString (const CompString str)
 {
-    if (priv->key.fromString (d, str))
+    if (priv->key.fromString (str))
 	priv->type = CompAction::BindingTypeKey;
     else
 	priv->type = CompAction::BindingTypeNone;
 }
 
 void
-CompAction::buttonFromString (CompDisplay *d, const CompString str)
+CompAction::buttonFromString (const CompString str)
 {
-    if (priv->button.fromString (d, str))
+    if (priv->button.fromString (str))
     {
-	priv->edgeMask = bindingStringToEdgeMask (d, str);
+	priv->edgeMask = bindingStringToEdgeMask (str);
 	if (priv->edgeMask)
 	    priv->type = CompAction::BindingTypeEdgeButton;
 	else
@@ -496,11 +497,11 @@ CompAction::edgeMaskFromString (const CompString str)
 }
 
 CompString
-CompAction::keyToString (CompDisplay *d)
+CompAction::keyToString ()
 {
     CompString binding;
 
-    binding = priv->key.toString (d);
+    binding = priv->key.toString ();
     if (binding.size () == 0)
 	return "Disabled";
 
@@ -508,12 +509,12 @@ CompAction::keyToString (CompDisplay *d)
 }
 
 CompString
-CompAction::buttonToString (CompDisplay *d)
+CompAction::buttonToString ()
 {
     CompString binding = "", edge = "";
 
-    binding = modifiersToString (d, priv->button.modifiers ());
-    binding += edgeMaskToBindingString (d, priv->edgeMask);
+    binding = modifiersToString (priv->button.modifiers ());
+    binding += edgeMaskToBindingString (priv->edgeMask);
 
     binding += compPrintf ("Button%d", priv->button.button ());
 

@@ -5,7 +5,6 @@
 
 #include <compaction.h>
 #include <compmatch.h>
-#include <compdisplay.h>
 #include <compscreen.h>
 
 typedef struct _CompOptionIntRestriction {

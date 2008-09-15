@@ -25,10 +25,8 @@ class CompMetadata {
     public:
 	CompMetadata ();
         CompMetadata (CompString       plugin,
-		      const OptionInfo *displayOptionInfo = NULL,
-		      unsigned int     nDisplayOptionInfo = 0,
-		      const OptionInfo *screenOptionInfo = NULL,
-		      unsigned int     nScreenOptionInfo = 0);
+		      const OptionInfo *optionInfo = NULL,
+		      unsigned int     nOptionInfo = 0);
 	~CompMetadata ();
 
 	std::vector<xmlDoc *> &doc ();
@@ -39,35 +37,22 @@ class CompMetadata {
 		        xmlInputCloseCallback ioclose,
 		        void                  *ioctx);
 
-	bool initScreenOption (CompScreen *screen,
-			       CompOption *option,
-			       CompString name);
+	bool initOption (CompOption *option,
+			 CompString name);
 
-	bool initDisplayOption (CompDisplay *display,
-				CompOption  *option,
-				CompString  name);
+	bool initOptions (const OptionInfo   *info,
+			  unsigned int       nOptions,
+			  CompOption::Vector &options);
 
-	bool initScreenOptions (CompScreen         *screen,
-				const OptionInfo   *info,
-				unsigned int       nOptions,
-				CompOption::Vector &options);
 
-	bool initDisplayOptions (CompDisplay        *display,
-				 const OptionInfo   *info,
-				 unsigned int       nOptions,
-				 CompOption::Vector &options);
 
 	CompString getShortPluginDescription ();
 
 	CompString getLongPluginDescription ();
 
-	CompString getShortScreenOptionDescription (CompOption *option);
+	CompString getShortOptionDescription (CompOption *option);
 
-	CompString getLongScreenOptionDescription (CompOption *option);
-
-	CompString getShortDisplayOptionDescription (CompOption *option);
-
-	CompString getLongDisplayOptionDescription (CompOption *option);
+	CompString getLongOptionDescription (CompOption *option);
 	
 	CompString getStringFromPath (CompString path);
 

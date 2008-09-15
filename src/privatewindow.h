@@ -4,6 +4,7 @@
 #include <compiz-core.h>
 #include <compwindow.h>
 #include <comppoint.h>
+#include <core/timer.h>
 
 #define WINDOW_INVISIBLE(w)				          \
     ((w)->attrib.map_state != IsViewable		       || \
@@ -216,7 +217,7 @@ class PrivateWindow {
 	XSyncValue	  syncValue;
 	XSyncAlarm	  syncAlarm;
 	unsigned long syncAlarmConnection;
-	CompCore::Timer   syncWaitTimer;
+	CompTimer   syncWaitTimer;
 
 	bool     syncWait;
 	CompWindow::Geometry syncGeometry;

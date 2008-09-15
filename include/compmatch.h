@@ -22,12 +22,10 @@ class CompMatch {
 	CompMatch (const CompMatch &);
 	~CompMatch ();
 
-	void update (CompDisplay *display);
+	void update ();
 	bool evaluate (CompWindow *window);
 
 	CompString toString ();
-
-	CompDisplay *display ();
 
 	CompMatch & operator= (const CompMatch &);
 	CompMatch & operator&= (const CompMatch &);

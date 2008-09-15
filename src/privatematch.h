@@ -51,7 +51,6 @@ class PrivateMatch {
 
     public:
 	MatchGroupOp op;
-	CompDisplay  *display;
 };
 
 #endif

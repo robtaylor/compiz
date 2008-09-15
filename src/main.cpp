@@ -37,9 +37,7 @@
 #include <sys/wait.h>
 
 #include <compiz-core.h>
-#include "privatedisplay.h"
 #include "privatescreen.h"
-#include "privatecore.h"
 
 char *programName;
 char **programArgv;
@@ -60,7 +58,6 @@ bool indirectRendering = false;
 bool strictBinding = true;
 bool noDetection = false;
 bool useDesktopHints = true;
-bool onlyCurrentScreen = false;
 
 bool useCow = true;
 
@@ -79,7 +76,6 @@ usage (void)
 	    "[--sm-client-id ID] "
 	    "[--no-detection]\n       "
 	    "[--ignore-desktop-hints] "
-	    "[--only-current-screen]"
 	    " [--use-root-window]\n       "
 	    "[--version] "
 	    "[--help] "
@@ -122,15 +118,15 @@ readCoreXmlCallback (void *context,
     unsigned int offset = ctx->offset;
     unsigned int i, j;
 
-    i = CompMetadata::readXmlChunk ("<compiz><core><display>", &offset, buffer,
+    i = CompMetadata::readXmlChunk ("<compiz><core><options>", &offset, buffer,
 				    length);
 
-    for (j = 0; j < COMP_DISPLAY_OPTION_NUM; j++)
+    for (j = 0; j < COMP_OPTION_NUM; j++)
     {
-	CompMetadata::OptionInfo info = coreDisplayOptionInfo[j];
+	CompMetadata::OptionInfo info = coreOptionInfo[j];
 
 	switch (j) {
-	case COMP_DISPLAY_OPTION_ACTIVE_PLUGINS:
+	case COMP_OPTION_ACTIVE_PLUGINS:
 	    if (ctx->pluginData)
 		info.data = ctx->pluginData;
 	    break;
@@ -142,7 +138,7 @@ readCoreXmlCallback (void *context,
 						       buffer + i, length - i);
     }
 
-    i += CompMetadata::readXmlChunk ("</display></core></compiz>", &offset,
+    i += CompMetadata::readXmlChunk ("</options></core></compiz>", &offset,
 				     buffer + i, length - 1);
 
     if (!offset && length > (int)i)
@@ -218,10 +214,6 @@ main (int argc, char **argv)
 	{
 	    useDesktopHints = FALSE;
 	}
-	else if (!strcmp (argv[i], "--only-current-screen"))
-	{
-	    onlyCurrentScreen = TRUE;
-	}
 	else if (!strcmp (argv[i], "--use-root-window"))
 	{
 	    useCow = FALSE;
@@ -250,7 +242,7 @@ main (int argc, char **argv)
 	}
 	else if (*argv[i] == '-')
 	{
-	    compLogMessage (NULL, "core", CompLogLevelWarn,
+	    compLogMessage ("core", CompLogLevelWarn,
 			    "Unknown option '%s'\n", argv[i]);
 	}
 	else
@@ -295,26 +287,23 @@ main (int argc, char **argv)
 
     coreMetadata->addFromFile ("core");
 
-    core = new CompCore();
+    screen = new CompScreen();
 
-    if (!core)
+    if (!screen)
 	return 1;
 
-    if (!core->init ())
+    if (!screen->init (displayName))
 	return 1;
 
     if (!disableSm)
 	CompSession::initSession (clientId);
 
-    if (!core->addDisplay (displayName))
-	return 1;
-
-    core->eventLoop ();
+    screen->eventLoop ();
 
     if (!disableSm)
 	CompSession::closeSession ();
 
-    delete core;
+    delete screen;
     delete coreMetadata;
 
     xmlCleanupParser ();

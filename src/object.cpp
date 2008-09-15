@@ -29,7 +29,6 @@
 #include <boost/bind.hpp>
 
 #include <compiz-core.h>
-#include <compcore.h>
 #include "privateobject.h"
 
 PrivateObject::PrivateObject () :
@@ -98,7 +97,7 @@ CompObject::addChild (CompObject *object)
 	return;
     object->priv->parent = this;
     priv->children.push_back (object);
-    core->objectAdd (this, object);
+    screen->objectAdd (this, object);
 }
 
 void
@@ -115,7 +114,7 @@ CompObject::removeFromParent ()
 	if (it != priv->parent->priv->children.end ())
 	{
 	    priv->parent->priv->children.erase (it);
-	    core->objectRemove (priv->parent, this);
+	    screen->objectRemove (priv->parent, this);
 	}
     }
 }
@@ -168,7 +167,7 @@ CompObject::allocatePrivateIndex (CompObject::Type    type,
     iList->resize (i + 1);
     iList->at (i) = true;
 
-    resizePrivates (core, type, i + 1);
+    resizePrivates (screen, type, i + 1);
 
     return i;
 }
@@ -190,6 +189,6 @@ CompObject::freePrivateIndex (CompObject::Type    type,
     unsigned int i = iList->size () - 1;
     iList->resize (i);
 
-    resizePrivates (core, type, i);
+    resizePrivates (screen, type, i);
 }
 

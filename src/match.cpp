@@ -30,7 +30,6 @@
 #define foreach BOOST_FOREACH
 
 #include <compiz-core.h>
-#include "privatedisplay.h"
 
 #include <compscreen.h>
 #include <compmatch.h>
@@ -59,7 +58,7 @@ class CoreExp : public CompMatch::Expression {
 	    else if (str.compare (0, 6, "state=") == 0)
 	    {
 		mType = TypeState;
-		priv.uval = CompDisplay::windowStateFromString
+		priv.uval = CompScreen::windowStateFromString
 				(str.substr (6).c_str ());
 	    }
 	    else if (str.compare (0, 18, "override_redirect=") == 0)
@@ -104,9 +103,9 @@ class CoreExp : public CompMatch::Expression {
 };
 
 CompMatch::Expression *
-CompDisplay::matchInitExp (const CompString str)
+CompScreen::matchInitExp (const CompString str)
 {
-    WRAPABLE_HND_FUNC_RETURN(4, CompMatch::Expression *, matchInitExp, str)
+    WRAPABLE_HND_FUNC_RETURN(12, CompMatch::Expression *, matchInitExp, str)
 
     return new CoreExp (str);
 }
@@ -118,16 +117,13 @@ matchUpdateMatchOptions (CompOption::Vector options)
     {
 	switch (option.type ()) {
 	    case CompOption::TypeMatch:
-		if (option.value ().match ().display ())
-		    option.value ().match ().update (
-			option.value ().match ().display ());
+		option.value ().match ().update ();
 		break;
 	    case CompOption::TypeList:
 		if (option.value ().listType () == CompOption::TypeMatch)
 		{
 		    foreach (CompOption::Value &value, option.value ().list ())
-			if (value.match ().display ())
-			    value.match ().update (value.match ().display ());
+			value.match ().update ();
 		}
 	    default:
 		break;
@@ -136,30 +132,21 @@ matchUpdateMatchOptions (CompOption::Vector options)
 }
 
 void
-CompDisplay::matchExpHandlerChanged ()
+CompScreen::matchExpHandlerChanged ()
 {
-    WRAPABLE_HND_FUNC(5, matchExpHandlerChanged)
+    WRAPABLE_HND_FUNC(13, matchExpHandlerChanged)
 
     foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
 	CompOption::Vector &options = p->vTable->getObjectOptions (this);
 	matchUpdateMatchOptions (options);
     }
-
-    foreach (CompScreen *s, priv->screens)
-    {
-	foreach (CompPlugin *p, CompPlugin::getPlugins ())
-	{
-	    CompOption::Vector &options = p->vTable->getObjectOptions (s);
-	    matchUpdateMatchOptions (options);
-	}
-    }
 }
 
 void
-CompDisplay::matchPropertyChanged (CompWindow *w)
+CompScreen::matchPropertyChanged (CompWindow *w)
 {
-    WRAPABLE_HND_FUNC(6, matchPropertyChanged, w)
+    WRAPABLE_HND_FUNC(14, matchPropertyChanged, w)
 }
 
 
@@ -435,20 +422,19 @@ matchOpsToString (MatchOp::List &list)
 }
 
 static void
-matchUpdateOps (CompDisplay   *display,
-		MatchOp::List &list)
+matchUpdateOps (MatchOp::List &list)
 {
     MatchExpOp *exp;
     foreach (MatchOp &op, list)
     {
 	switch (op.type ()) {
 	    case MatchOp::TypeGroup:
-		matchUpdateOps (display, dynamic_cast <MatchGroupOp &> (op).op);
+		matchUpdateOps (dynamic_cast <MatchGroupOp &> (op).op);
 		break;
 	    case MatchOp::TypeExp:
 		exp = dynamic_cast <MatchExpOp *> (&op);
-		if (exp)
-		    exp->e.reset (display->matchInitExp (exp->value));
+		if (exp && screen)
+		    exp->e.reset (screen->matchInitExp (exp->value));
 		break;
 	    default:
 		break;
@@ -528,8 +514,7 @@ MatchGroupOp::MatchGroupOp () :
 }
 
 PrivateMatch::PrivateMatch () :
-    op (),
-    display (NULL)
+    op ()
 {
 }
 
@@ -558,11 +543,10 @@ CompMatch::~CompMatch ()
 }
 
 void
-CompMatch::update (CompDisplay *display)
+CompMatch::update ()
 {
     matchResetOps (priv->op.op);
-    matchUpdateOps (display, priv->op.op);
-    priv->display = display;
+    matchUpdateOps (priv->op.op);
 }
 	
 bool
@@ -577,17 +561,10 @@ CompMatch::toString ()
     return matchOpsToString (priv->op.op);
 }
 
-CompDisplay *
-CompMatch::display ()
-{
-    return priv->display;
-}
-
 CompMatch &
 CompMatch::operator= (const CompMatch &match)
 {
     priv->op = match.priv->op;
-    priv->display = match.priv->display;
     return *this;
 }
 

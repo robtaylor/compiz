@@ -151,19 +151,9 @@ class CompOption {
 
 	static CompString colorToString (unsigned short *rgba);
 
-	static bool setScreenOption (CompScreen *s,
-				     CompOption &o,
-				     Value      &value);
 
-	static bool setDisplayOption (CompDisplay *d,
-				      CompOption  &o,
-				      Value       &value);
+	static bool setOption (CompOption  &o, Value &value);
 
-	static void finiScreenOptions (CompScreen *s,
-				       Vector     &options);
-
-	static void finiDisplayOptions (CompDisplay *d,
-				        Vector      &options);
 
 
     private:

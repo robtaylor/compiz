@@ -61,8 +61,8 @@ class CompAction {
 		unsigned int modifiers ();
 		int keycode ();
 
-		bool fromString (CompDisplay *d, const CompString str);
-		CompString toString (CompDisplay *d);
+		bool fromString (const CompString str);
+		CompString toString ();
 
 	    private:
 		unsigned int mModifiers;
@@ -77,8 +77,8 @@ class CompAction {
 		unsigned int modifiers ();
 		int button ();
 
-		bool fromString (CompDisplay *d, const CompString str);
-		CompString toString (CompDisplay *d);
+		bool fromString (const CompString str);
+		CompString toString ();
 
 	    private:
 		unsigned int mModifiers;
@@ -87,7 +87,7 @@ class CompAction {
 
 	typedef unsigned int State;
 	typedef unsigned int BindingType;
-	typedef boost::function <bool (CompDisplay *, CompAction *, State, CompOption::Vector &)> CallBack;
+	typedef boost::function <bool (CompAction *, State, CompOption::Vector &)> CallBack;
 
     public:
 	CompAction ();
@@ -119,12 +119,12 @@ class CompAction {
 	bool operator== (const CompAction& val);
 	CompAction & operator= (const CompAction &action);
 
-	void keyFromString (CompDisplay *d, const CompString str);
-	void buttonFromString (CompDisplay *d, const CompString str);
+	void keyFromString (const CompString str);
+	void buttonFromString (const CompString str);
 	void edgeMaskFromString (const CompString str);
 
-	CompString keyToString (CompDisplay *d);
-	CompString buttonToString (CompDisplay *d);
+	CompString keyToString ();
+	CompString buttonToString ();
 	CompString edgeMaskToString ();
 
 	static CompString edgeToString (unsigned int edge);

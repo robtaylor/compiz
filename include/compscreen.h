@@ -4,6 +4,9 @@
 #include <compwindow.h>
 #include <compoutput.h>
 #include <compsession.h>
+#include <compmetadata.h>
+#include <compplugin.h>
+#include <compmatch.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -14,6 +17,35 @@ extern bool       replaceCurrentWm;
 extern bool       indirectRendering;
 extern bool       strictBinding;
 extern bool       noDetection;
+
+extern CompScreen   *screen;
+extern CompMetadata *coreMetadata;
+
+extern REGION emptyRegion;
+extern REGION infiniteRegion;
+
+extern int lastPointerX;
+extern int lastPointerY;
+extern int pointerX;
+extern int pointerY;
+
+#define NOTIFY_CREATE_MASK (1 << 0)
+#define NOTIFY_DELETE_MASK (1 << 1)
+#define NOTIFY_MOVE_MASK   (1 << 2)
+#define NOTIFY_MODIFY_MASK (1 << 3)
+
+typedef boost::function<void ()> FdWatchCallBack;
+typedef boost::function<void (const char *)> FileWatchCallBack;
+
+typedef int CompFileWatchHandle;
+typedef int CompWatchFdHandle;
+
+struct CompFileWatch {
+    char		*path;
+    int			mask;
+    FileWatchCallBack   callBack;
+    CompFileWatchHandle handle;
+};
 
 /* camera distance from screen, 0.5 * tan (FOV) */
 #define DEFAULT_Z_CAMERA 0.866025404f
@@ -75,6 +107,42 @@ struct CompActiveWindowHistory {
 
 class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
     public:
+	virtual void fileWatchAdded (CompFileWatch *fw);
+	virtual void fileWatchRemoved (CompFileWatch *fw);
+
+	virtual bool initPluginForObject (CompPlugin *p, CompObject *o);
+	virtual void finiPluginForObject (CompPlugin *p, CompObject *o);
+
+	virtual bool setOptionForPlugin (CompObject *o, const char *plugin,
+					 const char *name,
+					 CompOption::Value &v);
+
+	virtual void objectAdd (CompObject *parent, CompObject *child);
+	virtual void objectRemove (CompObject *parent, CompObject *child);
+
+	virtual void sessionEvent (CompSession::Event event,
+				   CompOption::Vector &options);
+
+	virtual void handleEvent (XEvent *event);
+        virtual void handleCompizEvent (const char * plugin, const char *event,
+					CompOption::Vector &options);
+
+        virtual bool fileToImage (const char *path, const char *name,
+				  int *width, int *height,
+				  int *stride, void **data);
+	virtual bool imageToFile (const char *path, const char *name,
+				  const char *format, int width, int height,
+				  int stride, void *data);
+
+	virtual CompMatch::Expression *matchInitExp (const CompString value);
+
+	virtual void matchExpHandlerChanged ();
+	virtual void matchPropertyChanged (CompWindow *window);
+
+	virtual void logMessage (const char   *componentName,
+				 CompLogLevel level,
+				 const char   *message);
+
 	virtual void enterShowDesktopMode ();
 	virtual void leaveShowDesktopMode (CompWindow *window);
 
@@ -83,12 +151,12 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 
 class CompScreen :
-    public WrapableHandler<ScreenInterface, 3>,
+    public WrapableHandler<ScreenInterface, 19>,
     public CompObject
 {
 
     public:
-	typedef void* grabHandle;
+	typedef void* GrabHandle;
 
     public:
 	CompScreen ();
@@ -96,14 +164,128 @@ class CompScreen :
 
 	CompString objectName ();
 
-	bool
-	init (CompDisplay *, int);
+	bool init (const char *name);
+	
+	void eventLoop ();
 
-	bool
-	init (CompDisplay *, int, Window, Atom, Time);
+	CompFileWatchHandle addFileWatch (const char        *path,
+					  int               mask,
+					  FileWatchCallBack callBack);
 
-	CompDisplay *
-	display ();
+	void removeFileWatch (CompFileWatchHandle handle);
+	
+	CompWatchFdHandle addWatchFd (int             fd,
+				      short int       events,
+				      FdWatchCallBack callBack);
+	
+	void removeWatchFd (CompWatchFdHandle handle);
+
+	void storeValue (CompString key, CompPrivate value);
+	bool hasValue (CompString key);
+	CompPrivate getValue (CompString key);
+	void eraseValue (CompString key);
+	
+	Display * dpy();
+	
+	CompOption * getOption (const char *);
+
+	bool setOption (const char        *name,
+			CompOption::Value &value);
+
+	bool XRandr ();
+
+	int randrEvent ();
+	
+	bool XShape ();
+
+	int shapeEvent ();
+
+	int syncEvent ();
+
+	SnDisplay * snDisplay ();
+	
+	Window activeWindow ();
+	
+	Window autoRaiseWindow ();
+
+	const char * displayString ();
+
+	unsigned int lastPing ();
+
+	void updateModifierMappings ();
+
+	unsigned int virtualToRealModMask (unsigned int modMask);
+
+	unsigned int keycodeToModifiers (int keycode);
+
+	CompWindow * findWindow (Window id);
+
+	CompWindow * findTopLevelWindow (Window id,
+					 bool   override_redirect = false);
+
+	bool readImageFromFile (const char *name,
+				int        *width,
+				int        *height,
+				void       **data);
+
+	bool writeImageToFile (const char *path,
+			       const char *name,
+			       const char *format,
+			       int        width,
+			       int        height,
+			       void       *data);
+
+	Window getActiveWindow (Window root);
+
+	int getWmState (Window id);
+
+	void setWmState (int state, Window id);
+
+	unsigned int windowStateMask (Atom state);
+
+
+	static unsigned int windowStateFromString (const char *str);
+
+	unsigned int getWindowState (Window id);
+
+	void setWindowState (unsigned int state, Window id);
+
+	unsigned int getWindowType (Window id);
+
+	void getMwmHints (Window       id,
+			  unsigned int *func,
+			  unsigned int *decor);
+
+
+	unsigned int getProtocols (Window id);
+
+
+	unsigned int getWindowProp (Window       id,
+				    Atom         property,
+				    unsigned int defaultValue);
+
+
+	void setWindowProp (Window       id,
+			    Atom         property,
+			    unsigned int value);
+
+
+	bool readWindowProp32 (Window         id,
+			       Atom           property,
+			       unsigned short *returnValue);
+
+
+	unsigned short getWindowProp32 (Window         id,
+					Atom           property,
+					unsigned short defaultValue);
+
+
+	void setWindowProp32 (Window         id,
+			      Atom           property,
+			      unsigned short value);
+
+	void
+	addScreenActions (CompScreen *s);
 	
 	Window
 	root ();
@@ -117,24 +299,14 @@ class CompScreen :
 	CompWindowList &
 	windows ();
 
-	CompOption *
-	getOption (const char *name);
-
 	unsigned int
 	showingDesktopMask ();
 	
-	bool
-	setOption (const char       *name,
-		   CompOption::Value &value);
-
 	void
 	setCurrentOutput (unsigned int outputNum);
 
 	void
 	configure (XConfigureEvent *ce);
-
-	bool
-	hasGrab ();
 
 	void
 	warpPointer (int dx, int dy);
@@ -160,12 +332,6 @@ class CompScreen :
 	void
 	focusDefaultWindow ();
 
-	CompWindow *
-	findWindow (Window id);
-
-	CompWindow *
-	findTopLevelWindow (Window id, bool override_redirect = false);
-
 	void
 	insertWindow (CompWindow *w, Window aboveId);
 
@@ -175,14 +341,14 @@ class CompScreen :
 	void
 	eraseWindowFromMap (Window id);
 
-	grabHandle
+	GrabHandle
 	pushGrab (Cursor cursor, const char *name);
 
 	void
-	updateGrab (grabHandle handle, Cursor cursor);
+	updateGrab (GrabHandle handle, Cursor cursor);
 
 	void
-	removeGrab (grabHandle handle, CompPoint *restorePointer);
+	removeGrab (GrabHandle handle, CompPoint *restorePointer);
 
 	bool
 	otherGrabExist (const char *, ...);
@@ -192,9 +358,6 @@ class CompScreen :
 
 	void
 	removeAction (CompAction *action);
-
-	void
-	updatePassiveGrabs ();
 
 	void
 	updateWorkarea ();
@@ -283,8 +446,6 @@ class CompScreen :
 	unsigned int &
 	pendingDestroys ();
 
-	void
-	removeDestroyed ();
 
 	unsigned int &
 	mapNum ();
@@ -319,54 +480,155 @@ class CompScreen :
 
 	CompOutput & fullscreenOutput ();
 
+	std::vector<XineramaScreenInfo> & screenInfo ();
+
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 
-	WRAPABLE_HND (0, ScreenInterface, void, enterShowDesktopMode);
-	WRAPABLE_HND (1, ScreenInterface, void, leaveShowDesktopMode,
+	WRAPABLE_HND (0, ScreenInterface, void, fileWatchAdded, CompFileWatch *)
+	WRAPABLE_HND (1, ScreenInterface, void, fileWatchRemoved, CompFileWatch *)
+
+	WRAPABLE_HND (2, ScreenInterface, bool, initPluginForObject,
+		      CompPlugin *, CompObject *)
+	WRAPABLE_HND (3, ScreenInterface, void, finiPluginForObject,
+		      CompPlugin *, CompObject *)
+
+	WRAPABLE_HND (4, ScreenInterface, bool, setOptionForPlugin, CompObject *,
+		      const char *, const char *, CompOption::Value &)
+
+	WRAPABLE_HND (5, ScreenInterface, void, objectAdd,
+		      CompObject *, CompObject *)
+	WRAPABLE_HND (6, ScreenInterface, void, objectRemove,
+		      CompObject *, CompObject *)
+
+	WRAPABLE_HND (7, ScreenInterface, void, sessionEvent, CompSession::Event,
+		      CompOption::Vector &)
+	WRAPABLE_HND (8, ScreenInterface, void, handleEvent, XEvent *event)
+	WRAPABLE_HND (9, ScreenInterface, void, handleCompizEvent,
+		      const char *, const char *, CompOption::Vector &)
+
+	WRAPABLE_HND (10, ScreenInterface, bool, fileToImage, const char *,
+		     const char *,  int *, int *, int *, void **data)
+	WRAPABLE_HND (11, ScreenInterface, bool, imageToFile, const char *,
+		      const char *, const char *, int, int, int, void *)
+
+	
+	WRAPABLE_HND (12, ScreenInterface, CompMatch::Expression *,
+		      matchInitExp, const CompString);
+	WRAPABLE_HND (13, ScreenInterface, void, matchExpHandlerChanged)
+	WRAPABLE_HND (14, ScreenInterface, void, matchPropertyChanged,
+		      CompWindow *)
+
+	WRAPABLE_HND (15, ScreenInterface, void, logMessage, const char *,
+		      CompLogLevel, const char*)
+	WRAPABLE_HND (16, ScreenInterface, void, enterShowDesktopMode);
+	WRAPABLE_HND (17, ScreenInterface, void, leaveShowDesktopMode,
 		      CompWindow *);
 
-	WRAPABLE_HND (2, ScreenInterface, void, outputChangeNotify);
+	WRAPABLE_HND (18, ScreenInterface, void, outputChangeNotify);
 
+	friend class CompTimer;
+	friend class CompWindow;
+	friend class PrivateWindow;
 
     private:
 	PrivateScreen *priv;
 
     public :
-	static bool
-	mainMenu (CompDisplay        *d,
-		  CompAction         *action,
-		  CompAction::State  state,
-		  CompOption::Vector &options);
 
-	static bool
-	runDialog (CompDisplay        *d,
-		   CompAction         *action,
-		   CompAction::State  state,
-		   CompOption::Vector &options);
+	static bool runCommandDispatch (CompAction         *action,
+					CompAction::State  state,
+					CompOption::Vector &options);
 
-	static bool
-	showDesktop (CompDisplay        *d,
-		     CompAction         *action,
-		     CompAction::State  state,
-		     CompOption::Vector &options);
+	static bool runCommandScreenshot(CompAction         *action,
+					 CompAction::State  state,
+					 CompOption::Vector &options);
 
-	static bool
-	windowMenu (CompDisplay        *d,
-		    CompAction         *action,
-		    CompAction::State  state,
-		    CompOption::Vector &options);
+	static bool runCommandWindowScreenshot(CompAction         *action,
+					       CompAction::State  state,
+					       CompOption::Vector &options);
 
+	static bool runCommandTerminal (CompAction         *action,
+					CompAction::State  state,
+					CompOption::Vector &options);
+
+	static bool mainMenu (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
+
+	static bool runDialog (CompAction         *action,
+			       CompAction::State  state,
+			       CompOption::Vector &options);
+
+	static bool showDesktop (CompAction         *action,
+				 CompAction::State  state,
+				 CompOption::Vector &options);
+
+	static bool windowMenu (CompAction         *action,
+				CompAction::State  state,
+				CompOption::Vector &options);
+
+	static bool closeWin (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
+
+	static bool unmaximizeWin (CompAction         *action,
+				   CompAction::State  state,
+				   CompOption::Vector &options);
+
+	static bool minimizeWin (CompAction         *action,
+				 CompAction::State  state,
+				 CompOption::Vector &options);
+
+	static bool maximizeWin (CompAction         *action,
+				 CompAction::State  state,
+				 CompOption::Vector &options);
+
+	static bool maximizeWinHorizontally (CompAction         *action,
+					     CompAction::State  state,
+					     CompOption::Vector &options);
+
+	static bool maximizeWinVertically (CompAction         *action,
+					   CompAction::State  state,
+					   CompOption::Vector &options);
+
+	static bool raiseWin (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
+	
+	static bool lowerWin (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
+
+	static bool toggleWinMaximized (CompAction         *action,
+					CompAction::State  state,
+					CompOption::Vector &options);
+
+	static bool toggleWinMaximizedHorizontally (CompAction         *action,
+						    CompAction::State  state,
+						    CompOption::Vector &options);
+
+	static bool toggleWinMaximizedVertically (CompAction         *action,
+					          CompAction::State  state,
+					          CompOption::Vector &options);
+
+	static bool shadeWin (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector &options);
+
+	
 	static CompOption::Vector &
-	getScreenOptions (CompObject *object);
+	getOptions (CompObject *object);
 
-	static bool setScreenOption (CompObject        *object,
-				     const char        *name,
-				     CompOption::Value &value);
+	static bool setOption (CompObject        *object,
+			       const char        *name,
+			       CompOption::Value &value);
 
 	static void
 	compScreenSnEvent (SnMonitorEvent *event,
 			   void           *userData);
+
+	static int checkForError (Display *dpy);
 };
 
 #endif

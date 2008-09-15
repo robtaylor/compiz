@@ -2,7 +2,7 @@
     <core>
 	<_short>General Options</_short>
 	<_long>General compiz options</_long>
-	<display>
+	<options>
 	    <option name="active_plugins" type="list">
 		<_short>Active Plugins</_short>
 		<_long>List of currently active plugins</_long>
@@ -304,8 +304,6 @@
 		<min>1000</min>
 		<max>30000</max>
 	    </option>
-	</display>
-	<screen>
 	    <option name="hsize" type="int">
 		<_short>Horizontal Virtual Size</_short>
 		<_long>Screen size multiplier for horizontal virtual size</_long>
@@ -392,6 +390,6 @@
 		<_long>Focus prevention windows</_long>
 		<default>any</default>
 	    </option>
-	</screen>
+	</options>
     </core>
 </compiz>

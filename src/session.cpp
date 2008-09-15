@@ -179,7 +179,7 @@ saveYourselfCallback (SmcConn	connection,
     args[2].value ().set (interact_Style);
     args[3].value ().set ((bool) fast);
 
-    core->sessionEvent (CompSession::EventSaveYourself, args);
+    screen->sessionEvent (CompSession::EventSaveYourself, args);
 
     setCloneRestartCommands (connection);
     setRestartStyle (connection, SmRestartImmediately);
@@ -191,7 +191,7 @@ static void
 dieCallback (SmcConn   connection,
 	     SmPointer clientData)
 {
-    core->sessionEvent (CompSession::EventDie, noOptions);
+    screen->sessionEvent (CompSession::EventDie, noOptions);
 
     CompSession::closeSession ();
     exit (0);
@@ -201,14 +201,14 @@ static void
 saveCompleteCallback (SmcConn	connection,
 		      SmPointer clientData)
 {
-    core->sessionEvent (CompSession::EventSaveComplete, noOptions);
+    screen->sessionEvent (CompSession::EventSaveComplete, noOptions);
 }
 
 static void
 shutdownCancelledCallback (SmcConn   connection,
 			   SmPointer clientData)
 {
-    core->sessionEvent (CompSession::EventShutdownCancelled, noOptions);
+    screen->sessionEvent (CompSession::EventShutdownCancelled, noOptions);
 }
 
 void
@@ -248,7 +248,7 @@ CompSession::initSession (char *prevClientId)
 					   sizeof (errorBuffer),
 					   errorBuffer);
 	if (!smcConnection)
-	    compLogMessage (NULL, "core", CompLogLevelWarn,
+	    compLogMessage ("core", CompLogLevelWarn,
 			    "SmcOpenConnection failed: %s",
 			    errorBuffer);
 	else
@@ -345,7 +345,7 @@ iceNewConnection (IceConn    connection,
 	       fcntl (IceConnectionNumber (connection),
 		      F_GETFD,0) | FD_CLOEXEC);
 
-	iceWatchFdHandle = core->addWatchFd (IceConnectionNumber (connection),
+	iceWatchFdHandle = screen->addWatchFd (IceConnectionNumber (connection),
 	    POLLIN | POLLPRI | POLLHUP | POLLERR,
 	    boost::bind (iceProcessMessages, connection));
 
@@ -357,7 +357,7 @@ iceNewConnection (IceConn    connection,
 
 	if (iceConnected)
 	{
-	    core->removeWatchFd (iceWatchFdHandle);
+	    screen->removeWatchFd (iceWatchFdHandle);
 
 	    iceWatchFdHandle = 0;
 	    iceConnected = 0;

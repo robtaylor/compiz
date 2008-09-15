@@ -85,9 +85,7 @@ CompOption::Vector &
 CorePluginVTable::getObjectOptions (CompObject *object)
 {
     static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) CompDisplay::getDisplayOptions,
-	(GetPluginObjectOptionsProc) CompScreen::getScreenOptions
+	(GetPluginObjectOptionsProc) CompScreen::getOptions
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
@@ -100,9 +98,7 @@ CorePluginVTable::setObjectOption (CompObject        *object,
 				   CompOption::Value &value)
 {
     static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) CompDisplay::setDisplayOption,
-	(SetPluginObjectOptionProc) CompScreen::setScreenOption
+	(SetPluginObjectOptionProc) CompScreen::setOption
     };
 
     RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
@@ -178,8 +174,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 	error = dlerror ();
 	if (error)
 	{
-	    compLogMessage (NULL, "core", CompLogLevelError,
-			    "dlsym: %s", error);
+	    compLogMessage ("core", CompLogLevelError, "dlsym: %s", error);
 
 	    getInfo = 0;
 	}
@@ -189,9 +184,8 @@ dlloaderLoadPlugin (CompPlugin *p,
 	    p->vTable = (*getInfo) ();
 	    if (!p->vTable)
 	    {
-		compLogMessage (NULL, "core", CompLogLevelError,
-				"Couldn't get vtable from '%s' plugin",
-				file);
+		compLogMessage ("core", CompLogLevelError,
+				"Couldn't get vtable from '%s' plugin", file);
 
 		dlclose (dlhand);
 		free (file);
@@ -304,7 +298,7 @@ initObjectTree (CompObject        *object,
 
     if (!p->vTable->initObject (object))
     {
-	compLogMessage (NULL, p->vTable->name (), CompLogLevelError,
+	compLogMessage (p->vTable->name (), CompLogLevelError,
 			"InitObject failed");
 	return false;
     }
@@ -319,7 +313,7 @@ initObjectTree (CompObject        *object,
 	return false;
     }
 
-    if (!core->initPluginForObject (p, object))
+    if (!screen->initPluginForObject (p, object))
     {
 	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
 	p->vTable->finiObject (object);
@@ -348,7 +342,7 @@ finiObjectTree (CompObject        *object,
 
     p->vTable->finiObject (object);
 
-    core->finiPluginForObject (p, object);
+    screen->finiPluginForObject (p, object);
 
     return true;
 }
@@ -360,7 +354,7 @@ initPlugin (CompPlugin *p)
 
     if (!p->vTable->init ())
     {
-	compLogMessage (NULL, "core", CompLogLevelError,
+	compLogMessage ("core", CompLogLevelError,
 			"InitPlugin '%s' failed", p->vTable->name ());
 	return false;
     }
@@ -368,7 +362,7 @@ initPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    if (!initObjectTree (core, &ctx))
+    if (!initObjectTree (screen, &ctx))
     {
 	p->vTable->fini ();
 	return false;
@@ -385,7 +379,7 @@ finiPlugin (CompPlugin *p)
     ctx.plugin = p;
     ctx.object = NULL;
 
-    finiObjectTree (core, &ctx);
+    finiObjectTree (screen, &ctx);
 
     p->vTable->fini ();
 }
@@ -498,7 +492,7 @@ CompPlugin::load (const char *name)
     if (status)
 	return p;
 
-    compLogMessage (NULL, "core", CompLogLevelError,
+    compLogMessage ("core", CompLogLevelError,
 		    "Couldn't load plugin '%s'", name);
 
     return 0;
@@ -514,7 +508,7 @@ CompPlugin::push (CompPlugin *p)
 
     if (!insertRet.second)
     {
-	compLogMessage (NULL, "core", CompLogLevelWarn,
+	compLogMessage ("core", CompLogLevelWarn,
 			"Plugin '%s' already active",
 			p->vTable->name ());
 
@@ -525,7 +519,7 @@ CompPlugin::push (CompPlugin *p)
 
     if (!initPlugin (p))
     {
-	compLogMessage (NULL, "core", CompLogLevelError,
+	compLogMessage ("core", CompLogLevelError,
 			"Couldn't activate plugin '%s'", name);
 
         pluginsMap.erase (name);
@@ -630,10 +624,10 @@ CompPlugin::getPluginABI (const char *name)
 
     s += "_ABI";
 
-    if (!core->hasValue (s))
+    if (!screen->hasValue (s))
 	return 0;
 
-    return core->getValue (s).uval;
+    return screen->getValue (s).uval;
 }
 
 bool
@@ -645,13 +639,13 @@ CompPlugin::checkPluginABI (const char *name,
     pluginABI = getPluginABI (name);
     if (!pluginABI)
     {
-	compLogMessage (NULL, "core", CompLogLevelError,
+	compLogMessage ("core", CompLogLevelError,
 			"Plugin '%s' not loaded.\n", name);
 	return false;
     }
     else if (pluginABI != abi)
     {
-	compLogMessage (NULL, "core", CompLogLevelError,
+	compLogMessage ("core", CompLogLevelError,
 			"Plugin '%s' has ABI version '%d', expected "
 			"ABI version '%d'.\n",
 			name, pluginABI, abi);
