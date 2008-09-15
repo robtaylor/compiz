@@ -91,20 +91,23 @@ CompScreen *screen;
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
 
-CompObject::indices screenPrivateIndices (0);
+CompPrivateStorage::Indices screenPrivateIndices (0);
 
 int
 CompScreen::allocPrivateIndex ()
 {
-    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_SCREEN,
-					     &screenPrivateIndices);
+    int i = CompPrivateStorage::allocatePrivateIndex (&screenPrivateIndices);
+    if (screenPrivateIndices.size () != screen->privates.size ())
+	screen->privates.resize (screenPrivateIndices.size ());
+    return i;
 }
 
 void
 CompScreen::freePrivateIndex (int index)
 {
-    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_SCREEN,
-				  &screenPrivateIndices, index);
+    CompPrivateStorage::freePrivateIndex (&screenPrivateIndices, index);
+    if (screenPrivateIndices.size () != screen->privates.size ())
+	screen->privates.resize (screenPrivateIndices.size ());
 }
 
 
@@ -436,43 +439,21 @@ CompScreen::fileWatchAdded (CompFileWatch *watch)
 void
 CompScreen::fileWatchRemoved (CompFileWatch *watch)
     WRAPABLE_HND_FUNC(1, fileWatchRemoved, watch)
-
-bool
-CompScreen::initPluginForObject (CompPlugin *plugin, CompObject *object)
-{
-    WRAPABLE_HND_FUNC_RETURN(2, bool, initPluginForObject, plugin, object)
-    return true;
-}
-
-void
-CompScreen::finiPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_HND_FUNC(3, finiPluginForObject, plugin, object)
-
 	
 bool
-CompScreen::setOptionForPlugin (CompObject        *object,
-				const char        *plugin,
+CompScreen::setOptionForPlugin (const char        *plugin,
 				const char        *name,
 				CompOption::Value &value)
 {
     WRAPABLE_HND_FUNC_RETURN(4, bool, setOptionForPlugin,
-			     object, plugin, name, value)
+			     plugin, name, value)
 
     CompPlugin *p = CompPlugin::find (plugin);
     if (p)
-	return p->vTable->setObjectOption (object, name, value);
+	return p->vTable->setOption (name, value);
 
     return false;
 }
-
-void
-CompScreen::objectAdd (CompObject *parent, CompObject *object)
-    WRAPABLE_HND_FUNC(5, objectAdd, parent, object)
-
-
-void
-CompScreen::objectRemove (CompObject *parent, CompObject *object)
-    WRAPABLE_HND_FUNC(6, objectRemove, parent, object)
 
 void
 CompScreen::sessionEvent (CompSession::Event event,
@@ -488,28 +469,19 @@ ScreenInterface::fileWatchRemoved (CompFileWatch *watch)
     WRAPABLE_DEF (fileWatchRemoved, watch)
 
 bool
-ScreenInterface::initPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_DEF (initPluginForObject, plugin, object)
+ScreenInterface::initPluginForScreen (CompPlugin *plugin)
+    WRAPABLE_DEF (initPluginForScreen, plugin)
 
 void
-ScreenInterface::finiPluginForObject (CompPlugin *plugin, CompObject *object)
-    WRAPABLE_DEF (finiPluginForObject, plugin, object)
+ScreenInterface::finiPluginForScreen (CompPlugin *plugin)
+    WRAPABLE_DEF (finiPluginForScreen, plugin)
 
 	
 bool
-ScreenInterface::setOptionForPlugin (CompObject        *object,
-				     const char        *plugin,
+ScreenInterface::setOptionForPlugin (const char        *plugin,
 				     const char	     *name,
 				     CompOption::Value &value)
-    WRAPABLE_DEF (setOptionForPlugin, object, plugin, name, value)
-
-void
-ScreenInterface::objectAdd (CompObject *parent, CompObject *object)
-    WRAPABLE_DEF (objectAdd, parent, object)
-
-void
-ScreenInterface::objectRemove (CompObject *parent, CompObject *object)
-    WRAPABLE_DEF (objectRemove, parent, object)
+    WRAPABLE_DEF (setOptionForPlugin, plugin, name, value)
 
 void
 ScreenInterface::sessionEvent (CompSession::Event event,
@@ -603,21 +575,6 @@ const CompMetadata::OptionInfo coreOptionInfo[COMP_OPTION_NUM] = {
       RESTOSTRING (0, FOCUS_PREVENTION_LEVEL_LAST), 0, 0 },
     { "focus_prevention_match", "match", 0, 0, 0 }
 };
-
-CompOption::Vector &
-CompScreen::getOptions (CompObject  *object)
-{
-    return screen->priv->opt;
-}
-
-bool
-CompScreen::setOption (CompObject        *object,
-		       const char        *name,
-		       CompOption::Value &value)
-{
-    return screen->setOption (name, value);
-}
-
 
 static const int maskTable[] = {
     ShiftMask, LockMask, ControlMask, Mod1Mask,
@@ -814,6 +771,12 @@ PrivateScreen::handlePingTimeout ()
     lastPing = ping;
 
     return true;
+}
+
+CompOption::Vector &
+CompScreen::getOptions ()
+{
+    return priv->opt;
 }
 
 bool
@@ -1194,7 +1157,7 @@ PrivateScreen::updatePlugins ()
 	CompPlugin::unload (pp);
     }
 
-    screen->setOptionForPlugin (screen, "core", o->name ().c_str (), plugin);
+    screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
 }
 
 /* from fvwm2, Copyright Matthias Clasen, Dominik Vogt */
@@ -2128,7 +2091,7 @@ PrivateScreen::detectOutputDevices ()
 	name = opt[COMP_OPTION_OUTPUTS].name ();
 
 	opt[COMP_OPTION_DETECT_OUTPUTS].value ().set (false);
-	screen->setOptionForPlugin (screen, "core", name.c_str (), value);
+	screen->setOptionForPlugin ("core", name.c_str (), value);
 	opt[COMP_OPTION_DETECT_OUTPUTS].value ().set (true);
 
     }
@@ -4330,7 +4293,7 @@ CompScreen::screenInfo ()
 }
 
 CompScreen::CompScreen ():
-    CompObject (COMP_OBJECT_TYPE_SCREEN, "screen", &screenPrivateIndices)
+    CompPrivateStorage (&screenPrivateIndices)
 {
     priv = new PrivateScreen (this);
     assert (priv);
@@ -4658,7 +4621,7 @@ CompScreen::init (const char *name)
     priv->getDesktopHints ();
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (CompPlugin::objectInitPlugins (this));
+    assert (CompPlugin::screenInitPlugins (this));
 
     XQueryTree (dpy, priv->root,
 		&rootReturn, &parentReturn,
@@ -4760,7 +4723,7 @@ CompScreen::~CompScreen ()
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
 
-    CompPlugin::objectFiniPlugins (this);
+    CompPlugin::screenFiniPlugins (this);
 
     XUngrabKey (priv->dpy, AnyKey, AnyModifier, priv->root);
 

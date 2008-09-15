@@ -138,7 +138,7 @@ CompScreen::matchExpHandlerChanged ()
 
     foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
-	CompOption::Vector &options = p->vTable->getObjectOptions (this);
+	CompOption::Vector &options = p->vTable->getOptions ();
 	matchUpdateMatchOptions (options);
     }
 }

@@ -34,7 +34,7 @@
 #define foreach BOOST_FOREACH
 
 #include <compiz-core.h>
-#include <compobject.h>
+#include "privatescreen.h"
 
 CompPlugin::Map pluginsMap;
 CompPlugin::List plugins;
@@ -43,25 +43,18 @@ class CorePluginVTable : public CompPlugin::VTable
 {
     public:
 
-	const char *
-	name () { return "core"; };
+	const char * name () { return "core"; };
 
-	CompMetadata *
-	getMetadata ();
+	CompMetadata * getMetadata ();
 
-	virtual bool
-	init ();
+	bool init ();
 
-	virtual void
-	fini ();
+	void fini ();
 
-	CompOption::Vector &
-	getObjectOptions (CompObject *object);
+	CompOption::Vector & getOptions ();
 
-	bool
-	setObjectOption (CompObject        *object,
-			 const char        *name,
-			 CompOption::Value &value);
+	bool setOption (const char        *name,
+			CompOption::Value &value);
 };
 
 bool
@@ -82,27 +75,16 @@ CorePluginVTable::getMetadata ()
 }
 
 CompOption::Vector &
-CorePluginVTable::getObjectOptions (CompObject *object)
+CorePluginVTable::getOptions ()
 {
-    static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) CompScreen::getOptions
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     noOptions, (object));
+    return screen->getOptions ();
 }
 
 bool
-CorePluginVTable::setObjectOption (CompObject        *object,
-				   const char        *name,
-				   CompOption::Value &value)
+CorePluginVTable::setOption (const char        *name,
+			     CompOption::Value &value)
 {
-    static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) CompScreen::setOption
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), false,
-		     (object, name, value));
+    return screen->setOption (name, value);
 }
 
 CorePluginVTable coreVTable;
@@ -273,84 +255,10 @@ LoadPluginProc   loaderLoadPlugin   = dlloaderLoadPlugin;
 UnloadPluginProc loaderUnloadPlugin = dlloaderUnloadPlugin;
 ListPluginsProc  loaderListPlugins  = dlloaderListPlugins;
 
-struct InitObjectContext {
-    CompPlugin *plugin;
-    CompObject *object;
-};
-
-static bool
-initObjectTree (CompObject        *object,
-		InitObjectContext *pCtx);
-
-static bool
-finiObjectTree (CompObject        *object,
-		InitObjectContext *pCtx);
-
-static bool
-initObjectTree (CompObject        *object,
-		InitObjectContext *pCtx)
-{
-    CompPlugin		  *p = pCtx->plugin;
-    InitObjectContext ctx;
-
-    pCtx->object = object;
-
-
-    if (!p->vTable->initObject (object))
-    {
-	compLogMessage (p->vTable->name (), CompLogLevelError,
-			"InitObject failed");
-	return false;
-    }
-
-    ctx.plugin = pCtx->plugin;
-    ctx.object = NULL;
-
-    if (!object->forEachChild (boost::bind (initObjectTree, _1, &ctx)))
-    {
-	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
-
-	return false;
-    }
-
-    if (!screen->initPluginForObject (p, object))
-    {
-	object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
-	p->vTable->finiObject (object);
-
-	return false;
-    }
-
-    return true;
-}
-
-static bool
-finiObjectTree (CompObject        *object,
-		InitObjectContext *pCtx)
-{
-    CompPlugin		  *p = pCtx->plugin;
-    InitObjectContext     ctx;
-
-    /* pCtx->object is set to the object that failed to be initialized */
-    if (pCtx->object == object)
-	return false;
-
-    ctx.plugin = p;
-    ctx.object = NULL;
-
-    object->forEachChild (boost::bind (finiObjectTree, _1, &ctx));
-
-    p->vTable->finiObject (object);
-
-    screen->finiPluginForObject (p, object);
-
-    return true;
-}
 
 static bool
 initPlugin (CompPlugin *p)
 {
-    InitObjectContext ctx;
 
     if (!p->vTable->init ())
     {
@@ -359,13 +267,20 @@ initPlugin (CompPlugin *p)
 	return false;
     }
 
-    ctx.plugin = p;
-    ctx.object = NULL;
-
-    if (!initObjectTree (screen, &ctx))
+    if (screen)
     {
-	p->vTable->fini ();
-	return false;
+	if (!p->vTable->initScreen (screen))
+	{
+	    compLogMessage (p->vTable->name (), CompLogLevelError,
+                            "initScreen failed");
+	    p->vTable->fini ();
+	    return false;
+	}
+	if (!screen->initPluginForScreen (p))
+	{
+	    p->vTable->fini ();
+	    return false;
+	}
     }
 
     return true;
@@ -374,47 +289,71 @@ initPlugin (CompPlugin *p)
 static void
 finiPlugin (CompPlugin *p)
 {
-    InitObjectContext ctx;
 
-    ctx.plugin = p;
-    ctx.object = NULL;
-
-    finiObjectTree (screen, &ctx);
+    if (screen)
+    {
+	screen->finiPluginForScreen (p);
+	p->vTable->finiScreen (screen);
+    }
 
     p->vTable->fini ();
 }
 
 bool
-CompPlugin::objectInitPlugins (CompObject *o)
+CompScreen::initPluginForScreen (CompPlugin *p)
 {
-    InitObjectContext ctx;
+    WRAPABLE_HND_FUNC_RETURN(2, bool, initPluginForScreen, p)
 
+    bool status               = true;
+    CompWindowList::iterator it, fail;
+    CompWindow               *w;
+
+    it = fail = priv->windows.begin ();
+    for (;it != priv->windows.end (); it++)
+    {
+	w = *it;
+	if (!p->vTable->initWindow (w))
+	{
+	    compLogMessage (p->vTable->name (), CompLogLevelError,
+                            "initWindow failed");
+            fail   = it;
+            status = false;
+	}
+    }
+
+    it = priv->windows.begin ();
+    for (;it != fail; it++)
+    {
+	w = *it;
+	p->vTable->finiWindow (w);
+    }
+
+    return status;
+}
+
+void
+CompScreen::finiPluginForScreen (CompPlugin *p)
+{
+    WRAPABLE_HND_FUNC(3, finiPluginForScreen, p)
+
+    foreach (CompWindow *w, priv->windows)
+	p->vTable->finiWindow (w);
+}
+
+bool
+CompPlugin::screenInitPlugins (CompScreen *s)
+{
     CompPlugin::List::reverse_iterator rit = plugins.rbegin ();
 
-    ctx.object = NULL;
+    CompPlugin *p = NULL;
 
     while (rit != plugins.rend ())
     {
+	p = (*rit);
 
-	ctx.plugin = (*rit);
-
-	if (!initObjectTree (o, &ctx))
-	{
-	    if (rit == plugins.rbegin ())
-		return false;
-	    --rit;
-	    for (; rit != plugins.rbegin (); --rit)
-	    {
-		ctx.plugin = (*rit);
-
-		finiObjectTree (o, &ctx);
-	    }
-
-	    ctx.plugin = (*rit);
-
-	    finiObjectTree (o, &ctx);
-	    return false;
-	}
+	if (p->vTable->initScreen (s))
+	    s->initPluginForScreen (p);
+	
 	rit++;
     }
 
@@ -422,19 +361,38 @@ CompPlugin::objectInitPlugins (CompObject *o)
 }
 
 void
-CompPlugin::objectFiniPlugins (CompObject *o)
+CompPlugin::screenFiniPlugins (CompScreen *s)
 {
-    InitObjectContext ctx;
+    foreach (CompPlugin *p, plugins)
+    {
+	s->finiPluginForScreen (p);
+	p->vTable->finiScreen (s);
+    }
 
-    ctx.object = NULL;
+}
+
+bool
+CompPlugin::windowInitPlugins (CompWindow *w)
+{
+    bool status = true;
 
     foreach (CompPlugin *p, plugins)
     {
-	ctx.plugin = p;
+	p->vTable->finiWindow (w);
+    }
 
-	finiObjectTree (o, &ctx);
+    return status;
+}
+
+void
+CompPlugin::windowFiniPlugins (CompWindow *w)
+{
+    foreach (CompPlugin *p, plugins)
+    {
+	p->vTable->finiWindow (w);
     }
 }
+
 
 CompPlugin *
 CompPlugin::find (const char *name)
@@ -667,26 +625,36 @@ CompPlugin::VTable::getMetadata ()
 
 
 bool
-CompPlugin::VTable::initObject (CompObject *object)
+CompPlugin::VTable::initScreen (CompScreen *)
 {
     return true;
 }
 
 void
-CompPlugin::VTable::finiObject (CompObject *object)
+CompPlugin::VTable::finiScreen (CompScreen *)
+{
+}
+
+bool
+CompPlugin::VTable::initWindow (CompWindow *)
+{
+    return true;
+}
+
+void
+CompPlugin::VTable::finiWindow (CompWindow *)
 {
 }
 	
 CompOption::Vector &
-CompPlugin::VTable::getObjectOptions (CompObject *object)
+CompPlugin::VTable::getOptions ()
 {
     return noOptions;
 }
 
 bool
-CompPlugin::VTable::setObjectOption (CompObject        *object,
-				   const char        *name,
-				   CompOption::Value &value)
+CompPlugin::VTable::setOption (const char        *name,
+			       CompOption::Value &value)
 {
     return false;
 }

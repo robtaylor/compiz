@@ -554,7 +554,7 @@ triggerAllEdgeEnterBindings (CompAction::State  state,
 {
     foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
-	CompOption::Vector &options = p->vTable->getObjectOptions (screen);
+	CompOption::Vector &options = p->vTable->getOptions ();
 	if (triggerEdgeEnterBindings (options, state, delayState, edge,
 				      arguments))
 	{
@@ -637,7 +637,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
-	    CompOption::Vector &options = p->vTable->getObjectOptions (screen);
+	    CompOption::Vector &options = p->vTable->getOptions ();
 	    if (triggerButtonPressBindings (options, event, o))
 		return true;
 	}
@@ -658,7 +658,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
-	    CompOption::Vector &options = p->vTable->getObjectOptions (screen);
+	    CompOption::Vector &options = p->vTable->getOptions ();
 	    if (triggerButtonReleaseBindings (options, event, o))
 		return true;
 	}
@@ -679,7 +679,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
-	    CompOption::Vector &options = p->vTable->getObjectOptions (screen);
+	    CompOption::Vector &options = p->vTable->getOptions ();
 	    if (triggerKeyPressBindings (options, event, o))
 		return true;
 	}
@@ -700,7 +700,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
-	    CompOption::Vector &options = p->vTable->getObjectOptions (screen);
+	    CompOption::Vector &options = p->vTable->getOptions ();
 	    if (triggerKeyReleaseBindings (options, event, o))
 		return true;
 	}
@@ -747,8 +747,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
-		    CompOption::Vector &options =
-			p->vTable->getObjectOptions (screen);
+		    CompOption::Vector &options = p->vTable->getOptions ();
 		    if (triggerEdgeLeaveBindings (options, state, edge, o))
 			return true;
 		}
@@ -829,8 +828,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
-		    CompOption::Vector &options =
-			p->vTable->getObjectOptions (screen);
+		    CompOption::Vector &options = p->vTable->getOptions ();
 		    if (triggerEdgeLeaveBindings (options, state, edge, o))
 			return true;
 		}
@@ -899,8 +897,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
-		    CompOption::Vector &options =
-			p->vTable->getObjectOptions (screen);
+		    CompOption::Vector &options = p->vTable->getOptions ();
 		    if (triggerStateNotifyBindings (options, stateEvent, o))
 			return true;
 		}
@@ -917,8 +914,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
-		    CompOption::Vector &options =
-			p->vTable->getObjectOptions (screen);
+		    CompOption::Vector &options = p->vTable->getOptions ();
 		    if (triggerBellNotifyBindings (options, o))
 			return true;
 		}
@@ -1352,12 +1348,12 @@ CompScreen::handleEvent (XEvent *event)
 		value.set ((int) (event->xclient.data.l[0] /
 			   priv->size.width ()));
 
-		setOptionForPlugin (this, "core", "hsize", value);
+		setOptionForPlugin ("core", "hsize", value);
 
 		value.set ((int) (event->xclient.data.l[1] /
 			   priv->size.height ()));
 
-		setOptionForPlugin (this, "core", "vsize", value);
+		setOptionForPlugin ("core", "vsize", value);
 	    }
 	}
 	else if (event->xclient.message_type == Atoms::moveResizeWindow)
@@ -1461,7 +1457,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		value.set ((int) event->xclient.data.l[0]);
 
-		setOptionForPlugin (this, "core", "number_of_desktops", value);
+		setOptionForPlugin ("core", "number_of_desktops", value);
 	    }
 	}
 	else if (event->xclient.message_type == Atoms::currentDesktop)

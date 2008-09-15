@@ -23,7 +23,7 @@ compiz_SOURCES =   \
 	option.cpp \
 	string.cpp \
 	match.cpp    \
-	object.cpp   \
+	privates.cpp   \
 	event.cpp    \
 	plugin.cpp   \
 	session.cpp  \

@@ -7,6 +7,7 @@
 #include <compmetadata.h>
 #include <compplugin.h>
 #include <compmatch.h>
+#include <core/privates.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -53,9 +54,6 @@ struct CompFileWatch {
 #define OPAQUE 0xffff
 #define COLOR  0xffff
 #define BRIGHT 0xffff
-
-#define GET_CORE_SCREEN(object) (dynamic_cast<CompScreen *> (object))
-#define CORE_SCREEN(object) CompScreen *s = GET_CORE_SCREEN (object)
 
 #define PAINT_SCREEN_REGION_MASK		   (1 << 0)
 #define PAINT_SCREEN_FULL_MASK			   (1 << 1)
@@ -110,15 +108,12 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 	virtual void fileWatchAdded (CompFileWatch *fw);
 	virtual void fileWatchRemoved (CompFileWatch *fw);
 
-	virtual bool initPluginForObject (CompPlugin *p, CompObject *o);
-	virtual void finiPluginForObject (CompPlugin *p, CompObject *o);
+	virtual bool initPluginForScreen (CompPlugin *p);
+	virtual void finiPluginForScreen (CompPlugin *p);
 
-	virtual bool setOptionForPlugin (CompObject *o, const char *plugin,
+	virtual bool setOptionForPlugin (const char *plugin,
 					 const char *name,
 					 CompOption::Value &v);
-
-	virtual void objectAdd (CompObject *parent, CompObject *child);
-	virtual void objectRemove (CompObject *parent, CompObject *child);
 
 	virtual void sessionEvent (CompSession::Event event,
 				   CompOption::Vector &options);
@@ -152,7 +147,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 class CompScreen :
     public WrapableHandler<ScreenInterface, 19>,
-    public CompObject
+    public CompPrivateStorage
 {
 
     public:
@@ -186,6 +181,8 @@ class CompScreen :
 	void eraseValue (CompString key);
 	
 	Display * dpy();
+
+	CompOption::Vector & getOptions ();
 	
 	CompOption * getOption (const char *);
 
@@ -488,18 +485,13 @@ class CompScreen :
 	WRAPABLE_HND (0, ScreenInterface, void, fileWatchAdded, CompFileWatch *)
 	WRAPABLE_HND (1, ScreenInterface, void, fileWatchRemoved, CompFileWatch *)
 
-	WRAPABLE_HND (2, ScreenInterface, bool, initPluginForObject,
-		      CompPlugin *, CompObject *)
-	WRAPABLE_HND (3, ScreenInterface, void, finiPluginForObject,
-		      CompPlugin *, CompObject *)
+	WRAPABLE_HND (2, ScreenInterface, bool, initPluginForScreen,
+		      CompPlugin *)
+	WRAPABLE_HND (3, ScreenInterface, void, finiPluginForScreen,
+		      CompPlugin *)
 
-	WRAPABLE_HND (4, ScreenInterface, bool, setOptionForPlugin, CompObject *,
+	WRAPABLE_HND (4, ScreenInterface, bool, setOptionForPlugin,
 		      const char *, const char *, CompOption::Value &)
-
-	WRAPABLE_HND (5, ScreenInterface, void, objectAdd,
-		      CompObject *, CompObject *)
-	WRAPABLE_HND (6, ScreenInterface, void, objectRemove,
-		      CompObject *, CompObject *)
 
 	WRAPABLE_HND (7, ScreenInterface, void, sessionEvent, CompSession::Event,
 		      CompOption::Vector &)
@@ -615,14 +607,6 @@ class CompScreen :
 	static bool shadeWin (CompAction         *action,
 			      CompAction::State  state,
 			      CompOption::Vector &options);
-
-	
-	static CompOption::Vector &
-	getOptions (CompObject *object);
-
-	static bool setOption (CompObject        *object,
-			       const char        *name,
-			       CompOption::Value &value);
 
 	static void
 	compScreenSnEvent (SnMonitorEvent *event,

@@ -31,94 +31,7 @@
 
 #include <map>
 
-#define __GET_PLUGIN_OBJECT_OPTIONS__(name, object)
-#define __GET_PLUGIN_OBJECT_OPTIONS_X(name, object) \
-    return name::get(object)->getOptions ();
-
-#define __SET_PLUGIN_OBJECT_OPTION__(name, object, oName, oValue)
-#define __SET_PLUGIN_OBJECT_OPTION_X(name, object, oName, oValue) \
-    return name::get(object)->setOption (oName, oValue);
-
-#define __INIT_PLUGIN_OBJECT__(name, object) 
-#define __INIT_PLUGIN_OBJECT_X(name, object) \
-{                                            \
-    name *obj = new name (object);           \
-    if (!obj)                                \
-	return false;                        \
-    if (obj->loadFailed ())                  \
-    {                                        \
-	delete obj;                          \
-	return false;                        \
-    }                                        \
-    return true;                             \
-}
-
-#define __FINI_PLUGIN_OBJECT__(name, object)
-#define __FINI_PLUGIN_OBJECT_X(name, object) \
-{                                            \
-    name *obj = name::get (object);          \
-    if (obj)                                 \
-        delete obj;                          \
-}
-
-#define INIT_OBJECT(obj, hasScreen, hasWindow, screenName, windowName) 			\
-    switch ( obj ->objectType ())							\
-    {											\
-	case COMP_OBJECT_TYPE_SCREEN:							\
-	    __INIT_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj)) 	\
-	    break;									\
-	case COMP_OBJECT_TYPE_WINDOW:							\
-	    __INIT_PLUGIN_OBJECT_ ## hasWindow (windowName, GET_CORE_WINDOW (obj)) 	\
-	    break;									\
-	default:									\
-	    break;									\
-    }
-
-#define FINI_OBJECT(obj, hasScreen, hasWindow, screenName, windowName) 			\
-    switch ( obj ->objectType ())							\
-    {											\
-	case COMP_OBJECT_TYPE_SCREEN:							\
-	    __FINI_PLUGIN_OBJECT_ ## hasScreen (screenName, GET_CORE_SCREEN (obj))	\
-	    break;									\
-	case COMP_OBJECT_TYPE_WINDOW:							\
-	    __FINI_PLUGIN_OBJECT_ ## hasWindow (windowName, GET_CORE_WINDOW (obj))	\
-	    break;									\
-	default:									\
-	    break;									\
-    }
-
-#define GET_OBJECT_OPTIONS(obj, hasScreen, screenName) \
-    switch ( obj ->objectType ())						\
-    {										\
-	case COMP_OBJECT_TYPE_SCREEN:						\
-	    __GET_PLUGIN_OBJECT_OPTIONS_ ## hasScreen 				\
-		(screenName, GET_CORE_SCREEN (obj)) 				\
-	    break;								\
-	default:								\
-	    break;								\
-    }
-
-#define SET_OBJECT_OPTION(obj, hasScreen, screenName)	\
-    switch ( obj ->objectType ())						\
-    {										\
-	case COMP_OBJECT_TYPE_SCREEN:						\
-	    __SET_PLUGIN_OBJECT_OPTION_ ## hasScreen				\
-		(screenName, GET_CORE_SCREEN (obj), name, value) 		\
-	    break;								\
-	default:								\
-	    break;								\
-    }
-
-class CompObject;
 class CompMetadata;
-
-typedef bool (*InitPluginObjectProc) (CompObject *object);
-typedef void (*FiniPluginObjectProc) (CompObject *object);
-
-typedef CompOption::Vector & (*GetPluginObjectOptionsProc) (CompObject *object);
-typedef bool (*SetPluginObjectOptionProc) (CompObject        *object,
-					   const char        *name,
-					   CompOption::Value &value);
 
 #define HOME_PLUGINDIR ".compiz/plugins"
 
@@ -144,29 +57,43 @@ class CompPlugin {
  	
 		virtual const char * name () = 0;
 
-		virtual CompMetadata *
-		getMetadata ();
+		virtual CompMetadata * getMetadata ();
 
-		virtual bool
-		init () = 0;
+		virtual bool init () = 0;
 
-		virtual void
-		fini () = 0;
+		virtual void fini () = 0;
 
-		virtual bool
-		initObject (CompObject *object);
+		virtual bool initScreen (CompScreen *screen);
 
-		virtual void
-		finiObject (CompObject *object);
+		virtual void finiScreen (CompScreen *screen);
+
+		virtual bool initWindow (CompWindow *window);
+
+		virtual void finiWindow (CompWindow *window);
  	
-		virtual CompOption::Vector &
-		getObjectOptions (CompObject *object);
+		virtual CompOption::Vector & getOptions ();
 
-		virtual bool
-		setObjectOption (CompObject        *object,
-				const char        *name,
-				CompOption::Value &value);
+		virtual bool setOption (const char        *name,
+					CompOption::Value &value);
         };
+
+	template <typename T, typename T2>
+	class VTableForScreenAndWindow : public VTable {
+	    bool initScreen (CompScreen *screen);
+
+	    void finiScreen (CompScreen *screen);
+
+	    bool initWindow (CompWindow *window);
+
+	    void finiWindow (CompWindow *window);
+	};
+
+	template <typename T>
+	class VTableForScreen : public VTable {
+	    bool initScreen (CompScreen *screen);
+
+	    void finiScreen (CompScreen *screen);
+	};
 
 	struct cmpStr
 	{
@@ -186,9 +113,13 @@ class CompPlugin {
 
     public:
 
-	static bool objectInitPlugins (CompObject *o);
+	static bool screenInitPlugins (CompScreen *s);
 
-	static void objectFiniPlugins (CompObject *o);
+	static void screenFiniPlugins (CompScreen *s);
+
+	static bool windowInitPlugins (CompWindow *w);
+
+	static void windowFiniPlugins (CompWindow *w);
 
 	static CompPlugin *find (const char *name);
 
@@ -210,6 +141,63 @@ class CompPlugin {
 				    int	        abi);
 
 };
+
+template <typename T, typename T2>
+bool CompPlugin::VTableForScreenAndWindow<T,T2>::initScreen (CompScreen *screen)
+{
+    T * ps = new T (screen);
+    if (ps->loadFailed ())
+    {
+	delete ps;
+	return false;
+    }
+    return true;
+}
+
+template <typename T, typename T2>
+void CompPlugin::VTableForScreenAndWindow<T,T2>::finiScreen (CompScreen *screen)
+{
+    T * ps = T::get (screen);
+    delete ps;
+}
+
+template <typename T, typename T2>
+bool CompPlugin::VTableForScreenAndWindow<T,T2>::initWindow (CompWindow *window)
+{
+    T2 * pw = new T2 (window);
+    if (pw->loadFailed ())
+    {
+	delete pw;
+	return false;
+    }
+    return true;
+}
+
+template <typename T, typename T2>
+void CompPlugin::VTableForScreenAndWindow<T,T2>::finiWindow (CompWindow *window)
+{
+    T2 * pw = T2::get (window);
+    delete pw;
+}
+
+template <typename T>
+bool CompPlugin::VTableForScreen<T>::initScreen (CompScreen *screen)
+{
+    T * ps = new T (screen);
+    if (ps->loadFailed ())
+    {
+	delete ps;
+	return false;
+    }
+    return true;
+}
+
+template <typename T>
+void CompPlugin::VTableForScreen<T>::finiScreen (CompScreen *screen)
+{
+    T * ps = T::get (screen);
+    delete ps;
+}
 
 typedef CompPlugin::VTable *(*PluginGetInfoProc) (void);
 

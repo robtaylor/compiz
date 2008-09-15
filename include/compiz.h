@@ -48,20 +48,13 @@
 
 #define DEG2RAD (M_PI / 180.0f)
 
-class CompDisplay;
-
 typedef std::string CompString;
 typedef std::list<CompString> CompStringList;
 
 CompString compPrintf (const char *format, ...);
 CompString compPrintf (const char *format, va_list ap);
 
-union CompPrivate {
-    void	  *ptr;
-    long	  val;
-    unsigned long uval;
-    void	  *(*fptr) (void);
-};
+
 
 typedef enum {
     CompLogLevelFatal = 0,

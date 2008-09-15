@@ -47,20 +47,25 @@
 #include "privatescreen.h"
 
 
-CompObject::indices windowPrivateIndices (0);
+CompPrivateStorage::Indices windowPrivateIndices (0);
 
 int
 CompWindow::allocPrivateIndex ()
 {
-    return CompObject::allocatePrivateIndex (COMP_OBJECT_TYPE_WINDOW,
-					     &windowPrivateIndices);
+    int i = CompPrivateStorage::allocatePrivateIndex (&windowPrivateIndices);
+    foreach (CompWindow *w, ::screen->windows ())
+	if (windowPrivateIndices.size () != w->privates.size ())
+	    w->privates.resize (windowPrivateIndices.size ());
+    return i;
 }
 
 void
 CompWindow::freePrivateIndex (int index)
 {
-    CompObject::freePrivateIndex (COMP_OBJECT_TYPE_WINDOW,
-				  &windowPrivateIndices, index);
+    CompPrivateStorage::freePrivateIndex (&windowPrivateIndices, index);
+    foreach (CompWindow *w, ::screen->windows ())
+	if (windowPrivateIndices.size () != w->privates.size ())
+	    w->privates.resize (windowPrivateIndices.size ());
 }
 
 bool
@@ -4389,7 +4394,7 @@ CompWindow::invisible ()
 CompWindow::CompWindow (CompScreen *screen,
 			Window     id,
 			Window     aboveId) :
-   CompObject (COMP_OBJECT_TYPE_WINDOW, "window", &windowPrivateIndices)
+   CompPrivateStorage (&windowPrivateIndices)
 {
     priv = new PrivateWindow (this, screen);
     assert (priv);
@@ -4578,9 +4583,7 @@ CompWindow::CompWindow (CompScreen *screen,
     }
 
     /* TODO: bailout properly when objectInitPlugins fails */
-    assert (CompPlugin::objectInitPlugins (this));
-
-    screen->addChild (this);
+    assert (CompPlugin::windowInitPlugins (this));
 
     recalcActions ();
     updateIconGeometry ();
@@ -4639,9 +4642,7 @@ CompWindow::~CompWindow ()
     if (priv->destroyed)
 	priv->screen->updateClientList ();
 
-    removeFromParent ();
-
-    CompPlugin::objectFiniPlugins (this);
+    CompPlugin::windowFiniPlugins (this);
 
     delete priv;
 }

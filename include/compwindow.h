@@ -10,7 +10,7 @@
 #include <X11/extensions/sync.h>
 
 #include <compaction.h>
-#include <compobject.h>
+#include <core/privates.h>
 #include <compsize.h>
 #include <comppoint.h>
 
@@ -239,7 +239,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 
 class CompWindow :
     public WrapableHandler<WindowInterface, 13>,
-    public CompObject
+    public CompPrivateStorage
 {
 
     public:
