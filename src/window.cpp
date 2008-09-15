@@ -645,7 +645,7 @@ CompWindow::recalcType ()
 
     type = priv->wmType;
 
-    if (!priv->attrib.override_redirect && priv->wmType == CompWindowTypeUnknownMask)
+    if (!overrideRedirect () && priv->wmType == CompWindowTypeUnknownMask)
 	type = CompWindowTypeNormalMask;
 
     if (priv->state & CompWindowStateFullscreenMask)
@@ -1132,7 +1132,7 @@ CompWindow::sendConfigureNotify ()
 void
 CompWindow::map ()
 {
-    if (priv->attrib.map_state == IsViewable)
+    if (isViewable ())
 	return;
 
     priv->pendingMaps--;
@@ -1142,14 +1142,14 @@ CompWindow::map ()
     if (priv->struts)
 	priv->screen->updateWorkarea ();
 
-    if (priv->attrib.c_class == InputOnly)
+    if (windowClass () == InputOnly)
 	return;
 
     priv->unmapRefCnt = 1;
 
     priv->attrib.map_state = IsViewable;
 
-    if (!priv->attrib.override_redirect)
+    if (!overrideRedirect ())
 	priv->screen->display ()->setWmState (NormalState, priv->id);
 
     priv->invisible  = true;
@@ -1177,7 +1177,7 @@ CompWindow::map ()
 	sendConfigureNotify ();
     }
 
-    if (!priv->attrib.override_redirect)
+    if (!overrideRedirect ())
     {
 	/* been shaded */
 	if (!priv->height)
@@ -1210,7 +1210,6 @@ CompWindow::unmap ()
     priv->attrib.map_state = IsUnmapped;
 
     priv->invisible = true;
-
 
     if (priv->shaded && priv->height)
 	resize (priv->attrib.x, priv->attrib.y,
@@ -1289,6 +1288,10 @@ CompWindow::resize (CompWindow::Geometry gm)
 	priv->attrib.width	  = gm.width ();
 	priv->attrib.height       = gm.height ();
 	priv->attrib.border_width = gm.border ();
+
+	priv->geometry.set (priv->attrib.x, priv->attrib.y,
+			    priv->attrib.width, priv->attrib.height,
+			    priv->attrib.border_width);
 
 	priv->width  = pw;
 	priv->height = ph;
@@ -1508,6 +1511,9 @@ CompWindow::move (int dx, int dy, Bool damage, Bool immediate)
 	priv->attrib.x += dx;
 	priv->attrib.y += dy;
 
+	priv->geometry.setX (priv->attrib.x);
+	priv->geometry.setY (priv->attrib.y);
+
 	XOffsetRegion (priv->region, dx, dy);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
@@ -1539,7 +1545,7 @@ CompWindow::focus ()
 {
     WRAPABLE_HND_FUNC_RETURN(2, bool, focus)
 
-    if (priv->attrib.override_redirect)
+    if (overrideRedirect ())
 	return false;
 
     if (!priv->managed)
@@ -1853,7 +1859,7 @@ PrivateWindow::stackLayerCheck (CompWindow *w,
 bool
 PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 {
-    if (w->priv->attrib.override_redirect)
+    if (w->overrideRedirect ())
 	return true;
 
     if (!w->priv->shaded && !w->priv->pendingMaps)
@@ -2719,7 +2725,7 @@ CompWindow::updateSize ()
     XWindowChanges xwc;
     int		   mask;
 
-    if (priv->attrib.override_redirect || !priv->managed)
+    if (overrideRedirect () || !priv->managed)
 	return;
 
     mask = priv->addWindowSizeChanges (&xwc, priv->serverGeometry);
@@ -2891,7 +2897,7 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
     XWindowChanges xwc;
     int		   mask = 0;
 
-    if (priv->attrib.override_redirect || !priv->managed)
+    if (overrideRedirect () || !priv->managed)
 	return;
 
     if (priv->state & CompWindowStateShadedMask)
@@ -3356,7 +3362,7 @@ CompWindow::unminimize ()
 void
 CompWindow::maximize (unsigned int state)
 {
-    if (priv->attrib.override_redirect)
+    if (overrideRedirect ())
 	return;
 
     state = constrainWindowState (state, priv->actions);
@@ -3770,7 +3776,7 @@ CompWindow::screen ()
 bool
 CompWindow::onAllViewports ()
 {
-    if (priv->attrib.override_redirect)
+    if (overrideRedirect ())
 	return true;
 
     if (!priv->managed && priv->attrib.map_state != IsViewable)
@@ -3967,7 +3973,7 @@ CompWindow::close (Time serverTime)
 bool
 CompWindow::handlePingTimeout (unsigned int lastPing)
 {
-    if (priv->attrib.map_state != IsViewable)
+    if (!isViewable ())
 	return false;
 
     if (!(priv->type & CompWindowTypeNormalMask))
@@ -4426,6 +4432,9 @@ CompWindow::CompWindow (CompScreen *screen,
     priv->syncGeometry.set (priv->attrib.x, priv->attrib.y,
 			    priv->attrib.width, priv->attrib.height,
 			    priv->attrib.border_width);
+    priv->geometry.set (priv->attrib.x, priv->attrib.y,
+			priv->attrib.width, priv->attrib.height,
+			priv->attrib.border_width);
 
     priv->width  = priv->attrib.width  + priv->attrib.border_width * 2;
     priv->height = priv->attrib.height + priv->attrib.border_width * 2;
@@ -4448,7 +4457,7 @@ CompWindow::CompWindow (CompScreen *screen,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
 
-    priv->alpha     = (priv->attrib.depth == 32);
+    priv->alpha     = (depth () == 32);
     priv->lastPong  = d->lastPing ();
 
     if (d->XShape ())
@@ -4458,7 +4467,7 @@ CompWindow::CompWindow (CompScreen *screen,
 
     EMPTY_REGION (priv->region);
 
-    if (priv->attrib.c_class != InputOnly)
+    if (windowClass () != InputOnly)
     {
 	REGION rect;
 
@@ -4485,7 +4494,7 @@ CompWindow::CompWindow (CompScreen *screen,
     priv->wmType    = d->getWindowType (priv->id);
     priv->protocols = d->getProtocols (priv->id);
 
-    if (!priv->attrib.override_redirect)
+    if (!overrideRedirect ())
     {
 	updateNormalHints ();
 	updateStruts ();
@@ -4520,7 +4529,7 @@ CompWindow::CompWindow (CompScreen *screen,
     {
 	priv->placed = true;
 
-	if (!priv->attrib.override_redirect)
+	if (!overrideRedirect ())
 	{
 	    priv->managed = true;
 
@@ -4568,7 +4577,7 @@ CompWindow::CompWindow (CompScreen *screen,
 	    d->setWindowState (priv->state, priv->id);
 	}
     }
-    else if (!priv->attrib.override_redirect)
+    else if (!overrideRedirect ())
     {
 	if (d->getWmState (priv->id) == IconicState)
 	{

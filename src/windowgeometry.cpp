@@ -52,9 +52,5 @@ CompWindow::serverGeometry ()
 CompWindow::Geometry &
 CompWindow::geometry ()
 {
-    priv->geometry.set (priv->attrib.x, priv->attrib.y,
-			priv->attrib.width, priv->attrib.height,
-			priv->attrib.border_width);
-
     return priv->geometry;
 }
