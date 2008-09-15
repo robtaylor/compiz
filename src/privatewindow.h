@@ -143,7 +143,8 @@ class PrivateWindow {
 	unsigned int      mapNum;
 	unsigned int      activeNum;
 	XWindowAttributes attrib;
-	CompWindow::Geometry      serverGeometry;
+	CompWindow::Geometry geometry;
+	CompWindow::Geometry serverGeometry;
 	Window	      transientFor;
 	Window	      clientLeader;
 	XSizeHints	      sizeHints;

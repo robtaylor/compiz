@@ -3921,13 +3921,6 @@ CompWindow::protocols ()
     return priv->protocols;
 }
 
-XWindowAttributes
-CompWindow::attrib ()
-{
-    return priv->attrib;
-}
-
-
 void
 CompWindow::close (Time serverTime)
 {
@@ -4803,6 +4796,45 @@ bool
 CompWindow::alpha ()
 {
     return priv->alpha;
+}
+
+bool
+CompWindow::overrideRedirect ()
+{
+    return priv->attrib.override_redirect;
+}
+
+void
+CompWindow::setOverrideRedirect (bool overrideRedirect)
+{
+    CompDisplay *d = priv->screen->display ();
+
+    if (overrideRedirect == this->overrideRedirect ())
+	return;
+
+    priv->attrib.override_redirect = overrideRedirect ? 1 : 0;
+    recalcType ();
+    recalcActions ();
+
+    d->matchPropertyChanged (this);
+}
+
+bool
+CompWindow::isViewable ()
+{
+    return priv->attrib.map_state == IsViewable;
+}
+
+int
+CompWindow::windowClass ()
+{
+    return priv->attrib.c_class;
+}
+
+unsigned int
+CompWindow::depth ()
+{
+    return priv->attrib.depth;
 }
 
 bool

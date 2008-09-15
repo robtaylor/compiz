@@ -419,8 +419,10 @@ CompScreen::windowMenu (CompDisplay        *d,
 
 	time   = CompOption::getIntOptionNamed (options, "time", CurrentTime);
 	button = CompOption::getIntOptionNamed (options, "button", 0);
-	x      = CompOption::getIntOptionNamed (options, "x", w->attrib ().x);
-	y      = CompOption::getIntOptionNamed (options, "y", w->attrib ().y);
+	x      = CompOption::getIntOptionNamed (options, "x",
+						w->geometry ().x ());
+	y      = CompOption::getIntOptionNamed (options, "y",
+						w->geometry ().y ());
 
 	w->screen ()->toolkitAction (
 	    w->screen ()->display ()->atoms().toolkitActionWindowMenu,

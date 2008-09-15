@@ -53,8 +53,10 @@ void
 PrivateGLWindow::setWindowMatrix ()
 {
     matrix = texture.matrix ();
-    matrix.x0 -= ((window->attrib ().x - window->input ().left) * matrix.xx);
-    matrix.y0 -= ((window->attrib ().y - window->input ().top) * matrix.yy);
+    matrix.x0 -= ((window->geometry ().x () - window->input ().left) *
+		  matrix.xx);
+    matrix.y0 -= ((window->geometry ().y () - window->input ().top) *
+		  matrix.yy);
 }
 
 bool
@@ -68,7 +70,7 @@ GLWindow::bind ()
     if (!priv->texture.bindPixmap (priv->cWindow->pixmap (),
 				   priv->window->width () + i.left + i.right,
 				   priv->window->height () + i.top + i.bottom,
-				   priv->window->attrib ().depth))
+				   priv->window->depth ()))
     {
 	compLogMessage (priv->screen->display (), "opengl", CompLogLevelInfo,
 			"Couldn't bind redirected window 0x%x to "

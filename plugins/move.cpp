@@ -210,9 +210,9 @@ moveInitiate (CompDisplay     *d,
 	mods = CompOption::getIntOptionNamed (options, "modifiers", 0);
 
 	x = CompOption::getIntOptionNamed (options, "x",
-			       w->attrib ().x + (w->width () / 2));
+			       w->geometry ().x () + (w->width () / 2));
 	y = CompOption::getIntOptionNamed (options, "y",
-			       w->attrib ().y + (w->height () / 2));
+			       w->geometry ().y () + (w->height () / 2));
 
 	button = CompOption::getIntOptionNamed (options, "button", -1);
 
@@ -227,7 +227,7 @@ moveInitiate (CompDisplay     *d,
 		       CompWindowTypeFullscreenMask))
 	    return FALSE;
 
-	if (w->attrib ().override_redirect)
+	if (w->overrideRedirect ())
 	    return FALSE;
 
 	if (state & CompAction::StateInitButton)
@@ -274,8 +274,8 @@ moveInitiate (CompDisplay     *d,
 	    {
 		int xRoot, yRoot;
 
-		xRoot = w->attrib ().x + (w->width () / 2);
-		yRoot = w->attrib ().y + (w->height () / 2);
+		xRoot = w->geometry ().x () + (w->width () / 2);
+		yRoot = w->geometry ().y () + (w->height () / 2);
 
 		s->warpPointer (xRoot - pointerX, yRoot - pointerY);
 	    }
@@ -306,8 +306,8 @@ moveTerminate (CompDisplay     *d,
 	MOVE_SCREEN (md->w->screen ());
 
 	if (state & CompAction::StateCancel)
-	    md->w->move (md->savedX - md->w->attrib ().x,
-			md->savedY - md->w->attrib ().y,
+	    md->w->move (md->savedX - md->w->geometry ().x (),
+			 md->savedY - md->w->geometry ().y (),
 			TRUE, FALSE);
 
 	md->w->syncPosition ();
@@ -616,9 +616,12 @@ moveHandleMotionEvent (CompScreen *s,
 
 	if (dx || dy)
 	{
-	    w->move (wX + dx - w->attrib ().x,
-			wY + dy - w->attrib ().y,
-			TRUE, FALSE);
+	    int x, y;
+
+	    x = w->geometry (). x ();
+	    y = w->geometry (). y ();
+
+	    w->move (wX + dx - x, wY + dy - y, TRUE, FALSE);
 
 	    if (md->opt[MOVE_DISPLAY_OPTION_LAZY_POSITIONING].value ().b () &&
 	        MoveScreen::get (w->screen())->hasCompositing)
@@ -626,8 +629,8 @@ moveHandleMotionEvent (CompScreen *s,
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
 		   major performance regression in the 0.5.2 release. */
-		w->serverGeometry ().setX (w->attrib ().x);
-		w->serverGeometry ().setY (w->attrib ().y);
+		w->serverGeometry ().setX (x);
+		w->serverGeometry ().setY (y);
 	    }
 	    else
 	    {

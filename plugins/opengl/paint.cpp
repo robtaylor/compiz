@@ -218,7 +218,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 
 	    if (!w->shaded ())
 	    {
-		if (w->attrib ().map_state != IsViewable ||
+		if (!w->isViewable () ||
 		    !CompositeWindow::get (w)->damaged ())
 		    continue;
 	    }
@@ -303,7 +303,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 
 	if (!w->shaded ())
 	{
-	    if (w->attrib ().map_state != IsViewable ||
+	    if (!w->isViewable () ||
 		!CompositeWindow::get (w)->damaged ())
 		continue;
 	}
@@ -1078,7 +1078,7 @@ GLWindow::glDraw (const GLMatrix     &transform,
     if (!region->numRects)
 	return true;
 
-    if (priv->window->attrib ().map_state != IsViewable)
+    if (!priv->window->isViewable ())
 	return true;
 
     if (!priv->texture.hasPixmap () && !bind ())

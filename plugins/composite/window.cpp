@@ -7,7 +7,7 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 {
     CompDisplay *d = w->screen ()->display ();
 
-    if (w->attrib ().c_class != InputOnly)
+    if (w->windowClass () != InputOnly)
     {
 	priv->damage = XDamageCreate (d->dpy (), w->id (),
 				      XDamageReportRawRectangles);
@@ -28,10 +28,8 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
     priv->saturation = d->getWindowProp32 (w->id (),
 					   d->atoms ().winSaturation, COLOR);
 	
-    if (w->attrib ().map_state == IsViewable)
-    {
+    if (w->isViewable ())
 	priv->damaged   = true;
-    }
 }
 
 CompositeWindow::~CompositeWindow ()
@@ -218,12 +216,12 @@ CompositeWindow::damageTransformedRect (float  xScale,
 
     if (reg.extents.x2 > reg.extents.x1 && reg.extents.y2 > reg.extents.y1)
     {
-	XWindowAttributes attrib = priv->window->attrib ();
+	CompWindow::Geometry geom = priv->window->geometry ();
 
-	reg.extents.x1 += attrib.x + attrib.border_width;
-	reg.extents.y1 += attrib.y + attrib.border_width;
-	reg.extents.x2 += attrib.x + attrib.border_width;
-	reg.extents.y2 += attrib.y + attrib.border_width;
+	reg.extents.x1 += geom.x () + geom.border ();
+	reg.extents.y1 += geom.y () + geom.border ();
+	reg.extents.x2 += geom.x () + geom.border ();
+	reg.extents.y2 += geom.y () + geom.border ();
 
 	priv->cScreen->damageRegion (&reg);
     }
@@ -236,41 +234,41 @@ CompositeWindow::damageOutputExtents ()
 	return;
 
     if (priv->window->shaded () ||
-	(priv->window->attrib ().map_state == IsViewable && priv->damaged))
+	(priv->window->isViewable () && priv->damaged))
     {
 	BoxRec box;
 
-	XWindowAttributes attrib = priv->window->attrib ();
-	CompWindowExtents output = priv->window->output ();
+	CompWindow::Geometry geom = priv->window->geometry ();
+	CompWindowExtents output  = priv->window->output ();
 
 	/* top */
-	box.x1 = -output.left - attrib.border_width;
-	box.y1 = -output.top - attrib.border_width;
-	box.x2 = priv->window->width () + output.right - attrib.border_width;
-	box.y2 = -attrib.border_width;
+	box.x1 = -output.left - geom.border ();
+	box.y1 = -output.top - geom.border ();
+	box.x2 = priv->window->width () + output.right - geom.border ();
+	box.y2 = -geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
 
 	/* bottom */
-	box.y1 = priv->window->height () - attrib.border_width;
-	box.y2 = box.y1 + output.bottom - attrib.border_width;
+	box.y1 = priv->window->height () - geom.border ();
+	box.y2 = box.y1 + output.bottom - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
 
 	/* left */
-	box.x1 = -output.left - attrib.border_width;
-	box.y1 = -attrib.border_width;
-	box.x2 = -attrib.border_width;
-	box.y2 = priv->window->height () - attrib.border_width;
+	box.x1 = -output.left - geom.border ();
+	box.y1 = -geom.border ();
+	box.x2 = -geom.border ();
+	box.y2 = priv->window->height () - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
 
 	/* right */
-	box.x1 = priv->window->width () - attrib.border_width;
-	box.x2 = box.x1 + output.right - attrib.border_width;
+	box.x1 = priv->window->width () - geom.border ();
+	box.x2 = box.x1 + output.right - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
@@ -289,11 +287,11 @@ CompositeWindow::addDamageRect (BoxPtr rect)
 
     if (!damageRect (false, &region.extents))
     {
-	XWindowAttributes attrib = priv->window->attrib ();
-	region.extents.x1 += attrib.x + attrib.border_width;
-	region.extents.y1 += attrib.y + attrib.border_width;
-	region.extents.x2 += attrib.x + attrib.border_width;
-	region.extents.y2 += attrib.y + attrib.border_width;
+	CompWindow::Geometry geom = priv->window->geometry ();
+	region.extents.x1 += geom.x () + geom.border ();
+	region.extents.y1 += geom.y () + geom.border ();
+	region.extents.x2 += geom.x () + geom.border ();
+	region.extents.y2 += geom.y () + geom.border ();
 
 	region.rects = &region.extents;
 	region.numRects = region.size = 1;
@@ -309,16 +307,15 @@ CompositeWindow::addDamage (bool force)
 	return;
 
     if (priv->window->shaded () || force ||
-	(priv->window->attrib ().map_state == IsViewable && priv->damaged))
+	(priv->window->isViewable () && priv->damaged))
     {
 	BoxRec box;
+	int    border = priv->window->geometry ().border ();
 
 	box.x1 = -MAX (priv->window->output ().left,
-		       priv->window->input ().left) -
-		 priv->window->attrib ().border_width;
+		       priv->window->input ().left) - border;
 	box.y1 = -MAX (priv->window->output ().top,
-		       priv->window->input ().top) -
-		 priv->window->attrib ().border_width;
+		       priv->window->input ().top) - border;
 	box.x2 = priv->window->width () +
 		 MAX (priv->window->output ().right,
 		       priv->window->input ().right);
@@ -387,14 +384,12 @@ PrivateCompositeWindow::handleDamageRect (CompositeWindow *w,
 
     if (!w->damageRect (initial, &region.extents))
     {
-	region.extents.x1 += w->priv->window->attrib ().x +
-			     w->priv->window->attrib ().border_width;
-	region.extents.y1 += w->priv->window->attrib ().y +
-			     w->priv->window->attrib ().border_width;
-	region.extents.x2 += w->priv->window->attrib ().x +
-			     w->priv->window->attrib ().border_width;
-	region.extents.y2 += w->priv->window->attrib ().y +
-			     w->priv->window->attrib ().border_width;
+	CompWindow::Geometry geom = w->priv->window->geometry ();
+
+	region.extents.x1 += geom.x () + geom.border ();
+	region.extents.y1 += geom.y () + geom.border ();
+	region.extents.x2 += geom.x () + geom.border ();
+	region.extents.y2 += geom.y () + geom.border ();
 
 	region.rects = &region.extents;
 	region.numRects = region.size = 1;
@@ -544,17 +539,19 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 
     Pixmap pixmap = None;
 
-    if (window->shaded () ||
-	(window->attrib ().map_state == IsViewable && damaged))
+    if (window->shaded () || (window->isViewable () && damaged))
     {
 	REGION region;
+	int    x, y;
 
-	XWindowAttributes attrib = window->attrib ();
-	region.extents.x1 = attrib.x - window->output ().left - dx;
-	region.extents.y1 = attrib.y - window->output ().top - dy;
-	region.extents.x2 = attrib.x + window->width () +
+	x = window->geometry ().x ();
+	y = window->geometry ().y ();
+
+	region.extents.x1 = x - window->output ().left - dx;
+	region.extents.y1 = y - window->output ().top - dy;
+	region.extents.x2 = x + window->width () +
 			    window->output ().right - dx - dwidth;
-	region.extents.y2 = attrib.y + window->height () +
+	region.extents.y2 = y + window->height () +
 			    window->output ().bottom - dy - dheight;
 
 	region.rects = &region.extents;
@@ -593,20 +590,20 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 void
 PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
 {
-    if (window->shaded () ||
-	(window->attrib ().map_state == IsViewable && damaged))
+    if (window->shaded () || (window->isViewable () && damaged))
     {
 	REGION region;
+	int    x, y;
 
-	XWindowAttributes attrib = window->attrib ();
-	region.extents.x1 = attrib.x - window->output ().left - dx;
-	region.extents.y1 = attrib.y - window->output ().top - dy;
-	region.extents.x2 = attrib.x + window->width () +
+	x = window->geometry ().x ();
+	y = window->geometry ().y ();
+
+	region.extents.x1 = x - window->output ().left - dx;
+	region.extents.y1 = y - window->output ().top - dy;
+	region.extents.x2 = x + window->width () +
 			    window->output ().right - dx;
-	region.extents.y2 = attrib.y + window->height () +
+	region.extents.y2 = y + window->height () +
 			    window->output ().bottom - dy;
-
-	
 
 	region.rects = &region.extents;
 	region.numRects = region.size = 1;

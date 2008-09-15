@@ -1054,7 +1054,7 @@ CompDisplay::handleEvent (XEvent *event)
 	w = findWindow (event->xmap.window);
 	if (w)
 	{
-	    if (!w->attrib ().override_redirect)
+	    if (!w->overrideRedirect ())
 		w->managed () = true;
 
 	    /* been shaded */
@@ -1089,7 +1089,7 @@ CompDisplay::handleEvent (XEvent *event)
 		    w->screen () ->updateClientList ();
 		}
 
-		if (!w->attrib ().override_redirect)
+		if (!w->overrideRedirect ())
 		    setWmState (WithdrawnState, w->id ());
 
 		w->placed  () = false;
@@ -1166,7 +1166,7 @@ CompDisplay::handleEvent (XEvent *event)
 
 		if (type != w->wmType ())
 		{
-		    if (w->attrib ().map_state == IsViewable)
+		    if (w->isViewable ())
 		    {
 			if (w->type () == CompWindowTypeDesktopMask)
 			    w->screen ()->desktopWindowCount ()--;
@@ -1533,16 +1533,7 @@ CompDisplay::handleEvent (XEvent *event)
 	    /* We should check the override_redirect flag here, because the
 	       client might have changed it while being unmapped. */
 	    if (XGetWindowAttributes (priv->dpy, w->id (), &attr))
-	    {
-		if (w->attrib ().override_redirect != attr.override_redirect)
-		{
-		    w->attrib ().override_redirect = attr.override_redirect;
-		    w->recalcType ();
-		    w->recalcActions ();
-
-		    matchPropertyChanged (w);
-		}
-	    }
+		w->setOverrideRedirect (attr.override_redirect != 0);
 
 	    w->managed () = true;
 

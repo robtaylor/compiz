@@ -245,7 +245,7 @@ resizeInitiate (CompDisplay        *d,
 		          CompWindowTypeFullscreenMask))
 	    return false;
 
-	if (w->attrib ().override_redirect)
+	if (w->overrideRedirect ())
 	    return false;
 
 	if (state & CompAction::StateInitButton)
@@ -953,6 +953,7 @@ ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	BoxRec	       box;
 	float	       xOrigin, yOrigin;
 	float	       xScale, yScale;
+	int            x, y;
 
 	if (mask & PAINT_WINDOW_OCCLUSION_DETECTION_MASK)
 	    return false;
@@ -968,15 +969,17 @@ ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	rDisplay->getPaintRectangle (&box);
 	getStretchScale (&box, &xScale, &yScale);
 
-	xOrigin = window->attrib ().x - window->input ().left;
-	yOrigin = window->attrib ().y - window->input ().top;
+	x = window->geometry (). x ();
+	y = window->geometry (). y ();
+
+	xOrigin = x - window->input ().left;
+	yOrigin = y - window->input ().top;
 
 	wTransform.translate (xOrigin, yOrigin, 0.0f);
 	wTransform.scale (xScale, yScale, 1.0f);
-	wTransform.translate (
-	    (rDisplay->geometry.x - window->attrib ().x) / xScale - xOrigin,
-	    (rDisplay->geometry.y - window->attrib ().y) / yScale - yOrigin,
-	    0.0f);
+	wTransform.translate ((rDisplay->geometry.x - x) / xScale - xOrigin,
+			      (rDisplay->geometry.y - y) / yScale - yOrigin,
+			      0.0f);
 
 	glPushMatrix ();
 	glLoadMatrixf (wTransform.getMatrix ());

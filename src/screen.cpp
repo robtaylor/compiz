@@ -1225,10 +1225,8 @@ CompScreen::init (CompDisplay *display,
 
     foreach (CompWindow *w, priv->windows)
     {
-	if (w->attrib ().map_state == IsViewable)
-	{
+	if (w->isViewable ())
 	    w->setActiveNum (priv->activeNum++);
-	}
     }
 
     XFree (children);
@@ -1414,7 +1412,7 @@ CompScreen::findTopLevelWindow (Window id, bool override_redirect)
 
     if (w)
     {
-	if (w->attrib ().override_redirect && !override_redirect)
+	if (w->overrideRedirect () && !override_redirect)
 	    return NULL;
 	else
 	    return w;
@@ -1423,7 +1421,7 @@ CompScreen::findTopLevelWindow (Window id, bool override_redirect)
     foreach (CompWindow *w, priv->windows)
 	if (w->frame () == id)
 	{
-	    if (w->attrib ().override_redirect && !override_redirect)
+	    if (w->overrideRedirect () && !override_redirect)
 		return NULL;
 	    else
 		return w;
@@ -2044,10 +2042,10 @@ isClientListWindow (CompWindow *w)
     if (w->id () < 2)
 	return false;
 
-    if (w->attrib ().override_redirect)
+    if (w->overrideRedirect ())
 	return false;
 
-    if (w->attrib ().map_state != IsViewable)
+    if (!w->isViewable ())
     {
 	if (!(w->state () & CompWindowStateHiddenMask))
 	    return false;

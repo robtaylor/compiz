@@ -89,7 +89,7 @@ class CoreExp : public CompMatch::Expression {
 		    return (priv.uval & w->state ());
 		case TypeOverride:
 		{
-		    bool overrideRedirect = w->attrib ().override_redirect;
+		    bool overrideRedirect = w->overrideRedirect ();
 		    return ((priv.val == 1 && overrideRedirect) ||
 			    (priv.val == 0 && !overrideRedirect));
 		}

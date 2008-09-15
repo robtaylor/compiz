@@ -496,13 +496,18 @@ DecorWindow::updateDecorationScale ()
 
     for (i = 0; i < wd->nQuad; i++)
     {
+	int x, y;
+
 	computeQuadBox (&wd->decor->quad[i], window->width (),
 			window->height (), &x1, &y1, &x2, &y2, &sx, &sy);
 
-	wd->quad[i].box.x1 = x1 + window->attrib ().x;
-	wd->quad[i].box.y1 = y1 + window->attrib ().y;
-	wd->quad[i].box.x2 = x2 + window->attrib ().x;
-	wd->quad[i].box.y2 = y2 + window->attrib ().y;
+	x = window->geometry ().x ();
+	y = window->geometry ().y ();
+
+	wd->quad[i].box.x1 = x1 + x;
+	wd->quad[i].box.y1 = y1 + y;
+	wd->quad[i].box.x2 = x2 + x;
+	wd->quad[i].box.y2 = y2 + y;
 	wd->quad[i].sx     = sx;
 	wd->quad[i].sy     = sy;
     }
@@ -582,7 +587,7 @@ DecorWindow::update (bool allowDecoration)
 	    break;
     }
 
-    if (window->attrib ().override_redirect)
+    if (window->overrideRedirect ())
 	decorate = false;
 
     if (decorate)
@@ -680,7 +685,7 @@ DecorWindow::update (bool allowDecoration)
 	updateFrame ();
     }
 
-    if (window->placed () && !window->attrib ().override_redirect &&
+    if (window->placed () && !window->overrideRedirect () &&
 	(moveDx || moveDy))
     {
 	XWindowChanges xwc;
@@ -912,7 +917,7 @@ DecorScreen::checkForDm (bool updateWindows)
 	if (updateWindows)
 	{
 	    foreach (CompWindow *w, screen->windows ())
-		if (w->shaded () || w->attrib ().map_state == IsViewable)
+		if (w->shaded () || w->isViewable ())
 		    DecorWindow::get (w)->update (true);
 	}
     }
@@ -926,13 +931,18 @@ DecorWindow::updateFrameRegion (Region region)
     {
 	if (REGION_NOT_EMPTY (frameRegion))
 	{
+	    int x, y;
+
+	    x = window->geometry (). x ();
+	    y = window->geometry (). y ();
+
 	    XOffsetRegion (frameRegion,
-			   window->attrib ().x - window->input ().left,
-			   window->attrib ().y - window->input ().top);
+			   x - window->input ().left,
+			   y - window->input ().top);
 	    XUnionRegion (frameRegion, region, region);
 	    XOffsetRegion (frameRegion,
-			   - (window->attrib ().x - window->input ().left),
-			   - (window->attrib ().y - window->input ().top));
+			   - (x - window->input ().left),
+			   - (y - window->input ().top));
 	}
 	else
 	{
@@ -1288,7 +1298,7 @@ DecorCore::objectAdd (CompObject *parent,
     {
 	CORE_WINDOW (object);
 
-	if (w->shaded () || w->attrib ().map_state == IsViewable)
+	if (w->shaded () || w->isViewable ())
 	    DecorWindow::get (w)->update (true);
     }
 
@@ -1400,10 +1410,10 @@ DecorWindow::DecorWindow (CompWindow *w) :
 	return;
     }
 
-    if (!w->attrib ().override_redirect)
+    if (!w->overrideRedirect ())
 	updateDecoration ();
 
-    if (w->shaded () || w->attrib ().map_state == IsViewable)
+    if (w->shaded () || w->isViewable ())
 	update (true);
 
     WindowInterface::setHandler (window);

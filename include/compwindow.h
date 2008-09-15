@@ -309,9 +309,6 @@ class CompWindow :
 	unsigned int &
 	protocols ();
 
-	XWindowAttributes
-	attrib ();
-
 	void
 	close (Time serverTime);
 
@@ -558,6 +555,9 @@ class CompWindow :
 	width ();
 
 	Geometry &
+	geometry ();
+
+	Geometry &
 	serverGeometry ();
 
 	CompWindowExtents
@@ -568,8 +568,6 @@ class CompWindow :
 
 	XSizeHints
 	sizeHints ();
-
-
 
 	void
 	updateMwmHints ();
@@ -598,6 +596,19 @@ class CompWindow :
 	bool alpha ();
 
 	bool alive ();
+
+	bool
+	overrideRedirect ();
+
+	void
+	setOverrideRedirect (bool overrideRedirect);
+
+	bool
+	isViewable ();
+
+	int windowClass ();
+
+	unsigned int depth ();
 
 	unsigned int mwmDecor ();
 	unsigned int mwmFunc ();
