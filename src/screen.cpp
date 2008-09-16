@@ -1391,12 +1391,6 @@ CompScreen::imageToFile (const char *path,
     return false;
 }
 
-void
-CompScreen::logMessage (const char   *componentName,
-			CompLogLevel level,
-			const char   *message)
-    WRAPABLE_HND_FUNC(13, logMessage, componentName, level, message)
-
 const char *
 logLevelToString (CompLogLevel level)
 {
@@ -1426,6 +1420,15 @@ logMessage (const char   *componentName,
     fprintf (stderr, "%s (%s) - %s: %s\n",
 	     programName, componentName,
 	     logLevelToString (level), message);
+}
+
+void
+CompScreen::logMessage (const char   *componentName,
+			CompLogLevel level,
+			const char   *message)
+{
+    WRAPABLE_HND_FUNC(13, logMessage, componentName, level, message)
+    ::logMessage (componentName, level, message);
 }
 
 void
