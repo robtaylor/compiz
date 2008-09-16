@@ -20,6 +20,7 @@ class CompPrivateIndex {
 #include <boost/preprocessor/cat.hpp>
 
 #include <compiz.h>
+#include <compscreen.h>
 #include <core/privates.h>
 
 #if !defined(PLUGIN)
@@ -73,7 +74,7 @@ CLASSNAME<Tp,Tb,ABI>::CLASSNAME (Tb *base) :
 	if (!INDICESNAME[mBase->storageIndex ()].initiated)
 	{
 	    INDICESNAME[mBase->storageIndex ()].index = Tb::allocPrivateIndex ();
-	    if (INDICESNAME[mBase->objectType ()].index >= 0)
+	    if (INDICESNAME[mBase->storageIndex ()].index >= 0)
 	    {
 		INDICESNAME[mBase->storageIndex ()].initiated = true;
 
@@ -128,7 +129,7 @@ template<class Tp, class Tb, int ABI>
 Tp *
 CLASSNAME<Tp,Tb,ABI>::get (Tb *base)
 {
-    if (INDICESNAME[base->objectType ()].initiated)
+    if (INDICESNAME[base->storageIndex ()].initiated)
     {
 	return static_cast<Tp *>
 	    (base->privates[INDICESNAME[base->storageIndex ()].index].ptr);
