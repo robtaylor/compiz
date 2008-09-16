@@ -41,7 +41,7 @@ namespace GLFragment {
 
 	    void addBlendOp (const char *str, ...);
 
-	    FunctionId createFragmentFunction (GLScreen *s,const char *name);
+	    FunctionId createFragmentFunction (const char *name);
 
 	private:
 	    PrivateFunctionData *priv;
@@ -59,8 +59,8 @@ namespace GLFragment {
 
 	    void addFunction (FunctionId function);
 
-	    bool enable (GLScreen  *s, bool *blending);
-	    void disable (GLScreen *s);
+	    bool enable (bool *blending);
+	    void disable ();
 
 	    unsigned short getSaturation ();
 	    unsigned short getBrightness ();
@@ -76,10 +76,9 @@ namespace GLFragment {
 	    PrivateAttrib *priv;
     };
 
-    void destroyFragmentFunction (GLScreen *s, FunctionId id);
+    void destroyFragmentFunction (FunctionId id);
 
-    FunctionId getSaturateFragmentFunction (GLScreen  *s,
-					    GLTexture *texture,
+    FunctionId getSaturateFragmentFunction (GLTexture *texture,
 					    int       param);
 };
 

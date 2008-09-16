@@ -10,7 +10,7 @@ class GLDisplay;
 
 class PrivateTexture {
     public:
-	PrivateTexture (GLTexture *, CompScreen *);
+	PrivateTexture (GLTexture *);
 	~PrivateTexture ();
 
 	bool loadImageData (const char   *image,
@@ -20,9 +20,6 @@ class PrivateTexture {
 			    GLenum       type);
 
     public:
-	CompScreen        *screen;
-	GLScreen          *gScreen;
-	GLDisplay         *gDisplay;
 	GLTexture         *texture;
 	GLuint            name;
 	GLenum            target;

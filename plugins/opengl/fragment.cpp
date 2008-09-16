@@ -49,8 +49,7 @@ namespace GLFragment {
 
     class Program {
 	public:
-	    Program (GLScreen *s) :
-		s (s),
+	    Program () :
 		signature (0),
 		blending (false),
 		name (0),
@@ -59,12 +58,10 @@ namespace GLFragment {
 	    ~Program ()
 	    {
 		if (name)
-		    (*s->deletePrograms) (1, &name);
+		    (*GL::deletePrograms) (1, &name);
 	    };
 
 	public:
-	    GLScreen *s;
-
 	    std::list<FunctionId> signature;
 
 	    bool blending;
@@ -523,7 +520,7 @@ namespace GLFragment {
 	bool       indices[MAX_FRAGMENT_FUNCTIONS];
 	int        i;
 
-	program = new Program (s);
+	program = new Program ();
 	if (!program)
 	    return NULL;
 
@@ -542,7 +539,7 @@ namespace GLFragment {
 
 	if (!mask)
 	{
-	    compLogMessage (NULL, "core", CompLogLevelWarn,
+	    compLogMessage ("opengl", CompLogLevelWarn,
 			    "fragment functions can't be linked together "
 			    "because a common type doesn't exist");
 	}
@@ -573,19 +570,19 @@ namespace GLFragment {
 
 	glGetError ();
 
-	(*s->genPrograms) (1, &program->name);
-	(*s->bindProgram) (GL_FRAGMENT_PROGRAM_ARB, program->name);
-	(*s->programString) (GL_FRAGMENT_PROGRAM_ARB,
-			     GL_PROGRAM_FORMAT_ASCII_ARB,
-			     fetchData.size (), fetchData.c_str ());
+	(*GL::genPrograms) (1, &program->name);
+	(*GL::bindProgram) (GL_FRAGMENT_PROGRAM_ARB, program->name);
+	(*GL::programString) (GL_FRAGMENT_PROGRAM_ARB,
+			      GL_PROGRAM_FORMAT_ASCII_ARB,
+			      fetchData.size (), fetchData.c_str ());
 
 	glGetIntegerv (GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
 	if (glGetError () != GL_NO_ERROR || errorPos != -1)
 	{
-	    compLogMessage (NULL, "core", CompLogLevelError,
+	    compLogMessage ("opengl", CompLogLevelError,
 			    "failed to load fragment program");
 
-	    (*s->deletePrograms) (1, &program->name);
+	    (*GL::deletePrograms) (1, &program->name);
 
 	    program->name = 0;
 	    program->type = 0;
@@ -595,7 +592,7 @@ namespace GLFragment {
     }
 
     static GLuint
-    getFragmentProgram (GLScreen       *s,
+    getFragmentProgram (GLScreen      *s,
 			PrivateAttrib *attrib,
 			GLenum	      *type,
 			bool	      *blending)
@@ -713,7 +710,7 @@ namespace GLFragment {
 	{
 	    if (n.find (word) != std::string::npos)
 	    {
-		compLogMessage (NULL, "core", CompLogLevelWarn,
+		compLogMessage ("opengl", CompLogLevelWarn,
 				"%s is a reserved word", word);
 		return false;
 	    }
@@ -823,8 +820,9 @@ namespace GLFragment {
     }
 
     FunctionId
-    FunctionData::createFragmentFunction (GLScreen *s, const char *name)
+    FunctionData::createFragmentFunction (const char *name)
     {
+	GLScreen     *s = GLScreen::get (screen);
 	Function     *function = new Function ();
 	CompString   validName = name;
 	unsigned int i = 0;
@@ -909,16 +907,17 @@ namespace GLFragment {
     }
 
     bool
-    Attrib::enable (GLScreen *s, bool *blending)
+    Attrib::enable (bool *blending)
     {
 	GLuint name;
 	GLenum type;
 	bool   programBlending;
 
-	if (!s->fragmentProgram ())
+	if (!GL::fragmentProgram)
 	    return false;
 
-	name = getFragmentProgram (s, priv, &type, &programBlending);
+	name = getFragmentProgram (GLScreen::get (screen), priv, &type,
+				   &programBlending);
 	if (!name)
 	    return false;
 
@@ -926,13 +925,13 @@ namespace GLFragment {
 
 	glEnable (GL_FRAGMENT_PROGRAM_ARB);
 
-	(*s->bindProgram) (type, name);
+	(*GL::bindProgram) (type, name);
 
 	return true;
     }
 
     void
-    Attrib::disable (GLScreen *s)
+    Attrib::disable ()
     {
 	glDisable (GL_FRAGMENT_PROGRAM_ARB);
     }
@@ -1023,11 +1022,11 @@ namespace GLFragment {
     }
 
     FunctionId
-    getSaturateFragmentFunction (GLScreen  *s,
-				 GLTexture *texture,
+    getSaturateFragmentFunction (GLTexture *texture,
 				 int         param)
     {
-	int target;
+	int      target;
+	GLScreen *s = GLScreen::get (screen);
 
 	if (param >= 64)
 	    return 0;
@@ -1055,7 +1054,7 @@ namespace GLFragment {
 		return 0;
 
 	    s->fragmentStorage ()->saturateFunction [target][param] =
-		data.createFragmentFunction (s, "__core_saturate");
+		data.createFragmentFunction ("__core_saturate");
 
 	}
 

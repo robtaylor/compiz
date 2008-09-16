@@ -18,7 +18,6 @@
     ((m)->yx * (vx) + (m)->yy * (vy) + (m)->y0)
 
 
-class CompScreen;
 class PrivateTexture;
 
 class GLTexture {
@@ -36,7 +35,7 @@ class GLTexture {
 	} Matrix;
 
     public:
-	GLTexture (CompScreen *);
+	GLTexture ();
 	~GLTexture ();
 
 	void reset ();

@@ -3,51 +3,28 @@
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
+#include <core/atoms.h>
 
 #include "privatefragment.h"
 #include "privatetexture.h"
 
-#define GL_DISPLAY_OPTION_TEXTURE_FILTER 0
-#define GL_DISPLAY_OPTION_NUM            1
-
-#define GL_SCREEN_OPTION_LIGHTING            0
-#define GL_SCREEN_OPTION_SYNC_TO_VBLANK      1
-#define GL_SCREEN_OPTION_TEXTURE_COMPRESSION 2
-#define GL_SCREEN_OPTION_NUM                 3
+#define GL_OPTION_TEXTURE_FILTER      0
+#define GL_OPTION_LIGHTING            1
+#define GL_OPTION_SYNC_TO_VBLANK      2
+#define GL_OPTION_TEXTURE_COMPRESSION 3
+#define GL_OPTION_NUM                 4
 
 extern CompMetadata *glMetadata;
-extern const CompMetadata::OptionInfo
-    glDisplayOptionInfo[GL_DISPLAY_OPTION_NUM];
 
 extern const CompMetadata::OptionInfo
-    glScreenOptionInfo[GL_SCREEN_OPTION_NUM];
+    glOptionInfo[GL_OPTION_NUM];
 
-extern GLScreen   *targetScreen;
 extern CompOutput *targetOutput;
 
 
 #define RED_SATURATION_WEIGHT   0.30f
 #define GREEN_SATURATION_WEIGHT 0.59f
 #define BLUE_SATURATION_WEIGHT  0.11f
-
-
-
-class PrivateGLDisplay : public DisplayInterface
-{
-    public:
-	PrivateGLDisplay (CompDisplay *d, GLDisplay *gd);
-	~PrivateGLDisplay ();
-
-	void handleEvent (XEvent *event);
-
-    public:
-	CompDisplay *display;
-	GLDisplay   *gDisplay;
-
-	GLenum textureFilter;
-
-	CompOption::Vector opt;
-};
 
 class PrivateGLScreen :
     public ScreenInterface,
@@ -56,6 +33,8 @@ class PrivateGLScreen :
     public:
 	PrivateGLScreen (CompScreen *s, GLScreen *gs);
 	~PrivateGLScreen ();
+
+	void handleEvent (XEvent *event);
 
 	void outputChangeNotify ();
 
@@ -86,26 +65,14 @@ class PrivateGLScreen :
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
 
-	GLFBConfig      glxPixmapFBConfigs[MAX_DEPTH + 1];
+	GLenum textureFilter;
 
-	bool  textureRectangle;
-	bool  textureNonPowerOfTwo;
-	bool  textureEnvCombine;
-	bool  textureEnvCrossbar;
-	bool  textureBorderClamp;
-	bool  textureCompression;
-	GLint maxTextureSize;
-	bool  fbo;
-	bool  fragmentProgram;
-	GLint maxTextureUnits;
+	GLFBConfig      glxPixmapFBConfigs[MAX_DEPTH + 1];
 
 	GLTexture backgroundTexture;
 	bool      backgroundLoaded;
 
 	GLTexture::Filter filter[3];
-
-	bool canDoSaturated;
-	bool canDoSlightlySaturated;
 
 	CompPoint rasterPos;
 
@@ -116,7 +83,7 @@ class PrivateGLScreen :
 	bool clearBuffers;
 	bool lighting;
 
-	GLXGetProcAddressProc    getProcAddress;
+	GL::GLXGetProcAddressProc getProcAddress;
 
 	GLXContext ctx;
 

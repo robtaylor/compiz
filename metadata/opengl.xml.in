@@ -2,7 +2,7 @@
     <plugin name="opengl">
 	<_short>OpenGL</_short>
 	<_long>OpenGL Plugin</_long>
-	<display>
+	<options>
 	    <option name="texture_filter" type="int">
 		<_short>Texture Filter</_short>
 		<_long>Texture filtering</_long>
@@ -22,8 +22,6 @@
 		    <_name>Best</_name>
 		</desc>
 	    </option>
-	</display>
-	<screen>
 	    <option name="lighting" type="bool">
 		<_short>Lighting</_short>
 		<_long>Use diffuse light when screen is transformed</_long>
@@ -39,6 +37,6 @@
 		<_long>If available use compression for textures converted from images</_long>
 		<default>true</default>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

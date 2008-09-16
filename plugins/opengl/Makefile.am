@@ -2,7 +2,6 @@ libopengl_la_LDFLAGS = -avoid-version -no-undefined
 libopengl_la_LIBADD = $(top_builddir)/plugins/composite/libcomposite.la
 libopengl_la_SOURCES = \
 	opengl.cpp \
-	display.cpp \
 	screen.cpp \
 	window.cpp \
 	paint.cpp \

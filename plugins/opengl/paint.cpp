@@ -399,8 +399,7 @@ GLScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
     GLMatrix sTransform = transform;
 
     if (mask & PAINT_SCREEN_CLEAR_MASK)
-	GLDisplay::get (priv->screen->display ())
-	    ->clearTargetOutput (GL_COLOR_BUFFER_BIT);
+	clearTargetOutput (GL_COLOR_BUFFER_BIT);
 
     setLighting (true);
 
@@ -574,7 +573,7 @@ GLWindow::glDrawGeometry ()
     {
 	if (texUnit != currentTexUnit)
 	{
-	    (*priv->gScreen->clientActiveTexture) (GL_TEXTURE0_ARB + texUnit);
+	    (*GL::clientActiveTexture) (GL_TEXTURE0_ARB + texUnit);
 	    glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 	    currentTexUnit = texUnit;
 	}
@@ -591,11 +590,11 @@ GLWindow::glDrawGeometry ()
     {
 	while (--texUnit)
 	{
-	    (*priv->gScreen->clientActiveTexture) (GL_TEXTURE0_ARB + texUnit);
+	    (*GL::clientActiveTexture) (GL_TEXTURE0_ARB + texUnit);
 	    glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 	}
 
-	(*priv->gScreen->clientActiveTexture) (GL_TEXTURE0_ARB);
+	(*GL::clientActiveTexture) (GL_TEXTURE0_ARB);
     }
 }
 
@@ -757,24 +756,24 @@ enableFragmentProgramAndDrawGeometry (GLScreen	         *gs,
     GLFragment::Attrib fa (attrib);
     bool               blending;
 
-    if (gs->canDoSaturated () && attrib.getSaturation () != COLOR)
+    if (GL::canDoSaturated && attrib.getSaturation () != COLOR)
     {
 	int param, function;
 
 	param    = fa.allocParameters (1);
 	function =
-	    GLFragment::getSaturateFragmentFunction (gs, texture, param);
+	    GLFragment::getSaturateFragmentFunction (texture, param);
 
 	fa.addFunction (function);
 
-	(*gs->programEnvParameter4f) (GL_FRAGMENT_PROGRAM_ARB, param,
+	(*GL::programEnvParameter4f) (GL_FRAGMENT_PROGRAM_ARB, param,
 				      RED_SATURATION_WEIGHT,
 				      GREEN_SATURATION_WEIGHT,
 				      BLUE_SATURATION_WEIGHT,
 				      attrib.getSaturation () / 65535.0f);
     }
 
-    if (!fa.enable (gs, &blending))
+    if (!fa.enable (&blending))
 	return false;
 
     texture->enable (filter);
@@ -824,7 +823,7 @@ enableFragmentProgramAndDrawGeometry (GLScreen	         *gs,
 
     texture->disable ();
 
-    fa.disable (gs);
+    fa.disable ();
 
     return true;
 }
@@ -837,7 +836,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 					 GLTexture::Filter  filter,
 					 unsigned int	    mask)
 {
-    if (gs->canDoSaturated () && attrib.getSaturation () != COLOR)
+    if (GL::canDoSaturated && attrib.getSaturation () != COLOR)
     {
 	GLfloat constant[4];
 
@@ -862,7 +861,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 
 	glColor4f (1.0f, 1.0f, 1.0f, 0.5f);
 
-	gs->activeTexture (GL_TEXTURE1_ARB);
+	GL::activeTexture (GL_TEXTURE1_ARB);
 
 	texture->enable (filter);
 
@@ -874,7 +873,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 	glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND0_RGB, GL_SRC_COLOR);
 	glTexEnvf (GL_TEXTURE_ENV, GL_OPERAND1_RGB, GL_SRC_COLOR);
 
-	if (gs->canDoSlightlySaturated () && attrib.getSaturation () > 0)
+	if (GL::canDoSlightlySaturated && attrib.getSaturation () > 0)
 	{
 	    glTexEnvf (GL_TEXTURE_ENV, GL_COMBINE_ALPHA, GL_REPLACE);
 	    glTexEnvf (GL_TEXTURE_ENV, GL_SOURCE0_ALPHA, GL_PREVIOUS);
@@ -887,7 +886,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 
 	    glTexEnvfv (GL_TEXTURE_ENV, GL_TEXTURE_ENV_COLOR, constant);
 
-	    gs->activeTexture (GL_TEXTURE2_ARB);
+	    GL::activeTexture (GL_TEXTURE2_ARB);
 
 	    texture->enable (filter);
 
@@ -912,7 +911,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 	    if (attrib.getOpacity () < OPAQUE ||
 		attrib.getBrightness () != BRIGHT)
 	    {
-		gs->activeTexture (GL_TEXTURE3_ARB);
+		GL::activeTexture (GL_TEXTURE3_ARB);
 
 		texture->enable (filter);
 
@@ -942,7 +941,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 
 		glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-		gs->activeTexture (GL_TEXTURE2_ARB);
+		GL::activeTexture (GL_TEXTURE2_ARB);
 	    }
 	    else
 	    {
@@ -953,7 +952,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 
 	    glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-	    gs->activeTexture (GL_TEXTURE1_ARB);
+	    GL::activeTexture (GL_TEXTURE1_ARB);
 	}
 	else
 	{
@@ -980,7 +979,7 @@ enableFragmentOperationsAndDrawGeometry (GLScreen	    *gs,
 
 	glTexEnvi (GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_REPLACE);
 
-	gs->activeTexture (GL_TEXTURE0_ARB);
+	GL::activeTexture (GL_TEXTURE0_ARB);
 
 	texture->disable ();
 

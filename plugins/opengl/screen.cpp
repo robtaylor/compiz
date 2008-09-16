@@ -3,17 +3,58 @@
 #include <dlfcn.h>
 #include <math.h>
 
-GLScreen   *targetScreen = NULL;
-CompOutput *targetOutput = NULL;
+namespace GL {
+    GLXBindTexImageProc      bindTexImage = 0;
+    GLXReleaseTexImageProc   releaseTexImage = 0;
+    GLXQueryDrawableProc     queryDrawable = 0;
+    GLXCopySubBufferProc     copySubBuffer = 0;
+    GLXGetVideoSyncProc      getVideoSync = 0;
+    GLXWaitVideoSyncProc     waitVideoSync = 0;
+    GLXGetFBConfigsProc      getFBConfigs = 0;
+    GLXGetFBConfigAttribProc getFBConfigAttrib = 0;
+    GLXCreatePixmapProc      createPixmap = 0;
 
-Window currentRoot = None;
+    GLActiveTextureProc       activeTexture = 0;
+    GLClientActiveTextureProc clientActiveTexture = 0;
+    GLMultiTexCoord2fProc     multiTexCoord2f = 0;
+
+    GLGenProgramsProc	     genPrograms = 0;
+    GLDeleteProgramsProc     deletePrograms = 0;
+    GLBindProgramProc	     bindProgram = 0;
+    GLProgramStringProc	     programString = 0;
+    GLProgramParameter4fProc programEnvParameter4f = 0;
+    GLProgramParameter4fProc programLocalParameter4f = 0;
+    GLGetProgramivProc       getProgramiv = 0;
+
+    GLGenFramebuffersProc        genFramebuffers = 0;
+    GLDeleteFramebuffersProc     deleteFramebuffers = 0;
+    GLBindFramebufferProc        bindFramebuffer = 0;
+    GLCheckFramebufferStatusProc checkFramebufferStatus = 0;
+    GLFramebufferTexture2DProc   framebufferTexture2D = 0;
+    GLGenerateMipmapProc         generateMipmap = 0;
+
+    bool  textureRectangle = false;
+    bool  textureNonPowerOfTwo = false;
+    bool  textureEnvCombine = false;
+    bool  textureEnvCrossbar = false;
+    bool  textureBorderClamp = false;
+    bool  textureCompression = false;
+    GLint maxTextureSize = 0;
+    bool  fbo = false;
+    bool  fragmentProgram = false;
+    GLint maxTextureUnits = 1;
+
+    bool canDoSaturated = false;
+    bool canDoSlightlySaturated = false;
+}
+
+CompOutput *targetOutput = NULL;
 
 GLScreen::GLScreen (CompScreen *s) :
     OpenGLPrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
     priv (new PrivateGLScreen (s, this))
 {
-    CompDisplay          *d = s->display ();
-    Display		 *dpy = d->dpy ();
+    Display		 *dpy = s->dpy ();
     XVisualInfo		 templ;
     XVisualInfo		 *visinfo;
     GLXFBConfig		 *fbConfigs;
@@ -38,8 +79,7 @@ GLScreen::GLScreen (CompScreen *s) :
 	return;
     }
 
-    if (!glMetadata->initScreenOptions (s, glScreenOptionInfo,
-					GL_SCREEN_OPTION_NUM, priv->opt))
+    if (!glMetadata->initOptions (glOptionInfo, GL_OPTION_NUM, priv->opt))
     {
 	setFailed ();
 	return;
@@ -56,7 +96,7 @@ GLScreen::GLScreen (CompScreen *s) :
     visinfo = XGetVisualInfo (dpy, VisualIDMask, &templ, &nvisinfo);
     if (!nvisinfo)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"Couldn't get visual info for default visual");
 	setFailed ();
 	return;
@@ -67,7 +107,7 @@ GLScreen::GLScreen (CompScreen *s) :
     glXGetConfig (dpy, visinfo, GLX_USE_GL, &value);
     if (!value)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"Root visual is not a GL visual");
 	XFree (visinfo);
 	setFailed ();
@@ -77,7 +117,7 @@ GLScreen::GLScreen (CompScreen *s) :
     glXGetConfig (dpy, visinfo, GLX_DOUBLEBUFFER, &value);
     if (!value)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"Root visual is not a double buffered GL visual");
 	XFree (visinfo);
 	setFailed ();
@@ -87,7 +127,7 @@ GLScreen::GLScreen (CompScreen *s) :
     priv->ctx = glXCreateContext (dpy, visinfo, NULL, !indirectRendering);
     if (!priv->ctx)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"glXCreateContext failed");
 	XFree (visinfo);
 
@@ -98,7 +138,7 @@ GLScreen::GLScreen (CompScreen *s) :
     glxExtensions = glXQueryExtensionsString (dpy, s->screenNum ());
     if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap"))
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"GLX_EXT_texture_from_pixmap is missing");
 	XFree (visinfo);
 
@@ -110,203 +150,191 @@ GLScreen::GLScreen (CompScreen *s) :
 
     if (!strstr (glxExtensions, "GLX_SGIX_fbconfig"))
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"GLX_SGIX_fbconfig is missing");
 	setFailed ();
 	return;
     }
 
-    priv->getProcAddress = (GLXGetProcAddressProc)
+    priv->getProcAddress = (GL::GLXGetProcAddressProc)
 	getProcAddress ("glXGetProcAddressARB");
-    bindTexImage = (GLXBindTexImageProc)
+    GL::bindTexImage = (GL::GLXBindTexImageProc)
 	getProcAddress ("glXBindTexImageEXT");
-    releaseTexImage = (GLXReleaseTexImageProc)
+    GL::releaseTexImage = (GL::GLXReleaseTexImageProc)
 	getProcAddress ("glXReleaseTexImageEXT");
-    queryDrawable = (GLXQueryDrawableProc)
+    GL::queryDrawable = (GL::GLXQueryDrawableProc)
 	getProcAddress ("glXQueryDrawable");
-    getFBConfigs = (GLXGetFBConfigsProc)
+    GL::getFBConfigs = (GL::GLXGetFBConfigsProc)
 	getProcAddress ("glXGetFBConfigs");
-    getFBConfigAttrib = (GLXGetFBConfigAttribProc)
+    GL::getFBConfigAttrib = (GL::GLXGetFBConfigAttribProc)
 	getProcAddress ("glXGetFBConfigAttrib");
-    createPixmap = (GLXCreatePixmapProc)
+    GL::createPixmap = (GL::GLXCreatePixmapProc)
 	getProcAddress ("glXCreatePixmap");
 
-    if (!bindTexImage)
+    if (!GL::bindTexImage)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"glXBindTexImageEXT is missing");
 	setFailed ();
 	return;
     }
 
-    if (!releaseTexImage)
+    if (!GL::releaseTexImage)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"glXReleaseTexImageEXT is missing");
 	setFailed ();
 	return;
     }
 
-    if (!queryDrawable     ||
-	!getFBConfigs      ||
-	!getFBConfigAttrib ||
-	!createPixmap)
+    if (!GL::queryDrawable     ||
+	!GL::getFBConfigs      ||
+	!GL::getFBConfigAttrib ||
+	!GL::createPixmap)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"fbconfig functions missing");
 	setFailed ();
 	return;
     }
 
-    copySubBuffer = NULL;
     if (strstr (glxExtensions, "GLX_MESA_copy_sub_buffer"))
-	copySubBuffer = (GLXCopySubBufferProc)
+	GL::copySubBuffer = (GL::GLXCopySubBufferProc)
 	    getProcAddress ("glXCopySubBufferMESA");
 
-    getVideoSync = NULL;
-    waitVideoSync = NULL;
     if (strstr (glxExtensions, "GLX_SGI_video_sync"))
     {
-	getVideoSync = (GLXGetVideoSyncProc)
+	GL::getVideoSync = (GL::GLXGetVideoSyncProc)
 	    getProcAddress ("glXGetVideoSyncSGI");
 
-	waitVideoSync = (GLXWaitVideoSyncProc)
+	GL::waitVideoSync = (GL::GLXWaitVideoSyncProc)
 	    getProcAddress ("glXWaitVideoSyncSGI");
     }
 
-    glXMakeCurrent (dpy, CompositeScreen::get (s)->output (),
-		    priv->ctx);
-    currentRoot = s->root ();
+    glXMakeCurrent (dpy, CompositeScreen::get (s)->output (), priv->ctx);
 
     glExtensions = (const char *) glGetString (GL_EXTENSIONS);
     if (!glExtensions)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"No valid GL extensions string found.");
 	setFailed ();
 	return;
     }
 
-    priv->textureNonPowerOfTwo = false;
     if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))
-	priv->textureNonPowerOfTwo = true;
+	GL::textureNonPowerOfTwo = true;
 
-    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &priv->maxTextureSize);
+    glGetIntegerv (GL_MAX_TEXTURE_SIZE, &GL::maxTextureSize);
 
-    priv->textureRectangle = false;
     if (strstr (glExtensions, "GL_NV_texture_rectangle")  ||
 	strstr (glExtensions, "GL_EXT_texture_rectangle") ||
 	strstr (glExtensions, "GL_ARB_texture_rectangle"))
     {
-	priv->textureRectangle = true;
+	GL::textureRectangle = true;
 
-	if (!priv->textureNonPowerOfTwo)
+	if (!GL::textureNonPowerOfTwo)
 	{
 	    GLint maxTextureSize;
 
 	    glGetIntegerv (GL_MAX_RECTANGLE_TEXTURE_SIZE_NV, &maxTextureSize);
-	    if (maxTextureSize > priv->maxTextureSize)
-		priv->maxTextureSize = maxTextureSize;
+	    if (maxTextureSize > GL::maxTextureSize)
+		GL::maxTextureSize = maxTextureSize;
 	}
     }
 
-    if (!(priv->textureRectangle || priv->textureNonPowerOfTwo))
+    if (!(GL::textureRectangle || GL::textureNonPowerOfTwo))
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"Support for non power of two textures missing");
 	setFailed ();
 	return;
     }
 
-    priv->textureEnvCombine = priv->textureEnvCrossbar = false;
     if (strstr (glExtensions, "GL_ARB_texture_env_combine"))
     {
-	priv->textureEnvCombine = true;
+	GL::textureEnvCombine = true;
 
 	/* XXX: GL_NV_texture_env_combine4 need special code but it seams to
 	   be working anyway for now... */
 	if (strstr (glExtensions, "GL_ARB_texture_env_crossbar") ||
 	    strstr (glExtensions, "GL_NV_texture_env_combine4"))
-	    priv->textureEnvCrossbar = true;
+	    GL::textureEnvCrossbar = true;
     }
 
-    priv->textureBorderClamp = false;
     if (strstr (glExtensions, "GL_ARB_texture_border_clamp") ||
 	strstr (glExtensions, "GL_SGIS_texture_border_clamp"))
-	priv->textureBorderClamp = true;
+	GL::textureBorderClamp = true;
 
-    priv->maxTextureUnits = 1;
+    GL::maxTextureUnits = 1;
     if (strstr (glExtensions, "GL_ARB_multitexture"))
     {
-	activeTexture = (GLActiveTextureProc)
+	GL::activeTexture = (GL::GLActiveTextureProc)
 	    getProcAddress ("glActiveTexture");
-	clientActiveTexture = (GLClientActiveTextureProc)
+	GL::clientActiveTexture = (GL::GLClientActiveTextureProc)
 	    getProcAddress ("glClientActiveTexture");
-	multiTexCoord2f = (GLMultiTexCoord2fProc)
+	GL::multiTexCoord2f = (GL::GLMultiTexCoord2fProc)
 	    getProcAddress ("glMultiTexCoord2f");
 
-	if (activeTexture && clientActiveTexture && multiTexCoord2f)
-	    glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &priv->maxTextureUnits);
+	if (GL::activeTexture && GL::clientActiveTexture && GL::multiTexCoord2f)
+	    glGetIntegerv (GL_MAX_TEXTURE_UNITS_ARB, &GL::maxTextureUnits);
     }
 
-    priv->fragmentProgram = false;
     if (strstr (glExtensions, "GL_ARB_fragment_program"))
     {
-	genPrograms = (GLGenProgramsProc)
+	GL::genPrograms = (GL::GLGenProgramsProc)
 	    getProcAddress ("glGenProgramsARB");
-	deletePrograms = (GLDeleteProgramsProc)
+	GL::deletePrograms = (GL::GLDeleteProgramsProc)
 	    getProcAddress ("glDeleteProgramsARB");
-	bindProgram = (GLBindProgramProc)
+	GL::bindProgram = (GL::GLBindProgramProc)
 	    getProcAddress ("glBindProgramARB");
-	programString = (GLProgramStringProc)
+	GL::programString = (GL::GLProgramStringProc)
 	    getProcAddress ("glProgramStringARB");
-	programEnvParameter4f = (GLProgramParameter4fProc)
+	GL::programEnvParameter4f = (GL::GLProgramParameter4fProc)
 	    getProcAddress ("glProgramEnvParameter4fARB");
-	programLocalParameter4f = (GLProgramParameter4fProc)
+	GL::programLocalParameter4f = (GL::GLProgramParameter4fProc)
 	    getProcAddress ("glProgramLocalParameter4fARB");
-	getProgramiv = (GLGetProgramivProc)
+	GL::getProgramiv = (GL::GLGetProgramivProc)
 	    getProcAddress ("glGetProgramivARB");
 
-	if (genPrograms             &&
-	    deletePrograms          &&
-	    bindProgram             &&
-	    programString           &&
-	    programEnvParameter4f   &&
-	    programLocalParameter4f &&
-	    getProgramiv)
-	    priv->fragmentProgram = true;
+	if (GL::genPrograms             &&
+	    GL::deletePrograms          &&
+	    GL::bindProgram             &&
+	    GL::programString           &&
+	    GL::programEnvParameter4f   &&
+	    GL::programLocalParameter4f &&
+	    GL::getProgramiv)
+	    GL::fragmentProgram = true;
     }
 
-    priv->fbo = false;
     if (strstr (glExtensions, "GL_EXT_framebuffer_object"))
     {
-	genFramebuffers = (GLGenFramebuffersProc)
+	GL::genFramebuffers = (GL::GLGenFramebuffersProc)
 	    getProcAddress ("glGenFramebuffersEXT");
-	deleteFramebuffers = (GLDeleteFramebuffersProc)
+	GL::deleteFramebuffers = (GL::GLDeleteFramebuffersProc)
 	    getProcAddress ("glDeleteFramebuffersEXT");
-	bindFramebuffer = (GLBindFramebufferProc)
+	GL::bindFramebuffer = (GL::GLBindFramebufferProc)
 	    getProcAddress ("glBindFramebufferEXT");
-	checkFramebufferStatus = (GLCheckFramebufferStatusProc)
+	GL::checkFramebufferStatus = (GL::GLCheckFramebufferStatusProc)
 	    getProcAddress ("glCheckFramebufferStatusEXT");
-	framebufferTexture2D = (GLFramebufferTexture2DProc)
+	GL::framebufferTexture2D = (GL::GLFramebufferTexture2DProc)
 	    getProcAddress ("glFramebufferTexture2DEXT");
-	generateMipmap = (GLGenerateMipmapProc)
+	GL::generateMipmap = (GL::GLGenerateMipmapProc)
 	    getProcAddress ("glGenerateMipmapEXT");
 
-	if (genFramebuffers        &&
-	    deleteFramebuffers     &&
-	    bindFramebuffer        &&
-	    checkFramebufferStatus &&
-	    framebufferTexture2D   &&
-	    generateMipmap)
-	    priv->fbo = true;
+	if (GL::genFramebuffers        &&
+	    GL::deleteFramebuffers     &&
+	    GL::bindFramebuffer        &&
+	    GL::checkFramebufferStatus &&
+	    GL::framebufferTexture2D   &&
+	    GL::generateMipmap)
+	    GL::fbo = true;
     }
 
-    priv->textureCompression = false;
     if (strstr (glExtensions, "GL_ARB_texture_compression"))
-	priv->textureCompression = true;
+	GL::textureCompression = true;
 
-    fbConfigs = (*getFBConfigs) (dpy, s->screenNum (), &nElements);
+    fbConfigs = (*GL::getFBConfigs) (dpy, s->screenNum (), &nElements);
 
     for (i = 0; i <= MAX_DEPTH; i++)
     {
@@ -340,24 +368,18 @@ GLScreen::GLScreen (CompScreen *s) :
 	    if (visualDepth != i)
 		continue;
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_ALPHA_SIZE,
-				  &alpha);
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_BUFFER_SIZE,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_ALPHA_SIZE, &alpha);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_BUFFER_SIZE, &value);
 	    if (value != i && (value - alpha) != i)
 		continue;
 
 	    value = 0;
 	    if (i == 32)
 	    {
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_TEXTURE_RGBA_EXT,
-				      &value);
+		(*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+					  GLX_BIND_TO_TEXTURE_RGBA_EXT, &value);
 
 		if (value)
 		{
@@ -373,10 +395,8 @@ GLScreen::GLScreen (CompScreen *s) :
 		if (rgba)
 		    continue;
 
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_TEXTURE_RGB_EXT,
-				      &value);
+		(*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+					  GLX_BIND_TO_TEXTURE_RGB_EXT, &value);
 		if (!value)
 		    continue;
 
@@ -384,56 +404,45 @@ GLScreen::GLScreen (CompScreen *s) :
 		    GLX_TEXTURE_FORMAT_RGB_EXT;
 	    }
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_DOUBLEBUFFER,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_DOUBLEBUFFER, &value);
 	    if (value > db)
 		continue;
 
 	    db = value;
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_STENCIL_SIZE,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_STENCIL_SIZE, &value);
 	    if (value > stencil)
 		continue;
 
 	    stencil = value;
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_DEPTH_SIZE,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_DEPTH_SIZE, &value);
 	    if (value > depth)
 		continue;
 
 	    depth = value;
 
-	    if (priv->fbo)
+	    if (GL::fbo)
 	    {
-		(*getFBConfigAttrib) (dpy,
-				      fbConfigs[j],
-				      GLX_BIND_TO_MIPMAP_TEXTURE_EXT,
-				      &value);
+		(*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+					  GLX_BIND_TO_MIPMAP_TEXTURE_EXT,
+					  &value);
 		if (value < mipmap)
 		    continue;
 
 		mipmap = value;
 	    }
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_Y_INVERTED_EXT,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_Y_INVERTED_EXT, &value);
 
 	    priv->glxPixmapFBConfigs[i].yInverted = value;
 
-	    (*getFBConfigAttrib) (dpy,
-				  fbConfigs[j],
-				  GLX_BIND_TO_TEXTURE_TARGETS_EXT,
-				  &value);
+	    (*GL::getFBConfigAttrib) (dpy, fbConfigs[j],
+				      GLX_BIND_TO_TEXTURE_TARGETS_EXT, &value);
 
 	    priv->glxPixmapFBConfigs[i].textureTargets = value;
 
@@ -447,7 +456,7 @@ GLScreen::GLScreen (CompScreen *s) :
 
     if (!priv->glxPixmapFBConfigs[defaultDepth].fbConfig)
     {
-	compLogMessage (d, "opengl", CompLogLevelFatal,
+	compLogMessage ("opengl", CompLogLevelFatal,
 			"No GLXFBConfig for default depth, "
 			"this isn't going to work.");
 	setFailed ();
@@ -463,12 +472,11 @@ GLScreen::GLScreen (CompScreen *s) :
     glEnableClientState (GL_VERTEX_ARRAY);
     glEnableClientState (GL_TEXTURE_COORD_ARRAY);
 
-    priv->canDoSaturated = priv->canDoSlightlySaturated = false;
-    if (priv->textureEnvCombine && priv->maxTextureUnits >= 2)
+    if (GL::textureEnvCombine && GL::maxTextureUnits >= 2)
     {
-	priv->canDoSaturated = true;
-	if (priv->textureEnvCrossbar && priv->maxTextureUnits >= 4)
-	    priv->canDoSlightlySaturated = true;
+	GL::canDoSaturated = true;
+	if (GL::textureEnvCrossbar && GL::maxTextureUnits >= 4)
+	    GL::canDoSlightlySaturated = true;
     }
 
     priv->updateView ();
@@ -499,7 +507,7 @@ GLScreen::GLScreen (CompScreen *s) :
 GLScreen::~GLScreen ()
 {
     CompositeScreen::get (priv->screen)->unregisterPaintHandler ();
-    glXDestroyContext (priv->screen->display ()->dpy (), priv->ctx);
+    glXDestroyContext (priv->screen->dpy (), priv->ctx);
     delete priv;
 }
 
@@ -508,20 +516,9 @@ PrivateGLScreen::PrivateGLScreen (CompScreen *s,
     screen (s),
     gScreen (gs),
     cScreen (CompositeScreen::get (s)),
-    textureRectangle (false),
-    textureNonPowerOfTwo (false),
-    textureEnvCombine (false),
-    textureEnvCrossbar (false),
-    textureBorderClamp (false),
-    textureCompression (false),
-    maxTextureSize (0),
-    fbo (false),
-    fragmentProgram (false),
-    maxTextureUnits (1),
-    backgroundTexture (screen),
+    textureFilter (GL_LINEAR),
+    backgroundTexture (),
     backgroundLoaded (false),
-    canDoSaturated (false),
-    canDoSlightlySaturated (false),
     rasterPos (0, 0),
     fragmentStorage (),
     clearBuffers (true),
@@ -539,6 +536,53 @@ PrivateGLScreen::~PrivateGLScreen ()
     if (outputRegion)
 	XDestroyRegion (outputRegion);
 }
+
+GLushort defaultColor[4] = { 0xffff, 0xffff, 0xffff, 0xffff };
+
+
+
+GLenum
+GLScreen::textureFilter ()
+{
+    return priv->textureFilter;
+}
+
+void
+PrivateGLScreen::handleEvent (XEvent *event)
+{
+    CompWindow *w;
+
+    screen->handleEvent (event);
+
+    switch (event->type) {
+	case PropertyNotify:
+	    if (event->xproperty.atom == Atoms::xBackground[0] ||
+		event->xproperty.atom == Atoms::xBackground[1])
+	    {
+		if (event->xproperty.window == screen->root ())
+		    gScreen->updateBackground ();
+	    }
+	    else if (event->xproperty.atom == Atoms::winOpacity ||
+		     event->xproperty.atom == Atoms::winBrightness ||
+		     event->xproperty.atom == Atoms::winSaturation)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    GLWindow::get (w)->updatePaintAttribs ();
+	    }
+	    break;
+	break;
+	default:
+	    break;
+    }
+}
+
+void
+GLScreen::clearTargetOutput (unsigned int mask)
+{
+    clearOutput (targetOutput, mask);
+}
+
 
 static void
 frustum (GLfloat *m,
@@ -629,11 +673,11 @@ PrivateGLScreen::outputChangeNotify ()
     updateView ();
 }
 
-FuncPtr
+GL::FuncPtr
 GLScreen::getProcAddress (const char *name)
 {
     static void *dlhand = NULL;
-    FuncPtr     funcPtr = NULL;
+    GL::FuncPtr funcPtr = NULL;
 
     if (priv->getProcAddress)
 	funcPtr = priv->getProcAddress ((GLubyte *) name);
@@ -646,7 +690,7 @@ GLScreen::getProcAddress (const char *name)
 	if (dlhand)
 	{
 	    dlerror ();
-	    funcPtr = (FuncPtr) dlsym (dlhand, name);
+	    funcPtr = (GL::FuncPtr) dlsym (dlhand, name);
 	    if (dlerror () != NULL)
 		funcPtr = NULL;
 	}
@@ -658,7 +702,7 @@ GLScreen::getProcAddress (const char *name)
 void
 PrivateGLScreen::updateScreenBackground (GLTexture *texture)
 {
-    Display	  *dpy = screen->display ()->dpy ();
+    Display	  *dpy = screen->dpy ();
     Atom	  pixmapAtom, actualType;
     int		  actualFormat, i, status;
     unsigned int  width = 1, height = 1, depth = 0;
@@ -672,7 +716,7 @@ PrivateGLScreen::updateScreenBackground (GLTexture *texture)
     for (i = 0; pixmap == 0 && i < 2; i++)
     {
 	status = XGetWindowProperty (dpy, screen->root (),
-				     screen->display ()->atoms ().xBackground[i],
+				     Atoms::xBackground[i],
 				     0, 4, FALSE, AnyPropertyType,
 				     &actualType, &actualFormat, &nItems,
 				     &bytesAfter, &prop);
@@ -708,15 +752,11 @@ PrivateGLScreen::updateScreenBackground (GLTexture *texture)
 
     if (pixmap)
     {
-/* FIXME:
-	if (pixmap == texture->pixmap)
-	    return;
-*/
 	texture->reset ();
 
 	if (!texture->bindPixmap (pixmap, width, height, depth))
 	{
-	    compLogMessage (NULL, "core", CompLogLevelWarn,
+	    compLogMessage ("core", CompLogLevelWarn,
 			    "Couldn't bind background pixmap 0x%x to "
 			    "texture", (int) pixmap);
 	}
@@ -753,7 +793,7 @@ GLScreen::setLighting (bool lighting)
 {
     if (priv->lighting != lighting)
     {
-	if (!priv->opt[GL_SCREEN_OPTION_LIGHTING].value ().b ())
+	if (!priv->opt[GL_OPTION_LIGHTING].value ().b ())
 	    lighting = false;
 
 	if (lighting)
@@ -771,20 +811,6 @@ GLScreen::setLighting (bool lighting)
 
 	setTexEnvMode (GL_REPLACE);
     }
-}
-
-void
-GLScreen::makeCurrent ()
-{
-    if (currentRoot != priv->screen->root ())
-    {
-	glXMakeCurrent (priv->screen->display ()->dpy (),
-			CompositeScreen::get (priv->screen)->output (),
-			priv->ctx);
-	currentRoot = priv->screen->root ();
-    }
-
-    priv->pendingCommands = true;
 }
 
 bool
@@ -820,12 +846,6 @@ void
 GLScreenInterface::glDisableOutputClipping ()
     WRAPABLE_DEF (glDisableOutputClipping)
 
-int
-GLScreen::maxTextureSize ()
-{
-    return priv->maxTextureSize;
-}
-
 void
 GLScreen::updateBackground ()
 {
@@ -836,30 +856,6 @@ GLScreen::updateBackground ()
 	priv->backgroundLoaded = false;
 	CompositeScreen::get (priv->screen)->damageScreen ();
     }
-}
-
-bool
-GLScreen::textureNonPowerOfTwo ()
-{
-    return priv->textureNonPowerOfTwo;
-}
-
-bool
-GLScreen::textureCompression ()
-{
-    return priv->textureCompression;
-}
-
-bool
-GLScreen::canDoSaturated ()
-{
-    return priv->canDoSaturated;
-}
-
-bool
-GLScreen::canDoSlightlySaturated ()
-{
-    return priv->canDoSlightlySaturated;
 }
 
 bool
@@ -880,22 +876,10 @@ GLScreen::fragmentStorage ()
     return &priv->fragmentStorage;
 }
 
-bool
-GLScreen::fragmentProgram ()
-{
-    return priv->fragmentProgram;
-}
-
 GLFBConfig*
 GLScreen::glxPixmapFBConfig (unsigned int depth)
 {
     return &priv->glxPixmapFBConfigs[depth];
-}
-
-bool
-GLScreen::framebufferObject ()
-{
-    return priv->fbo;
 }
 
 void
@@ -946,15 +930,15 @@ PrivateGLScreen::waitForVideoSync ()
 {
     unsigned int sync;
 
-    if (!opt[GL_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ())
+    if (!opt[GL_OPTION_SYNC_TO_VBLANK].value ().b ())
 	return;
 
-    if (gScreen->getVideoSync)
+    if (GL::getVideoSync)
     {
 	glFlush ();
 
-	(*gScreen->getVideoSync) (&sync);
-	(*gScreen->waitVideoSync) (2, (sync + 1) % 2, &sync);
+	(*GL::getVideoSync) (&sync);
+	(*GL::waitVideoSync) (2, (sync + 1) % 2, &sync);
     }
 }
 
@@ -982,7 +966,6 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 
     foreach (CompOutput *output, outputs)
     {
-	targetScreen = gScreen;
 	targetOutput = output;
 
 	r.x	 = output->x1 ();
@@ -1032,15 +1015,14 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	    }
 	}
     }
-	
-    targetScreen = NULL;
+
     targetOutput = &screen->outputDevs ()[0];
 
     waitForVideoSync ();
 
     if (mask & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
     {
-	glXSwapBuffers (screen->display ()->dpy (), cScreen->output ());
+	glXSwapBuffers (screen->dpy (), cScreen->output ());
     }
     else
     {
@@ -1050,17 +1032,16 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	pBox = tmpRegion->rects;
 	nBox = tmpRegion->numRects;
 
-	if (gScreen->copySubBuffer)
+	if (GL::copySubBuffer)
 	{
 	    while (nBox--)
 	    {
 		y = screen->size ().height () - pBox->y2;
 
-		(*gScreen->copySubBuffer) (screen->display ()->dpy (),
-					   cScreen->output (),
-					   pBox->x1, y,
-					   pBox->x2 - pBox->x1,
-					   pBox->y2 - pBox->y1);
+		(*GL::copySubBuffer) (screen->dpy (), cScreen->output (),
+				      pBox->x1, y,
+				      pBox->x2 - pBox->x1,
+				      pBox->y2 - pBox->y1);
 
 		pBox++;
 	    }
@@ -1103,18 +1084,16 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 bool
 PrivateGLScreen::hasVSync ()
 {
-   return (gScreen->getVideoSync &&
-	   opt[GL_SCREEN_OPTION_SYNC_TO_VBLANK].value ().b ());
+   return (GL::getVideoSync &&
+	   opt[GL_OPTION_SYNC_TO_VBLANK].value ().b ());
 }
 
 void
 PrivateGLScreen::prepareDrawing ()
 {
-    gScreen->makeCurrent ();
     if (pendingCommands)
     {
 	glFinish ();
 	pendingCommands = false;
     }
-    targetScreen = gScreen;
 }

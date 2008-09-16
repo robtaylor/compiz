@@ -29,7 +29,7 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     cWindow (CompositeWindow::get (w)),
     screen (w->screen ()),
     gScreen (GLScreen::get (screen)),
-    texture (screen),
+    texture (),
     clip (0),
     bindFailed (false),
     geometry ()
@@ -72,7 +72,7 @@ GLWindow::bind ()
 				   priv->window->height () + i.top + i.bottom,
 				   priv->window->depth ()))
     {
-	compLogMessage (priv->screen->display (), "opengl", CompLogLevelInfo,
+	compLogMessage ("opengl", CompLogLevelInfo,
 			"Couldn't bind redirected window 0x%x to "
 			"texture\n", (int) priv->window->id ());
     }
@@ -87,7 +87,7 @@ GLWindow::release ()
 {
     if (priv->cWindow->pixmap ())
     {
-	priv->texture = GLTexture (priv->screen);
+	priv->texture = GLTexture ();
 	priv->cWindow->release ();
     }
 }

@@ -2,61 +2,17 @@
 #include <compprivatehandler.h>
 #include "privates.h"
 
-const CompMetadata::OptionInfo glDisplayOptionInfo[GL_DISPLAY_OPTION_NUM] = {
+const CompMetadata::OptionInfo glOptionInfo[GL_OPTION_NUM] = {
     { "texture_filter", "int", RESTOSTRING (0, 2), 0, 0 },
-};
-
-const CompMetadata::OptionInfo glScreenOptionInfo[GL_SCREEN_OPTION_NUM] = {
     { "lighting", "bool", 0, 0, 0 },
     { "sync_to_vblank", "bool", 0, 0, 0 },
     { "texture_compression", "bool", 0, 0, 0 },
 };
 
 CompOption::Vector &
-GLDisplay::getOptions ()
-{
-    return priv->opt;
-}
-
-CompOption::Vector &
 GLScreen::getOptions ()
 {
     return priv->opt;
-}
-
-bool
-GLDisplay::setOption (const char        *name,
-		      CompOption::Value &value)
-{
-    CompOption   *o;
-    unsigned int index;
-
-    o = CompOption::findOption (priv->opt, name, &index);
-    if (!o)
-	return false;
-
-    switch (index) {
-	case GL_DISPLAY_OPTION_TEXTURE_FILTER:
-	    if (o->set (value))
-	    {
-		foreach (CompScreen *s, priv->display->screens ())
-		    CompositeScreen::get (s)->damageScreen ();
-
-		if (!o->value ().i ())
-		    priv->textureFilter = GL_NEAREST;
-		else
-		    priv->textureFilter = GL_LINEAR;
-
-		return true;
-	    }
-	    break;
-	default:
-	    if (CompOption::setDisplayOption (priv->display, *o, value))
-		return true;
-	    break;
-    }
-
-    return false;
 }
 
 bool
@@ -70,70 +26,46 @@ GLScreen::setOption (const char        *name,
     if (!o)
 	return false;
 
-    return CompOption::setScreenOption (priv->screen, *o, value);
+    switch (index) {
+	case GL_OPTION_TEXTURE_FILTER:
+	    if (o->set (value))
+	    {
+		priv->cScreen->damageScreen ();
+
+		if (!o->value ().i ())
+		    priv->textureFilter = GL_NEAREST;
+		else
+		    priv->textureFilter = GL_LINEAR;
+
+		return true;
+	    }
+	    break;
+	default:
+	    if (CompOption::setOption (*o, value))
+		return true;
+	    break;
+    }
+
+    return false;
 }
 
 CompMetadata *glMetadata;
 
-class OpenglPluginVTable : public CompPlugin::VTable
+class OpenglPluginVTable :
+    public CompPlugin::VTableForScreenAndWindow<GLScreen, GLWindow>
 {
     public:
 
-	const char *
-	name () { return "opengl"; };
+	const char * name () { return "opengl"; };
 
-	CompMetadata *
-	getMetadata ();
+	CompMetadata * getMetadata ();
 
-	virtual bool
-	init ();
+	bool init ();
 
-	virtual void
-	fini ();
+	void fini ();
 
-	virtual bool
-	initObject (CompObject *object);
-
-	virtual void
-	finiObject (CompObject *object);
-
-	CompOption::Vector &
-	getObjectOptions (CompObject *object);
-
-	bool
-	setObjectOption (CompObject        *object,
-			 const char        *name,
-			 CompOption::Value &value);
+	PLUGIN_OPTION_HELPER (GLScreen)
 };
-
-bool
-OpenglPluginVTable::initObject (CompObject *o)
-{
-    INIT_OBJECT (o,_,X,X,X,,GLDisplay, GLScreen, GLWindow)
-    return true;
-}
-
-void
-OpenglPluginVTable::finiObject (CompObject *o)
-{
-    FINI_OBJECT (o,_,X,X,X,,GLDisplay, GLScreen, GLWindow)
-}
-
-CompOption::Vector &
-OpenglPluginVTable::getObjectOptions (CompObject *o)
-{
-    GET_OBJECT_OPTIONS (o,X,X,GLDisplay, GLScreen)
-    return noOptions;
-}
-
-bool
-OpenglPluginVTable::setObjectOption (CompObject      *o,
-				     const char      *name,
-				     CompOption::Value &value)
-{
-    SET_OBJECT_OPTION (o,X,X,GLDisplay, GLScreen)
-    return false;
-}
 
 bool
 OpenglPluginVTable::init ()
@@ -144,11 +76,9 @@ OpenglPluginVTable::init ()
 
     CompPrivate p;
     p.uval = COMPIZ_OPENGL_ABI;
-    core->storeValue ("opengl_ABI", p);
+    screen->storeValue ("opengl_ABI", p);
 
-    glMetadata = new CompMetadata
-	(name (), glDisplayOptionInfo, GL_DISPLAY_OPTION_NUM,
-	 glScreenOptionInfo, GL_SCREEN_OPTION_NUM);
+    glMetadata = new CompMetadata (name (), glOptionInfo, GL_OPTION_NUM);
 
     if (!glMetadata)
 	return false;
@@ -161,6 +91,7 @@ OpenglPluginVTable::init ()
 void
 OpenglPluginVTable::fini ()
 {
+    screen->eraseValue ("opengl_ABI");
     delete glMetadata;
 }
 

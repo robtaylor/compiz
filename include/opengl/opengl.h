@@ -13,28 +13,8 @@
 #define PLUGIN OpenGL
 #include <compprivatehandler.h>
 
-class PrivateGLDisplay;
 class PrivateGLScreen;
 class PrivateGLWindow;
-
-class GLDisplay :
-    public OpenGLPrivateHandler<GLDisplay, CompDisplay, COMPIZ_OPENGL_ABI>
-{
-    public:
-	GLDisplay (CompDisplay *d);
-	~GLDisplay ();
-
-	CompOption::Vector & getOptions ();
-        bool setOption (const char *name, CompOption::Value &value);
-	
-	GLenum textureFilter ();
-
-	void clearTargetOutput (unsigned int mask);
-
-    private:
-	PrivateGLDisplay *priv;
-};
-
 
 extern GLushort   defaultColor[4];
 
@@ -59,86 +39,132 @@ extern GLushort   defaultColor[4];
 #define GLX_FRONT_LEFT_EXT                 0x20DE
 #endif
 
-typedef void (*FuncPtr) (void);
-typedef FuncPtr (*GLXGetProcAddressProc) (const GLubyte *procName);
+namespace GL {
 
-typedef void    (*GLXBindTexImageProc)    (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer,
-					   int		 *attribList);
-typedef void    (*GLXReleaseTexImageProc) (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 buffer);
-typedef void    (*GLXQueryDrawableProc)   (Display	 *display,
-					   GLXDrawable	 drawable,
-					   int		 attribute,
-					   unsigned int  *value);
+    typedef void (*FuncPtr) (void);
+    typedef FuncPtr (*GLXGetProcAddressProc) (const GLubyte *procName);
 
-typedef void (*GLXCopySubBufferProc) (Display     *display,
-				      GLXDrawable drawable,
-				      int	  x,
-				      int	  y,
-				      int	  width,
-				      int	  height);
+    typedef void    (*GLXBindTexImageProc)    (Display	 *display,
+					       GLXDrawable	 drawable,
+					       int		 buffer,
+					       int		 *attribList);
+    typedef void    (*GLXReleaseTexImageProc) (Display	 *display,
+					       GLXDrawable	 drawable,
+					       int		 buffer);
+    typedef void    (*GLXQueryDrawableProc)   (Display	 *display,
+					       GLXDrawable	 drawable,
+					       int		 attribute,
+					       unsigned int  *value);
 
-typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
-typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
-				     int	  remainder,
-				     unsigned int *count);
+    typedef void (*GLXCopySubBufferProc) (Display     *display,
+					  GLXDrawable drawable,
+					  int	  x,
+					  int	  y,
+					  int	  width,
+					  int	  height);
 
-#ifndef GLX_VERSION_1_3
-typedef struct __GLXFBConfigRec *GLXFBConfig;
-#endif
+    typedef int (*GLXGetVideoSyncProc)  (unsigned int *count);
+    typedef int (*GLXWaitVideoSyncProc) (int	  divisor,
+					 int	  remainder,
+					 unsigned int *count);
 
-typedef GLXFBConfig *(*GLXGetFBConfigsProc) (Display *display,
-					     int     screen,
-					     int     *nElements);
-typedef int (*GLXGetFBConfigAttribProc) (Display     *display,
-					 GLXFBConfig config,
-					 int	     attribute,
-					 int	     *value);
-typedef GLXPixmap (*GLXCreatePixmapProc) (Display     *display,
-					  GLXFBConfig config,
-					  Pixmap      pixmap,
-					  const int   *attribList);
+    #ifndef GLX_VERSION_1_3
+    typedef struct __GLXFBConfigRec *GLXFBConfig;
+    #endif
 
-typedef void (*GLActiveTextureProc) (GLenum texture);
-typedef void (*GLClientActiveTextureProc) (GLenum texture);
-typedef void (*GLMultiTexCoord2fProc) (GLenum, GLfloat, GLfloat);
+    typedef GLXFBConfig *(*GLXGetFBConfigsProc) (Display *display,
+						 int     screen,
+						 int     *nElements);
+    typedef int (*GLXGetFBConfigAttribProc) (Display     *display,
+					     GLXFBConfig config,
+					     int	     attribute,
+					     int	     *value);
+    typedef GLXPixmap (*GLXCreatePixmapProc) (Display     *display,
+					      GLXFBConfig config,
+					      Pixmap      pixmap,
+					      const int   *attribList);
 
-typedef void (*GLGenProgramsProc) (GLsizei n,
-				   GLuint  *programs);
-typedef void (*GLDeleteProgramsProc) (GLsizei n,
-				      GLuint  *programs);
-typedef void (*GLBindProgramProc) (GLenum target,
-				   GLuint program);
-typedef void (*GLProgramStringProc) (GLenum	  target,
-				     GLenum	  format,
-				     GLsizei	  len,
-				     const GLvoid *string);
-typedef void (*GLProgramParameter4fProc) (GLenum  target,
-					  GLuint  index,
-					  GLfloat x,
-					  GLfloat y,
-					  GLfloat z,
-					  GLfloat w);
-typedef void (*GLGetProgramivProc) (GLenum target,
-				    GLenum pname,
-				    int    *params);
+    typedef void (*GLActiveTextureProc) (GLenum texture);
+    typedef void (*GLClientActiveTextureProc) (GLenum texture);
+    typedef void (*GLMultiTexCoord2fProc) (GLenum, GLfloat, GLfloat);
 
-typedef void (*GLGenFramebuffersProc) (GLsizei n,
-				       GLuint  *framebuffers);
-typedef void (*GLDeleteFramebuffersProc) (GLsizei n,
-					  GLuint  *framebuffers);
-typedef void (*GLBindFramebufferProc) (GLenum target,
-				       GLuint framebuffer);
-typedef GLenum (*GLCheckFramebufferStatusProc) (GLenum target);
-typedef void (*GLFramebufferTexture2DProc) (GLenum target,
-					    GLenum attachment,
-					    GLenum textarget,
-					    GLuint texture,
-					    GLint  level);
-typedef void (*GLGenerateMipmapProc) (GLenum target);
+    typedef void (*GLGenProgramsProc) (GLsizei n,
+				       GLuint  *programs);
+    typedef void (*GLDeleteProgramsProc) (GLsizei n,
+					  GLuint  *programs);
+    typedef void (*GLBindProgramProc) (GLenum target,
+				       GLuint program);
+    typedef void (*GLProgramStringProc) (GLenum	  target,
+					 GLenum	  format,
+					 GLsizei	  len,
+					 const GLvoid *string);
+    typedef void (*GLProgramParameter4fProc) (GLenum  target,
+					      GLuint  index,
+					      GLfloat x,
+					      GLfloat y,
+					      GLfloat z,
+					      GLfloat w);
+    typedef void (*GLGetProgramivProc) (GLenum target,
+					GLenum pname,
+					int    *params);
+
+    typedef void (*GLGenFramebuffersProc) (GLsizei n,
+					   GLuint  *framebuffers);
+    typedef void (*GLDeleteFramebuffersProc) (GLsizei n,
+					      GLuint  *framebuffers);
+    typedef void (*GLBindFramebufferProc) (GLenum target,
+					   GLuint framebuffer);
+    typedef GLenum (*GLCheckFramebufferStatusProc) (GLenum target);
+    typedef void (*GLFramebufferTexture2DProc) (GLenum target,
+						GLenum attachment,
+						GLenum textarget,
+						GLuint texture,
+						GLint  level);
+    typedef void (*GLGenerateMipmapProc) (GLenum target);
+
+    extern GLXBindTexImageProc      bindTexImage;
+    extern GLXReleaseTexImageProc   releaseTexImage;
+    extern GLXQueryDrawableProc     queryDrawable;
+    extern GLXCopySubBufferProc     copySubBuffer;
+    extern GLXGetVideoSyncProc      getVideoSync;
+    extern GLXWaitVideoSyncProc     waitVideoSync;
+    extern GLXGetFBConfigsProc      getFBConfigs;
+    extern GLXGetFBConfigAttribProc getFBConfigAttrib;
+    extern GLXCreatePixmapProc      createPixmap;
+
+    extern GLActiveTextureProc       activeTexture;
+    extern GLClientActiveTextureProc clientActiveTexture;
+    extern GLMultiTexCoord2fProc     multiTexCoord2f;
+
+    extern GLGenProgramsProc        genPrograms;
+    extern GLDeleteProgramsProc     deletePrograms;
+    extern GLBindProgramProc        bindProgram;
+    extern GLProgramStringProc      programString;
+    extern GLProgramParameter4fProc programEnvParameter4f;
+    extern GLProgramParameter4fProc programLocalParameter4f;
+    extern GLGetProgramivProc       getProgramiv;
+
+    extern GLGenFramebuffersProc        genFramebuffers;
+    extern GLDeleteFramebuffersProc     deleteFramebuffers;
+    extern GLBindFramebufferProc        bindFramebuffer;
+    extern GLCheckFramebufferStatusProc checkFramebufferStatus;
+    extern GLFramebufferTexture2DProc   framebufferTexture2D;
+    extern GLGenerateMipmapProc         generateMipmap;
+
+    extern bool  textureRectangle;
+    extern bool  textureNonPowerOfTwo;
+    extern bool  textureEnvCombine;
+    extern bool  textureEnvCrossbar;
+    extern bool  textureBorderClamp;
+    extern bool  textureCompression;
+    extern GLint maxTextureSize;
+    extern bool  fbo;
+    extern bool  fragmentProgram;
+    extern GLint maxTextureUnits;
+
+    extern bool canDoSaturated;
+    extern bool canDoSlightlySaturated;
+};
 
 struct GLScreenPaintAttrib {
     GLfloat xRotate;
@@ -201,17 +227,13 @@ class GLScreen :
         bool setOption (const char *name, CompOption::Value &value);
 	CompOption * getOption (const char *name);
 
-	FuncPtr	getProcAddress (const char *name);
+	GLenum textureFilter ();
+
+	void clearTargetOutput (unsigned int mask);
+
+	GL::FuncPtr getProcAddress (const char *name);
 
 	void updateBackground ();
-
-	int maxTextureSize ();
-	bool textureNonPowerOfTwo ();
-	bool textureCompression ();
-	bool canDoSaturated ();
-	bool canDoSlightlySaturated ();
-	bool fragmentProgram ();
-	bool framebufferObject ();
 
 	GLTexture::Filter filter (int);
 
@@ -220,8 +242,6 @@ class GLScreen :
 	void setTexEnvMode (GLenum mode);
 	void setLighting (bool lighting);
 	bool lighting ();
-
-	void makeCurrent ();
 
 	void clearOutput (CompOutput *output, unsigned int mask);
 
@@ -242,35 +262,6 @@ class GLScreen :
 	WRAPABLE_HND (3, GLScreenInterface, void, glEnableOutputClipping,
 		      const GLMatrix &, Region, CompOutput *);
 	WRAPABLE_HND (4, GLScreenInterface, void, glDisableOutputClipping);
-
-	GLXBindTexImageProc      bindTexImage;
-	GLXReleaseTexImageProc   releaseTexImage;
-	GLXQueryDrawableProc     queryDrawable;
-	GLXCopySubBufferProc     copySubBuffer;
-	GLXGetVideoSyncProc      getVideoSync;
-	GLXWaitVideoSyncProc     waitVideoSync;
-	GLXGetFBConfigsProc      getFBConfigs;
-	GLXGetFBConfigAttribProc getFBConfigAttrib;
-	GLXCreatePixmapProc      createPixmap;
-
-	GLActiveTextureProc       activeTexture;
-	GLClientActiveTextureProc clientActiveTexture;
-	GLMultiTexCoord2fProc     multiTexCoord2f;
-
-	GLGenProgramsProc	     genPrograms;
-	GLDeleteProgramsProc     deletePrograms;
-	GLBindProgramProc	     bindProgram;
-	GLProgramStringProc	     programString;
-	GLProgramParameter4fProc programEnvParameter4f;
-	GLProgramParameter4fProc programLocalParameter4f;
-	GLGetProgramivProc       getProgramiv;
-
-	GLGenFramebuffersProc        genFramebuffers;
-	GLDeleteFramebuffersProc     deleteFramebuffers;
-	GLBindFramebufferProc        bindFramebuffer;
-	GLCheckFramebufferStatusProc checkFramebufferStatus;
-	GLFramebufferTexture2DProc   framebufferTexture2D;
-	GLGenerateMipmapProc         generateMipmap;
 
     private:
 	PrivateGLScreen *priv;
