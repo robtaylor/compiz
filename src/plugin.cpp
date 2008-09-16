@@ -376,9 +376,17 @@ CompPlugin::windowInitPlugins (CompWindow *w)
 {
     bool status = true;
 
-    foreach (CompPlugin *p, plugins)
+    CompPlugin::List::reverse_iterator rit = plugins.rbegin ();
+
+    CompPlugin *p = NULL;
+
+    while (rit != plugins.rend ())
     {
-	p->vTable->finiWindow (w);
+	p = (*rit);
+
+	status &= p->vTable->initWindow (w);
+	
+	rit++;
     }
 
     return status;
