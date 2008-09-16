@@ -458,7 +458,7 @@ CompScreen::setOptionForPlugin (const char        *plugin,
 void
 CompScreen::sessionEvent (CompSession::Event event,
 			CompOption::Vector &arguments)
-    WRAPABLE_HND_FUNC(7, sessionEvent, event, arguments)
+    WRAPABLE_HND_FUNC(5, sessionEvent, event, arguments)
 
 void
 ScreenInterface::fileWatchAdded (CompFileWatch *watch)
@@ -1372,7 +1372,7 @@ CompScreen::fileToImage (const char *path,
 			 int        *stride,
 			 void       **data)
 {
-    WRAPABLE_HND_FUNC_RETURN(10, bool, fileToImage, path, name, width, height,
+    WRAPABLE_HND_FUNC_RETURN(8, bool, fileToImage, path, name, width, height,
 			     stride, data)
     return false;
 }
@@ -1386,7 +1386,7 @@ CompScreen::imageToFile (const char *path,
 			 int        stride,
 			 void       *data)
 {
-    WRAPABLE_HND_FUNC_RETURN(11, bool, imageToFile, path, name, format, width,
+    WRAPABLE_HND_FUNC_RETURN(9, bool, imageToFile, path, name, format, width,
 			     height, stride, data)
     return false;
 }
@@ -1395,7 +1395,7 @@ void
 CompScreen::logMessage (const char   *componentName,
 			CompLogLevel level,
 			const char   *message)
-    WRAPABLE_HND_FUNC(15, logMessage, componentName, level, message)
+    WRAPABLE_HND_FUNC(13, logMessage, componentName, level, message)
 
 const char *
 logLevelToString (CompLogLevel level)
@@ -2510,7 +2510,7 @@ PrivateScreen::getDesktopHints ()
 void
 CompScreen::enterShowDesktopMode ()
 {
-    WRAPABLE_HND_FUNC(16, enterShowDesktopMode)
+    WRAPABLE_HND_FUNC(14, enterShowDesktopMode)
 
 
     unsigned long data = 1;
@@ -2553,7 +2553,7 @@ CompScreen::enterShowDesktopMode ()
 void
 CompScreen::leaveShowDesktopMode (CompWindow *window)
 {
-    WRAPABLE_HND_FUNC(17, leaveShowDesktopMode, window)
+    WRAPABLE_HND_FUNC(15, leaveShowDesktopMode, window)
 
     unsigned long data = 0;
 
@@ -3799,7 +3799,7 @@ CompScreen::getWorkareaForOutput (int output, XRectangle *area)
 
 void
 CompScreen::outputChangeNotify ()
-    WRAPABLE_HND_FUNC(2, outputChangeNotify)
+    WRAPABLE_HND_FUNC(16, outputChangeNotify)
 
 
 

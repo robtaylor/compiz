@@ -63,8 +63,6 @@ struct CompFileWatch {
 #define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
 #define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
 
-
-
 struct CompGroup {
     unsigned int      refCnt;
     Window	      id;
@@ -146,7 +144,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 
 class CompScreen :
-    public WrapableHandler<ScreenInterface, 19>,
+    public WrapableHandler<ScreenInterface, 17>,
     public CompPrivateStorage
 {
 
@@ -493,31 +491,31 @@ class CompScreen :
 	WRAPABLE_HND (4, ScreenInterface, bool, setOptionForPlugin,
 		      const char *, const char *, CompOption::Value &)
 
-	WRAPABLE_HND (7, ScreenInterface, void, sessionEvent, CompSession::Event,
+	WRAPABLE_HND (5, ScreenInterface, void, sessionEvent, CompSession::Event,
 		      CompOption::Vector &)
-	WRAPABLE_HND (8, ScreenInterface, void, handleEvent, XEvent *event)
-	WRAPABLE_HND (9, ScreenInterface, void, handleCompizEvent,
+	WRAPABLE_HND (6, ScreenInterface, void, handleEvent, XEvent *event)
+	WRAPABLE_HND (7, ScreenInterface, void, handleCompizEvent,
 		      const char *, const char *, CompOption::Vector &)
 
-	WRAPABLE_HND (10, ScreenInterface, bool, fileToImage, const char *,
+	WRAPABLE_HND (8, ScreenInterface, bool, fileToImage, const char *,
 		     const char *,  int *, int *, int *, void **data)
-	WRAPABLE_HND (11, ScreenInterface, bool, imageToFile, const char *,
+	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, const char *,
 		      const char *, const char *, int, int, int, void *)
 
 	
-	WRAPABLE_HND (12, ScreenInterface, CompMatch::Expression *,
+	WRAPABLE_HND (10, ScreenInterface, CompMatch::Expression *,
 		      matchInitExp, const CompString);
-	WRAPABLE_HND (13, ScreenInterface, void, matchExpHandlerChanged)
-	WRAPABLE_HND (14, ScreenInterface, void, matchPropertyChanged,
+	WRAPABLE_HND (11, ScreenInterface, void, matchExpHandlerChanged)
+	WRAPABLE_HND (12, ScreenInterface, void, matchPropertyChanged,
 		      CompWindow *)
 
-	WRAPABLE_HND (15, ScreenInterface, void, logMessage, const char *,
+	WRAPABLE_HND (13, ScreenInterface, void, logMessage, const char *,
 		      CompLogLevel, const char*)
-	WRAPABLE_HND (16, ScreenInterface, void, enterShowDesktopMode);
-	WRAPABLE_HND (17, ScreenInterface, void, leaveShowDesktopMode,
+	WRAPABLE_HND (14, ScreenInterface, void, enterShowDesktopMode);
+	WRAPABLE_HND (15, ScreenInterface, void, leaveShowDesktopMode,
 		      CompWindow *);
 
-	WRAPABLE_HND (18, ScreenInterface, void, outputChangeNotify);
+	WRAPABLE_HND (16, ScreenInterface, void, outputChangeNotify);
 
 	friend class CompTimer;
 	friend class CompWindow;
