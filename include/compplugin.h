@@ -35,6 +35,24 @@ class CompMetadata;
 
 #define HOME_PLUGINDIR ".compiz/plugins"
 
+#define PLUGIN_OPTION_HELPER(screenName)        \
+CompOption::Vector & getOptions ()              \
+{                                               \
+    screenName *ps = screenName::get (screen);  \
+    if (ps)                                     \
+	return ps->getOptions ();                  \
+    return noOptions;                           \
+}                                               \
+                                                \
+bool setOption (const char        *name,        \
+		CompOption::Value &value)       \
+{                                               \
+    screenName *ps = screenName::get (screen);  \
+    if (ps)                                     \
+	return ps->setOption (name, value);     \
+    return false;                               \
+}
+
 class CompPlugin;
 
 typedef bool (*LoadPluginProc) (CompPlugin *p,
