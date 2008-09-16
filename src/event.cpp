@@ -1060,7 +1060,7 @@ CompScreen::handleEvent (XEvent *event)
 
 	    w->unmap ();
 
-	    if (!w->shaded ())
+	    if (!w->shaded () && !w->priv->pendingMaps)
 		w->moveInputFocusToOtherWindow ();
 	}
 	break;
@@ -1070,7 +1070,8 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    new CompWindow (this, event->xreparent.window, getTopWindow ());
 	}
-	else if (w && event->xreparent.parent != w->wrapper ())
+	else if (w && !(event->xreparent.parent == w->wrapper () ||
+		 event->xreparent.parent == priv->root))
 	{
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive

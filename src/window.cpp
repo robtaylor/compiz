@@ -4984,6 +4984,10 @@ PrivateWindow::reparent ()
     if (mapNum || shaded)
     {
 	XMapWindow (dpy, frame);
+	XSync (dpy, FALSE);
+	if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
+	    screen->activeWindow () == id)
+	    window->moveInputFocusTo ();
 	pendingUnmaps++;
 	pendingMaps++;
     }
@@ -5026,6 +5030,9 @@ PrivateWindow::unreparent ()
 	
 	if (mapNum || shaded)
 	{
+	    if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
+		screen->activeWindow () == id)
+		window->moveInputFocusTo ();
 	    pendingUnmaps++;
 	    pendingMaps++;
 	}
