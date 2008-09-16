@@ -4942,7 +4942,7 @@ PrivateWindow::reparent ()
     attr.border_pixel      = 0;
     mask |= CWBorderPixel;
     attr.colormap          = attrib.colormap;
-    attr.override_redirect = TRUE;
+    attr.override_redirect = FALSE;
     attr.event_mask        = SubstructureRedirectMask | StructureNotifyMask |
 			     SubstructureNotifyMask | EnterWindowMask |
 			     LeaveWindowMask;
