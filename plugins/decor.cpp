@@ -558,7 +558,7 @@ decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 bool
 DecorWindow::update (bool allowDecoration)
 {
-    Decoration	     *old, *decor = NULL;
+    Decoration	     *old, *decoration = NULL;
     bool	     decorate = false;
     CompMatch	     *match;
     int		     moveDx, moveDy;
@@ -592,16 +592,16 @@ DecorWindow::update (bool allowDecoration)
 
     if (decorate)
     {
-	if (this->decor && checkSize (this->decor))
+	if (decor && checkSize (decor))
 	{
-	    decor = this->decor;
+	    decoration = decor;
 	}
 	else
 	{
 	    if (window->id () == window->screen ()->activeWindow ())
-		decor = dScreen->decor[DECOR_ACTIVE];
+		decoration = dScreen->decor[DECOR_ACTIVE];
 	    else
-		decor = dScreen->decor[DECOR_NORMAL];
+		decoration = dScreen->decor[DECOR_NORMAL];
 	}
     }
     else
@@ -610,24 +610,24 @@ DecorWindow::update (bool allowDecoration)
 	if (match->evaluate (window))
 	{
 	    if (window->region ()->numRects == 1 && !window->alpha ())
-		decor = dScreen->decor[DECOR_BARE];
+		decoration = dScreen->decor[DECOR_BARE];
 
 	    /* no decoration on windows with below state */
 	    if (window->state () & CompWindowStateBelowMask)
-		decor = NULL;
+		decoration = NULL;
 
-	    if (decor)
+	    if (decoration)
 	    {
-		if (!checkSize (decor))
-		    decor = NULL;
+		if (!checkSize (decoration))
+		    decoration = NULL;
 	    }
 	}
     }
 
     if (!dScreen->dmWin || !allowDecoration)
-	decor = NULL;
+	decoration = NULL;
 
-    if (decor == old)
+    if (decoration == old)
 	return false;
 
     cWindow->damageOutputExtents ();
@@ -642,9 +642,9 @@ DecorWindow::update (bool allowDecoration)
 	wd = NULL;
     }
 
-    if (decor)
+    if (decoration)
     {
-	wd = WindowDecoration::create (decor);
+	wd = WindowDecoration::create (decoration);
 	if (!wd)
 	    return false;
 
@@ -1298,8 +1298,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
     inputFrameAtom =
 	XInternAtom (s->dpy (), DECOR_INPUT_FRAME_ATOM_NAME, 0);
 
-    foreach (Decoration *d, decor)
-	d = NULL;
+    for (unsigned int i = 0; i < DECOR_NUM; i++)
+	decor[i] = NULL;
 
     checkForDm (false);
 
@@ -1311,9 +1311,9 @@ DecorScreen::DecorScreen (CompScreen *s) :
 
 DecorScreen::~DecorScreen ()
 {
-    foreach (Decoration *d, decor)
-	if (d)
-	    delete d;
+    for (unsigned int i = 0; i < DECOR_NUM; i++)
+	if (decor[i])
+	    delete decor[i];
 }
 
 DecorWindow::DecorWindow (CompWindow *w) :
