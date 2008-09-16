@@ -525,7 +525,8 @@ PrivateGLScreen::PrivateGLScreen (CompScreen *s,
     lighting (false),
     getProcAddress (0),
     tmpRegion (NULL),
-    outputRegion (NULL)
+    outputRegion (NULL),
+    pendingCommands (false)
 {
 }
 
