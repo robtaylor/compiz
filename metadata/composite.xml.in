@@ -2,7 +2,7 @@
     <plugin name="composite">
 	<_short>Composite</_short>
 	<_long>Composite plugin</_long>
-	<optons>
+	<options>
 	    <option name="slow_animations_key" type="key">
 		<_short>Slow Animations</_short>
 		<_long>Toggle use of slow animations</_long>
