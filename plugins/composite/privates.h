@@ -2,54 +2,26 @@
 #define _COMPOSITE_PRIVATES_H
 
 #include <composite/composite.h>
+#include <core/atoms.h>
 
 #if COMPOSITE_MAJOR > 0 || COMPOSITE_MINOR > 2
 #define USE_COW
 extern bool       useCow;
 #endif
 
-#define COMPOSITE_DISPLAY_OPTION_SLOW_ANIMATIONS_KEY 0
-#define COMPOSITE_DISPLAY_OPTION_NUM                 1
-
-#define COMPOSITE_SCREEN_OPTION_DETECT_REFRESH_RATE 0
-#define COMPOSITE_SCREEN_OPTION_REFRESH_RATE        1
-#define COMPOSITE_SCREEN_OPTION_UNREDIRECT_FS       2
-#define COMPOSITE_SCREEN_OPTION_FORCE_INDEPENDENT   3
-#define COMPOSITE_SCREEN_OPTION_NUM                 4
+#define COMPOSITE_OPTION_SLOW_ANIMATIONS_KEY 0
+#define COMPOSITE_OPTION_DETECT_REFRESH_RATE 1
+#define COMPOSITE_OPTION_REFRESH_RATE        2
+#define COMPOSITE_OPTION_UNREDIRECT_FS       3
+#define COMPOSITE_OPTION_FORCE_INDEPENDENT   4
+#define COMPOSITE_OPTION_NUM                 5
 
 extern CompMetadata *compositeMetadata;
-extern const CompMetadata::OptionInfo
-    compositeDisplayOptionInfo[COMPOSITE_DISPLAY_OPTION_NUM];
 
 extern const CompMetadata::OptionInfo
-   compositeScreenOptionInfo[COMPOSITE_SCREEN_OPTION_NUM];
+   compositeOptionInfo[COMPOSITE_OPTION_NUM];
 
 extern CompWindow *lastDamagedWindow;
-
-class PrivateCompositeDisplay : public DisplayInterface
-{
-    public:
-	PrivateCompositeDisplay (CompDisplay *d, CompositeDisplay *cd);
-	~PrivateCompositeDisplay ();
-
-	void handleEvent (XEvent *event);
-
-    public:
-	CompDisplay      *display;
-	CompositeDisplay *cDisplay;
-
-	int compositeEvent, compositeError, compositeOpcode;
-	int damageEvent, damageError;
-	int fixesEvent, fixesError, fixesVersion;
-
-	bool shapeExtension;
-	int  shapeEvent, shapeError;
-
-	bool randrExtension;
-	int  randrEvent, randrError;
-
-	CompOption::Vector opt;
-};
 
 class PrivateCompositeScreen : ScreenInterface
 {
@@ -58,6 +30,8 @@ class PrivateCompositeScreen : ScreenInterface
 	~PrivateCompositeScreen ();
 
 	void outputChangeNotify ();
+
+	void handleEvent (XEvent *event);
 
 	void makeOutputWindow ();
 
@@ -68,6 +42,16 @@ class PrivateCompositeScreen : ScreenInterface
     public:
 	CompScreen      *screen;
 	CompositeScreen *cScreen;
+
+	int compositeEvent, compositeError, compositeOpcode;
+	int damageEvent, damageError;
+	int fixesEvent, fixesError, fixesVersion;
+
+	bool shapeExtension;
+	int  shapeEvent, shapeError;
+
+	bool randrExtension;
+	int  randrEvent, randrError;
 
 	Region	      damage;
 	unsigned long damageMask;
@@ -92,7 +76,7 @@ class PrivateCompositeScreen : ScreenInterface
 
 	bool slowAnimations;
 
-	CompCore::Timer paintTimer;
+	CompTimer paintTimer;
 
 	Region tmpRegion;
 
@@ -141,8 +125,6 @@ class PrivateCompositeWindow : WindowInterface
 	XRectangle *damageRects;
 	int        sizeDamage;
 	int        nDamage;
-
-
 };
 
 #endif

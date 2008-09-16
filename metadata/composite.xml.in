@@ -2,13 +2,11 @@
     <plugin name="composite">
 	<_short>Composite</_short>
 	<_long>Composite plugin</_long>
-	<display>
+	<optons>
 	    <option name="slow_animations_key" type="key">
 		<_short>Slow Animations</_short>
 		<_long>Toggle use of slow animations</_long>
 	    </option>
-	</display>
-	<screen>
 	    <option name="detect_refresh_rate" type="bool">
 		<_short>Detect Refresh Rate</_short>
 		<_long>Automatic detection of refresh rate</_long>
@@ -31,6 +29,6 @@
 		<_long>Paint each output device independly, even if the output devices overlap</_long>
 		<default>false</default>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

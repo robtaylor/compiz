@@ -13,11 +13,216 @@
 
 #include "privates.h"
 
+#include <X11/extensions/shape.h>
+#include <X11/extensions/Xrandr.h>
+
+CompWindow *lastDamagedWindow = 0;
+
+
+void
+PrivateCompositeScreen::handleEvent (XEvent *event)
+{
+    CompWindow      *w;
+
+    switch (event->type) {
+
+	case CreateNotify:
+	    if (screen->root () == event->xcreatewindow.parent)
+	    {
+		/* The first time some client asks for the composite
+		 * overlay window, the X server creates it, which causes
+		 * an errorneous CreateNotify event.  We catch it and
+		 * ignore it. */
+		if (overlay == event->xcreatewindow.window)
+		    return;
+	    }
+	    break;
+	case PropertyNotify:
+	    if (event->xproperty.atom == Atoms::winOpacity)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    CompositeWindow::get (w)->updateOpacity ();
+	    }
+	    else if (event->xproperty.atom == Atoms::winBrightness)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    CompositeWindow::get (w)->updateBrightness ();
+	    }
+	    else if (event->xproperty.atom == Atoms::winSaturation)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    CompositeWindow::get (w)->updateSaturation ();
+	    }
+	    break;
+	default:
+	    if (shapeExtension &&
+		event->type == shapeEvent + ShapeNotify)
+	    {
+		w = screen->findWindow (((XShapeEvent *) event)->window);
+		if (w)
+		{
+		    if (w->mapNum ())
+		    {
+		        CompositeWindow::get (w)->addDamage ();
+		    }
+		}
+	    }
+	    break;
+    }
+	
+    screen->handleEvent (event);
+
+    switch (event->type) {
+	case Expose:
+	    handleExposeEvent (&event->xexpose);
+	break;
+	case ClientMessage:
+	    if (event->xclient.message_type == Atoms::winOpacity)
+	    {
+		w = screen->findWindow (event->xclient.window);
+		if (w && (w->type () & CompWindowTypeDesktopMask) == 0)
+		{
+		    unsigned short opacity = event->xclient.data.l[0] >> 16;
+
+		    screen->setWindowProp32 (w->id (),
+			Atoms::winOpacity, opacity);
+		}
+	    }
+	    else if (event->xclient.message_type ==
+		     Atoms::winBrightness)
+	    {
+		w = screen->findWindow (event->xclient.window);
+		if (w)
+		{
+		    unsigned short brightness = event->xclient.data.l[0] >> 16;
+
+		    screen->setWindowProp32 (w->id (),
+			Atoms::winBrightness, brightness);
+		}
+	    }
+	    else if (event->xclient.message_type ==
+		     Atoms::winSaturation)
+	    {
+		w = screen->findWindow (event->xclient.window);
+		if (w)
+		{
+		    unsigned short saturation = event->xclient.data.l[0] >> 16;
+
+		    screen->setWindowProp32 (w->id (),
+			Atoms::winSaturation, saturation);
+		}
+	    }
+	    break;
+	default:
+	    if (event->type == damageEvent + XDamageNotify)
+	    {
+		XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
+
+		if (lastDamagedWindow && de->drawable == lastDamagedWindow->id ())
+		{
+		    w = lastDamagedWindow;
+		}
+		else
+		{
+		    w = screen->findWindow (de->drawable);
+		    if (w)
+			lastDamagedWindow = w;
+		}
+
+		if (w)
+		    CompositeWindow::get (w)->processDamage (de);
+	    }
+	    else if (shapeExtension &&
+		     event->type == shapeEvent + ShapeNotify)
+	    {
+		w = screen->findWindow (((XShapeEvent *) event)->window);
+		if (w)
+		{
+		    if (w->mapNum ())
+		    {
+		        CompositeWindow::get (w)->addDamage ();
+		    }
+		}
+	    }
+	    else if (randrExtension &&
+		     event->type == randrEvent + RRScreenChangeNotify)
+	    {
+		XRRScreenChangeNotifyEvent *rre;
+
+		rre = (XRRScreenChangeNotifyEvent *) event;
+
+		if (screen->root () == rre->root)
+		    cScreen->detectRefreshRate ();
+	    }
+	    break;
+    }
+}
+
+int
+CompositeScreen::damageEvent ()
+{
+    return priv->damageEvent;
+}
+
+
 CompositeScreen::CompositeScreen (CompScreen *s) :
     CompositePrivateHandler<CompositeScreen, CompScreen,
 			    COMPIZ_COMPOSITE_ABI> (s),
     priv (new PrivateCompositeScreen (s, this))
 {
+    int	compositeMajor, compositeMinor;
+
+    if (!compositeMetadata->initOptions (compositeOptionInfo,
+					 COMPOSITE_OPTION_NUM, priv->opt))
+    {
+	setFailed ();
+	return;
+    }
+
+    if (!XQueryExtension (s->dpy (), COMPOSITE_NAME,
+			  &priv->compositeOpcode,
+			  &priv->compositeEvent,
+			  &priv->compositeError))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+		        "No composite extension");
+	setFailed ();
+	return;
+    }
+
+    XCompositeQueryVersion (s->dpy (), &compositeMajor, &compositeMinor);
+    if (compositeMajor == 0 && compositeMinor < 2)
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+		        "Old composite extension");
+	setFailed ();
+	return;
+    }
+
+    if (!XDamageQueryExtension (s->dpy (), &priv->damageEvent,
+	 			&priv->damageError))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+		        "No damage extension");
+	setFailed ();
+	return;
+    }
+
+    if (!XFixesQueryExtension (s->dpy (), &priv->fixesEvent, &priv->fixesError))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+		        "No fixes extension");
+	setFailed ();
+	return;
+    }
+
+    priv->shapeExtension = XShapeQueryExtension (s->dpy (), &priv->shapeEvent,
+						 &priv->shapeError);
+    priv->randrExtension = XRRQueryExtension (s->dpy (), &priv->randrEvent,
+					      &priv->randrError);
     priv->tmpRegion = XCreateRegion ();
     if (!priv->tmpRegion)
     {
@@ -27,13 +232,6 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
 
     priv->damage = XCreateRegion ();
     if (!priv->damage)
-    {
-	setFailed ();
-	return;
-    }
-
-    if (!compositeMetadata->initScreenOptions
-	 (s, compositeScreenOptionInfo, COMPOSITE_SCREEN_OPTION_NUM, priv->opt))
     {
 	setFailed ();
 	return;
@@ -58,7 +256,7 @@ CompositeScreen::~CompositeScreen ()
 
 #ifdef USE_COW
     if (useCow)
-	XCompositeReleaseOverlayWindow (priv->screen->display()->dpy (),
+	XCompositeReleaseOverlayWindow (priv->screen->dpy (),
 					priv->screen->root ());
 #endif
 
@@ -90,7 +288,7 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompScreen      *s,
     tmpRegion (NULL),
     active (false),
     pHnd (NULL),
-    opt (COMPOSITE_SCREEN_OPTION_NUM)
+    opt (COMPOSITE_OPTION_NUM)
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
@@ -106,7 +304,7 @@ PrivateCompositeScreen::~PrivateCompositeScreen ()
 bool
 PrivateCompositeScreen::init ()
 {
-    Display              *dpy = screen->display ()->dpy ();
+    Display              *dpy = screen->dpy ();
     Window               newCmSnOwner = None;
     Atom                 cmSnAtom = 0;
     Time                 cmSnTimestamp = 0;
@@ -124,8 +322,7 @@ PrivateCompositeScreen::init ()
     {
 	if (!replaceCurrentWm)
 	{
-	    compLogMessage (screen->display (), "composite",
-			    CompLogLevelError,
+	    compLogMessage ("composite", CompLogLevelError,
 			    "Screen %d on display \"%s\" already "
 			    "has a compositing manager; try using the "
 			    "--replace option to replace the current "
@@ -147,12 +344,8 @@ PrivateCompositeScreen::init ()
 		       CWOverrideRedirect | CWEventMask,
 		       &attr);
 
-    XChangeProperty (dpy,
-		     newCmSnOwner,
-		     screen->display ()->atoms ().wmName,
-		     screen->display ()->atoms ().utf8String, 8,
-		     PropModeReplace,
-		     (unsigned char *) PACKAGE,
+    XChangeProperty (dpy, newCmSnOwner, Atoms::wmName, Atoms::utf8String, 8,
+		     PropModeReplace, (unsigned char *) PACKAGE,
 		     strlen (PACKAGE));
 
     XWindowEvent (dpy, newCmSnOwner, PropertyChangeMask, &event);
@@ -164,7 +357,7 @@ PrivateCompositeScreen::init ()
 
     if (XGetSelectionOwner (dpy, cmSnAtom) != newCmSnOwner)
     {
-	compLogMessage (screen->display (), "composite", CompLogLevelError,
+	compLogMessage ("composite", CompLogLevelError,
 			"Could not acquire compositing manager "
 			"selection on screen %d display \"%s\"",
 			screen->screenNum (), DisplayString (dpy));
@@ -179,22 +372,21 @@ PrivateCompositeScreen::init ()
 bool
 CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
 {
-    Display *dpy = priv->screen->display ()->dpy ();
+    Display *dpy = priv->screen->dpy ();
 
     if (priv->active)
 	return false;
 
-    CompDisplay::checkForError (dpy);
+    CompScreen::checkForError (dpy);
 
     XCompositeRedirectSubwindows (dpy, priv->screen->root (),
 				  CompositeRedirectManual);
 
     priv->overlayWindowCount = 0;
 
-    if (CompDisplay::checkForError (dpy))
+    if (CompScreen::checkForError (dpy))
     {
-	compLogMessage (priv->screen->display (), "composite",
-			CompLogLevelError,
+	compLogMessage ("composite", CompLogLevelError,
 			"Another composite manager is already "
 			"running on screen: %d", priv->screen->screenNum ());
 
@@ -222,7 +414,7 @@ CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
 void
 CompositeScreen::unregisterPaintHandler ()
 {
-    Display *dpy = priv->screen->display ()->dpy ();
+    Display *dpy = priv->screen->dpy ();
 
     foreach (CompWindow *w, priv->screen->windows ())
     {
@@ -296,7 +488,7 @@ CompositeScreen::showOutputWindow ()
 #ifdef USE_COW
     if (useCow && priv->active)
     {
-	Display       *dpy = priv->screen->display ()->dpy ();
+	Display       *dpy = priv->screen->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
@@ -324,7 +516,7 @@ CompositeScreen::hideOutputWindow ()
 #ifdef USE_COW
     if (useCow)
     {
-	Display       *dpy = priv->screen->display ()->dpy ();
+	Display       *dpy = priv->screen->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
@@ -346,7 +538,7 @@ CompositeScreen::updateOutputWindow ()
 #ifdef USE_COW
     if (useCow && priv->active)
     {
-	Display       *dpy = priv->screen->display ()->dpy ();
+	Display       *dpy = priv->screen->dpy ();
 	XserverRegion region;
 	static Region tmpRegion = NULL;
 
@@ -391,11 +583,10 @@ PrivateCompositeScreen::makeOutputWindow ()
 #ifdef USE_COW
     if (useCow)
     {
-	overlay = XCompositeGetOverlayWindow (screen->display ()->dpy (),
-					      screen->root ());
+	overlay = XCompositeGetOverlayWindow (screen->dpy (), screen->root ());
 	output  = overlay;
 
-	XSelectInput (screen->display ()->dpy (), output, ExposureMask);
+	XSelectInput (screen->dpy (), output, ExposureMask);
     }
     else
 #endif
@@ -438,18 +629,18 @@ void
 CompositeScreen::detectRefreshRate ()
 {
     if (!noDetection &&
-	priv->opt[COMPOSITE_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().b ())
+	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().b ())
     {
 	CompString        name;
 	CompOption::Value value;
 
 	value.set ((int) 0);
 
-	if (priv->screen->display ()->XRandr())
+	if (priv->screen->XRandr())
 	{
 	    XRRScreenConfiguration *config;
 
-	    config  = XRRGetScreenInfo (priv->screen->display ()->dpy (),
+	    config  = XRRGetScreenInfo (priv->screen->dpy (),
 					priv->screen->root ());
 	    value.set ((int) XRRConfigCurrentRate (config));
 
@@ -459,16 +650,16 @@ CompositeScreen::detectRefreshRate ()
 	if (value.i () == 0)
 	    value.set ((int) 50);
 
-	name = priv->opt[COMPOSITE_SCREEN_OPTION_REFRESH_RATE].name ();
+	name = priv->opt[COMPOSITE_OPTION_REFRESH_RATE].name ();
 
-	priv->opt[COMPOSITE_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (false);
-	core->setOptionForPlugin (priv->screen, "composite", name.c_str (), value);
-	priv->opt[COMPOSITE_SCREEN_OPTION_DETECT_REFRESH_RATE].value ().set (true);
+	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (false);
+	priv->screen->setOptionForPlugin ("composite", name.c_str (), value);
+	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (true);
     }
     else
     {
 	priv->redrawTime = 1000 /
-	    priv->opt[COMPOSITE_SCREEN_OPTION_REFRESH_RATE].value ().i ();
+	    priv->opt[COMPOSITE_OPTION_REFRESH_RATE].value ().i ();
 	priv->optimalRedrawTime = priv->redrawTime;
     }
 }
@@ -611,7 +802,7 @@ CompositeScreen::handlePaintTimeout ()
 
 	CompOutput::ptrList outputs (0);
 	
-	if (priv->opt[COMPOSITE_SCREEN_OPTION_FORCE_INDEPENDENT].value ().b ()
+	if (priv->opt[COMPOSITE_OPTION_FORCE_INDEPENDENT].value ().b ()
 	    || !priv->screen->hasOverlappingOutputs ())
 	{
 	    foreach (CompOutput &o, priv->screen->outputDevs ())
@@ -700,29 +891,20 @@ PrivateCompositeScreen::outputChangeNotify ()
     screen->outputChangeNotify ();
 #ifdef USE_COW
     if (useCow)
-	XMoveResizeWindow (screen->display ()->dpy (), overlay, 0, 0,
+	XMoveResizeWindow (screen->dpy (), overlay, 0, 0,
 			   screen->size ().width (), screen->size ().height ());
 #endif
     cScreen->damageScreen ();
 }
 
 bool
-CompositeScreen::toggleSlowAnimations (CompDisplay        *d,
-				      CompAction         *action,
-				      CompAction::State  state,
-				      CompOption::Vector &options)
+CompositeScreen::toggleSlowAnimations (CompAction         *action,
+				       CompAction::State  state,
+				       CompOption::Vector &options)
 {
-    CompScreen *s;
-    Window     xid;
-
-    xid = CompOption::getIntOptionNamed (options, "root");
-    s = d->findScreen (xid);
-    if (s)
-    {
-	CompositeScreen *cs = CompositeScreen::get (s);
-	if (cs)
-	    cs->priv->slowAnimations = !cs->priv->slowAnimations;
-    }
+    CompositeScreen *cs = CompositeScreen::get (screen);
+    if (cs)
+	cs->priv->slowAnimations = !cs->priv->slowAnimations;
 
     return true;
 }

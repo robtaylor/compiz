@@ -5,11 +5,11 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 			    COMPIZ_COMPOSITE_ABI> (w),
     priv (new PrivateCompositeWindow (w, this))
 {
-    CompDisplay *d = w->screen ()->display ();
+    CompScreen *s = w->screen ();
 
     if (w->windowClass () != InputOnly)
     {
-	priv->damage = XDamageCreate (d->dpy (), w->id (),
+	priv->damage = XDamageCreate (s->dpy (), w->id (),
 				      XDamageReportRawRectangles);
     }
     else
@@ -19,14 +19,14 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 
     priv->opacity = OPAQUE;
     if (!(w->type () & CompWindowTypeDesktopMask))
- 	priv->opacity = d->getWindowProp32 (w->id (),
-					    d->atoms ().winOpacity, OPAQUE);
+ 	priv->opacity = s->getWindowProp32 (w->id (),
+					    Atoms::winOpacity, OPAQUE);
 
-    priv->brightness = d->getWindowProp32 (w->id (),
-					   d->atoms ().winBrightness, BRIGHT);
+    priv->brightness = s->getWindowProp32 (w->id (),
+					   Atoms::winBrightness, BRIGHT);
 
-    priv->saturation = d->getWindowProp32 (w->id (),
-					   d->atoms ().winSaturation, COLOR);
+    priv->saturation = s->getWindowProp32 (w->id (),
+					   Atoms::winSaturation, COLOR);
 	
     if (w->isViewable ())
 	priv->damaged   = true;
@@ -36,7 +36,7 @@ CompositeWindow::~CompositeWindow ()
 {
 
     if (priv->damage)
-	XDamageDestroy (priv->screen->display ()->dpy (), priv->damage);
+	XDamageDestroy (priv->screen->dpy (), priv->damage);
 
      if (!priv->redirected)
     {
@@ -102,20 +102,20 @@ CompositeWindow::bind ()
 
 	/* We have to grab the server here to make sure that window
 	   is mapped when getting the window pixmap */
-	XGrabServer (priv->screen->display ()->dpy ());
-	XGetWindowAttributes (priv->screen->display ()->dpy (),
+	XGrabServer (priv->screen->dpy ());
+	XGetWindowAttributes (priv->screen->dpy (),
 			      ROOTPARENT (priv->window), &attr);
 	if (attr.map_state != IsViewable)
 	{
-	    XUngrabServer (priv->screen->display ()->dpy ());
+	    XUngrabServer (priv->screen->dpy ());
 	    priv->bindFailed = true;
 	    return false;
 	}
 
 	priv->pixmap = XCompositeNameWindowPixmap
-	    (priv->screen->display ()->dpy (), ROOTPARENT (priv->window));
+	    (priv->screen->dpy (), ROOTPARENT (priv->window));
 
-	XUngrabServer (priv->screen->display ()->dpy ());
+	XUngrabServer (priv->screen->dpy ());
     }
     return true;
 }
@@ -125,7 +125,7 @@ CompositeWindow::release ()
 {
     if (priv->pixmap)
     {
-	XFreePixmap (priv->screen->display ()->dpy (), priv->pixmap);
+	XFreePixmap (priv->screen->dpy (), priv->pixmap);
 	priv->pixmap = None;
     }
 }
@@ -142,7 +142,7 @@ CompositeWindow::redirect ()
     if (priv->redirected || !priv->cScreen->compositingActive ())
 	return;
 
-    XCompositeRedirectWindow (priv->screen->display ()->dpy (),
+    XCompositeRedirectWindow (priv->screen->dpy (),
 			      ROOTPARENT (priv->window),
 			      CompositeRedirectManual);
 
@@ -168,7 +168,7 @@ CompositeWindow::unredirect ()
 
     release ();
 
-    XCompositeUnredirectWindow (priv->screen->display ()->dpy (),
+    XCompositeUnredirectWindow (priv->screen->dpy (),
 				ROOTPARENT (priv->window),
 				CompositeRedirectManual);
 
@@ -409,8 +409,8 @@ CompositeWindow::updateOpacity ()
     if (priv->window->type () & CompWindowTypeDesktopMask)
 	return;
 
-    opacity = priv->screen->display ()->getWindowProp32 (priv->window->id (),
-	priv->screen->display ()->atoms ().winOpacity, OPAQUE);
+    opacity = priv->screen->getWindowProp32 (priv->window->id (),
+					     Atoms::winOpacity, OPAQUE);
 
     if (opacity != priv->opacity)
     {
@@ -424,8 +424,8 @@ CompositeWindow::updateBrightness ()
 {
     unsigned short brightness;
 
-    brightness = priv->screen->display ()->getWindowProp32 (priv->window->id (),
-	priv->screen->display ()->atoms ().winBrightness, BRIGHT);
+    brightness = priv->screen->getWindowProp32 (priv->window->id (),
+						Atoms::winBrightness, BRIGHT);
 
     if (brightness != priv->brightness)
     {
@@ -439,8 +439,8 @@ CompositeWindow::updateSaturation ()
 {
     unsigned short saturation;
 
-    saturation = priv->screen->display ()->getWindowProp32 (priv->window->id (),
-	priv->screen->display ()->atoms ().winSaturation, COLOR);
+    saturation = priv->screen->getWindowProp32 (priv->window->id (),
+						Atoms::winSaturation, COLOR);
 
     if (saturation != priv->saturation)
     {
@@ -567,16 +567,14 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	Status	     result;
 	int	     i;
 
-	pixmap = XCompositeNameWindowPixmap (screen->display ()->dpy (),
-					     window->id ());
-	result = XGetGeometry (screen->display ()->dpy (), pixmap, &root,
-			       &i, &i, &actualWidth, &actualHeight,
-			       &ui, &ui);
+	pixmap = XCompositeNameWindowPixmap (screen->dpy (), window->id ());
+	result = XGetGeometry (screen->dpy (), pixmap, &root, &i, &i,
+			       &actualWidth, &actualHeight, &ui, &ui);
 
 	if (!result || (int) actualWidth != window->width () ||
 	    (int) actualHeight != window->height ())
 	{
-	    XFreePixmap (screen->display ()->dpy (), pixmap);
+	    XFreePixmap (screen->dpy (), pixmap);
 	    return;
 	}
     }

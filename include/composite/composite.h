@@ -7,34 +7,17 @@
 
 #define PLUGIN Composite
 #include <compprivatehandler.h>
+#include <core/timer.h>
 #include <compiz-core.h>
 
 #define COMPOSITE_SCREEN_DAMAGE_PENDING_MASK (1 << 0)
 #define COMPOSITE_SCREEN_DAMAGE_REGION_MASK  (1 << 1)
 #define COMPOSITE_SCREEN_DAMAGE_ALL_MASK     (1 << 2)
 
-class PrivateCompositeDisplay;
 class PrivateCompositeScreen;
 class PrivateCompositeWindow;
 class CompositeScreen;
 class CompositeWindow;
-
-class CompositeDisplay :
-    public CompositePrivateHandler<CompositeDisplay, CompDisplay,
-				   COMPIZ_COMPOSITE_ABI>
-{
-    public:
-	CompositeDisplay (CompDisplay *d);
-	~CompositeDisplay ();
-
-	CompOption::Vector & getOptions ();
-        bool setOption (const char *name, CompOption::Value &value);
-
-	int damageEvent ();
-
-    private:
-	PrivateCompositeDisplay *priv;
-};
 
 class CompositeScreenInterface :
     public WrapableInterface<CompositeScreen, CompositeScreenInterface>
@@ -81,7 +64,8 @@ class CompositeScreen :
         void unregisterPaintHandler ();
 
 	bool compositingActive ();
-	
+
+	int damageEvent ();
 	
 	void damageScreen ();
 	void damageRegion (Region);
@@ -120,8 +104,7 @@ class CompositeScreen :
 	PrivateCompositeScreen *priv;
 
     public:
-	static bool toggleSlowAnimations (CompDisplay        *d,
-					  CompAction         *action,
+	static bool toggleSlowAnimations (CompAction         *action,
 					  CompAction::State  state,
 					  CompOption::Vector &options);
 };

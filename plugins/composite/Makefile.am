@@ -1,5 +1,5 @@
 libcomposite_la_LDFLAGS = -avoid-version -no-undefined
-libcomposite_la_SOURCES = composite.cpp display.cpp screen.cpp window.cpp
+libcomposite_la_SOURCES = composite.cpp screen.cpp window.cpp
 
 INCLUDES =					\
 	@COMPIZ_CFLAGS@				\
