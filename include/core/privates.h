@@ -3,6 +3,8 @@
 
 #include <vector>
 
+#define MAX_PRIVATE_STORAGE 2
+
 union CompPrivate {
     void	  *ptr;
     long	  val;
@@ -16,8 +18,9 @@ class CompPrivateStorage {
 	typedef std::vector<bool> Indices;
 
     public:
-	CompPrivateStorage (Indices *iList);
+	CompPrivateStorage (Indices *iList, unsigned int index);
 
+	unsigned int storageIndex ();
 
     public:
 	std::vector<CompPrivate> privates;
@@ -25,6 +28,9 @@ class CompPrivateStorage {
     protected:
 	static int allocatePrivateIndex (Indices *iList);
 	static void freePrivateIndex (Indices *iList, int idx);
+
+    private:
+	unsigned int mIndex;
 };
 
 #endif

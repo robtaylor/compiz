@@ -4293,7 +4293,7 @@ CompScreen::screenInfo ()
 }
 
 CompScreen::CompScreen ():
-    CompPrivateStorage (&screenPrivateIndices)
+    CompPrivateStorage (&screenPrivateIndices, 0)
 {
     priv = new PrivateScreen (this);
     assert (priv);

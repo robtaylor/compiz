@@ -20,8 +20,7 @@ class CompPrivateIndex {
 #include <boost/preprocessor/cat.hpp>
 
 #include <compiz.h>
-#include <compobject.h>
-#include <compcore.h>
+#include <core/privates.h>
 
 #if !defined(PLUGIN)
 #define PLUGIN
@@ -31,7 +30,7 @@ class CompPrivateIndex {
 #define INDICESNAME BOOST_PP_CAT(PLUGIN, PrivateIndicies)
 #define CLASSNAME BOOST_PP_CAT(PLUGIN, PrivateHandler)
 			 
-static CompPrivateIndex INDICESNAME[COMP_OBJECT_TYPE_NUM];
+static CompPrivateIndex INDICESNAME[MAX_PRIVATE_STORAGE];
 
 template<class Tp, class Tb, int ABI = 0>
 class CLASSNAME {
@@ -63,47 +62,47 @@ CLASSNAME<Tp,Tb,ABI>::CLASSNAME (Tb *base) :
     mPrivFailed (false),
     mBase (base)
 {
-    if (mBase->objectType () >= COMP_OBJECT_TYPE_NUM ||
-        INDICESNAME[base->objectType ()].failed)
+    if (mBase->storageIndex () >= MAX_PRIVATE_STORAGE ||
+        INDICESNAME[base->storageIndex ()].failed)
     {
 	mFailed = true;
 	mPrivFailed = true;
     }
     else
     {
-	if (!INDICESNAME[mBase->objectType ()].initiated)
+	if (!INDICESNAME[mBase->storageIndex ()].initiated)
 	{
-	    INDICESNAME[mBase->objectType ()].index = Tb::allocPrivateIndex ();
+	    INDICESNAME[mBase->storageIndex ()].index = Tb::allocPrivateIndex ();
 	    if (INDICESNAME[mBase->objectType ()].index >= 0)
 	    {
-		INDICESNAME[mBase->objectType ()].initiated = true;
+		INDICESNAME[mBase->storageIndex ()].initiated = true;
 
 		CompPrivate p;
-		p.val = INDICESNAME[mBase->objectType ()].index;
+		p.val = INDICESNAME[mBase->storageIndex ()].index;
 
-		if (!core->hasValue (keyName ()))
+		if (!screen->hasValue (keyName ()))
 		{
-		    core->storeValue (keyName (), p);
+		    screen->storeValue (keyName (), p);
 		}
 		else
 		{
-		    compLogMessage (0, "core", CompLogLevelFatal,
-			"Private index value \"%s\" already stored in core.",
+		    compLogMessage ("core", CompLogLevelFatal,
+			"Private index value \"%s\" already stored in screen.",
 			keyName ().c_str ());
 		}
 	    }
 	    else
 	    {
-		INDICESNAME[mBase->objectType ()].failed = true;
+		INDICESNAME[mBase->storageIndex ()].failed = true;
 		mPrivFailed = true;
 		mFailed = true;
 	    }
 	}
 
-	if (!INDICESNAME[mBase->objectType ()].failed)
+	if (!INDICESNAME[mBase->storageIndex ()].failed)
 	{
-	    INDICESNAME[mBase->objectType ()].refCount++;
-	    mBase->privates[INDICESNAME[mBase->objectType ()].index].ptr =
+	    INDICESNAME[mBase->storageIndex ()].refCount++;
+	    mBase->privates[INDICESNAME[mBase->storageIndex ()].index].ptr =
 		static_cast<Tp *> (this);
 	}
     }
@@ -112,15 +111,15 @@ CLASSNAME<Tp,Tb,ABI>::CLASSNAME (Tb *base) :
 template<class Tp, class Tb, int ABI>
 CLASSNAME<Tp,Tb,ABI>::~CLASSNAME ()
 {
-    if (!mPrivFailed && !INDICESNAME[mBase->objectType ()].failed)
+    if (!mPrivFailed && !INDICESNAME[mBase->storageIndex ()].failed)
     {
-	INDICESNAME[mBase->objectType ()].refCount--;
+	INDICESNAME[mBase->storageIndex ()].refCount--;
 
-	if (INDICESNAME[mBase->objectType ()].refCount == 0)
+	if (INDICESNAME[mBase->storageIndex ()].refCount == 0)
 	{
-	    Tb::freePrivateIndex (INDICESNAME[mBase->objectType ()].index);
-	    INDICESNAME[mBase->objectType ()].initiated = false;
-	    core->eraseValue (keyName ());
+	    Tb::freePrivateIndex (INDICESNAME[mBase->storageIndex ()].index);
+	    INDICESNAME[mBase->storageIndex ()].initiated = false;
+	    screen->eraseValue (keyName ());
 	}
     }
 }
@@ -132,23 +131,23 @@ CLASSNAME<Tp,Tb,ABI>::get (Tb *base)
     if (INDICESNAME[base->objectType ()].initiated)
     {
 	return static_cast<Tp *>
-	    (base->privates[INDICESNAME[base->objectType ()].index].ptr);
+	    (base->privates[INDICESNAME[base->storageIndex ()].index].ptr);
     }
-    if (INDICESNAME[base->objectType ()].failed)
+    if (INDICESNAME[base->storageIndex ()].failed)
 	return NULL;
 
-    if (core->hasValue (keyName ()))
+    if (screen->hasValue (keyName ()))
     {
-	INDICESNAME[base->objectType ()].index =
-	    core->getValue (keyName ()).val;
-	INDICESNAME[base->objectType ()].initiated = true;
-	INDICESNAME[base->objectType ()].refCount  = -1;
+	INDICESNAME[base->storageIndex ()].index =
+	    screen->getValue (keyName ()).val;
+	INDICESNAME[base->storageIndex ()].initiated = true;
+	INDICESNAME[base->storageIndex ()].refCount  = -1;
 	return static_cast<Tp *>
-	    (base->privates[INDICESNAME[base->objectType ()].index].ptr);
+	    (base->privates[INDICESNAME[base->storageIndex ()].index].ptr);
     }
     else
     {
-	INDICESNAME[base->objectType ()].failed = true;
+	INDICESNAME[base->storageIndex ()].failed = true;
 	return NULL;
     }
 }

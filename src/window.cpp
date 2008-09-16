@@ -4394,7 +4394,7 @@ CompWindow::invisible ()
 CompWindow::CompWindow (CompScreen *screen,
 			Window     id,
 			Window     aboveId) :
-   CompPrivateStorage (&windowPrivateIndices)
+   CompPrivateStorage (&windowPrivateIndices, 1)
 {
     priv = new PrivateWindow (this, screen);
     assert (priv);

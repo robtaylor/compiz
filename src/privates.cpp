@@ -1,8 +1,10 @@
 
 #include <core/privates.h>
 
-CompPrivateStorage::CompPrivateStorage (CompPrivateStorage::Indices *iList) :
-    privates (0)
+CompPrivateStorage::CompPrivateStorage (CompPrivateStorage::Indices *iList,
+				        unsigned int                index) :
+    privates (0),
+    mIndex (index)
 {
     if (iList->size() > 0)
 	privates.resize (iList->size ());
@@ -44,4 +46,10 @@ CompPrivateStorage::freePrivateIndex (CompPrivateStorage::Indices *iList,
 
     unsigned int i = iList->size () - 1;
     iList->resize (i);
+}
+
+unsigned int
+CompPrivateStorage::storageIndex ()
+{
+    return mIndex;
 }
