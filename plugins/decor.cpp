@@ -84,9 +84,8 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     return status;
 }
 
-DecorTexture::DecorTexture (CompScreen *screen, Pixmap pixmap) :
-    GLTexture (screen),
-    screen (screen),
+DecorTexture::DecorTexture (Pixmap pixmap) :
+    GLTexture (),
     status (true),
     refCount (1),
     pixmap (pixmap),
@@ -96,7 +95,7 @@ DecorTexture::DecorTexture (CompScreen *screen, Pixmap pixmap) :
     Window	 root;
     int		 i;
 
-    if (!XGetGeometry (screen->display ()->dpy (), pixmap, &root,
+    if (!XGetGeometry (screen->dpy (), pixmap, &root,
 		       &i, &i, &width, &height, &ui, &depth))
     {
         status = false;
@@ -109,22 +108,21 @@ DecorTexture::DecorTexture (CompScreen *screen, Pixmap pixmap) :
 	return;
     }
 
-    if (!DecorDisplay::get (screen->display ())->
-	 opt[DECOR_DISPLAY_OPTION_MIPMAP].value ().b ())
+    if (!DecorScreen::get (screen)->opt[DECOR_OPTION_MIPMAP].value ().b ())
 	mipmap () = false;
 
-    damage = XDamageCreate (screen->display ()->dpy (), pixmap,
+    damage = XDamageCreate (screen->dpy (), pixmap,
 			     XDamageReportRawRectangles);
 }
 
 DecorTexture::~DecorTexture ()
 {
     if (damage)
-	XDamageDestroy (screen->display ()->dpy (), damage);
+	XDamageDestroy (screen->dpy (), damage);
 }
 
 DecorTexture *
-DecorDisplay::getTexture (CompScreen *screen, Pixmap pixmap)
+DecorScreen::getTexture (Pixmap pixmap)
 {
     foreach (DecorTexture *t, textures)
 	if (t->pixmap == pixmap)
@@ -133,7 +131,7 @@ DecorDisplay::getTexture (CompScreen *screen, Pixmap pixmap)
 	    return t;
 	}
 
-    DecorTexture *texture = new DecorTexture (screen, pixmap);
+    DecorTexture *texture = new DecorTexture (pixmap);
 
     if (!texture->status)
     {
@@ -148,7 +146,7 @@ DecorDisplay::getTexture (CompScreen *screen, Pixmap pixmap)
 
 
 void
-DecorDisplay::releaseTexture (DecorTexture *texture)
+DecorScreen::releaseTexture (DecorTexture *texture)
 {
     texture->refCount--;
     if (texture->refCount)
@@ -236,8 +234,7 @@ computeQuadBox (decor_quad_t *q,
 }
 
 Decoration *
-Decoration::create (CompScreen *screen,
-		    Window     id,
+Decoration::create (Window     id,
 		    Atom       decorAtom)
 {
     Decoration	    *decoration;
@@ -256,7 +253,7 @@ Decoration::create (CompScreen *screen,
     int		    left, right, top, bottom;
     int		    x1, y1, x2, y2;
 
-    result = XGetWindowProperty (screen->display ()->dpy (), id,
+    result = XGetWindowProperty (screen->dpy (), id,
 				 decorAtom, 0L, 1024L, FALSE,
 				 XA_INTEGER, &actual, &format,
 				 &n, &nleft, &data);
@@ -268,7 +265,7 @@ Decoration::create (CompScreen *screen,
 
     if (decor_property_get_version (prop) != decor_version ())
     {
-	compLogMessage (screen->display (), "decoration", CompLogLevelWarn,
+	compLogMessage ("decoration", CompLogLevelWarn,
 			"Property ignored because "
 			"version is %d and decoration plugin version is %d\n",
 			decor_property_get_version (prop), decor_version ());
@@ -304,8 +301,7 @@ Decoration::create (CompScreen *screen,
 	return NULL;
     }
 
-    decoration->texture = DecorDisplay::get (screen->display())->
-	getTexture (screen, pixmap);
+    decoration->texture = DecorScreen::get (screen)->getTexture (pixmap);
     if (!decoration->texture)
     {
 	delete decoration;
@@ -357,8 +353,6 @@ Decoration::create (CompScreen *screen,
 
     decoration->refCount = 1;
 
-    decoration->screen = screen;
-
     return decoration;
 }
 
@@ -369,8 +363,7 @@ Decoration::release (Decoration *decoration)
     if (decoration->refCount)
 	return;
 
-    DecorDisplay::get (decoration->screen->display ())->
-	releaseTexture (decoration->texture);
+    DecorScreen::get (screen)->releaseTexture (decoration->texture);
 
     delete [] decoration->quad;
     delete decoration;
@@ -381,8 +374,7 @@ DecorWindow::updateDecoration ()
 {
     Decoration *decoration;
 
-    decoration = Decoration::create (window->screen (), window->id (),
-				     dDisplay->winDecorAtom);
+    decoration = Decoration::create (window->id (), dScreen->winDecorAtom);
 
     if (decor)
 	Decoration::release (decor);
@@ -593,7 +585,7 @@ DecorWindow::update (bool allowDecoration)
     if (decorate)
     {
 	match =
-	    &dDisplay->opt[DECOR_DISPLAY_OPTION_DECOR_MATCH].value ().match ();
+	    &dScreen->opt[DECOR_OPTION_DECOR_MATCH].value ().match ();
 	if (!match->evaluate (window))
 	    decorate = false;
     }
@@ -606,7 +598,7 @@ DecorWindow::update (bool allowDecoration)
 	}
 	else
 	{
-	    if (window->id () == window->screen ()->display ()->activeWindow ())
+	    if (window->id () == window->screen ()->activeWindow ())
 		decor = dScreen->decor[DECOR_ACTIVE];
 	    else
 		decor = dScreen->decor[DECOR_NORMAL];
@@ -614,8 +606,7 @@ DecorWindow::update (bool allowDecoration)
     }
     else
     {
-	match =
-	    &dDisplay->opt[DECOR_DISPLAY_OPTION_SHADOW_MATCH].value ().match ();
+	match = &dScreen->opt[DECOR_OPTION_SHADOW_MATCH].value ().match ();
 	if (match->evaluate (window))
 	{
 	    if (window->region ()->numRects == 1 && !window->alpha ())
@@ -751,25 +742,25 @@ DecorWindow::updateFrame ()
 	    attr.event_mask	   = StructureNotifyMask;
 	    attr.override_redirect = TRUE;
 
-	    inputFrame = XCreateWindow (display->dpy (), window->frame (),
+	    inputFrame = XCreateWindow (screen->dpy (), window->frame (),
 					x, y, width, height, 0, CopyFromParent,
 					InputOnly, CopyFromParent,
 					CWOverrideRedirect | CWEventMask,
 					&attr);
 
-	    XGrabButton (display->dpy (), AnyButton, AnyModifier, inputFrame,
+	    XGrabButton (screen->dpy (), AnyButton, AnyModifier, inputFrame,
 			 TRUE, ButtonPressMask | ButtonReleaseMask |
 			 ButtonMotionMask, GrabModeSync, GrabModeSync, None,
 			 None);
 
-	    XMapWindow (display->dpy (), inputFrame);
+	    XMapWindow (screen->dpy (), inputFrame);
 
-	    XChangeProperty (display->dpy (), window->id (),
-			     dDisplay->inputFrameAtom, XA_WINDOW, 32,
+	    XChangeProperty (screen->dpy (), window->id (),
+			     dScreen->inputFrameAtom, XA_WINDOW, 32,
 			     PropModeReplace, (unsigned char *) &inputFrame, 1);
 
-	    if (display->XShape ())
-        	XShapeSelectInput (display->dpy (), inputFrame,
+	    if (screen->XShape ())
+        	XShapeSelectInput (screen->dpy (), inputFrame,
 				   ShapeNotifyMask);
 
 	    oldX = 0;
@@ -785,9 +776,9 @@ DecorWindow::updateFrame ()
 	    oldWidth  = width;
 	    oldHeight = height;
 
-	    XMoveResizeWindow (display->dpy (), inputFrame, x, y,
+	    XMoveResizeWindow (screen->dpy (), inputFrame, x, y,
 			       width, height);
-	    XLowerWindow (display->dpy (), inputFrame);
+	    XLowerWindow (screen->dpy (), inputFrame);
 
 
 	    rects[i].x	= 0;
@@ -822,9 +813,9 @@ DecorWindow::updateFrame ()
 	    if (rects[i].width && rects[i].height)
 		i++;
 
-	    XShapeCombineRectangles (display->dpy (), inputFrame,
-					ShapeInput, 0, 0, rects, i,
-					ShapeSet, YXBanded);
+	    XShapeCombineRectangles (screen->dpy (), inputFrame,
+				     ShapeInput, 0, 0, rects, i,
+				     ShapeSet, YXBanded);
 
 	    EMPTY_REGION (frameRegion);
 	}
@@ -833,9 +824,9 @@ DecorWindow::updateFrame ()
     {
 	if (inputFrame)
 	{
-	    XDeleteProperty (display->dpy (), window->id (),
-			     dDisplay->inputFrameAtom);
-	    XDestroyWindow (display->dpy (), inputFrame);
+	    XDeleteProperty (screen->dpy (), window->id (),
+			     dScreen->inputFrameAtom);
+	    XDestroyWindow (screen->dpy (), inputFrame);
 	    inputFrame = None;
 	    EMPTY_REGION (frameRegion);
 
@@ -850,17 +841,14 @@ DecorWindow::updateFrame ()
 void
 DecorScreen::checkForDm (bool updateWindows)
 {
-    CompDisplay   *d = screen->display ();
     Atom	  actual;
     int		  result, format;
     unsigned long n, left;
     unsigned char *data;
     Window	  dmWin = None;
 
-    DecorDisplay *dd = DecorDisplay::get (screen->display ());
-
-    result = XGetWindowProperty (d->dpy (), screen->root (),
-				 dd->supportingDmCheckAtom, 0L, 1L, FALSE,
+    result = XGetWindowProperty (screen->dpy (), screen->root (),
+				 supportingDmCheckAtom, 0L, 1L, FALSE,
 				 XA_WINDOW, &actual, &format,
 				 &n, &left, &data);
 
@@ -871,11 +859,11 @@ DecorScreen::checkForDm (bool updateWindows)
 	memcpy (&dmWin, data, sizeof (Window));
 	XFree (data);
 
-	CompDisplay::checkForError (d->dpy ());
+	CompScreen::checkForError (screen->dpy ());
 
-	XGetWindowAttributes (d->dpy (), dmWin, &attr);
+	XGetWindowAttributes (screen->dpy (), dmWin, &attr);
 
-	if (CompDisplay::checkForError (d->dpy ()))
+	if (CompScreen::checkForError (screen->dpy ()))
 	    dmWin = None;
     }
 
@@ -886,8 +874,7 @@ DecorScreen::checkForDm (bool updateWindows)
 	if (dmWin)
 	{
 	    for (i = 0; i < DECOR_NUM; i++)
-		decor[i] = Decoration::create (screen, screen->root (),
-					       dd->decorAtom[i]);
+		decor[i] = Decoration::create (screen->root (), decorAtom[i]);
 	}
 	else
 	{
@@ -953,28 +940,27 @@ DecorWindow::updateFrameRegion (Region region)
 }
 
 void
-DecorDisplay::handleEvent (XEvent *event)
+DecorScreen::handleEvent (XEvent *event)
 {
-    Window  activeWindow = display->activeWindow ();
+    Window  activeWindow = screen->activeWindow ();
     CompWindow *w;
 
     switch (event->type) {
 	case DestroyNotify:
-	    w = display->findWindow (event->xdestroywindow.window);
+	    w = screen->findWindow (event->xdestroywindow.window);
 	    if (w)
 	    {
-		DECOR_SCREEN (w->screen ());
-		if (w->id () == ds->dmWin)
-		    ds->checkForDm (true);
+		if (w->id () == dmWin)
+		    checkForDm (true);
 	    }
 	    break;
 	case MapRequest:
-	    w = display->findWindow (event->xdestroywindow.window);
+	    w = screen->findWindow (event->xdestroywindow.window);
 	    if (w)
 		DecorWindow::get (w)->update (true);
 	    break;
 	default:
-	    if (event->type == cDisplay->damageEvent () + XDamageNotify)
+	    if (event->type == cScreen->damageEvent () + XDamageNotify)
 	    {
 		XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
 		
@@ -984,17 +970,14 @@ DecorDisplay::handleEvent (XEvent *event)
 		    {
 			t->GLTexture::damage ();
 
-			foreach (CompScreen *s, display->screens ())
+			foreach (CompWindow *w, screen->windows ())
 			{
-			    foreach (CompWindow *w, s->windows ())
+			    if (w->shaded () || w->mapNum ())
 			    {
-				if (w->shaded () || w->mapNum ())
-				{
-				    DECOR_WINDOW (w);
+				DECOR_WINDOW (w);
 
-				    if (dw->wd && dw->wd->decor->texture == t)
-					dw->cWindow->damageOutputExtents ();
-				}
+				if (dw->wd && dw->wd->decor->texture == t)
+				    dw->cWindow->damageOutputExtents ();
 			    }
 			}
 			return;
@@ -1004,15 +987,15 @@ DecorDisplay::handleEvent (XEvent *event)
 	    break;
     }
 
-    display->handleEvent (event);
+    screen->handleEvent (event);
 
-    if (display->activeWindow () != activeWindow)
+    if (screen->activeWindow () != activeWindow)
     {
-	w = display->findWindow (activeWindow);
+	w = screen->findWindow (activeWindow);
 	if (w)
 	    DecorWindow::get (w)->update (true);
 
-	w = display->findWindow (display->activeWindow ());
+	w = screen->findWindow (screen->activeWindow ());
 	if (w)
 	    DecorWindow::get (w)->update (true);
     }
@@ -1021,7 +1004,7 @@ DecorDisplay::handleEvent (XEvent *event)
 	case PropertyNotify:
 	    if (event->xproperty.atom == winDecorAtom)
 	    {
-		w = display->findWindow (event->xproperty.window);
+		w = screen->findWindow (event->xproperty.window);
 		if (w)
 		{
 		    DECOR_WINDOW (w);
@@ -1029,24 +1012,19 @@ DecorDisplay::handleEvent (XEvent *event)
 		    dw->update (true);
 		}
 	    }
-	    else if (event->xproperty.atom == display->atoms ().mwmHints)
+	    else if (event->xproperty.atom == Atoms::mwmHints)
 	    {
-		w = display->findWindow (event->xproperty.window);
+		w = screen->findWindow (event->xproperty.window);
 		if (w)
 		    DecorWindow::get (w)->update (true);
 	    }
 	    else
 	    {
-		CompScreen *s;
-
-		s = display->findScreen (event->xproperty.window);
-		if (s)
+		if (event->xproperty.window == screen->root ())
 		{
-		    DECOR_SCREEN (s);
-
 		    if (event->xproperty.atom == supportingDmCheckAtom)
 		    {
-			ds->checkForDm (true);
+			checkForDm (true);
 		    }
 		    else
 		    {
@@ -1056,14 +1034,14 @@ DecorDisplay::handleEvent (XEvent *event)
 			{
 			    if (event->xproperty.atom == decorAtom[i])
 			    {
-				if (ds->decor[i])
-				    Decoration::release (ds->decor[i]);
+				if (decor[i])
+				    Decoration::release (decor[i]);
 
-				ds->decor[i] =
-				    Decoration::create (s, s->root (),
+				decor[i] =
+				    Decoration::create (screen->root (),
 							decorAtom[i]);
 
-				foreach (CompWindow *w, s->windows ())
+				foreach (CompWindow *w, screen->windows ())
 				    DecorWindow::get (w)->update (true);
 			    }
 			}
@@ -1072,7 +1050,7 @@ DecorDisplay::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ConfigureNotify:
-	    w = display->findTopLevelWindow (event->xconfigure.window);
+	    w = screen->findTopLevelWindow (event->xconfigure.window);
 	    if (w)
 	    {
 		DECOR_WINDOW (w);
@@ -1083,57 +1061,56 @@ DecorDisplay::handleEvent (XEvent *event)
 	    }
 	    break;
 	case DestroyNotify:
-	    w = display->findTopLevelWindow (event->xproperty.window);
+	    w = screen->findTopLevelWindow (event->xproperty.window);
 	    if (w)
 	    {
 		DECOR_WINDOW (w);
 		if (dw->inputFrame &&
 		    dw->inputFrame == event->xdestroywindow.window)
 		{
-		    XDeleteProperty (display->dpy (), w->id (),
+		    XDeleteProperty (screen->dpy (), w->id (),
 				     inputFrameAtom);
 		    dw->inputFrame = None;
 		}
 	    }
 	    break;
 	default:
-	    if (display->XShape () && event->type ==
-		display->shapeEvent () + ShapeNotify)
+	    if (screen->XShape () && event->type ==
+		screen->shapeEvent () + ShapeNotify)
 	    {
-		w = display->findWindow (((XShapeEvent *) event)->window);
+		w = screen->findWindow (((XShapeEvent *) event)->window);
 		if (w)
 		    DecorWindow::get (w)->update (true);
 		else
 		{
-		    foreach (CompScreen *s, display->screens ())
-			foreach (w, s->windows ())
+		    foreach (w, screen->windows ())
+		    {
+			DECOR_WINDOW (w);
+			if (dw->inputFrame ==
+			    ((XShapeEvent *) event)->window)
 			{
-			    DECOR_WINDOW (w);
-			    if (dw->inputFrame ==
-				((XShapeEvent *) event)->window)
-			    {
-				XRectangle *shapeRects = 0;
-				int order, n;
+			    XRectangle *shapeRects = 0;
+			    int order, n;
 
-				EMPTY_REGION (dw->frameRegion);
+			    EMPTY_REGION (dw->frameRegion);
 
-				shapeRects =
-				    XShapeGetRectangles (display->dpy (),
-					dw->inputFrame, ShapeInput,
-					&n, &order);
-				if (!n || !shapeRects)
-				    break;
+			    shapeRects =
+				XShapeGetRectangles (screen->dpy (),
+				    dw->inputFrame, ShapeInput,
+				    &n, &order);
+			    if (!n || !shapeRects)
+				break;
 
-				for (int i = 0; i < n; i++)
-				    XUnionRectWithRegion (&shapeRects[i],
-							  dw->frameRegion,
-							  dw->frameRegion);
+			    for (int i = 0; i < n; i++)
+				XUnionRectWithRegion (&shapeRects[i],
+						      dw->frameRegion,
+						      dw->frameRegion);
 
-				w->updateFrameRegion ();
+			    w->updateFrameRegion ();
 
-				XFree (shapeRects);
-			    }
+			    XFree (shapeRects);
 			}
+		    }
 		}
 	    }
 	    break;
@@ -1170,14 +1147,14 @@ DecorWindow::getOutputExtents (CompWindowExtents *output)
 }
 
 CompOption::Vector &
-DecorDisplay::getOptions ()
+DecorScreen::getOptions ()
 {
     return opt;
 }
  
 bool
-DecorDisplay::setOption (const char        *name,
-			 CompOption::Value &value)
+DecorScreen::setOption (const char        *name,
+			CompOption::Value &value)
 {
     CompOption   *o;
     unsigned int index;
@@ -1187,31 +1164,25 @@ DecorDisplay::setOption (const char        *name,
 	return false;
 
     switch (index) {
-    case DECOR_DISPLAY_OPTION_COMMAND:
+    case DECOR_OPTION_COMMAND:
 	if (o->set(value))
 	{
-	    foreach (CompScreen *s, display->screens ())
-	    {
-		DECOR_SCREEN (s);
 
-		if (!ds->dmWin)
-		    s->runCommand (o->value ().s ());
-	    }
-
+	    if (!dmWin)
+		screen->runCommand (o->value ().s ());
 	    return true;
 	}
 	break;
-    case DECOR_DISPLAY_OPTION_DECOR_MATCH:
-    case DECOR_DISPLAY_OPTION_SHADOW_MATCH:
+    case DECOR_OPTION_DECOR_MATCH:
+    case DECOR_OPTION_SHADOW_MATCH:
 	if (o->set(value))
 	{
-	    foreach (CompScreen *s, display->screens())
-		foreach (CompWindow *w, s->windows ())
-		    DecorWindow::get (w)->update (true);
+	    foreach (CompWindow *w, screen->windows ())
+		DecorWindow::get (w)->update (true);
 	}
 	break;
     default:
-	return CompOption::setDisplayOption (display, *o, value);
+	return CompOption::setOption (*o, value);
     }
 
     return false;
@@ -1281,45 +1252,14 @@ DecorWindow::stateChangeNotify (unsigned int lastState)
 }
 
 void
-DecorDisplay::matchPropertyChanged (CompWindow  *w)
+DecorScreen::matchPropertyChanged (CompWindow *w)
 {
     DecorWindow::get (w)->update (true);
 
-    display->matchPropertyChanged (w);
+    screen->matchPropertyChanged (w);
 }
 
-void
-DecorCore::objectAdd (CompObject *parent,
-		      CompObject *object)
-{
-    core->objectAdd (parent, object);
-
-    if (object->objectType () == COMP_OBJECT_TYPE_WINDOW)
-    {
-	CORE_WINDOW (object);
-
-	if (w->shaded () || w->isViewable ())
-	    DecorWindow::get (w)->update (true);
-    }
-
-}
-
-void
-DecorCore::objectRemove (CompObject *parent,
-			 CompObject *object)
-{
-    if (object->objectType () == COMP_OBJECT_TYPE_WINDOW)
-    {
-	CORE_WINDOW (object);
-
-	if (!w->destroyed ())
-	    DecorWindow::get (w)->update (false);
-    }
-
-    core->objectRemove (parent, object);
-}
-
-static const CompMetadata::OptionInfo decorDisplayOptionInfo[] = {
+static const CompMetadata::OptionInfo decorOptionInfo[] = {
     { "shadow_radius", "float", "<min>0.0</min><max>48.0</max>", 0, 0 },
     { "shadow_opacity", "float", "<min>0.0</min>", 0, 0 },
     { "shadow_color", "color", 0, 0, 0 },
@@ -1331,49 +1271,32 @@ static const CompMetadata::OptionInfo decorDisplayOptionInfo[] = {
     { "shadow_match", "match", 0, 0, 0 }
 };
 
-
-DecorDisplay::DecorDisplay (CompDisplay *d) :
-    PrivateHandler<DecorDisplay,CompDisplay> (d),
-    display (d),
-    cDisplay (CompositeDisplay::get (d)),
+DecorScreen::DecorScreen (CompScreen *s) :
+    PrivateHandler<DecorScreen,CompScreen> (s),
+    screen (s),
+    cScreen (CompositeScreen::get (s)),
     textures (),
-    opt (DECOR_DISPLAY_OPTION_NUM)
+    dmWin (None),
+    opt (DECOR_OPTION_NUM)
 {
-    if (!decorMetadata->initDisplayOptions (d, decorDisplayOptionInfo,
-					    DECOR_DISPLAY_OPTION_NUM, opt))
+    if (!decorMetadata->initOptions (decorOptionInfo, DECOR_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
     }
 
     supportingDmCheckAtom =
-	XInternAtom (d->dpy (), DECOR_SUPPORTING_DM_CHECK_ATOM_NAME, 0);
+	XInternAtom (s->dpy (), DECOR_SUPPORTING_DM_CHECK_ATOM_NAME, 0);
     winDecorAtom =
-	XInternAtom (d->dpy (), DECOR_WINDOW_ATOM_NAME, 0);
+	XInternAtom (s->dpy (), DECOR_WINDOW_ATOM_NAME, 0);
     decorAtom[DECOR_BARE] =
-	XInternAtom (d->dpy (), DECOR_BARE_ATOM_NAME, 0);
+	XInternAtom (s->dpy (), DECOR_BARE_ATOM_NAME, 0);
     decorAtom[DECOR_NORMAL] =
-	XInternAtom (d->dpy (), DECOR_NORMAL_ATOM_NAME, 0);
+	XInternAtom (s->dpy (), DECOR_NORMAL_ATOM_NAME, 0);
     decorAtom[DECOR_ACTIVE] =
-	XInternAtom (d->dpy (), DECOR_ACTIVE_ATOM_NAME, 0);
+	XInternAtom (s->dpy (), DECOR_ACTIVE_ATOM_NAME, 0);
     inputFrameAtom =
-	XInternAtom (d->dpy (), DECOR_INPUT_FRAME_ATOM_NAME, 0);
-
-    DisplayInterface::setHandler (d);
-}
-
-DecorDisplay::~DecorDisplay ()
-{
-    CompOption::finiDisplayOptions (display, opt);
-}
-
-
-DecorScreen::DecorScreen (CompScreen *s) :
-    PrivateHandler<DecorScreen,CompScreen> (s),
-    screen (s),
-    dDisplay (DecorDisplay::get (s->display ())),
-    dmWin (None)
-{
+	XInternAtom (s->dpy (), DECOR_INPUT_FRAME_ATOM_NAME, 0);
 
     foreach (Decoration *d, decor)
 	d = NULL;
@@ -1381,7 +1304,9 @@ DecorScreen::DecorScreen (CompScreen *s) :
     checkForDm (false);
 
     if (!dmWin)
-	s->runCommand (dDisplay->opt[DECOR_DISPLAY_OPTION_COMMAND].value ().s ());
+	s->runCommand (opt[DECOR_OPTION_COMMAND].value ().s ());
+
+    ScreenInterface::setHandler (s);
 }
 
 DecorScreen::~DecorScreen ()
@@ -1396,9 +1321,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),
+    screen (w->screen ()),
     dScreen (DecorScreen::get (w->screen ())),
-    display (w->screen ()->display ()),
-    dDisplay (DecorDisplay::get (w->screen ()->display ())),
     wd (NULL),
     decor (NULL),
     inputFrame (None)
@@ -1438,37 +1362,6 @@ DecorWindow::~DecorWindow ()
 	Decoration::release (decor);
 }
 
-
-
-bool
-DecorPluginVTable::initObject (CompObject *o)
-{
-    INIT_OBJECT (o,X,X,X,X,DecorCore,DecorDisplay,DecorScreen,DecorWindow)
-    return true;
-}
-
-void
-DecorPluginVTable::finiObject (CompObject *o)
-{
-    FINI_OBJECT (o,X,X,X,X,DecorCore,DecorDisplay,DecorScreen,DecorWindow)
-}
-
-CompOption::Vector &
-DecorPluginVTable::getObjectOptions (CompObject *object)
-{
-    GET_OBJECT_OPTIONS (object,X,_,DecorDisplay,)
-    return noOptions;
-}
-
-bool
-DecorPluginVTable::setObjectOption (CompObject        *object,
-				   const char        *name,
-				   CompOption::Value &value)
-{
-    SET_OBJECT_OPTION (object,X,_,DecorDisplay,)
-    return false;
-}
-
 bool
 DecorPluginVTable::init ()
 {
@@ -1477,10 +1370,8 @@ DecorPluginVTable::init ()
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
 
-    decorMetadata = new CompMetadata (name (),
-				      decorDisplayOptionInfo,
-				      DECOR_DISPLAY_OPTION_NUM,
-				      0, 0);
+    decorMetadata = new CompMetadata (name (), decorOptionInfo,
+				      DECOR_OPTION_NUM);
     if (!decorMetadata)
 	return false;
 

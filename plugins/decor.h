@@ -4,40 +4,19 @@
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
+#include <core/atoms.h>
 
-#define DECOR_DISPLAY_OPTION_SHADOW_RADIUS   0
-#define DECOR_DISPLAY_OPTION_SHADOW_OPACITY  1
-#define DECOR_DISPLAY_OPTION_SHADOW_COLOR    2
-#define DECOR_DISPLAY_OPTION_SHADOW_OFFSET_X 3
-#define DECOR_DISPLAY_OPTION_SHADOW_OFFSET_Y 4
-#define DECOR_DISPLAY_OPTION_COMMAND         5
-#define DECOR_DISPLAY_OPTION_MIPMAP          6
-#define DECOR_DISPLAY_OPTION_DECOR_MATCH     7
-#define DECOR_DISPLAY_OPTION_SHADOW_MATCH    8
-#define DECOR_DISPLAY_OPTION_NUM             9
+#define DECOR_OPTION_SHADOW_RADIUS   0
+#define DECOR_OPTION_SHADOW_OPACITY  1
+#define DECOR_OPTION_SHADOW_COLOR    2
+#define DECOR_OPTION_SHADOW_OFFSET_X 3
+#define DECOR_OPTION_SHADOW_OFFSET_Y 4
+#define DECOR_OPTION_COMMAND         5
+#define DECOR_OPTION_MIPMAP          6
+#define DECOR_OPTION_DECOR_MATCH     7
+#define DECOR_OPTION_SHADOW_MATCH    8
+#define DECOR_OPTION_NUM             9
 
-class DecorPluginVTable : public CompPlugin::VTable
-{
-    public:
-
-	const char * name () { return "decor"; };
-
-	CompMetadata * getMetadata ();
-
-	bool init ();
-	void fini ();
-
-	bool initObject (CompObject *object);
-	void finiObject (CompObject *object);
-
-	CompOption::Vector & getObjectOptions (CompObject *object);
-
-	bool setObjectOption (CompObject        *object,
-			      const char        *name,
-			      CompOption::Value &value);
-};
-
-#define DECOR_DISPLAY(s) DecorDisplay *ds = DecorDisplay::get(d)
 #define DECOR_SCREEN(s) DecorScreen *ds = DecorScreen::get(s)
 #define DECOR_WINDOW(w) DecorWindow *dw = DecorWindow::get(w)
 
@@ -56,11 +35,10 @@ struct Vector {
 class DecorTexture : public GLTexture {
 
     public:
-	DecorTexture (CompScreen *screen, Pixmap pixmap);
+	DecorTexture (Pixmap pixmap);
 	~DecorTexture ();
 
     public:
-	CompScreen *screen;
 	bool       status;
 	int        refCount;
         Pixmap     pixmap;
@@ -70,8 +48,7 @@ class DecorTexture : public GLTexture {
 class Decoration {
 
     public:
-	static Decoration * create (CompScreen *screen, Window id,
-				    Atom decorAtom);
+	static Decoration * create (Window id, Atom decorAtom);
 	static void release (Decoration *);
 
     public:
@@ -84,7 +61,6 @@ class Decoration {
 	int                       minHeight;
 	decor_quad_t              *quad;
 	int                       nQuad;
-	CompScreen                *screen;
 };
 
 struct ScaledQuad {
@@ -105,28 +81,13 @@ class WindowDecoration {
 	int	   nQuad;
 };
 
-class DecorCore :
-    public CoreInterface,
-    public PrivateHandler<DecorCore,CompCore>
+class DecorScreen :
+    public ScreenInterface,
+    public PrivateHandler<DecorScreen,CompScreen>
 {
     public:
-	DecorCore (CompCore *c) :
-	    PrivateHandler<DecorCore,CompCore> (c)
-	{
-	    CoreInterface::setHandler (c);
-	}
-	
-	void objectAdd (CompObject *, CompObject *);
-	void objectRemove (CompObject *, CompObject *);
-};
-
-class DecorDisplay :
-    public DisplayInterface,
-    public PrivateHandler<DecorDisplay,CompDisplay>
-{
-    public:
-	DecorDisplay (CompDisplay *d);
-	~DecorDisplay ();
+	DecorScreen (CompScreen *s);
+	~DecorScreen ();
 
 	CompOption::Vector & getOptions ();
 	bool setOption (const char *name, CompOption::Value &value);
@@ -134,12 +95,15 @@ class DecorDisplay :
 	void handleEvent (XEvent *event);
 	void matchPropertyChanged (CompWindow *);
 
-	DecorTexture * getTexture (CompScreen *, Pixmap);
+	DecorTexture * getTexture (Pixmap);
 	void releaseTexture (DecorTexture *);
 
+	
+	void checkForDm (bool);
+
     public:
-	CompDisplay      *display;
-	CompositeDisplay *cDisplay;
+	CompScreen      *screen;
+	CompositeScreen *cScreen;
 
 	std::list<DecorTexture *> textures;
 
@@ -147,26 +111,12 @@ class DecorDisplay :
 	Atom winDecorAtom;
 	Atom decorAtom[DECOR_NUM];
 	Atom inputFrameAtom; 
-
-	CompOption::Vector opt;
-};
-
-class DecorScreen :
-    public PrivateHandler<DecorScreen,CompScreen>
-{
-    public:
-	DecorScreen (CompScreen *s);
-	~DecorScreen ();
-
-	void checkForDm (bool);
-
-    public:
-	CompScreen   *screen;
-	DecorDisplay *dDisplay;
-
+	
 	Window dmWin;
 
 	Decoration *decor[DECOR_NUM];
+
+	CompOption::Vector opt;
 };
 
 class DecorWindow :
@@ -212,9 +162,8 @@ class DecorWindow :
 	CompWindow      *window;
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
+	CompScreen      *screen;
 	DecorScreen     *dScreen;
-	CompDisplay     *display;
-	DecorDisplay    *dDisplay;
 	
 	WindowDecoration *wd;
 	Decoration	 *decor;
@@ -227,7 +176,22 @@ class DecorWindow :
 	int    oldWidth;
 	int    oldHeight;
 
-	CompCore::Timer resizeUpdate;
-	CompCore::Timer moveUpdate;
+	CompTimer resizeUpdate;
+	CompTimer moveUpdate;
+};
+
+class DecorPluginVTable :
+    public CompPlugin::VTableForScreenAndWindow<DecorScreen, DecorWindow>
+{
+    public:
+
+	const char * name () { return "decor"; };
+
+	CompMetadata * getMetadata ();
+
+	bool init ();
+	void fini ();
+
+	PLUGIN_OPTION_HELPER (DecorScreen);
 };
 
