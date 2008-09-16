@@ -7,43 +7,21 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define RESIZE_DISPLAY_OPTION_INITIATE_NORMAL_KEY    0
-#define RESIZE_DISPLAY_OPTION_INITIATE_OUTLINE_KEY   1
-#define RESIZE_DISPLAY_OPTION_INITIATE_RECTANGLE_KEY 2
-#define RESIZE_DISPLAY_OPTION_INITIATE_STRETCH_KEY   3
-#define RESIZE_DISPLAY_OPTION_INITIATE_BUTTON	     4
-#define RESIZE_DISPLAY_OPTION_INITIATE_KEY	     5
-#define RESIZE_DISPLAY_OPTION_MODE	             6
-#define RESIZE_DISPLAY_OPTION_BORDER_COLOR           7
-#define RESIZE_DISPLAY_OPTION_FILL_COLOR             8
-#define RESIZE_DISPLAY_OPTION_NORMAL_MATCH	     9
-#define RESIZE_DISPLAY_OPTION_OUTLINE_MATCH	     10
-#define RESIZE_DISPLAY_OPTION_RECTANGLE_MATCH	     11
-#define RESIZE_DISPLAY_OPTION_STRETCH_MATCH	     12
-#define RESIZE_DISPLAY_OPTION_NUM		     13
+#define RESIZE_OPTION_INITIATE_NORMAL_KEY    0
+#define RESIZE_OPTION_INITIATE_OUTLINE_KEY   1
+#define RESIZE_OPTION_INITIATE_RECTANGLE_KEY 2
+#define RESIZE_OPTION_INITIATE_STRETCH_KEY   3
+#define RESIZE_OPTION_INITIATE_BUTTON	     4
+#define RESIZE_OPTION_INITIATE_KEY	     5
+#define RESIZE_OPTION_MODE	             6
+#define RESIZE_OPTION_BORDER_COLOR           7
+#define RESIZE_OPTION_FILL_COLOR             8
+#define RESIZE_OPTION_NORMAL_MATCH	     9
+#define RESIZE_OPTION_OUTLINE_MATCH	     10
+#define RESIZE_OPTION_RECTANGLE_MATCH	     11
+#define RESIZE_OPTION_STRETCH_MATCH	     12
+#define RESIZE_OPTION_NUM		     13
 
-class ResizePluginVTable : public CompPlugin::VTable
-{
-    public:
-
-	const char * name () { return "resize"; };
-
-	CompMetadata * getMetadata ();
-
-	bool init ();
-	void fini ();
-
-	bool initObject (CompObject *object);
-	void finiObject (CompObject *object);
-
-	CompOption::Vector & getObjectOptions (CompObject *object);
-
-	bool setObjectOption (CompObject        *object,
-			      const char        *name,
-			      CompOption::Value &value);
-};
-
-#define RESIZE_DISPLAY(s) ResizeDisplay *rd = ResizeDisplay::get(d)
 #define RESIZE_SCREEN(s) ResizeScreen *rs = ResizeScreen::get(s)
 #define RESIZE_WINDOW(w) ResizeWindow *rw = ResizeWindow::get(w)
 
@@ -76,13 +54,14 @@ struct _ResizeKeys {
 #define MIN_KEY_WIDTH_INC  24
 #define MIN_KEY_HEIGHT_INC 24
 
-class ResizeDisplay :
-    public DisplayInterface,
-    public PrivateHandler<ResizeDisplay,CompDisplay>
+class ResizeScreen :
+    public PrivateHandler<ResizeScreen,CompScreen>,
+    public GLScreenInterface,
+    public ScreenInterface
 {
     public:
-	ResizeDisplay (CompDisplay *d);
-	~ResizeDisplay ();
+	ResizeScreen (CompScreen *s);
+	~ResizeScreen ();
 
 	CompOption::Vector & getOptions ();
 	bool setOption (const char *name, CompOption::Value &value);
@@ -98,34 +77,6 @@ class ResizeDisplay :
 	void finishResizing ();
 
 	void updateWindowSize ();
-
-    public:
-	CompDisplay      *display;
-
-	Atom resizeNotifyAtom;
-	Atom resizeInformationAtom;
-
-	CompWindow	 *w;
-	int		 mode;
-	XRectangle	 savedGeometry;
-	XRectangle	 geometry;
-
-	int		 releaseButton;
-	unsigned int mask;
-	int		 pointerDx;
-	int		 pointerDy;
-	KeyCode	 key[NUM_KEYS];
-
-	CompOption::Vector opt;
-};
-
-class ResizeScreen :
-    public PrivateHandler<ResizeScreen,CompScreen>,
-    public GLScreenInterface
-{
-    public:
-	ResizeScreen (CompScreen *s);
-	~ResizeScreen ();
 
 	bool glPaintOutput (const GLScreenPaintAttrib &,
 			    const GLMatrix &, Region, CompOutput *,
@@ -147,9 +98,22 @@ class ResizeScreen :
 	CompScreen      *screen;
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
-	ResizeDisplay   *rDisplay;
 
-    	CompScreen::grabHandle grabIndex;
+	Atom resizeNotifyAtom;
+	Atom resizeInformationAtom;
+
+	CompWindow	 *w;
+	int		 mode;
+	XRectangle	 savedGeometry;
+	XRectangle	 geometry;
+
+	int          releaseButton;
+	unsigned int mask;
+	int          pointerDx;
+	int          pointerDy;
+	KeyCode      key[NUM_KEYS];
+	
+	CompScreen::GrabHandle grabIndex;
 
 	Cursor leftCursor;
 	Cursor rightCursor;
@@ -161,6 +125,8 @@ class ResizeScreen :
 	Cursor downRightCursor;
 	Cursor middleCursor;
 	Cursor cursor[NUM_KEYS];
+
+	CompOption::Vector opt;
 };
 
 class ResizeWindow :
@@ -189,7 +155,22 @@ class ResizeWindow :
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
 	ResizeScreen    *rScreen;
-	ResizeDisplay   *rDisplay;
+};
+
+class ResizePluginVTable :
+    public CompPlugin::VTableForScreenAndWindow<ResizeScreen, ResizeWindow>
+{
+    public:
+
+	const char * name () { return "resize"; };
+
+	CompMetadata * getMetadata ();
+
+	bool init ();
+	void fini ();
+
+	PLUGIN_OPTION_HELPER (ResizeScreen)
+
 };
 
 #endif

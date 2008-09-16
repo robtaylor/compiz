@@ -2,7 +2,7 @@
     <plugin name="resize">
 	<_short>Resize Window</_short>
 	<_long>Resize window</_long>
-	<display>
+	<options>
 	    <option name="initiate_normal_key" type="key">
 		<_short>Initiate Normal Window Resize</_short>
 		<_long>Start resizing window normally</_long>
@@ -96,6 +96,6 @@
 		<_long>Windows that stretch resize should be used for</_long>
 		<default/>
 	    </option>
-	</display>
+	</options>
     </plugin>
 </compiz>
