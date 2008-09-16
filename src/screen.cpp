@@ -4726,7 +4726,8 @@ CompScreen::~CompScreen ()
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
 
-    CompPlugin::screenFiniPlugins (this);
+    while ((p = CompPlugin::pop ()))
+	CompPlugin::unload (p);
 
     XUngrabKey (priv->dpy, AnyKey, AnyModifier, priv->root);
 
@@ -4761,10 +4762,9 @@ CompScreen::~CompScreen ()
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
 
-    while ((p = CompPlugin::pop ()))
-	CompPlugin::unload (p);
-
     delete priv;
+
+    screen = NULL;
 }
 
 PrivateScreen::PrivateScreen (CompScreen *screen) :
