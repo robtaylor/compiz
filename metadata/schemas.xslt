@@ -31,7 +31,7 @@
   <xsl:template  match="/compiz">
     <gconfschemafile>
       <schemalist>
-        <xsl:for-each select="/compiz//option[not(@read_only='true') and not(@type='action')]">
+        <xsl:for-each select="/compiz//options/option[not(@read_only='true') and not(@type='action')]">
           <xsl:call-template name="dumpOption"/>
         </xsl:for-each>
       </schemalist>
@@ -392,14 +392,7 @@
         <xsl:text>/general</xsl:text>
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:choose>
-      <xsl:when test="ancestor::screen">
-        <xsl:text>/screen0/options/</xsl:text>
-      </xsl:when>
-      <xsl:otherwise>
-        <xsl:text>/allscreens/options/</xsl:text>
-      </xsl:otherwise>
-    </xsl:choose>
+    <xsl:text>/screen0/options/</xsl:text>
     <xsl:value-of select="@name"/>
   </xsl:template>
 
