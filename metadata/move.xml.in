@@ -2,7 +2,7 @@
     <plugin name="move">
 	<_short>Move Window</_short>
 	<_long>Move window</_long>
-	<display>
+	<options>
 	    <option name="initiate_button" type="button">
 		<_short>Initiate Window Move</_short>
 		<_long>Start moving window</_long>
@@ -35,6 +35,6 @@
 		<_long>Do not update the server-side position of windows until finished moving</_long>
 		<default>true</default>
 	    </option>
-	</display>
+	</options>
     </plugin>
 </compiz>
