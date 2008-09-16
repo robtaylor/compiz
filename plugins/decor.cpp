@@ -1348,10 +1348,6 @@ DecorWindow::DecorWindow (CompWindow *w) :
 
 DecorWindow::~DecorWindow ()
 {
-
-    if (frameRegion)
-	XDestroyRegion (frameRegion);
-
     if (!window->destroyed ())
 	update (false);
 
@@ -1360,6 +1356,9 @@ DecorWindow::~DecorWindow ()
 
     if (decor)
 	Decoration::release (decor);
+
+    if (frameRegion)
+	XDestroyRegion (frameRegion);
 }
 
 bool
