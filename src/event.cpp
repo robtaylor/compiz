@@ -181,7 +181,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 	{
 	    if (action->button ().button () == (int) event->xbutton.button)
 	    {
-		bindMods = screen->virtualToRealModMask (
+		bindMods = virtualToRealModMask (
 		    action->button ().modifiers ());
 
 		if ((bindMods & modMask) == (event->xbutton.state & modMask))
@@ -199,7 +199,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 		     (int) event->xbutton.button) &&
 		    (action->edgeMask () & edge))
 		{
-		    bindMods = screen->virtualToRealModMask (
+		    bindMods = virtualToRealModMask (
 			action->button ().modifiers ());
 
 		    if ((bindMods & modMask) ==
@@ -278,7 +278,7 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
 	if (isInitiateBinding (option, CompAction::BindingTypeKey,
 			       state, &action))
 	{
-	    bindMods = screen->virtualToRealModMask (
+	    bindMods = virtualToRealModMask (
 		action->key ().modifiers ());
 
 	    if (action->key ().keycode () == (int) event->xkey.keycode)
@@ -312,7 +312,7 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 	unsigned int      bindMods;
 	unsigned int      mods;
 
-	mods = screen->keycodeToModifiers (event->xkey.keycode);
+	mods = keycodeToModifiers (event->xkey.keycode);
 	if (mods == 0)
 	    return false;
 
@@ -321,8 +321,7 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 	    if (isTerminateBinding (option, CompAction::BindingTypeKey,
 				    state, &action))
 	    {
-		bindMods =
-		    screen->virtualToRealModMask (action->key ().modifiers ());
+		bindMods = virtualToRealModMask (action->key ().modifiers ());
 
 		if ((mods & modMask & bindMods) != bindMods)
 		{
@@ -357,8 +356,8 @@ PrivateScreen::triggerStateNotifyBindings (CompOption::Vector  &options,
 	    {
 		if (action->key ().keycode () == 0)
 		{
-		    bindMods = screen->virtualToRealModMask (
-			action->key ().modifiers ());
+		    bindMods =
+			virtualToRealModMask (action->key ().modifiers ());
 
 		    if ((event->mods & modMask & bindMods) == bindMods)
 		    {
@@ -378,8 +377,7 @@ PrivateScreen::triggerStateNotifyBindings (CompOption::Vector  &options,
 	    if (isTerminateBinding (option, CompAction::BindingTypeKey,
 				    state, &action))
 	    {
-		bindMods =
-		    screen->virtualToRealModMask (action->key ().modifiers ());
+		bindMods = virtualToRealModMask (action->key ().modifiers ());
 
 		if ((event->mods & modMask & bindMods) != bindMods)
 		{
@@ -942,18 +940,20 @@ CompScreen::handleEvent (XEvent *event)
     switch (event->type) {
     case ButtonPress:
 	if (event->xbutton.root == priv->root)
-	    setCurrentOutput (outputDeviceForPoint (event->xbutton.x_root,
-						    event->xbutton.y_root));
+	    priv->setCurrentOutput (
+		outputDeviceForPoint (event->xbutton.x_root,
+				      event->xbutton.y_root));
 	break;
     case MotionNotify:
 	if (event->xmotion.root == priv->root)
-	    setCurrentOutput (outputDeviceForPoint (event->xmotion.x_root,
-						    event->xmotion.y_root));
+	    priv->setCurrentOutput (
+		outputDeviceForPoint (event->xmotion.x_root,
+				      event->xmotion.y_root));
 	break;
     case KeyPress:
 	w = findWindow (priv->activeWindow);
 	if (w)
-	    setCurrentOutput (w->outputDevice ());
+	    priv->setCurrentOutput (w->outputDevice ());
     default:
 	break;
     }
@@ -990,7 +990,7 @@ CompScreen::handleEvent (XEvent *event)
 	    else
 	    {
 		if (event->xconfigure.window == priv->root)
-		    configure (&event->xconfigure);
+		    priv->configure (&event->xconfigure);
 	    }
 	}
 	break;
@@ -1001,7 +1001,7 @@ CompScreen::handleEvent (XEvent *event)
 	    (!w || w->frame () != event->xcreatewindow.window))
 	{
 	    new CompWindow (screen, event->xcreatewindow.window,
-			    getTopWindow ());
+			    priv->getTopWindow ());
 	}
 	break;
     case DestroyNotify:
@@ -1036,7 +1036,7 @@ CompScreen::handleEvent (XEvent *event)
 	    /* Normal -> Iconic */
 	    if (w->pendingUnmaps ())
 	    {
-		setWmState (IconicState, w->id ());
+		priv->setWmState (IconicState, w->id ());
 		w->pendingUnmaps ()--;
 	    }
 	    else /* X -> Withdrawn */
@@ -1048,11 +1048,11 @@ CompScreen::handleEvent (XEvent *event)
 
 		    w->changeState (w->state () & ~CompWindowStateHiddenMask);
 
-		    w->screen () ->updateClientList ();
+		    priv->updateClientList ();
 		}
 
 		if (!w->overrideRedirect ())
-		    setWmState (WithdrawnState, w->id ());
+		    priv->setWmState (WithdrawnState, w->id ());
 
 		w->placed  () = false;
 		w->managed () = false;
@@ -1068,7 +1068,8 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xreparent.window);
 	if (!w)
 	{
-	    new CompWindow (this, event->xreparent.window, getTopWindow ());
+	    new CompWindow (this, event->xreparent.window,
+			    priv->getTopWindow ());
 	}
 	else if (w && !(event->xreparent.parent == w->wrapper () ||
 		 event->xreparent.parent == priv->root))
@@ -1122,16 +1123,16 @@ CompScreen::handleEvent (XEvent *event)
 	    {
 		unsigned int type;
 
-		type = getWindowType (w->id ());
+		type = priv->getWindowType (w->id ());
 
 		if (type != w->wmType ())
 		{
 		    if (w->isViewable ())
 		    {
 			if (w->type () == CompWindowTypeDesktopMask)
-			    w->screen ()->desktopWindowCount ()--;
+			    priv->desktopWindowCount--;
 			else if (type == CompWindowTypeDesktopMask)
-			    w->screen ()->desktopWindowCount ()++;
+			    priv->desktopWindowCount++;
 		    }
 
 		    w->wmType () = type;
@@ -1143,7 +1144,7 @@ CompScreen::handleEvent (XEvent *event)
 				CompWindowTypeDesktopMask))
 			w->setDesktop (0xffffffff);
 
-		    w->screen ()->updateClientList ();
+		    priv->updateClientList ();
 
 		    matchPropertyChanged (w);
 		}
@@ -1156,7 +1157,7 @@ CompScreen::handleEvent (XEvent *event)
 	    {
 		unsigned int state;
 
-		state = getWindowState (w->id ());
+		state = priv->getWindowState (w->id ());
 		state = CompWindow::constrainWindowState (state, w->actions ());
 
 		if (state != w->state ())
@@ -1213,7 +1214,7 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w)
 	    {
 		if (w->updateStruts ())
-		    w->screen ()->updateWorkarea ();
+		    priv->updateWorkarea ();
 	    }
 	}
 	else if (event->xproperty.atom == Atoms::mwmHints)
@@ -1226,7 +1227,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->protocols () = getProtocols (w->id ());
+		w->priv->protocols = priv->getProtocols (w->id ());
 	}
 	else if (event->xproperty.atom == Atoms::wmIcon)
 	{
@@ -1276,7 +1277,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		for (i = 1; i < 3; i++)
 		{
-		    state = windowStateMask (event->xclient.data.l[i]);
+		    state = priv->windowStateMask (event->xclient.data.l[i]);
 		    if (state & ~CompWindowStateHiddenMask)
 		    {
 
@@ -1464,7 +1465,7 @@ CompScreen::handleEvent (XEvent *event)
 	else if (event->xclient.message_type == Atoms::currentDesktop)
 	{
 	    if (event->xclient.window == priv->root)
-		setCurrentDesktop (event->xclient.data.l[0]);
+		priv->setCurrentDesktop (event->xclient.data.l[0]);
 	}
 	else if (event->xclient.message_type == Atoms::winDesktop)
 	{
@@ -1474,7 +1475,7 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case MappingNotify:
-	updateModifierMappings ();
+	priv->updateModifierMappings ();
 	break;
     case MapRequest:
 	w = findWindow (event->xmaprequest.window);
@@ -1594,9 +1595,9 @@ CompScreen::handleEvent (XEvent *event)
 		if (w->id () != priv->activeWindow)
 		{
 		    priv->activeWindow = w->id ();
-		    w->activeNum ()    = w->screen ()->activeNum ()++;
+		    w->priv->activeNum = priv->activeNum++;
 
-		    w->screen ()->addToCurrentActiveWindowHistory (w->id ());
+		    priv->addToCurrentActiveWindowHistory (w->id ());
 
 		    XChangeProperty (priv->dpy , w->screen ()->root (),
 				     Atoms::winActive,

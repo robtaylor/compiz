@@ -2,7 +2,7 @@
 #define _PRIVATESCREEN_H
 
 #include <compiz-core.h>
-#include <compscreen.h>
+#include <core/screen.h>
 #include <compsize.h>
 #include <comppoint.h>
 #include <core/timer.h>
@@ -129,6 +129,32 @@ typedef struct _CompDelayedEdgeSettings
 #define FOCUS_PREVENTION_LEVEL_HIGH     2
 #define FOCUS_PREVENTION_LEVEL_VERYHIGH 3
 #define FOCUS_PREVENTION_LEVEL_LAST     FOCUS_PREVENTION_LEVEL_VERYHIGH
+
+#define SCREEN_EDGE_LEFT	0
+#define SCREEN_EDGE_RIGHT	1
+#define SCREEN_EDGE_TOP		2
+#define SCREEN_EDGE_BOTTOM	3
+#define SCREEN_EDGE_TOPLEFT	4
+#define SCREEN_EDGE_TOPRIGHT	5
+#define SCREEN_EDGE_BOTTOMLEFT	6
+#define SCREEN_EDGE_BOTTOMRIGHT 7
+#define SCREEN_EDGE_NUM		8
+
+struct CompScreenEdge {
+    Window	 id;
+    unsigned int count;
+};
+
+struct CompGroup {
+    unsigned int      refCnt;
+    Window	      id;
+};
+
+struct CompStartupSequence {
+    SnStartupSequence		*sequence;
+    unsigned int		viewportX;
+    unsigned int		viewportY;
+};
 
 extern const CompMetadata::OptionInfo
 coreOptionInfo[COMP_OPTION_NUM];
@@ -305,9 +331,76 @@ class PrivateScreen {
 	void updateScreenInfo ();
 
 
+	void updateModifierMappings ();
+
+	unsigned int virtualToRealModMask (unsigned int modMask);
+
+	unsigned int keycodeToModifiers (int keycode);
+
+	Window getActiveWindow (Window root);
+
+	int getWmState (Window id);
+
+	void setWmState (int state, Window id);
+
+	unsigned int windowStateMask (Atom state);
+
+	static unsigned int windowStateFromString (const char *str);
+
+	unsigned int getWindowState (Window id);
+
+	void setWindowState (unsigned int state, Window id);
+
+	unsigned int getWindowType (Window id);
+
+	void getMwmHints (Window       id,
+			  unsigned int *func,
+			  unsigned int *decor);
+
+	unsigned int getProtocols (Window id);
+
+	bool readWindowProp32 (Window         id,
+			       Atom           property,
+			       unsigned short *returnValue);
+
+	void setCurrentOutput (unsigned int outputNum);
+
+	
+	void configure (XConfigureEvent *ce);
+
+	void eraseWindowFromMap (Window id);
+
+	void updateWorkarea ();
+
+	void updateClientList ();
+
+	CompGroup * addGroup (Window id);
+
+	void removeGroup (CompGroup *group);
+
+	CompGroup * findGroup (Window id);
+
+	void applyStartupProperties (CompWindow *window);
+
+	Window getTopWindow ();
+
+	void setNumberOfDesktops (unsigned int nDesktop);
+
+	void setCurrentDesktop (unsigned int desktop);
+
+	bool updateDefaultIcon ();
+
+	void setCurrentActiveWindowHistory (int x, int y);
+
+	void addToCurrentActiveWindowHistory (Window id);
+
+	void enableEdge (int edge);
+
+	void disableEdge (int edge);
 
     public:
 
+	PrivateScreen *priv;
 
 	std::list<CompFileWatch *>  fileWatch;
 	CompFileWatchHandle         lastFileWatchHandle;

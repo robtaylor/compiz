@@ -420,7 +420,7 @@ CompWindow::changeState (unsigned int newState)
     recalcType ();
     recalcActions ();
 
-    priv->screen->setWindowState (priv->state, priv->id);
+    priv->screen->priv->setWindowState (priv->state, priv->id);
 
     stateChangeNotify (oldState);
     priv->screen->matchPropertyChanged (this);
@@ -1060,7 +1060,7 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
 void
 CompWindow::destroy ()
 {
-    screen ()->eraseWindowFromMap (id ());
+    screen ()->priv->eraseWindowFromMap (id ());
 
     priv->id = 1;
     priv->mapNum = 0;
@@ -1075,7 +1075,7 @@ CompWindow::destroy ()
     if (!priv->destroyed)
     {
 	priv->destroyed = true;
-	priv->screen->pendingDestroys ()++;
+	priv->screen->priv->pendingDestroys++;
     }
 }
 
@@ -1140,10 +1140,10 @@ CompWindow::map ()
 
     priv->pendingMaps--;
 
-    priv->mapNum = priv->screen->mapNum ()++;
+    priv->mapNum = priv->screen->priv->mapNum++;
 
     if (priv->struts)
-	priv->screen->updateWorkarea ();
+	priv->screen->priv->updateWorkarea ();
 
     if (windowClass () == InputOnly)
 	return;
@@ -1153,12 +1153,12 @@ CompWindow::map ()
     priv->attrib.map_state = IsViewable;
 
     if (!overrideRedirect ())
-	priv->screen->setWmState (NormalState, priv->id);
+	priv->screen->priv->setWmState (NormalState, priv->id);
 
     priv->invisible  = true;
     priv->alive      = true;
 
-    priv->lastPong = priv->screen->lastPing ();
+    priv->lastPong = priv->screen->priv->lastPing;
 
     updateRegion ();
     updateSize ();
@@ -1169,10 +1169,10 @@ CompWindow::map ()
 	XMapWindow (priv->screen->dpy (), priv->wrapper);
     }
 
-    priv->screen->updateClientList ();
+    priv->screen->priv->updateClientList ();
 
     if (priv->type & CompWindowTypeDesktopMask)
-	priv->screen->desktopWindowCount ()++;
+	priv->screen->priv->desktopWindowCount++;
 
     if (priv->protocols & CompWindowProtocolSyncRequestMask)
     {
@@ -1202,13 +1202,13 @@ CompWindow::unmap ()
 	return;
 
     if (priv->struts)
-	priv->screen->updateWorkarea ();
+	priv->screen->priv->updateWorkarea ();
 
     if (priv->attrib.map_state != IsViewable)
 	return;
 
     if (priv->type == CompWindowTypeDesktopMask)
-	priv->screen->desktopWindowCount ()--;
+	priv->screen->priv->desktopWindowCount--;
 
     priv->attrib.map_state = IsUnmapped;
 
@@ -1219,7 +1219,7 @@ CompWindow::unmap ()
 		priv->attrib.width, ++priv->attrib.height - 1,
 		priv->attrib.border_width);
 
-    priv->screen->updateClientList ();
+    priv->screen->priv->updateClientList ();
 
     windowNotify (CompWindowNotifyUnmap);
 }
@@ -1242,7 +1242,7 @@ PrivateWindow::restack (Window aboveId)
     screen->unhookWindow (window);
     screen->insertWindow (window, aboveId);
 
-    screen->updateClientList ();
+    screen->priv->updateClientList ();
 
     window->windowNotify (CompWindowNotifyRestack);
 
@@ -1499,7 +1499,7 @@ CompWindow::circulate (XCirculateEvent *ce)
     Window newAboveId;
 
     if (ce->place == PlaceOnTop)
-	newAboveId = priv->screen->getTopWindow ();
+	newAboveId = priv->screen->priv->getTopWindow ();
     else
 	newAboveId = 0;
 
@@ -3039,7 +3039,7 @@ CompWindow::activate ()
 {
     WRAPABLE_HND_FUNC(3, activate)
 
-    priv->screen->setCurrentDesktop (priv->desktop);
+    priv->screen->priv->setCurrentDesktop (priv->desktop);
 
     priv->screen->forEachWindow (
 	boost::bind (PrivateWindow::revealAncestors, _1, this));
@@ -4042,7 +4042,7 @@ CompWindow::processMap ()
 
     priv->initialTimestampSet = false;
 
-    priv->screen->applyStartupProperties (this);
+    priv->screen->priv->applyStartupProperties (this);
 
     if (!priv->placed)
     {
@@ -4362,8 +4362,8 @@ CompWindow::sizeHints ()
 void
 CompWindow::updateMwmHints ()
 {
-    priv->screen->getMwmHints (priv->id, &priv->mwmFunc,
-					   &priv->mwmDecor);
+    priv->screen->priv->getMwmHints (priv->id, &priv->mwmFunc,
+				     &priv->mwmDecor);
 
     recalcActions ();
 }
@@ -4452,7 +4452,7 @@ CompWindow::CompWindow (CompScreen *screen,
 		 GrabModeSync, GrabModeSync, None, None);
 
     priv->alpha     = (depth () == 32);
-    priv->lastPong  = screen->lastPing ();
+    priv->lastPong  = screen->priv->lastPing;
 
     if (screen->XShape ())
 	XShapeSelectInput (screen->dpy (), id, ShapeNotifyMask);
@@ -4476,7 +4476,7 @@ CompWindow::CompWindow (CompScreen *screen,
 	XUnionRegion (&rect, priv->region, priv->region);
 
 	/* need to check for DisplayModal state on all windows */
-	priv->state = screen->getWindowState (priv->id);
+	priv->state = screen->priv->getWindowState (priv->id);
 
 	updateClassHints ();
     }
@@ -4485,8 +4485,8 @@ CompWindow::CompWindow (CompScreen *screen,
 	priv->attrib.map_state = IsUnmapped;
     }
 
-    priv->wmType    = screen->getWindowType (priv->id);
-    priv->protocols = screen->getProtocols (priv->id);
+    priv->wmType    = screen->priv->getWindowType (priv->id);
+    priv->protocols = screen->priv->getProtocols (priv->id);
 
     if (!overrideRedirect ())
     {
@@ -4501,7 +4501,7 @@ CompWindow::CompWindow (CompScreen *screen,
 
 	recalcType ();
 
-	screen->getMwmHints (priv->id, &priv->mwmFunc, &priv->mwmDecor);
+	screen->priv->getMwmHints (priv->id, &priv->mwmFunc, &priv->mwmDecor);
 
 	if (!(priv->type & (CompWindowTypeDesktopMask | CompWindowTypeDockMask)))
 	{
@@ -4527,7 +4527,7 @@ CompWindow::CompWindow (CompScreen *screen,
 	{
 	    priv->managed = true;
 
-	    if (screen->getWmState (priv->id) == IconicState)
+	    if (screen->priv->getWmState (priv->id) == IconicState)
 	    {
 		if (priv->state & CompWindowStateShadedMask)
 		    priv->shaded = true;
@@ -4568,12 +4568,12 @@ CompWindow::CompWindow (CompScreen *screen,
 
 	    XUnmapWindow (screen->dpy (), priv->id);
 
-	    screen->setWindowState (priv->state, priv->id);
+	    screen->priv->setWindowState (priv->state, priv->id);
 	}
     }
     else if (!overrideRedirect ())
     {
-	if (screen->getWmState (priv->id) == IconicState)
+	if (screen->priv->getWmState (priv->id) == IconicState)
 	{
 	    priv->managed = true;
 	    priv->placed  = true;
@@ -4639,14 +4639,14 @@ CompWindow::~CompWindow ()
     if (priv->attrib.map_state == IsViewable)
     {
 	if (priv->type == CompWindowTypeDesktopMask)
-	    priv->screen->desktopWindowCount ()--;
+	    priv->screen->priv->desktopWindowCount--;
 
 	if (priv->destroyed && priv->struts)
-	    priv->screen->updateWorkarea ();
+	    priv->screen->priv->updateWorkarea ();
     }
 
     if (priv->destroyed)
-	priv->screen->updateClientList ();
+	priv->screen->priv->updateClientList ();
 
     CompPlugin::windowFiniPlugins (this);
 

@@ -5,7 +5,7 @@
 
 #include <compaction.h>
 #include <compmatch.h>
-#include <compscreen.h>
+#include <core/screen.h>
 
 typedef struct _CompOptionIntRestriction {
     int min;

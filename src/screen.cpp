@@ -55,7 +55,7 @@
 
 #include <compiz-core.h>
 
-#include <compscreen.h>
+#include <core/screen.h>
 #include <compicon.h>
 #include <core/atoms.h>
 #include "privatescreen.h"
@@ -701,17 +701,10 @@ CompScreen::autoRaiseWindow ()
     return priv->autoRaiseWindow;
 }
 
-
 const char *
 CompScreen::displayString ()
 {
     return priv->displayString;
-}
-
-unsigned int
-CompScreen::lastPing ()
-{
-    return priv->lastPing;
 }
 
 void
@@ -859,13 +852,13 @@ CompScreen::setOption (const char        *name,
 	case COMP_OPTION_NUMBER_OF_DESKTOPS:
 	    if (o->set (value))
 	    {
-		setNumberOfDesktops (o->value ().i ());
+		priv->setNumberOfDesktops (o->value ().i ());
 		return true;
 	    }
 	    break;
 	case COMP_OPTION_DEFAULT_ICON:
 	    if (o->set (value))
-		return updateDefaultIcon ();
+		return priv->updateDefaultIcon ();
 	    break;
 	case COMP_OPTION_OUTPUTS:
 	    if (!noDetection &&
@@ -888,7 +881,7 @@ CompScreen::setOption (const char        *name,
 }
 
 void
-CompScreen::updateModifierMappings ()
+PrivateScreen::updateModifierMappings ()
 {
     unsigned int    modMask[CompModNum];
     int		    i, minKeycode, maxKeycode, keysymsPerKeycode = 0;
@@ -897,38 +890,38 @@ CompScreen::updateModifierMappings ()
     for (i = 0; i < CompModNum; i++)
 	modMask[i] = 0;
 
-    XDisplayKeycodes (priv->dpy, &minKeycode, &maxKeycode);
-    key = XGetKeyboardMapping (priv->dpy,
+    XDisplayKeycodes (this->dpy, &minKeycode, &maxKeycode);
+    key = XGetKeyboardMapping (this->dpy,
 			       minKeycode, (maxKeycode - minKeycode + 1),
 			       &keysymsPerKeycode);
 
-    if (priv->modMap)
-	XFreeModifiermap (priv->modMap);
+    if (this->modMap)
+	XFreeModifiermap (this->modMap);
 
-    priv->modMap = XGetModifierMapping (priv->dpy);
-    if (priv->modMap && priv->modMap->max_keypermod > 0)
+    this->modMap = XGetModifierMapping (this->dpy);
+    if (this->modMap && this->modMap->max_keypermod > 0)
     {
 	KeySym keysym;
 	int    index, size, mask;
 
-	size = maskTableSize * priv->modMap->max_keypermod;
+	size = maskTableSize * this->modMap->max_keypermod;
 
 	for (i = 0; i < size; i++)
 	{
-	    if (!priv->modMap->modifiermap[i])
+	    if (!this->modMap->modifiermap[i])
 		continue;
 
 	    index = 0;
 	    do
 	    {
-		keysym = XKeycodeToKeysym (priv->dpy,
-					   priv->modMap->modifiermap[i],
+		keysym = XKeycodeToKeysym (this->dpy,
+					   this->modMap->modifiermap[i],
 					   index++);
 	    } while (!keysym && index < keysymsPerKeycode);
 
 	    if (keysym)
 	    {
-		mask = maskTable[i / priv->modMap->max_keypermod];
+		mask = maskTable[i / this->modMap->max_keypermod];
 
 		if (keysym == XK_Alt_L ||
 		    keysym == XK_Alt_R)
@@ -971,15 +964,15 @@ CompScreen::updateModifierMappings ()
 		modMask[i] = CompNoMask;
 	}
 
-	if (memcmp (modMask, priv->modMask, sizeof (modMask)))
+	if (memcmp (modMask, this->modMask, sizeof (modMask)))
 	{
-	    memcpy (priv->modMask, modMask, sizeof (modMask));
+	    memcpy (this->modMask, modMask, sizeof (modMask));
 
-	    priv->ignoredModMask = LockMask |
+	    this->ignoredModMask = LockMask |
 		(modMask[CompModNumLock]    & ~CompNoMask) |
 		(modMask[CompModScrollLock] & ~CompNoMask);
 
-	    priv->updatePassiveKeyGrabs ();
+	    this->updatePassiveKeyGrabs ();
 	}
     }
 
@@ -988,7 +981,7 @@ CompScreen::updateModifierMappings ()
 }
 
 unsigned int
-CompScreen::virtualToRealModMask (unsigned int modMask)
+PrivateScreen::virtualToRealModMask (unsigned int modMask)
 {
     int i;
 
@@ -997,7 +990,7 @@ CompScreen::virtualToRealModMask (unsigned int modMask)
 	if (modMask & virtualModMask[i])
 	{
 	    modMask &= ~virtualModMask[i];
-	    modMask |= priv->modMask[i];
+	    modMask |= this->modMask[i];
 	}
     }
 
@@ -1005,17 +998,17 @@ CompScreen::virtualToRealModMask (unsigned int modMask)
 }
 
 unsigned int
-CompScreen::keycodeToModifiers (int keycode)
+PrivateScreen::keycodeToModifiers (int keycode)
 {
     unsigned int mods = 0;
     int mod, k;
 
     for (mod = 0; mod < maskTableSize; mod++)
     {
-	for (k = 0; k < priv->modMap->max_keypermod; k++)
+	for (k = 0; k < modMap->max_keypermod; k++)
 	{
-	    if (priv->modMap->modifiermap[mod *
-		priv->modMap->max_keypermod + k] == keycode)
+	    if (modMap->modifiermap[mod *
+		modMap->max_keypermod + k] == keycode)
 		mods |= maskTable[mod];
 	}
     }
@@ -1341,7 +1334,7 @@ CompScreen::writeImageToFile (const char *path,
 }
 
 Window
-CompScreen::getActiveWindow (Window root)
+PrivateScreen::getActiveWindow (Window root)
 {
     Atom	  actual;
     int		  result, format;
@@ -1453,7 +1446,7 @@ compLogMessage (const char *componentName,
 }
 
 int
-CompScreen::getWmState (Window id)
+PrivateScreen::getWmState (Window id)
 {
     Atom	  actual;
     int		  result, format;
@@ -1476,7 +1469,7 @@ CompScreen::getWmState (Window id)
 }
 
 void
-CompScreen::setWmState (int state, Window id)
+PrivateScreen::setWmState (int state, Window id)
 {
     unsigned long data[2];
 
@@ -1489,7 +1482,7 @@ CompScreen::setWmState (int state, Window id)
 }
 
 unsigned int
-CompScreen::windowStateMask (Atom state)
+PrivateScreen::windowStateMask (Atom state)
 {
     if (state == Atoms::winStateModal)
 	return CompWindowStateModalMask;
@@ -1522,7 +1515,7 @@ CompScreen::windowStateMask (Atom state)
 }
 
 unsigned int
-CompScreen::windowStateFromString (const char *str)
+PrivateScreen::windowStateFromString (const char *str)
 {
     if (strcasecmp (str, "modal") == 0)
 	return CompWindowStateModalMask;
@@ -1553,7 +1546,7 @@ CompScreen::windowStateFromString (const char *str)
 }
 
 unsigned int
-CompScreen::getWindowState (Window id)
+PrivateScreen::getWindowState (Window id)
 {
     Atom	  actual;
     int		  result, format;
@@ -1580,8 +1573,7 @@ CompScreen::getWindowState (Window id)
 }
 
 void
-CompScreen::setWindowState (unsigned int state,
-			    Window       id)
+PrivateScreen::setWindowState (unsigned int state, Window id)
 {
     Atom data[32];
     int	 i = 0;
@@ -1619,7 +1611,7 @@ CompScreen::setWindowState (unsigned int state,
 }
 
 unsigned int
-CompScreen::getWindowType (Window id)
+PrivateScreen::getWindowType (Window id)
 {
     Atom	  actual;
     int		  result, format;
@@ -1672,9 +1664,9 @@ CompScreen::getWindowType (Window id)
 }
 
 void
-CompScreen::getMwmHints (Window	  id,
-			 unsigned int *func,
-			 unsigned int *decor)
+PrivateScreen::getMwmHints (Window       id,
+			    unsigned int *func,
+			    unsigned int *decor)
 {
     Atom	  actual;
     int		  result, format;
@@ -1707,7 +1699,7 @@ CompScreen::getMwmHints (Window	  id,
 }
 
 unsigned int
-CompScreen::getProtocols (Window id)
+PrivateScreen::getProtocols (Window id)
 {
     Atom         *protocol;
     int          count;
@@ -1776,9 +1768,9 @@ CompScreen::setWindowProp (Window       id,
 }
 
 bool
-CompScreen::readWindowProp32 (Window         id,
-			      Atom           property,
-			      unsigned short *returnValue)
+PrivateScreen::readWindowProp32 (Window         id,
+				 Atom           property,
+				 unsigned short *returnValue)
 {
     Atom	  actual;
     int		  result, format;
@@ -1812,7 +1804,7 @@ CompScreen::getWindowProp32 (Window         id,
 {
     unsigned short result;
 
-    if (readWindowProp32 (id, property, &result))
+    if (priv->readWindowProp32 (id, property, &result))
 	return result;
 
     return defaultValue;
@@ -2057,9 +2049,9 @@ PrivateScreen::updateOutputDevices ()
 
     hasOverlappingOutputs = false;
 
-    screen->setCurrentOutput (currentOutputDev);
+    setCurrentOutput (currentOutputDev);
 
-    screen->updateWorkarea ();
+    updateWorkarea ();
 
     screen->outputChangeNotify ();
 }
@@ -2249,7 +2241,7 @@ PrivateScreen::updateScreenEdges ()
 
 
 void
-CompScreen::setCurrentOutput (unsigned int outputNum)
+PrivateScreen::setCurrentOutput (unsigned int outputNum)
 {
     if (outputNum >= priv->outputDevs.size ())
 	outputNum = 0;
@@ -2280,7 +2272,7 @@ PrivateScreen::reshape (int w, int h)
 }
 
 void
-CompScreen::configure (XConfigureEvent *ce)
+PrivateScreen::configure (XConfigureEvent *ce)
 {
     if (priv->attrib.width  != ce->width ||
 	priv->attrib.height != ce->height)
@@ -2599,18 +2591,6 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 		     (unsigned char *) &data, 1);
 }
 
-CompString
-CompScreen::objectName ()
-{
-    char tmp[256];
-
-    snprintf (tmp, 256, "%d", priv->screenNum);
-
-    return CompString (tmp);
-
-}
-
-
 void
 CompScreen::forEachWindow (CompWindow::ForEach proc)
 {
@@ -2772,7 +2752,7 @@ CompScreen::insertWindow (CompWindow *w, Window	aboveId)
 }
 
 void
-CompScreen::eraseWindowFromMap (Window id)
+PrivateScreen::eraseWindowFromMap (Window id)
 {
     if (id != 1)
         priv->windowsMap.erase (id);
@@ -2785,7 +2765,7 @@ CompScreen::unhookWindow (CompWindow *w)
 	std::find (priv->windows.begin (), priv->windows.end (), w);
 
     priv->windows.erase (it);
-    eraseWindowFromMap (w->id ());
+    priv->eraseWindowFromMap (w->id ());
 
     if (w->next)
 	w->next->prev = w->prev;
@@ -3005,7 +2985,7 @@ PrivateScreen::addPassiveKeyGrab (CompAction::KeyBinding &key)
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = screen->virtualToRealModMask (key.modifiers ());
+    mask = virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
@@ -3040,7 +3020,7 @@ PrivateScreen::removePassiveKeyGrab (CompAction::KeyBinding &key)
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = screen->virtualToRealModMask (key.modifiers ());
+    mask = virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
@@ -3146,7 +3126,7 @@ CompScreen::addAction (CompAction *action)
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	    if (action->edgeMask () & (1 << i))
-		enableEdge (i);
+		priv->enableEdge (i);
     }
 
     return true;
@@ -3167,7 +3147,7 @@ CompScreen::removeAction (CompAction *action)
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	    if (action->edgeMask () & (1 << i))
-		disableEdge (i);
+		priv->disableEdge (i);
     }
 }
 
@@ -3272,7 +3252,7 @@ PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 }
 
 void
-CompScreen::updateWorkarea ()
+PrivateScreen::updateWorkarea ()
 {
     XRectangle workArea;
     BoxRec     box;
@@ -3356,7 +3336,7 @@ compareMappingOrder (const void *w1,
 }
 
 void
-CompScreen::updateClientList ()
+PrivateScreen::updateClientList ()
 {
     Window *clientList;
     Window *clientListStacking;
@@ -3364,7 +3344,7 @@ CompScreen::updateClientList ()
     Bool   updateClientListStacking = true;
     int	   i, n = 0;
 
-    forEachWindow (boost::bind (countClientListWindow, _1, &n));
+    screen->forEachWindow (boost::bind (countClientListWindow, _1, &n));
 
     if (n == 0)
     {
@@ -3564,7 +3544,7 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 
 	priv->setDesktopHints ();
 
-	setCurrentActiveWindowHistory (priv->vp.x (), priv->vp.y ());
+	priv->setCurrentActiveWindowHistory (priv->vp.x (), priv->vp.y ());
 
 	w = findWindow (priv->activeWindow);
 	if (w)
@@ -3576,13 +3556,13 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 	    /* add window to current history if it's default viewport is
 	       still the current one. */
 	    if (priv->vp.x () == x && priv->vp.y () == y)
-		addToCurrentActiveWindowHistory (w->id ());
+		priv->addToCurrentActiveWindowHistory (w->id ());
 	}
     }
 }
 
 CompGroup *
-CompScreen::addGroup (Window id)
+PrivateScreen::addGroup (Window id)
 {
     CompGroup *group = new CompGroup ();
 
@@ -3595,7 +3575,7 @@ CompScreen::addGroup (Window id)
 }
 
 void
-CompScreen::removeGroup (CompGroup *group)
+PrivateScreen::removeGroup (CompGroup *group)
 {
     group->refCnt--;
     if (group->refCnt)
@@ -3613,7 +3593,7 @@ CompScreen::removeGroup (CompGroup *group)
 }
 
 CompGroup *
-CompScreen::findGroup (Window id)
+PrivateScreen::findGroup (Window id)
 {
     foreach (CompGroup *g, priv->groups)
 	if (g->id == id)
@@ -3623,7 +3603,7 @@ CompScreen::findGroup (Window id)
 }
 
 void
-CompScreen::applyStartupProperties (CompWindow *window)
+PrivateScreen::applyStartupProperties (CompWindow *window)
 {
     CompStartupSequence *s = NULL;
     const char	        *startupId = window->startupId ();
@@ -3632,7 +3612,7 @@ CompScreen::applyStartupProperties (CompWindow *window)
     {
 	CompWindow *leader;
 
-	leader = findWindow (window->clientLeader ());
+	leader = screen->findWindow (window->clientLeader ());
 	if (leader)
 	    startupId = leader->startupId ();
 
@@ -3680,7 +3660,7 @@ CompScreen::sendWindowActivationRequest (Window id)
 
 
 void
-CompScreen::enableEdge (int edge)
+PrivateScreen::enableEdge (int edge)
 {
     priv->screenEdge[edge].count++;
     if (priv->screenEdge[edge].count == 1)
@@ -3688,7 +3668,7 @@ CompScreen::enableEdge (int edge)
 }
 
 void
-CompScreen::disableEdge (int edge)
+PrivateScreen::disableEdge (int edge)
 {
     priv->screenEdge[edge].count--;
     if (priv->screenEdge[edge].count == 0)
@@ -3696,7 +3676,7 @@ CompScreen::disableEdge (int edge)
 }
 
 Window
-CompScreen::getTopWindow ()
+PrivateScreen::getTopWindow ()
 {
     /* return first window that has not been destroyed */
     for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
@@ -3708,10 +3688,6 @@ CompScreen::getTopWindow ()
 
     return None;
 }
-
-
-
-
 
 int
 CompScreen::outputDeviceForPoint (int x, int y)
@@ -3736,7 +3712,7 @@ CompScreen::getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2)
 }
 
 void
-CompScreen::setNumberOfDesktops (unsigned int nDesktop)
+PrivateScreen::setNumberOfDesktops (unsigned int nDesktop)
 {
     if (nDesktop < 1 || nDesktop >= 0xffffffff)
 	return;
@@ -3762,7 +3738,7 @@ CompScreen::setNumberOfDesktops (unsigned int nDesktop)
 }
 
 void
-CompScreen::setCurrentDesktop (unsigned int desktop)
+PrivateScreen::setCurrentDesktop (unsigned int desktop)
 {
     unsigned long data;
 
@@ -3982,7 +3958,7 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 }
 
 bool
-CompScreen::updateDefaultIcon ()
+PrivateScreen::updateDefaultIcon ()
 {
     CompString file = priv->opt[COMP_OPTION_DEFAULT_ICON].value ().s ();
     void       *data;
@@ -3994,10 +3970,10 @@ CompScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!readImageFromFile (file.c_str (), &width, &height, &data))
+    if (!screen->readImageFromFile (file.c_str (), &width, &height, &data))
 	return false;
 
-    priv->defaultIcon = new CompIcon (this, width, height);
+    priv->defaultIcon = new CompIcon (screen, width, height);
 
     memcpy (priv->defaultIcon->data (), data, width * height * sizeof (CARD32));
 
@@ -4007,7 +3983,7 @@ CompScreen::updateDefaultIcon ()
 }
 
 void
-CompScreen::setCurrentActiveWindowHistory (int x, int y)
+PrivateScreen::setCurrentActiveWindowHistory (int x, int y)
 {
     int	i, min = 0;
 
@@ -4034,7 +4010,7 @@ CompScreen::setCurrentActiveWindowHistory (int x, int y)
 }
 
 void
-CompScreen::addToCurrentActiveWindowHistory (Window id)
+PrivateScreen::addToCurrentActiveWindowHistory (Window id)
 {
     CompActiveWindowHistory *history = &priv->history[priv->currentHistory];
     Window		    tmp, next = id;
@@ -4073,16 +4049,6 @@ CompScreen::root ()
 {
     return priv->root;
 }
-
-unsigned int
-CompScreen::showingDesktopMask ()
-{
-    return priv->showingDesktopMask;
-}
-
-
-
-
 
 void
 CompScreen::warpPointer (int dx, int dy)
@@ -4143,22 +4109,10 @@ CompScreen::getCurrentTime ()
     return event.xproperty.time;
 }
 
-Atom
-CompScreen::selectionAtom ()
-{
-    return priv->wmSnAtom;
-}
-
 Window
 CompScreen::selectionWindow ()
 {
     return priv->wmSnSelectionWindow;
-}
-
-Time
-CompScreen::selectionTimestamp ()
-{
-    return priv->wmSnTimestamp;
 }
 
 int
@@ -4185,13 +4139,7 @@ CompScreen::size ()
     return priv->size;
 }
 
-unsigned int &
-CompScreen::mapNum ()
-{
-    return priv->mapNum;
-}
-
-int &
+int
 CompScreen::desktopWindowCount ()
 {
     return priv->desktopWindowCount;
@@ -4226,24 +4174,6 @@ CompActiveWindowHistory *
 CompScreen::currentHistory ()
 {
     return &priv->history[priv->currentHistory];
-}
-
-CompScreenEdge &
-CompScreen::screenEdge (int edge)
-{
-    return priv->screenEdge[edge];
-}
-
-unsigned int &
-CompScreen::activeNum ()
-{
-    return priv->activeNum;
-}
-
-unsigned int &
-CompScreen::pendingDestroys ()
-{
-    return priv->pendingDestroys;
 }
 
 void
@@ -4377,7 +4307,7 @@ CompScreen::init (const char *name)
 
     XSetErrorHandler (errorHandler);
 
-    updateModifierMappings ();
+    priv->updateModifierMappings ();
 
     priv->snDisplay = sn_display_new (dpy, NULL, NULL);
     if (!priv->snDisplay)
@@ -4768,6 +4698,7 @@ CompScreen::~CompScreen ()
 }
 
 PrivateScreen::PrivateScreen (CompScreen *screen) :
+    priv (this),
     fileWatch (0),
     lastFileWatchHandle (1),
     timers (0),

@@ -5,6 +5,7 @@
 #include <compwindow.h>
 #include <comppoint.h>
 #include <core/timer.h>
+#include "privatescreen.h"
 
 #define WINDOW_INVISIBLE(w)				          \
     ((w)->attrib.map_state != IsViewable		       || \

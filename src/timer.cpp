@@ -1,5 +1,5 @@
 #include <core/timer.h>
-#include <compscreen.h>
+#include <core/screen.h>
 #include "privatescreen.h"
 
 CompTimer::CompTimer () :

@@ -1,4 +1,4 @@
-#include <compscreen.h>
+#include <core/screen.h>
 #include <compwindow.h>
 #include <core/atoms.h>
 #include "privatescreen.h"

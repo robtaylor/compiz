@@ -63,33 +63,6 @@ struct CompFileWatch {
 #define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
 #define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
 
-struct CompGroup {
-    unsigned int      refCnt;
-    Window	      id;
-};
-
-struct CompStartupSequence {
-    SnStartupSequence		*sequence;
-    unsigned int		viewportX;
-    unsigned int		viewportY;
-};
-
-
-#define SCREEN_EDGE_LEFT	0
-#define SCREEN_EDGE_RIGHT	1
-#define SCREEN_EDGE_TOP		2
-#define SCREEN_EDGE_BOTTOM	3
-#define SCREEN_EDGE_TOPLEFT	4
-#define SCREEN_EDGE_TOPRIGHT	5
-#define SCREEN_EDGE_BOTTOMLEFT	6
-#define SCREEN_EDGE_BOTTOMRIGHT 7
-#define SCREEN_EDGE_NUM		8
-
-struct CompScreenEdge {
-    Window	 id;
-    unsigned int count;
-};
-
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
@@ -155,8 +128,6 @@ class CompScreen :
 	CompScreen ();
 	~CompScreen ();
 
-	CompString objectName ();
-
 	bool init (const char *name);
 	
 	void eventLoop ();
@@ -205,13 +176,6 @@ class CompScreen :
 
 	const char * displayString ();
 
-	unsigned int lastPing ();
-
-	void updateModifierMappings ();
-
-	unsigned int virtualToRealModMask (unsigned int modMask);
-
-	unsigned int keycodeToModifiers (int keycode);
 
 	CompWindow * findWindow (Window id);
 
@@ -230,30 +194,6 @@ class CompScreen :
 			       int        height,
 			       void       *data);
 
-	Window getActiveWindow (Window root);
-
-	int getWmState (Window id);
-
-	void setWmState (int state, Window id);
-
-	unsigned int windowStateMask (Atom state);
-
-
-	static unsigned int windowStateFromString (const char *str);
-
-	unsigned int getWindowState (Window id);
-
-	void setWindowState (unsigned int state, Window id);
-
-	unsigned int getWindowType (Window id);
-
-	void getMwmHints (Window       id,
-			  unsigned int *func,
-			  unsigned int *decor);
-
-
-	unsigned int getProtocols (Window id);
-
 
 	unsigned int getWindowProp (Window       id,
 				    Atom         property,
@@ -265,11 +205,6 @@ class CompScreen :
 			    unsigned int value);
 
 
-	bool readWindowProp32 (Window         id,
-			       Atom           property,
-			       unsigned short *returnValue);
-
-
 	unsigned short getWindowProp32 (Window         id,
 					Atom           property,
 					unsigned short defaultValue);
@@ -279,158 +214,66 @@ class CompScreen :
 			      Atom           property,
 			      unsigned short value);
 
-	void
-	addScreenActions (CompScreen *s);
 	
-	Window
-	root ();
+	Window root ();
 
-	XWindowAttributes
-	attrib ();
+	XWindowAttributes attrib ();
 
-	int
-	screenNum ();
+	int screenNum ();
 
-	CompWindowList &
-	windows ();
+	CompWindowList & windows ();
 
-	unsigned int
-	showingDesktopMask ();
-	
-	void
-	setCurrentOutput (unsigned int outputNum);
+	void warpPointer (int dx, int dy);
 
-	void
-	configure (XConfigureEvent *ce);
+	Time getCurrentTime ();
 
-	void
-	warpPointer (int dx, int dy);
+	Window selectionWindow ();
 
-	Time
-	getCurrentTime ();
+	void forEachWindow (CompWindow::ForEach);
 
-	Atom
-	selectionAtom ();
+	void focusDefaultWindow ();
 
-	Window
-	selectionWindow ();
+	void insertWindow (CompWindow *w, Window aboveId);
 
-	Time
-	selectionTimestamp ();
+	void unhookWindow (CompWindow *w);
 
-	void
-	updateWorkareaForScreen ();
+	GrabHandle pushGrab (Cursor cursor, const char *name);
 
-	void
-	forEachWindow (CompWindow::ForEach);
+	void updateGrab (GrabHandle handle, Cursor cursor);
 
-	void
-	focusDefaultWindow ();
+	void removeGrab (GrabHandle handle, CompPoint *restorePointer);
 
-	void
-	insertWindow (CompWindow *w, Window aboveId);
+	bool otherGrabExist (const char *, ...);
 
-	void
-	unhookWindow (CompWindow *w);
+	bool addAction (CompAction *action);
 
-	void
-	eraseWindowFromMap (Window id);
+	void removeAction (CompAction *action);
 
-	GrabHandle
-	pushGrab (Cursor cursor, const char *name);
+	void toolkitAction (Atom   toolkitAction,
+			    Time   eventTime,
+			    Window window,
+			    long   data0,
+			    long   data1,
+			    long   data2);
 
-	void
-	updateGrab (GrabHandle handle, Cursor cursor);
+	void runCommand (CompString command);
 
-	void
-	removeGrab (GrabHandle handle, CompPoint *restorePointer);
+	void moveViewport (int tx, int ty, bool sync);
 
-	bool
-	otherGrabExist (const char *, ...);
+	void sendWindowActivationRequest (Window id);
 
-	bool
-	addAction (CompAction *action);
+	int outputDeviceForPoint (int x, int y);
 
-	void
-	removeAction (CompAction *action);
+	void getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2);
 
-	void
-	updateWorkarea ();
-
-	void
-	updateClientList ();
-
-	void
-	toolkitAction (Atom	  toolkitAction,
-		       Time       eventTime,
-		       Window	  window,
-		       long	  data0,
-		       long	  data1,
-		       long	  data2);
-
-	void
-	runCommand (CompString command);
-
-	void
-	moveViewport (int tx, int ty, bool sync);
-
-	CompGroup *
-	addGroup (Window id);
-
-	void
-	removeGroup (CompGroup *group);
-
-	CompGroup *
-	findGroup (Window id);
-
-	void
-	applyStartupProperties (CompWindow *window);
-
-	void
-	sendWindowActivationRequest (Window id);
+	void getWorkareaForOutput (int output, XRectangle *area);
 
 
-	void
-	enableEdge (int edge);
+	void viewportForGeometry (CompWindow::Geometry gm,
+				  int                  *viewportX,
+				  int                  *viewportY);
 
-	void
-	disableEdge (int edge);
-
-	Window
-	getTopWindow ();
-
-	int
-	outputDeviceForPoint (int x, int y);
-
-	void
-	getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2);
-
-	void
-	setNumberOfDesktops (unsigned int nDesktop);
-
-	void
-	setCurrentDesktop (unsigned int desktop);
-
-	void
-	getWorkareaForOutput (int output, XRectangle *area);
-
-
-	void
-	viewportForGeometry (CompWindow::Geometry gm,
-			     int                  *viewportX,
-			     int                  *viewportY);
-
-	int
-	outputDeviceForGeometry (CompWindow::Geometry gm);
-
-	bool
-	updateDefaultIcon ();
-
-	void
-	setCurrentActiveWindowHistory (int x, int y);
-
-	void
-	addToCurrentActiveWindowHistory (Window id);
+	int outputDeviceForGeometry (CompWindow::Geometry gm);
 
 	CompPoint vp ();
 
@@ -438,36 +281,17 @@ class CompScreen :
 
 	CompSize size ();
 
-	unsigned int &
-	pendingDestroys ();
+	int desktopWindowCount ();
 
+	CompOutput::vector & outputDevs ();
 
-	unsigned int &
-	mapNum ();
+	XRectangle workArea ();
 
-	int &
-	desktopWindowCount ();
+	unsigned int currentDesktop ();
 
-	CompOutput::vector &
-	outputDevs ();
+	unsigned int nDesktop ();
 
-	XRectangle
-	workArea ();
-
-	unsigned int
-	currentDesktop ();
-
-	unsigned int
-	nDesktop ();
-
-	CompActiveWindowHistory *
-	currentHistory ();
-
-	CompScreenEdge &
-	screenEdge (int);
-
-	unsigned int &
-	activeNum ();
+	CompActiveWindowHistory *currentHistory ();
 
 	Region region ();
 

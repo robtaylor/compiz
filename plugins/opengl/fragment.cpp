@@ -31,7 +31,6 @@
 #include <compiz-core.h>
 #include <opengl/texture.h>
 #include <opengl/fragment.h>
-#include <compscreen.h>
 #include "privatefragment.h"
 #include "privates.h"
 

@@ -20,7 +20,7 @@ class CompPrivateIndex {
 #include <boost/preprocessor/cat.hpp>
 
 #include <compiz.h>
-#include <compscreen.h>
+#include <core/screen.h>
 #include <core/privates.h>
 
 #if !defined(PLUGIN)

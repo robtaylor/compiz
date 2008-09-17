@@ -35,7 +35,8 @@
 
 #include <compiz.h>
 #include <compmetadata.h>
-#include <compscreen.h>
+#include <core/screen.h>
+#include "privatescreen.h"
 
 #define HOME_METADATADIR ".compiz/metadata"
 #define EXTENSION ".xml"

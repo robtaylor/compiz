@@ -31,11 +31,12 @@
 
 #include <compiz-core.h>
 
-#include <compscreen.h>
+#include <core/screen.h>
 #include <compmatch.h>
 #include <compwindow.h>
 #include <compplugin.h>
 #include "privatematch.h"
+#include "privatescreen.h"
 
 class CoreExp : public CompMatch::Expression {
     public:
@@ -58,7 +59,7 @@ class CoreExp : public CompMatch::Expression {
 	    else if (str.compare (0, 6, "state=") == 0)
 	    {
 		mType = TypeState;
-		priv.uval = CompScreen::windowStateFromString
+		priv.uval = PrivateScreen::windowStateFromString
 				(str.substr (6).c_str ());
 	    }
 	    else if (str.compare (0, 18, "override_redirect=") == 0)

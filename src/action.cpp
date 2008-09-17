@@ -31,8 +31,9 @@
 
 #include <compoption.h>
 #include <compaction.h>
-#include <compscreen.h>
-#include <privateaction.h>
+#include <core/screen.h>
+#include "privateaction.h"
+#include "privatescreen.h"
 
 struct _Modifier {
     const char *name;
