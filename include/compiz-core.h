@@ -76,10 +76,10 @@ typedef XBool Bool;
 #include <compicon.h>
 #include <compmatch.h>
 #include <compoutput.h>
-#include <comppoint.h>
-#include <comprect.h>
+#include <core/point.h>
+#include <core/rect.h>
 #include <compsession.h>
-#include <compsize.h>
+#include <core/size.h>
 
 
 #endif

@@ -10,8 +10,8 @@ class CompPoint {
 	CompPoint ();
 	CompPoint (int, int);
 
-	int x ();
-	int y ();
+	int x () const;
+	int y () const;
 
 	void setX (int);
 	void setY (int);
@@ -24,5 +24,18 @@ class CompPoint {
     private:
 	int mX, mY;
 };
+
+inline int
+CompPoint::x () const
+{
+    return mX;
+}
+
+inline int
+CompPoint::y () const
+{
+    return mY;
+}
+
 
 #endif

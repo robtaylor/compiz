@@ -1,4 +1,4 @@
-#include <compsize.h>
+#include <core/size.h>
 
 CompSize::CompSize () :
    mWidth (0),
@@ -10,18 +10,6 @@ CompSize::CompSize (unsigned int width, unsigned int height) :
    mWidth (width),
    mHeight (height)
 {
-}
-
-unsigned int
-CompSize::width ()
-{
-    return mWidth;
-}
-
-unsigned int
-CompSize::height ()
-{
-    return mHeight;
 }
 
 void

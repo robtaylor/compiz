@@ -3,7 +3,7 @@
 
 #include <compiz-core.h>
 #include <core/window.h>
-#include <comppoint.h>
+#include <core/point.h>
 #include <core/timer.h>
 #include "privatescreen.h"
 

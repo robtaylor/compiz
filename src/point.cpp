@@ -1,4 +1,4 @@
-#include <comppoint.h>
+#include <core/point.h>
 
 CompPoint::CompPoint () :
    mX (0),
@@ -10,18 +10,6 @@ CompPoint::CompPoint (int x, int y) :
    mX (x),
    mY (y)
 {
-}
-
-int
-CompPoint::x ()
-{
-    return mX;
-}
-
-int
-CompPoint::y ()
-{
-    return mY;
 }
 
 void

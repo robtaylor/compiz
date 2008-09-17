@@ -2,7 +2,7 @@
 #define _COMPOUTPUT_H
 
 #include <compiz-core.h>
-#include <comprect.h>
+#include <core/rect.h>
 
 class CompOutput : public CompRect {
 

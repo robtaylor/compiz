@@ -10,8 +10,8 @@ class CompSize {
 	CompSize ();
 	CompSize (unsigned int, unsigned int);
 
-	unsigned int width ();
-	unsigned int height ();
+	unsigned int width () const;
+	unsigned int height () const;
 
 	void setWidth (unsigned int);
 	void setHeight (unsigned int);
@@ -24,5 +24,17 @@ class CompSize {
     private:
 	unsigned int mWidth, mHeight;
 };
+
+inline unsigned int
+CompSize::width () const
+{
+    return mWidth;
+}
+
+inline unsigned int
+CompSize::height () const
+{
+    return mHeight;
+}
 
 #endif

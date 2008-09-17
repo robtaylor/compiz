@@ -1,5 +1,5 @@
 #include <compiz-core.h>
-#include <comprect.h>
+#include <core/rect.h>
 
 CompRect::CompRect ()
 {
@@ -25,54 +25,6 @@ CompRect::CompRect (const CompRect& r)
 {
     mRegion = r.mRegion;
     mRegion.rects = &mRegion.extents;
-}
-
-int
-CompRect::x ()
-{
-    return mRegion.extents.x1;
-}
-
-int
-CompRect::y ()
-{
-    return mRegion.extents.y1;
-}
-
-int
-CompRect::x1 ()
-{
-    return mRegion.extents.x1;
-}
-
-int
-CompRect::y1 ()
-{
-    return mRegion.extents.y1;
-}
-
-int
-CompRect::x2 ()
-{
-    return mRegion.extents.x2;
-}
-
-int
-CompRect::y2 ()
-{
-    return mRegion.extents.y2;
-}
-
-unsigned int
-CompRect::width ()
-{
-    return mRegion.extents.x2 - mRegion.extents.x1;
-}
-
-unsigned int
-CompRect::height ()
-{
-    return mRegion.extents.y2 - mRegion.extents.y1;
 }
 
 Region

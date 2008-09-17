@@ -11,8 +11,8 @@
 
 #include <compaction.h>
 #include <core/privates.h>
-#include <compsize.h>
-#include <comppoint.h>
+#include <core/size.h>
+#include <core/point.h>
 
 #include <compwrapsystem.h>
 

@@ -3,8 +3,8 @@
 
 #include <compiz-core.h>
 #include <core/screen.h>
-#include <compsize.h>
-#include <comppoint.h>
+#include <core/size.h>
+#include <core/point.h>
 #include <core/timer.h>
 
 extern bool shutDown;
