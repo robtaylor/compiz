@@ -26,7 +26,7 @@ extern CompWindow *lastDamagedWindow;
 class PrivateCompositeScreen : ScreenInterface
 {
     public:
-	PrivateCompositeScreen (CompScreen *s, CompositeScreen *cs);
+	PrivateCompositeScreen (CompositeScreen *cs);
 	~PrivateCompositeScreen ();
 
 	void outputChangeNotify ();
@@ -40,7 +40,7 @@ class PrivateCompositeScreen : ScreenInterface
 	void handleExposeEvent (XExposeEvent *event);
 
     public:
-	CompScreen      *screen;
+
 	CompositeScreen *cScreen;
 
 	int compositeEvent, compositeError, compositeOpcode;
@@ -106,7 +106,6 @@ class PrivateCompositeWindow : WindowInterface
 
 	CompWindow      *window;
 	CompositeWindow *cWindow;
-	CompScreen      *screen;
 	CompositeScreen *cScreen;
 
 	Pixmap	      pixmap;

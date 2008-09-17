@@ -33,10 +33,11 @@
 
 #include <core/screen.h>
 #include <compmatch.h>
-#include <compwindow.h>
+#include <core/window.h>
 #include <compplugin.h>
 #include "privatematch.h"
 #include "privatescreen.h"
+#include "privatewindow.h"
 
 class CoreExp : public CompMatch::Expression {
     public:
@@ -73,7 +74,7 @@ class CoreExp : public CompMatch::Expression {
 		    str = str.substr (5);
 
 		mType = TypeType;
-		priv.uval = CompWindow::windowTypeFromString (str.c_str ());
+		priv.uval = PrivateWindow::windowTypeFromString (str.c_str ());
 	    }
 	}
 

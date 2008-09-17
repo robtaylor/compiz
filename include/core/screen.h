@@ -1,7 +1,7 @@
 #ifndef _COMPSCREEN_H
 #define _COMPSCREEN_H
 
-#include <compwindow.h>
+#include <core/window.h>
 #include <compoutput.h>
 #include <compsession.h>
 #include <compmetadata.h>

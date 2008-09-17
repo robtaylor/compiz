@@ -1,5 +1,5 @@
 #include <core/screen.h>
-#include <compwindow.h>
+#include <core/window.h>
 #include <core/atoms.h>
 #include "privatescreen.h"
 #include "privatewindow.h"

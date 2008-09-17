@@ -1,5 +1,5 @@
 #include <compiz-core.h>
-#include <compwindow.h>
+#include <core/window.h>
 #include <privatewindow.h>
 
 

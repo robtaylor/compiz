@@ -95,7 +95,7 @@ class ResizeScreen :
 			       unsigned short            *fillColor);
 
     public:
-	CompScreen      *screen;
+
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
 

@@ -2,7 +2,7 @@
 #define _PRIVATEWINDOW_H
 
 #include <compiz-core.h>
-#include <compwindow.h>
+#include <core/window.h>
 #include <comppoint.h>
 #include <core/timer.h>
 #include "privatescreen.h"
@@ -11,14 +11,14 @@
     ((w)->attrib.map_state != IsViewable		       || \
      (w)->attrib.x + (w)->width  + (w)->output.right  <= 0     || \
      (w)->attrib.y + (w)->height + (w)->output.bottom <= 0     || \
-     (w)->attrib.x - (w)->output.left >= (int) (w)->screen->size().width () || \
-     (w)->attrib.y - (w)->output.top >= (int) (w)->screen->size().height () )
+     (w)->attrib.x - (w)->output.left >= (int) screen->size().width () || \
+     (w)->attrib.y - (w)->output.top >= (int) screen->size().height () )
 
 
 class PrivateWindow {
 
     public:
-	PrivateWindow (CompWindow *window, CompScreen *screen);
+	PrivateWindow (CompWindow *window);
 	~PrivateWindow ();
 
 	void
@@ -133,10 +133,74 @@ class PrivateWindow {
 	bool reparent ();
 	void unreparent ();
 
+	bool handlePingTimeout (unsigned int lastPing);
+
+	void handlePing (int lastPing);
+
+	void applyStartupProperties (CompStartupSequence *s);
+
+	void updateNormalHints ();
+
+	void updateWmHints ();
+
+	void updateClassHints ();
+
+	void updateTransientHint ();
+
+	void updateIconGeometry ();
+
+	Window getClientLeader ();
+
+	char * getStartupId ();
+
+	void updateRegion ();
+
+	bool updateStruts ();
+
+	bool handleSyncAlarm ();
+
+	void configure (XConfigureEvent *ce);
+
+	void configureFrame (XConfigureEvent *ce);
+
+	void circulate (XCirculateEvent *ce);
+
+	unsigned int adjustConfigureRequestForGravity (XWindowChanges *xwc,
+						       unsigned int   xwcm,
+						       int            gravity);
+
+	
+	void updateSize ();
+
+	bool getUserTime (Time *time);
+
+	void setUserTime (Time time);
+
+	bool allowWindowFocus (unsigned int noFocusMask,
+			       Time         timestamp);
+
+	void freeIcons ();
+
+	void setDesktop (unsigned int desktop);
+
+	void updateMwmHints ();
+
+	void updateStartupId ();
+
+	void processMap ();
+
+	static unsigned int windowTypeFromString (const char *str);
+
+	static int compareWindowActiveness (CompWindow *w1,
+					    CompWindow *w2);
+
+	void setOverrideRedirect (bool overrideRedirect);
+
     public:
 
+	PrivateWindow *priv;
+
 	CompWindow *window;
-	CompScreen *screen;
 
 	int		      refcnt;
 	Window	      id;

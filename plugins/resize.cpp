@@ -48,7 +48,7 @@ ResizeScreen::getPaintRectangle (BoxPtr pBox)
 
     if (w->shaded ())
     {
-	pBox->y2 = geometry.y + w->height () + w->input ().bottom;
+	pBox->y2 = geometry.y + w->size ().height () + w->input ().bottom;
     }
     else
     {
@@ -63,8 +63,10 @@ ResizeWindow::getStretchScale (BoxPtr pBox, float *xScale, float *yScale)
 {
     int width, height;
 
-    width  = window->width () + window->input ().left + window->input ().right;
-    height = window->height () + window->input ().top + window->input ().bottom;
+    width  = window->size ().width () + window->input ().left +
+	     window->input ().right;
+    height = window->size ().height () + window->input ().top +
+	     window->input ().bottom;
 
     *xScale = (width)  ? (pBox->x2 - pBox->x1) / (float) width  : 1.0f;
     *yScale = (height) ? (pBox->y2 - pBox->y1) / (float) height : 1.0f;
@@ -157,7 +159,7 @@ ResizeScreen::sendResizeNotify ()
     xev.xclient.data.l[3] = geometry.height;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (screen->dpy (), w->screen ()->root (),	FALSE,
+    XSendEvent (screen->dpy (), screen->root (),	FALSE,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 
@@ -204,7 +206,7 @@ resizeInitiate (CompAction         *action,
 	int	     button;
 	int	     i;
 
-	RESIZE_SCREEN (w->screen ());
+	RESIZE_SCREEN (screen);
 
 	CompWindow::Geometry server = w->serverGeometry ();
 	
@@ -300,9 +302,9 @@ resizeInitiate (CompAction         *action,
 		}
 	    }
 
-	    if (!GLScreen::get (w->screen ()) ||
-		!CompositeScreen::get (w->screen ()) ||
-		!CompositeScreen::get (w->screen ())->compositingActive ())
+	    if (!GLScreen::get (screen) ||
+		!CompositeScreen::get (screen) ||
+		!CompositeScreen::get (screen)->compositingActive ())
 		rs->mode = RESIZE_MODE_NORMAL;
 	}
 
@@ -319,7 +321,7 @@ resizeInitiate (CompAction         *action,
 		cursor = rs->cursorFromResizeMask (mask);
 	    }
 
-	    rs->grabIndex = w->screen ()->pushGrab (cursor, "resize");
+	    rs->grabIndex = screen->pushGrab (cursor, "resize");
 	}
 
 	if (rs->grabIndex)
@@ -343,7 +345,7 @@ resizeInitiate (CompAction         *action,
 		xRoot = server.x () + (server.width () / 2);
 		yRoot = server.y () + (server.height () / 2);
 
-		w->screen ()->warpPointer (xRoot - pointerX, yRoot - pointerY);
+		screen->warpPointer (xRoot - pointerX, yRoot - pointerY);
 	    }
 	}
     }
@@ -428,7 +430,7 @@ resizeTerminate (CompAction         *action,
 
 	if (rs->grabIndex)
 	{
-	    w->screen ()->removeGrab (rs->grabIndex, NULL);
+	    screen->removeGrab (rs->grabIndex, NULL);
 	    rs->grabIndex = 0;
 	}
 
@@ -775,7 +777,7 @@ ResizeScreen::handleEvent (XEvent *event)
 				resizeInitiate (&opt[option].value ().action (),
 						CompAction::StateInitButton, o);
 
-				ResizeScreen::get (w->screen ())->
+				ResizeScreen::get (screen)->
 				    handleMotionEvent (xRoot, yRoot);
 			    }
 			}
@@ -1033,7 +1035,6 @@ static const CompMetadata::OptionInfo resizeOptionInfo[] = {
 
 ResizeScreen::ResizeScreen (CompScreen *s) :
     PrivateHandler<ResizeScreen,CompScreen> (s),
-    screen (s),
     gScreen (GLScreen::get (s)),
     cScreen (CompositeScreen::get (s)),
     w (NULL),
@@ -1109,7 +1110,7 @@ ResizeWindow::ResizeWindow (CompWindow *w) :
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),
-    rScreen (ResizeScreen::get (w->screen ()))
+    rScreen (ResizeScreen::get (screen))
 {
     WindowInterface::setHandler (window);
 

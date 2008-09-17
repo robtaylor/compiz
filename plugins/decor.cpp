@@ -490,8 +490,9 @@ DecorWindow::updateDecorationScale ()
     {
 	int x, y;
 
-	computeQuadBox (&wd->decor->quad[i], window->width (),
-			window->height (), &x1, &y1, &x2, &y2, &sx, &sy);
+	computeQuadBox (&wd->decor->quad[i], window->size ().width (),
+			window->size ().height (),
+			&x1, &y1, &x2, &y2, &sx, &sy);
 
 	x = window->geometry ().x ();
 	y = window->geometry ().y ();
@@ -510,8 +511,8 @@ DecorWindow::updateDecorationScale ()
 bool
 DecorWindow::checkSize (Decoration *decor)
 {
-    return (decor->minWidth <= window->width () &&
-	    decor->minHeight <= window->height ());
+    return (decor->minWidth <= window->size ().width () &&
+	    decor->minHeight <= window->size ().height ());
 }
 
 int
@@ -598,7 +599,7 @@ DecorWindow::update (bool allowDecoration)
 	}
 	else
 	{
-	    if (window->id () == window->screen ()->activeWindow ())
+	    if (window->id () == screen->activeWindow ())
 		decoration = dScreen->decor[DECOR_ACTIVE];
 	    else
 		decoration = dScreen->decor[DECOR_NORMAL];
@@ -1273,7 +1274,6 @@ static const CompMetadata::OptionInfo decorOptionInfo[] = {
 
 DecorScreen::DecorScreen (CompScreen *s) :
     PrivateHandler<DecorScreen,CompScreen> (s),
-    screen (s),
     cScreen (CompositeScreen::get (s)),
     textures (),
     dmWin (None),
@@ -1321,8 +1321,7 @@ DecorWindow::DecorWindow (CompWindow *w) :
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),
-    screen (w->screen ()),
-    dScreen (DecorScreen::get (w->screen ())),
+    dScreen (DecorScreen::get (screen)),
     wd (NULL),
     decor (NULL),
     inputFrame (None)

@@ -43,8 +43,6 @@ class MoveScreen :
 	bool setOption (const char *name, CompOption::Value &value);	
 
 	void handleEvent (XEvent *);
-
-	CompScreen *screen;
 	
 	CompWindow *w;
 	int        savedX;

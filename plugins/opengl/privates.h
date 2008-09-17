@@ -31,7 +31,7 @@ class PrivateGLScreen :
     public CompositeScreen::PaintHandler
 {
     public:
-	PrivateGLScreen (CompScreen *s, GLScreen *gs);
+	PrivateGLScreen (GLScreen *gs);
 	~PrivateGLScreen ();
 
 	void handleEvent (XEvent *event);
@@ -61,7 +61,7 @@ class PrivateGLScreen :
 	void updateView ();
 
     public:
-	CompScreen      *screen;
+
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
 
@@ -116,7 +116,6 @@ class PrivateGLWindow :
 	CompWindow      *window;
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
-	CompScreen      *screen;
 	GLScreen        *gScreen;
 
 	GLTexture         texture;

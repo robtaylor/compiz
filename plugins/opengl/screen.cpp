@@ -52,7 +52,7 @@ CompOutput *targetOutput = NULL;
 
 GLScreen::GLScreen (CompScreen *s) :
     OpenGLPrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
-    priv (new PrivateGLScreen (s, this))
+    priv (new PrivateGLScreen (this))
 {
     Display		 *dpy = s->dpy ();
     XVisualInfo		 templ;
@@ -506,16 +506,14 @@ GLScreen::GLScreen (CompScreen *s) :
 
 GLScreen::~GLScreen ()
 {
-    CompositeScreen::get (priv->screen)->unregisterPaintHandler ();
-    glXDestroyContext (priv->screen->dpy (), priv->ctx);
+    CompositeScreen::get (screen)->unregisterPaintHandler ();
+    glXDestroyContext (screen->dpy (), priv->ctx);
     delete priv;
 }
 
-PrivateGLScreen::PrivateGLScreen (CompScreen *s,
-				  GLScreen   *gs) :
-    screen (s),
+PrivateGLScreen::PrivateGLScreen (GLScreen   *gs) :
     gScreen (gs),
-    cScreen (CompositeScreen::get (s)),
+    cScreen (CompositeScreen::get (screen)),
     textureFilter (GL_LINEAR),
     backgroundTexture (),
     backgroundLoaded (false),
@@ -855,7 +853,7 @@ GLScreen::updateBackground ()
     if (priv->backgroundLoaded)
     {
 	priv->backgroundLoaded = false;
-	CompositeScreen::get (priv->screen)->damageScreen ();
+	CompositeScreen::get (screen)->damageScreen ();
     }
 }
 
@@ -891,14 +889,14 @@ GLScreen::clearOutput (CompOutput   *output,
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != (int) priv->screen->size ().width () ||
-	pBox->y2 != (int) priv->screen->size ().height ())
+	pBox->x2 != (int) screen->size ().width () ||
+	pBox->y2 != (int) screen->size ().height ())
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
 	glScissor (pBox->x1,
-		   priv->screen->size ().height () - pBox->y2,
+		   screen->size ().height () - pBox->y2,
 		   pBox->x2 - pBox->x1,
 		   pBox->y2 - pBox->y1);
 	glClear (mask);
@@ -914,11 +912,11 @@ GLScreen::clearOutput (CompOutput   *output,
 void
 GLScreen::setDefaultViewport ()
 {
-    priv->lastViewport.x      = priv->screen->outputDevs ()[0].x1 ();
-    priv->lastViewport.y      = priv->screen->size ().height () -
-				priv->screen->outputDevs ()[0].y2 ();
-    priv->lastViewport.width  = priv->screen->outputDevs ()[0].width ();
-    priv->lastViewport.height = priv->screen->outputDevs ()[0].height ();
+    priv->lastViewport.x      = screen->outputDevs ()[0].x1 ();
+    priv->lastViewport.y      = screen->size ().height () -
+				screen->outputDevs ()[0].y2 ();
+    priv->lastViewport.width  = screen->outputDevs ()[0].width ();
+    priv->lastViewport.height = screen->outputDevs ()[0].height ();
 
     glViewport (priv->lastViewport.x,
 		priv->lastViewport.y,

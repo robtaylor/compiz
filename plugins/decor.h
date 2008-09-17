@@ -102,7 +102,7 @@ class DecorScreen :
 	void checkForDm (bool);
 
     public:
-	CompScreen      *screen;
+
 	CompositeScreen *cScreen;
 
 	std::list<DecorTexture *> textures;
@@ -162,7 +162,6 @@ class DecorWindow :
 	CompWindow      *window;
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
-	CompScreen      *screen;
 	DecorScreen     *dScreen;
 	
 	WindowDecoration *wd;

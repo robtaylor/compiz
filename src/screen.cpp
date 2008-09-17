@@ -59,6 +59,7 @@
 #include <compicon.h>
 #include <core/atoms.h>
 #include "privatescreen.h"
+#include "privatewindow.h"
 
 static unsigned int virtualModMask[] = {
     CompAltMask, CompMetaMask, CompSuperMask, CompHyperMask,
@@ -752,7 +753,7 @@ PrivateScreen::handlePingTimeout ()
 
     foreach (CompWindow *w, windows)
     {
-	if (w->handlePingTimeout (lastPing))
+	if (w->priv->handlePingTimeout (lastPing))
 	{
 	    ev.xclient.window    = w->id ();
 	    ev.xclient.data.l[2] = w->id ();
@@ -2633,7 +2634,7 @@ CompScreen::focusDefaultWindow ()
 				      CompWindowTypeDialogMask |
 				      CompWindowTypeModalDialogMask))
 		    {
-			if (CompWindow::compareWindowActiveness (focus, w) < 0)
+			if (PrivateWindow::compareWindowActiveness (focus, w) < 0)
 			    focus = w;
 		    }
 		}
@@ -3292,7 +3293,7 @@ PrivateScreen::updateWorkarea ()
 	/* as work area changed, update all maximized windows on this
 	   screen to snap to the new work area */
 	foreach (CompWindow *w, priv->windows)
-	    w->updateSize ();
+	    w->priv->updateSize ();
     }
 }
 
@@ -3499,7 +3500,7 @@ CompScreen::runCommand (CompString command)
 void
 CompScreen::moveViewport (int tx, int ty, bool sync)
 {
-    int         wx, wy;
+    CompPoint pnt;
 
     tx = priv->vp.x () - tx;
     tx = MOD (tx, priv->vpSize.width ());
@@ -3523,16 +3524,16 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 	if (w->onAllViewports ())
 	    continue;
 
-	w->getMovementForOffset (tx, ty, &wx, &wy);
+	pnt = w->getMovementForOffset (CompPoint (tx, ty));
 
 	if (w->saveMask () & CWX)
-	    w->saveWc ().x += wx;
+	    w->saveWc ().x += pnt.x ();
 
 	if (w->saveMask () & CWY)
-	    w->saveWc ().y += wy;
+	    w->saveWc ().y += pnt.y ();
 
 	/* move */
-	w->move (wx, wy, sync, true);
+	w->move (pnt.x (), pnt.y ());
 
 	if (sync)
 	    w->syncPosition ();
@@ -3549,13 +3550,13 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
 	w = findWindow (priv->activeWindow);
 	if (w)
 	{
-	    int x, y;
+	    CompPoint dvp;
 
-	    w->defaultViewport (&x, &y);
+	    dvp = w->defaultViewport ();
 
 	    /* add window to current history if it's default viewport is
 	       still the current one. */
-	    if (priv->vp.x () == x && priv->vp.y () == y)
+	    if (priv->vp.x () == dvp.x () && priv->vp.y () == dvp.y ())
 		priv->addToCurrentActiveWindowHistory (w->id ());
 	}
     }
@@ -3633,7 +3634,7 @@ PrivateScreen::applyStartupProperties (CompWindow *window)
     }
 
     if (s)
-	window->applyStartupProperties (s);
+	window->priv->applyStartupProperties (s);
 }
 
 void
@@ -3729,7 +3730,7 @@ PrivateScreen::setNumberOfDesktops (unsigned int nDesktop)
 	    continue;
 
 	if (w->desktop () >= nDesktop)
-	    w->setDesktop (nDesktop - 1);
+	    w->priv->setDesktop (nDesktop - 1);
     }
 
     priv->nDesktop = nDesktop;
@@ -4561,12 +4562,12 @@ CompScreen::init (const char *name)
 		&children, &nchildren);
 
     for (unsigned int i = 0; i < nchildren; i++)
-	new CompWindow (this, children[i], i ? children[i - 1] : 0);
+	new CompWindow (children[i], i ? children[i - 1] : 0);
 
     foreach (CompWindow *w, priv->windows)
     {
 	if (w->isViewable ())
-	    w->setActiveNum (priv->activeNum++);
+	    w->priv->activeNum = priv->activeNum++;
     }
 
     XFree (children);

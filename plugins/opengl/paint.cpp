@@ -174,7 +174,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
     bool          status, unredirectFS;
     bool          withOffset = false;
     GLMatrix      vTransform;
-    int           offX, offY;
+    CompPoint     offXY;
     Region        clip = region;
 
     CompWindowList                   pl;
@@ -234,14 +234,12 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	    {
 		withOffset = true;
 
-		w->getMovementForOffset (cScreen->windowPaintOffset ().x (),
-					 cScreen->windowPaintOffset ().y (),
-					 &offX, &offY);
+		offXY = w->getMovementForOffset (cScreen->windowPaintOffset ());
 
 		vTransform = transform;
-		vTransform.translate (offX, offY, 0);
+		vTransform.translate (offXY.x (), offXY.y (), 0);
 	 
-		XOffsetRegion (gw->clip (), -offX, -offY);
+		XOffsetRegion (gw->clip (), -offXY.x (), -offXY. y());
 
 		odMask |= PAINT_WINDOW_WITH_OFFSET_MASK;
 		status = gw->glPaint (gw->paintAttrib (), vTransform,
@@ -258,9 +256,9 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	    {
 		if (withOffset)
 		{
-		    XOffsetRegion (w->region (), offX, offY);
+		    XOffsetRegion (w->region (), offXY.x (), offXY.y ());
 		    XSubtractRegion (tmpRegion, w->region (), tmpRegion);
-		    XOffsetRegion (w->region (), -offX, -offY);
+		    XOffsetRegion (w->region (), -offXY.x (), -offXY.y ());
 		}
 		else
 		    XSubtractRegion (tmpRegion, w->region (), tmpRegion);
@@ -317,12 +315,10 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	     cScreen->windowPaintOffset ().y () != 0) &&
 	    !w->onAllViewports ())
 	{
-	   w->getMovementForOffset (cScreen->windowPaintOffset ().x (),
-				    cScreen->windowPaintOffset ().y (),
-				    &offX, &offY);
+	    offXY = w->getMovementForOffset (cScreen->windowPaintOffset ());
 
 	    vTransform = transform;
-	    vTransform.translate (offX, offY, 0);
+	    vTransform.translate (offXY.x (), offXY.y (), 0);
 	    gw->glPaint (gw->paintAttrib (), vTransform, clip,
 		         windowMask | PAINT_WINDOW_WITH_OFFSET_MASK);
 	}
@@ -340,7 +336,7 @@ GLScreen::glEnableOutputClipping (const GLMatrix &transform,
 {
     WRAPABLE_HND_FUNC(3, glEnableOutputClipping, transform, region, output)
 
-    GLdouble h = priv->screen->size ().height ();
+    GLdouble h = screen->size ().height ();
 
     GLdouble p1[2] = { region->extents.x1, h - region->extents.y2 };
     GLdouble p2[2] = { region->extents.x2, h - region->extents.y1 };

@@ -68,7 +68,7 @@ typedef XBool Bool;
 
 #include <core/privates.h>
 #include <core/screen.h>
-#include <compwindow.h>
+#include <core/window.h>
 #include <compplugin.h>
 #include <compoption.h>
 #include <compmetadata.h>

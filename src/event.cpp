@@ -47,21 +47,21 @@ static Window edgeWindow = None;
 
 
 bool
-CompWindow::handleSyncAlarm ()
+PrivateWindow::handleSyncAlarm ()
 {
     if (priv->syncWait)
     {
 	priv->syncWait = FALSE;
 
-	if (resize (priv->syncGeometry))
+	if (window->resize (priv->syncGeometry))
 	{
-	    windowNotify (CompWindowNotifySyncAlarm);
+	    window->windowNotify (CompWindowNotifySyncAlarm);
 	}
 	else
 	{
 	    /* resizeWindow failing means that there is another pending
 	       resize and we must send a new sync request to the client */
-	    sendSyncRequest ();
+	    window->sendSyncRequest ();
 	}
     }
 
@@ -977,7 +977,7 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xconfigure.window);
 	if (w && !w->frame ())
 	{
-	    w->configure (&event->xconfigure);
+	    w->priv->configure (&event->xconfigure);
 	}
 	else
 	{
@@ -985,7 +985,7 @@ CompScreen::handleEvent (XEvent *event)
 
 	    if (w && w->frame () == event->xconfigure.window)
 	    {
-		w->configureFrame (&event->xconfigure);
+		w->priv->configureFrame (&event->xconfigure);
 	    }
 	    else
 	    {
@@ -1000,8 +1000,7 @@ CompScreen::handleEvent (XEvent *event)
         if (event->xcreatewindow.parent == priv->root &&
 	    (!w || w->frame () != event->xcreatewindow.window))
 	{
-	    new CompWindow (screen, event->xcreatewindow.window,
-			    priv->getTopWindow ());
+	    new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
 	}
 	break;
     case DestroyNotify:
@@ -1017,10 +1016,10 @@ CompScreen::handleEvent (XEvent *event)
 	if (w)
 	{
 	    if (!w->overrideRedirect ())
-		w->managed () = true;
+		w->priv->managed = true;
 
 	    /* been shaded */
-	    if (w->height () == 0)
+	    if (w->priv->height == 0)
 	    {
 		if (w->id () == priv->activeWindow)
 		    w->moveInputFocusTo ();
@@ -1037,14 +1036,14 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w->pendingUnmaps ())
 	    {
 		priv->setWmState (IconicState, w->id ());
-		w->pendingUnmaps ()--;
+		w->priv->pendingUnmaps--;
 	    }
 	    else /* X -> Withdrawn */
 	    {
 		/* Iconic -> Withdrawn */
 		if (w->state () & CompWindowStateHiddenMask)
 		{
-		    w->minimized () = false;
+		    w->priv->minimized = false;
 
 		    w->changeState (w->state () & ~CompWindowStateHiddenMask);
 
@@ -1054,8 +1053,8 @@ CompScreen::handleEvent (XEvent *event)
 		if (!w->overrideRedirect ())
 		    priv->setWmState (WithdrawnState, w->id ());
 
-		w->placed  () = false;
-		w->managed () = false;
+		w->priv->placed = false;
+		w->priv->managed = false;
 	    }
 
 	    w->unmap ();
@@ -1068,10 +1067,9 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xreparent.window);
 	if (!w)
 	{
-	    new CompWindow (this, event->xreparent.window,
-			    priv->getTopWindow ());
+	    new CompWindow (event->xreparent.window, priv->getTopWindow ());
 	}
-	else if (w && !(event->xreparent.parent == w->wrapper () ||
+	else if (w && !(event->xreparent.parent == w->priv->wrapper ||
 		 event->xreparent.parent == priv->root))
 	{
 	    /* This is the only case where a window is removed but not
@@ -1089,7 +1087,7 @@ CompScreen::handleEvent (XEvent *event)
     case CirculateNotify:
 	w = findWindow (event->xcirculate.window);
 	if (w)
-	    w->circulate (&event->xcirculate);
+	    w->priv->circulate (&event->xcirculate);
 	break;
     case ButtonPress:
 	if (event->xbutton.root == priv->root)
@@ -1142,7 +1140,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		    if (type & (CompWindowTypeDockMask |
 				CompWindowTypeDesktopMask))
-			w->setDesktop (0xffffffff);
+			w->priv->setDesktop (0xffffffff);
 
 		    priv->updateClientList ();
 
@@ -1176,7 +1174,7 @@ CompScreen::handleEvent (XEvent *event)
 	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		w->updateNormalHints ();
+		w->priv->updateNormalHints ();
 		w->recalcActions ();
 	    }
 	}
@@ -1184,14 +1182,14 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->updateWmHints ();
+		w->priv->updateWmHints ();
 	}
 	else if (event->xproperty.atom == XA_WM_TRANSIENT_FOR)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		w->updateTransientHint ();
+		w->priv->updateTransientHint ();
 		w->recalcActions ();
 	    }
 	}
@@ -1199,13 +1197,13 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->clientLeader () = w->getClientLeader ();
+		w->priv->clientLeader = w->priv->getClientLeader ();
 	}
 	else if (event->xproperty.atom == Atoms::wmIconGeometry)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->updateIconGeometry ();
+		w->priv->updateIconGeometry ();
 	}
 	else if (event->xproperty.atom == Atoms::wmStrut ||
 		 event->xproperty.atom == Atoms::wmStrutPartial)
@@ -1213,7 +1211,7 @@ CompScreen::handleEvent (XEvent *event)
 	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		if (w->updateStruts ())
+		if (w->priv->updateStruts ())
 		    priv->updateWorkarea ();
 	    }
 	}
@@ -1221,7 +1219,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->updateMwmHints ();
+		w->priv->updateMwmHints ();
 	}
 	else if (event->xproperty.atom == Atoms::wmProtocols)
 	{
@@ -1233,19 +1231,19 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->freeIcons ();
+		w->priv->freeIcons ();
 	}
 	else if (event->xproperty.atom == Atoms::startupId)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->updateStartupId ();
+		w->priv->updateStartupId ();
 	}
 	else if (event->xproperty.atom == XA_WM_CLASS)
 	{
 	    w = findWindow (event->xproperty.window);
 	    if (w)
-		w->updateClassHints ();
+		w->priv->updateClassHints ();
 	}
 	break;
     case MotionNotify:
@@ -1259,7 +1257,7 @@ CompScreen::handleEvent (XEvent *event)
 		/* use focus stealing prevention if request came from an
 		   application (which means data.l[0] is 1 */
 		if (event->xclient.data.l[0] != 1 ||
-		    w->allowWindowFocus (0, event->xclient.data.l[1]))
+		    w->priv->allowWindowFocus (0, event->xclient.data.l[1]))
 		{
 		    w->activate ();
 		}
@@ -1332,7 +1330,7 @@ CompScreen::handleEvent (XEvent *event)
 	    {
 		w = findWindow (event->xclient.data.l[2]);
 		if (w)
-		    w->handlePing (priv->lastPing);
+		    w->priv->handlePing (priv->lastPing);
 	    }
 	}
 	else if (event->xclient.message_type == Atoms::closeWindow)
@@ -1471,7 +1469,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xclient.window);
 	    if (w)
-		w->setDesktop (event->xclient.data.l[0]);
+		w->priv->setDesktop (event->xclient.data.l[0]);
 	}
 	break;
     case MappingNotify:
@@ -1487,16 +1485,16 @@ CompScreen::handleEvent (XEvent *event)
 	    /* We should check the override_redirect flag here, because the
 	       client might have changed it while being unmapped. */
 	    if (XGetWindowAttributes (priv->dpy, w->id (), &attr))
-		w->setOverrideRedirect (attr.override_redirect != 0);
+		w->priv->setOverrideRedirect (attr.override_redirect != 0);
 
-	    w->managed () = true;
+	    w->priv->managed = true;
 
 	    if (w->state () & CompWindowStateHiddenMask)
 		if (!w->minimized () && !w->inShowDesktopMode ())
 		    doMapProcessing = false;
 
 	    if (doMapProcessing)
-		w->processMap ();
+		w->priv->processMap ();
 
 	    setWindowProp (w->id (), Atoms::winDesktop, w->desktop ());
 	}
@@ -1534,7 +1532,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		switch (event->xconfigurerequest.detail) {
 		case Above:
-		    if (w->allowWindowFocus (NO_FOCUS_MASK, 0))
+		    if (w->priv->allowWindowFocus (NO_FOCUS_MASK, 0))
 		    {
 			if (above)
 			{
@@ -1599,7 +1597,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		    priv->addToCurrentActiveWindowHistory (w->id ());
 
-		    XChangeProperty (priv->dpy , w->screen ()->root (),
+		    XChangeProperty (priv->dpy , priv->root,
 				     Atoms::winActive,
 				     XA_WINDOW, 32, PropModeReplace,
 				     (unsigned char *) &priv->activeWindow, 1);
@@ -1684,7 +1682,7 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w)
 	    {
 		if (w->mapNum ())
-		    w->updateRegion ();
+		    w->priv->updateRegion ();
 	    }
 	}
 	else if (event->type == priv->syncEvent + XSyncAlarmNotify)
@@ -1696,9 +1694,9 @@ CompScreen::handleEvent (XEvent *event)
 
 	    foreach (w, priv->windows)
 	    {
-		if (w->syncAlarm () == sa->alarm)
+		if (w->priv->syncAlarm == sa->alarm)
 		{
-		    w->handleSyncAlarm ();
+		    w->priv->handleSyncAlarm ();
 		    return;
 		}
 	    }

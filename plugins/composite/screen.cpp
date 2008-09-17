@@ -171,7 +171,7 @@ CompositeScreen::damageEvent ()
 CompositeScreen::CompositeScreen (CompScreen *s) :
     CompositePrivateHandler<CompositeScreen, CompScreen,
 			    COMPIZ_COMPOSITE_ABI> (s),
-    priv (new PrivateCompositeScreen (s, this))
+    priv (new PrivateCompositeScreen (this))
 {
     int	compositeMajor, compositeMinor;
 
@@ -256,8 +256,8 @@ CompositeScreen::~CompositeScreen ()
 
 #ifdef USE_COW
     if (useCow)
-	XCompositeReleaseOverlayWindow (priv->screen->dpy (),
-					priv->screen->root ());
+	XCompositeReleaseOverlayWindow (screen->dpy (),
+					screen->root ());
 #endif
 
     if (priv->damage)
@@ -267,9 +267,7 @@ CompositeScreen::~CompositeScreen ()
 }
 
 
-PrivateCompositeScreen::PrivateCompositeScreen (CompScreen      *s,
-						CompositeScreen *cs) :
-    screen (s),
+PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
     cScreen (cs),
     damageMask (COMPOSITE_SCREEN_DAMAGE_ALL_MASK),
     overlay (None),
@@ -292,7 +290,7 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompScreen      *s,
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
-    ScreenInterface::setHandler (s);
+    ScreenInterface::setHandler (screen);
 }
 
 PrivateCompositeScreen::~PrivateCompositeScreen ()
@@ -372,14 +370,14 @@ PrivateCompositeScreen::init ()
 bool
 CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
 {
-    Display *dpy = priv->screen->dpy ();
+    Display *dpy = screen->dpy ();
 
     if (priv->active)
 	return false;
 
     CompScreen::checkForError (dpy);
 
-    XCompositeRedirectSubwindows (dpy, priv->screen->root (),
+    XCompositeRedirectSubwindows (dpy, screen->root (),
 				  CompositeRedirectManual);
 
     priv->overlayWindowCount = 0;
@@ -388,12 +386,12 @@ CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
     {
 	compLogMessage ("composite", CompLogLevelError,
 			"Another composite manager is already "
-			"running on screen: %d", priv->screen->screenNum ());
+			"running on screen: %d", screen->screenNum ());
 
 	return false;
     }
 
-    foreach (CompWindow *w, priv->screen->windows ())
+    foreach (CompWindow *w, screen->windows ())
     {
 	CompositeWindow *cw = CompositeWindow::get (w);
 	cw->priv->overlayWindow = false;
@@ -414,9 +412,9 @@ CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
 void
 CompositeScreen::unregisterPaintHandler ()
 {
-    Display *dpy = priv->screen->dpy ();
+    Display *dpy = screen->dpy ();
 
-    foreach (CompWindow *w, priv->screen->windows ())
+    foreach (CompWindow *w, screen->windows ())
     {
 	CompositeWindow *cw = CompositeWindow::get (w);
 	cw->priv->overlayWindow = false;
@@ -426,7 +424,7 @@ CompositeScreen::unregisterPaintHandler ()
 
     priv->overlayWindowCount = 0;
 
-    XCompositeUnredirectSubwindows (dpy, priv->screen->root (),
+    XCompositeUnredirectSubwindows (dpy, screen->root (),
 				    CompositeRedirectManual);
 
     priv->pHnd = NULL;
@@ -488,7 +486,7 @@ CompositeScreen::showOutputWindow ()
 #ifdef USE_COW
     if (useCow && priv->active)
     {
-	Display       *dpy = priv->screen->dpy ();
+	Display       *dpy = screen->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
@@ -516,7 +514,7 @@ CompositeScreen::hideOutputWindow ()
 #ifdef USE_COW
     if (useCow)
     {
-	Display       *dpy = priv->screen->dpy ();
+	Display       *dpy = screen->dpy ();
 	XserverRegion region;
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
@@ -538,7 +536,7 @@ CompositeScreen::updateOutputWindow ()
 #ifdef USE_COW
     if (useCow && priv->active)
     {
-	Display       *dpy = priv->screen->dpy ();
+	Display       *dpy = screen->dpy ();
 	XserverRegion region;
 	static Region tmpRegion = NULL;
 
@@ -549,12 +547,12 @@ CompositeScreen::updateOutputWindow ()
 		return;
 	}
 
-	XSubtractRegion (priv->screen->region (), &emptyRegion, tmpRegion);
+	XSubtractRegion (screen->region (), &emptyRegion, tmpRegion);
 
 	
 	for (CompWindowList::reverse_iterator rit =
-	     priv->screen->windows ().rbegin ();
-	     rit != priv->screen->windows ().rend (); rit++)
+	     screen->windows ().rbegin ();
+	     rit != screen->windows ().rend (); rit++)
 	    if (CompositeWindow::get (*rit)->overlayWindow ())
 	    {
 		XSubtractRegion (tmpRegion, (*rit)->region (), tmpRegion);
@@ -636,12 +634,12 @@ CompositeScreen::detectRefreshRate ()
 
 	value.set ((int) 0);
 
-	if (priv->screen->XRandr())
+	if (screen->XRandr())
 	{
 	    XRRScreenConfiguration *config;
 
-	    config  = XRRGetScreenInfo (priv->screen->dpy (),
-					priv->screen->root ());
+	    config  = XRRGetScreenInfo (screen->dpy (),
+					screen->root ());
 	    value.set ((int) XRRConfigCurrentRate (config));
 
 	    XRRFreeScreenConfigInfo (config);
@@ -653,7 +651,7 @@ CompositeScreen::detectRefreshRate ()
 	name = priv->opt[COMPOSITE_OPTION_REFRESH_RATE].name ();
 
 	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (false);
-	priv->screen->setOptionForPlugin ("composite", name.c_str (), value);
+	screen->setOptionForPlugin ("composite", name.c_str (), value);
 	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (true);
     }
     else
@@ -758,8 +756,8 @@ CompositeScreen::handlePaintTimeout ()
 	if (priv->overlayWindowCount)
 	{
 	    for (CompWindowList::reverse_iterator rit =
-		 priv->screen->windows ().rbegin ();
-	         rit != priv->screen->windows ().rend (); rit++)
+		 screen->windows ().rbegin ();
+	         rit != screen->windows ().rend (); rit++)
 	    {
 		CompWindow *w = (*rit);
 
@@ -782,16 +780,16 @@ CompositeScreen::handlePaintTimeout ()
 
 	if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_REGION_MASK)
 	{
-	    XIntersectRegion (priv->damage, priv->screen->region (),
+	    XIntersectRegion (priv->damage, screen->region (),
 			      priv->tmpRegion);
 
 	    if (priv->tmpRegion->numRects  == 1	  &&
 		priv->tmpRegion->rects->x1 == 0	  &&
 		priv->tmpRegion->rects->y1 == 0	  &&
 		priv->tmpRegion->rects->x2 ==
-		    (int) priv->screen->size ().width () &&
+		    (int) screen->size ().width () &&
 		priv->tmpRegion->rects->y2 ==
-		    (int) priv->screen->size ().height ())
+		    (int) screen->size ().height ())
 		damageScreen ();
 	}
 
@@ -803,13 +801,13 @@ CompositeScreen::handlePaintTimeout ()
 	CompOutput::ptrList outputs (0);
 	
 	if (priv->opt[COMPOSITE_OPTION_FORCE_INDEPENDENT].value ().b ()
-	    || !priv->screen->hasOverlappingOutputs ())
+	    || !screen->hasOverlappingOutputs ())
 	{
-	    foreach (CompOutput &o, priv->screen->outputDevs ())
+	    foreach (CompOutput &o, screen->outputDevs ())
 		outputs.push_back (&o);
 	}
 	else
-	    outputs.push_back (&priv->screen->fullscreenOutput ());
+	    outputs.push_back (&screen->fullscreenOutput ());
 
 	paint (outputs, mask);
 	
@@ -817,7 +815,7 @@ CompositeScreen::handlePaintTimeout ()
 
 	donePaint ();
 
-	foreach (CompWindow *w, priv->screen->windows ())
+	foreach (CompWindow *w, screen->windows ())
 	{
 	    if (w->destroyed ())
 	    {
@@ -862,7 +860,7 @@ CompositeScreen::getWindowPaintList ()
 {
     WRAPABLE_HND_FUNC_RETURN (3, CompWindowList, getWindowPaintList)
 
-    return priv->screen->windows ();
+    return screen->windows ();
 }
 
 void

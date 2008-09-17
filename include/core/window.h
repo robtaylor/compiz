@@ -272,20 +272,12 @@ class CompWindow :
 
     public:
 
-	CompWindow (CompScreen *screen,
-		    Window     id,
+	CompWindow (Window     id,
 	            Window     aboveId);
 	~CompWindow ();
 
-	CompString objectName ();
-
-	CompScreen *
-	screen ();
-
 	Window id ();
-
 	Window frame ();
-	Window wrapper ();
 
 	Region region ();
 
@@ -294,317 +286,155 @@ class CompWindow :
 	void updateFrameRegion ();
 	void setWindowFrameExtents (CompWindowExtents *input);
 
-	unsigned int &
-	wmType ();
+	unsigned int & wmType ();
 	
-	unsigned int
-	type ();
+	unsigned int type ();
 	
-	unsigned int &
-	state ();
+	unsigned int & state ();
 	
-	unsigned int
-	actions ();
+	unsigned int actions ();
 	
-	unsigned int &
-	protocols ();
+	unsigned int & protocols ();
 
-	void
-	close (Time serverTime);
+	void close (Time serverTime);
 
-	bool
-	handlePingTimeout (unsigned int lastPing);
 
-	void
-	handlePing (int lastPing);
+	bool inShowDesktopMode ();
 
-	bool
-	inShowDesktopMode ();
+	void setShowDesktopMode (bool);
 
-	void
-	setShowDesktopMode (bool);
+	bool managed ();
 
-	bool &
-	managed ();
+	bool grabbed ();
 
-	bool
-	grabbed ();
-
-	unsigned int &
-	activeNum ();
+	unsigned int activeNum ();
 	
-	void
-	setActiveNum (int);
+	int mapNum ();
 
-	int
-	mapNum ();
+	CompStruts * struts ();
 
-	CompStruts *
-	struts ();
+	int & saveMask ();
 
-	int &
-	saveMask ();
+	XWindowChanges & saveWc ();
 
-	XWindowChanges &
-	saveWc ();
+	void moveToViewportPosition (int x, int y, bool sync);
 
-	void
-	moveToViewportPosition (int x, int y, bool sync);
+	char * startupId ();
 
-	char *
-	startupId ();
+	unsigned int desktop ();
 
-	void
-	applyStartupProperties (CompStartupSequence *s);
-
-	unsigned int
-	desktop ();
-
-	Window &
-	clientLeader ();
-
-	void
-	updateNormalHints ();
-
-	void
-	updateWmHints ();
-
-	void
-	updateClassHints ();
-
-	void
-	updateTransientHint ();
-
-	void
-	updateIconGeometry ();
-
-	Window
-	getClientLeader ();
-
-	char *
-	getStartupId ();
+	Window clientLeader ();
 
 	void
 	changeState (unsigned int newState);
 
-	void
-	recalcActions ();
+	void recalcActions ();
 
-	void
-	recalcType ();
+	void recalcType ();
 
-	void
-	updateWindowOutputExtents ();
+	void updateWindowOutputExtents ();
 
-	void
-	updateRegion ();
+	void destroy ();
 
-	bool
-	updateStruts ();
+	void sendConfigureNotify ();
 
-	void
-	destroy ();
+	void sendSyncRequest ();
 
-	void
-	sendConfigureNotify ();
+	XSyncAlarm syncAlarm ();
 
-	void
-	map ();
+	void map ();
 
-	void
-	unmap ();
+	void unmap ();
 
-	bool
-	resize (XWindowAttributes);
+	bool resize (XWindowAttributes);
 	
-	bool
-	resize (Geometry);
+	bool resize (Geometry);
 
-	bool
-	resize (int x, int y, unsigned int width, unsigned int height,
-		unsigned int border = 0);
+	bool resize (int x, int y, unsigned int width, unsigned int height,
+		     unsigned int border = 0);
 
-	bool
-	handleSyncAlarm ();
+	void move (int dx, int dy, bool immediate = true);
 
-	void
-	sendSyncRequest ();
+	void syncPosition ();
 
-	void configure (XConfigureEvent *ce);
-	void configureFrame (XConfigureEvent *ce);
+	void moveInputFocusTo ();
 
-	void
-	circulate (XCirculateEvent *ce);
+	void moveInputFocusToOtherWindow ();
 
-	void
-	move (int dx, int dy, Bool damage, Bool immediate);
+	void configureXWindow (unsigned int valueMask,
+			       XWindowChanges *xwc);
 
-	void
-	syncPosition ();
+	void moveResize (XWindowChanges *xwc,
+			 unsigned int   xwcm,
+			 int            gravity);
 
-	void
-	moveInputFocusTo ();
+	void raise ();
 
-	void
-	moveInputFocusToOtherWindow ();
+	void lower ();
 
-	void
-	configureXWindow (unsigned int valueMask,
-			  XWindowChanges *xwc);
+	void restackAbove (CompWindow *sibling);
 
+	void restackBelow (CompWindow *sibling);
 
-	unsigned int
-	adjustConfigureRequestForGravity (XWindowChanges *xwc,
-					  unsigned int   xwcm,
-					  int            gravity);
+	void updateAttributes (CompStackingUpdateMode stackingMode);
 
-	void
-	moveResize (XWindowChanges *xwc,
-		    unsigned int   xwcm,
-		    int            gravity);
+	void hide ();
 
-	void
-	updateSize ();
+	void show ();
 
-	void
-	raise ();
+	void minimize ();
 
-	void
-	lower ();
+	void unminimize ();
 
-	void
-	restackAbove (CompWindow *sibling);
+	void maximize (unsigned int state = 0);
 
-	void
-	restackBelow (CompWindow *sibling);
+	CompPoint defaultViewport ();
 
-	void
-	updateAttributes (CompStackingUpdateMode stackingMode);
+	CompIcon * getIcon (int width, int height);
 
-	void
-	hide ();
+	int outputDevice ();
 
-	void
-	show ();
+	bool onCurrentDesktop ();
 
-	void
-	minimize ();
+	bool onAllViewports ();
 
-	void
-	unminimize ();
+	CompPoint getMovementForOffset (CompPoint offset);
 
-	void
-	maximize (unsigned int state = 0);
+	Window transientFor ();
 
-	bool
-	getUserTime (Time *time);
+	int pendingUnmaps ();
 
-	void
-	setUserTime (Time time);
+	bool minimized ();
 
-	bool
-	allowWindowFocus (unsigned int noFocusMask,
-			  Time         timestamp);
+	bool placed ();
 
-	void
-	defaultViewport (int *vx, int *vy);
+	bool shaded ();
 
-	CompIcon *
-	getIcon (int width, int height);
+	CompSize size ();
 
-	void
-	freeIcons ();
+	Geometry & geometry ();
 
-	int
-	outputDevice ();
+	Geometry & serverGeometry ();
 
-	bool
-	onCurrentDesktop ();
+	CompWindowExtents input ();
 
-	void
-	setDesktop (unsigned int desktop);
+	CompWindowExtents output ();
 
-	bool
-	onAllViewports ();
+	XSizeHints sizeHints ();
 
-	void
-	getMovementForOffset (int        offX,
-			      int        offY,
-			      int        *retX,
-			      int        *retY);
+	bool destroyed ();
 
-	Window
-	transientFor ();
+	bool invisible ();
 
-	int &
-	pendingUnmaps ();
-
-	bool &
-	minimized ();
-
-	bool &
-	placed ();
-
-	bool
-	shaded ();
-
-	int
-	height ();
-
-	int
-	width ();
-
-	Geometry &
-	geometry ();
-
-	Geometry &
-	serverGeometry ();
-
-	CompWindowExtents
-	input ();
-
-	CompWindowExtents
-	output ();
-
-	XSizeHints
-	sizeHints ();
-
-	void
-	updateMwmHints ();
-
-	void
-	updateStartupId ();
-
-	void
-	processMap ();
-
-
-
-	XSyncAlarm
-	syncAlarm ();
-
-	bool
-	destroyed ();
-
-
-	bool
-	invisible ();
-
-	bool
-	syncWait ();
+	bool syncWait ();
 
 	bool alpha ();
 
 	bool alive ();
 
-	bool
-	overrideRedirect ();
+	bool overrideRedirect ();
 
-	void
-	setOverrideRedirect (bool overrideRedirect);
-
-	bool
-	isViewable ();
+	bool isViewable ();
 
 	int windowClass ();
 
@@ -618,16 +448,8 @@ class CompWindow :
 				     int *newWidth,
 				     int *newHeight);
 	
-	static unsigned int
-	constrainWindowState (unsigned int state,
-			      unsigned int actions);
-
-	static unsigned int
-	windowTypeFromString (const char *str);
-
-	static int
-	compareWindowActiveness (CompWindow *w1,
-				 CompWindow *w2);
+	static unsigned int constrainWindowState (unsigned int state,
+						  unsigned int actions);
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);

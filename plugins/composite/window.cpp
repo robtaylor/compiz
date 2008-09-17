@@ -5,7 +5,7 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 			    COMPIZ_COMPOSITE_ABI> (w),
     priv (new PrivateCompositeWindow (w, this))
 {
-    CompScreen *s = w->screen ();
+    CompScreen *s = screen;
 
     if (w->windowClass () != InputOnly)
     {
@@ -36,7 +36,7 @@ CompositeWindow::~CompositeWindow ()
 {
 
     if (priv->damage)
-	XDamageDestroy (priv->screen->dpy (), priv->damage);
+	XDamageDestroy (screen->dpy (), priv->damage);
 
      if (!priv->redirected)
     {
@@ -60,7 +60,6 @@ PrivateCompositeWindow::PrivateCompositeWindow (CompWindow      *w,
 						CompositeWindow *cw) :
     window (w),
     cWindow (cw),
-    screen (w->screen ()),
     cScreen (CompositeScreen::get (screen)),
     pixmap (None),
     damage (None),
@@ -102,20 +101,20 @@ CompositeWindow::bind ()
 
 	/* We have to grab the server here to make sure that window
 	   is mapped when getting the window pixmap */
-	XGrabServer (priv->screen->dpy ());
-	XGetWindowAttributes (priv->screen->dpy (),
+	XGrabServer (screen->dpy ());
+	XGetWindowAttributes (screen->dpy (),
 			      ROOTPARENT (priv->window), &attr);
 	if (attr.map_state != IsViewable)
 	{
-	    XUngrabServer (priv->screen->dpy ());
+	    XUngrabServer (screen->dpy ());
 	    priv->bindFailed = true;
 	    return false;
 	}
 
 	priv->pixmap = XCompositeNameWindowPixmap
-	    (priv->screen->dpy (), ROOTPARENT (priv->window));
+	    (screen->dpy (), ROOTPARENT (priv->window));
 
-	XUngrabServer (priv->screen->dpy ());
+	XUngrabServer (screen->dpy ());
     }
     return true;
 }
@@ -125,7 +124,7 @@ CompositeWindow::release ()
 {
     if (priv->pixmap)
     {
-	XFreePixmap (priv->screen->dpy (), priv->pixmap);
+	XFreePixmap (screen->dpy (), priv->pixmap);
 	priv->pixmap = None;
     }
 }
@@ -142,7 +141,7 @@ CompositeWindow::redirect ()
     if (priv->redirected || !priv->cScreen->compositingActive ())
 	return;
 
-    XCompositeRedirectWindow (priv->screen->dpy (),
+    XCompositeRedirectWindow (screen->dpy (),
 			      ROOTPARENT (priv->window),
 			      CompositeRedirectManual);
 
@@ -168,7 +167,7 @@ CompositeWindow::unredirect ()
 
     release ();
 
-    XCompositeUnredirectWindow (priv->screen->dpy (),
+    XCompositeUnredirectWindow (screen->dpy (),
 				ROOTPARENT (priv->window),
 				CompositeRedirectManual);
 
@@ -244,14 +243,14 @@ CompositeWindow::damageOutputExtents ()
 	/* top */
 	box.x1 = -output.left - geom.border ();
 	box.y1 = -output.top - geom.border ();
-	box.x2 = priv->window->width () + output.right - geom.border ();
+	box.x2 = priv->window->size ().width () + output.right - geom.border ();
 	box.y2 = -geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
 
 	/* bottom */
-	box.y1 = priv->window->height () - geom.border ();
+	box.y1 = priv->window->size ().height () - geom.border ();
 	box.y2 = box.y1 + output.bottom - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
@@ -261,13 +260,13 @@ CompositeWindow::damageOutputExtents ()
 	box.x1 = -output.left - geom.border ();
 	box.y1 = -geom.border ();
 	box.x2 = -geom.border ();
-	box.y2 = priv->window->height () - geom.border ();
+	box.y2 = priv->window->size ().height () - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
 	    addDamageRect (&box);
 
 	/* right */
-	box.x1 = priv->window->width () - geom.border ();
+	box.x1 = priv->window->size ().width () - geom.border ();
 	box.x2 = box.x1 + output.right - geom.border ();
 
 	if (box.x1 < box.x2 && box.y1 < box.y2)
@@ -316,10 +315,10 @@ CompositeWindow::addDamage (bool force)
 		       priv->window->input ().left) - border;
 	box.y1 = -MAX (priv->window->output ().top,
 		       priv->window->input ().top) - border;
-	box.x2 = priv->window->width () +
+	box.x2 = priv->window->size ().width () +
 		 MAX (priv->window->output ().right,
 		       priv->window->input ().right);
-	box.y2 = priv->window->height () +
+	box.y2 = priv->window->size ().height () +
 		 MAX (priv->window->output ().bottom,
 		       priv->window->input ().bottom);
 
@@ -409,7 +408,7 @@ CompositeWindow::updateOpacity ()
     if (priv->window->type () & CompWindowTypeDesktopMask)
 	return;
 
-    opacity = priv->screen->getWindowProp32 (priv->window->id (),
+    opacity = screen->getWindowProp32 (priv->window->id (),
 					     Atoms::winOpacity, OPAQUE);
 
     if (opacity != priv->opacity)
@@ -424,7 +423,7 @@ CompositeWindow::updateBrightness ()
 {
     unsigned short brightness;
 
-    brightness = priv->screen->getWindowProp32 (priv->window->id (),
+    brightness = screen->getWindowProp32 (priv->window->id (),
 						Atoms::winBrightness, BRIGHT);
 
     if (brightness != priv->brightness)
@@ -439,7 +438,7 @@ CompositeWindow::updateSaturation ()
 {
     unsigned short saturation;
 
-    saturation = priv->screen->getWindowProp32 (priv->window->id (),
+    saturation = screen->getWindowProp32 (priv->window->id (),
 						Atoms::winSaturation, COLOR);
 
     if (saturation != priv->saturation)
@@ -549,9 +548,9 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 
 	region.extents.x1 = x - window->output ().left - dx;
 	region.extents.y1 = y - window->output ().top - dy;
-	region.extents.x2 = x + window->width () +
+	region.extents.x2 = x + window->size ().width () +
 			    window->output ().right - dx - dwidth;
-	region.extents.y2 = y + window->height () +
+	region.extents.y2 = y + window->size ().height () +
 			    window->output ().bottom - dy - dheight;
 
 	region.rects = &region.extents;
@@ -571,8 +570,8 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	result = XGetGeometry (screen->dpy (), pixmap, &root, &i, &i,
 			       &actualWidth, &actualHeight, &ui, &ui);
 
-	if (!result || (int) actualWidth != window->width () ||
-	    (int) actualHeight != window->height ())
+	if (!result || actualWidth != window->size ().width () ||
+	    actualHeight != window->size ().height ())
 	{
 	    XFreePixmap (screen->dpy (), pixmap);
 	    return;
@@ -598,9 +597,9 @@ PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
 
 	region.extents.x1 = x - window->output ().left - dx;
 	region.extents.y1 = y - window->output ().top - dy;
-	region.extents.x2 = x + window->width () +
+	region.extents.x2 = x + window->size ().width () +
 			    window->output ().right - dx;
-	region.extents.y2 = y + window->height () +
+	region.extents.y2 = y + window->size ().height () +
 			    window->output ().bottom - dy;
 
 	region.rects = &region.extents;

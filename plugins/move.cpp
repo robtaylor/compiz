@@ -53,14 +53,14 @@ moveInitiate (CompAction      *action,
 	unsigned int mods;
 	int          x, y, button;
 
-	CompScreen *s = w->screen ();
+	CompScreen *s = screen;
 
 	mods = CompOption::getIntOptionNamed (options, "modifiers", 0);
 
 	x = CompOption::getIntOptionNamed (options, "x", w->geometry ().x () +
-					   (w->width () / 2));
+					   (w->size ().width () / 2));
 	y = CompOption::getIntOptionNamed (options, "y", w->geometry ().y () +
-					   (w->height () / 2));
+					   (w->size ().height () / 2));
 
 	button = CompOption::getIntOptionNamed (options, "button", -1);
 
@@ -121,8 +121,8 @@ moveInitiate (CompAction      *action,
 	    {
 		int xRoot, yRoot;
 
-		xRoot = w->geometry ().x () + (w->width () / 2);
-		yRoot = w->geometry ().y () + (w->height () / 2);
+		xRoot = w->geometry ().x () + (w->size ().width () / 2);
+		yRoot = w->geometry ().y () + (w->size ().height () / 2);
 
 		s->warpPointer (xRoot - pointerX, yRoot - pointerY);
 	    }
@@ -151,8 +151,7 @@ moveTerminate (CompAction      *action,
     {
 	if (state & CompAction::StateCancel)
 	    ms->w->move (ms->savedX - ms->w->geometry ().x (),
-			 ms->savedY - ms->w->geometry ().y (),
-			 true, false);
+			 ms->savedY - ms->w->geometry ().y (), false);
 
 	ms->w->syncPosition ();
 
@@ -165,7 +164,7 @@ moveTerminate (CompAction      *action,
 
 	if (ms->grab)
 	{
-	    ms->w->screen ()->removeGrab (ms->grab, NULL);
+	    screen->removeGrab (ms->grab, NULL);
 	    ms->grab = NULL;
 	}
 
@@ -441,7 +440,8 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (w->state () & CompWindowStateMaximizedHorzMask)
 	    {
-		if (wX > (int) s->size ().width () || wX + w->width () < 0)
+		if (wX > (int) s->size ().width () ||
+		    wX + w->size ().width () < 0)
 		    return;
 
 		if (wX + wWidth < 0)
@@ -460,10 +460,10 @@ moveHandleMotionEvent (CompScreen *s,
 	if (dx || dy)
 	{
 	    w->move (wX + dx - w->geometry ().x (),
-		     wY + dy - w->geometry ().y (), TRUE, FALSE);
+		     wY + dy - w->geometry ().y (), false);
 
 	    if (ms->opt[MOVE_OPTION_LAZY_POSITIONING].value ().b () &&
-	        MoveScreen::get (w->screen())->hasCompositing)
+	        MoveScreen::get (screen)->hasCompositing)
 	    {
 		/* FIXME: This form of lazy positioning is broken and should
 		   be replaced asap. Current code exists just to avoid a
@@ -638,7 +638,7 @@ MoveWindow::glPaint (const GLWindowPaintAttrib &attrib,
     GLWindowPaintAttrib sAttrib = attrib;
     bool                status;
 
-    MOVE_SCREEN (window->screen ());
+    MOVE_SCREEN (screen);
 
     if (ms->grab)
     {
@@ -697,7 +697,6 @@ static const CompMetadata::OptionInfo moveOptionInfo[] = {
 
 MoveScreen::MoveScreen (CompScreen *screen) :
     PrivateHandler<MoveScreen,CompScreen> (screen),
-    screen (screen),
     w (0),
     region (NULL),
     status (RectangleOut),

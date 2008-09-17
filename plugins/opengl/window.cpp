@@ -27,7 +27,6 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     window (w),
     gWindow (gw),
     cWindow (CompositeWindow::get (w)),
-    screen (w->screen ()),
     gScreen (GLScreen::get (screen)),
     texture (),
     clip (0),
@@ -68,8 +67,10 @@ GLWindow::bind ()
 	return false;
 
     if (!priv->texture.bindPixmap (priv->cWindow->pixmap (),
-				   priv->window->width () + i.left + i.right,
-				   priv->window->height () + i.top + i.bottom,
+				   priv->window->size ().width () + i.left +
+				   i.right,
+				   priv->window->size ().height () + i.top +
+				   i.bottom,
 				   priv->window->depth ()))
     {
 	compLogMessage ("opengl", CompLogLevelInfo,
