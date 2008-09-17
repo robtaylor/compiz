@@ -30,7 +30,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <opengl/opengl.h>
 
 #include "privates.h"

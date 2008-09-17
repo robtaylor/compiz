@@ -36,7 +36,7 @@
 #include <string.h>
 #include <sys/wait.h>
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include "privatescreen.h"
 
 char *programName;

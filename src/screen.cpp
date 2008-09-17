@@ -53,10 +53,10 @@
 #include <X11/cursorfont.h>
 
 
-#include <compiz-core.h>
+#include <core/core.h>
 
 #include <core/screen.h>
-#include <compicon.h>
+#include <core/icon.h>
 #include <core/atoms.h>
 #include "privatescreen.h"
 #include "privatewindow.h"

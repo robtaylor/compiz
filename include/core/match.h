@@ -1,7 +1,7 @@
 #ifndef _COMPMATCH_H
 #define _COMPMATCH_H
 
-#include <compiz-core.h>
+#include <core/core.h>
 
 class PrivateMatch;
 class CompWindow;

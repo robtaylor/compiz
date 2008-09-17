@@ -32,8 +32,8 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include <compiz-core.h>
-#include <compoption.h>
+#include <core/core.h>
+#include <core/option.h>
 #include "privateoption.h"
 
 CompOption::Vector noOptions (0);

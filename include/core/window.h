@@ -9,12 +9,12 @@
 #include <X11/extensions/Xdamage.h>
 #include <X11/extensions/sync.h>
 
-#include <compaction.h>
+#include <core/action.h>
 #include <core/privates.h>
 #include <core/size.h>
 #include <core/point.h>
 
-#include <compwrapsystem.h>
+#include <core/wrapsystem.h>
 
 #include <map>
 

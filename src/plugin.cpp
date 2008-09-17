@@ -33,7 +33,7 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include "privatescreen.h"
 
 CompPlugin::Map pluginsMap;

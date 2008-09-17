@@ -34,7 +34,7 @@
 #define foreach BOOST_FOREACH
 
 #include <compiz.h>
-#include <compmetadata.h>
+#include <core/metadata.h>
 #include <core/screen.h>
 #include "privatescreen.h"
 

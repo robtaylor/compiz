@@ -29,12 +29,12 @@
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
-#include <compiz-core.h>
+#include <core/core.h>
 
 #include <core/screen.h>
-#include <compmatch.h>
+#include <core/match.h>
 #include <core/window.h>
-#include <compplugin.h>
+#include <core/plugin.h>
 #include "privatematch.h"
 #include "privatescreen.h"
 #include "privatewindow.h"

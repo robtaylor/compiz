@@ -1,4 +1,4 @@
-#include <compiz-core.h>
+#include <core/core.h>
 #include <core/rect.h>
 
 CompRect::CompRect ()

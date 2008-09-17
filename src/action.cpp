@@ -29,8 +29,8 @@
 
 #include <compiz.h>
 
-#include <compoption.h>
-#include <compaction.h>
+#include <core/option.h>
+#include <core/action.h>
 #include <core/screen.h>
 #include "privateaction.h"
 #include "privatescreen.h"

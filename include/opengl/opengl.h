@@ -11,7 +11,7 @@
 #define COMPIZ_OPENGL_ABI 1
 
 #define PLUGIN OpenGL
-#include <compprivatehandler.h>
+#include <core/privatehandler.h>
 
 class PrivateGLScreen;
 class PrivateGLWindow;

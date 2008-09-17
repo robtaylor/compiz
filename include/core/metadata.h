@@ -5,7 +5,7 @@
 
 #include <libxml/parser.h>
 
-#include <compaction.h>
+#include <core/action.h>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY (x)

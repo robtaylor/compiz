@@ -31,7 +31,7 @@
 #include <X11/Xatom.h>
 #include <X11/cursorfont.h>
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <core/atoms.h>
 #include "resize.h"
 

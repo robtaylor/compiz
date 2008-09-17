@@ -2,11 +2,11 @@
 #define _COMPSCREEN_H
 
 #include <core/window.h>
-#include <compoutput.h>
-#include <compsession.h>
-#include <compmetadata.h>
-#include <compplugin.h>
-#include <compmatch.h>
+#include <core/output.h>
+#include <core/session.h>
+#include <core/metadata.h>
+#include <core/plugin.h>
+#include <core/match.h>
 #include <core/privates.h>
 
 class CompScreen;

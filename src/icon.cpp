@@ -1,4 +1,4 @@
-#include <compicon.h>
+#include <core/icon.h>
 
 CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 		    unsigned int height) :

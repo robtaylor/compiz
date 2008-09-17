@@ -1,8 +1,8 @@
 #ifndef _RESIZE_H
 #define _RESIZE_H
 
-#include <compiz-core.h>
-#include <compprivatehandler.h>
+#include <core/core.h>
+#include <core/privatehandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>

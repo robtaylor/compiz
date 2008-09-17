@@ -27,7 +27,7 @@
 #define _COMPIZ_PLUGIN_H
 
 #include <compiz.h>
-#include <compoption.h>
+#include <core/option.h>
 
 #include <map>
 

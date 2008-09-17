@@ -1,7 +1,7 @@
 #ifndef _PRIVATEMATCH_H
 #define _PRIVATEMATCH_H
 
-#include <compmatch.h>
+#include <core/match.h>
 #include <boost/shared_ptr.hpp>
 
 #define MATCH_OP_AND_MASK (1 << 0)

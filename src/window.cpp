@@ -40,8 +40,8 @@
 
 #include <boost/bind.hpp>
 
-#include <compiz-core.h>
-#include <compicon.h>
+#include <core/core.h>
+#include <core/icon.h>
 #include <core/atoms.h>
 #include "privatewindow.h"
 #include "privatescreen.h"

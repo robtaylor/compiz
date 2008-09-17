@@ -24,7 +24,7 @@
 #include <compiz.h>
 #include <string.h>
 #include <math.h>
-#include <compiz-core.h>
+#include <core/core.h>
 #include <opengl/matrix.h>
 
 /**

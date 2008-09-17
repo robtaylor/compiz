@@ -1,7 +1,7 @@
 #ifndef _PRIVATEWINDOW_H
 #define _PRIVATEWINDOW_H
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <core/window.h>
 #include <core/point.h>
 #include <core/timer.h>

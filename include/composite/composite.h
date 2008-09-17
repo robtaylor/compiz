@@ -6,9 +6,9 @@
 #define COMPIZ_COMPOSITE_ABI 1
 
 #define PLUGIN Composite
-#include <compprivatehandler.h>
+#include <core/privatehandler.h>
 #include <core/timer.h>
-#include <compiz-core.h>
+#include <core/core.h>
 
 #define COMPOSITE_SCREEN_DAMAGE_PENDING_MASK (1 << 0)
 #define COMPOSITE_SCREEN_DAMAGE_REGION_MASK  (1 << 1)

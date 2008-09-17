@@ -1,6 +1,6 @@
 
-#include <compiz-core.h>
-#include <compoutput.h>
+#include <core/core.h>
+#include <core/output.h>
 
 CompOutput::CompOutput ()
 {

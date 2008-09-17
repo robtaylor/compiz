@@ -33,7 +33,7 @@
 #include <math.h>
 #include <unistd.h>
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <decoration.h>
 #include "decor.h"
 

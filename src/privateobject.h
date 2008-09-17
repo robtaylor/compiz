@@ -2,8 +2,8 @@
 #define _PRIVATEOBJECT_H
 
 #include <list>
-#include <compiz-core.h>
-#include <compobject.h>
+#include <core/core.h>
+#include <core/object.h>
 
 class PrivateObject {
     public :

@@ -1,6 +1,6 @@
 #include <boost/shared_ptr.hpp>
-#include <compiz-core.h>
-#include <compprivatehandler.h>
+#include <core/core.h>
+#include <core/privatehandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>

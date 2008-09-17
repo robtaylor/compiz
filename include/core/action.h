@@ -5,7 +5,7 @@
 
 #include <X11/Xlib-xcb.h>
 
-#include <compoption.h>
+#include <core/option.h>
 
 class PrivateAction;
 

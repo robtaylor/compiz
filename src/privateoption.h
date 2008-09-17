@@ -3,8 +3,8 @@
 
 #include <vector>
 
-#include <compaction.h>
-#include <compmatch.h>
+#include <core/action.h>
+#include <core/match.h>
 #include <core/screen.h>
 
 typedef struct _CompOptionIntRestriction {

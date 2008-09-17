@@ -40,8 +40,8 @@
 
 #include <boost/bind.hpp>
 
-#include <compsession.h>
-#include <compiz-core.h>
+#include <core/session.h>
+#include <core/core.h>
 
 #define SM_DEBUG(x)
 

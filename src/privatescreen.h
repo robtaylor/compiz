@@ -1,7 +1,7 @@
 #ifndef _PRIVATESCREEN_H
 #define _PRIVATESCREEN_H
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <core/screen.h>
 #include <core/size.h>
 #include <core/point.h>

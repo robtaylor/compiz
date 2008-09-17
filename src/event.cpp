@@ -36,7 +36,7 @@
 #include <X11/extensions/Xrandr.h>
 #include <X11/extensions/Xfixes.h>
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <core/atoms.h>
 #include "privatescreen.h"
 #include "privatewindow.h"

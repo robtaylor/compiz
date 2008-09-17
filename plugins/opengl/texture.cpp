@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include <compiz-core.h>
+#include <core/core.h>
 #include <opengl/texture.h>
 #include <privatetexture.h>
 #include "privates.h"
