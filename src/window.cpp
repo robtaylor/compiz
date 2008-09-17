@@ -2198,7 +2198,8 @@ PrivateWindow::stackTransients (CompWindow	*w,
 	    if (!stackTransients (t, avoid, xwc))
 		return false;
 
-	    if (xwc->sibling == t->priv->id)
+	    if (xwc->sibling == t->priv->id ||
+		(t->priv->frame && xwc->sibling == t->priv->frame))
 		return false;
 
 	    if (t->priv->mapNum || t->priv->pendingMaps)
@@ -2213,7 +2214,11 @@ void
 PrivateWindow::stackAncestors (CompWindow     *w,
 			       XWindowChanges *xwc)
 {
-    if (w->priv->transientFor && xwc->sibling != w->priv->transientFor)
+    CompWindow *transient = NULL;
+    if (w->priv->transientFor)
+	transient = w->priv->screen->findWindow (w->priv->transientFor);
+    if (transient && (xwc->sibling != transient->priv->id &&
+	(!transient->priv->frame || xwc->sibling != transient->priv->frame)))
     {
 	CompWindow *ancestor;
 
@@ -2247,7 +2252,8 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 		a->priv->transientFor == None		   &&
 		!a->priv->isGroupTransient (w->priv->clientLeader))
 	    {
-		if (xwc->sibling == a->priv->id)
+		if (xwc->sibling == a->priv->id ||
+		    (a->priv->frame && xwc->sibling == a->priv->frame))
 		    break;
 
 		if (!stackTransients (a, w, xwc))
