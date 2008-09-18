@@ -1235,7 +1235,7 @@ PrivateWindow::restack (Window aboveId)
     else if (aboveId == None && !window->next)
 	return false;
 
-    if (aboveId && !screen->findTopLevelWindow (aboveId))
+    if (aboveId && !screen->findTopLevelWindow (aboveId, true))
         return false;
 
     screen->unhookWindow (window);
