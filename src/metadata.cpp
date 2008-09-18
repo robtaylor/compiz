@@ -29,6 +29,7 @@
 #include <libxml/tree.h>
 #include <libxml/xpath.h>
 #include <libxml/xpathInternals.h>
+#include <locale.h>
 
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -257,12 +258,15 @@ initFloatValue (CompOption::Value       &v,
 		xmlNodePtr              node)
 {
     xmlChar *value;
+    char *loc;
 
     v.set ((r.fMin () + r.fMax ()) / 2);
 
     if (!doc)
 	return;
 
+    loc = setlocale (LC_NUMERIC, NULL);
+    setlocale (LC_NUMERIC, "C");
     value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
     if (value)
     {
@@ -273,6 +277,7 @@ initFloatValue (CompOption::Value       &v,
 
 	xmlFree (value);
     }
+    setlocale (LC_NUMERIC, loc);
 }
 
 static void
@@ -623,11 +628,14 @@ initFloatRestriction (CompMetadata            *metadata,
 		      const char              *path)
 {
     char *value;
+    char *loc;
 
     float min       = MINSHORT;
     float max       = MAXSHORT;
     float precision = 0.1f;
 
+    loc = setlocale (LC_NUMERIC, NULL);
+    setlocale (LC_NUMERIC, "C");
     value = stringFromMetadataPathElement (metadata, path, "min");
     if (value)
     {
@@ -649,6 +657,8 @@ initFloatRestriction (CompMetadata            *metadata,
 	free (value);
     }
     r.set (min, max, precision);
+
+    setlocale (LC_NUMERIC, loc);
 }
 
 static void
