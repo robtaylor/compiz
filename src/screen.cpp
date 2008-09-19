@@ -1275,8 +1275,8 @@ void
 PrivateScreen::handleSelectionClear (XEvent *event)
 {
     /* We need to unmanage the screen on which we lost the selection */
-    if (wmSnSelectionWindow != event->xselectionrequest.owner ||
-	wmSnAtom != event->xselectionrequest.selection)
+    if (wmSnSelectionWindow != event->xselectionclear.window ||
+	wmSnAtom != event->xselectionclear.selection)
 	return;
 
     shutDown = TRUE;
