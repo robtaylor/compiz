@@ -398,6 +398,8 @@ class PrivateScreen {
 
 	void disableEdge (int edge);
 
+	void addScreenActions ();
+
     public:
 
 	PrivateScreen *priv;
@@ -532,7 +534,7 @@ class PrivateScreen {
 	unsigned long *desktopHintData;
 	int           desktopHintSize;
 
-
+        bool initialized;
 
 	CompOption::Vector opt;
 

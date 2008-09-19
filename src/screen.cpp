@@ -3101,13 +3101,31 @@ PrivateScreen::removePassiveButtonGrab (CompAction::ButtonBinding &button)
     }
 }
 
+/* add actions that should be automatically added as no screens
+   existed when they were initialized. */
+void
+PrivateScreen::addScreenActions ()
+{
+    foreach (CompOption &o, opt)
+    {
+	if (!o.isAction ())
+	    continue;
+
+	if (o.value ().action ().state () & CompAction::StateAutoGrab)
+	    screen->addAction (&o.value ().action ());
+    }
+}
+
 bool
 CompScreen::addAction (CompAction *action)
 {
+    if (!priv->initialized)
+	return false;
+
     if (action->type () & CompAction::BindingTypeKey)
     {
 	if (!priv->addPassiveKeyGrab (action->key ()))
-	    return true;
+	    return false;
     }
 
     if (action->type () & CompAction::BindingTypeButton)
@@ -3117,7 +3135,7 @@ CompScreen::addAction (CompAction *action)
 	    if (action->type () & CompAction::BindingTypeKey)
 		priv->removePassiveKeyGrab (action->key ());
 
-	    return true;
+	    return false;
 	}
     }
 
@@ -4647,6 +4665,9 @@ CompScreen::init (const char *name)
 	priv->opt[COMP_OPTION_PING_DELAY].value ().i (),
 	priv->opt[COMP_OPTION_PING_DELAY].value ().i () + 500);
 
+    priv->initialized = true;
+    priv->addScreenActions ();
+
     return true;
 }
 
@@ -4748,6 +4769,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
+    initialized (false),
     opt (COMP_OPTION_NUM)
 {
     for (int i = 0; i < CompModNum; i++)
