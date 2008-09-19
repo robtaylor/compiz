@@ -3154,6 +3154,9 @@ CompScreen::addAction (CompAction *action)
 void
 CompScreen::removeAction (CompAction *action)
 {
+    if (!priv->initialized)
+	return;
+
     if (action->type () & CompAction::BindingTypeKey)
 	priv->removePassiveKeyGrab (action->key ());
 
@@ -4682,6 +4685,8 @@ CompScreen::~CompScreen ()
 	CompPlugin::unload (p);
 
     XUngrabKey (priv->dpy, AnyKey, AnyModifier, priv->root);
+
+    priv->initialized = false;
 
     for (int i = 0; i < SCREEN_EDGE_NUM; i++)
 	XDestroyWindow (priv->dpy, priv->screenEdge[i].id);
