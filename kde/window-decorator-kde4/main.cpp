@@ -172,7 +172,9 @@ main (int argc, char **argv)
 	return 1;
     }
 
-    decor_set_dm_check_hint (QX11Info::display(), QX11Info::appScreen ());
+    decor_set_dm_check_hint (QX11Info::display(), QX11Info::appScreen (),
+			     WINDOW_DECORATION_TYPE_PIXMAP |
+			     WINDOW_DECORATION_TYPE_WINDOW);
 
     if (!app->enableDecorations (timestamp, event))
     {

@@ -35,7 +35,8 @@ namespace KWD
 	extern Atom switchSelectWindow;
 	extern Atom switchFgColor;
 	extern Atom netWmWindowOpacity;
-	extern Atom netFrameWindow;
+	extern Atom netInputFrameWindow;
+	extern Atom netOutputFrameWindow;
 	extern Atom netWindowDecor;
 	extern Atom netWindowDecorNormal;
 	extern Atom netWindowDecorActive;

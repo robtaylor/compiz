@@ -39,7 +39,8 @@ namespace KWD
 	Atom switchSelectWindow;
 	Atom switchFgColor;
 	Atom netWmWindowOpacity;
-	Atom netFrameWindow;
+	Atom netInputFrameWindow;
+	Atom netOutputFrameWindow;
 	Atom netWindowDecor;
 	Atom netWindowDecorNormal;
 	Atom netWindowDecorActive;
@@ -180,7 +181,10 @@ KWD::Atoms::init (void)
 {
     Display *xdisplay = QX11Info::display();
 
-    netFrameWindow = XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, false);
+    netInputFrameWindow =
+	XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, false);
+    netOutputFrameWindow =
+	XInternAtom (xdisplay, DECOR_OUTPUT_FRAME_ATOM_NAME, false);
     netWindowDecor = XInternAtom (xdisplay, DECOR_WINDOW_ATOM_NAME, false);
     netWindowDecorNormal =
 	XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, false);

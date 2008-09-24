@@ -52,7 +52,8 @@ class Window:public QWidget, public KDecorationBridge {
 	{
 	    Normal,
 	    Default,
-	    DefaultActive
+	    DefaultActive,
+	    Normal2D
 	};
 
     public:
@@ -184,7 +185,29 @@ class Window:public QWidget, public KDecorationBridge {
 	{
 	    return mFakeRelease;
 	}
+
+	WId winId ()
+	{
+	    if (mType == Normal2D && mDecor)
+		return mDecor->widget ()->winId ();
+	    return QWidget::winId ();
+	}
+
+	QWidget *childAt (int x, int y)
+	{
+	    QWidget *rv;
+	    if (mType == Normal2D && mDecor)
+	    {
+		rv = mDecor->widget ()->childAt (x, y);
+		if (!rv)
+		    rv = mDecor->widget ();
+		return rv;
+	    }
+	    return QWidget::childAt (x, y);
+	}
 	
+
+	virtual bool eventFilter( QObject* o, QEvent* e );
 
     private:
 	bool resizeDecoration (bool force = false);

@@ -485,7 +485,11 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 
 	break;
     case PropertyNotify:
-	if (xevent->xproperty.atom == Atoms::netFrameWindow)
+	if (xevent->xproperty.atom == Atoms::netInputFrameWindow)
+	{
+	    handleWindowAdded (xevent->xproperty.window);
+	}
+	else if (xevent->xproperty.atom == Atoms::netOutputFrameWindow)
 	{
 	    handleWindowAdded (xevent->xproperty.window);
 	}
@@ -585,7 +589,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
     {
 	XButtonEvent *xbe = reinterpret_cast <XButtonEvent *>(xevent);
 	QWidget	     *child;
-
+	
 	if (!mFrames.contains (xbe->window))
 	    break;
 
@@ -736,6 +740,7 @@ KWD::Decorator::handleWindowAdded (WId id)
     QMap <WId, KWD::Window *>::ConstIterator it;
     KWD::Window				     *client = 0;
     WId					     select, frame = 0;
+    WId					     oframe = 0, iframe = 0;
     KWD::Window::Type			     type = KWD::Window::Normal;
     unsigned int			     width, height, border, depth;
     int					     x, y;
@@ -754,7 +759,8 @@ KWD::Decorator::handleWindowAdded (WId id)
     if (KWD::popXError ())
 	return;
 
-    KWD::readWindowProperty (id, Atoms::netFrameWindow, (long *) &frame);
+    KWD::readWindowProperty (id, Atoms::netInputFrameWindow, (long *) &iframe);
+    KWD::readWindowProperty (id, Atoms::netOutputFrameWindow, (long *) &oframe);
 
     if (KWD::readWindowProperty (id, Atoms::switchSelectWindow,
 				 (long *) &select))
@@ -786,13 +792,30 @@ KWD::Decorator::handleWindowAdded (WId id)
 	    return;
 	}
 
-	type = KWD::Window::Normal;
+	if (iframe)
+	{
+	    type = KWD::Window::Normal;
+	    frame = iframe;
+	}
+	else
+	{
+	    type = KWD::Window::Normal2D;
+	    frame = oframe;
+	}
     }
 
     KWD::trapXError ();
     XSelectInput (QX11Info::display(), id, StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
+    if (frame)
+    {
+	XWindowAttributes attr;
+	KWD::trapXError ();
+	XGetWindowAttributes (QX11Info::display(), frame, &attr);
+	if (KWD::popXError ())
+	    frame = None;
+    }
     if (frame)
     {
 	if (!mClients.contains (id))

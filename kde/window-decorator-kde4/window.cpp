@@ -63,7 +63,7 @@ KWD::Window::Window (WId  parentId,
 		     int  x,
 		     int  y,
 		     int  w,
-		     int  h): QWidget (0, 0),
+		     int  h): QWidget (0, Qt::X11BypassWindowManagerHint),
     mType (type),
     mParentId (parentId),
     mFrame (0),
@@ -102,44 +102,35 @@ KWD::Window::Window (WId  parentId,
 {
     memset (&mBorder, 0, sizeof (mBorder));
 
-    if (mType == Normal)
+    if (mType == Normal || mType == Normal2D)
     {
 	KWindowInfo wInfo = KWindowSystem::windowInfo (mClientId, NET::WMState |
 						       NET::WMVisibleName, 0);
 
 	mState = wInfo.state ();
 
-	if (mType == Normal)
-	{
-	    mName = wInfo.visibleName ();
+	mName = wInfo.visibleName ();
 
+	mIcon = KWindowSystem::icon (mClientId, 32, 32, true,
+					KWindowSystem::NETWM |
+					KWindowSystem::WMHints );
+
+	mMiniIcon = KWindowSystem::icon (mClientId, 16, 16, true,
+					    KWindowSystem::NETWM |
+					    KWindowSystem::WMHints );
+
+	if (mIcon.isNull ())
+	{
 	    mIcon = KWindowSystem::icon (mClientId, 32, 32, true,
-					 KWindowSystem::NETWM |
-					 KWindowSystem::WMHints );
-
+					    KWindowSystem::ClassHint |
+					    KWindowSystem::XApp );
 	    mMiniIcon = KWindowSystem::icon (mClientId, 16, 16, true,
-					     KWindowSystem::NETWM |
-					     KWindowSystem::WMHints );
-
-	    if (mIcon.isNull ())
-	    {
-		mIcon = KWindowSystem::icon (mClientId, 32, 32, true,
-					     KWindowSystem::ClassHint |
-					     KWindowSystem::XApp );
-		mMiniIcon = KWindowSystem::icon (mClientId, 16, 16, true,
-						 KWindowSystem::ClassHint |
-						 KWindowSystem::XApp );
-	    }
-
-	    mOpacity = readPropertyShort (mClientId, Atoms::netWmWindowOpacity,
-					  0xffff);
+						KWindowSystem::ClassHint |
+						KWindowSystem::XApp );
 	}
-	else
-	{
-	    mIcon     = QPixmap ();
-	    mMiniIcon = QPixmap ();
-	    mName     = QString ("");
-	}
+
+	mOpacity = readPropertyShort (mClientId, Atoms::netWmWindowOpacity,
+					0xffff);
 
 	updateFrame (frame);
 
@@ -155,7 +146,7 @@ KWD::Window::Window (WId  parentId,
 	mGeometry = QRect (50, 50, 30, 1);
     }
 
-    QTimer::singleShot (0, this, SLOT (createDecoration ()));
+    createDecoration ();
 
     mActiveChild = NULL;
 }
@@ -209,7 +200,7 @@ KWD::Window::isCloseable (void) const
 {
     KWindowInfo wInfo;
 
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     wInfo = KWindowSystem::windowInfo (mClientId, NET::WMPid,
@@ -222,7 +213,7 @@ KWD::Window::isMaximizable (void) const
 {
     KWindowInfo wInfo;
 
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     wInfo = KWindowSystem::windowInfo (mClientId, NET::WMPid,
@@ -235,7 +226,7 @@ KWD::Window::maximizeMode (void) const
 {
     MaximizeMode mode = MaximizeRestore;
 
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return mode;
 
     mode =
@@ -250,7 +241,7 @@ KWD::Window::isMinimizable (void) const
 {
     KWindowInfo wInfo;
 
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     wInfo = KWindowSystem::windowInfo (mClientId, NET::WMPid,
@@ -261,7 +252,7 @@ KWD::Window::isMinimizable (void) const
 bool
 KWD::Window::providesContextHelp (void) const
 {
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     return mSupportContextHelp;
@@ -294,7 +285,7 @@ KWD::Window::isShadeable (void) const
 bool
 KWD::Window::isShade (void) const
 {
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     return (mState & NET::Shaded);
@@ -309,7 +300,7 @@ KWD::Window::isSetShade (void) const
 bool
 KWD::Window::keepAbove (void) const
 {
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     return (mState & NET::KeepAbove);
@@ -318,7 +309,7 @@ KWD::Window::keepAbove (void) const
 bool
 KWD::Window::keepBelow (void) const
 {
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
 	return false;
 
     return (mState & NET::KeepBelow);
@@ -419,23 +410,26 @@ KWD::Window::showWindowMenu (const QPoint &pos)
 	action = mPopup->addMenu (mAdvancedMenu);
 	action->setText (i18n ("Ad&vanced"));
 
-	mOpacityMenu = new QMenu (mPopup);
-	mOpacityMenu->setFont (KGlobalSettings::menuFont ());
-
-	connect (mOpacityMenu, SIGNAL (triggered (QAction*)),
-		 SLOT (handleOpacityPopupActivated (QAction*)));
-	
-
-        for( unsigned int i = 0; i < sizeof (levels) / sizeof (levels[0]); ++i)
+	if (mType != Normal2D)
 	{
-	    action = mOpacityMenu->addAction
-			(QString::number (levels[i]) + "%");
-	    action->setCheckable (true);
-	    action->setData (levels[i]);
-	}
-	action = mPopup->addMenu (mOpacityMenu);
-	action->setText (i18n ("&Opacity"));
+	    mOpacityMenu = new QMenu (mPopup);
+	    mOpacityMenu->setFont (KGlobalSettings::menuFont ());
 
+	    connect (mOpacityMenu, SIGNAL (triggered (QAction*)),
+		    SLOT (handleOpacityPopupActivated (QAction*)));
+	    
+
+	    for (unsigned int i = 0;
+		 i < sizeof (levels) / sizeof (levels[0]); ++i)
+	    {
+		action = mOpacityMenu->addAction
+			    (QString::number (levels[i]) + "%");
+		action->setCheckable (true);
+		action->setData (levels[i]);
+	    }
+	    action = mPopup->addMenu (mOpacityMenu);
+	    action->setText (i18n ("&Opacity"));
+	}
 
 	mDesktopMenu = new QMenu (mPopup);
 	mDesktopMenu->setFont (KGlobalSettings::menuFont ());
@@ -624,13 +618,6 @@ QRect
 KWD::Window::clientGeometry (void)
 {
     return mGeometry;
-
-    QRect frame = geometry ();
-
-    return QRect (frame.x () + mBorder.left,
-		  frame.y () + mBorder.top,
-		  frame.width () - mBorder.left - mBorder.right,
-		  frame.height () - mBorder.top - mBorder.bottom);
 }
 
 QRegion
@@ -749,12 +736,16 @@ KWD::Window::currentDesktop (void) const
 QWidget *
 KWD::Window::initialParentWidget (void) const
 {
+    if (mType == Normal2D)
+	return NULL;
     return const_cast <Window *> (this);
 }
 
 Qt::WFlags
 KWD::Window::initialWFlags (void) const
 {
+    if (mType == Normal2D)
+	return Qt::X11BypassWindowManagerHint;
     return 0;
 }
 
@@ -776,7 +767,10 @@ KWD::Window::createDecoration (void)
 
     mDecor = decor;
 
-    if (mType == Normal && mFrame)
+    if (mType == Normal2D)
+	decor->widget ()->installEventFilter (this);
+
+    if (mFrame)
     {
 	KWD::trapXError ();
 	XSelectInput (QX11Info::display(), mFrame,
@@ -788,7 +782,7 @@ KWD::Window::createDecoration (void)
     }
 
     KWD::trapXError ();
-    XSelectInput (QX11Info::display(), this->winId(),
+    XSelectInput (QX11Info::display(), QWidget::winId(),
 		  StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
@@ -1013,6 +1007,9 @@ KWD::Window::updateShadow (void)
 
     xscreen = ScreenOfDisplay (xdisplay, QX11Info::appScreen ());
 
+    if (mType == Normal2D)
+	return;
+
     if (mShadow)
     {
 	decor_shadow_destroy (QX11Info::display(), mShadow);
@@ -1141,7 +1138,7 @@ KWD::Window::setMask (const QRegion &reg, int)
 	KWD::trapXError ();
 	XShapeCombineRegion (QX11Info::display(),
 			     mFrame,
-			     ShapeInput,
+			     (mType == Normal2D) ? ShapeBounding : ShapeInput,
 			     0,
 			     0,
 			     r.handle (),
@@ -1193,7 +1190,7 @@ KWD::Window::resizeDecoration (bool force)
     mUniqueHorzShape = false;
     mUniqueVertShape = false;
 
-    if (mType != Normal)
+    if (mType != Normal && mType != Normal2D)
     {
 	Display		*xdisplay = QX11Info::display();
 	Screen		*xscreen;
@@ -1257,28 +1254,41 @@ KWD::Window::resizeDecoration (bool force)
     setGeometry (QRect (mGeometry.x () + ROOT_OFF_X - mBorder.left,
 			mGeometry.y () + ROOT_OFF_Y - mBorder.top,
 			w, h));
-    XMoveResizeWindow (QX11Info::display(), winId(),
+
+    mSize = QSize (w, h);
+
+    if (mType != Normal2D)
+    {
+        XMoveResizeWindow (QX11Info::display(), winId(),
 		       mGeometry.x () + ROOT_OFF_X - mBorder.left,
 		       mGeometry.y () + ROOT_OFF_Y - mBorder.top,
 		       w, h);
 
-    mSize = QSize (w, h);
-
-    if (!mMapped)
-    {
-	mPendingMap = 1;
-
-	XReparentWindow (QX11Info::display(), winId (), mParentId, 0, 0);
-
-	show ();
-
-	mMapped = true;
-
-	if (mDamageId != winId ())
+	if (!mMapped)
 	{
-	    mDamageId = winId ();
-	    XDamageCreate (QX11Info::display(), mDamageId,
-			   XDamageReportRawRectangles);
+	    mPendingMap = 1;
+
+	    XReparentWindow (QX11Info::display(), winId (), mParentId, 0, 0);
+
+	    show ();
+	    mMapped = true;
+
+	    if (mDamageId != winId ())
+	    {
+		mDamageId = winId ();
+		XDamageCreate (QX11Info::display(), mDamageId,
+			       XDamageReportRawRectangles);
+	    }
+	}
+    }
+    else
+    {
+	if (!mMapped)
+	{
+            XReparentWindow (QX11Info::display(), mDecor->widget ()->winId (),
+			     mFrame, 0, 0);
+	    mMapped = true;
+	    updateProperty ();
 	}
     }
 
@@ -1293,6 +1303,9 @@ void
 KWD::Window::rebindPixmap (void)
 {
     XRenderPictFormat *xformat;
+
+    if (mType == Normal2D)
+	return;
 
     if (mPicture)
 	XRenderFreePicture (QX11Info::display(), mPicture);
@@ -1456,7 +1469,7 @@ KWD::Window::updateProperty (void)
     decor_extents_t maxExtents;
     long	    data[256];
     decor_quad_t    quads[N_QUADS_MAX];
-    int		    nQuad;
+    int		    nQuad = 0;
     int		    lh, rh;
     int		    w;
     int		    minWidth;
@@ -1471,74 +1484,82 @@ KWD::Window::updateProperty (void)
     mState = NET::MaxVert | NET::MaxHoriz;
     mDecor->borders (maxExtents.left, maxExtents.right,
 		     maxExtents.top, maxExtents.bottom);
-    mState = saveState;
+    mState = 0;
     mDecor->borders (mBorder.left, mBorder.right, mBorder.top, mBorder.bottom);
+    mState = saveState;
 
-    if (mLayout.rotation)
-	lh = mLayout.left.x2 - mLayout.left.x1;
-    else
-	lh = mLayout.left.y2 - mLayout.left.y1;
-
-    if (mLayout.rotation)
-	rh = mLayout.right.x2 - mLayout.right.x1;
-    else
-	rh = mLayout.right.y2 - mLayout.right.y1;
-
-    w = mLayout.top.x2 - mLayout.top.x1 - mContext.left_space -
-	mContext.right_space;
-
-    if (mType == Normal)
+    if (mType != Normal2D)
     {
-	int	topXOffset = w / 2;
-	QWidget *widget = mDecor->widget ();
-	int	x;
+	if (mLayout.rotation)
+	    lh = mLayout.left.x2 - mLayout.left.x1;
+	else
+	    lh = mLayout.left.y2 - mLayout.left.y1;
+ 
+	if (mLayout.rotation)
+	    rh = mLayout.right.x2 - mLayout.right.x1;
+	else
+	    rh = mLayout.right.y2 - mLayout.right.y1;
+ 
+	w = mLayout.top.x2 - mLayout.top.x1 - mContext.left_space -
+	    mContext.right_space;
 
-	x = w - mContext.left_space - mContext.left_corner_space;
-	if (x > topXOffset)
-	    topXOffset = x;
-
-	if (widget)
+	if (mType == Normal)
 	{
-	    const QList<QObject*> children = widget->children ();
+	    int	topXOffset = w / 2;
+	    QWidget *widget = mDecor->widget ();
+	    int	x;
 
-	    foreach (QObject *obj, children)
+	    x = w - mContext.left_space - mContext.left_corner_space;
+	    if (x > topXOffset)
+		topXOffset = x;
+ 
+	    if (widget)
 	    {
-		QWidget *child;
+		const QList<QObject*> children = widget->children ();
+ 
+		foreach (QObject *obj, children)
+		{
+		    QWidget *child;
+ 
+		    if (!obj->isWidgetType ())
+			continue;
+ 
+		    child = static_cast <QWidget *> (obj);
 
-		if (!obj->isWidgetType ())
-		    continue;
-
-		child = static_cast <QWidget *> (obj);
-
-		x = child->x () - mBorder.left - 2;
-		if (x > w / 2 && x < topXOffset)
-		    topXOffset = x;
+		    x = child->x () - mBorder.left - 2;
+		    if (x > w / 2 && x < topXOffset)
+			topXOffset = x;
+		}
 	    }
+	    nQuad = decor_set_lXrXtXbX_window_quads (quads,
+						    &mContext,
+						    &mLayout,
+						    lh / 2,
+						    rh / 2,
+						    topXOffset,
+						    w / 2);
+ 
+	    updateBlurProperty (topXOffset, w / 2, lh / 2, rh / 2);
+ 
+	    minWidth = mContext.left_corner_space + 1 + mContext.right_corner_space;
+	}
+	else
+	{
+	    nQuad = decor_set_lSrStSbS_window_quads (quads, &mContext, &mLayout);
+
+	    minWidth = 1;
 	}
 
-	nQuad = decor_set_lXrXtXbX_window_quads (quads,
-						 &mContext,
-						 &mLayout,
-						 lh / 2,
-						 rh / 2,
-						 topXOffset,
-						 w / 2);
-
-	updateBlurProperty (topXOffset, w / 2, lh / 2, rh / 2);
-
-	minWidth = mContext.left_corner_space + 1 + mContext.right_corner_space;
-    }
-    else
-    {
-	nQuad = decor_set_lSrStSbS_window_quads (quads, &mContext, &mLayout);
-
-	minWidth = 1;
-    }
-
-    decor_quads_to_property (data, mTexturePixmap.handle (),
-			     &mBorder, &maxExtents,
-			     minWidth, 0,
-			     quads, nQuad);
+	decor_quads_to_property (data, mTexturePixmap.handle (),
+				&mBorder, &maxExtents,
+				minWidth, 0,
+				quads, nQuad);
+     }
+     else
+     {
+	decor_gen_window_property (data, &mBorder, &maxExtents, 1, 0);
+     }
+ 
 
     KWD::trapXError ();
     XChangeProperty (QX11Info::display(), mClientId, atom,
@@ -1560,6 +1581,10 @@ KWD::Window::handleActiveChange (void)
 void
 KWD::Window::updateFrame (WId frame)
 {
+    if (mMapped && mType == Normal2D && mFrame != frame)
+    {
+	XReparentWindow (QX11Info::display(), winId (), frame, 0, 0);
+    }
     mFrame = frame;
 
     KWD::trapXError ();
@@ -1657,7 +1682,10 @@ void
 KWD::Window::updateCursor (QPoint pos)
 {
     KWD::trapXError ();
-    XDefineCursor (QX11Info::display(), mFrame, positionToCursor (pos));
+    if (mType == Normal2D)
+        XDefineCursor (QX11Info::display(), winId (), positionToCursor (pos));
+    else
+	XDefineCursor (QX11Info::display(), mFrame, positionToCursor (pos));
     KWD::popXError ();
 }
 
@@ -1789,13 +1817,16 @@ KWD::Window::handlePopupAboutToShow (void)
     mMinimizeOpAction->setEnabled (isMinimizable ());
     mCloseOpAction->setEnabled (isCloseable ());
 
-    foreach (QAction* action, mOpacityMenu->actions ())
+    if (mType != Normal2D)
     {
-	if(action->data ().toInt () ==
-	   qRound ((float)mOpacity * 100.0 / 0xffff))
-	    action->setChecked( true );
-	else
-	    action->setChecked( false );
+	foreach (QAction* action, mOpacityMenu->actions ())
+	{
+	    if(action->data ().toInt () ==
+	    qRound ((float)mOpacity * 100.0 / 0xffff))
+		action->setChecked( true );
+	    else
+		action->setChecked( false );
+	}
     }
 
 }
@@ -2197,4 +2228,17 @@ KWD::Window::hideKillProcessDialog (void)
     {
 	mProcessKiller.terminate ();
     }
+}
+
+bool
+KWD::Window::eventFilter( QObject* o, QEvent* e )
+{
+    if (mDecor == NULL || o != mDecor->widget())
+        return false;
+    if (e->type() == QEvent::MouseMove)
+    {
+        QMouseEvent* ev = static_cast< QMouseEvent* >( e );
+        updateCursor (QPoint (ev->x(), ev->y()));
+    }
+    return false;
 }
