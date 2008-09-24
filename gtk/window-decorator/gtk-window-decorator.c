@@ -7094,7 +7094,8 @@ main (int argc, char *argv[])
 	return 1;
     }
 
-    decor_set_dm_check_hint (xdisplay, gdk_screen_get_number (gdkscreen));
+    decor_set_dm_check_hint (xdisplay, gdk_screen_get_number (gdkscreen),
+			     WINDOW_DECORATION_TYPE_PIXMAP);
 
     update_default_decorations (gdkscreen);
 
