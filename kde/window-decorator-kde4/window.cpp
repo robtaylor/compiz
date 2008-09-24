@@ -1466,7 +1466,7 @@ void
 KWD::Window::updateProperty (void)
 {
     Atom	    atom = Atoms::netWindowDecor;
-    decor_extents_t maxExtents;
+    decor_extents_t maxExtents, normExtents;
     long	    data[256];
     decor_quad_t    quads[N_QUADS_MAX];
     int		    nQuad = 0;
@@ -1485,8 +1485,10 @@ KWD::Window::updateProperty (void)
     mDecor->borders (maxExtents.left, maxExtents.right,
 		     maxExtents.top, maxExtents.bottom);
     mState = 0;
-    mDecor->borders (mBorder.left, mBorder.right, mBorder.top, mBorder.bottom);
+    mDecor->borders (normExtents.left, normExtents.right,
+		     normExtents.top, normExtents.bottom);
     mState = saveState;
+    mDecor->borders (mBorder.left, mBorder.right, mBorder.top, mBorder.bottom);
 
     if (mType != Normal2D)
     {
@@ -1551,13 +1553,13 @@ KWD::Window::updateProperty (void)
 	}
 
 	decor_quads_to_property (data, mTexturePixmap.handle (),
-				&mBorder, &maxExtents,
+				&normExtents, &maxExtents,
 				minWidth, 0,
 				quads, nQuad);
      }
      else
      {
-	decor_gen_window_property (data, &mBorder, &maxExtents, 1, 0);
+	decor_gen_window_property (data, &normExtents, &maxExtents, 1, 0);
      }
  
 
