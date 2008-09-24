@@ -1517,6 +1517,8 @@ CompWindow::move (int dx, int dy, bool immediate)
 	priv->geometry.setY (priv->attrib.y);
 
 	XOffsetRegion (priv->region, dx, dy);
+	if (priv->frameRegion)
+	    XOffsetRegion (priv->frameRegion, dx, dy);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
 
@@ -4948,7 +4950,6 @@ PrivateWindow::reparent ()
     XFlush (dpy);
 
     XChangeWindowAttributes(dpy, id, CWEventMask | CWDontPropagate, &attr);
-
 
     if (mapNum || shaded)
     {
