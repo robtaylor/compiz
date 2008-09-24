@@ -1065,7 +1065,7 @@ CompScreen::handleEvent (XEvent *event)
 	break;
     case ReparentNotify:
 	w = findWindow (event->xreparent.window);
-	if (!w)
+	if (!w && event->xreparent.parent == priv->root)
 	{
 	    new CompWindow (event->xreparent.window, priv->getTopWindow ());
 	}
