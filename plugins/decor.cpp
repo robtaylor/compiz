@@ -55,7 +55,8 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     if (mask & PAINT_WINDOW_TRANSFORMED_MASK)
 	region = &infiniteRegion;
 
-    if (wd && region->numRects)
+    if (wd && region->numRects &&
+	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
 	REGION	     box;
 
@@ -79,6 +80,22 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 
 	if (gWindow->geometry ().vCount)
 	    gWindow->glDrawTexture (wd->decor->texture, attrib, mask);
+    }
+    else if (wd && region->numRects &&
+	     wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW)
+    {
+	gWindow->geometry ().reset ();
+
+	if (!gWindow->texture ().hasPixmap ())
+	    gWindow->bind ();
+	if (!gWindow->texture ().hasPixmap ())
+	    return status;
+
+	gWindow->glAddGeometry (&gWindow->matrix (), 1,
+				window->frameRegion (), region);
+
+	if (gWindow->geometry ().vCount)
+	    gWindow->glDrawTexture (&gWindow->texture (), attrib, mask);
     }
 
     return status;
@@ -124,6 +141,9 @@ DecorTexture::~DecorTexture ()
 DecorTexture *
 DecorScreen::getTexture (Pixmap pixmap)
 {
+    if (!cmActive)
+	return NULL;
+
     foreach (DecorTexture *t, textures)
 	if (t->pixmap == pixmap)
 	{
@@ -243,15 +263,16 @@ Decoration::create (Window     id,
     unsigned long   n, nleft;
     unsigned char   *data;
     long	    *prop;
-    Pixmap	    pixmap;
+    Pixmap	    pixmap = None;
     decor_extents_t input;
     decor_extents_t maxInput;
-    decor_quad_t    *quad;
-    int		    nQuad;
+    decor_quad_t    *quad = NULL;
+    int		    nQuad = 0;
     int		    minWidth;
     int		    minHeight;
     int		    left, right, top, bottom;
     int		    x1, y1, x2, y2;
+    int		    type;
 
     result = XGetWindowProperty (screen->dpy (), id,
 				 decorAtom, 0L, 1024L, FALSE,
@@ -274,25 +295,48 @@ Decoration::create (Window     id,
 	return NULL;
     }
 
-    nQuad = (n - BASE_PROP_SIZE) / QUAD_PROP_SIZE;
+    type = decor_property_get_type (prop);
 
-    quad = new decor_quad_t [nQuad];
-    if (!quad)
+    if (type ==  WINDOW_DECORATION_TYPE_PIXMAP &&
+	!DecorScreen::get (screen)->cmActive)
+	return NULL;
+
+    if (type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
+
+	nQuad = (n - BASE_PROP_SIZE) / QUAD_PROP_SIZE;
+
+	quad = new decor_quad_t [nQuad];
+	if (!quad)
+	{
+	    XFree (data);
+	    return NULL;
+	}
+
+	nQuad = decor_pixmap_property_to_quads (prop, n, &pixmap, &input,
+						&maxInput, &minWidth,
+						&minHeight, quad);
+
 	XFree (data);
-	return NULL;
+
+	if (!nQuad)
+	{
+	    delete [] quad;
+	    return NULL;
+	}
     }
-
-    nQuad = decor_property_to_quads (prop, n, &pixmap, &input, &maxInput,
-				     &minWidth, &minHeight, quad);
-
-    XFree (data);
-
-    if (!nQuad)
+    else if (type == WINDOW_DECORATION_TYPE_WINDOW)
     {
-	delete [] quad;
-	return NULL;
+	if (!decor_window_property (prop, n, &input, &maxInput,
+				    &minWidth, &minHeight))
+	{
+	    XFree (data);
+	    return NULL;
+	}
+	XFree (data);
     }
+    else
+	return NULL;
 
     decoration = new Decoration ();
     if (!decoration)
@@ -301,8 +345,12 @@ Decoration::create (Window     id,
 	return NULL;
     }
 
-    decoration->texture = DecorScreen::get (screen)->getTexture (pixmap);
-    if (!decoration->texture)
+    if (pixmap)
+	decoration->texture = DecorScreen::get (screen)->getTexture (pixmap);
+    else
+	decoration->texture = NULL;
+
+    if (!decoration->texture && type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
 	delete decoration;
 	delete [] quad;
@@ -314,32 +362,42 @@ Decoration::create (Window     id,
     decoration->quad	  = quad;
     decoration->nQuad	  = nQuad;
 
-    left   = 0;
-    right  = minWidth;
-    top    = 0;
-    bottom = minHeight;
-
-    while (nQuad--)
+    if (type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
-	computeQuadBox (quad, minWidth, minHeight, &x1, &y1, &x2, &y2,
-			NULL, NULL);
+	left   = 0;
+	right  = minWidth;
+	top    = 0;
+	bottom = minHeight;
 
-	if (x1 < left)
-	    left = x1;
-	if (y1 < top)
-	    top = y1;
-	if (x2 > right)
-	    right = x2;
-	if (y2 > bottom)
-	    bottom = y2;
+	while (nQuad--)
+	{
+	    computeQuadBox (quad, minWidth, minHeight, &x1, &y1, &x2, &y2,
+			    NULL, NULL);
 
-	quad++;
+	    if (x1 < left)
+		left = x1;
+	    if (y1 < top)
+		top = y1;
+	    if (x2 > right)
+		right = x2;
+	    if (y2 > bottom)
+		bottom = y2;
+
+	    quad++;
+	}
+
+	decoration->output.left   = -left;
+	decoration->output.right  = right - minWidth;
+	decoration->output.top    = -top;
+	decoration->output.bottom = bottom - minHeight;
     }
-
-    decoration->output.left   = -left;
-    decoration->output.right  = right - minWidth;
-    decoration->output.top    = -top;
-    decoration->output.bottom = bottom - minHeight;
+    else
+    {
+	decoration->output.left   = MAX (input.left, maxInput.left);
+	decoration->output.right  = MAX (input.right, maxInput.right);
+	decoration->output.top    = MAX (input.top, maxInput.top);
+	decoration->output.bottom = MAX (input.bottom, maxInput.bottom);
+    }
 
     decoration->input.left   = input.left;
     decoration->input.right  = input.right;
@@ -352,6 +410,7 @@ Decoration::create (Window     id,
     decoration->maxInput.bottom = maxInput.bottom;
 
     decoration->refCount = 1;
+    decoration->type = type;
 
     return decoration;
 }
@@ -363,7 +422,8 @@ Decoration::release (Decoration *decoration)
     if (decoration->refCount)
 	return;
 
-    DecorScreen::get (screen)->releaseTexture (decoration->texture);
+    if (decoration->texture)
+	DecorScreen::get (screen)->releaseTexture (decoration->texture);
 
     delete [] decoration->quad;
     delete decoration;
@@ -391,13 +451,18 @@ WindowDecoration::create (Decoration *d)
     if (!wd)
 	return NULL;
 
-    wd->quad = new ScaledQuad[d->nQuad];
-
-    if (!wd->quad)
+    if (d->type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
-	delete wd;
-	return NULL;
+	wd->quad = new ScaledQuad[d->nQuad];
+
+	if (!wd->quad)
+	{
+	    delete wd;
+	    return NULL;
+	}
     }
+    else
+	wd->quad = NULL;
 
     d->refCount++;
 
@@ -599,10 +664,17 @@ DecorWindow::update (bool allowDecoration)
 	}
 	else
 	{
-	    if (window->id () == screen->activeWindow ())
-		decoration = dScreen->decor[DECOR_ACTIVE];
-	    else
-		decoration = dScreen->decor[DECOR_NORMAL];
+	    
+	    if (dScreen->dmSupports & WINDOW_DECORATION_TYPE_PIXMAP &&
+	        dScreen->cmActive)
+	    {
+		if (window->id () == screen->activeWindow ())
+		    decoration = dScreen->decor[DECOR_ACTIVE];
+		else
+		    decoration = dScreen->decor[DECOR_NORMAL];
+	    }
+	    else if (dScreen->dmSupports & WINDOW_DECORATION_TYPE_WINDOW)
+		decoration = &dScreen->windowDefault;
 	}
     }
     else
@@ -631,7 +703,8 @@ DecorWindow::update (bool allowDecoration)
     if (decoration == old)
 	return false;
 
-    cWindow->damageOutputExtents ();
+    if (dScreen->cmActive)
+	cWindow->damageOutputExtents ();
 
     if (old)
     {
@@ -659,7 +732,8 @@ DecorWindow::update (bool allowDecoration)
 
 	updateFrame ();
 	window->updateWindowOutputExtents ();
-	cWindow->damageOutputExtents ();
+	if (dScreen->cmActive)
+	    cWindow->damageOutputExtents ();
 	updateDecorationScale ();
     }
     else
@@ -667,14 +741,14 @@ DecorWindow::update (bool allowDecoration)
 	CompWindowExtents emptyExtents;
 	wd = NULL;
 
+	updateFrame ();
+	
 	memset (&emptyExtents, 0, sizeof (CompWindowExtents));
 
 	window->setWindowFrameExtents (&emptyExtents);
 
 	moveDx = -oldShiftX;
 	moveDy = -oldShiftY;
-
-	updateFrame ();
     }
 
     if (window->placed () && !window->overrideRedirect () &&
@@ -713,115 +787,10 @@ DecorWindow::update (bool allowDecoration)
 void
 DecorWindow::updateFrame ()
 {
-    if (wd && (window->input ().left || window->input ().right ||
-	window->input ().top || window->input ().bottom))
-    {
-	XRectangle           rects[4];
-	int	             x, y, width, height;
-	int	             i = 0;
-	CompWindow::Geometry server = window->serverGeometry ();
-	int                  bw = server.border () * 2;
-	CompWindowExtents    input;
-
-	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
-	    input = wd->decor->maxInput;
-	else
-	    input = wd->decor->input;
-	
-	x      = window->input ().left - input.left;
-	y      = window->input ().top - input.top;
-	width  = server.width () + input.left + input.right + bw;
-	height = server.height ()+ input.top  + input.bottom + bw;
-
-	if (window->shaded ())
-	    height = input.top + input.bottom;
-
-	if (!inputFrame)
-	{
-	    XSetWindowAttributes attr;
-
-	    attr.event_mask	   = StructureNotifyMask;
-	    attr.override_redirect = TRUE;
-
-	    inputFrame = XCreateWindow (screen->dpy (), window->frame (),
-					x, y, width, height, 0, CopyFromParent,
-					InputOnly, CopyFromParent,
-					CWOverrideRedirect | CWEventMask,
-					&attr);
-
-	    XGrabButton (screen->dpy (), AnyButton, AnyModifier, inputFrame,
-			 TRUE, ButtonPressMask | ButtonReleaseMask |
-			 ButtonMotionMask, GrabModeSync, GrabModeSync, None,
-			 None);
-
-	    XMapWindow (screen->dpy (), inputFrame);
-
-	    XChangeProperty (screen->dpy (), window->id (),
-			     dScreen->inputFrameAtom, XA_WINDOW, 32,
-			     PropModeReplace, (unsigned char *) &inputFrame, 1);
-
-	    if (screen->XShape ())
-        	XShapeSelectInput (screen->dpy (), inputFrame,
-				   ShapeNotifyMask);
-
-	    oldX = 0;
-	    oldY = 0;
-	    oldWidth  = 0;
-	    oldHeight = 0;
-	}
-
-	if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
-	{
-	    oldX = x;
-	    oldY = y;
-	    oldWidth  = width;
-	    oldHeight = height;
-
-	    XMoveResizeWindow (screen->dpy (), inputFrame, x, y,
-			       width, height);
-	    XLowerWindow (screen->dpy (), inputFrame);
-
-
-	    rects[i].x	= 0;
-	    rects[i].y	= 0;
-	    rects[i].width  = width;
-	    rects[i].height = input.top;
-
-	    if (rects[i].width && rects[i].height)
-		i++;
-
-	    rects[i].x	= 0;
-	    rects[i].y	= input.top;
-	    rects[i].width  = input.left;
-	    rects[i].height = height - input.top - input.bottom;
-
-	    if (rects[i].width && rects[i].height)
-		i++;
-
-	    rects[i].x	= width - input.right;
-	    rects[i].y	= input.top;
-	    rects[i].width  = input.right;
-	    rects[i].height = height - input.top - input.bottom;
-
-	    if (rects[i].width && rects[i].height)
-		i++;
-
-	    rects[i].x	= 0;
-	    rects[i].y	= height - input.bottom;
-	    rects[i].width  = width;
-	    rects[i].height = input.bottom;
-
-	    if (rects[i].width && rects[i].height)
-		i++;
-
-	    XShapeCombineRectangles (screen->dpy (), inputFrame,
-				     ShapeInput, 0, 0, rects, i,
-				     ShapeSet, YXBanded);
-
-	    EMPTY_REGION (frameRegion);
-	}
-    }
-    else
+    if (!wd || !(window->input ().left || window->input ().right ||
+	window->input ().top || window->input ().bottom) ||
+        (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP && outputFrame) ||
+        (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW && inputFrame))
     {
 	if (inputFrame)
 	{
@@ -836,14 +805,268 @@ DecorWindow::updateFrame ()
 	    oldWidth  = 0;
 	    oldHeight = 0;
 	}
+	if (outputFrame)
+	{
+	    XDamageDestroy (screen->dpy (), frameDamage);
+	    XDeleteProperty (screen->dpy (), window->id (),
+			     dScreen->outputFrameAtom);
+	    XDestroyWindow (screen->dpy (), outputFrame);
+	    dScreen->frames.erase (outputFrame);
+
+	    outputFrame = None;
+	    EMPTY_REGION (frameRegion);
+
+	    oldX = 0;
+	    oldY = 0;
+	    oldWidth  = 0;
+	    oldHeight = 0;
+	}
     }
+    if (wd && (window->input ().left || window->input ().right ||
+	window->input ().top || window->input ().bottom))
+    {
+	if (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
+	    updateInputFrame ();
+	else if (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW)
+	    updateOutputFrame ();
+    }
+}
+
+void
+DecorWindow::updateInputFrame ()
+{
+    XRectangle           rects[4];
+    int                  x, y, width, height;
+    int                  i = 0;
+    CompWindow::Geometry server = window->serverGeometry ();
+    int                  bw = server.border () * 2;
+    CompWindowExtents    input;
+
+    if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
+	input = wd->decor->maxInput;
+    else
+	input = wd->decor->input;
+
+    x      = window->input ().left - input.left;
+    y      = window->input ().top - input.top;
+    width  = server.width () + input.left + input.right + bw;
+    height = server.height ()+ input.top  + input.bottom + bw;
+
+    if (window->shaded ())
+	height = input.top + input.bottom;
+
+    XGrabServer (screen->dpy ());
+
+    if (!inputFrame)
+    {
+	XSetWindowAttributes attr;
+
+	attr.event_mask	   = StructureNotifyMask;
+	attr.override_redirect = TRUE;
+
+	inputFrame = XCreateWindow (screen->dpy (), window->frame (),
+				    x, y, width, height, 0, CopyFromParent,
+				    InputOnly, CopyFromParent,
+				    CWOverrideRedirect | CWEventMask,
+				    &attr);
+
+	XGrabButton (screen->dpy (), AnyButton, AnyModifier, inputFrame,
+		     TRUE, ButtonPressMask | ButtonReleaseMask |
+		     ButtonMotionMask, GrabModeSync, GrabModeSync, None,
+		     None);
+
+	XMapWindow (screen->dpy (), inputFrame);
+
+	XChangeProperty (screen->dpy (), window->id (),
+			 dScreen->inputFrameAtom, XA_WINDOW, 32,
+			 PropModeReplace, (unsigned char *) &inputFrame, 1);
+
+	if (screen->XShape ())
+	    XShapeSelectInput (screen->dpy (), inputFrame, ShapeNotifyMask);
+
+	oldX = 0;
+	oldY = 0;
+	oldWidth  = 0;
+	oldHeight = 0;
+    }
+
+    if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
+    {
+	oldX = x;
+	oldY = y;
+	oldWidth  = width;
+	oldHeight = height;
+
+	XMoveResizeWindow (screen->dpy (), inputFrame, x, y,
+			   width, height);
+	XLowerWindow (screen->dpy (), inputFrame);
+
+
+	rects[i].x	= 0;
+	rects[i].y	= 0;
+	rects[i].width  = width;
+	rects[i].height = input.top;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= input.top;
+	rects[i].width  = input.left;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= width - input.right;
+	rects[i].y	= input.top;
+	rects[i].width  = input.right;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= height - input.bottom;
+	rects[i].width  = width;
+	rects[i].height = input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	XShapeCombineRectangles (screen->dpy (), inputFrame,
+				 ShapeInput, 0, 0, rects, i,
+				 ShapeSet, YXBanded);
+
+	EMPTY_REGION (frameRegion);
+    }
+
+    XUngrabServer (screen->dpy ());
+}
+
+void
+DecorWindow::updateOutputFrame ()
+{
+    XRectangle           rects[4];
+    int                  x, y, width, height;
+    int                  i = 0;
+    CompWindow::Geometry server = window->serverGeometry ();
+    int                  bw = server.border () * 2;
+    CompWindowExtents    input;
+
+    if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
+	input = wd->decor->maxInput;
+    else
+	input = wd->decor->input;
+
+    x      = window->input ().left - input.left;
+    y      = window->input ().top - input.top;
+    width  = server.width () + input.left + input.right + bw;
+    height = server.height ()+ input.top  + input.bottom + bw;
+
+    if (window->shaded ())
+	height = input.top + input.bottom;
+
+    XGrabServer (screen->dpy ());
+
+    if (!outputFrame)
+    {
+	XSetWindowAttributes attr;
+
+	attr.background_pixel  = 0x0;
+	attr.event_mask        = StructureNotifyMask;
+	attr.override_redirect = TRUE;
+
+	outputFrame = XCreateWindow (screen->dpy (), window->frame (),
+				     x, y, width, height, 0, CopyFromParent,
+				     InputOutput, CopyFromParent,
+				     CWOverrideRedirect | CWEventMask,
+				     &attr);
+
+	XGrabButton (screen->dpy (), AnyButton, AnyModifier, outputFrame,
+			TRUE, ButtonPressMask | ButtonReleaseMask |
+			ButtonMotionMask, GrabModeSync, GrabModeSync, None,
+			None);
+
+	XMapWindow (screen->dpy (), outputFrame);
+
+	XChangeProperty (screen->dpy (), window->id (),
+			 dScreen->outputFrameAtom, XA_WINDOW, 32,
+			 PropModeReplace, (unsigned char *) &outputFrame, 1);
+	
+	if (screen->XShape ())
+	    XShapeSelectInput (screen->dpy (), outputFrame,
+			       ShapeNotifyMask);
+
+	oldX = 0;
+	oldY = 0;
+	oldWidth  = 0;
+	oldHeight = 0;
+
+	frameDamage = XDamageCreate (screen->dpy (), outputFrame,
+			             XDamageReportRawRectangles);
+
+	dScreen->frames[outputFrame] = this;
+    }
+
+    if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
+    {
+	oldX = x;
+	oldY = y;
+	oldWidth  = width;
+	oldHeight = height;
+
+	XMoveResizeWindow (screen->dpy (), outputFrame, x, y, width, height);
+	XLowerWindow (screen->dpy (), outputFrame);
+
+
+	rects[i].x	= 0;
+	rects[i].y	= 0;
+	rects[i].width  = width;
+	rects[i].height = input.top;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= input.top;
+	rects[i].width  = input.left;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= width - input.right;
+	rects[i].y	= input.top;
+	rects[i].width  = input.right;
+	rects[i].height = height - input.top - input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	rects[i].x	= 0;
+	rects[i].y	= height - input.bottom;
+	rects[i].width  = width;
+	rects[i].height = input.bottom;
+
+	if (rects[i].width && rects[i].height)
+	    i++;
+
+	XShapeCombineRectangles (screen->dpy (), outputFrame,
+				 ShapeBounding, 0, 0, rects, i,
+				 ShapeSet, YXBanded);
+
+	EMPTY_REGION (frameRegion);
+    }
+
+    XUngrabServer (screen->dpy ());
 }
 
 void
 DecorScreen::checkForDm (bool updateWindows)
 {
     Atom	  actual;
-    int		  result, format;
+    int		  result, format, dmSupports = 0;
     unsigned long n, left;
     unsigned char *data;
     Window	  dmWin = None;
@@ -866,11 +1089,39 @@ DecorScreen::checkForDm (bool updateWindows)
 
 	if (CompScreen::checkForError (screen->dpy ()))
 	    dmWin = None;
+	else
+	{
+	    result = XGetWindowProperty (screen->dpy (), dmWin,
+					 decorTypeAtom, 0L, 2L, FALSE,
+					 XA_ATOM, &actual, &format,
+					 &n, &left, &data);
+	    if (result == Success && n && data)
+	    {
+		Atom *ret = (Atom *) data;
+
+		for (unsigned long i = 0; i < n; i++)
+		{
+		    if (ret[i] == decorTypePixmapAtom)
+			dmSupports |= WINDOW_DECORATION_TYPE_PIXMAP;
+		    else if (ret[i] == decorTypeWindowAtom)
+			dmSupports |= WINDOW_DECORATION_TYPE_WINDOW;
+		}
+
+		if (!dmSupports)
+		    dmWin = None;
+		
+		XFree (data);
+	    }
+	    else
+		dmWin = None;
+	}
     }
 
     if (dmWin != this->dmWin)
     {
 	int i;
+
+	this->dmSupports = dmSupports;
 
 	if (dmWin)
 	{
@@ -961,9 +1212,13 @@ DecorScreen::handleEvent (XEvent *event)
 		DecorWindow::get (w)->update (true);
 	    break;
 	default:
-	    if (event->type == cScreen->damageEvent () + XDamageNotify)
+	    if (cmActive &&
+		event->type == cScreen->damageEvent () + XDamageNotify)
 	    {
 		XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
+
+		if (frames.find (de->drawable) != frames.end ())
+		    frames[de->drawable]->cWindow->damageOutputExtents ();
 		
 		foreach (DecorTexture *t, textures)
 		{
@@ -1073,6 +1328,13 @@ DecorScreen::handleEvent (XEvent *event)
 				     inputFrameAtom);
 		    dw->inputFrame = None;
 		}
+		else if (dw->outputFrame &&
+		         dw->outputFrame == event->xdestroywindow.window)
+		{
+		    XDeleteProperty (screen->dpy (), w->id (),
+				     outputFrameAtom);
+		    dw->outputFrame = None;
+		}
 	    }
 	    break;
 	default:
@@ -1098,6 +1360,30 @@ DecorScreen::handleEvent (XEvent *event)
 			    shapeRects =
 				XShapeGetRectangles (screen->dpy (),
 				    dw->inputFrame, ShapeInput,
+				    &n, &order);
+			    if (!n || !shapeRects)
+				break;
+
+			    for (int i = 0; i < n; i++)
+				XUnionRectWithRegion (&shapeRects[i],
+						      dw->frameRegion,
+						      dw->frameRegion);
+
+			    w->updateFrameRegion ();
+
+			    XFree (shapeRects);
+			}
+			else if (dw->outputFrame ==
+			         ((XShapeEvent *) event)->window)
+			{
+			    XRectangle *shapeRects = 0;
+			    int order, n;
+
+			    EMPTY_REGION (dw->frameRegion);
+
+			    shapeRects =
+				XShapeGetRectangles (screen->dpy (),
+				    dw->outputFrame, ShapeBounding,
 				    &n, &order);
 			    if (!n || !shapeRects)
 				break;
@@ -1277,6 +1563,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
     cScreen (CompositeScreen::get (s)),
     textures (),
     dmWin (None),
+    dmSupports (0),
+    cmActive (false),
     opt (DECOR_OPTION_NUM)
 {
     if (!decorMetadata->initOptions (decorOptionInfo, DECOR_OPTION_NUM, opt))
@@ -1297,9 +1585,32 @@ DecorScreen::DecorScreen (CompScreen *s) :
 	XInternAtom (s->dpy (), DECOR_ACTIVE_ATOM_NAME, 0);
     inputFrameAtom =
 	XInternAtom (s->dpy (), DECOR_INPUT_FRAME_ATOM_NAME, 0);
+    outputFrameAtom =
+	XInternAtom (s->dpy (), DECOR_OUTPUT_FRAME_ATOM_NAME, 0);
+    decorTypeAtom =
+	XInternAtom (s->dpy (), DECOR_TYPE_ATOM_NAME, 0);
+    decorTypePixmapAtom =
+	XInternAtom (s->dpy (), DECOR_TYPE_PIXMAP_ATOM_NAME, 0);
+    decorTypeWindowAtom =
+	XInternAtom (s->dpy (), DECOR_TYPE_WINDOW_ATOM_NAME, 0);
 
-    for (unsigned int i = 0; i < DECOR_NUM; i++)
-	decor[i] = NULL;
+    windowDefault.texture   = NULL;
+    windowDefault.minWidth  = 0;
+    windowDefault.minHeight = 0;
+    windowDefault.quad      = NULL;
+    windowDefault.nQuad     = 0;
+    windowDefault.type      = WINDOW_DECORATION_TYPE_WINDOW;
+
+    windowDefault.input.left   = 0;
+    windowDefault.input.right  = 0;
+    windowDefault.input.top    = 1;
+    windowDefault.input.bottom = 0;
+
+    windowDefault.maxInput = windowDefault.output = windowDefault.input;
+    windowDefault.refCount = 1;
+
+    cmActive = (cScreen) ? cScreen->compositingActive () &&
+               GLScreen::get (s) != NULL : false;
 
     checkForDm (false);
 
@@ -1324,7 +1635,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     dScreen (DecorScreen::get (screen)),
     wd (NULL),
     decor (NULL),
-    inputFrame (None)
+    inputFrame (None),
+    outputFrame (None)
 {
     frameRegion = XCreateRegion ();
     if (!frameRegion)
@@ -1333,15 +1645,21 @@ DecorWindow::DecorWindow (CompWindow *w) :
 	return;
     }
 
+    WindowInterface::setHandler (window);
+
+    if (dScreen->cmActive)
+    {
+	gWindow = GLWindow::get (w);
+        cWindow = CompositeWindow::get (w);
+	CompositeWindowInterface::setHandler (cWindow);
+	GLWindowInterface::setHandler (gWindow);
+    }
+
     if (!w->overrideRedirect ())
 	updateDecoration ();
 
     if (w->shaded () || w->isViewable ())
 	update (true);
-
-    WindowInterface::setHandler (window);
-    CompositeWindowInterface::setHandler (cWindow);
-    GLWindowInterface::setHandler (gWindow);
 }
 
 
@@ -1363,9 +1681,7 @@ DecorWindow::~DecorWindow ()
 bool
 DecorPluginVTable::init ()
 {
-    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) ||
-        !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) ||
-        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
 
     decorMetadata = new CompMetadata (name (), decorOptionInfo,

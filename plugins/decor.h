@@ -61,6 +61,7 @@ class Decoration {
 	int                       minHeight;
 	decor_quad_t              *quad;
 	int                       nQuad;
+	int                       type;
 };
 
 struct ScaledQuad {
@@ -80,6 +81,8 @@ class WindowDecoration {
 	ScaledQuad *quad;
 	int	   nQuad;
 };
+
+class DecorWindow;
 
 class DecorScreen :
     public ScreenInterface,
@@ -110,11 +113,21 @@ class DecorScreen :
 	Atom supportingDmCheckAtom;
 	Atom winDecorAtom;
 	Atom decorAtom[DECOR_NUM];
-	Atom inputFrameAtom; 
-	
+	Atom inputFrameAtom;
+	Atom outputFrameAtom;
+	Atom decorTypeAtom;
+	Atom decorTypePixmapAtom;
+	Atom decorTypeWindowAtom;
+
 	Window dmWin;
+	int    dmSupports;
 
 	Decoration *decor[DECOR_NUM];
+	Decoration windowDefault;
+
+	bool cmActive;
+
+	std::map<Window, DecorWindow *> frames;
 
 	CompOption::Vector opt;
 };
@@ -147,6 +160,8 @@ class DecorWindow :
 	void updateDecorationScale ();
 
 	void updateFrame ();
+	void updateInputFrame ();
+	void updateOutputFrame ();
 
 	bool checkSize (Decoration *decor);
 
@@ -170,6 +185,9 @@ class DecorWindow :
 	Region frameRegion;
 
 	Window inputFrame;
+	Window outputFrame;
+	Damage frameDamage;
+
 	int    oldX;
 	int    oldY;
 	int    oldWidth;
