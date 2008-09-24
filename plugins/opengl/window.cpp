@@ -277,3 +277,15 @@ GLWindow::Geometry::moreIndices (int newSize)
 
     return true;
 }
+
+GLTexture &
+GLWindow::texture ()
+{
+    return priv->texture;
+}
+
+GLTexture::Matrix &
+GLWindow::matrix ()
+{
+    return priv->matrix;
+}

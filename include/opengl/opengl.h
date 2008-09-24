@@ -336,6 +336,9 @@ class GLWindow :
 	bool bind ();
 	void release ();
 
+	GLTexture &texture ();
+	GLTexture::Matrix &matrix ();
+
 	void updatePaintAttribs ();
 
 	Geometry & geometry ();
