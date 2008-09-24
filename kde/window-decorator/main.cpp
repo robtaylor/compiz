@@ -124,7 +124,8 @@ main (int argc, char **argv)
 	return 1;
     }
 
-    decor_set_dm_check_hint (qt_xdisplay (), qt_xscreen ());
+    decor_set_dm_check_hint (qt_xdisplay (), qt_xscreen (),
+			     WINDOW_DECORATION_TYPE_PIXMAP);
 
     if (!app->enableDecorations (timestamp, event))
     {
