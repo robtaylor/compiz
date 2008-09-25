@@ -69,6 +69,14 @@ CompRegion::operator= (const CompRegion &c)
 	    priv->region = XCreateRegion ();
 	XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
     }
+    else
+    {
+	if (priv->region)
+	{
+	    XDestroyRegion (priv->region);
+	    priv->region = NULL;
+	}
+    }
     return *this;
 }
 
