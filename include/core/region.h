@@ -32,6 +32,7 @@ class CompRegion {
 	bool intersects (const CompRegion &) const;
 	bool intersects (const CompRect &) const;
 	CompRegion subtracted (const CompRegion &) const;
+	CompRegion subtracted (const CompRect &) const;
 	void translate (int, int);
 	void translate (const CompPoint &);
 	CompRegion translated (int, int) const;
@@ -51,7 +52,9 @@ class CompRegion {
 	CompRegion & operator+= (const CompRegion &);
 	CompRegion & operator+= (const CompRect &);
 	const CompRegion operator- (const CompRegion &) const;
+	const CompRegion operator- (const CompRect &) const;
 	CompRegion & operator-= (const CompRegion &);
+	CompRegion & operator-= (const CompRect &);
 	CompRegion & operator= (const CompRegion &);
 	
 	const CompRegion operator^ (const CompRegion &) const;
@@ -62,5 +65,8 @@ class CompRegion {
     private:
 	PrivateRegion *priv;
 };
+
+extern const CompRegion infiniteRegion;
+extern const CompRegion emptyRegion;
 
 #endif

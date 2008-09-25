@@ -8,6 +8,10 @@
 
 #include "privateregion.h"
 
+const CompRegion infiniteRegion (CompRect (MINSHORT, MAXSHORT,
+				           MINSHORT, MAXSHORT));
+const CompRegion emptyRegion;
+
 CompRegion::CompRegion ()
 {
     priv = new PrivateRegion ();
@@ -22,7 +26,7 @@ CompRegion::CompRegion (const CompRegion &c)
     if (c.priv->region)
     {
 	priv->region = XCreateRegion ();
-	XUnionRegion (&emptyRegion, c.priv->region, priv->region);
+	XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
     }
 }
 
@@ -63,7 +67,7 @@ CompRegion::operator= (const CompRegion &c)
     {
 	if (!priv->region)
 	    priv->region = XCreateRegion ();
-	XUnionRegion (&emptyRegion, c.priv->region, priv->region);
+	XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
     }
     return *this;
 }
@@ -170,6 +174,15 @@ CompRegion::subtracted (const CompRegion &r) const
     CompRegion rv;
     rv.priv->makeReal ();
     XSubtractRegion (handle (), r.handle (), rv.handle ());
+    return rv;
+}
+
+CompRegion
+CompRegion::subtracted (const CompRect &r) const
+{
+    CompRegion rv;
+    rv.priv->makeReal ();
+    XSubtractRegion (handle (), r.region (), rv.handle ());
     return rv;
 }
 
@@ -284,8 +297,20 @@ CompRegion::operator- (const CompRegion &r) const
     return subtracted (r);
 }
 
+const CompRegion
+CompRegion::operator- (const CompRect &r) const
+{
+    return subtracted (r);
+}
+
 CompRegion &
 CompRegion::operator-= (const CompRegion &r)
+{
+    return *this = *this - r;
+}
+
+CompRegion &
+CompRegion::operator-= (const CompRect &r)
 {
     return *this = *this - r;
 }
@@ -318,7 +343,12 @@ CompRegion::operator|= (const CompRegion &r)
 PrivateRegion::PrivateRegion ()
 {
     region = NULL;
-    box = emptyRegion;
+    box.numRects = 0;
+    box.extents.x1 = 0;
+    box.extents.y1 = 0;
+    box.extents.x2 = 0;
+    box.extents.y2 = 0;
+    box.size = 0;
 }
 
 PrivateRegion::~PrivateRegion ()
@@ -334,6 +364,6 @@ PrivateRegion::makeReal ()
 	return;
     region = XCreateRegion ();
     if (box.numRects)
-	XUnionRegion (&emptyRegion, &box, region);
+	XUnionRegion (CompRegion ().handle (), &box, region);
 }
 
