@@ -4805,7 +4805,7 @@ CompWindow::updateFrameRegion ()
 	r = priv->region.boundingRect ();
 	priv->frameRegion -= r;
 
-	r.setGeometry (r.x1 () - priv->input.left, r.x1 () + priv->input.right,
+	r.setGeometry (r.x1 () - priv->input.left, r.x2 () + priv->input.right,
 		       r.y1 () - priv->input.top, r.y2 () + priv->input.bottom);
 
 	priv->frameRegion &= CompRegion (r);
