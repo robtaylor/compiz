@@ -45,9 +45,6 @@ int  programArgc;
 
 char *backgroundImage = NULL;
 
-REGION   emptyRegion;
-REGION   infiniteRegion;
-
 bool shutDown = false;
 bool restartSignal = false;
 
@@ -167,21 +164,6 @@ main (int argc, char **argv)
     signal (SIGCHLD, signalHandler);
     signal (SIGINT, signalHandler);
     signal (SIGTERM, signalHandler);
-
-    emptyRegion.rects = &emptyRegion.extents;
-    emptyRegion.numRects = 0;
-    emptyRegion.extents.x1 = 0;
-    emptyRegion.extents.y1 = 0;
-    emptyRegion.extents.x2 = 0;
-    emptyRegion.extents.y2 = 0;
-    emptyRegion.size = 0;
-
-    infiniteRegion.rects = &infiniteRegion.extents;
-    infiniteRegion.numRects = 1;
-    infiniteRegion.extents.x1 = MINSHORT;
-    infiniteRegion.extents.y1 = MINSHORT;
-    infiniteRegion.extents.x2 = MAXSHORT;
-    infiniteRegion.extents.y2 = MAXSHORT;
 
     memset (&ctx, 0, sizeof (ctx));
 

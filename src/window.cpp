@@ -707,7 +707,7 @@ PrivateWindow::updateFrameWindow ()
 	{
 	    unreparent ();
 	    frame = None;
-	    XSubtractRegion (&emptyRegion, &emptyRegion, frameRegion);
+	    frameRegion = CompRegion ();
 	}
     }
 
@@ -747,11 +747,11 @@ CompWindow::getOutputExtents (CompWindowExtents *output)
 void
 PrivateWindow::updateRegion ()
 {
-    REGION     rect;
+    int        x1, x2, y1, y2;
     XRectangle r, *rects, *shapeRects = 0;
     int	       i, n = 0;
 
-    EMPTY_REGION (priv->region);
+    priv->region = CompRegion ();
 
     if (screen->XShape ())
     {
@@ -776,34 +776,30 @@ PrivateWindow::updateRegion ()
 	rects = shapeRects;
     }
 
-    rect.rects = &rect.extents;
-    rect.numRects = rect.size = 1;
-
     for (i = 0; i < n; i++)
     {
-	rect.extents.x1 = rects[i].x + priv->attrib.border_width;
-	rect.extents.y1 = rects[i].y + priv->attrib.border_width;
-	rect.extents.x2 = rect.extents.x1 + rects[i].width;
-	rect.extents.y2 = rect.extents.y1 + rects[i].height;
+	x1 = rects[i].x + priv->attrib.border_width;
+	y1 = rects[i].y + priv->attrib.border_width;
+	x2 = x1 + rects[i].width;
+	y2 = y1 + rects[i].height;
 
-	if (rect.extents.x1 < 0)
-	    rect.extents.x1 = 0;
-	if (rect.extents.y1 < 0)
-	    rect.extents.y1 = 0;
-	if (rect.extents.x2 > priv->width)
-	    rect.extents.x2 = priv->width;
-	if (rect.extents.y2 > priv->height)
-	    rect.extents.y2 = priv->height;
+	if (x1 < 0)
+	    x1 = 0;
+	if (y1 < 0)
+	    y1 = 0;
+	if (x2 > priv->width)
+	    x2 = priv->width;
+	if (y2 > priv->height)
+	    y2 = priv->height;
 
-	if (rect.extents.y1 < rect.extents.y2 &&
-	    rect.extents.x1 < rect.extents.x2)
+	if (y1 < y2 && x1 < x2)
 	{
-	    rect.extents.x1 += priv->attrib.x;
-	    rect.extents.y1 += priv->attrib.y;
-	    rect.extents.x2 += priv->attrib.x;
-	    rect.extents.y2 += priv->attrib.y;
+	    x1 += priv->attrib.x;
+	    y1 += priv->attrib.y;
+	    x2 += priv->attrib.x;
+	    y2 += priv->attrib.y;
 
-	    XUnionRegion (&rect, priv->region, priv->region);
+	    priv->region += CompRect (x1, x2, y1, y2);
 	}
     }
 
@@ -1516,9 +1512,9 @@ CompWindow::move (int dx, int dy, bool immediate)
 	priv->geometry.setX (priv->attrib.x);
 	priv->geometry.setY (priv->attrib.y);
 
-	XOffsetRegion (priv->region, dx, dy);
-	if (priv->frameRegion)
-	    XOffsetRegion (priv->frameRegion, dx, dy);
+	priv->region.translate (dx, dy);
+	if (!priv->frameRegion.isEmpty ())
+	    priv->frameRegion.translate (dx, dy);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
 
@@ -3893,7 +3889,7 @@ WindowInterface::stateChangeNotify (unsigned int lastState)
     WRAPABLE_DEF (stateChangeNotify, lastState)
 
 void
-WindowInterface::updateFrameRegion (Region region)
+WindowInterface::updateFrameRegion (CompRegion &region)
     WRAPABLE_DEF (updateFrameRegion, region)
 
 Window
@@ -4094,14 +4090,14 @@ PrivateWindow::processMap ()
 }
 
 
-Region
-CompWindow::region ()
+const CompRegion &
+CompWindow::region () const
 {
     return priv->region;
 }
 
-Region
-CompWindow::frameRegion ()
+const CompRegion &
+CompWindow::frameRegion () const
 {
     return priv->frameRegion;
 }
@@ -4381,13 +4377,6 @@ CompWindow::CompWindow (Window     id,
     priv = new PrivateWindow (this);
     assert (priv);
 
-    priv->region = XCreateRegion ();
-    assert (priv->region);
-    priv->frameRegion = XCreateRegion ();
-    assert (priv->frameRegion);
-
-
-
     /* Failure means that window has been destroyed. We still have to add the
        window to the window list as we might get configure requests which
        require us to stack other windows relative to it. Setting some default
@@ -4435,21 +4424,10 @@ CompWindow::CompWindow (Window     id,
 
     screen->insertWindow (this, aboveId);
 
-    EMPTY_REGION (priv->region);
-
     if (windowClass () != InputOnly)
     {
-	REGION rect;
-
-	rect.rects = &rect.extents;
-	rect.numRects = rect.size = 1;
-
-	rect.extents.x1 = priv->attrib.x;
-	rect.extents.y1 = priv->attrib.y;
-	rect.extents.x2 = priv->attrib.x + priv->width;
-	rect.extents.y2 = priv->attrib.y + priv->height;
-
-	XUnionRegion (&rect, priv->region, priv->region);
+	priv->region = CompRegion (priv->attrib.x, priv->attrib.y,
+				   priv->width, priv->height);
 
 	/* need to check for DisplayModal state on all windows */
 	priv->state = screen->priv->getWindowState (priv->id);
@@ -4644,7 +4622,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     alpha (false),
     width (0),
     height (0),
-    region (0),
+    region (),
     wmType (0),
     type (CompWindowTypeUnknownMask),
     state (0),
@@ -4726,12 +4704,6 @@ PrivateWindow::~PrivateWindow ()
 
     if (frame)
 	XDestroyWindow (screen->dpy (), frame);
-
-    if (region)
-	XDestroyRegion (region);
-
-    if (frameRegion)
-	XDestroyRegion (frameRegion);
 
     if (struts)
 	free (struts);
@@ -4819,37 +4791,32 @@ CompWindow::mwmFunc ()
 void
 CompWindow::updateFrameRegion ()
 {
-    REGION r;
-    int    x, y;
+    CompRect   r;
+    int        x, y;
 
     if ((priv->input.left || priv->input.right ||
 	priv->input.top || priv->input.bottom) && priv->frame)
     {
 
-	XSubtractRegion (&emptyRegion, &emptyRegion, priv->frameRegion);
+	priv->frameRegion = CompRegion ();
 
 	updateFrameRegion (priv->frameRegion);
 
-	r.numRects = 1;
-	r.rects = &r.extents;
-	r.extents = priv->region->extents;
-	XSubtractRegion (priv->frameRegion, &r, priv->frameRegion);
+	r = priv->region.boundingRect ();
+	priv->frameRegion -= r;
 
-	r.extents.x1 -= priv->input.left;
-	r.extents.x2 += priv->input.right;
-	r.extents.y1 -= priv->input.top;
-	r.extents.y2 += priv->input.bottom;
+	r.setGeometry (r.x1 () - priv->input.left, r.x1 () + priv->input.right,
+		       r.y1 () - priv->input.top, r.y2 () + priv->input.bottom);
 
-	XIntersectRegion (priv->frameRegion, &r, priv->frameRegion);
-	
-	XUnionRegion (priv->frameRegion, priv->region, priv->frameRegion);
+	priv->frameRegion &= CompRegion (r);
 
 	x = priv->serverGeometry.x () - priv->input.left;
 	y = priv->serverGeometry.y () - priv->input.top;
 
 
 	XShapeCombineRegion (screen->dpy (), priv->frame,
-			     ShapeBounding, -x, -y, priv->frameRegion,
+			     ShapeBounding, -x, -y,
+			     priv->frameRegion.united (priv->region).handle (),
 			     ShapeSet);
     }
 }
@@ -4883,7 +4850,7 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 }
 
 void
-CompWindow::updateFrameRegion (Region region)
+CompWindow::updateFrameRegion (CompRegion & region)
     WRAPABLE_HND_FUNC(12, updateFrameRegion, region)
 
 bool

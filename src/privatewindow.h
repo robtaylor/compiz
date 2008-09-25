@@ -219,8 +219,8 @@ class PrivateWindow {
 	bool	      alpha;
 	int	      width;
 	int	      height;
-	Region        region;
-	Region        frameRegion;
+	CompRegion    region;
+	CompRegion    frameRegion;
 
 	unsigned int      wmType;
 	unsigned int      type;

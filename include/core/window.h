@@ -13,6 +13,7 @@
 #include <core/privates.h>
 #include <core/size.h>
 #include <core/point.h>
+#include <core/region.h>
 
 #include <core/wrapsystem.h>
 
@@ -234,7 +235,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 
 	virtual void stateChangeNotify (unsigned int lastState);
 
-	virtual void updateFrameRegion (Region region);
+	virtual void updateFrameRegion (CompRegion &region);
 };
 
 class CompWindow :
@@ -279,9 +280,9 @@ class CompWindow :
 	Window id ();
 	Window frame ();
 
-	Region region ();
+	const CompRegion & region () const;
 
-	Region frameRegion ();
+	const CompRegion & frameRegion () const;
 
 	void updateFrameRegion ();
 	void setWindowFrameExtents (CompWindowExtents *input);
@@ -475,7 +476,8 @@ class CompWindow :
 	WRAPABLE_HND (11, WindowInterface, void, stateChangeNotify,
 		      unsigned int);
 
-	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion, Region);
+	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion,
+		      CompRegion &);
 
 	friend class PrivateWindow;
 	friend class CompScreen;

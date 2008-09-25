@@ -8,6 +8,7 @@
 #include <core/plugin.h>
 #include <core/match.h>
 #include <core/privates.h>
+#include <core/region.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -21,9 +22,6 @@ extern bool       noDetection;
 
 extern CompScreen   *screen;
 extern CompMetadata *coreMetadata;
-
-extern REGION emptyRegion;
-extern REGION infiniteRegion;
 
 extern int lastPointerX;
 extern int lastPointerY;
@@ -293,7 +291,7 @@ class CompScreen :
 
 	CompActiveWindowHistory *currentHistory ();
 
-	Region region ();
+	const CompRegion & region () const;
 
 	bool hasOverlappingOutputs ();
 

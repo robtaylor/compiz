@@ -476,7 +476,7 @@ class PrivateScreen {
 	CompSize              vpSize;
 	unsigned int      nDesktop;
 	unsigned int      currentDesktop;
-	REGION	      region;
+	CompRegion   region;
 
 	Window	      root;
 

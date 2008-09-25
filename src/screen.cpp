@@ -2255,13 +2255,7 @@ PrivateScreen::reshape (int w, int h)
 {
     updateScreenInfo();
 
-    region.rects = &region.extents;
-    region.numRects = 1;
-    region.extents.x1 = 0;
-    region.extents.y1 = 0;
-    region.extents.x2 = w;
-    region.extents.y2 = h;
-    region.size = 1;
+    region = CompRegion (0, 0, w, h);
 
     size.setWidth (w);
     size.setHeight (h);
@@ -4216,10 +4210,10 @@ PrivateScreen::removeDestroyed ()
     }
 }
 
-Region
-CompScreen::region ()
+const CompRegion &
+CompScreen::region () const
 {
-    return &priv->region;
+    return priv->region;
 }
 
 bool
