@@ -574,8 +574,8 @@ DecorWindow::updateDecorationScale ()
 bool
 DecorWindow::checkSize (Decoration *decor)
 {
-    return (decor->minWidth <= window->size ().width () &&
-	    decor->minHeight <= window->size ().height ());
+    return (decor->minWidth <= (int) window->size ().width () &&
+	    decor->minHeight <= (int) window->size ().height ());
 }
 
 int
