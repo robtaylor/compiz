@@ -4,9 +4,6 @@ GLWindow::GLWindow (CompWindow *w) :
     OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI> (w),
     priv (new PrivateGLWindow (w, this))
 {
-    priv->clip = XCreateRegion ();
-    assert (priv->clip);
-
     CompositeWindow *cw = CompositeWindow::get (w);
 	
     priv->paint.opacity    = cw->opacity ();
@@ -29,7 +26,7 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     cWindow (CompositeWindow::get (w)),
     gScreen (GLScreen::get (screen)),
     texture (),
-    clip (0),
+    clip (),
     bindFailed (false),
     geometry ()
 {
@@ -44,8 +41,6 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
 
 PrivateGLWindow::~PrivateGLWindow ()
 {
-    if (clip)
-	XDestroyRegion (clip);
 }
 
 void
@@ -96,22 +91,22 @@ GLWindow::release ()
 bool
 GLWindowInterface::glPaint (const GLWindowPaintAttrib &attrib,
 			    const GLMatrix            &transform,
-			    Region                    region,
+			    const CompRegion          &region,
 			    unsigned int              mask)
     WRAPABLE_DEF (glPaint, attrib, transform, region, mask)
 
 bool
 GLWindowInterface::glDraw (const GLMatrix     &transform,
 			   GLFragment::Attrib &fragment,
-			   Region             region,
+			   const CompRegion   &region,
 			   unsigned int       mask)
     WRAPABLE_DEF (glDraw, transform, fragment, region, mask)
 
 void
 GLWindowInterface::glAddGeometry (GLTexture::Matrix *matrix,
 				  int	            nMatrix,
-				  Region	    region,
-				  Region	    clip)
+				  const CompRegion  &region,
+				  const CompRegion  &clip)
     WRAPABLE_DEF (glAddGeometry, matrix, nMatrix, region, clip)
 
 void
@@ -124,8 +119,8 @@ void
 GLWindowInterface::glDrawGeometry ()
     WRAPABLE_DEF (glDrawGeometry)
 
-Region
-GLWindow::clip ()
+const CompRegion &
+GLWindow::clip () const
 {
     return priv->clip;
 }
@@ -200,7 +195,7 @@ GLWindow::updatePaintAttribs ()
 }
 
 bool
-PrivateGLWindow::damageRect (bool initial, BoxPtr box)
+PrivateGLWindow::damageRect (bool initial, const CompRect &box)
 {
     texture.damage ();
     return cWindow->damageRect (initial, box);

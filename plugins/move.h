@@ -86,8 +86,8 @@ class MoveWindow :
 		GLWindowInterface::setHandler (gWindow);
 	};
 
-	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &, Region,
-		      unsigned int);
+	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
+		      const CompRegion &, unsigned int);
 
 	CompWindow      *window;
 	GLWindow        *gWindow;

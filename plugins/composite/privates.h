@@ -53,8 +53,10 @@ class PrivateCompositeScreen : ScreenInterface
 	bool randrExtension;
 	int  randrEvent, randrError;
 
-	Region	      damage;
+	CompRegion    damage;
 	unsigned long damageMask;
+
+	CompRegion    tmpRegion;
 	
 	Window	      overlay;
 	Window	      output;
@@ -77,8 +79,6 @@ class PrivateCompositeScreen : ScreenInterface
 	bool slowAnimations;
 
 	CompTimer paintTimer;
-
-	Region tmpRegion;
 
 	bool active;
 	CompositeScreen::PaintHandler *pHnd;

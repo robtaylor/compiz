@@ -63,12 +63,12 @@ GLScreen::glApplyTransform (const GLScreenPaintAttrib &sAttrib,
 }
 
 void
-PrivateGLScreen::paintBackground (Region region,
-				  bool   transformed)
+PrivateGLScreen::paintBackground (const CompRegion &region,
+				  bool             transformed)
 {
     GLTexture *bg = &backgroundTexture;
-    BoxPtr    pBox = region->rects;
-    int	      n, nBox = region->numRects;
+    BoxPtr    pBox = const_cast <Region> (region.handle ())->rects;
+    int	      n, nBox = const_cast <Region> (region.handle ())->numRects;
     GLfloat   *d, *data;
 
     if (!nBox)
@@ -161,12 +161,12 @@ PrivateGLScreen::paintBackground (Region region,
    transformed screen case should be made optional for those who do
    see a difference. */
 void
-PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
-				    Region         region,
-				    CompOutput     *output,
-				    unsigned int   mask)
+PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
+				    const CompRegion &region,
+				    CompOutput       *output,
+				    unsigned int     mask)
 {
-    static Region tmpRegion = NULL;
+    CompRegion    tmpRegion (region);
     CompWindow    *w;
     GLWindow      *gw;
     int		  count, windowMask, odMask;
@@ -175,7 +175,6 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
     bool          withOffset = false;
     GLMatrix      vTransform;
     CompPoint     offXY;
-    Region        clip = region;
 
     CompWindowList                   pl;
     CompWindowList::reverse_iterator rit;
@@ -183,12 +182,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
     unredirectFS = CompositeScreen::get (screen)->
 	getOption("unredirect_fullscreen_windows")->value ().b ();
 
-    if (!tmpRegion)
-    {
-	tmpRegion = XCreateRegion ();
-	if (!tmpRegion)
-	    return;
-    }
+
 
     if (mask & PAINT_SCREEN_TRANSFORMED_MASK)
     {
@@ -200,8 +194,6 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	windowMask     = 0;
 	count	       = 0;
     }
-
-    XSubtractRegion (region, &emptyRegion, tmpRegion);
 
     pl = cScreen->getWindowPaintList ();
 
@@ -224,7 +216,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	    }
 
 	    /* copy region */
-	    XSubtractRegion (tmpRegion, &emptyRegion, gw->clip ());
+	    gw->priv->clip = tmpRegion;
 
 	    odMask = PAINT_WINDOW_OCCLUSION_DETECTION_MASK;
 		
@@ -238,8 +230,8 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 
 		vTransform = transform;
 		vTransform.translate (offXY.x (), offXY.y (), 0);
-	 
-		XOffsetRegion (gw->clip (), -offXY.x (), -offXY. y());
+
+		gw->priv->clip.translate (-offXY.x (), -offXY. y());
 
 		odMask |= PAINT_WINDOW_WITH_OFFSET_MASK;
 		status = gw->glPaint (gw->paintAttrib (), vTransform,
@@ -256,25 +248,23 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 	    {
 		if (withOffset)
 		{
-		    XOffsetRegion (w->region (), offXY.x (), offXY.y ());
-		    XSubtractRegion (tmpRegion, w->region (), tmpRegion);
-		    XOffsetRegion (w->region (), -offXY.x (), -offXY.y ());
+		    tmpRegion -= w->region ().translated (offXY);
 		}
 		else
-		    XSubtractRegion (tmpRegion, w->region (), tmpRegion);
+		    tmpRegion -= w->region ();
 
 		/* unredirect top most fullscreen windows. */
 		if (count == 0 && unredirectFS)
 		{
-		    if (XEqualRegion (w->region (), screen->region ()) &&
-			!REGION_NOT_EMPTY (tmpRegion))
+		    if (w->region () == screen->region () &&
+			tmpRegion.isEmpty ())
 		    {
 			fullscreenWindow = w;
 		    }
 		    else
 		    {
 			foreach (CompOutput &o, screen->outputDevs ())
-			    if (XEqualRegion (w->region (), o.region ()))
+			    if (w->region () == CompRegion (o))
 				fullscreenWindow = w;
 		    }
 		}
@@ -308,8 +298,9 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 
 	gw = GLWindow::get (w);
 
-	if (!(mask & PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK))
-	    clip = gw->clip ();
+	const CompRegion &clip =
+	    (!(mask & PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK)) ?
+	    gw->clip () : region;
 
 	if ((cScreen->windowPaintOffset ().x () != 0 ||
 	     cScreen->windowPaintOffset ().y () != 0) &&
@@ -330,16 +321,18 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix &transform,
 }
 
 void
-GLScreen::glEnableOutputClipping (const GLMatrix &transform,
-				  Region         region,
-				  CompOutput     *output)
+GLScreen::glEnableOutputClipping (const GLMatrix   &transform,
+				  const CompRegion &region,
+				  CompOutput       *output)
 {
     WRAPABLE_HND_FUNC(3, glEnableOutputClipping, transform, region, output)
 
     GLdouble h = screen->size ().height ();
 
-    GLdouble p1[2] = { region->extents.x1, h - region->extents.y2 };
-    GLdouble p2[2] = { region->extents.x2, h - region->extents.y1 };
+    GLdouble p1[2] = { region.handle ()->extents.x1,
+		       h - region.handle ()->extents.y2 };
+    GLdouble p2[2] = { region.handle ()->extents.x2,
+		       h - region.handle ()->extents.y1 };
 
     GLdouble halfW = output->width () / 2.0;
     GLdouble halfH = output->height () / 2.0;
@@ -385,7 +378,7 @@ GLScreen::glDisableOutputClipping ()
 void
 GLScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 				    const GLMatrix            &transform,
-				    Region                    region,
+				    const CompRegion          &region,
 				    CompOutput                *output,
 				    unsigned int              mask)
 {
@@ -432,7 +425,7 @@ GLScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 bool
 GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 			 const GLMatrix            &transform,
-			 Region                    region,
+			 const CompRegion          &region,
 			 CompOutput                *output,
 			 unsigned int              mask)
 {
@@ -447,9 +440,8 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	{
 	    if (mask & PAINT_SCREEN_FULL_MASK)
 	    {
-		region = output->region ();
-		glPaintTransformedOutput (sAttrib, sTransform, region,
-					  output, mask);
+		glPaintTransformedOutput (sAttrib, sTransform,
+					  CompRegion (*output), output, mask);
 
 		return true;
 	    }
@@ -461,7 +453,7 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
     }
     else if (mask & PAINT_SCREEN_FULL_MASK)
     {
-	glPaintTransformedOutput (sAttrib, sTransform, output->region (),
+	glPaintTransformedOutput (sAttrib, sTransform, CompRegion (*output),
 				  output, mask);
 
 	return true;
@@ -597,8 +589,8 @@ GLWindow::glDrawGeometry ()
 void
 GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 			 int               nMatrix,
-			 Region            region,
-			 Region            clip)
+			 const CompRegion  &region,
+			 const CompRegion  &clip)
 {
     WRAPABLE_HND_FUNC(2, glAddGeometry, matrix, nMatrix, region, clip)
 
@@ -606,15 +598,15 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 
     priv->geometry.texUnits = nMatrix;
 
-    full = clip->extents;
-    if (region->extents.x1 > full.x1)
-	full.x1 = region->extents.x1;
-    if (region->extents.y1 > full.y1)
-	full.y1 = region->extents.y1;
-    if (region->extents.x2 < full.x2)
-	full.x2 = region->extents.x2;
-    if (region->extents.y2 < full.y2)
-	full.y2 = region->extents.y2;
+    full = clip.handle ()->extents;
+    if (region.handle ()->extents.x1 > full.x1)
+	full.x1 = region.handle ()->extents.x1;
+    if (region.handle ()->extents.y1 > full.y1)
+	full.y1 = region.handle ()->extents.y1;
+    if (region.handle ()->extents.x2 < full.x2)
+	full.x2 = region.handle ()->extents.x2;
+    if (region.handle ()->extents.y2 < full.y2)
+	full.y2 = region.handle ()->extents.y2;
 
     if (full.x1 < full.x2 && full.y1 < full.y2)
     {
@@ -637,8 +629,8 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 	    }
 	}
 
-	pBox = region->rects;
-	nBox = region->numRects;
+	pBox = const_cast <Region> (region.handle ())->rects;
+	nBox = const_cast <Region> (region.handle ())->numRects;
 
 	vSize = 3 + nMatrix * 2;
 
@@ -672,7 +664,7 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 
 	    if (x1 < x2 && y1 < y2)
 	    {
-		nClip = clip->numRects;
+		nClip = const_cast <Region> (clip.handle ())->numRects;
 
 		if (nClip == 1)
 		{
@@ -689,7 +681,7 @@ GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
 		}
 		else
 		{
-		    pClip = clip->rects;
+		    pClip = const_cast <Region> (clip.handle ())->rects;
 
 		    if (((n + nClip) * vSize * 4) > priv->geometry.vertexSize)
 		    {
@@ -1062,15 +1054,15 @@ GLWindow::glDrawTexture (GLTexture          *texture,
 bool
 GLWindow::glDraw (const GLMatrix     &transform,
 		  GLFragment::Attrib &fragment,
-		  Region             region,
+		  const CompRegion   &region,
 		  unsigned int       mask)
 {
     WRAPABLE_HND_FUNC_RETURN(1, bool, glDraw, transform, fragment, region, mask)
 
-    if (mask & PAINT_WINDOW_TRANSFORMED_MASK)
-	region = &infiniteRegion;
+    const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
+	                   infiniteRegion : region;
 
-    if (!region->numRects)
+    if (reg.isEmpty ())
 	return true;
 
     if (!priv->window->isViewable ())
@@ -1083,7 +1075,7 @@ GLWindow::glDraw (const GLMatrix     &transform,
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
     priv->geometry.reset ();
-    glAddGeometry (&priv->matrix, 1, priv->window->region (), region);
+    glAddGeometry (&priv->matrix, 1, priv->window->region (), reg);
     if (priv->geometry.vCount)
 	glDrawTexture (&priv->texture, fragment, mask);
 
@@ -1093,7 +1085,7 @@ GLWindow::glDraw (const GLMatrix     &transform,
 bool
 GLWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		   const GLMatrix            &transform,
-		   Region                    region,
+		   const CompRegion          &region,
 		   unsigned int              mask)
 {
     WRAPABLE_HND_FUNC_RETURN(0, bool, glPaint, attrib, transform, region, mask)

@@ -146,12 +146,12 @@ class DecorWindow :
 	void resizeNotify (int, int, int, int);
 	void moveNotify (int, int, bool);
 	void stateChangeNotify (unsigned int);
-	void updateFrameRegion (Region region);
+	void updateFrameRegion (CompRegion &region);
 
-	bool damageRect (bool, BoxPtr);
+	bool damageRect (bool, const CompRect &);
 
 	bool glDraw (const GLMatrix &, GLFragment::Attrib &,
-		     Region, unsigned int);
+		     const CompRegion &, unsigned int);
 
 	void updateDecoration ();
 
@@ -182,7 +182,7 @@ class DecorWindow :
 	WindowDecoration *wd;
 	Decoration	 *decor;
 
-	Region frameRegion;
+	CompRegion frameRegion;
 
 	Window inputFrame;
 	Window outputFrame;

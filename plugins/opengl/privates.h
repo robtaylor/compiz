@@ -40,7 +40,7 @@ class PrivateGLScreen :
 
 	void paintOutputs (CompOutput::ptrList &outputs,
 			   unsigned int        mask,
-			   Region              region);
+			   const CompRegion    &region);
 
 	bool hasVSync ();
 
@@ -48,13 +48,13 @@ class PrivateGLScreen :
 
 	void waitForVideoSync ();
 
-	void paintBackground (Region region,
-			      bool   transformed);
+	void paintBackground (const CompRegion &region,
+			      bool             transformed);
 
-	void paintOutputRegion (const GLMatrix &transform,
-			        Region         region,
-			        CompOutput     *output,
-			        unsigned int   mask);
+	void paintOutputRegion (const GLMatrix   &transform,
+			        const CompRegion &region,
+			        CompOutput       *output,
+			        unsigned int     mask);
 
 	void updateScreenBackground (GLTexture *texture);
 
@@ -87,8 +87,7 @@ class PrivateGLScreen :
 
 	GLXContext ctx;
 
-	Region tmpRegion;
-	Region outputRegion;
+	CompRegion outputRegion;
 
 	bool pendingCommands;
 
@@ -109,7 +108,7 @@ class PrivateGLWindow :
 	void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	void moveNotify (int dx, int dy, bool now);
 
-	bool damageRect (bool, BoxPtr);
+	bool damageRect (bool, const CompRect &);
 	
 	void setWindowMatrix ();
 
@@ -121,7 +120,7 @@ class PrivateGLWindow :
 	GLTexture         texture;
 	GLTexture::Matrix matrix;
 	
-	Region	      clip;
+	CompRegion    clip;
 	
 	bool	      bindFailed;
 	bool	      overlayWindow;

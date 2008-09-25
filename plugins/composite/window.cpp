@@ -192,37 +192,34 @@ CompositeWindow::overlayWindow ()
 }
 
 void
-CompositeWindow::damageTransformedRect (float  xScale,
-				   float  yScale,
-				   float  xTranslate,
-				   float  yTranslate,
-				   BoxPtr rect)
+CompositeWindow::damageTransformedRect (float          xScale,
+					float          yScale,
+					float          xTranslate,
+					float          yTranslate,
+					const CompRect &rect)
 {
-    REGION reg;
+    int x1, x2, y1, y2;
 
-    reg.rects    = &reg.extents;
-    reg.numRects = 1;
+    x1 = (short) (rect.x1 () * xScale) - 1;
+    y1 = (short) (rect.y1 () * yScale) - 1;
+    x2 = (short) (rect.x2 () * xScale + 0.5f) + 1;
+    y2 = (short) (rect.y2 () * yScale + 0.5f) + 1;
 
-    reg.extents.x1 = (short) (rect->x1 * xScale) - 1;
-    reg.extents.y1 = (short) (rect->y1 * yScale) - 1;
-    reg.extents.x2 = (short) (rect->x2 * xScale + 0.5f) + 1;
-    reg.extents.y2 = (short) (rect->y2 * yScale + 0.5f) + 1;
+    x1 += (short) xTranslate;
+    y1 += (short) yTranslate;
+    x2 += (short) (xTranslate + 0.5f);
+    y2 += (short) (yTranslate + 0.5f);
 
-    reg.extents.x1 += (short) xTranslate;
-    reg.extents.y1 += (short) yTranslate;
-    reg.extents.x2 += (short) (xTranslate + 0.5f);
-    reg.extents.y2 += (short) (yTranslate + 0.5f);
-
-    if (reg.extents.x2 > reg.extents.x1 && reg.extents.y2 > reg.extents.y1)
+    if (x2 > x1 && y2 > y1)
     {
 	CompWindow::Geometry geom = priv->window->geometry ();
 
-	reg.extents.x1 += geom.x () + geom.border ();
-	reg.extents.y1 += geom.y () + geom.border ();
-	reg.extents.x2 += geom.x () + geom.border ();
-	reg.extents.y2 += geom.y () + geom.border ();
+	x1 += geom.x () + geom.border ();
+	y1 += geom.y () + geom.border ();
+	x2 += geom.x () + geom.border ();
+	y2 += geom.y () + geom.border ();
 
-	priv->cScreen->damageRegion (&reg);
+	priv->cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
     }
 }
 
@@ -235,67 +232,67 @@ CompositeWindow::damageOutputExtents ()
     if (priv->window->shaded () ||
 	(priv->window->isViewable () && priv->damaged))
     {
-	BoxRec box;
+	int x1, x2, y1, y2;
 
 	CompWindow::Geometry geom = priv->window->geometry ();
 	CompWindowExtents output  = priv->window->output ();
 
 	/* top */
-	box.x1 = -output.left - geom.border ();
-	box.y1 = -output.top - geom.border ();
-	box.x2 = priv->window->size ().width () + output.right - geom.border ();
-	box.y2 = -geom.border ();
+	x1 = -output.left - geom.border ();
+	y1 = -output.top - geom.border ();
+	x2 = priv->window->size ().width () + output.right - geom.border ();
+	y2 = -geom.border ();
 
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
+	if (x1 < x2 && y1 < y2)
+	    addDamageRect (CompRect (x1, x2, y1, y2));
 
 	/* bottom */
-	box.y1 = priv->window->size ().height () - geom.border ();
-	box.y2 = box.y1 + output.bottom - geom.border ();
+	y1 = priv->window->size ().height () - geom.border ();
+	y2 = y1 + output.bottom - geom.border ();
 
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
+	if (x1 < x2 && y1 < y2)
+	    addDamageRect (CompRect (x1, x2, y1, y2));
 
 	/* left */
-	box.x1 = -output.left - geom.border ();
-	box.y1 = -geom.border ();
-	box.x2 = -geom.border ();
-	box.y2 = priv->window->size ().height () - geom.border ();
+	x1 = -output.left - geom.border ();
+	y1 = -geom.border ();
+	x2 = -geom.border ();
+	y2 = priv->window->size ().height () - geom.border ();
 
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
+	if (x1 < x2 && y1 < y2)
+	    addDamageRect (CompRect (x1, x2, y1, y2));
 
 	/* right */
-	box.x1 = priv->window->size ().width () - geom.border ();
-	box.x2 = box.x1 + output.right - geom.border ();
+	x1 = priv->window->size ().width () - geom.border ();
+	x2 = x1 + output.right - geom.border ();
 
-	if (box.x1 < box.x2 && box.y1 < box.y2)
-	    addDamageRect (&box);
+	if (x1 < x2 && y1 < y2)
+	    addDamageRect (CompRect (x1, x2, y1, y2));
     }
 }
 
 void
-CompositeWindow::addDamageRect (BoxPtr rect)
+CompositeWindow::addDamageRect (const CompRect &rect)
 {
-    REGION region;
+    int x1, x2, y1, y2;
 
     if (priv->cScreen->damageMask () & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
-    region.extents = *rect;
-
-    if (!damageRect (false, &region.extents))
+    if (!damageRect (false, rect))
     {
+	x1 = rect.x1 ();
+	x2 = rect.x2 ();
+	y1 = rect.y1 ();
+	y2 = rect.y2 ();
+
 	CompWindow::Geometry geom = priv->window->geometry ();
-	region.extents.x1 += geom.x () + geom.border ();
-	region.extents.y1 += geom.y () + geom.border ();
-	region.extents.x2 += geom.x () + geom.border ();
-	region.extents.y2 += geom.y () + geom.border ();
+	x1 += geom.x () + geom.border ();
+	y1 += geom.y () + geom.border ();
+	x2 += geom.x () + geom.border ();
+	y2 += geom.y () + geom.border ();
 
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	priv->cScreen->damageRegion (&region);
+	priv->cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
     }
 }
 
@@ -308,21 +305,20 @@ CompositeWindow::addDamage (bool force)
     if (priv->window->shaded () || force ||
 	(priv->window->isViewable () && priv->damaged))
     {
-	BoxRec box;
 	int    border = priv->window->geometry ().border ();
 
-	box.x1 = -MAX (priv->window->output ().left,
-		       priv->window->input ().left) - border;
-	box.y1 = -MAX (priv->window->output ().top,
-		       priv->window->input ().top) - border;
-	box.x2 = priv->window->size ().width () +
-		 MAX (priv->window->output ().right,
-		       priv->window->input ().right);
-	box.y2 = priv->window->size ().height () +
-		 MAX (priv->window->output ().bottom,
-		       priv->window->input ().bottom);
+	CompRect r (-MAX (priv->window->output ().left,
+		          priv->window->input ().left) - border,
+		    priv->window->size ().width () +
+		    MAX (priv->window->output ().right,
+		         priv->window->input ().right),
+	            -MAX (priv->window->output ().top,
+		          priv->window->input ().top) - border,
+		    priv->window->size ().height () +
+		    MAX (priv->window->output ().bottom,
+		         priv->window->input ().bottom));
 
-	addDamageRect (&box);
+	addDamageRect (r);
     }
 }
 
@@ -365,7 +361,7 @@ PrivateCompositeWindow::handleDamageRect (CompositeWindow *w,
 					  int             width,
 					  int             height)
 {
-    REGION region;
+    int    x2, y2;
     bool   initial = false;
 
     if (!w->priv->redirected)
@@ -376,24 +372,19 @@ PrivateCompositeWindow::handleDamageRect (CompositeWindow *w,
 	w->priv->damaged = initial = true;
     }
 
-    region.extents.x1 = x;
-    region.extents.y1 = y;
-    region.extents.x2 = region.extents.x1 + width;
-    region.extents.y2 = region.extents.y1 + height;
+    x2 = x + width;
+    y2 = y + height;
 
-    if (!w->damageRect (initial, &region.extents))
+    if (!w->damageRect (initial, CompRect (x, x2, y, y2)))
     {
 	CompWindow::Geometry geom = w->priv->window->geometry ();
 
-	region.extents.x1 += geom.x () + geom.border ();
-	region.extents.y1 += geom.y () + geom.border ();
-	region.extents.x2 += geom.x () + geom.border ();
-	region.extents.y2 += geom.y () + geom.border ();
+	x += geom.x () + geom.border ();
+	y += geom.y () + geom.border ();
+	x2 += geom.x () + geom.border ();
+	y2 += geom.y () + geom.border ();
 
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	w->priv->cScreen->damageRegion (&region);
+	w->priv->cScreen->damageRegion (CompRegion (CompRect (x, x2, y, y2)));
     }
 
     if (initial)
@@ -467,8 +458,8 @@ CompositeWindow::saturation ()
 }
 
 bool
-CompositeWindow::damageRect (bool       initial,
- 			     BoxPtr     rect)
+CompositeWindow::damageRect (bool           initial,
+ 			     const CompRect &rect)
 {
     WRAPABLE_HND_FUNC_RETURN(0, bool, damageRect, initial, rect)
     return false;
@@ -540,23 +531,19 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 
     if (window->shaded () || (window->isViewable () && damaged))
     {
-	REGION region;
-	int    x, y;
+	int x, y, x1, x2, y1, y2;
 
 	x = window->geometry ().x ();
 	y = window->geometry ().y ();
 
-	region.extents.x1 = x - window->output ().left - dx;
-	region.extents.y1 = y - window->output ().top - dy;
-	region.extents.x2 = x + window->size ().width () +
-			    window->output ().right - dx - dwidth;
-	region.extents.y2 = y + window->size ().height () +
-			    window->output ().bottom - dy - dheight;
+	x1 = x - window->output ().left - dx;
+	y1 = y - window->output ().top - dy;
+	x2 = x + window->size ().width () +
+	     window->output ().right - dx - dwidth;
+	y2 = y + window->size ().height () +
+	     window->output ().bottom - dy - dheight;
 
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	cScreen->damageRegion (&region);
+	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
     }
 
     if (window->mapNum () && redirected)
@@ -589,23 +576,19 @@ PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
 {
     if (window->shaded () || (window->isViewable () && damaged))
     {
-	REGION region;
-	int    x, y;
+	int x, y, x1, x2, y1, y2;
 
 	x = window->geometry ().x ();
 	y = window->geometry ().y ();
 
-	region.extents.x1 = x - window->output ().left - dx;
-	region.extents.y1 = y - window->output ().top - dy;
-	region.extents.x2 = x + window->size ().width () +
-			    window->output ().right - dx;
-	region.extents.y2 = y + window->size ().height () +
-			    window->output ().bottom - dy;
+	x1 = x - window->output ().left - dx;
+	y1 = y - window->output ().top - dy;
+	x2 = x + window->size ().width () +
+	     window->output ().right - dx;
+	y2 = y + window->size ().height () +
+	     window->output ().bottom - dy;
 
-	region.rects = &region.extents;
-	region.numRects = region.size = 1;
-
-	cScreen->damageRegion (&region);
+	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
     }
     cWindow->addDamage ();
 
@@ -613,5 +596,5 @@ PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
 }
 
 bool
-CompositeWindowInterface::damageRect (bool initial, BoxPtr rect)
+CompositeWindowInterface::damageRect (bool initial, const CompRect &rect)
     WRAPABLE_DEF (damageRect, initial, rect)

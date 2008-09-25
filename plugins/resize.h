@@ -79,7 +79,7 @@ class ResizeScreen :
 	void updateWindowSize ();
 
 	bool glPaintOutput (const GLScreenPaintAttrib &,
-			    const GLMatrix &, Region, CompOutput *,
+			    const GLMatrix &, const CompRegion &, CompOutput *,
 			    unsigned int);
 
 	void damageRectangle (BoxPtr pBox);
@@ -141,10 +141,10 @@ class ResizeWindow :
 	
 	void resizeNotify (int, int, int, int);
 
-	bool damageRect (bool, BoxPtr);
+	bool damageRect (bool, const CompRect &);
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
-		      Region, unsigned int);
+		      const CompRegion &, unsigned int);
 
 	void getStretchScale (BoxPtr pBox, float *xScale, float *yScale);
 

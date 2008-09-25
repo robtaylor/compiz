@@ -45,7 +45,7 @@ class CompositeScreen :
 
 		virtual void paintOutputs (CompOutput::ptrList &outputs,
 					   unsigned int        mask,
-					   Region              region) = 0;
+					   const CompRegion    &region) = 0;
 
 		virtual bool hasVSync () { return false; };
 
@@ -68,7 +68,7 @@ class CompositeScreen :
 	int damageEvent ();
 	
 	void damageScreen ();
-	void damageRegion (Region);
+	void damageRegion (const CompRegion &);
 	void damagePending ();
 	unsigned int damageMask ();
 
@@ -113,7 +113,7 @@ class CompositeWindowInterface :
     public WrapableInterface<CompositeWindow, CompositeWindowInterface>
 {
     public:
-	virtual bool damageRect (bool, BoxPtr);
+	virtual bool damageRect (bool, const CompRect &);
 };
 
 class CompositeWindow :
@@ -135,14 +135,14 @@ class CompositeWindow :
 	bool redirected ();
 	bool overlayWindow ();
 	
-	void damageTransformedRect (float  xScale,
-				    float  yScale,
-				    float  xTranslate,
-				    float  yTranslate,
-				    BoxPtr rect);
+	void damageTransformedRect (float          xScale,
+				    float          yScale,
+				    float          xTranslate,
+				    float          yTranslate,
+				    const CompRect &rect);
 
 	void damageOutputExtents ();
-	void addDamageRect (BoxPtr rect);
+	void addDamageRect (const CompRect &);
 	void addDamage (bool force = false);
 
 	bool damaged ();
@@ -158,7 +158,7 @@ class CompositeWindow :
 	unsigned short saturation ();
 
 	WRAPABLE_HND (0, CompositeWindowInterface, bool, damageRect,
-		      bool, BoxPtr);
+		      bool, const CompRect &);
 
 	friend class PrivateCompositeWindow;
 	friend class CompositeScreen;

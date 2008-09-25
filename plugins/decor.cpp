@@ -45,43 +45,41 @@ static CompMetadata *decorMetadata;
 bool
 DecorWindow::glDraw (const GLMatrix     &transform,
 		     GLFragment::Attrib &attrib,
-		     Region             region,
+		     const CompRegion   &region,
 		     unsigned int       mask)
 {
     bool status;
 
     status = gWindow->glDraw (transform, attrib, region, mask);
 
-    if (mask & PAINT_WINDOW_TRANSFORMED_MASK)
-	region = &infiniteRegion;
+    const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
+	                   infiniteRegion : region;
 
-    if (wd && region->numRects &&
+    if (wd && !reg.isEmpty () &&
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
-	REGION	     box;
-
+	CompRect box;
 	mask |= PAINT_WINDOW_BLEND_MASK;
-
-	box.rects	 = &box.extents;
-	box.numRects = 1;
 
 	gWindow->geometry ().reset ();
 
 	for (int i = 0; i < wd->nQuad; i++)
 	{
-	    box.extents = wd->quad[i].box;
+	    box.setGeometry (wd->quad[i].box.x1, wd->quad[i].box.x2,
+			     wd->quad[i].box.y1, wd->quad[i].box.y2);
 
-	    if (box.extents.x1 < box.extents.x2 &&
-		box.extents.y1 < box.extents.y2)
+	    if (box.x1 () < box.x2 () &&
+		box.y1 () < box.y2 ())
 	    {
-		gWindow->glAddGeometry (&wd->quad[i].matrix, 1, &box, region);
+		gWindow->glAddGeometry (&wd->quad[i].matrix, 1,
+					CompRegion (box), region);
 	    }
 	}
 
 	if (gWindow->geometry ().vCount)
 	    gWindow->glDrawTexture (wd->decor->texture, attrib, mask);
     }
-    else if (wd && region->numRects &&
+    else if (wd && !reg.isEmpty () &&
 	     wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW)
     {
 	gWindow->geometry ().reset ();
@@ -682,7 +680,7 @@ DecorWindow::update (bool allowDecoration)
 	match = &dScreen->opt[DECOR_OPTION_SHADOW_MATCH].value ().match ();
 	if (match->evaluate (window))
 	{
-	    if (window->region ()->numRects == 1 && !window->alpha ())
+	    if (window->region ().numRects () == 1 && !window->alpha ())
 		decoration = dScreen->decor[DECOR_BARE];
 
 	    /* no decoration on windows with below state */
@@ -798,7 +796,7 @@ DecorWindow::updateFrame ()
 			     dScreen->inputFrameAtom);
 	    XDestroyWindow (screen->dpy (), inputFrame);
 	    inputFrame = None;
-	    EMPTY_REGION (frameRegion);
+	    frameRegion = CompRegion ();
 
 	    oldX = 0;
 	    oldY = 0;
@@ -814,7 +812,7 @@ DecorWindow::updateFrame ()
 	    dScreen->frames.erase (outputFrame);
 
 	    outputFrame = None;
-	    EMPTY_REGION (frameRegion);
+	    frameRegion = CompRegion ();
 
 	    oldX = 0;
 	    oldY = 0;
@@ -938,7 +936,7 @@ DecorWindow::updateInputFrame ()
 				 ShapeInput, 0, 0, rects, i,
 				 ShapeSet, YXBanded);
 
-	EMPTY_REGION (frameRegion);
+	frameRegion = CompRegion ();
     }
 
     XUngrabServer (screen->dpy ());
@@ -1056,7 +1054,7 @@ DecorWindow::updateOutputFrame ()
 				 ShapeBounding, 0, 0, rects, i,
 				 ShapeSet, YXBanded);
 
-	EMPTY_REGION (frameRegion);
+	frameRegion = CompRegion ();
     }
 
     XUngrabServer (screen->dpy ());
@@ -1163,29 +1161,24 @@ DecorScreen::checkForDm (bool updateWindows)
 }
 
 void
-DecorWindow::updateFrameRegion (Region region)
+DecorWindow::updateFrameRegion (CompRegion &region)
 {
     window->updateFrameRegion (region);
     if (wd)
     {
-	if (REGION_NOT_EMPTY (frameRegion))
+	if (!frameRegion.isEmpty ())
 	{
 	    int x, y;
 
 	    x = window->geometry (). x ();
 	    y = window->geometry (). y ();
 
-	    XOffsetRegion (frameRegion,
-			   x - window->input ().left,
-			   y - window->input ().top);
-	    XUnionRegion (frameRegion, region, region);
-	    XOffsetRegion (frameRegion,
-			   - (x - window->input ().left),
-			   - (y - window->input ().top));
+	    region += frameRegion.translated (x - window->input ().left,
+					      y - window->input ().top);
 	}
 	else
 	{
-	    XUnionRegion (&infiniteRegion, region, region);
+	    region += infiniteRegion;
 	}
     }
 
@@ -1355,7 +1348,7 @@ DecorScreen::handleEvent (XEvent *event)
 			    XRectangle *shapeRects = 0;
 			    int order, n;
 
-			    EMPTY_REGION (dw->frameRegion);
+			    dw->frameRegion = CompRegion ();
 
 			    shapeRects =
 				XShapeGetRectangles (screen->dpy (),
@@ -1365,9 +1358,11 @@ DecorScreen::handleEvent (XEvent *event)
 				break;
 
 			    for (int i = 0; i < n; i++)
-				XUnionRectWithRegion (&shapeRects[i],
-						      dw->frameRegion,
-						      dw->frameRegion);
+				dw->frameRegion +=
+				    CompRegion (shapeRects[i].x,
+					        shapeRects[i].y,
+						shapeRects[i].width,
+						shapeRects[i].height);
 
 			    w->updateFrameRegion ();
 
@@ -1379,7 +1374,7 @@ DecorScreen::handleEvent (XEvent *event)
 			    XRectangle *shapeRects = 0;
 			    int order, n;
 
-			    EMPTY_REGION (dw->frameRegion);
+			    dw->frameRegion = CompRegion ();
 
 			    shapeRects =
 				XShapeGetRectangles (screen->dpy (),
@@ -1389,9 +1384,11 @@ DecorScreen::handleEvent (XEvent *event)
 				break;
 
 			    for (int i = 0; i < n; i++)
-				XUnionRectWithRegion (&shapeRects[i],
-						      dw->frameRegion,
-						      dw->frameRegion);
+				dw->frameRegion +=
+				    CompRegion (shapeRects[i].x,
+					        shapeRects[i].y,
+						shapeRects[i].width,
+						shapeRects[i].height);
 
 			    w->updateFrameRegion ();
 
@@ -1405,7 +1402,7 @@ DecorScreen::handleEvent (XEvent *event)
 }
 
 bool
-DecorWindow::damageRect (bool initial, BoxPtr rect)
+DecorWindow::damageRect (bool initial, const CompRect &rect)
 {
     if (initial)
 	update (true);
@@ -1638,13 +1635,6 @@ DecorWindow::DecorWindow (CompWindow *w) :
     inputFrame (None),
     outputFrame (None)
 {
-    frameRegion = XCreateRegion ();
-    if (!frameRegion)
-    {
-	setFailed ();
-	return;
-    }
-
     WindowInterface::setHandler (window);
 
     if (dScreen->cmActive)
@@ -1673,9 +1663,6 @@ DecorWindow::~DecorWindow ()
 
     if (decor)
 	Decoration::release (decor);
-
-    if (frameRegion)
-	XDestroyRegion (frameRegion);
 }
 
 bool

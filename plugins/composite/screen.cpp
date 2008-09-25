@@ -223,19 +223,6 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
 						 &priv->shapeError);
     priv->randrExtension = XRRQueryExtension (s->dpy (), &priv->randrEvent,
 					      &priv->randrError);
-    priv->tmpRegion = XCreateRegion ();
-    if (!priv->tmpRegion)
-    {
-	setFailed ();
-	return;
-    }
-
-    priv->damage = XCreateRegion ();
-    if (!priv->damage)
-    {
-	setFailed ();
-	return;
-    }
 
     priv->makeOutputWindow ();
 
@@ -260,9 +247,6 @@ CompositeScreen::~CompositeScreen ()
 					screen->root ());
 #endif
 
-    if (priv->damage)
-	XDestroyRegion (priv->damage);
-
     delete priv;
 }
 
@@ -283,7 +267,6 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
     idle (true),
     timeLeft (0),
     slowAnimations (false),
-    tmpRegion (NULL),
     active (false),
     pHnd (NULL),
     opt (COMPOSITE_OPTION_NUM)
@@ -295,8 +278,6 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
 
 PrivateCompositeScreen::~PrivateCompositeScreen ()
 {
-    if (tmpRegion)
-	XDestroyRegion (tmpRegion);
 }
 
 bool
@@ -451,7 +432,7 @@ CompositeScreen::damageScreen ()
 }
 
 void
-CompositeScreen::damageRegion (Region region)
+CompositeScreen::damageRegion (const CompRegion &region)
 {
     if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
@@ -459,7 +440,7 @@ CompositeScreen::damageRegion (Region region)
     if (priv->damageMask == 0)
 	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
 
-    XUnionRegion (priv->damage, region, priv->damage);
+    priv->damage += region;
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
 
@@ -538,28 +519,18 @@ CompositeScreen::updateOutputWindow ()
     {
 	Display       *dpy = screen->dpy ();
 	XserverRegion region;
-	static Region tmpRegion = NULL;
-
-	if (!tmpRegion)
-	{
-	    tmpRegion = XCreateRegion ();
-	    if (!tmpRegion)
-		return;
-	}
-
-	XSubtractRegion (screen->region (), &emptyRegion, tmpRegion);
-
+	CompRegion    tmpRegion (screen->region ());
 	
 	for (CompWindowList::reverse_iterator rit =
 	     screen->windows ().rbegin ();
 	     rit != screen->windows ().rend (); rit++)
 	    if (CompositeWindow::get (*rit)->overlayWindow ())
 	    {
-		XSubtractRegion (tmpRegion, (*rit)->region (), tmpRegion);
+		tmpRegion -= (*rit)->region ();
 	    }
 	
 	XShapeCombineRegion (dpy, priv->output, ShapeBounding,
-			     0, 0, tmpRegion, ShapeSet);
+			     0, 0, tmpRegion.handle (), ShapeSet);
 
 
 	region = XFixesCreateRegion (dpy, NULL, 0);
@@ -765,8 +736,7 @@ CompositeScreen::handlePaintTimeout ()
 		    continue;
 
 		if (!CompositeWindow::get (w)->redirected ())
-		    XSubtractRegion (priv->damage, w->region (),
-				     priv->damage);
+		    priv->damage -= w->region ();
 
 		break;
 	    }
@@ -778,22 +748,15 @@ CompositeScreen::handlePaintTimeout ()
 	    }
 	}
 
+	priv->tmpRegion = priv->damage & screen->region ();
+	
 	if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_REGION_MASK)
 	{
-	    XIntersectRegion (priv->damage, screen->region (),
-			      priv->tmpRegion);
-
-	    if (priv->tmpRegion->numRects  == 1	  &&
-		priv->tmpRegion->rects->x1 == 0	  &&
-		priv->tmpRegion->rects->y1 == 0	  &&
-		priv->tmpRegion->rects->x2 ==
-		    (int) screen->size ().width () &&
-		priv->tmpRegion->rects->y2 ==
-		    (int) screen->size ().height ())
+	    if (priv->tmpRegion == screen->region ())
 		damageScreen ();
 	}
 
-	EMPTY_REGION (priv->damage);
+	priv->damage = CompRegion ();
 
 	int mask = priv->damageMask;
 	priv->damageMask = 0;
@@ -877,7 +840,7 @@ PrivateCompositeScreen::handleExposeEvent (XExposeEvent *event)
 	CompRect rect;
 	foreach (CompRect rect, exposeRects)
 	{
-	    cScreen->damageRegion (rect.region ());
+	    cScreen->damageRegion (CompRegion (rect));
 	}
 	exposeRects.clear ();
     }

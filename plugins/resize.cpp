@@ -90,20 +90,15 @@ ResizeScreen::getStretchRectangle (BoxPtr pBox)
 void
 ResizeScreen::damageRectangle (BoxPtr pBox)
 {
-    REGION reg;
+    int x1, x2, y1, y2;
 
-    reg.rects    = &reg.extents;
-    reg.numRects = 1;
-
-    reg.extents = *pBox;
-
-    reg.extents.x1 -= 1;
-    reg.extents.y1 -= 1;
-    reg.extents.x2 += 1;
-    reg.extents.y2 += 1;
+    x1 = pBox->x1 - 1;
+    y1 = pBox->y1 - 1;
+    x2 = pBox->x2 + 1;
+    y2 = pBox->y2 + 1;
 
     if (cScreen)
-	cScreen->damageRegion (&reg);
+	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
 }
 
 Cursor
@@ -883,7 +878,7 @@ ResizeScreen::glPaintRectangle (const GLScreenPaintAttrib &sAttrib,
 bool
 ResizeScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 			     const GLMatrix            &transform,
-			     Region                    region,
+			     const CompRegion          &region,
 			     CompOutput                *output,
 			     unsigned int              mask)
 {
@@ -921,7 +916,7 @@ ResizeScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 bool
 ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		       const GLMatrix            &transform,
-		       Region                    region,
+		       const CompRegion          &region,
 		       unsigned int              mask)
 {
     bool       status;
@@ -977,7 +972,7 @@ ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 }
 
 bool
-ResizeWindow::damageRect (bool initial, BoxPtr rect)
+ResizeWindow::damageRect (bool initial, const CompRect &rect)
 {
     bool status = false;
 

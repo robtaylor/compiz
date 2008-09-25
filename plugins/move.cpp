@@ -632,7 +632,7 @@ MoveScreen::handleEvent (XEvent *event)
 bool
 MoveWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		     const GLMatrix            &transform,
-		     Region                    region,
+		     const CompRegion          &region,
 		     unsigned int              mask)
 {
     GLWindowPaintAttrib sAttrib = attrib;

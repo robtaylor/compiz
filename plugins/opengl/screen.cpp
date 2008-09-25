@@ -66,19 +66,6 @@ GLScreen::GLScreen (CompScreen *s) :
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     XWindowAttributes    attr;
 
-    priv->tmpRegion = XCreateRegion ();
-    if (!priv->tmpRegion)
-    {
-	setFailed ();
-	return;
-    }
-    priv->outputRegion = XCreateRegion ();
-    if (!priv->outputRegion)
-    {
-	setFailed ();
-	return;
-    }
-
     if (!glMetadata->initOptions (glOptionInfo, GL_OPTION_NUM, priv->opt))
     {
 	setFailed ();
@@ -522,18 +509,13 @@ PrivateGLScreen::PrivateGLScreen (GLScreen   *gs) :
     clearBuffers (true),
     lighting (false),
     getProcAddress (0),
-    tmpRegion (NULL),
-    outputRegion (NULL),
+    outputRegion (),
     pendingCommands (false)
 {
 }
 
 PrivateGLScreen::~PrivateGLScreen ()
 {
-    if (tmpRegion)
-	XDestroyRegion (tmpRegion);
-    if (outputRegion)
-	XDestroyRegion (outputRegion);
 }
 
 GLushort defaultColor[4] = { 0xffff, 0xffff, 0xffff, 0xffff };
@@ -647,20 +629,15 @@ PrivateGLScreen::updateView ()
     glMultMatrixf (projection);
     glMatrixMode (GL_MODELVIEW);
 
-    Region region = XCreateRegion ();
-    if (region)
-    {
-	XSubtractRegion (screen->region (), &emptyRegion, region);
-	/* remove all output regions from visible screen region */
-	foreach (CompOutput &o, screen->outputDevs ())
-	    XSubtractRegion (region, o.region (), region);
+    CompRegion region (screen->region ());
+    /* remove all output regions from visible screen region */
+    foreach (CompOutput &o, screen->outputDevs ())
+	region -= o;
 
-	/* we should clear color buffers before swapping if we have visible
-           regions without output */
-	clearBuffers = REGION_NOT_EMPTY (region);
+    /* we should clear color buffers before swapping if we have visible
+	regions without output */
+    clearBuffers = !region.isEmpty ();
 
-	XDestroyRegion (region);
-    }
     gScreen->setDefaultViewport ();
 }
 
@@ -815,7 +792,7 @@ GLScreen::setLighting (bool lighting)
 bool
 GLScreenInterface::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 			          const GLMatrix            &transform,
-			          Region                    region,
+			          const CompRegion          &region,
 			          CompOutput                *output,
 			          unsigned int              mask)
     WRAPABLE_DEF (glPaintOutput, sAttrib, transform, region, output, mask)
@@ -823,7 +800,7 @@ GLScreenInterface::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 void
 GLScreenInterface::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 					     const GLMatrix            &transform,
-					     Region                    region,
+					     const CompRegion          &region,
 					     CompOutput                *output,
 					     unsigned int              mask)
     WRAPABLE_DEF (glPaintTransformedOutput, sAttrib, transform, region,
@@ -836,9 +813,9 @@ GLScreenInterface::glApplyTransform (const GLScreenPaintAttrib &sAttrib,
     WRAPABLE_DEF (glApplyTransform, sAttrib, output, transform)
 
 void
-GLScreenInterface::glEnableOutputClipping (const GLMatrix &transform,
-				           Region         region,
-				           CompOutput     *output)
+GLScreenInterface::glEnableOutputClipping (const GLMatrix   &transform,
+				           const CompRegion &region,
+				           CompOutput       *output)
     WRAPABLE_DEF (glEnableOutputClipping, transform, region, output)
 
 void
@@ -951,7 +928,7 @@ GLScreen::getOption (const char *name)
 void
 PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 			       unsigned int        mask,
-			       Region              region)
+			       const CompRegion    &region)
 {
     XRectangle r;
 
@@ -961,7 +938,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	    glClear (GL_COLOR_BUFFER_BIT);
     }
 
-    XSubtractRegion (region, &emptyRegion, tmpRegion);
+    CompRegion tmpRegion (region);
 
     foreach (CompOutput *output, outputs)
     {
@@ -987,7 +964,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 
 	    gScreen->glPaintOutput (defaultScreenPaintAttrib,
 				    identity,
-				    output->region (), output,
+				    CompRegion (*output), output,
 				    PAINT_SCREEN_REGION_MASK |
 				    PAINT_SCREEN_FULL_MASK);
 	}
@@ -995,7 +972,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	{
 	    GLMatrix identity;
 
-	    XIntersectRegion (tmpRegion, output->region (), outputRegion);
+	    outputRegion = tmpRegion & CompRegion (*output);
 
 	    if (!gScreen->glPaintOutput (defaultScreenPaintAttrib,
 					 identity,
@@ -1006,10 +983,10 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 
 		gScreen->glPaintOutput (defaultScreenPaintAttrib,
 					identity,
-					output->region (), output,
+					CompRegion (*output), output,
 					PAINT_SCREEN_FULL_MASK);
 
-		XUnionRegion (tmpRegion, output->region (), tmpRegion);
+		tmpRegion += *output;
 
 	    }
 	}
@@ -1028,8 +1005,8 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	BoxPtr pBox;
 	int    nBox, y;
 
-	pBox = tmpRegion->rects;
-	nBox = tmpRegion->numRects;
+	pBox = const_cast <Region> (tmpRegion.handle ())->rects;
+	nBox = const_cast <Region> (tmpRegion.handle ())->numRects;
 
 	if (GL::copySubBuffer)
 	{
