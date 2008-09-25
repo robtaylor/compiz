@@ -27,10 +27,10 @@ CompRect::CompRect (const CompRect& r)
     mRegion.rects = &mRegion.extents;
 }
 
-Region
-CompRect::region ()
+const Region
+CompRect::region () const
 {
-    return &mRegion;
+    return const_cast<const Region> (&mRegion);
 }
 
 void

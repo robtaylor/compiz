@@ -18,7 +18,7 @@ class CompRect {
 	unsigned int width () const;
 	unsigned int height () const;
 
-	Region region ();
+	const Region region () const;
 
 	void setGeometry (int, int, int, int);
 

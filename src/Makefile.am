@@ -12,6 +12,7 @@ bin_PROGRAMS = compiz
 compiz_LDADD = @COMPIZ_LIBS@ @GL_LIBS@ -lm
 compiz_LDFLAGS = -export-dynamic
 compiz_SOURCES =   \
+        region.cpp \
 	atoms.cpp \
 	timer.cpp \
 	main.cpp \
