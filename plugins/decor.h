@@ -32,17 +32,18 @@ struct Vector {
 #define DECOR_ACTIVE 2
 #define DECOR_NUM    3
 
-class DecorTexture : public GLTexture {
+class DecorTexture {
 
     public:
 	DecorTexture (Pixmap pixmap);
 	~DecorTexture ();
 
     public:
-	bool       status;
-	int        refCount;
-        Pixmap     pixmap;
-	Damage     damage;
+	bool            status;
+	int             refCount;
+        Pixmap          pixmap;
+	Damage          damage;
+	GLTexture::List textures;
 };
 
 class Decoration {

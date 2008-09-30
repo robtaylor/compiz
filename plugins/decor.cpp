@@ -59,6 +59,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
 	CompRect box;
+	GLTexture::MatrixList ml (1);
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
 	gWindow->geometry ().reset ();
@@ -71,36 +72,38 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 	    if (box.x1 () < box.x2 () &&
 		box.y1 () < box.y2 ())
 	    {
-		gWindow->glAddGeometry (&wd->quad[i].matrix, 1,
-					CompRegion (box), region);
+		ml[0] = wd->quad[i].matrix;
+		gWindow->glAddGeometry (ml, CompRegion (box), region);
 	    }
 	}
 
 	if (gWindow->geometry ().vCount)
-	    gWindow->glDrawTexture (wd->decor->texture, attrib, mask);
+	    gWindow->glDrawTexture (wd->decor->texture->textures[0],
+				    attrib, mask);
     }
     else if (wd && !reg.isEmpty () &&
 	     wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW)
     {
+	GLTexture::MatrixList ml (1);
+
 	gWindow->geometry ().reset ();
 
-	if (!gWindow->texture ().hasPixmap ())
+	if (gWindow->textures ().empty ())
 	    gWindow->bind ();
-	if (!gWindow->texture ().hasPixmap ())
+	if (gWindow->textures ().empty ())
 	    return status;
 
-	gWindow->glAddGeometry (&gWindow->matrix (), 1,
-				window->frameRegion (), region);
+	ml[0] = gWindow->matrices ()[0];
+	gWindow->glAddGeometry (ml, window->frameRegion (), region);
 
 	if (gWindow->geometry ().vCount)
-	    gWindow->glDrawTexture (&gWindow->texture (), attrib, mask);
+	    gWindow->glDrawTexture (gWindow->textures ()[0], attrib, mask);
     }
 
     return status;
 }
 
 DecorTexture::DecorTexture (Pixmap pixmap) :
-    GLTexture (),
     status (true),
     refCount (1),
     pixmap (pixmap),
@@ -117,14 +120,15 @@ DecorTexture::DecorTexture (Pixmap pixmap) :
 	return;
     }
 
-    if (!bindPixmap (pixmap, width, height, depth))
+    textures = GLTexture::bindPixmapToTexture (pixmap, width, height, depth);
+    if (textures.size () != 1)
     {
         status = false;
 	return;
     }
 
     if (!DecorScreen::get (screen)->opt[DECOR_OPTION_MIPMAP].value ().b ())
-	mipmap () = false;
+	textures[0]->setMipmap (false);
 
     damage = XDamageCreate (screen->dpy (), pixmap,
 			     XDamageReportRawRectangles);
@@ -491,7 +495,7 @@ DecorWindow::setDecorationMatrices ()
 
     for (i = 0; i < wd->nQuad; i++)
     {
-	wd->quad[i].matrix = wd->decor->texture->matrix ();
+	wd->quad[i].matrix = wd->decor->texture->textures[0]->matrix ();
 
 	x0 = wd->decor->quad[i].m.x0;
 	y0 = wd->decor->quad[i].m.y0;
@@ -1217,8 +1221,6 @@ DecorScreen::handleEvent (XEvent *event)
 		{
 		    if (t->pixmap == de->drawable)
 		    {
-			t->GLTexture::damage ();
-
 			foreach (CompWindow *w, screen->windows ())
 			{
 			    if (w->shaded () || w->mapNum ())

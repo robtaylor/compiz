@@ -25,7 +25,7 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     gWindow (gw),
     cWindow (CompositeWindow::get (w)),
     gScreen (GLScreen::get (screen)),
-    texture (),
+    textures (),
     clip (),
     bindFailed (false),
     geometry ()
@@ -46,11 +46,16 @@ PrivateGLWindow::~PrivateGLWindow ()
 void
 PrivateGLWindow::setWindowMatrix ()
 {
-    matrix = texture.matrix ();
-    matrix.x0 -= ((window->geometry ().x () - window->input ().left) *
-		  matrix.xx);
-    matrix.y0 -= ((window->geometry ().y () - window->input ().top) *
-		  matrix.yy);
+    matrices.clear ();
+    foreach (GLTexture *t, textures)
+    {
+	GLTexture::Matrix matrix = t->matrix ();
+	matrix.x0 -= ((window->geometry ().x () - window->input ().left) *
+		    matrix.xx);
+	matrix.y0 -= ((window->geometry ().y () - window->input ().top) *
+		    matrix.yy);
+	matrices.push_back (matrix);
+    }
 }
 
 bool
@@ -61,12 +66,14 @@ GLWindow::bind ()
     if (!priv->cWindow->pixmap () && !priv->cWindow->bind ())
 	return false;
 
-    if (!priv->texture.bindPixmap (priv->cWindow->pixmap (),
-				   priv->window->size ().width () + i.left +
-				   i.right,
-				   priv->window->size ().height () + i.top +
-				   i.bottom,
-				   priv->window->depth ()))
+    priv->textures =
+	GLTexture::bindPixmapToTexture (priv->cWindow->pixmap (),
+				        priv->window->size ().width () +
+					i.left + i.right,
+					priv->window->size ().height () +
+					i.top + i.bottom,
+					priv->window->depth ());
+    if (priv->textures.empty ())
     {
 	compLogMessage ("opengl", CompLogLevelInfo,
 			"Couldn't bind redirected window 0x%x to "
@@ -83,7 +90,7 @@ GLWindow::release ()
 {
     if (priv->cWindow->pixmap ())
     {
-	priv->texture = GLTexture ();
+	priv->textures.clear ();
 	priv->cWindow->release ();
     }
 }
@@ -103,11 +110,10 @@ GLWindowInterface::glDraw (const GLMatrix     &transform,
     WRAPABLE_DEF (glDraw, transform, fragment, region, mask)
 
 void
-GLWindowInterface::glAddGeometry (GLTexture::Matrix *matrix,
-				  int	            nMatrix,
-				  const CompRegion  &region,
-				  const CompRegion  &clip)
-    WRAPABLE_DEF (glAddGeometry, matrix, nMatrix, region, clip)
+GLWindowInterface::glAddGeometry (const GLTexture::MatrixList &matrix,
+				  const CompRegion            &region,
+				  const CompRegion            &clip)
+    WRAPABLE_DEF (glAddGeometry, matrix, region, clip)
 
 void
 GLWindowInterface::glDrawTexture (GLTexture          *texture,
@@ -194,13 +200,6 @@ GLWindow::updatePaintAttribs ()
     }
 }
 
-bool
-PrivateGLWindow::damageRect (bool initial, const CompRect &box)
-{
-    texture.damage ();
-    return cWindow->damageRect (initial, box);
-}
-
 GLWindow::Geometry &
 GLWindow::geometry ()
 {
@@ -273,14 +272,14 @@ GLWindow::Geometry::moreIndices (int newSize)
     return true;
 }
 
-GLTexture &
-GLWindow::texture ()
+const GLTexture::List &
+GLWindow::textures () const
 {
-    return priv->texture;
+    return priv->textures;
 }
 
-GLTexture::Matrix &
-GLWindow::matrix ()
+const GLTexture::MatrixList &
+GLWindow::matrices () const
 {
-    return priv->matrix;
+    return priv->matrices;
 }

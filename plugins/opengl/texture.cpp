@@ -38,11 +38,62 @@
 #include <privatetexture.h>
 #include "privates.h"
 
+std::map<Damage, TfpTexture*> boundPixmapTex;
+
 static GLTexture::Matrix _identity_matrix = {
     1.0f, 0.0f,
     0.0f, 1.0f,
     0.0f, 0.0f
 };
+
+GLTexture::List::List () :
+    std::vector<GLTexture *> (0)
+{
+}
+
+GLTexture::List::List (unsigned int size) :
+    std::vector<GLTexture *> (size)
+{
+    for (unsigned int i = 0; i < size; i++)
+	at (i) = NULL;
+}
+
+GLTexture::List::List (const GLTexture::List &c)
+{
+    resize (c.size ());
+    for (unsigned int i = 0; i < c.size (); i++)
+    {
+	at (i) = c[i];
+	GLTexture::incRef (c[i]);
+    }
+}
+
+GLTexture::List::~List ()
+{
+    foreach (GLTexture *t, *this)
+	GLTexture::decRef (t);
+}
+
+GLTexture::List &
+GLTexture::List::operator= (const GLTexture::List &c)
+{
+    this->clear ();
+    resize (c.size ());
+    for (unsigned int i = 0; i < c.size (); i++)
+    {
+	at (i) = c[i];
+	GLTexture::incRef (c[i]);
+    }
+    return *this;
+}
+
+void
+GLTexture::List::clear ()
+{
+    foreach (GLTexture *t, *this)
+	GLTexture::decRef (t);
+    std::vector <GLTexture *>::clear ();
+}
 
 GLTexture::GLTexture () :
     priv (new PrivateTexture (this))
@@ -57,311 +108,53 @@ PrivateTexture::PrivateTexture (GLTexture *texture) :
     texture (texture),
     name (0),
     target (GL_TEXTURE_2D),
-    pixmap  (None),
-    filter  (GL_NEAREST),
-    wrap    (GL_CLAMP_TO_EDGE),
-    matrix  (_identity_matrix),
-    damaged (true),
-    mipmap  (false)
+    filter (GL_NEAREST),
+    wrap   (GL_CLAMP_TO_EDGE),
+    matrix (_identity_matrix),
+    mipmap  (true),
+    mipmapSupport (false),
+    initial (true),
+    refCount (1)
 {
+    glGenTextures (1, &name);
 }
 
 PrivateTexture::~PrivateTexture ()
 {
     if (name)
     {
-	if (pixmap)
-	{
-	    glEnable (target);
-	    if (!strictBinding)
-	    {
-		glBindTexture (target, name);
-
-		(*GL::releaseTexImage) (screen->dpy (),
-					pixmap, GLX_FRONT_LEFT_EXT);
-	    }
-
-	    glBindTexture (target, 0);
-	    glDisable (target);
-
-	    glXDestroyGLXPixmap (screen->dpy (), pixmap);
-	}
 	glDeleteTextures (1, &name);
     }
 }
 
-
-bool
-PrivateTexture::loadImageData (const char   *image,
-			       unsigned int width,
-			       unsigned int height,
-			       GLenum       format,
-			       GLenum       type)
+GLuint
+GLTexture::name () const
 {
-    GLint internalFormat;
+    return priv->name;
+}
 
-    texture->releasePixmap ();
+GLenum
+GLTexture::target () const
+{
+    return priv->target;
+}
 
-    if (GL::textureNonPowerOfTwo ||
-	(POWER_OF_TWO (width) && POWER_OF_TWO (height)))
-    {
-	target = GL_TEXTURE_2D;
-	matrix.xx = 1.0f / width;
-	matrix.yy = 1.0f / height;
-	matrix.y0 = 0.0f;
-	mipmap = true;
-    }
-    else
-    {
-	target = GL_TEXTURE_RECTANGLE_NV;
-	matrix.xx = 1.0f;
-	matrix.yy = 1.0f;
-	matrix.y0 = 0.0f;
-	mipmap = false;
-    }
-
-    this->width  = width;
-    this->height = height;
-
-    if (!name)
-	glGenTextures (1, &name);
-
-    glBindTexture (target, name);
-
-    internalFormat =
-	(GLScreen::get(screen)->getOption ("texture_compression")->value ().b ()
-	&& GL::textureCompression ? GL_COMPRESSED_RGBA_ARB : GL_RGBA);
-
-    glTexImage2D (target, 0, internalFormat, width, height, 0,
-		  format, type, image);
-
-    filter = GL_NEAREST;
-
-    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    wrap = GL_CLAMP_TO_EDGE;
-
-    glBindTexture (target, 0);
-
-    return true;
+const GLTexture::Matrix &
+GLTexture::matrix () const
+{
+    return priv->matrix;
 }
 
 bool
-GLTexture::imageBufferToTexture (GLTexture  *texture,
-				   const char   *image,
-				   unsigned int width,
-				   unsigned int height)
+GLTexture::mipmap () const
 {
-#if IMAGE_BYTE_ORDER == MSBFirst
-    return texture->priv->loadImageData (image, width, height,
-					 GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV);
-#else
-    return texture->priv->loadImageData (image, width, height,
-					 GL_BGRA, GL_UNSIGNED_BYTE);
-#endif
+    return priv->mipmap & priv->mipmapSupport;
 }
 
-bool
-GLTexture::imageDataToTexture (GLTexture  *texture,
-				 const char   *image,
-				 unsigned int width,
-				 unsigned int height,
-				 GLenum       format,
-				 GLenum       type)
+GLenum
+GLTexture::filter () const
 {
-    return texture->priv->loadImageData (image, width, height, format, type);
-}
-
-
-bool
-GLTexture::readImageToTexture (CompScreen   *screen,
-			       GLTexture    *texture,
-			       const char   *imageFileName,
-			       unsigned int *returnWidth,
-			       unsigned int *returnHeight)
-{
-    void *image;
-    int  width, height;
-    Bool status;
-
-    if (screen->readImageFromFile (imageFileName, &width, &height, &image))
-	return false;
-
-    status = GLTexture::imageBufferToTexture (texture, (char *)image,
-						width, height);
-
-    free (image);
-
-    if (returnWidth)
-	*returnWidth = width;
-    if (returnHeight)
-	*returnHeight = height;
-
-    return status;
-}
-
-bool
-GLTexture::bindPixmap (Pixmap pixmap,
-		       int    width,
-		       int    height,
-		       int    depth)
-{
-    unsigned int target = 0;
-    GLFBConfig   *config = GLScreen::get (screen)->glxPixmapFBConfig (depth);
-    int          attribs[7], i = 0;
-
-    if (!config->fbConfig)
-    {
-	compLogMessage ("core", CompLogLevelWarn,
-			"No GLXFBConfig for depth %d",
-			depth);
-
-	return false;
-    }
-
-    attribs[i++] = GLX_TEXTURE_FORMAT_EXT;
-    attribs[i++] = config->textureFormat;
-    attribs[i++] = GLX_MIPMAP_TEXTURE_EXT;
-    attribs[i++] = config->mipmap;
-
-    /* If no texture target is specified in the fbconfig, or only the
-       TEXTURE_2D target is specified and GL_texture_non_power_of_two
-       is not supported, then allow the server to choose the texture target. */
-    if (config->textureTargets & GLX_TEXTURE_2D_BIT_EXT &&
-       (GL::textureNonPowerOfTwo ||
-       (POWER_OF_TWO (width) && POWER_OF_TWO (height))))
-	target = GLX_TEXTURE_2D_EXT;
-    else if (config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT)
-	target = GLX_TEXTURE_RECTANGLE_EXT;
-
-    /* Workaround for broken texture from pixmap implementations, 
-       that don't advertise any texture target in the fbconfig. */
-    if (!target)
-    {
-	if (!(config->textureTargets & GLX_TEXTURE_2D_BIT_EXT))
-	    target = GLX_TEXTURE_RECTANGLE_EXT;
-	else if (!(config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT))
-	    target = GLX_TEXTURE_2D_EXT;
-    }
-
-    if (target)
-    {
-	attribs[i++] = GLX_TEXTURE_TARGET_EXT;
-	attribs[i++] = target;
-    }
-
-    attribs[i++] = None;
-
-    priv->pixmap = (*GL::createPixmap) (screen->dpy (), config->fbConfig,
-					pixmap, attribs);
-
-    if (!priv->pixmap)
-    {
-	compLogMessage ("core", CompLogLevelWarn,
-			"glXCreatePixmap failed");
-
-	return false;
-    }
-
-    if (!target)
-	(*GL::queryDrawable) (screen->dpy (), priv->pixmap,
-			      GLX_TEXTURE_TARGET_EXT, &target);
-
-    switch (target) {
-	case GLX_TEXTURE_2D_EXT:
-	    priv->target = GL_TEXTURE_2D;
-
-	    priv->matrix.xx = 1.0f / width;
-	    if (config->yInverted)
-	    {
-		priv->matrix.yy = 1.0f / height;
-		priv->matrix.y0 = 0.0f;
-	    }
-	    else
-	    {
-		priv->matrix.yy = -1.0f / height;
-		priv->matrix.y0 = 1.0f;
-	    }
-	    priv->mipmap = config->mipmap;
-	    break;
-	case GLX_TEXTURE_RECTANGLE_EXT:
-	    priv->target = GL_TEXTURE_RECTANGLE_ARB;
-
-	    priv->matrix.xx = 1.0f;
-	    if (config->yInverted)
-	    {
-		priv->matrix.yy = 1.0f;
-		priv->matrix.y0 = 0;
-	    }
-	    else
-	    {
-		priv->matrix.yy = -1.0f;
-		priv->matrix.y0 = height;
-	    }
-	    priv->mipmap = false;
-	    break;
-	default:
-	    compLogMessage ("core", CompLogLevelWarn,
-			    "pixmap 0x%x can't be bound to texture",
-			    (int) pixmap);
-
-	    glXDestroyGLXPixmap (screen->dpy (), priv->pixmap);
-	    priv->pixmap = None;
-
-	    return false;
-    }
-
-    if (!priv->name)
-	glGenTextures (1, &priv->name);
-
-    glBindTexture (priv->target, priv->name);
-
-    if (!strictBinding)
-    {
-	(*GL::bindTexImage) (screen->dpy (), priv->pixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
-    }
-
-    priv->filter = GL_NEAREST;
-
-    glTexParameteri (priv->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (priv->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-    glTexParameteri (priv->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (priv->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    priv->wrap = GL_CLAMP_TO_EDGE;
-
-    glBindTexture (priv->target, 0);
-
-    return true;
-}
-
-void
-GLTexture::releasePixmap ()
-{
-    if (priv->pixmap)
-    {
-	glEnable (priv->target);
-	if (!strictBinding)
-	{
-	    glBindTexture (priv->target, priv->name);
-
-	    (*GL::releaseTexImage) (screen->dpy (), priv->pixmap,
-				    GLX_FRONT_LEFT_EXT);
-	}
-
-	glBindTexture (priv->target, 0);
-	glDisable (priv->target);
-
-	glXDestroyGLXPixmap (screen->dpy (), priv->pixmap);
-
-	priv->pixmap = None;
-    }
+    return priv->filter;
 }
 
 void
@@ -370,12 +163,6 @@ GLTexture::enable (GLTexture::Filter filter)
     GLScreen *gs = GLScreen::get (screen);
     glEnable (priv->target);
     glBindTexture (priv->target, priv->name);
-
-    if (strictBinding && priv->pixmap)
-    {
-	(*GL::bindTexImage) (screen->dpy (), priv->pixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
-    }
 
     if (filter == Fast)
     {
@@ -435,10 +222,10 @@ GLTexture::enable (GLTexture::Filter filter)
 
     if (priv->filter == GL_LINEAR_MIPMAP_LINEAR)
     {
-	if (priv->damaged)
+	if (priv->initial)
 	{
 	    (*GL::generateMipmap) (priv->target);
-	    priv->damaged = false;
+	    priv->initial = false;
 	}
     }
 }
@@ -446,56 +233,390 @@ GLTexture::enable (GLTexture::Filter filter)
 void
 GLTexture::disable ()
 {
-    if (strictBinding && priv->pixmap)
-    {
-	glBindTexture (priv->target, priv->name);
-
-	(*GL::releaseTexImage) (screen->dpy (), priv->pixmap,
-				GLX_FRONT_LEFT_EXT);
-    }
-
     glBindTexture (priv->target, 0);
     glDisable (priv->target);
 }
 
-GLuint
-GLTexture::name ()
+void
+GLTexture::setData (GLenum target, Matrix &m, bool mipmap)
 {
-    return priv->name;
-}
-
-GLenum
-GLTexture::target ()
-{
-    return priv->target;
+    priv->target = target;
+    priv->matrix = m;
+    priv->mipmapSupport = mipmap;
 }
 
 void
-GLTexture::damage ()
+GLTexture::setMipmap (bool enable)
 {
-    priv->damaged = true;
+    priv->mipmap = enable;
 }
 
-GLTexture::Matrix &
-GLTexture::matrix ()
-{
-    return priv->matrix;
-}
-	
 void
-GLTexture::reset ()
+GLTexture::setFilter (GLenum filter)
 {
-    priv = boost::shared_ptr <PrivateTexture> (new PrivateTexture (this));
+    glBindTexture (priv->target, priv->name);
+
+    priv->filter = filter;
+
+    glTexParameteri (priv->target, GL_TEXTURE_MIN_FILTER, filter);
+    glTexParameteri (priv->target, GL_TEXTURE_MAG_FILTER, filter);
+
+    glBindTexture (priv->target, 0);
 }
 
-bool
-GLTexture::hasPixmap ()
+void
+GLTexture::setWrap (GLenum wrap)
 {
-    return (priv->pixmap != None);
+    glBindTexture (priv->target, priv->name);
+
+    priv->wrap = GL_CLAMP_TO_EDGE;
+
+    glTexParameteri (priv->target, GL_TEXTURE_WRAP_S, wrap);
+    glTexParameteri (priv->target, GL_TEXTURE_WRAP_T, wrap);
+
+    glBindTexture (priv->target, 0);
 }
 
-bool &
-GLTexture::mipmap ()
+GLTexture::List
+PrivateTexture::loadImageData (const char   *image,
+			       unsigned int width,
+			       unsigned int height,
+			       GLenum       format,
+			       GLenum       type)
 {
-    return priv->mipmap;
+#warning Add support for multiple textures
+    if ((int) width > GL::maxTextureSize || (int) height > GL::maxTextureSize)
+	return GLTexture::List ();
+
+    GLTexture::List rv (1);
+    GLTexture *t = new GLTexture ();
+    rv[0] = t;
+
+    GLTexture::Matrix matrix = _identity_matrix;
+    GLint             internalFormat;
+    GLenum            target;
+    bool              mipmap;
+
+
+    if (GL::textureNonPowerOfTwo ||
+	(POWER_OF_TWO (width) && POWER_OF_TWO (height)))
+    {
+	target = GL_TEXTURE_2D;
+	matrix.xx = 1.0f / width;
+	matrix.yy = 1.0f / height;
+	matrix.y0 = 0.0f;
+	mipmap = true;
+    }
+    else
+    {
+	target = GL_TEXTURE_RECTANGLE_NV;
+	matrix.xx = 1.0f;
+	matrix.yy = 1.0f;
+	matrix.y0 = 0.0f;
+	mipmap = false;
+    }
+
+    t->setData (target, matrix, mipmap);
+
+    glBindTexture (target, t->name ());
+
+    internalFormat =
+	(GLScreen::get(screen)->getOption ("texture_compression")->value ().b ()
+	&& GL::textureCompression ? GL_COMPRESSED_RGBA_ARB : GL_RGBA);
+
+    glTexImage2D (target, 0, internalFormat, width, height, 0,
+		  format, type, image);
+
+    t->setFilter (GL_NEAREST);
+    t->setWrap (GL_CLAMP_TO_EDGE);
+
+    return rv;
+}
+
+GLTexture::List
+GLTexture::imageBufferToTexture (const char   *image,
+				 unsigned int width,
+				 unsigned int height)
+{
+#if IMAGE_BYTE_ORDER == MSBFirst
+    return PrivateTexture::loadImageData (image, width, height,
+					  GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV);
+#else
+    return PrivateTexture::loadImageData (image, width, height,
+					  GL_BGRA, GL_UNSIGNED_BYTE);
+#endif
+}
+
+GLTexture::List
+GLTexture::imageDataToTexture (const char   *image,
+			       unsigned int width,
+			       unsigned int height,
+			       GLenum       format,
+			       GLenum       type)
+{
+    return PrivateTexture::loadImageData (image, width, height, format, type);
+}
+
+
+GLTexture::List
+GLTexture::readImageToTexture (const char   *imageFileName,
+			       unsigned int *returnWidth,
+			       unsigned int *returnHeight)
+{
+    void            *image;
+    int             width, height;
+
+    if (screen->readImageFromFile (imageFileName, &width, &height, &image))
+	return GLTexture::List ();
+
+    GLTexture::List rv =
+	GLTexture::imageBufferToTexture ((char *)image, width, height);
+
+    free (image);
+
+    if (returnWidth)
+	*returnWidth = width;
+    if (returnHeight)
+	*returnHeight = height;
+
+    return rv;
+}
+
+void
+GLTexture::decRef (GLTexture *tex)
+{
+    tex->priv->refCount--;
+    if (tex->priv->refCount <= 0)
+	delete tex;
+}
+
+void
+GLTexture::incRef (GLTexture *tex)
+{
+    tex->priv->refCount++;
+}
+
+GLTexture::List
+GLTexture::bindPixmapToTexture (Pixmap pixmap,
+				int    width,
+				int    height,
+				int    depth)
+{
+    return TfpTexture::bindPixmapToTexture (pixmap, width, height, depth);
+}
+
+TfpTexture::TfpTexture () :
+    pixmap (0),
+    damaged (true),
+    damage (None)
+{
+}
+
+TfpTexture::~TfpTexture ()
+{
+    if (pixmap)
+    {
+	glEnable (target ());
+	if (!strictBinding)
+	{
+	    glBindTexture (target (), name ());
+
+	    (*GL::releaseTexImage) (screen->dpy (), pixmap,
+				    GLX_FRONT_LEFT_EXT);
+	}
+
+	glBindTexture (target (), 0);
+	glDisable (target ());
+
+	glXDestroyGLXPixmap (screen->dpy (), pixmap);
+
+	boundPixmapTex.erase (damage);
+	XDamageDestroy (screen->dpy (), damage);
+    }
+}
+
+GLTexture::List
+TfpTexture::bindPixmapToTexture (Pixmap pixmap,
+				 int    width,
+				 int    height,
+				 int    depth)
+{
+    if ((int) width > GL::maxTextureSize || (int) height > GL::maxTextureSize ||
+        !GL::textureFromPixmap)
+	return GLTexture::List ();
+
+    GLTexture::List   rv (1);
+    TfpTexture        *tex = NULL;
+    unsigned int      target = 0;
+    GLenum            texTarget = GL_TEXTURE_2D;
+    GLXPixmap         glxPixmap = None;
+    GLTexture::Matrix matrix = _identity_matrix;
+    bool              mipmap = false;
+    GLFBConfig        *config =
+	GLScreen::get (screen)->glxPixmapFBConfig (depth);
+    int               attribs[7], i = 0;
+
+    if (!config->fbConfig)
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"No GLXFBConfig for depth %d",
+			depth);
+
+	return GLTexture::List ();
+    }
+
+    attribs[i++] = GLX_TEXTURE_FORMAT_EXT;
+    attribs[i++] = config->textureFormat;
+    attribs[i++] = GLX_MIPMAP_TEXTURE_EXT;
+    attribs[i++] = config->mipmap;
+
+    /* If no texture target is specified in the fbconfig, or only the
+       TEXTURE_2D target is specified and GL_texture_non_power_of_two
+       is not supported, then allow the server to choose the texture target. */
+    if (config->textureTargets & GLX_TEXTURE_2D_BIT_EXT &&
+       (GL::textureNonPowerOfTwo ||
+       (POWER_OF_TWO (width) && POWER_OF_TWO (height))))
+	target = GLX_TEXTURE_2D_EXT;
+    else if (config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT)
+	target = GLX_TEXTURE_RECTANGLE_EXT;
+
+    /* Workaround for broken texture from pixmap implementations, 
+       that don't advertise any texture target in the fbconfig. */
+    if (!target)
+    {
+	if (!(config->textureTargets & GLX_TEXTURE_2D_BIT_EXT))
+	    target = GLX_TEXTURE_RECTANGLE_EXT;
+	else if (!(config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT))
+	    target = GLX_TEXTURE_2D_EXT;
+    }
+
+    if (target)
+    {
+	attribs[i++] = GLX_TEXTURE_TARGET_EXT;
+	attribs[i++] = target;
+    }
+
+    attribs[i++] = None;
+
+    glxPixmap = (*GL::createPixmap) (screen->dpy (), config->fbConfig,
+				     pixmap, attribs);
+
+    if (!glxPixmap)
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"glXCreatePixmap failed");
+
+	return GLTexture::List ();
+    }
+
+    if (!target)
+	(*GL::queryDrawable) (screen->dpy (), glxPixmap,
+			      GLX_TEXTURE_TARGET_EXT, &target);
+
+    switch (target) {
+	case GLX_TEXTURE_2D_EXT:
+	    texTarget = GL_TEXTURE_2D;
+
+	    matrix.xx = 1.0f / width;
+	    if (config->yInverted)
+	    {
+		matrix.yy = 1.0f / height;
+		matrix.y0 = 0.0f;
+	    }
+	    else
+	    {
+		matrix.yy = -1.0f / height;
+		matrix.y0 = 1.0f;
+	    }
+	    mipmap = config->mipmap;
+	    break;
+	case GLX_TEXTURE_RECTANGLE_EXT:
+	    texTarget = GL_TEXTURE_RECTANGLE_ARB;
+
+	    matrix.xx = 1.0f;
+	    if (config->yInverted)
+	    {
+		matrix.yy = 1.0f;
+		matrix.y0 = 0;
+	    }
+	    else
+	    {
+		matrix.yy = -1.0f;
+		matrix.y0 = height;
+	    }
+	    mipmap = false;
+	    break;
+	default:
+	    compLogMessage ("core", CompLogLevelWarn,
+			    "pixmap 0x%x can't be bound to texture",
+			    (int) pixmap);
+
+	    glXDestroyGLXPixmap (screen->dpy (), glxPixmap);
+	    glxPixmap = None;
+
+	    return GLTexture::List ();
+    }
+
+    tex = new TfpTexture ();
+    tex->setData (texTarget, matrix, mipmap);
+    tex->pixmap = glxPixmap;
+
+    rv[0] = tex;
+
+    glBindTexture (texTarget, tex->name ());
+
+    if (!strictBinding)
+    {
+	(*GL::bindTexImage) (screen->dpy (), glxPixmap,
+			     GLX_FRONT_LEFT_EXT, NULL);
+    }
+
+    tex->setFilter (GL_NEAREST);
+    tex->setWrap (GL_CLAMP_TO_EDGE);
+
+    glBindTexture (texTarget, 0);
+
+    tex->damage = XDamageCreate (screen->dpy (), pixmap,
+			         XDamageReportRawRectangles);
+    boundPixmapTex[tex->damage] = tex;
+
+    return rv;
+}
+
+void
+TfpTexture::enable (GLTexture::Filter filter)
+{
+    glEnable (target ());
+    glBindTexture (target (), name ());
+
+    if (strictBinding && pixmap)
+    {
+	(*GL::bindTexImage) (screen->dpy (), pixmap,
+			     GLX_FRONT_LEFT_EXT, NULL);
+    }
+
+    GLTexture::enable (filter);
+
+    if (this->filter () == GL_LINEAR_MIPMAP_LINEAR)
+    {
+	if (damaged)
+	{
+	    (*GL::generateMipmap) (target ());
+	    damaged = false;
+	}
+    }
+}
+
+void
+TfpTexture::disable ()
+{
+    if (strictBinding && pixmap)
+    {
+	glBindTexture (target (), name ());
+
+	(*GL::releaseTexImage) (screen->dpy (), pixmap,
+				GLX_FRONT_LEFT_EXT);
+    }
+
+    GLTexture::disable ();
 }

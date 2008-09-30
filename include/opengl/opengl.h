@@ -151,6 +151,7 @@ namespace GL {
     extern GLFramebufferTexture2DProc   framebufferTexture2D;
     extern GLGenerateMipmapProc         generateMipmap;
 
+    extern bool  textureFromPixmap;
     extern bool  textureRectangle;
     extern bool  textureNonPowerOfTwo;
     extern bool  textureEnvCombine;
@@ -289,7 +290,7 @@ class GLWindowInterface :
 			      const CompRegion &, unsigned int);
 	virtual bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 			     const CompRegion &, unsigned int);
-	virtual void glAddGeometry (GLTexture::Matrix *matrix, int,
+	virtual void glAddGeometry (const GLTexture::MatrixList &,
 				    const CompRegion &,const CompRegion &);
 	virtual void glDrawTexture (GLTexture *texture, GLFragment::Attrib &,
 				    unsigned int);
@@ -338,8 +339,8 @@ class GLWindow :
 	bool bind ();
 	void release ();
 
-	GLTexture &texture ();
-	GLTexture::Matrix &matrix ();
+	const GLTexture::List &       textures () const;
+	const GLTexture::MatrixList & matrices () const;
 
 	void updatePaintAttribs ();
 
@@ -351,7 +352,7 @@ class GLWindow :
 	WRAPABLE_HND (1, GLWindowInterface, bool, glDraw, const GLMatrix &,
 		      GLFragment::Attrib &, const CompRegion &, unsigned int);
 	WRAPABLE_HND (2, GLWindowInterface, void, glAddGeometry,
-		      GLTexture::Matrix *matrix, int, const CompRegion &,
+		      const GLTexture::MatrixList &, const CompRegion &,
 		      const CompRegion &);
 	WRAPABLE_HND (3, GLWindowInterface, void, glDrawTexture,
 		      GLTexture *texture, GLFragment::Attrib &, unsigned int);

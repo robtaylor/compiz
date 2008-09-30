@@ -56,7 +56,7 @@ class PrivateGLScreen :
 			        CompOutput       *output,
 			        unsigned int     mask);
 
-	void updateScreenBackground (GLTexture *texture);
+	void updateScreenBackground ();
 
 	void updateView ();
 
@@ -69,8 +69,8 @@ class PrivateGLScreen :
 
 	GLFBConfig      glxPixmapFBConfigs[MAX_DEPTH + 1];
 
-	GLTexture backgroundTexture;
-	bool      backgroundLoaded;
+	GLTexture::List backgroundTextures;
+	bool            backgroundLoaded;
 
 	GLTexture::Filter filter[3];
 
@@ -107,8 +107,6 @@ class PrivateGLWindow :
 	void windowNotify (CompWindowNotify n);
 	void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	void moveNotify (int dx, int dy, bool now);
-
-	bool damageRect (bool, const CompRect &);
 	
 	void setWindowMatrix ();
 
@@ -117,8 +115,8 @@ class PrivateGLWindow :
 	CompositeWindow *cWindow;
 	GLScreen        *gScreen;
 
-	GLTexture         texture;
-	GLTexture::Matrix matrix;
+	GLTexture::List       textures;
+	GLTexture::MatrixList matrices;
 	
 	CompRegion    clip;
 	

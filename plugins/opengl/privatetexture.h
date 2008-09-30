@@ -1,6 +1,8 @@
 #ifndef _PRIVATETEXTURE_H
 #define _PRIVATETEXTURE_H
 
+#include <map>
+
 #include <GL/gl.h>
 #include <GL/glx.h>
 #include <opengl/texture.h>
@@ -13,25 +15,44 @@ class PrivateTexture {
 	PrivateTexture (GLTexture *);
 	~PrivateTexture ();
 
-	bool loadImageData (const char   *image,
-			    unsigned int width,
-			    unsigned int height,
-			    GLenum       format,
-			    GLenum       type);
+	static GLTexture::List loadImageData (const char   *image,
+					      unsigned int width,
+					      unsigned int height,
+					      GLenum       format,
+					      GLenum       type);
 
     public:
 	GLTexture         *texture;
 	GLuint            name;
 	GLenum            target;
-	GLfloat           dx, dy;
-	GLXPixmap         pixmap;
 	GLenum            filter;
 	GLenum            wrap;
 	GLTexture::Matrix matrix;
-	bool              damaged;
 	bool              mipmap;
-	unsigned int      width;
-	unsigned int      height;
+	bool              mipmapSupport;
+	bool              initial;
+	int               refCount;
 };
+
+class TfpTexture : public GLTexture {
+    public:
+	TfpTexture ();
+	~TfpTexture ();
+
+	void enable (Filter filter);
+	void disable ();
+
+	static List bindPixmapToTexture (Pixmap pixmap,
+					 int width,
+					 int height,
+					 int depth);
+
+    public:
+	GLXPixmap pixmap;
+	bool      damaged;
+	Damage    damage;
+};
+
+extern std::map<Damage, TfpTexture*> boundPixmapTex;
 
 #endif

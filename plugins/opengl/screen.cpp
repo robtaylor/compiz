@@ -33,6 +33,7 @@ namespace GL {
     GLFramebufferTexture2DProc   framebufferTexture2D = 0;
     GLGenerateMipmapProc         generateMipmap = 0;
 
+    bool  textureFromPixmap = true;
     bool  textureRectangle = false;
     bool  textureNonPowerOfTwo = false;
     bool  textureEnvCombine = false;
@@ -122,18 +123,8 @@ GLScreen::GLScreen (CompScreen *s) :
 	return;
     }
 
-    glxExtensions = glXQueryExtensionsString (dpy, s->screenNum ());
-    if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap"))
-    {
-	compLogMessage ("opengl", CompLogLevelFatal,
-			"GLX_EXT_texture_from_pixmap is missing");
-	XFree (visinfo);
-
-	setFailed ();
-	return;
-    }
-
     XFree (visinfo);
+    glxExtensions = glXQueryExtensionsString (dpy, s->screenNum ());
 
     if (!strstr (glxExtensions, "GLX_SGIX_fbconfig"))
     {
@@ -158,6 +149,16 @@ GLScreen::GLScreen (CompScreen *s) :
     GL::createPixmap = (GL::GLXCreatePixmapProc)
 	getProcAddress ("glXCreatePixmap");
 
+    GL::textureFromPixmap = false;
+
+    if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap"))
+    {
+	compLogMessage ("opengl", CompLogLevelFatal,
+			"GLX_EXT_texture_from_pixmap is missing");
+	setFailed ();
+	return;
+    }
+
     if (!GL::bindTexImage)
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
@@ -173,6 +174,8 @@ GLScreen::GLScreen (CompScreen *s) :
 	setFailed ();
 	return;
     }
+
+    GL::textureFromPixmap = true;
 
     if (!GL::queryDrawable     ||
 	!GL::getFBConfigs      ||
@@ -502,7 +505,7 @@ PrivateGLScreen::PrivateGLScreen (GLScreen   *gs) :
     gScreen (gs),
     cScreen (CompositeScreen::get (screen)),
     textureFilter (GL_LINEAR),
-    backgroundTexture (),
+    backgroundTextures (),
     backgroundLoaded (false),
     rasterPos (0, 0),
     fragmentStorage (),
@@ -554,6 +557,17 @@ PrivateGLScreen::handleEvent (XEvent *event)
 	    break;
 	break;
 	default:
+	    if (event->type == cScreen->damageEvent () + XDamageNotify)
+	    {
+		XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
+
+		std::map<Damage, TfpTexture*>::iterator it =
+		    boundPixmapTex.find (de->damage);
+		if (it != boundPixmapTex.end ())
+		{
+		    it->second->damaged = true;
+		}
+	    }
 	    break;
     }
 }
@@ -676,7 +690,7 @@ GLScreen::getProcAddress (const char *name)
 }
 
 void
-PrivateGLScreen::updateScreenBackground (GLTexture *texture)
+PrivateGLScreen::updateScreenBackground ()
 {
     Display	  *dpy = screen->dpy ();
     Atom	  pixmapAtom, actualType;
@@ -728,9 +742,9 @@ PrivateGLScreen::updateScreenBackground (GLTexture *texture)
 
     if (pixmap)
     {
-	texture->reset ();
-
-	if (!texture->bindPixmap (pixmap, width, height, depth))
+	backgroundTextures =
+	    GLTexture::bindPixmapToTexture (pixmap, width, height, depth);
+	if (backgroundTextures.empty ())
 	{
 	    compLogMessage ("core", CompLogLevelWarn,
 			    "Couldn't bind background pixmap 0x%x to "
@@ -739,19 +753,23 @@ PrivateGLScreen::updateScreenBackground (GLTexture *texture)
     }
     else
     {
-	texture->reset ();
+	backgroundTextures.clear ();
     }
 
-    if (!texture->name () && backgroundImage)
-	GLTexture::readImageToTexture (screen, texture, backgroundImage,
-				       &width, &height);
+    if (backgroundTextures.empty () && backgroundImage)
+	backgroundTextures =
+	    GLTexture::readImageToTexture (backgroundImage, &width, &height);
 
-    if (texture->target () == GL_TEXTURE_2D)
+    if (!backgroundTextures.empty ())
     {
-	glBindTexture (texture->target (), texture->name ());
-	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_S, GL_REPEAT);
-	glTexParameteri (texture->target (), GL_TEXTURE_WRAP_T, GL_REPEAT);
-	glBindTexture (texture->target (), 0);
+	foreach (GLTexture *t, backgroundTextures)
+	    if (t->target () == GL_TEXTURE_2D)
+	    {
+		glBindTexture (t->target (), t->name ());
+		glTexParameteri (t->target (), GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri (t->target (), GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glBindTexture (t->target (), 0);
+	    }
     }
 }
 
@@ -825,7 +843,7 @@ GLScreenInterface::glDisableOutputClipping ()
 void
 GLScreen::updateBackground ()
 {
-    priv->backgroundTexture.reset ();
+    priv->backgroundTextures.clear ();
 
     if (priv->backgroundLoaded)
     {

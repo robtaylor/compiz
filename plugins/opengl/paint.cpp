@@ -66,7 +66,6 @@ void
 PrivateGLScreen::paintBackground (const CompRegion &region,
 				  bool             transformed)
 {
-    GLTexture *bg = &backgroundTexture;
     BoxPtr    pBox = const_cast <Region> (region.handle ())->rects;
     int	      n, nBox = const_cast <Region> (region.handle ())->numRects;
     GLfloat   *d, *data;
@@ -76,9 +75,9 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
 
     if (screen->desktopWindowCount ())
     {
-	if (bg->name ())
+	if (!backgroundTextures.empty ())
 	{
-	    bg->reset ();
+	    backgroundTextures.clear ();
 	}
 
 	backgroundLoaded = false;
@@ -88,68 +87,94 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
     else
     {
 	if (!backgroundLoaded)
-	    updateScreenBackground (bg);
+	    updateScreenBackground ();
 
 	backgroundLoaded = true;
     }
 
-    data = (GLfloat *) malloc (sizeof (GLfloat) * nBox * 16);
+    data = new GLfloat [nBox * 16];
     if (!data)
 	return;
 
     d = data;
     n = nBox;
-    while (n--)
+
+    if (backgroundTextures.empty ())
     {
-	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x1);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y2);
+	while (n--)
+	{
+	    *d++ = pBox->x1;
+	    *d++ = pBox->y2;
 
-	*d++ = pBox->x1;
-	*d++ = pBox->y2;
+	    *d++ = pBox->x2;
+	    *d++ = pBox->y2;
 
-	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x2);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y2);
+	    *d++ = pBox->x2;
+	    *d++ = pBox->y1;
 
-	*d++ = pBox->x2;
-	*d++ = pBox->y2;
+	    *d++ = pBox->x1;
+	    *d++ = pBox->y1;
 
-	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x2);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y1);
+	    pBox++;
+	}
 
-	*d++ = pBox->x2;
-	*d++ = pBox->y1;
-
-	*d++ = COMP_TEX_COORD_X (&bg->matrix (), pBox->x1);
-	*d++ = COMP_TEX_COORD_Y (&bg->matrix (), pBox->y1);
-
-	*d++ = pBox->x1;
-	*d++ = pBox->y1;
-
-	pBox++;
-    }
-
-    glTexCoordPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data);
-    glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data + 2);
-
-    if (bg->name ())
-    {
-	if (transformed)
-	    bg->enable (GLTexture::Good);
-	else
-	    bg->enable (GLTexture::Fast);
-
-	glDrawArrays (GL_QUADS, 0, nBox * 4);
-
-	bg->disable ();
-    }
-    else
-    {
+	glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 2, data + 2);
+	
 	glColor4us (0, 0, 0, 0);
 	glDrawArrays (GL_QUADS, 0, nBox * 4);
 	glColor4usv (defaultColor);
     }
+    else
+    {
+#warning Add support for multiple textures
+	GLTexture *bg = backgroundTextures[0];
 
-    free (data);
+	while (n--)
+	{
+	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
+	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
+
+	    *d++ = pBox->x1;
+	    *d++ = pBox->y2;
+
+	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
+	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
+
+	    *d++ = pBox->x2;
+	    *d++ = pBox->y2;
+
+	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
+	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
+
+	    *d++ = pBox->x2;
+	    *d++ = pBox->y1;
+
+	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
+	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
+
+	    *d++ = pBox->x1;
+	    *d++ = pBox->y1;
+
+	    pBox++;
+	}
+
+	glTexCoordPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data);
+	glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data + 2);
+
+	if (bg->name ())
+	{
+	    if (transformed)
+		bg->enable (GLTexture::Good);
+	    else
+		bg->enable (GLTexture::Fast);
+
+	    glDrawArrays (GL_QUADS, 0, nBox * 4);
+
+	    bg->disable ();
+	}
+    }
+
+    delete data;
 }
 
 
@@ -478,32 +503,32 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 #define ADD_RECT(data, m, n, x1, y1, x2, y2)	   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (&m[it], x1); \
-	*(data)++ = COMP_TEX_COORD_Y (&m[it], y1); \
+	*(data)++ = COMP_TEX_COORD_X (m[it], x1);  \
+	*(data)++ = COMP_TEX_COORD_Y (m[it], y1);  \
     }						   \
     *(data)++ = (x1);				   \
     *(data)++ = (y1);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (&m[it], x1); \
-	*(data)++ = COMP_TEX_COORD_Y (&m[it], y2); \
+	*(data)++ = COMP_TEX_COORD_X (m[it], x1);  \
+	*(data)++ = COMP_TEX_COORD_Y (m[it], y2);  \
     }						   \
     *(data)++ = (x1);				   \
     *(data)++ = (y2);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (&m[it], x2); \
-	*(data)++ = COMP_TEX_COORD_Y (&m[it], y2); \
+	*(data)++ = COMP_TEX_COORD_X (m[it], x2);  \
+	*(data)++ = COMP_TEX_COORD_Y (m[it], y2);  \
     }						   \
     *(data)++ = (x2);				   \
     *(data)++ = (y2);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (&m[it], x2); \
-	*(data)++ = COMP_TEX_COORD_Y (&m[it], y1); \
+	*(data)++ = COMP_TEX_COORD_X (m[it], x2);  \
+	*(data)++ = COMP_TEX_COORD_Y (m[it], y1);  \
     }						   \
     *(data)++ = (x2);				   \
     *(data)++ = (y1);				   \
@@ -512,32 +537,32 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 #define ADD_QUAD(data, m, n, x1, y1, x2, y2)		\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (&m[it], x1, y1);	\
-	*(data)++ = COMP_TEX_COORD_YX (&m[it], x1, y1);	\
+	*(data)++ = COMP_TEX_COORD_XY (m[it], x1, y1);	\
+	*(data)++ = COMP_TEX_COORD_YX (m[it], x1, y1);	\
     }							\
     *(data)++ = (x1);					\
     *(data)++ = (y1);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (&m[it], x1, y2);	\
-	*(data)++ = COMP_TEX_COORD_YX (&m[it], x1, y2);	\
+	*(data)++ = COMP_TEX_COORD_XY (m[it], x1, y2);	\
+	*(data)++ = COMP_TEX_COORD_YX (m[it], x1, y2);	\
     }							\
     *(data)++ = (x1);					\
     *(data)++ = (y2);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (&m[it], x2, y2);	\
-	*(data)++ = COMP_TEX_COORD_YX (&m[it], x2, y2);	\
+	*(data)++ = COMP_TEX_COORD_XY (m[it], x2, y2);	\
+	*(data)++ = COMP_TEX_COORD_YX (m[it], x2, y2);	\
     }							\
     *(data)++ = (x2);					\
     *(data)++ = (y2);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (&m[it], x2, y1);	\
-	*(data)++ = COMP_TEX_COORD_YX (&m[it], x2, y1);	\
+	*(data)++ = COMP_TEX_COORD_XY (m[it], x2, y1);	\
+	*(data)++ = COMP_TEX_COORD_YX (m[it], x2, y1);	\
     }							\
     *(data)++ = (x2);					\
     *(data)++ = (y1);					\
@@ -587,14 +612,14 @@ GLWindow::glDrawGeometry ()
 }
 
 void
-GLWindow::glAddGeometry (GLTexture::Matrix *matrix,
-			 int               nMatrix,
-			 const CompRegion  &region,
-			 const CompRegion  &clip)
+GLWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
+			 const CompRegion            &region,
+			 const CompRegion            &clip)
 {
-    WRAPABLE_HND_FUNC(2, glAddGeometry, matrix, nMatrix, region, clip)
+    WRAPABLE_HND_FUNC(2, glAddGeometry, matrix, region, clip)
 
     BoxRec full;
+    int    nMatrix = matrix.size ();
 
     priv->geometry.texUnits = nMatrix;
 
@@ -1068,16 +1093,21 @@ GLWindow::glDraw (const GLMatrix     &transform,
     if (!priv->window->isViewable ())
 	return true;
 
-    if (!priv->texture.hasPixmap () && !bind ())
+    if (priv->textures.empty () && !bind ())
 	return false;
 
     if (mask & PAINT_WINDOW_TRANSLUCENT_MASK)
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
-    priv->geometry.reset ();
-    glAddGeometry (&priv->matrix, 1, priv->window->region (), reg);
-    if (priv->geometry.vCount)
-	glDrawTexture (&priv->texture, fragment, mask);
+    GLTexture::MatrixList ml (1);
+#warning Add support for multiple textures
+    {
+	ml[0] = priv->matrices[0];
+	priv->geometry.reset ();
+	glAddGeometry (ml, priv->window->region (), reg);
+	if (priv->geometry.vCount)
+	    glDrawTexture (priv->textures[0], fragment, mask);
+    }
 
     return true;
 }
