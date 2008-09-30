@@ -1611,6 +1611,9 @@ DecorScreen::DecorScreen (CompScreen *s) :
     cmActive = (cScreen) ? cScreen->compositingActive () &&
                GLScreen::get (s) != NULL : false;
 
+    for (unsigned int i = 0; i < DECOR_NUM; i++)
+	decor[i] = NULL;
+
     checkForDm (false);
 
     if (!dmWin)
