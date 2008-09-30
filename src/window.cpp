@@ -4372,7 +4372,7 @@ CompWindow::syncAlarm ()
 
 CompWindow::CompWindow (Window     id,
 			Window     aboveId) :
-   CompPrivateStorage (&windowPrivateIndices, 1)
+   CompPrivateStorage (&windowPrivateIndices)
 {
     priv = new PrivateWindow (this);
     assert (priv);

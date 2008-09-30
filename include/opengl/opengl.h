@@ -219,7 +219,7 @@ class GLScreenInterface :
 
 class GLScreen :
     public WrapableHandler<GLScreenInterface, 5>,
-    public OpenGLPrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
+    public PrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
 {
     public:
 	GLScreen (CompScreen *s);
@@ -298,7 +298,7 @@ class GLWindowInterface :
 
 class GLWindow :
     public WrapableHandler<GLWindowInterface, 5>,
-    public OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
+    public PrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
 {
     public:
 

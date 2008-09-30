@@ -51,7 +51,7 @@ namespace GL {
 CompOutput *targetOutput = NULL;
 
 GLScreen::GLScreen (CompScreen *s) :
-    OpenGLPrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
+    PrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
     priv (new PrivateGLScreen (this))
 {
     Display		 *dpy = s->dpy ();

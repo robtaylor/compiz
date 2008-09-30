@@ -169,8 +169,7 @@ CompositeScreen::damageEvent ()
 
 
 CompositeScreen::CompositeScreen (CompScreen *s) :
-    CompositePrivateHandler<CompositeScreen, CompScreen,
-			    COMPIZ_COMPOSITE_ABI> (s),
+    PrivateHandler<CompositeScreen, CompScreen, COMPIZ_COMPOSITE_ABI> (s),
     priv (new PrivateCompositeScreen (this))
 {
     int	compositeMajor, compositeMinor;

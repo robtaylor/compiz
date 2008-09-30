@@ -1,7 +1,7 @@
 #include "privates.h"
 
 GLWindow::GLWindow (CompWindow *w) :
-    OpenGLPrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI> (w),
+    PrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI> (w),
     priv (new PrivateGLWindow (w, this))
 {
     CompositeWindow *cw = CompositeWindow::get (w);

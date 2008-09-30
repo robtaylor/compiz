@@ -1,8 +1,7 @@
 #include "privates.h"
 
 CompositeWindow::CompositeWindow (CompWindow *w) :
-    CompositePrivateHandler<CompositeWindow, CompWindow,
-			    COMPIZ_COMPOSITE_ABI> (w),
+    PrivateHandler<CompositeWindow, CompWindow, COMPIZ_COMPOSITE_ABI> (w),
     priv (new PrivateCompositeWindow (w, this))
 {
     CompScreen *s = screen;
