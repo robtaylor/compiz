@@ -356,6 +356,7 @@ PrivateRegion::PrivateRegion ()
     box.extents.y1 = 0;
     box.extents.x2 = 0;
     box.extents.y2 = 0;
+    box.rects = NULL;
     box.size = 0;
 }
 
