@@ -416,7 +416,16 @@ GLTexture::bindPixmapToTexture (Pixmap pixmap,
 				int    height,
 				int    depth)
 {
-    return TfpTexture::bindPixmapToTexture (pixmap, width, height, depth);
+    GLTexture::List rv;
+
+    foreach (BindPixmapProc &proc, GLScreen::get (screen)->priv->bindPixmap)
+    {
+	if (!proc.empty ())
+	    rv = proc (pixmap, width, height, depth);
+	if (rv.size ())
+	    return rv;
+    }
+    return GLTexture::List ();
 }
 
 TfpTexture::TfpTexture () :

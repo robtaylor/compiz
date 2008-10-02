@@ -93,6 +93,9 @@ class PrivateGLScreen :
 
 	XRectangle lastViewport;
 
+	std::vector<GLTexture::BindPixmapProc> bindPixmap;
+	bool hasCompositing;
+
 	CompOption::Vector opt;
 };
 
@@ -107,8 +110,10 @@ class PrivateGLWindow :
 	void windowNotify (CompWindowNotify n);
 	void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	void moveNotify (int dx, int dy, bool now);
+	void updateFrameRegion (CompRegion &region);
 	
 	void setWindowMatrix ();
+	void updateWindowRegions ();
 
 	CompWindow      *window;
 	GLWindow        *gWindow;
@@ -117,6 +122,8 @@ class PrivateGLWindow :
 
 	GLTexture::List       textures;
 	GLTexture::MatrixList matrices;
+	CompRegion::Vector    regions;
+	bool                  updateReg;
 	
 	CompRegion    clip;
 	

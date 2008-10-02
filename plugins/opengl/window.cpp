@@ -26,6 +26,8 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     cWindow (CompositeWindow::get (w)),
     gScreen (GLScreen::get (screen)),
     textures (),
+    regions (),
+    updateReg (true),
     clip (),
     bindFailed (false),
     geometry ()
@@ -46,15 +48,16 @@ PrivateGLWindow::~PrivateGLWindow ()
 void
 PrivateGLWindow::setWindowMatrix ()
 {
-    matrices.clear ();
-    foreach (GLTexture *t, textures)
+    if (textures.size () != matrices.size ())
+	matrices.resize (textures.size ());
+    
+    for (unsigned int i = 0; i < textures.size (); i++)
     {
-	GLTexture::Matrix matrix = t->matrix ();
-	matrix.x0 -= ((window->geometry ().x () - window->input ().left) *
-		    matrix.xx);
-	matrix.y0 -= ((window->geometry ().y () - window->input ().top) *
-		    matrix.yy);
-	matrices.push_back (matrix);
+	matrices[i] = textures[i]->matrix ();
+	matrices[i].x0 -= ((window->geometry ().x () - window->input ().left) *
+			   matrices[i].xx);
+	matrices[i].y0 -= ((window->geometry ().y () - window->input ().top) *
+			   matrices[i].yy);
     }
 }
 
@@ -81,6 +84,7 @@ GLWindow::bind ()
     }
 
     priv->setWindowMatrix ();
+    priv->updateReg = true;
 
     return true;
 }
@@ -149,6 +153,7 @@ PrivateGLWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 {
     window->resizeNotify (dx, dy, dwidth, dheight);
     setWindowMatrix ();
+    updateReg = true;
     gWindow->release ();
 }
 
@@ -156,6 +161,7 @@ void
 PrivateGLWindow::moveNotify (int dx, int dy, bool now)
 {
     window->moveNotify (dx, dy, now);
+    updateReg = true;
     setWindowMatrix ();
 }
 
@@ -282,4 +288,28 @@ const GLTexture::MatrixList &
 GLWindow::matrices () const
 {
     return priv->matrices;
+}
+
+void
+PrivateGLWindow::updateFrameRegion (CompRegion &region)
+{
+    window->updateFrameRegion (region);
+    updateReg = true;
+}
+
+void
+PrivateGLWindow::updateWindowRegions ()
+{
+    if (regions.size () != textures.size ())
+	regions.resize (textures.size ());
+    for (unsigned int i = 0; i < textures.size (); i++)
+    {
+	regions[i] = CompRegion (textures[i]->size ());
+	regions[i].translate (window->geometry ().x () - window->input ().left,
+			      window->geometry ().y () - window->input ().top);
+	regions[i].handle ();
+	regions[i] &= window->region ();
+	regions[i].handle ();
+    }
+    updateReg = false;
 }

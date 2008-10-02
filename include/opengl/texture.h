@@ -50,6 +50,9 @@ class GLTexture {
 		void clear ();
 	};
 
+	typedef boost::function<List (Pixmap, int, int, int)> BindPixmapProc;
+	typedef unsigned int BindPixmapHandle;
+
     public:
 	
 	GLuint name () const;

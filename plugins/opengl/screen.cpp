@@ -149,33 +149,16 @@ GLScreen::GLScreen (CompScreen *s) :
     GL::createPixmap = (GL::GLXCreatePixmapProc)
 	getProcAddress ("glXCreatePixmap");
 
-    GL::textureFromPixmap = false;
 
-    if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap"))
+    if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap") ||
+        !GL::bindTexImage || !GL::releaseTexImage)
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"GLX_EXT_texture_from_pixmap is missing");
-	setFailed ();
-	return;
+	GL::textureFromPixmap = false;
     }
-
-    if (!GL::bindTexImage)
-    {
-	compLogMessage ("opengl", CompLogLevelFatal,
-			"glXBindTexImageEXT is missing");
-	setFailed ();
-	return;
-    }
-
-    if (!GL::releaseTexImage)
-    {
-	compLogMessage ("opengl", CompLogLevelFatal,
-			"glXReleaseTexImageEXT is missing");
-	setFailed ();
-	return;
-    }
-
-    GL::textureFromPixmap = true;
+    else
+	GL::textureFromPixmap = true;
 
     if (!GL::queryDrawable     ||
 	!GL::getFBConfigs      ||
@@ -489,14 +472,15 @@ GLScreen::GLScreen (CompScreen *s) :
     priv->filter[SCREEN_TRANS_FILTER]  = GLTexture::Good;
     priv->filter[WINDOW_TRANS_FILTER]  = GLTexture::Good;
 
-    if (!CompositeScreen::get (s)->registerPaintHandler (priv))
-	setFailed ();
+    if (GL::textureFromPixmap)
+	registerBindPixmap (TfpTexture::bindPixmapToTexture);
 
 }
 
 GLScreen::~GLScreen ()
 {
-    CompositeScreen::get (screen)->unregisterPaintHandler ();
+    if (priv->hasCompositing)
+	CompositeScreen::get (screen)->unregisterPaintHandler ();
     glXDestroyContext (screen->dpy (), priv->ctx);
     delete priv;
 }
@@ -513,7 +497,9 @@ PrivateGLScreen::PrivateGLScreen (GLScreen   *gs) :
     lighting (false),
     getProcAddress (0),
     outputRegion (),
-    pendingCommands (false)
+    pendingCommands (false),
+    bindPixmap (),
+    hasCompositing (false)
 {
 }
 
@@ -1089,5 +1075,30 @@ PrivateGLScreen::prepareDrawing ()
     {
 	glFinish ();
 	pendingCommands = false;
+    }
+}
+
+GLTexture::BindPixmapHandle
+GLScreen::registerBindPixmap (GLTexture::BindPixmapProc proc)
+{
+    priv->bindPixmap.push_back (proc);
+    if (!priv->hasCompositing &&
+	CompositeScreen::get (screen)->registerPaintHandler (priv))
+	priv->hasCompositing = true;
+    return priv->bindPixmap.size () - 1;
+}
+
+void
+GLScreen::unregisterBindPixmap (GLTexture::BindPixmapHandle hnd)
+{
+    bool hasBP = false;
+    priv->bindPixmap[hnd].clear ();
+    for (unsigned int i = 0; i < priv->bindPixmap.size (); i++)
+	if (!priv->bindPixmap[i].empty ())
+	    hasBP = true;
+    if (!hasBP && priv->hasCompositing)
+    {
+	CompositeScreen::get (screen)->unregisterPaintHandler ();
+	priv->hasCompositing = false;
     }
 }

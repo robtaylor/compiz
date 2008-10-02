@@ -1100,13 +1100,27 @@ GLWindow::glDraw (const GLMatrix     &transform,
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
     GLTexture::MatrixList ml (1);
-#warning Add support for multiple textures
+    
+    if (priv->textures.size () == 1)
     {
 	ml[0] = priv->matrices[0];
 	priv->geometry.reset ();
 	glAddGeometry (ml, priv->window->region (), reg);
 	if (priv->geometry.vCount)
 	    glDrawTexture (priv->textures[0], fragment, mask);
+    }
+    else
+    {
+	if (priv->updateReg)
+	    priv->updateWindowRegions ();
+	for (unsigned int i = 0; i < priv->textures.size (); i++)
+	{
+	    ml[0] = priv->matrices[i];
+	    priv->geometry.reset ();
+	    glAddGeometry (ml, priv->regions[i], reg);
+	    if (priv->geometry.vCount)
+		glDrawTexture (priv->textures[i], fragment, mask);
+	}
     }
 
     return true;

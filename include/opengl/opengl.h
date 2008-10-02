@@ -249,6 +249,9 @@ class GLScreen :
 	void clearOutput (CompOutput *output, unsigned int mask);
 
 	void setDefaultViewport ();
+
+	GLTexture::BindPixmapHandle registerBindPixmap (GLTexture::BindPixmapProc);
+	void unregisterBindPixmap (GLTexture::BindPixmapHandle);
 	
 	GLFBConfig * glxPixmapFBConfig (unsigned int depth);
 
@@ -265,6 +268,8 @@ class GLScreen :
 	WRAPABLE_HND (3, GLScreenInterface, void, glEnableOutputClipping,
 		      const GLMatrix &, const CompRegion &, CompOutput *);
 	WRAPABLE_HND (4, GLScreenInterface, void, glDisableOutputClipping);
+
+	friend class GLTexture;
 
     private:
 	PrivateGLScreen *priv;
