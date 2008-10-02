@@ -120,6 +120,8 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     return status;
 }
 
+static bool bindFailed;
+
 DecorTexture::DecorTexture (Pixmap pixmap) :
     status (true),
     refCount (1),
@@ -137,9 +139,11 @@ DecorTexture::DecorTexture (Pixmap pixmap) :
 	return;
     }
 
+    bindFailed = false;
     textures = GLTexture::bindPixmapToTexture (pixmap, width, height, depth);
     if (textures.size () != 1)
     {
+	bindFailed = true;
         status = false;
 	return;
     }
@@ -453,12 +457,13 @@ DecorWindow::updateDecoration ()
 {
     Decoration *decoration;
 
+    bindFailed = false;
     decoration = Decoration::create (window->id (), dScreen->winDecorAtom);
 
     if (decor)
 	Decoration::release (decor);
 
-    if (!decoration)
+    if (bindFailed)
 	pixmapFailed = true;
     else
 	pixmapFailed = false;
