@@ -4833,8 +4833,8 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 
 	priv->input = *i;
 
-	priv->updateSize ();
 	priv->updateFrameWindow ();
+	priv->updateSize ();
 	recalcActions ();
 
 	data[0] = i->left;
