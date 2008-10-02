@@ -4860,6 +4860,7 @@ PrivateWindow::reparent ()
     XWindowChanges	 xwc;
     int                  mask;
     XEvent               e;
+    CompWindow::Geometry sg = serverGeometry;
 
     Display              *dpy = screen->dpy ();
 
@@ -4885,15 +4886,15 @@ PrivateWindow::reparent ()
 			     SubstructureNotifyMask | EnterWindowMask |
 			     LeaveWindowMask;
 
-    frame = XCreateWindow(dpy, screen->root (), attrib.x - input.left,
-			  attrib.y - input.top,
-			  attrib.width + input.left + input.right,
-			  attrib.height + input.top + input.bottom,
+    frame = XCreateWindow(dpy, screen->root (), sg.x () - input.left,
+			  sg.y () - input.top,
+			  sg.width () + input.left + input.right,
+			  sg.height () + input.top + input.bottom,
 			  0, attrib.depth,
 			  InputOutput, attrib.visual, mask, &attr);
 
     wrapper = XCreateWindow(dpy, frame, input.left, input.top,
-			    attrib.width, attrib.height, 0, attrib.depth,
+			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, attrib.visual, mask, &attr);
 
     attr.event_mask = PropertyChangeMask | FocusChangeMask |
@@ -4958,7 +4959,8 @@ PrivateWindow::unreparent ()
     {
         XChangeSaveSet (dpy, id, SetModeDelete);
         XSelectInput (dpy, frame, NoEventMask);
-        XReparentWindow (dpy, id, screen->root (), attrib.x, attrib.y);
+        XReparentWindow (dpy, id, screen->root (), serverGeometry.x (),
+			 serverGeometry.y ());
 	xwc.stack_mode = Above;
         xwc.sibling    = frame;
         XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
