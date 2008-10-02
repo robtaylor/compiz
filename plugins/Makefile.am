@@ -9,8 +9,15 @@ SUBDIRS = composite opengl
 # librotate_la_LDFLAGS = -module -avoid-version -no-undefined
 # librotate_la_SOURCES = rotate.cpp
 
-libzoom_la_LDFLAGS = -module -avoid-version -no-undefined
-libzoom_la_SOURCES = zoom.cpp
+libcopytex_la_DEPENDENCIES = \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
+
+libcopytex_la_LDFLAGS = -module -avoid-version -no-undefined
+libcopytex_la_LIBADD = \
+	$(top_builddir)/plugins/composite/libcomposite.la \
+	$(top_builddir)/plugins/opengl/libopengl.la
+libcopytex_la_SOURCES = copytex.cpp
 
 # libscale_la_LDFLAGS = -module -avoid-version -no-undefined
 # libscale_la_SOURCES = scale.cpp
@@ -171,7 +178,8 @@ moduledir = $(plugindir)
 module_LTLIBRARIES =		\
 	libmove.la		\
 	libdecor.la		\
-	libresize.la
+	libresize.la            \
+	libcopytex.la
 
 
 #module_LTLIBRARIES =		\

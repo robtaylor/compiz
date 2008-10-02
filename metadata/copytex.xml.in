@@ -1,0 +1,11 @@
+<compiz>
+    <plugin name="copytex">
+	<_short>Copy to texture</_short>
+	<_long>Copy pixmap content to texture</_long>
+	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	</deps>
+    </plugin>
+</compiz>
