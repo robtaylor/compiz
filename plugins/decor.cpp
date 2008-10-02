@@ -86,18 +86,35 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     {
 	GLTexture::MatrixList ml (1);
 
-	gWindow->geometry ().reset ();
-
 	if (gWindow->textures ().empty ())
 	    gWindow->bind ();
 	if (gWindow->textures ().empty ())
 	    return status;
 
-	ml[0] = gWindow->matrices ()[0];
-	gWindow->glAddGeometry (ml, window->frameRegion (), region);
+	if (gWindow->textures ().size () == 1)
+	{
+	    ml[0] = gWindow->matrices ()[0];
+	    gWindow->geometry ().reset ();
+	    gWindow->glAddGeometry (ml, window->frameRegion (), region);
 
-	if (gWindow->geometry ().vCount)
-	    gWindow->glDrawTexture (gWindow->textures ()[0], attrib, mask);
+	    if (gWindow->geometry ().vCount)
+		gWindow->glDrawTexture (gWindow->textures ()[0], attrib, mask);
+	}
+	else
+	{
+	    if (updateReg)
+		updateWindowRegions ();
+	    for (unsigned int i = 0; i < gWindow->textures ().size (); i++)
+	    {
+		ml[0] = gWindow->matrices ()[i];
+		gWindow->geometry ().reset ();
+		gWindow->glAddGeometry (ml, regions[i], region);
+
+		if (gWindow->geometry ().vCount)
+		    gWindow->glDrawTexture (gWindow->textures ()[i], attrib,
+					    mask);
+	    }
+	}
     }
 
     return status;
@@ -256,8 +273,8 @@ computeQuadBox (decor_quad_t *q,
 }
 
 Decoration *
-Decoration::create (Window     id,
-		    Atom       decorAtom)
+Decoration::create (Window id,
+		    Atom   decorAtom)
 {
     Decoration	    *decoration;
     Atom	    actual;
@@ -440,6 +457,11 @@ DecorWindow::updateDecoration ()
 
     if (decor)
 	Decoration::release (decor);
+
+    if (!decoration)
+	pixmapFailed = true;
+    else
+	pixmapFailed = false;
 
     decor = decoration;
 }
@@ -668,7 +690,9 @@ DecorWindow::update (bool allowDecoration)
 	{
 	    
 	    if (dScreen->dmSupports & WINDOW_DECORATION_TYPE_PIXMAP &&
-	        dScreen->cmActive)
+	        dScreen->cmActive &&
+		!(dScreen->dmSupports & WINDOW_DECORATION_TYPE_WINDOW &&
+		  pixmapFailed))
 	    {
 		if (window->id () == screen->activeWindow ())
 		    decoration = dScreen->decor[DECOR_ACTIVE];
@@ -1185,7 +1209,22 @@ DecorWindow::updateFrameRegion (CompRegion &region)
 	    region += infiniteRegion;
 	}
     }
+    updateReg = true;
+}
 
+void
+DecorWindow::updateWindowRegions ()
+{
+    if (regions.size () != gWindow->textures ().size ())
+	regions.resize (gWindow->textures ().size ());
+    for (unsigned int i = 0; i < gWindow->textures ().size (); i++)
+    {
+	regions[i] = CompRegion (gWindow->textures ()[i]->size ());
+	regions[i].translate (window->geometry ().x () - window->input ().left,
+			      window->geometry ().y () - window->input ().top);
+	regions[i] &= window->frameRegion ();
+    }
+    updateReg = false;
 }
 
 void
@@ -1491,6 +1530,7 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
 
 	setDecorationMatrices ();
     }
+    updateReg = true;
 
     window->moveNotify (dx, dy, immediate);
 }
@@ -1514,6 +1554,7 @@ DecorWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
        should be fixed so that it does not emit a resize notification. */
     resizeUpdate.start (boost::bind (&DecorWindow::resizeTimeout, this), 0);
     updateDecorationScale ();
+    updateReg = true;
 
     window->resizeNotify (dx, dy, dwidth, dheight);
 }
@@ -1638,7 +1679,10 @@ DecorWindow::DecorWindow (CompWindow *w) :
     wd (NULL),
     decor (NULL),
     inputFrame (None),
-    outputFrame (None)
+    outputFrame (None),
+    pixmapFailed (false),
+    regions (),
+    updateReg (true)
 {
     WindowInterface::setHandler (window);
 

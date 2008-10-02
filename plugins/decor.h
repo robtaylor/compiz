@@ -46,6 +46,8 @@ class DecorTexture {
 	GLTexture::List textures;
 };
 
+class DecorWindow;
+
 class Decoration {
 
     public:
@@ -163,6 +165,7 @@ class DecorWindow :
 	void updateFrame ();
 	void updateInputFrame ();
 	void updateOutputFrame ();
+	void updateWindowRegions ();
 
 	bool checkSize (Decoration *decor);
 
@@ -193,6 +196,11 @@ class DecorWindow :
 	int    oldY;
 	int    oldWidth;
 	int    oldHeight;
+
+	bool pixmapFailed;
+
+	CompRegion::Vector regions;
+	bool               updateReg;
 
 	CompTimer resizeUpdate;
 	CompTimer moveUpdate;
