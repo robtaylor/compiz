@@ -126,51 +126,59 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
     }
     else
     {
-#warning Add support for multiple textures
-	GLTexture *bg = backgroundTextures[0];
-
-	while (n--)
+	for (unsigned int i = 0; i < backgroundTextures.size (); i++)
 	{
-	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
-	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
+	    GLTexture *bg = backgroundTextures[i];
+	    CompRegion r = region & bg->size ();
 
-	    *d++ = pBox->x1;
-	    *d++ = pBox->y2;
+	    pBox = const_cast <Region> (r.handle ())->rects;
+	    nBox = const_cast <Region> (r.handle ())->numRects;
+	    d = data;
+	    n = nBox;
 
-	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
-	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
+	    while (n--)
+	    {
+		*d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
+		*d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
 
-	    *d++ = pBox->x2;
-	    *d++ = pBox->y2;
+		*d++ = pBox->x1;
+		*d++ = pBox->y2;
 
-	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
-	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
+		*d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
+		*d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y2);
 
-	    *d++ = pBox->x2;
-	    *d++ = pBox->y1;
+		*d++ = pBox->x2;
+		*d++ = pBox->y2;
 
-	    *d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
-	    *d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
+		*d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x2);
+		*d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
 
-	    *d++ = pBox->x1;
-	    *d++ = pBox->y1;
+		*d++ = pBox->x2;
+		*d++ = pBox->y1;
 
-	    pBox++;
-	}
+		*d++ = COMP_TEX_COORD_X (bg->matrix (), pBox->x1);
+		*d++ = COMP_TEX_COORD_Y (bg->matrix (), pBox->y1);
 
-	glTexCoordPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data);
-	glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data + 2);
+		*d++ = pBox->x1;
+		*d++ = pBox->y1;
 
-	if (bg->name ())
-	{
-	    if (transformed)
-		bg->enable (GLTexture::Good);
-	    else
-		bg->enable (GLTexture::Fast);
+		pBox++;
+	    }
 
-	    glDrawArrays (GL_QUADS, 0, nBox * 4);
+	    glTexCoordPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data);
+	    glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 4, data + 2);
 
-	    bg->disable ();
+	    if (bg->name ())
+	    {
+		if (transformed)
+		    bg->enable (GLTexture::Good);
+		else
+		    bg->enable (GLTexture::Fast);
+
+		glDrawArrays (GL_QUADS, 0, nBox * 4);
+
+		bg->disable ();
+	    }
 	}
     }
 
