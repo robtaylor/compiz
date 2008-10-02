@@ -233,12 +233,21 @@ CopytexScreen::handleEvent (XEvent *event)
 
 	    foreach (CopyTexture *t, cp->textures)
 	    {
-		x1 = MIN (MAX (de->area.x, t->dim.x1 ()), t->damage.x1 ());
-		x2 = MAX (MIN (de->area.x + de->area.width, t->dim.x2 ()),
-			  t->damage.x2 ());
-		y1 = MIN (MAX (de->area.y, t->dim.y1 ()), t->damage.y1 ());
-		y2 = MAX (MIN (de->area.y + de->area.height, t->dim.y2 ()),
-			  t->damage.y2 ());
+		x1 = MAX (de->area.x, t->dim.x1 ()) - t->dim.x1 ();
+		x2 = MIN (de->area.x + de->area.width, t->dim.x2 ()) -
+		     t->dim.x1 ();
+		y1 = MAX (de->area.y, t->dim.y1 ()) - t->dim.y1 ();
+		y2 = MIN (de->area.y + de->area.height, t->dim.y2 ()) -
+		     t->dim.y1 ();
+
+		if (t->damage.width () && t->damage.height ())
+		{
+		    x1 = MIN (x1, t->damage.x1 ());
+		    x2 = MAX (x2, t->damage.x2 ());
+		    y1 = MIN (y1, t->damage.y1 ());
+		    y2 = MAX (y2, t->damage.y2 ());
+		}
+		
 		if (x1 < x2 && y1 < y2)
 		    t->damage.setGeometry (x1, x2, y1, y2);
 
