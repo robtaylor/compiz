@@ -11,6 +11,12 @@ class PrivateRegion;
 
 class CompRegion {
     public:
+	typedef std::vector<CompRegion> List;
+	typedef std::vector<CompRegion *> PtrList;
+	typedef std::vector<CompRegion> Vector;
+	typedef std::vector<CompRegion *> PtrVector;
+
+    public:
 	CompRegion ();
 	CompRegion (const CompRegion &);
 	CompRegion (int x, int y, int w, int h);
