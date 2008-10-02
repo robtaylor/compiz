@@ -307,9 +307,7 @@ PrivateGLWindow::updateWindowRegions ()
 	regions[i] = CompRegion (textures[i]->size ());
 	regions[i].translate (window->geometry ().x () - window->input ().left,
 			      window->geometry ().y () - window->input ().top);
-	regions[i].handle ();
 	regions[i] &= window->region ();
-	regions[i].handle ();
     }
     updateReg = false;
 }
