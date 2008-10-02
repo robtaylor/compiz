@@ -101,8 +101,8 @@ CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
 	target = GL_TEXTURE_2D;
 	matrix.xx = 1.0f / dim.width ();
 	matrix.yy = 1.0f / dim.height ();
-	matrix.x0 = -dim.x () / dim.width ();
-	matrix.y0 = -dim.y () / dim.height ();
+	matrix.x0 = -dim.x () * matrix.xx;
+	matrix.y0 = -dim.y () * matrix.yy;
     }
     else
     {
