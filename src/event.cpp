@@ -1619,7 +1619,7 @@ CompScreen::handleEvent (XEvent *event)
 
 	if (w && w->id () != priv->below)
 	{
-	    priv->below = w->id;
+	    priv->below = w->id ();
 
 	    if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b () &&
 		priv->grabs.empty ()                                 &&

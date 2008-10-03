@@ -1515,13 +1515,13 @@ DecorScreen::setOption (const char        *name,
 	       making sure we don't show ugliness by default
 	     */
 
-	    matchString = value->match ().toString ();
+	    matchString = value.match ().toString ();
     	    if (matchString.find ("rgba=") == std::string::npos)
 	    {
 		CompMatch rgbaMatch;
 
 		rgbaMatch = "rgba=0";
-		value->match () &= rgbaMatch;
+		value.match () &= rgbaMatch;
 	    }
 	}
 	/* fall-through intended */

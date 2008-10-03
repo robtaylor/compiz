@@ -540,6 +540,8 @@ MoveScreen::handleEvent (XEvent *event)
 		CompWindow *w;
 		unsigned   long type = event->xclient.data.l[2];
 
+		MOVE_SCREEN (screen);
+
 		if (type == WmMoveResizeMove ||
 		    type == WmMoveResizeMoveKeyboard)
 		{

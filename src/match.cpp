@@ -72,7 +72,7 @@ class CoreExp : public CompMatch::Expression {
 	    else if (str.compare (0, 5, "rgba=") == 0)
 	    {
 		mType = TypeRGBA;
-		priv.val = strtol (std.substr (5).c_str (), NULL, 0);
+		priv.val = strtol (str.substr (5).c_str (), NULL, 0);
 	    }
 	    else
 	    {

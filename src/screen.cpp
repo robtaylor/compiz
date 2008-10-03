@@ -2625,7 +2625,7 @@ CompScreen::focusDefaultWindow ()
 	    /* huh, we didn't find d->below ... perhaps it's out of date;
 	       try grabbing it through the server */
 
-	    status = XQueryPointer (d->display, priv->root, &rootReturn,
+	    status = XQueryPointer (dpy (), priv->root, &rootReturn,
 				    &childReturn, &dummyInt, &dummyInt,
 				    &dummyInt, &dummyInt, &dummyUInt);
 

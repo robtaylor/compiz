@@ -448,7 +448,7 @@ CompositeScreen::damageRegion (const CompRegion &region)
        in order to make sure we're not having too much overhead, damage
        the whole screen if we have a lot of damage rects */
 
-    if (priv->damage->numRects () > 100)
+    if (priv->damage.numRects () > 100)
        damageScreen ();
 }
 

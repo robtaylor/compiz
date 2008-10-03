@@ -1578,8 +1578,9 @@ CompWindow::place (int        x,
 
 void
 CompWindow::validateResizeRequest (unsigned int   *mask,
-				   XWindowChanges *xwc)
-    WRAPABLE_HND_FUNC(5, validateResizeRequest, mask, xwc)
+				   XWindowChanges *xwc,
+				   unsigned int   source)
+    WRAPABLE_HND_FUNC(5, validateResizeRequest, mask, xwc, source)
 
 void
 CompWindow::resizeNotify (int dx,
@@ -3519,11 +3520,11 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     active = s->findWindow (s->activeWindow ());
 
     /* no active window */
-    if (!active || (active->type & CompWindowTypeDesktopMask))
+    if (!active || (active->type () & CompWindowTypeDesktopMask))
 	return true;
 
     /* active window belongs to same application */
-    if (w->clientLeader () == active->clientLeader ())
+    if (window->clientLeader () == active->clientLeader ())
        return true;
 
     if (level == FOCUS_PREVENTION_LEVEL_HIGH)
@@ -4368,7 +4369,7 @@ PrivateWindow::updateStartupId ()
     {
 	Time       timestamp = 0;
 	CompPoint  vp, svp;
-	CompScreen *s = window->screen;
+	CompSize   size;
 	int        x, y;
 
 	initialTimestampSet = false;
@@ -4381,15 +4382,17 @@ PrivateWindow::updateStartupId ()
 	   notification, assume the client changing the ID
 	   wanted to activate the window on the current viewport */
 
-	vp  = window->defaultViewport ();
-	svp = s->vp ();
+	vp   = window->defaultViewport ();
+	svp  = screen->vp ();
+	size = screen->size ();
 
-	x = w->geometry ().x + (s->vp ().x () - vp.x ()) * s->size ().width ();
-	y = w->geometry ().y + (s->vp ().y () - vp.y ()) * s->size ().height ();
+	x = window->geometry ().x () + (svp.x () - vp.x ()) * size.width ();
+	y = window->geometry ().y () + (svp.y () - vp.y ()) * size.height ();
 	window->moveToViewportPosition (x, y, TRUE);
 
 	if (allowWindowFocus (0, timestamp))
 	    window->activate ();
+    }
 }
 
 bool

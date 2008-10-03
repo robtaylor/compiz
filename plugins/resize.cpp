@@ -717,6 +717,8 @@ ResizeScreen::handleEvent (XEvent *event)
 		CompWindow    *w;
 		unsigned long type = event->xclient.data.l[2];
 
+		RESIZE_SCREEN (screen);
+
 		if (type <= WmMoveResizeSizeLeft ||
 		    type == WmMoveResizeSizeKeyboard)
 		{

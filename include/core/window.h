@@ -229,7 +229,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 	virtual bool place (int x, int y, int *newX, int *newY);
 
 	virtual void validateResizeRequest (unsigned int   *mask,
-					    XWindowChanges *xwc
+					    XWindowChanges *xwc,
 					    unsigned int   source);
 
 	virtual void resizeNotify (int dx, int dy, int dwidth, int dheight);
