@@ -1609,58 +1609,53 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case EnterNotify:
-	if (priv->grabs.empty ()                    &&
-	    event->xcrossing.mode   != NotifyGrab   &&
-	    event->xcrossing.mode   != NotifyUngrab &&
-	    event->xcrossing.detail != NotifyInferior)
+	if (event->xcrossing.root == priv->root)
+	    w = findTopLevelWindow (event->xcrossing.window);
+	else
+	    w = NULL;
+
+	if (w && w->id () != priv->below)
 	{
-	    Bool raise;
-	    int  delay;
+	    priv->below = w->id;
 
-	    raise = priv->opt[COMP_OPTION_AUTORAISE].value ().b ();
-	    delay =
-		priv->opt[COMP_OPTION_AUTORAISE_DELAY].value ().i ();
-
-	    if (event->xcrossing.root == priv->root)
+	    if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b () &&
+		priv->grabs.empty ()                                 &&
+		event->xcrossing.mode   != NotifyGrab                &&
+		event->xcrossing.mode   != NotifyUngrab              &&
+		event->xcrossing.detail != NotifyInferior)
 	    {
-		w = findTopLevelWindow (event->xcrossing.window);
-	    }
-	    else
-		w = NULL;
+		Bool raise;
+		int  delay;
 
-	    if (w && w->id () != priv->below)
-	    {
-		priv->below = w->id ();
+		raise = priv->opt[COMP_OPTION_AUTORAISE].value ().b ();
+		delay = priv->opt[COMP_OPTION_AUTORAISE_DELAY].value ().i ();
 
-		if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b ())
+		if (priv->autoRaiseTimer.active () &&
+		    priv->autoRaiseWindow != w->id ())
 		{
-		    if (priv->autoRaiseTimer.active () &&
-			priv->autoRaiseWindow != w->id ())
-		    {
-			priv->autoRaiseTimer.stop ();
-		    }
+		    priv->autoRaiseTimer.stop ();
+		}
 
-		    if (w->type () & ~(CompWindowTypeDockMask |
-				       CompWindowTypeDesktopMask))
-		    {
-			w->moveInputFocusTo ();
+		if (w->type () & ~(CompWindowTypeDockMask |
+				   CompWindowTypeDesktopMask))
+		{
+		    w->moveInputFocusTo ();
 
-			if (raise)
+		    if (raise)
+		    {
+			if (delay > 0)
 			{
-			    if (delay > 0)
-			    {
-				priv->autoRaiseWindow = w->id ();
-				priv->autoRaiseTimer.start (
-				    boost::bind (autoRaiseTimeout, this),
-				    delay, (unsigned int)((float) delay * 1.2));
-			    }
-			    else
-			    {
-				CompStackingUpdateMode mode =
-				    CompStackingUpdateModeNormal;
+			    priv->autoRaiseWindow = w->id ();
+			    priv->autoRaiseTimer.start (
+				boost::bind (autoRaiseTimeout, this),
+				delay, (unsigned int)((float) delay * 1.2));
+			}
+			else
+			{
+			    CompStackingUpdateMode mode =
+				CompStackingUpdateModeNormal;
 
-				w->updateAttributes (mode);
-			    }
+			    w->updateAttributes (mode);
 			}
 		    }
 		}
