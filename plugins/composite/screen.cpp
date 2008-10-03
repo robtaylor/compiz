@@ -443,6 +443,13 @@ CompositeScreen::damageRegion (const CompRegion &region)
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
 
+    /* if the number of damage rectangles grows two much between repaints,
+       we have a lot of overhead just for doing the damage tracking -
+       in order to make sure we're not having too much overhead, damage
+       the whole screen if we have a lot of damage rects */
+
+    if (priv->damage->numRects () > 100)
+       damageScreen ();
 }
 
 void
