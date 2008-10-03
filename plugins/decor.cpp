@@ -716,10 +716,6 @@ DecorWindow::update (bool allowDecoration)
 	    if (window->region ().numRects () == 1 && !window->alpha ())
 		decoration = dScreen->decor[DECOR_BARE];
 
-	    /* no decoration on windows with below state */
-	    if (window->state () & CompWindowStateBelowMask)
-		decoration = NULL;
-
 	    if (decoration)
 	    {
 		if (!checkSize (decoration))
