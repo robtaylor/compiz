@@ -2602,11 +2602,38 @@ CompScreen::focusDefaultWindow ()
     if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b ())
     {
 	w = findTopLevelWindow (priv->below);
-	if (w && !(w->type () & (CompWindowTypeDesktopMask |
-				 CompWindowTypeDockMask)))
+
+	if (w && w->focus ())
 	{
-	    if (w->focus ())
+	    if (!(w->type () & (CompWindowTypeDesktopMask |
+				CompWindowTypeDockMask)))
 		focus = w;
+	}
+	else
+	{
+	    Bool         status;
+	    Window       rootReturn, childReturn;
+	    int          dummyInt;
+	    unsigned int dummyUInt;
+
+	    /* huh, we didn't find d->below ... perhaps it's out of date;
+	       try grabbing it through the server */
+
+	    status = XQueryPointer (d->display, priv->root, &rootReturn,
+				    &childReturn, &dummyInt, &dummyInt,
+				    &dummyInt, &dummyInt, &dummyUInt);
+
+	    if (status && rootReturn == priv->root)
+	    {
+		w = findTopLevelWindow (childReturn);
+
+		if (w && w->focus ())
+		{
+		    if (!(w->type () & (CompWindowTypeDesktopMask |
+					CompWindowTypeDockMask)))
+			focus = w;
+		}
+	    }
 	}
     }
 
