@@ -3516,6 +3516,19 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     if (level == FOCUS_PREVENTION_LEVEL_VERYHIGH)
 	return false;
 
+    active = s->findWindow (s->activeWindow ());
+
+    /* no active window */
+    if (!active || (active->type & CompWindowTypeDesktopMask))
+	return true;
+
+    /* active window belongs to same application */
+    if (w->clientLeader () == active->clientLeader ())
+       return true;
+
+    if (level == FOCUS_PREVENTION_LEVEL_HIGH)
+       return false;
+
     /* not in current viewport */
     dvp = window->defaultViewport ();
     if (dvp.x () != s->vp ().x () || dvp.y () != s->vp ().y ())
@@ -3524,16 +3537,15 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     if (!gotTimestamp)
     {
 	/* unsure as we have nothing to compare - allow focus in low level,
-	   don't allow in high level */
-	if (level == FOCUS_PREVENTION_LEVEL_HIGH)
+	   don't allow in normal level */
+	if (level == FOCUS_PREVENTION_LEVEL_NORMAL)
 	    return false;
 
 	return true;
     }
 
     /* can't get user time for active window */
-    active = s->findWindow (s->activeWindow ());
-    if (!active || !active->priv->getUserTime (&aUserTime))
+    if (!active->priv->getUserTime (&aUserTime))
 	return true;
 
     if (XSERVER_TIME_IS_BEFORE (wUserTime, aUserTime))
