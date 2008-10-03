@@ -47,6 +47,7 @@ class CoreExp : public CompMatch::Expression {
 	    TypeXid,
 	    TypeState,
 	    TypeOverride,
+	    TypeRGBA,
 	    TypeType
 	} Type;
 	
@@ -67,6 +68,11 @@ class CoreExp : public CompMatch::Expression {
 	    {
 		mType = TypeOverride;
 		priv.val = strtol (str.substr (18).c_str (), NULL, 0);
+	    }
+	    else if (str.compare (0, 5, "rgba=") == 0)
+	    {
+		mType = TypeRGBA;
+		priv.val = strtol (std.substr (5).c_str (), NULL, 0);
 	    }
 	    else
 	    {
@@ -94,6 +100,9 @@ class CoreExp : public CompMatch::Expression {
 		    return ((priv.val == 1 && overrideRedirect) ||
 			    (priv.val == 0 && !overrideRedirect));
 		}
+		case TypeRGBA:
+		    return ((priv.val && w->alpha ()) ||
+			    (!priv.val && !w->alpha ()));
 		case TypeType:
 		    return (priv.uval & w->wmType ());
 	    }
