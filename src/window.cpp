@@ -4363,6 +4363,33 @@ PrivateWindow::updateStartupId ()
 	free (startupId);
 
     startupId = getStartupId ();
+
+    if (managed && startupId)
+    {
+	Time       timestamp = 0;
+	CompPoint  vp, svp;
+	CompScreen *s = window->screen;
+	int        x, y;
+
+	initialTimestampSet = false;
+	screen->priv->applyStartupProperties (window);
+
+	if (initialTimestampSet)
+	    timestamp = initialTimestamp;
+
+	/* as the viewport can't be transmitted via startup
+	   notification, assume the client changing the ID
+	   wanted to activate the window on the current viewport */
+
+	vp  = window->defaultViewport ();
+	svp = s->vp ();
+
+	x = w->geometry ().x + (s->vp ().x () - vp.x ()) * s->size ().width ();
+	y = w->geometry ().y + (s->vp ().y () - vp.y ()) * s->size ().height ();
+	window->moveToViewportPosition (x, y, TRUE);
+
+	if (allowWindowFocus (0, timestamp))
+	    window->activate ();
 }
 
 bool
