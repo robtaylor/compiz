@@ -1364,6 +1364,7 @@ CompScreen::handleEvent (XEvent *event)
 		unsigned int   xwcm = 0;
 		XWindowChanges xwc;
 		int            gravity;
+		unsigned int   source;
 
 		memset (&xwc, 0, sizeof (xwc));
 
@@ -1392,8 +1393,9 @@ CompScreen::handleEvent (XEvent *event)
 		}
 
 		gravity = event->xclient.data.l[0] & 0xFF;
+		source  = (event->xclient.data.l[0] >> 12) & 0xF;
 
-		w->moveResize (&xwc, xwcm, gravity);
+		w->moveResize (&xwc, xwcm, gravity, source);
 	    }
 	}
 	else if (event->xclient.message_type == Atoms::restackWindow)
@@ -1517,7 +1519,8 @@ CompScreen::handleEvent (XEvent *event)
 	    xwc.height       = event->xconfigurerequest.height;
 	    xwc.border_width = event->xconfigurerequest.border_width;
 
-	    w->moveResize (&xwc, event->xconfigurerequest.value_mask, 0);
+	    w->moveResize (&xwc, event->xconfigurerequest.value_mask,
+			   0, ClientTypeUnknown);
 
 	    if (event->xconfigurerequest.value_mask & CWStackMode)
 	    {

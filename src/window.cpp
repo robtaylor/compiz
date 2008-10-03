@@ -2582,7 +2582,8 @@ PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 void
 CompWindow::moveResize (XWindowChanges *xwc,
 			unsigned int   xwcm,
-			int            gravity)
+			int            gravity,
+			unsigned int   source)
 {
     Bool placed = xwcm & (CWX | CWY);
 
@@ -2661,7 +2662,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	}
     }
 
-    validateResizeRequest (&xwcm, xwc);
+    validateResizeRequest (&xwcm, xwc, source);
 
     /* when horizontally maximized only allow width changes added by
        addWindowSizeChanges */
@@ -3857,8 +3858,9 @@ WindowInterface::place (int x, int y, int *newX, int *newY)
 
 void
 WindowInterface::validateResizeRequest (unsigned int   *mask,
-					XWindowChanges *xwc)
-    WRAPABLE_DEF (validateResizeRequest, mask, xwc)
+					XWindowChanges *xwc,
+					unsigned int   source)
+    WRAPABLE_DEF (validateResizeRequest, mask, xwc, source)
 
 void
 WindowInterface::resizeNotify (int dx, int dy, int dwidth, int dheight)

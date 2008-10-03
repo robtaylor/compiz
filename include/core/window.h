@@ -229,7 +229,8 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 	virtual bool place (int x, int y, int *newX, int *newY);
 
 	virtual void validateResizeRequest (unsigned int   *mask,
-					    XWindowChanges *xwc);
+					    XWindowChanges *xwc
+					    unsigned int   source);
 
 	virtual void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	virtual void moveNotify (int dx, int dy, bool immediate);
@@ -373,7 +374,8 @@ class CompWindow :
 
 	void moveResize (XWindowChanges *xwc,
 			 unsigned int   xwcm,
-			 int            gravity);
+			 int            gravity,
+			 unsigned int   source);
 
 	void raise ();
 
@@ -470,7 +472,7 @@ class CompWindow :
 	WRAPABLE_HND (3, WindowInterface, void, activate);
 	WRAPABLE_HND (4, WindowInterface, bool, place, int, int, int*, int*);
 	WRAPABLE_HND (5, WindowInterface, void, validateResizeRequest,
-		      unsigned int *, XWindowChanges *);
+		      unsigned int *, XWindowChanges *, unsigned int);
 
 	WRAPABLE_HND (6, WindowInterface, void, resizeNotify,
 		      int, int, int, int);
