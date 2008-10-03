@@ -2421,39 +2421,45 @@ PrivateScreen::getDesktopHints ()
     unsigned long n, left;
     unsigned char *propData;
 
-    result = XGetWindowProperty (dpy, root,
-				 Atoms::numberOfDesktops,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
-				 &n, &left, &propData);
-
-    if (result == Success && n && propData && useDesktopHints)
+    if (useDesktopHints)
     {
-	memcpy (data, propData, sizeof (unsigned long));
-	XFree (propData);
+	result = XGetWindowProperty (dpy, root,
+				     Atoms::numberOfDesktops,
+				     0L, 1L, FALSE, XA_CARDINAL, &actual,
+				     &format, &n, &left, &propData);
 
-	if (data[0] > 0 && data[0] < 0xffffffff)
-	    nDesktop = data[0];
-    }
-
-    result = XGetWindowProperty (dpy, root,
-				 Atoms::desktopViewport, 0L, 2L,
-				 FALSE, XA_CARDINAL, &actual, &format,
-				 &n, &left, &propData);
-
-    if (result == Success && n && propData)
-    {
-	if (n == 2)
+	if (result == Success && propData)
 	{
-	    memcpy (data, propData, sizeof (unsigned long) * 2);
+	    if (n)
+	    {
+		memcpy (data, propData, sizeof (unsigned long));
+		if (data[0] > 0 && data[0] < 0xffffffff)
+		    nDesktop = data[0];
+	    }
 
-	    if (data[0] / size.width () < vpSize.width () - 1)
-		vp.setX (data[0] / size.width ());
-
-	    if (data[1] / size.height () < vpSize.height () - 1)
-		vp.setY (data[1] / size.height ());
+	    XFree (propData);
 	}
 
-	XFree (propData);
+	result = XGetWindowProperty (dpy, root,
+				     Atoms::desktopViewport, 0L, 2L,
+				     FALSE, XA_CARDINAL, &actual, &format,
+				     &n, &left, &propData);
+
+	if (result == Success && propData)
+	{
+	    if (n == 2)
+	    {
+		memcpy (data, propData, sizeof (unsigned long) * 2);
+
+		if (data[0] / size.width () < vpSize.width () - 1)
+		    vp.setX (data[0] / size.width ());
+
+		if (data[1] / size.height () < vpSize.height () - 1)
+		    vp.setY (data[1] / size.height ());
+	    }
+
+	    XFree (propData);
+	}
     }
 
     result = XGetWindowProperty (dpy, root,
