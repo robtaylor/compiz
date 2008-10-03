@@ -1695,7 +1695,7 @@ CompScreen::handleEvent (XEvent *event)
 		if (w->priv->syncAlarm == sa->alarm)
 		{
 		    w->priv->handleSyncAlarm ();
-		    return;
+		    break;
 		}
 	    }
 	}
