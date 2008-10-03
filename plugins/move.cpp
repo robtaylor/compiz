@@ -538,9 +538,10 @@ MoveScreen::handleEvent (XEvent *event)
 	    if (event->xclient.message_type == Atoms::wmMoveResize)
 	    {
 		CompWindow *w;
+		unsigned   long type = event->xclient.data.l[2];
 
-		if (event->xclient.data.l[2] == WmMoveResizeMove ||
-		    event->xclient.data.l[2] == WmMoveResizeMoveKeyboard)
+		if (type == WmMoveResizeMove ||
+		    type == WmMoveResizeMoveKeyboard)
 		{
 		    w = screen->findWindow (event->xclient.window);
 		    if (w)
@@ -593,6 +594,21 @@ MoveScreen::handleEvent (XEvent *event)
 				moveHandleMotionEvent (screen, xRoot, yRoot);
 			    }
 			}
+		    }
+		}
+		else if (ms->w && type == WmMoveResizeCancel)
+		{
+		    if (ms->w->id () == event->xclient.window)
+		    {
+			int option;
+
+			option = MOVE_OPTION_INITIATE_BUTTON;
+			moveTerminate (&opt[option].value ().action (),
+				       CompAction::StateCancel, noOptions);
+			option = MOVE_OPTION_INITIATE_KEY;
+			moveTerminate (&opt[option].value ().action (),
+				       CompAction::StateCancel, noOptions);
+
 		    }
 		}
 	    }

@@ -118,6 +118,7 @@ struct CompStartupSequence;
 #define WmMoveResizeMove             8
 #define WmMoveResizeSizeKeyboard     9
 #define WmMoveResizeMoveKeyboard    10
+#define WmMoveResizeCancel          11
 
 /*
   window paint flags

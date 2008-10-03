@@ -699,10 +699,11 @@ ResizeScreen::handleEvent (XEvent *event)
 	case ClientMessage:
 	    if (event->xclient.message_type == Atoms::wmMoveResize)
 	    {
-		CompWindow *w;
+		CompWindow    *w;
+		unsigned long type = event->xclient.data.l[2];
 
-		if (event->xclient.data.l[2] <= WmMoveResizeSizeLeft ||
-		    event->xclient.data.l[2] == WmMoveResizeSizeKeyboard)
+		if (type <= WmMoveResizeSizeLeft ||
+		    type == WmMoveResizeSizeKeyboard)
 		{
 		    w = screen->findWindow (event->xclient.window);
 		    if (w)
@@ -776,6 +777,20 @@ ResizeScreen::handleEvent (XEvent *event)
 				    handleMotionEvent (xRoot, yRoot);
 			    }
 			}
+		    }
+		}
+		else if (rs->w && type == WmMoveResizeCancel)
+		{
+		    if (rs->w->id () == event->xclient.window)
+		    {
+			int option;
+
+			option = RESIZE_OPTION_INITIATE_BUTTON;
+			resizeTerminate (&opt[option].value ().action (),
+					 CompAction::StateCancel, noOptions);
+			option = RESIZE_OPTION_INITIATE_KEY;
+			resizeTerminate (&opt[option].value ().action (),
+					 CompAction::StateCancel, noOptions);
 		    }
 		}
 	    }
