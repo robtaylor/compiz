@@ -1499,8 +1499,33 @@ DecorScreen::setOption (const char        *name,
 	    return true;
 	}
 	break;
-    case DECOR_OPTION_DECOR_MATCH:
     case DECOR_OPTION_SHADOW_MATCH:
+    	{
+	    CompString matchString;
+
+	    /*
+	       Make sure RGBA matching is always present and disable shadows
+	       for RGBA windows by default if the user didn't specify an
+	       RGBA match.
+	       Reasoning for that is that shadows are desired for some RGBA
+	       windows (e.g. rectangular windows that just happen to have an
+	       RGBA colormap), while it's absolutely undesired for others
+	       (especially shaped ones) ... by enforcing no shadows for RGBA
+	       windows by default, we are flexible to user desires while still
+	       making sure we don't show ugliness by default
+	     */
+
+	    matchString = value->match ().toString ();
+    	    if (matchString.find ("rgba=") == std::string::npos)
+	    {
+		CompMatch rgbaMatch;
+
+		rgbaMatch = "rgba=0";
+		value->match () &= rgbaMatch;
+	    }
+	}
+	/* fall-through intended */
+    case DECOR_OPTION_DECOR_MATCH:
 	if (o->set(value))
 	{
 	    foreach (CompWindow *w, screen->windows ())
