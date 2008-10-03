@@ -1254,9 +1254,9 @@ CompScreen::handleEvent (XEvent *event)
 	    w = findWindow (event->xclient.window);
 	    if (w)
 	    {
-		/* use focus stealing prevention if request came from an
-		   application (which means data.l[0] is 1 */
-		if (event->xclient.data.l[0] != 1 ||
+		/* use focus stealing prevention if request came
+		   from an application  */
+		if (event->xclient.data.l[0] != ClientTypeApplication ||
 		    w->priv->allowWindowFocus (0, event->xclient.data.l[1]))
 		{
 		    w->activate ();
