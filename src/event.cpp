@@ -141,7 +141,7 @@ isTerminateBinding (CompOption	            &option,
 
 bool
 PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
-					   XEvent             *event,
+					   XButtonEvent       *event,
 					   CompOption::Vector &arguments)
 {
     CompAction::State state = CompAction::StateInitButton;
@@ -154,12 +154,12 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
     {
 	unsigned int i;
 
-	if (event->xbutton.root != root);
+	if (event->root != root)
 	    return false;
 
-	if (event->xbutton.window != edgeWindow)
+	if (event->window != edgeWindow)
 	{
-	    if (grabs.empty () || event->xbutton.window != root)
+	    if (grabs.empty () || event->window != root)
 		return false;
 	}
 
@@ -179,12 +179,12 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 	if (isInitiateBinding (option, CompAction::BindingTypeButton, state,
 			       &action))
 	{
-	    if (action->button ().button () == (int) event->xbutton.button)
+	    if (action->button ().button () == (int) event->button)
 	    {
 		bindMods = virtualToRealModMask (
 		    action->button ().modifiers ());
 
-		if ((bindMods & modMask) == (event->xbutton.state & modMask))
+		if ((bindMods & modMask) == (event->state & modMask))
 		    if (action->initiate () (action, state, arguments))
 			return true;
 	    }
@@ -195,15 +195,13 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 	    if (isInitiateBinding (option, CompAction::BindingTypeEdgeButton,
 				   state | CompAction::StateInitEdge, &action))
 	    {
-		if ((action->button ().button () ==
-		     (int) event->xbutton.button) &&
+		if ((action->button ().button () == (int) event->button) &&
 		    (action->edgeMask () & edge))
 		{
 		    bindMods = virtualToRealModMask (
 			action->button ().modifiers ());
 
-		    if ((bindMods & modMask) ==
-			(event->xbutton.state & modMask))
+		    if ((bindMods & modMask) == (event->state & modMask))
 			if (action->initiate () (action, state |
 						 CompAction::StateInitEdge,
 						 arguments))
@@ -218,7 +216,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 
 bool
 PrivateScreen::triggerButtonReleaseBindings (CompOption::Vector &options,
-					     XEvent             *event,
+					     XButtonEvent       *event,
 					     CompOption::Vector &arguments)
 {
     CompAction::State       state = CompAction::StateTermButton;
@@ -230,7 +228,7 @@ PrivateScreen::triggerButtonReleaseBindings (CompOption::Vector &options,
     {
 	if (isTerminateBinding (option, type, state, &action))
 	{
-	    if (action->button ().button () == (int) event->xbutton.button)
+	    if (action->button ().button () == (int) event->button)
 	    {
 		if (action->terminate () (action, state, arguments))
 		    return true;
@@ -243,7 +241,7 @@ PrivateScreen::triggerButtonReleaseBindings (CompOption::Vector &options,
 
 bool
 PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
-					XEvent             *event,
+					XKeyEvent          *event,
 					CompOption::Vector &arguments)
 {
     CompAction::State state = 0;
@@ -251,9 +249,9 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
     unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
     unsigned int      bindMods;
 
-    if (event->xkey.keycode == escapeKeyCode)
+    if (event->keycode == escapeKeyCode)
 	state = CompAction::StateCancel;
-    else if (event->xkey.keycode == returnKeyCode)
+    else if (event->keycode == returnKeyCode)
 	state = CompAction::StateCommit;
 
     if (state)
@@ -281,15 +279,15 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
 	    bindMods = virtualToRealModMask (
 		action->key ().modifiers ());
 
-	    if (action->key ().keycode () == (int) event->xkey.keycode)
+	    if (action->key ().keycode () == (int) event->keycode)
 	    {
-		if ((bindMods & modMask) == (event->xkey.state & modMask))
+		if ((bindMods & modMask) == (event->state & modMask))
 		    if (action->initiate () (action, state, arguments))
 			return true;
 	    }
 	    else if (!xkbEvent && action->key ().keycode () == 0)
 	    {
-		if (bindMods == (event->xkey.state & modMask))
+		if (bindMods == (event->state & modMask))
 		    if (action->initiate () (action, state, arguments))
 			return true;
 	    }
@@ -310,7 +308,7 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
     unsigned int      bindMods;
     unsigned int      mods;
 
-    mods = keycodeToModifiers (event->xkey.keycode);
+    mods = keycodeToModifiers (event->keycode);
     if (!xkbEvent && !mods)
 	return false;
 
@@ -323,7 +321,7 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 
 	    if ((bindMods & modMask) == 0)
 	    {
-		if (action->key ().keycode () == event->xkey.keycode)
+		if (action->key ().keycode () == event->keycode)
 		{
 		    if (action->terminate () (action, state, arguments))
 			return true;
@@ -641,7 +639,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getOptions ();
-	    if (triggerButtonPressBindings (options, event, o))
+	    if (triggerButtonPressBindings (options, &event->xbutton, o))
 		return true;
 	}
 	break;
@@ -662,7 +660,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getOptions ();
-	    if (triggerButtonReleaseBindings (options, event, o))
+	    if (triggerButtonReleaseBindings (options, &event->xbutton, o))
 		return true;
 	}
 	break;
@@ -683,7 +681,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getOptions ();
-	    if (triggerKeyPressBindings (options, event, o))
+	    if (triggerKeyPressBindings (options, &event->xkey, o))
 		return true;
 	}
 	break;
@@ -704,7 +702,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	foreach (CompPlugin *p, CompPlugin::getPlugins ())
 	{
 	    CompOption::Vector &options = p->vTable->getOptions ();
-	    if (triggerKeyReleaseBindings (options, event, o))
+	    if (triggerKeyReleaseBindings (options, &event->xkey, o))
 		return true;
 	}
 	break;
