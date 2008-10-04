@@ -299,7 +299,7 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
 
 bool
 PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
-					  XEvent             *event,
+					  XKeyEvent          *event,
 					  CompOption::Vector &arguments)
 {
     CompAction::State state = CompAction::StateTermKey;

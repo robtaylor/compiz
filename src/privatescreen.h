@@ -213,22 +213,22 @@ class PrivateScreen {
 
 	bool
 	triggerButtonPressBindings (CompOption::Vector &options,
-				    XEvent             *event,
+				    XButtonEvent       *event,
 				    CompOption::Vector &arguments);
 
 	bool
 	triggerButtonReleaseBindings (CompOption::Vector &options,
-				      XEvent             *event,
+				      XButtonEvent       *event,
 				      CompOption::Vector &arguments);
 
 	bool
 	triggerKeyPressBindings (CompOption::Vector &options,
-				 XEvent             *event,
+				 XKeyEvent          *event,
 				 CompOption::Vector &arguments);
 
 	bool
 	triggerKeyReleaseBindings (CompOption::Vector &options,
-				   XEvent             *event,
+				   XKeyEvent          *event,
 				   CompOption::Vector &arguments);
 
 	bool
