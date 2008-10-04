@@ -363,11 +363,13 @@ PrivateWindow::getClientLeader ()
 				 0L, 1L, False, XA_WINDOW, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	Window win;
+	Window win = None;
 
-	memcpy (&win, data, sizeof (Window));
+	if (n)
+	    memcpy (&win, data, sizeof (Window));
+
 	XFree ((void *) data);
 
 	if (win)
@@ -392,11 +394,12 @@ PrivateWindow::getStartupId ()
 				 &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	char *id;
+	char *id = NULL;
 
-	id = strdup ((char *) data);
+	if (n)
+	    id = strdup ((char *) data);
 	XFree ((void *) data);
 
 	return id;
@@ -862,7 +865,7 @@ PrivateWindow::updateStruts ()
 				 0L, 12L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
 	unsigned long *struts = (unsigned long *) data;
 
@@ -909,7 +912,7 @@ PrivateWindow::updateStruts ()
 				     0L, 4L, FALSE, XA_CARDINAL,
 				     &actual, &format, &n, &left, &data);
 
-	if (result == Success && n && data)
+	if (result == Success && data)
 	{
 	    unsigned long *struts = (unsigned long *) data;
 
@@ -1392,6 +1395,10 @@ PrivateWindow::initializeSyncCounter ()
 
 	XSyncDestroyAlarm (screen->dpy (), syncAlarm);
 	syncAlarm = None;
+    }
+    else if (result == Success && data)
+    {
+	XFree (data);
     }
 
     return false;
@@ -3390,24 +3397,28 @@ PrivateWindow::getUserTime (Time *time)
     int		  result, format;
     unsigned long n, left;
     unsigned char *data;
+    bool          retval = false;
 
     result = XGetWindowProperty (screen->dpy (), priv->id,
 				 Atoms::wmUserTime,
 				 0L, 1L, False, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	CARD32 value;
+	if (n)
+	{
+	    CARD32 value;
 
-	memcpy (&value, data, sizeof (CARD32));
+	    memcpy (&value, data, sizeof (CARD32));
+	    retval = true;
+	    *time  = (Time) value;
+	}
+
 	XFree ((void *) data);
-
-	*time = (Time) value;
-	return true;
     }
 
-    return false;
+    return retval;
 }
 
 void
@@ -3616,7 +3627,7 @@ CompWindow::getIcon (int width, int height)
 				     &actual, &format, &n,
 				     &left, &data);
 
-	if (result == Success && n && data)
+	if (result == Success && data)
 	{
 	    CARD32   *p;
 	    CARD32   alpha, red, green, blue;

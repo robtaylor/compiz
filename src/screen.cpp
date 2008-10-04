@@ -1253,6 +1253,9 @@ PrivateScreen::handleSelectionRequest (XEvent *event)
 			     event->xselectionrequest.property,
 			     Atoms::atomPair,
 			     32, PropModeReplace, data, num);
+
+	    if (data)
+		XFree (data);
 	}
     }
     else
@@ -1348,9 +1351,10 @@ PrivateScreen::getActiveWindow (Window root)
 				 XA_WINDOW, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	memcpy (&w, data, sizeof (Window));
+	if (n)
+	    memcpy (&w, data, sizeof (Window));
 	XFree (data);
     }
 
@@ -1460,9 +1464,10 @@ PrivateScreen::getWmState (Window id)
 				 Atoms::wmState, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	memcpy (&state, data, sizeof (unsigned long));
+	if (n)
+	    memcpy (&state, data, sizeof (unsigned long));
 	XFree ((void *) data);
     }
 
@@ -1614,7 +1619,7 @@ PrivateScreen::setWindowState (unsigned int state, Window id)
 unsigned int
 PrivateScreen::getWindowType (Window id)
 {
-    Atom	  actual;
+    Atom	  actual, a = None;
     int		  result, format;
     unsigned long n, left;
     unsigned char *data;
@@ -1624,13 +1629,15 @@ PrivateScreen::getWindowType (Window id)
 				 0L, 1L, FALSE, XA_ATOM, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	Atom a;
-
-	memcpy (&a, data, sizeof (Atom));
+	if (n)
+	    memcpy (&a, data, sizeof (Atom));
 	XFree ((void *) data);
+    }
 
+    if (a)
+    {
 	if (a == Atoms::winTypeNormal)
 	    return CompWindowTypeNormalMask;
 	else if (a == Atoms::winTypeMenu)
@@ -1682,7 +1689,7 @@ PrivateScreen::getMwmHints (Window       id,
 				 0L, 20L, FALSE, Atoms::mwmHints,
 				 &actual, &format, &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
 	MwmHints *mwmHints = (MwmHints *) data;
 
@@ -1737,23 +1744,25 @@ CompScreen::getWindowProp (Window       id,
     int		  result, format;
     unsigned long n, left;
     unsigned char *data;
+    unsigned int  retval = defaultValue;
 
     result = XGetWindowProperty (priv->dpy, id, property,
 				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	unsigned long value;
-
-	memcpy (&value, data, sizeof (unsigned long));
+	if (n)
+	{
+	    unsigned long value;
+	    memcpy (&value, data, sizeof (unsigned long));
+	    retval = (unsigned int) value;
+	}
 
 	XFree (data);
-
-	return (unsigned int) value;
     }
 
-    return defaultValue;
+    return retval;
 }
 
 void
@@ -1777,25 +1786,27 @@ PrivateScreen::readWindowProp32 (Window         id,
     int		  result, format;
     unsigned long n, left;
     unsigned char *data;
+    bool          retval = false;
 
     result = XGetWindowProperty (priv->dpy, id, property,
 				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
-    if (result == Success && n && data)
+    if (result == Success && data)
     {
-	CARD32 value;
+	if (n)
+	{
+	    CARD32 value;
 
-	memcpy (&value, data, sizeof (CARD32));
+	    memcpy (&value, data, sizeof (CARD32));
+	    retval       = true;
+	    *returnValue = value >> 16;
+	}
 
 	XFree (data);
-
-	*returnValue = value >> 16;
-
-	return true;
     }
 
-    return false;
+    return retval;
 }
 
 unsigned short
@@ -2460,20 +2471,23 @@ PrivateScreen::getDesktopHints ()
 
 	    XFree (propData);
 	}
-    }
 
-    result = XGetWindowProperty (dpy, root,
-				 Atoms::currentDesktop,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
-				 &n, &left, &propData);
+	result = XGetWindowProperty (dpy, root,
+				     Atoms::currentDesktop,
+				     0L, 1L, FALSE, XA_CARDINAL, &actual,
+				     &format, &n, &left, &propData);
 
-    if (result == Success && n && propData && useDesktopHints)
-    {
-	memcpy (data, propData, sizeof (unsigned long));
-	XFree (propData);
+	if (result == Success && propData)
+	{
+	    if (n)
+	    {
+		memcpy (data, propData, sizeof (unsigned long));
+		if (data[0] < nDesktop)
+		    currentDesktop = data[0];
+	    }
 
-	if (data[0] < nDesktop)
-	    currentDesktop = data[0];
+	    XFree (propData);
+	}
     }
 
     result = XGetWindowProperty (dpy, root,
@@ -2481,13 +2495,16 @@ PrivateScreen::getDesktopHints ()
 				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
-    if (result == Success && n && propData)
+    if (result == Success && propData)
     {
-	memcpy (data, propData, sizeof (unsigned long));
-	XFree (propData);
+	if (n)
+	{
+	    memcpy (data, propData, sizeof (unsigned long));
+	    if (data[0])
+		screen->enterShowDesktopMode ();
+	}
 
-	if (data[0])
-	    screen->enterShowDesktopMode ();
+	XFree (propData);
     }
 
     data[0] = currentDesktop;
