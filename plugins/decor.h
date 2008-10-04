@@ -106,6 +106,7 @@ class DecorScreen :
 
 	
 	void checkForDm (bool);
+	bool decoratorStartTimeout ();
 
     public:
 
@@ -133,6 +134,8 @@ class DecorScreen :
 	std::map<Window, DecorWindow *> frames;
 
 	CompOption::Vector opt;
+	
+	CompTimer decoratorStart;
 };
 
 class DecorWindow :

@@ -1612,6 +1612,15 @@ DecorScreen::matchPropertyChanged (CompWindow *w)
     screen->matchPropertyChanged (w);
 }
 
+bool
+DecorScreen::decoratorStartTimeout ()
+{
+    if (!dmWin)
+	screen->runCommand (opt[DECOR_OPTION_COMMAND].value ().s ());
+
+    return false;
+}
+
 static const CompMetadata::OptionInfo decorOptionInfo[] = {
     { "shadow_radius", "float", "<min>0.0</min><max>48.0</max>", 0, 0 },
     { "shadow_opacity", "float", "<min>0.0</min>", 0, 0 },
@@ -1683,8 +1692,9 @@ DecorScreen::DecorScreen (CompScreen *s) :
 
     checkForDm (false);
 
-    if (!dmWin)
-	s->runCommand (opt[DECOR_OPTION_COMMAND].value ().s ());
+    decoratorStart.start (boost::bind (&DecorScreen::decoratorStartTimeout,
+				       this),
+			  0);
 
     ScreenInterface::setHandler (s);
 }
