@@ -1133,7 +1133,8 @@ CompWindow::map ()
     if (isViewable ())
 	return;
 
-    priv->pendingMaps--;
+    if (priv->pendingMaps > 0)
+	priv->pendingMaps--;
 
     priv->mapNum = screen->priv->mapNum++;
 
