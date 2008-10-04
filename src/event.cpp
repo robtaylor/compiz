@@ -1018,7 +1018,7 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xmap.window);
 	if (w)
 	{
-	    if (!w->overrideRedirect ())
+	    if (w->priv->pendingMaps)
 		w->priv->managed = true;
 
 	    /* been shaded */
