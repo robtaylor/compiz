@@ -304,30 +304,35 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 					  XEvent             *event,
 					  CompOption::Vector &arguments)
 {
-    if (!xkbEvent)
+    CompAction::State state = CompAction::StateTermKey;
+    CompAction        *action;
+    unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
+    unsigned int      bindMods;
+    unsigned int      mods;
+
+    mods = keycodeToModifiers (event->xkey.keycode);
+    if (!xkbEvent && !mods)
+	return false;
+
+    foreach (CompOption &option, options)
     {
-	CompAction::State state = CompAction::StateTermKey;
-	CompAction        *action;
-	unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
-	unsigned int      bindMods;
-	unsigned int      mods;
-
-	mods = keycodeToModifiers (event->xkey.keycode);
-	if (mods == 0)
-	    return false;
-
-	foreach (CompOption &option, options)
+	if (isTerminateBinding (option, CompAction::BindingTypeKey,
+				state, &action))
 	{
-	    if (isTerminateBinding (option, CompAction::BindingTypeKey,
-				    state, &action))
-	    {
-		bindMods = virtualToRealModMask (action->key ().modifiers ());
+	    bindMods = virtualToRealModMask (action->key ().modifiers ());
 
-		if ((mods & modMask & bindMods) != bindMods)
+	    if ((bindMods & modMask) == 0)
+	    {
+		if (action->key ().keycode () == event->xkey.keycode)
 		{
 		    if (action->terminate () (action, state, arguments))
 			return true;
 		}
+	    }
+	    else if (!xkbEvent && ((mods & modMask & bindMods) != bindMods))
+	    {
+		if (action->terminate () (action, state, arguments))
+		    return true;
 	    }
 	}
     }
