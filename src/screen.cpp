@@ -3852,8 +3852,7 @@ CompScreen::outputChangeNotify ()
    more than one viewport the most appropriate viewport is returned. How the
    most appropriate viewport is computed can be made optional if necessary. It
    is currently computed as the viewport where the center of the window is
-   located, except for when the window is visible in the current viewport as
-   the current viewport is then always returned. */
+   located. */
 void
 CompScreen::viewportForGeometry (CompWindow::Geometry gm,
 				 int                  *viewportX,
@@ -3864,18 +3863,6 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
 
     gm.setWidth  (gm.width () + (gm.border () * 2));
     gm.setHeight (gm.height () + (gm.border () * 2));
-
-    if ((gm.x () < (int) priv->size.width ()  && gm.x () + gm.width () > 0) &&
-	(gm.y () < (int) priv->size.height () && gm.y ()+ gm.height () > 0))
-    {
-	if (viewportX)
-	    *viewportX = priv->vp.x ();
-
-	if (viewportY)
-	    *viewportY = priv->vp.y ();
-
-	return;
-    }
 
     if (viewportX)
     {

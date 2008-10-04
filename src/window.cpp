@@ -3599,7 +3599,20 @@ CompPoint
 CompWindow::defaultViewport ()
 {
     int vx, vy;
-    screen->viewportForGeometry (priv->serverGeometry, &vx, &vy);
+
+    if (priv->serverGeometry.x () < (int) screen->size ().width ()    &&
+	priv->serverGeometry.x () + priv->serverGeometry.width () > 0 &&
+	priv->serverGeometry.y () < (int) screen->size ().height ()   &&
+	priv->serverGeometry.y ()+ priv->serverGeometry.height () > 0)
+    {
+	vx = screen->vp ().x ();
+	vy = screen->vp ().y ();
+    }
+    else
+    {
+	screen->viewportForGeometry (priv->serverGeometry, &vx, &vy);
+    }
+
     return CompPoint (vx, vy);
 }
 
