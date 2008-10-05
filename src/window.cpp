@@ -3547,7 +3547,10 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     if (level == FOCUS_PREVENTION_LEVEL_HIGH)
        return false;
 
-    /* not in current viewport */
+    /* not in current viewport or desktop */
+    if (!window->onCurrentDesktop ())
+	return false;
+
     dvp = window->defaultViewport ();
     if (dvp.x () != s->vp ().x () || dvp.y () != s->vp ().y ())
 	return false;
@@ -4082,6 +4085,8 @@ PrivateWindow::processMap ()
 
     screen->priv->applyStartupProperties (window);
 
+    priv->managed = true;
+
     if (!priv->placed)
     {
 	int            newX, newY;
@@ -4126,11 +4131,11 @@ PrivateWindow::processMap ()
 
     screen->leaveShowDesktopMode (window);
 
+    if (allowFocus && !window->onCurrentDesktop ())
+	screen->priv->setCurrentDesktop (priv->desktop);
+
     if (!(priv->state & CompWindowStateHiddenMask))
-    {
-	priv->pendingMaps++;
-	XMapWindow (screen->dpy (), priv->id);
-    }
+	window->show ();
 
     if (allowFocus)
 	window->moveInputFocusTo ();
@@ -4306,8 +4311,7 @@ PrivateWindow::applyStartupProperties (CompStartupSequence *s)
     priv->initialViewport.setY (s->viewportY);
 
     workspace = sn_startup_sequence_get_workspace (s->sequence);
-    if (workspace >= 0)
-	priv->desktop = workspace;
+    setDesktop (workspace);
 
     priv->initialTimestamp    =
 	sn_startup_sequence_get_timestamp (s->sequence);

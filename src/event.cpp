@@ -1491,14 +1491,14 @@ CompScreen::handleEvent (XEvent *event)
 	    if (XGetWindowAttributes (priv->dpy, w->id (), &attr))
 		w->priv->setOverrideRedirect (attr.override_redirect != 0);
 
-	    w->priv->managed = true;
-
 	    if (w->state () & CompWindowStateHiddenMask)
 		if (!w->minimized () && !w->inShowDesktopMode ())
 		    doMapProcessing = false;
 
 	    if (doMapProcessing)
 		w->priv->processMap ();
+
+	    w->priv->managed = true;
 
 	    setWindowProp (w->id (), Atoms::winDesktop, w->desktop ());
 	}
