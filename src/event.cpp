@@ -1161,6 +1161,13 @@ CompScreen::handleEvent (XEvent *event)
 		state = priv->getWindowState (w->id ());
 		state = CompWindow::constrainWindowState (state, w->actions ());
 
+		/* EWMH suggests that we ignore changes
+		   to _NET_WM_STATE_HIDDEN */
+		if (w->state () & CompWindowStateHiddenMask)
+		    state |= CompWindowStateHiddenMask;
+		else
+		    state &= ~CompWindowStateHiddenMask;
+
 		if (state != w->state ())
 		{
 		    w->state () = state;
