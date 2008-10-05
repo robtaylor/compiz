@@ -3319,6 +3319,7 @@ CompWindow::show ()
     XMapWindow (screen->dpy (), priv->id);
 
     changeState (priv->state & ~CompWindowStateHiddenMask);
+    screen->priv->setWindowState (priv->state, priv->id);
 }
 
 void
