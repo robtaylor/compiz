@@ -422,7 +422,8 @@ CompWindow::changeState (unsigned int newState)
     recalcType ();
     recalcActions ();
 
-    screen->priv->setWindowState (priv->state, priv->id);
+    if (priv->managed)
+	screen->priv->setWindowState (priv->state, priv->id);
 
     stateChangeNotify (oldState);
     screen->matchPropertyChanged (this);
