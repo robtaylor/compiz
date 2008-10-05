@@ -1637,8 +1637,11 @@ PrivateWindow::isGroupTransient (Window clientLeader)
 
     if (transientFor == None || transientFor == screen->root ())
     {
-	if (type & (CompWindowTypeDialogMask |
-		       CompWindowTypeModalDialogMask))
+	if (type & (CompWindowTypeUtilMask    |
+		    CompWindowTypeToolbarMask |
+		    CompWindowTypeMenuMask    |
+		    CompWindowTypeDialogMask  |
+		    CompWindowTypeModalDialogMask))
 	{
 	    if (this->clientLeader == clientLeader)
 		return true;
