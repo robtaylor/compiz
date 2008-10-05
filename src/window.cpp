@@ -4099,6 +4099,8 @@ PrivateWindow::processMap ()
 	    xwcm |= CWX | CWY;
 	}
 
+	window->validateResizeRequest (&xwcm, &xwc, ClientTypeApplication);
+
 	if (xwcm)
 	    window->configureXWindow (xwcm, &xwc);
 
