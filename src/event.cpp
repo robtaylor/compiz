@@ -1168,15 +1168,7 @@ CompScreen::handleEvent (XEvent *event)
 		else
 		    state &= ~CompWindowStateHiddenMask;
 
-		if (state != w->state ())
-		{
-		    w->state () = state;
-
-		    w->recalcType ();
-		    w->recalcActions ();
-
-		    matchPropertyChanged (w);
-		}
+		w->changeState (state);
 	    }
 	}
 	else if (event->xproperty.atom == XA_WM_NORMAL_HINTS)
