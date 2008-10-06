@@ -2,7 +2,7 @@
 if (USE_GNOME)
 
     include_directories (
-	${compiz_BINARY_DIR}
+	${CMAKE_BINARY_DIR}/gtk
 	${GNOME_WINDOW_SETTINGS_INCLUDE_DIRS}
     )
 

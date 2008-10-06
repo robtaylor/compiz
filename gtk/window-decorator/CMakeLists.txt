@@ -2,7 +2,7 @@ if (USE_GTK)
 
     include_directories (
 	${compiz_SOURCE_DIR}/include
-	${compiz_BINARY_DIR}
+	${CMAKE_BINARY_DIR}/gtk
 	${GTK_WINDOW_DECORATOR_INCLUDE_DIRS}
 	${METACITY_INCLUDE_DIRS}
 	${GCONF_INCLUDE_DIRS}

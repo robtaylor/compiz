@@ -1,6 +1,13 @@
+check_pkg_module (xrender>=0.9.3 HAVE_XRENDER_0_9_3)
+
+configure_file (
+    ${CMAKE_CURRENT_SOURCE_DIR}/config.h.libdecoration.in
+    ${CMAKE_CURRENT_BINARY_DIR}/config.h
+)
+
 include_directories (
     ${compiz_SOURCE_DIR}/include
-    ${compiz_BINARY_DIR}
+    ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${LIBDECORATION_INCLUDE_DIRS}
 )
