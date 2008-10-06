@@ -88,6 +88,20 @@ generate_pkg_file (
     COMPIZ_CFLAGS
 )
 
+generate_pkg_file (
+    ${CMAKE_SOURCE_DIR}/compiz-composite.pc.in
+    ${CMAKE_BINARY_DIR}/compiz-composite.pc
+    _composite_plugin_LDFLAGS
+    _composite_plugin_CFLAGS
+    COMPIZ_CFLAGS
+)
+
+generate_pkg_file (
+    ${CMAKE_SOURCE_DIR}/compiz-opengl.pc.in
+    ${CMAKE_BINARY_DIR}/compiz-opengl.pc
+    COMPIZ_CFLAGS
+)
+
 add_subdirectory (src)
 add_subdirectory (include)
 add_subdirectory (images)
