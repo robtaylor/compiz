@@ -107,3 +107,26 @@ macro (install_gconf_schema _file)
 	DESTINATION "${SCHEMADIR}"
     )
 endmacro (install_gconf_schema)
+
+macro (generate_pkg_file _src _dst)
+
+    foreach (_val ${ARGN})
+        set (_${_val}_sav ${${_val}})
+        set (${_val} "")
+	foreach (_word ${_${_val}_sav})
+	    set (${_val} "${${_val}}${_word} ")
+	endforeach (_word ${_${_val}_sav})
+    endforeach (_val ${ARGN})
+
+    configure_file (${_src} ${_dst} @ONLY)
+
+    foreach (_val ${ARGN})
+	set (${_val} ${_${_val}_sav})
+        set (_${_val}_sav "")
+    endforeach (_val ${ARGN})
+
+    install (
+	FILES ${_dst}
+	DESTINATION ${libdir}/pkgconfig
+    )
+endmacro (generate_pkg_file)

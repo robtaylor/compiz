@@ -81,6 +81,13 @@ file (APPEND ${_commonfile} "\n")
 file (APPEND ${_commonfile} "#define COMPIZ_VERSION_STRING \"${VERSION}\"\n")
 file (APPEND ${_commonfile} "#endif\n")
 
+generate_pkg_file (
+    ${CMAKE_SOURCE_DIR}/compiz.pc.in
+    ${CMAKE_BINARY_DIR}/compiz.pc
+    COMPIZ_REQUIRES
+    COMPIZ_CFLAGS
+)
+
 add_subdirectory (src)
 add_subdirectory (include)
 add_subdirectory (images)
@@ -93,42 +100,4 @@ add_subdirectory (plugins)
 
 _print_configure_results ()
 
-# AC_CONFIG_COMMANDS([include/compiz-common.h],
-# [
-# 	commonfile=include/compiz-common.h
-# 	outfile=$commonfile.tmp
-# 	AC_MSG_NOTICE([creating $commonfile])
-# 	cat > $outfile <<_EOF
-# #ifndef COMPIZ_COMMON_H
-# #define COMPIZ_COMMON_H
-# 
-# #ifdef  __cplusplus
-# # define COMPIZ_BEGIN_DECLS  extern "C" {
-# # define COMPIZ_END_DECLS    }
-# #else
-# # define COMPIZ_BEGIN_DECLS
-# # define COMPIZ_END_DECLS
-# #endif
-# 
-# #define COMPIZ_VERSION_MAJOR $COMPIZ_VERSION_MAJOR
-# #define COMPIZ_VERSION_MINOR $COMPIZ_VERSION_MINOR
-# #define COMPIZ_VERSION_MICRO $COMPIZ_VERSION_MICRO
-# 
-# #define COMPIZ_VERSION_STRING "$COMPIZ_VERSION_MAJOR.$COMPIZ_VERSION_MINOR.$COMPIZ_VERSION_MICRO"
-# 
-# _EOF
-# 	echo '#endif' >> $outfile
-# 
-# 	if cmp -s $outfile $commonfile; then
-# 	  AC_MSG_NOTICE([$commonfile is unchanged])
-# 	  rm -f $outfile
-# 	else
-# 	  mv $outfile $commonfile
-# 	fi
-# ],[
-# 	COMPIZ_VERSION_MAJOR=$COMPIZ_VERSION_MAJOR
-# 	COMPIZ_VERSION_MINOR=$COMPIZ_VERSION_MINOR
-# 	COMPIZ_VERSION_MICRO=$COMPIZ_VERSION_MICRO
-# ])
-# 
 
