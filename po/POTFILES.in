@@ -9,7 +9,7 @@ metadata/clone.xml.in
 metadata/core.xml.in
 metadata/cube.xml.in
 metadata/dbus.xml.in
-metadata/decoration.xml.in
+metadata/decor.xml.in
 metadata/fade.xml.in
 metadata/fs.xml.in
 metadata/gconf.xml.in
@@ -32,4 +32,4 @@ metadata/video.xml.in
 metadata/water.xml.in
 metadata/wobbly.xml.in
 metadata/zoom.xml.in
-src/main.c
+src/main.cpp
