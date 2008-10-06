@@ -1,67 +1,77 @@
 project (kde4-window-decorator)
 
-find_package(KDE4)
+set (USE_KDE4 1 CACHE BOOL "Build KDE 4 window decorator")
 
-if (KDE4_FOUND)
+if (USE_KDE4)
 
-    include(KDE4Defaults)
-    include(FindPkgConfig)
-    include(MacroLibrary)
-    include (FindPlasma)
+    find_package(KDE4)
 
-    if (PLASMA_FOUND)
+    if (KDE4_FOUND)
 
-	add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
+	include(KDE4Defaults)
+	include(FindPkgConfig)
+	include(MacroLibrary)
+	include (FindPlasma)
 
-        qt4_add_dbus_adaptor (kwd4_SRCS org.kde.KWin.xml decorator.h KWD::Decorator kwinadaptor)
-	
+	if (PLASMA_FOUND)
 
-	pkg_check_modules (KWD4 REQUIRED xdamage xrender xcomposite)
+	    add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 
-	link_directories(
-	    ${KWD4_LIBRARY_DIRS}
-	)
+	    qt4_add_dbus_adaptor (kwd4_SRCS org.kde.KWin.xml decorator.h KWD::Decorator kwinadaptor)
+	    
 
-	include_directories (
-	    ${compiz_SOURCE_DIR}/include
-	    ${KWD4_INCLUDE_DIRS}
-	    ${KDE4_INCLUDES}
-	    ${KDE4_INCLUDE_DIR}
-	    ${PLASMA_INCLUDE_DIR}
-	    ${QT_INCLUDES}
-	)
+	    pkg_check_modules (KWD4 REQUIRED xdamage xrender xcomposite)
 
-	set (kwd4_SRCS
-	    main.cpp
-	    utils.cpp
-	    decorator.cpp
-	    window.cpp
-	    options.cpp
-	    kdecoration_plugins.cpp
-	    switcher.cpp
-	    ${kwd4_SRCS}
-	)
+	    link_directories(
+		${KWD4_LIBRARY_DIRS}
+	    )
 
-	kde4_add_executable (
-	    kde4-window-decorator
-	    ${kwd4_SRCS}
-	)
+	    include_directories (
+		${compiz_SOURCE_DIR}/include
+		${KWD4_INCLUDE_DIRS}
+		${KDE4_INCLUDES}
+		${KDE4_INCLUDE_DIR}
+		${PLASMA_INCLUDE_DIR}
+		${QT_INCLUDES}
+	    )
 
-	target_link_libraries (
-	    kde4-window-decorator
-	    decoration
-	    ${KWD4_LIBRARIES}
-	    ${PLASMA_LIBS}
-	    ${KDE4_KDECORE_LIBS}
-	    ${KDE4_KDEUI_LIBS}
-	    kdecorations
-	)
+	    set (kwd4_SRCS
+		main.cpp
+		utils.cpp
+		decorator.cpp
+		window.cpp
+		options.cpp
+		kdecoration_plugins.cpp
+		switcher.cpp
+		${kwd4_SRCS}
+	    )
 
-	install (
-	    TARGETS kde4-window-decorator
-	    DESTINATION ${exec_prefix}
-	)
+	    kde4_add_executable (
+		kde4-window-decorator
+		${kwd4_SRCS}
+	    )
 
-    endif (PLASMA_FOUND)
+	    target_link_libraries (
+		kde4-window-decorator
+		decoration
+		${KWD4_LIBRARIES}
+		${PLASMA_LIBS}
+		${KDE4_KDECORE_LIBS}
+		${KDE4_KDEUI_LIBS}
+		kdecorations
+	    )
 
-endif (KDE4_FOUND)
+	    install (
+		TARGETS kde4-window-decorator
+		DESTINATION ${exec_prefix}
+	    )
+
+	else (PLASMA_FOUND)
+	    set (USE_KDE4 0)
+	endif (PLASMA_FOUND)
+
+    else (KDE4_FOUND)
+	set (USE_KDE4 0)
+    endif (KDE4_FOUND)
+
+endif (USE_KDE4)
