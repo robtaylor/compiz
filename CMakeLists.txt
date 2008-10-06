@@ -19,6 +19,8 @@ set (COMPIZ_VERSION_MINOR 91)
 set (COMPIZ_VERSION_MICRO 1)
 set (VERSION ${COMPIZ_VERSION_MAJOR}.${COMPIZ_VERSION_MINOR}.${COMPIZ_VERSION_MICRO})
 
+include (cmake/package.cmake)
+
 set (DECOR_INTERFACE_VERSION 20080901)
 
 set (prefix ${CMAKE_INSTALL_PREFIX})
@@ -57,7 +59,8 @@ pkg_check_modules (LIBDECORATION REQUIRED ${DECORATION_REQUIRES})
 
 set (COMPIZ_CFLAGS "${COMPIZ_CFLAGS} -I${Boost_INCLUDE_DIR}")
 
-set (_compiz_package_string "compiz ${VERSION}")
+set (_compiz_package_string "Compiz ${VERSION}")
+set (_compiz_package "Compiz")
 
 configure_file (${compiz_SOURCE_DIR}/config.h.core.in ${compiz_BINARY_DIR}/config.h)
 
