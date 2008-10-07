@@ -12,8 +12,11 @@ target_link_libraries (move composite opengl)
 add_library (resize MODULE resize.cpp)
 target_link_libraries (resize composite opengl)
 
+add_library (copytex MODULE copytex.cpp)
+target_link_libraries (copytex composite opengl)
+
 install (
-    TARGETS decor move resize
+    TARGETS decor move resize copytex
     DESTINATION ${compiz_plugindir}
 )
 
