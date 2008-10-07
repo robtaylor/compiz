@@ -158,7 +158,10 @@ CompScreen::eventLoop ()
 			time = t->mMaxLeft;
 		    it++;
 		}
-		priv->doPoll (time);
+		if (time < 5)
+		    usleep (time * 1000);
+		else
+		    priv->doPoll (time);
 		gettimeofday (&tv, 0);
 		priv->handleTimers (&tv);
 	    }
