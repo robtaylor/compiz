@@ -178,7 +178,7 @@ namespace GLFragment {
 		b.noOffset[0] = "TEX output, fragment.texcoord[0], texture[0], 2D;";
 		b.noOffset[1] = "TEX output, fragment.texcoord[0], texture[0], RECT;";
 		b.offset[0] = "TEX output, __tmp_texcoord0, texture[0], 2D;";
-		b.offset[1] = "TEX output, __tmp_texcoord0, texture[0], 2D;";
+		b.offset[1] = "TEX output, __tmp_texcoord0, texture[0], RECT;";
 		data[0].body.push_back (b);
 	    };
     };
@@ -469,7 +469,7 @@ namespace GLFragment {
 	    callBack (&dataOp, nList);
 	}
 
-	forEachDataOpInFunction (list, nList - 1, type, 0, NULL,
+	forEachDataOpInFunction (list, nList - 1, type, 0, "",
 				 &colorDone, &blendDone,
 				 callBack);
 
@@ -629,10 +629,8 @@ namespace GLFragment {
 	      const CompString      prefix,
 	      CompString            data)
     {
-	CompString inPrefix = "_";
-	inPrefix += prefix;
-
-	CompString copy;
+	CompString inPrefix (prefix);
+	inPrefix += "_";
 
 	foreach (HeaderOp &h, header)
 	{
@@ -644,7 +642,8 @@ namespace GLFragment {
 		pos = data.find (h.name, pos);
 	    }
 	}
-	return copy;
+
+	return data;
     }
 
     PrivateFunctionData::PrivateFunctionData (const PrivateFunctionData& src,
@@ -978,8 +977,9 @@ namespace GLFragment {
 	return priv->nFunction > 0;
     }
 
-    void destroyFragmentFunction (GLScreen *s, FunctionId id)
+    void destroyFragmentFunction (FunctionId id)
     {
+	GLScreen *s = GLScreen::get (screen);
 	Function *function;
 	Program  *program;
 
@@ -1008,7 +1008,6 @@ namespace GLFragment {
 	    }
 
 	} while (program);
-	
 
 	std::vector<Function *>::iterator fi =
 	    std::find (s->fragmentStorage ()->functions.begin (),
@@ -1016,7 +1015,7 @@ namespace GLFragment {
 		       function);
 	if (fi != s->fragmentStorage ()->functions.end ())
 	    s->fragmentStorage ()->functions.erase (fi);
-	
+
 	delete (function);
     }
 
@@ -1061,7 +1060,7 @@ namespace GLFragment {
     }
 
     Storage::Storage () :
-	lastFunctionId (0),
+	lastFunctionId (1),
 	functions (0),
 	programs (0)
     {
