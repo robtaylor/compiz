@@ -23,117 +23,9 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
-#include <sys/time.h>
+#include "zoom.h"
 
-#include <X11/cursorfont.h>
-
-#include <compiz-core.h>
-
-static CompMetadata zoomMetadata;
-
-static int displayPrivateIndex;
-
-#define ZOOM_DISPLAY_OPTION_INITIATE_BUTTON 0
-#define ZOOM_DISPLAY_OPTION_IN_BUTTON	    1
-#define ZOOM_DISPLAY_OPTION_OUT_BUTTON	    2
-#define ZOOM_DISPLAY_OPTION_PAN_BUTTON	    3
-#define ZOOM_DISPLAY_OPTION_NUM	            4
-
-typedef struct _ZoomDisplay {
-    int		    screenPrivateIndex;
-    HandleEventProc handleEvent;
-
-    CompOption opt[ZOOM_DISPLAY_OPTION_NUM];
-} ZoomDisplay;
-
-typedef struct _ZoomBox {
-    float x1;
-    float y1;
-    float x2;
-    float y2;
-} ZoomBox;
-
-#define ZOOM_SCREEN_OPTION_SPEED	 0
-#define ZOOM_SCREEN_OPTION_TIMESTEP	 1
-#define ZOOM_SCREEN_OPTION_ZOOM_FACTOR   2
-#define ZOOM_SCREEN_OPTION_FILTER_LINEAR 3
-#define ZOOM_SCREEN_OPTION_NUM		 4
-
-typedef struct _ZoomScreen {
-    PreparePaintScreenProc	 preparePaintScreen;
-    DonePaintScreenProc		 donePaintScreen;
-    PaintOutputProc		 paintOutput;
-
-    CompOption opt[ZOOM_SCREEN_OPTION_NUM];
-
-    float pointerSensitivity;
-
-    int  grabIndex;
-    Bool grab;
-
-    int zoomed;
-
-    Bool adjust;
-
-    int    panGrabIndex;
-    Cursor panCursor;
-
-    GLfloat velocity;
-    GLfloat scale;
-
-    ZoomBox current[16];
-    ZoomBox last[16];
-
-    int x1, y1, x2, y2;
-
-    int zoomOutput;
-} ZoomScreen;
-
-#define GET_ZOOM_DISPLAY(d)					  \
-    ((ZoomDisplay *) (d)->base.privates[displayPrivateIndex].ptr)
-
-#define ZOOM_DISPLAY(d)		           \
-    ZoomDisplay *zd = GET_ZOOM_DISPLAY (d)
-
-#define GET_ZOOM_SCREEN(s, zd)					      \
-    ((ZoomScreen *) (s)->base.privates[(zd)->screenPrivateIndex].ptr)
-
-#define ZOOM_SCREEN(s)						        \
-    ZoomScreen *zs = GET_ZOOM_SCREEN (s, GET_ZOOM_DISPLAY (s->display))
-
-#define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
-
-static CompOption *
-zoomGetScreenOptions (CompPlugin *plugin,
-		      CompScreen *screen,
-		      int	 *count)
-{
-    ZOOM_SCREEN (screen);
-
-    *count = NUM_OPTIONS (zs);
-    return zs->opt;
-}
-
-static Bool
-zoomSetScreenOption (CompPlugin      *plugin,
-		     CompScreen      *screen,
-		     const char	     *name,
-		     CompOptionValue *value)
-{
-    CompOption *o;
-
-    ZOOM_SCREEN (screen);
-
-    o = compFindOption (zs->opt, NUM_OPTIONS (zs), name, NULL);
-    if (!o)
-	return FALSE;
-
-    return compSetScreenOption (screen, o, value);
-}
+static CompMetadata *zoomMetadata;
 
 static int
 adjustZoomVelocity (ZoomScreen *zs)
@@ -154,182 +46,123 @@ adjustZoomVelocity (ZoomScreen *zs)
     return (fabs (d) < 0.02f && fabs (zs->velocity) < 0.005f);
 }
 
-static void
-zoomInEvent (CompScreen *s)
+void
+ZoomScreen::zoomInEvent ()
 {
-    CompOption o[6];
+    CompOption::Vector o (0);
 
-    ZOOM_SCREEN (s);
+    o.push_back (CompOption ("root", CompOption::TypeInt));
+    o.push_back (CompOption ("output", CompOption::TypeInt));
+    o.push_back (CompOption ("x1", CompOption::TypeInt));
+    o.push_back (CompOption ("y1", CompOption::TypeInt));
+    o.push_back (CompOption ("x2", CompOption::TypeInt));
+    o.push_back (CompOption ("y2", CompOption::TypeInt));
 
-    o[0].type    = CompOptionTypeInt;
-    o[0].name    = "root";
-    o[0].value.i = s->root;
+    o[0].value ().set ((int) screen->root ());
+    o[1].value ().set ((int) zoomOutput);
+    o[2].value ().set ((int) current[zoomOutput].x1);
+    o[3].value ().set ((int) current[zoomOutput].y1);
+    o[4].value ().set ((int) current[zoomOutput].x2);
+    o[5].value ().set ((int) current[zoomOutput].y2);
 
-    o[1].type    = CompOptionTypeInt;
-    o[1].name    = "output";
-    o[1].value.i = zs->zoomOutput;
-
-    o[2].type    = CompOptionTypeInt;
-    o[2].name    = "x1";
-    o[2].value.i = zs->current[zs->zoomOutput].x1;
-
-    o[3].type    = CompOptionTypeInt;
-    o[3].name    = "y1";
-    o[3].value.i = zs->current[zs->zoomOutput].y1;
-
-    o[4].type    = CompOptionTypeInt;
-    o[4].name    = "x2";
-    o[4].value.i = zs->current[zs->zoomOutput].x2;
-
-    o[5].type    = CompOptionTypeInt;
-    o[5].name    = "y2";
-    o[5].value.i = zs->current[zs->zoomOutput].y2;
-
-    (*s->display->handleCompizEvent) (s->display, "zoom", "in", o, 6);
+    screen->handleCompizEvent ("zoom", "in", o);
 }
 
-static void
-zoomOutEvent (CompScreen *s)
+void
+ZoomScreen::zoomOutEvent ()
 {
-    CompOption o[2];
+    CompOption::Vector o (0);
 
-    ZOOM_SCREEN (s);
+    o.push_back (CompOption ("root", CompOption::TypeInt));
+    o.push_back (CompOption ("output", CompOption::TypeInt));
 
-    o[0].type    = CompOptionTypeInt;
-    o[0].name    = "root";
-    o[0].value.i = s->root;
+    o[0].value ().set ((int) screen->root ());
+    o[1].value ().set ((int) zoomOutput);
 
-    o[1].type    = CompOptionTypeInt;
-    o[1].name    = "output";
-    o[1].value.i = zs->zoomOutput;
-
-    (*s->display->handleCompizEvent) (s->display, "zoom", "out", o, 2);
+    screen->handleCompizEvent ("zoom", "out", o);
 }
 
-static void
-zoomPreparePaintScreen (CompScreen *s,
-			int	   msSinceLastPaint)
+void
+ZoomScreen::preparePaint (int ms)
 {
-    ZOOM_SCREEN (s);
-
-    if (zs->adjust)
+    if (adjust)
     {
 	int   steps;
 	float amount;
 
-	amount = msSinceLastPaint * 0.35f *
-	    zs->opt[ZOOM_SCREEN_OPTION_SPEED].value.f;
-	steps  = amount / (0.5f * zs->opt[ZOOM_SCREEN_OPTION_TIMESTEP].value.f);
+	amount = ms * 0.35f * opt[ZOOM_OPTION_SPEED].value ().f ();
+	steps  = amount / (0.5f * opt[ZOOM_OPTION_TIMESTEP].value ().f ());
 	if (!steps) steps = 1;
 
 	while (steps--)
 	{
-	    if (adjustZoomVelocity (zs))
+	    if (adjustZoomVelocity (this))
 	    {
-		BoxPtr pBox = &s->outputDev[zs->zoomOutput].region.extents;
+		BoxPtr pBox =
+		    &screen->outputDevs ()[zoomOutput].region ()->extents;
 
-		zs->scale = 1.0f;
-		zs->velocity = 0.0f;
-		zs->adjust = FALSE;
+		scale = 1.0f;
+		velocity = 0.0f;
+		adjust = false;
 
-		if (zs->current[zs->zoomOutput].x1 == pBox->x1 &&
-		    zs->current[zs->zoomOutput].y1 == pBox->y1 &&
-		    zs->current[zs->zoomOutput].x2 == pBox->x2 &&
-		    zs->current[zs->zoomOutput].y2 == pBox->y2)
+		if (current[zoomOutput].x1 == pBox->x1 &&
+		    current[zoomOutput].y1 == pBox->y1 &&
+		    current[zoomOutput].x2 == pBox->x2 &&
+		    current[zoomOutput].y2 == pBox->y2)
 		{
-		    zs->zoomed &= ~(1 << zs->zoomOutput);
-		    zoomOutEvent (s);
+		    zoomed &= ~(1 << zoomOutput);
+		    zoomOutEvent ();
 		}
 		else
 		{
-		    zoomInEvent (s);
+		    zoomInEvent ();
 		}
 
 		break;
 	    }
 	    else
 	    {
-		zs->scale += (zs->velocity * msSinceLastPaint) / s->redrawTime;
+		scale += (velocity * ms) / (float) cScreen->redrawTime ();
 	    }
 	}
     }
 
-    UNWRAP (zs, s, preparePaintScreen);
-    (*s->preparePaintScreen) (s, msSinceLastPaint);
-    WRAP (zs, s, preparePaintScreen, zoomPreparePaintScreen);
+    cScreen->preparePaint (ms);
 }
 
-static void
-zoomGetCurrentZoom (CompScreen *s,
-		    int	       output,
-		    ZoomBox    *pBox)
+void
+ZoomScreen::donePaint ()
 {
-    ZOOM_SCREEN (s);
+    if (adjust)
+	cScreen->damageScreen ();
 
-    if (output == zs->zoomOutput)
-    {
-	float inverse;
-
-	inverse = 1.0f - zs->scale;
-
-	pBox->x1 = zs->scale * zs->current[output].x1 +
-	    inverse * zs->last[output].x1;
-	pBox->y1 = zs->scale * zs->current[output].y1 +
-	    inverse * zs->last[output].y1;
-	pBox->x2 = zs->scale * zs->current[output].x2 +
-	    inverse * zs->last[output].x2;
-	pBox->y2 = zs->scale * zs->current[output].y2 +
-	    inverse * zs->last[output].y2;
-    }
-    else
-    {
-	pBox->x1 = zs->current[output].x1;
-	pBox->y1 = zs->current[output].y1;
-	pBox->x2 = zs->current[output].x2;
-	pBox->y2 = zs->current[output].y2;
-    }
+    cScreen->donePaint ();
 }
 
-static void
-zoomDonePaintScreen (CompScreen *s)
+bool
+ZoomScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
+			   const GLMatrix &transform,
+			   const CompRegion &region,
+			   CompOutput *output,
+			   unsigned int mask)
 {
-    ZOOM_SCREEN (s);
+    GLMatrix zTransform (transform);
+    bool     status;
 
-    if (zs->adjust)
-	damageScreen (s);
-
-    UNWRAP (zs, s, donePaintScreen);
-    (*s->donePaintScreen) (s);
-    WRAP (zs, s, donePaintScreen, zoomDonePaintScreen);
-}
-
-static Bool
-zoomPaintOutput (CompScreen		 *s,
-		 const ScreenPaintAttrib *sAttrib,
-		 const CompTransform	 *transform,
-		 Region		         region,
-		 CompOutput		 *output,
-		 unsigned int		 mask)
-{
-    CompTransform zTransform = *transform;
-    Bool	  status;
-
-    ZOOM_SCREEN (s);
-
-    if (output->id != ~0 && (zs->zoomed & (1 << output->id)))
+    if (output->id () != ~0 && (zoomed & (1 << output->id ())))
     {
-	int	saveFilter;
-	ZoomBox	box;
-	float	scale, x, y, x1, y1;
-	float	oWidth = output->width;
-	float	oHeight = output->height;
+	GLTexture::Filter saveFilter;
+	ZoomBox           box;
+	float             scale, x, y, x1, y1;
+	float             oWidth = output->width ();
+	float             oHeight = output->height ();
 
 	mask &= ~PAINT_SCREEN_REGION_MASK;
 
-	zoomGetCurrentZoom (s, output->id, &box);
+	getCurrentZoom (output->id (), &box);
 
-	x1 = box.x1 - output->region.extents.x1;
-	y1 = box.y1 - output->region.extents.y1;
+	x1 = box.x1 - output->x1 ();
+	y1 = box.y1 - output->y1 ();
 
 	scale = oWidth / (box.x2 - box.x1);
 
@@ -339,47 +172,43 @@ zoomPaintOutput (CompScreen		 *s,
 	x = 0.5f - x * scale;
 	y = 0.5f - y * scale;
 
-	matrixTranslate (&zTransform, -x, y, 0.0f);
-	matrixScale (&zTransform, scale, scale, 1.0f);
+	zTransform.translate (-x, y, 0.0f);
+	zTransform.scale (scale, scale, 1.0f);
 
 	mask |= PAINT_SCREEN_TRANSFORMED_MASK;
 
-	saveFilter = s->filter[SCREEN_TRANS_FILTER];
+	saveFilter = gScreen->filter (SCREEN_TRANS_FILTER);
 
-	if ((zs->zoomOutput != output->id || !zs->adjust) && scale > 3.9f &&
-	    !zs->opt[ZOOM_SCREEN_OPTION_FILTER_LINEAR].value.b)
-	    s->filter[SCREEN_TRANS_FILTER] = COMP_TEXTURE_FILTER_FAST;
+	if ((zoomOutput != output->id () || !adjust) && scale > 3.9f &&
+	    !opt[ZOOM_OPTION_FILTER_LINEAR].value ().b ())
+	    gScreen->setFilter (SCREEN_TRANS_FILTER, GLTexture::Fast);
 
-	UNWRAP (zs, s, paintOutput);
-	status = (*s->paintOutput) (s, sAttrib, &zTransform, region, output,
-				    mask);
-	WRAP (zs, s, paintOutput, zoomPaintOutput);
+	status = gScreen->glPaintOutput (sAttrib, zTransform, region, output,
+					 mask);
 
-	s->filter[SCREEN_TRANS_FILTER] = saveFilter;
+	gScreen->setFilter (SCREEN_TRANS_FILTER, saveFilter);
     }
     else
     {
-	UNWRAP (zs, s, paintOutput);
-	status = (*s->paintOutput) (s, sAttrib, transform, region, output,
-				    mask);
-	WRAP (zs, s, paintOutput, zoomPaintOutput);
+	status = gScreen->glPaintOutput (sAttrib, transform, region, output,
+					 mask);
     }
 
-    if (status && zs->grab)
+    if (status && grab)
     {
 	int x1, x2, y1, y2;
 
-	x1 = MIN (zs->x1, zs->x2);
-	y1 = MIN (zs->y1, zs->y2);
-	x2 = MAX (zs->x1, zs->x2);
-	y2 = MAX (zs->y1, zs->y2);
+	x1 = MIN (this->x1, this->x2);
+	y1 = MIN (this->y1, this->y2);
+	x2 = MAX (this->x1, this->x2);
+	y2 = MAX (this->y1, this->y2);
 
-	if (zs->grabIndex)
+	if (grabIndex)
 	{
-	    transformToScreenSpace (s, output, -DEFAULT_Z_CAMERA, &zTransform);
+	    zTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
 
 	    glPushMatrix ();
-	    glLoadMatrixf (zTransform.m);
+	    glLoadMatrixf (zTransform.getMatrix ());
 	    glDisableClientState (GL_TEXTURE_COORD_ARRAY);
 	    glEnable (GL_BLEND);
 	    glColor4us (0x2fff, 0x2fff, 0x4fff, 0x4fff);
@@ -401,29 +230,27 @@ zoomPaintOutput (CompScreen		 *s,
     return status;
 }
 
-static void
-zoomInitiateForSelection (CompScreen *s,
-			  int	     output)
+
+void
+ZoomScreen::initiateForSelection (int output)
 {
     int tmp;
 
-    ZOOM_SCREEN (s);
-
-    if (zs->x1 > zs->x2)
+    if (x1 > x2)
     {
-	tmp = zs->x1;
-	zs->x1 = zs->x2;
-	zs->x2 = tmp;
+	tmp = x1;
+	x1 = x2;
+	x2 = tmp;
     }
 
-    if (zs->y1 > zs->y2)
+    if (y1 > y2)
     {
-	tmp = zs->y1;
-	zs->y1 = zs->y2;
-	zs->y2 = tmp;
+	tmp = y1;
+	y1 = y2;
+	y2 = tmp;
     }
 
-    if (zs->x1 < zs->x2 && zs->y1 < zs->y2)
+    if (x1 < x2 && y1 < y2)
     {
 	float  oWidth, oHeight;
 	float  xScale, yScale, scale;
@@ -431,14 +258,14 @@ zoomInitiateForSelection (CompScreen *s,
 	int    cx, cy;
 	int    width, height;
 
-	oWidth  = s->outputDev[output].width;
-	oHeight = s->outputDev[output].height;
+	oWidth  = screen->outputDevs ()[output].width ();
+	oHeight = screen->outputDevs ()[output].height ();
 
-	cx = (int) ((zs->x1 + zs->x2) / 2.0f + 0.5f);
-	cy = (int) ((zs->y1 + zs->y2) / 2.0f + 0.5f);
+	cx = (int) ((x1 + x2) / 2.0f + 0.5f);
+	cy = (int) ((y1 + y2) / 2.0f + 0.5f);
 
-	width  = zs->x2 - zs->x1;
-	height = zs->y2 - zs->y1;
+	width  = x2 - x1;
+	height = y2 - y1;
 
 	xScale = oWidth  / width;
 	yScale = oHeight / height;
@@ -450,383 +277,316 @@ zoomInitiateForSelection (CompScreen *s,
 	box.x2 = cx + (oWidth  / scale) / 2.0f;
 	box.y2 = cy + (oHeight / scale) / 2.0f;
 
-	if (box.x1 < s->outputDev[output].region.extents.x1)
+	if (box.x1 < screen->outputDevs ()[output].x1 ())
 	{
-	    box.x2 += s->outputDev[output].region.extents.x1 - box.x1;
-	    box.x1 = s->outputDev[output].region.extents.x1;
+	    box.x2 += screen->outputDevs ()[output].x1 () - box.x1;
+	    box.x1 = screen->outputDevs ()[output].x1 ();
 	}
-	else if (box.x2 > s->outputDev[output].region.extents.x2)
+	else if (box.x2 > screen->outputDevs ()[output].x2 ())
 	{
-	    box.x1 -= box.x2 - s->outputDev[output].region.extents.x2;
-	    box.x2 = s->outputDev[output].region.extents.x2;
-	}
-
-	if (box.y1 < s->outputDev[output].region.extents.y1)
-	{
-	    box.y2 += s->outputDev[output].region.extents.y1 - box.y1;
-	    box.y1 = s->outputDev[output].region.extents.y1;
-	}
-	else if (box.y2 > s->outputDev[output].region.extents.y2)
-	{
-	    box.y1 -= box.y2 - s->outputDev[output].region.extents.y2;
-	    box.y2 = s->outputDev[output].region.extents.y2;
+	    box.x1 -= box.x2 - screen->outputDevs ()[output].x2 ();
+	    box.x2 = screen->outputDevs ()[output].x2 ();
 	}
 
-	if (zs->zoomed & (1 << output))
+	if (box.y1 < screen->outputDevs ()[output].y1 ())
 	{
-	    zoomGetCurrentZoom (s, output, &zs->last[output]);
+	    box.y2 += screen->outputDevs ()[output].y1 () - box.y1;
+	    box.y1 = screen->outputDevs ()[output].y1 ();
+	}
+	else if (box.y2 > screen->outputDevs ()[output].y2 ())
+	{
+	    box.y1 -= box.y2 - screen->outputDevs ()[output].y2 ();
+	    box.y2 = screen->outputDevs ()[output].y2 ();
+	}
+
+	if (zoomed & (1 << output))
+	{
+	    getCurrentZoom (output, &last[output]);
 	}
 	else
 	{
-	    zs->last[output].x1 = s->outputDev[output].region.extents.x1;
-	    zs->last[output].y1 = s->outputDev[output].region.extents.y1;
-	    zs->last[output].x2 = s->outputDev[output].region.extents.x2;
-	    zs->last[output].y2 = s->outputDev[output].region.extents.y2;
+	    last[output].x1 = screen->outputDevs ()[output].x1 ();
+	    last[output].y1 = screen->outputDevs ()[output].y1 ();
+	    last[output].x2 = screen->outputDevs ()[output].x2 ();
+	    last[output].y2 = screen->outputDevs ()[output].y2 ();
 	}
 
-	zs->current[output].x1 = box.x1;
-	zs->current[output].y1 = box.y1;
-	zs->current[output].x2 = box.x2;
-	zs->current[output].y2 = box.y2;
+	current[output].x1 = box.x1;
+	current[output].y1 = box.y1;
+	current[output].x2 = box.x2;
+	current[output].y2 = box.y2;
 
-	zs->scale = 0.0f;
-	zs->adjust = TRUE;
-	zs->zoomOutput = output;
-	zs->zoomed |= (1 << output);
+	this->scale = 0.0f;
+	adjust = true;
+	zoomOutput = output;
+	zoomed |= (1 << output);
 
-	damageScreen (s);
+	cScreen->damageScreen ();
     }
 }
 
-static Bool
-zoomIn (CompDisplay     *d,
-	CompAction      *action,
-	CompActionState state,
-	CompOption      *option,
-	int		nOption)
+static bool
+zoomIn (CompAction         *action,
+	CompAction::State  state,
+	CompOption::Vector &options)
 {
-    CompScreen *s;
-    Window     xid;
+    float   w, h, x0, y0;
+    int     output;
+    ZoomBox box;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    ZOOM_SCREEN (screen);
 
-    s = findScreenAtDisplay (d, xid);
-    if (s)
+    output = screen->outputDeviceForPoint (pointerX, pointerY);
+
+    if (!zs->grabIndex)
+	zs->grabIndex = screen->pushGrab (None, "zoom");
+
+    if (zs->zoomed & (1 << output))
     {
-	float   w, h, x0, y0;
-	int     output;
+	zs->getCurrentZoom (output, &box);
+    }
+    else
+    {
+	box.x1 = screen->outputDevs ()[output].x1 ();
+	box.y1 = screen->outputDevs ()[output].y1 ();
+	box.x2 = screen->outputDevs ()[output].x2 ();
+	box.y2 = screen->outputDevs ()[output].y2 ();
+    }
+
+    w = (box.x2 - box.x1) /
+	zs->opt[ZOOM_OPTION_ZOOM_FACTOR].value ().f ();
+    h = (box.y2 - box.y1) /
+	zs->opt[ZOOM_OPTION_ZOOM_FACTOR].value ().f ();
+
+    x0 = (pointerX - screen->outputDevs ()[output].x1 ()) / (float)
+	screen->outputDevs ()[output].width ();
+    y0 = (pointerY - screen->outputDevs ()[output].y1 ()) / (float)
+	screen->outputDevs ()[output].height ();
+
+    zs->x1 = box.x1 + (x0 * (box.x2 - box.x1) - x0 * w + 0.5f);
+    zs->y1 = box.y1 + (y0 * (box.y2 - box.y1) - y0 * h + 0.5f);
+    zs->x2 = zs->x1 + w;
+    zs->y2 = zs->y1 + h;
+
+    zs->initiateForSelection (output);
+
+    return TRUE;
+}
+
+static bool
+zoomInitiate (CompAction         *action,
+	      CompAction::State  state,
+	      CompOption::Vector &options)
+{
+    int   output, x1, y1;
+    float scale;
+
+    ZOOM_SCREEN (screen);
+
+    if (screen->otherGrabExist ("zoom", 0))
+	return false;
+
+    if (!zs->grabIndex)
+	zs->grabIndex = screen->pushGrab (None, "zoom");
+
+    if (state & CompAction::StateInitButton)
+	action->setState (action->state () | CompAction::StateTermButton);
+
+    /* start selection zoom rectangle */
+
+    output = screen->outputDeviceForPoint (pointerX, pointerY);
+
+    if (zs->zoomed & (1 << output))
+    {
 	ZoomBox box;
+	float   oWidth;
 
-	ZOOM_SCREEN (s);
+	zs->getCurrentZoom (output, &box);
 
-	output = outputDeviceForPoint (s, pointerX, pointerY);
+	oWidth = screen->outputDevs ()[output].width ();
+	scale = oWidth / (box.x2 - box.x1);
 
-	if (!zs->grabIndex)
-	    zs->grabIndex = pushScreenGrab (s, None, "zoom");
-
-	if (zs->zoomed & (1 << output))
-	{
-	    zoomGetCurrentZoom (s, output, &box);
-	}
-	else
-	{
-	    box.x1 = s->outputDev[output].region.extents.x1;
-	    box.y1 = s->outputDev[output].region.extents.y1;
-	    box.x2 = s->outputDev[output].region.extents.x2;
-	    box.y2 = s->outputDev[output].region.extents.y2;
-	}
-
-	w = (box.x2 - box.x1) /
-	    zs->opt[ZOOM_SCREEN_OPTION_ZOOM_FACTOR].value.f;
-	h = (box.y2 - box.y1) /
-	    zs->opt[ZOOM_SCREEN_OPTION_ZOOM_FACTOR].value.f;
-
-	x0 = (pointerX - s->outputDev[output].region.extents.x1) / (float)
-	    s->outputDev[output].width;
-	y0 = (pointerY - s->outputDev[output].region.extents.y1) / (float)
-	    s->outputDev[output].height;
-
-	zs->x1 = box.x1 + (x0 * (box.x2 - box.x1) - x0 * w + 0.5f);
-	zs->y1 = box.y1 + (y0 * (box.y2 - box.y1) - y0 * h + 0.5f);
-	zs->x2 = zs->x1 + w;
-	zs->y2 = zs->y1 + h;
-
-	zoomInitiateForSelection (s, output);
-
-	return TRUE;
+	x1 = box.x1;
+	y1 = box.y1;
     }
-
-    return FALSE;
-}
-
-static Bool
-zoomInitiate (CompDisplay     *d,
-	      CompAction      *action,
-	      CompActionState state,
-	      CompOption      *option,
-	      int	      nOption)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = getIntOptionNamed (option, nOption, "root", 0);
-
-    s = findScreenAtDisplay (d, xid);
-    if (s)
+    else
     {
-	int   output, x1, y1;
-	float scale;
-
-	ZOOM_SCREEN (s);
-
-	if (otherScreenGrabExist (s, "zoom", 0))
-	    return FALSE;
-
-	if (!zs->grabIndex)
-	    zs->grabIndex = pushScreenGrab (s, None, "zoom");
-
-	if (state & CompActionStateInitButton)
-	    action->state |= CompActionStateTermButton;
-
-	/* start selection zoom rectangle */
-
-	output = outputDeviceForPoint (s, pointerX, pointerY);
-
-	if (zs->zoomed & (1 << output))
-	{
-	    ZoomBox box;
-	    float   oWidth;
-
-	    zoomGetCurrentZoom (s, output, &box);
-
-	    oWidth = s->outputDev[output].width;
-	    scale = oWidth / (box.x2 - box.x1);
-
-	    x1 = box.x1;
-	    y1 = box.y1;
-	}
-	else
-	{
-	    scale = 1.0f;
-	    x1 = s->outputDev[output].region.extents.x1;
-	    y1 = s->outputDev[output].region.extents.y1;
-	}
-
-	zs->x1 = zs->x2 = x1 +
-	    ((pointerX - s->outputDev[output].region.extents.x1) /
-	     scale + 0.5f);
-	zs->y1 = zs->y2 = y1 +
-	    ((pointerY - s->outputDev[output].region.extents.y1) /
-	     scale + 0.5f);
-
-	zs->zoomOutput = output;
-
-	zs->grab = TRUE;
-
-	damageScreen (s);
-
-	return TRUE;
+	scale = 1.0f;
+	x1 = screen->outputDevs ()[output].x1 ();
+	y1 = screen->outputDevs ()[output].y1 ();
     }
 
-    return FALSE;
+    zs->x1 = zs->x2 = x1 +
+	((pointerX - screen->outputDevs ()[output].x1 ()) /
+	    scale + 0.5f);
+    zs->y1 = zs->y2 = y1 +
+	((pointerY - screen->outputDevs ()[output].y1 ()) /
+	    scale + 0.5f);
+
+    zs->zoomOutput = output;
+
+    zs->grab = true;
+
+    zs->cScreen->damageScreen ();
+
+    return true;
 }
 
-static Bool
-zoomOut (CompDisplay     *d,
-	 CompAction      *action,
-	 CompActionState state,
-	 CompOption      *option,
-	 int	         nOption)
+static bool
+zoomOut (CompAction         *action,
+	 CompAction::State  state,
+	 CompOption::Vector &options)
 {
-    CompScreen *s;
-    Window     xid;
+    int output;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    ZOOM_SCREEN (screen);
 
-    s = findScreenAtDisplay (d, xid);
-    if (s)
-    {
-	int output;
+    output = screen->outputDeviceForPoint (pointerX, pointerY);
 
-	ZOOM_SCREEN (s);
+    zs->getCurrentZoom (output, &zs->last[output]);
 
-	output = outputDeviceForPoint (s, pointerX, pointerY);
+    zs->current[output].x1 = screen->outputDevs ()[output].x1 ();
+    zs->current[output].y1 = screen->outputDevs ()[output].y1 ();
+    zs->current[output].x2 = screen->outputDevs ()[output].x2 ();
+    zs->current[output].y2 = screen->outputDevs ()[output].y2 ();
 
-	zoomGetCurrentZoom (s, output, &zs->last[output]);
-
-	zs->current[output].x1 = s->outputDev[output].region.extents.x1;
-	zs->current[output].y1 = s->outputDev[output].region.extents.y1;
-	zs->current[output].x2 = s->outputDev[output].region.extents.x2;
-	zs->current[output].y2 = s->outputDev[output].region.extents.y2;
-
-	zs->zoomOutput = output;
-	zs->scale = 0.0f;
-	zs->adjust = TRUE;
-	zs->grab = FALSE;
-
-	if (zs->grabIndex)
-	{
-	    removeScreenGrab (s, zs->grabIndex, NULL);
-	    zs->grabIndex = 0;
-	}
-
-	damageScreen (s);
-
-	return TRUE;
-    }
-
-    return FALSE;
-}
-
-static Bool
-zoomTerminate (CompDisplay     *d,
-	       CompAction      *action,
-	       CompActionState state,
-	       CompOption      *option,
-	       int	       nOption)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = getIntOptionNamed (option, nOption, "root", 0);
-
-    for (s = d->screens; s; s = s->next)
-    {
-	ZOOM_SCREEN (s);
-
-	if (xid && s->root != xid)
-	    continue;
-
-	if (zs->grab)
-	{
-	    int output;
-
-	    output = outputDeviceForPoint (s, zs->x1, zs->y1);
-
-	    if (zs->x2 > s->outputDev[output].region.extents.x2)
-		zs->x2 = s->outputDev[output].region.extents.x2;
-
-	    if (zs->y2 > s->outputDev[output].region.extents.y2)
-		zs->y2 = s->outputDev[output].region.extents.y2;
-
-	    zoomInitiateForSelection (s, output);
-
-	    zs->grab = FALSE;
-	}
-	else
-	{
-	    CompOption o;
-
-	    o.type    = CompOptionTypeInt;
-	    o.name    = "root";
-	    o.value.i = s->root;
-
-	    zoomOut (d, action, state, &o, 1);
-	}
-    }
-
-    action->state &= ~(CompActionStateTermKey | CompActionStateTermButton);
-
-    return FALSE;
-}
-
-static Bool
-zoomInitiatePan (CompDisplay     *d,
-		 CompAction      *action,
-		 CompActionState state,
-		 CompOption      *option,
-		 int	         nOption)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = getIntOptionNamed (option, nOption, "root", 0);
-
-    s = findScreenAtDisplay (d, xid);
-    if (s)
-    {
-	int output;
-
-	ZOOM_SCREEN (s);
-
-	output = outputDeviceForPoint (s, pointerX, pointerY);
-
-	if (!(zs->zoomed & (1 << output)))
-	    return FALSE;
-
-	if (otherScreenGrabExist (s, "zoom", 0))
-	    return FALSE;
-
-	if (state & CompActionStateInitButton)
-	    action->state |= CompActionStateTermButton;
-
-	if (!zs->panGrabIndex)
-	    zs->panGrabIndex = pushScreenGrab (s, zs->panCursor, "zoom-pan");
-
-	zs->zoomOutput = output;
-
-	return TRUE;
-    }
-
-    return FALSE;
-}
-
-static Bool
-zoomTerminatePan (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int	          nOption)
-{
-    CompScreen *s;
-    Window     xid;
-
-    xid = getIntOptionNamed (option, nOption, "root", 0);
-
-    for (s = d->screens; s; s = s->next)
-    {
-	ZOOM_SCREEN (s);
-
-	if (xid && s->root != xid)
-	    continue;
-
-	if (zs->panGrabIndex)
-	{
-	    removeScreenGrab (s, zs->panGrabIndex, NULL);
-	    zs->panGrabIndex = 0;
-
-	    zoomInEvent (s);
-	}
-
-	return TRUE;
-    }
-
-    action->state &= ~(CompActionStateTermKey | CompActionStateTermButton);
-
-    return FALSE;
-}
-
-static void
-zoomHandleMotionEvent (CompScreen *s,
-		       int	  xRoot,
-		       int	  yRoot)
-{
-    ZOOM_SCREEN (s);
+    zs->zoomOutput = output;
+    zs->scale = 0.0f;
+    zs->adjust = true;
+    zs->grab = false;
 
     if (zs->grabIndex)
     {
-	int     output = zs->zoomOutput;
+	screen->removeGrab (zs->grabIndex, NULL);
+	zs->grabIndex = 0;
+    }
+
+    zs->cScreen->damageScreen ();
+
+    return true;
+}
+
+static bool
+zoomTerminate (CompAction         *action,
+	       CompAction::State  state,
+	       CompOption::Vector &options)
+{
+    ZOOM_SCREEN (screen);
+
+    if (zs->grab)
+    {
+	int output;
+
+	output = screen->outputDeviceForPoint (zs->x1, zs->y1);
+
+	if (zs->x2 > screen->outputDevs ()[output].x2 ())
+	    zs->x2 = screen->outputDevs ()[output].x2 ();
+
+	if (zs->y2 > screen->outputDevs ()[output].y2 ())
+	    zs->y2 = screen->outputDevs ()[output].y2 ();
+
+	zs->initiateForSelection (output);
+
+	zs->grab = false;
+    }
+    else
+    {
+	zoomOut (action, state, noOptions);
+    }
+    action->setState (action->state () & ~(CompAction::StateTermKey |
+					   CompAction::StateTermButton));
+}
+
+static bool
+zoomInitiatePan (CompAction         *action,
+		 CompAction::State  state,
+		 CompOption::Vector &options)
+{
+    int output;
+
+    ZOOM_SCREEN (screen);
+
+    output = screen->outputDeviceForPoint (pointerX, pointerY);
+
+    if (!(zs->zoomed & (1 << output)))
+	return false;
+
+    if (screen->otherGrabExist ("zoom", 0))
+	return false;
+
+    if (state & CompAction::StateInitButton)
+	action->setState (action->state () | CompAction::StateTermButton);
+
+    if (!zs->panGrabIndex)
+	zs->panGrabIndex = screen->pushGrab (zs->panCursor, "zoom-pan");
+
+    zs->zoomOutput = output;
+
+    return true;
+}
+
+static bool
+zoomTerminatePan (CompAction         *action,
+		  CompAction::State  state,
+		  CompOption::Vector &options)
+{
+    ZOOM_SCREEN (screen);
+
+    if (zs->panGrabIndex)
+    {
+	screen->removeGrab (zs->panGrabIndex, NULL);
+	zs->panGrabIndex = 0;
+
+	zs->zoomInEvent ();
+    }
+
+    return true;
+}
+
+void
+ZoomScreen::getCurrentZoom (int output, ZoomBox *pBox)
+{
+    if (output == zoomOutput)
+    {
+	float inverse;
+
+	inverse = 1.0f - scale;
+
+	pBox->x1 = scale * current[output].x1 +
+	    inverse * last[output].x1;
+	pBox->y1 = scale * current[output].y1 +
+	    inverse * last[output].y1;
+	pBox->x2 = scale * current[output].x2 +
+	    inverse * last[output].x2;
+	pBox->y2 = scale * current[output].y2 +
+	    inverse * last[output].y2;
+    }
+    else
+    {
+	pBox->x1 = current[output].x1;
+	pBox->y1 = current[output].y1;
+	pBox->x2 = current[output].x2;
+	pBox->y2 = current[output].y2;
+    }
+}
+
+void
+ZoomScreen::handleMotionEvent (int xRoot, int yRoot)
+{
+    if (grabIndex)
+    {
+	int     output = zoomOutput;
 	ZoomBox box;
-	float   scale, oWidth = s->outputDev[output].width;
+	float   scale, oWidth = screen->outputDevs ()[output].width ();
 
-	zoomGetCurrentZoom (s, output, &box);
+	getCurrentZoom (output, &box);
 
-	if (zs->zoomed & (1 << output))
+	if (zoomed & (1 << output))
 	    scale = oWidth / (box.x2 - box.x1);
 	else
 	    scale = 1.0f;
 
-	if (zs->panGrabIndex)
+	if (panGrabIndex)
 	{
 	    float dx, dy;
 
@@ -838,365 +598,181 @@ zoomHandleMotionEvent (CompScreen *s,
 	    box.x2 -= dx;
 	    box.y2 -= dy;
 
-	    if (box.x1 < s->outputDev[output].region.extents.x1)
+	    if (box.x1 < screen->outputDevs ()[output].x1 ())
 	    {
-		box.x2 += s->outputDev[output].region.extents.x1 - box.x1;
-		box.x1 = s->outputDev[output].region.extents.x1;
+		box.x2 += screen->outputDevs ()[output].x1 () - box.x1;
+		box.x1 = screen->outputDevs ()[output].x1 ();
 	    }
-	    else if (box.x2 > s->outputDev[output].region.extents.x2)
+	    else if (box.x2 > screen->outputDevs ()[output].x2 ())
 	    {
-		box.x1 -= box.x2 - s->outputDev[output].region.extents.x2;
-		box.x2 = s->outputDev[output].region.extents.x2;
-	    }
-
-	    if (box.y1 < s->outputDev[output].region.extents.y1)
-	    {
-		box.y2 += s->outputDev[output].region.extents.y1 - box.y1;
-		box.y1 = s->outputDev[output].region.extents.y1;
-	    }
-	    else if (box.y2 > s->outputDev[output].region.extents.y2)
-	    {
-		box.y1 -= box.y2 - s->outputDev[output].region.extents.y2;
-		box.y2 = s->outputDev[output].region.extents.y2;
+		box.x1 -= box.x2 - screen->outputDevs ()[output].x2 ();
+		box.x2 = screen->outputDevs ()[output].x2 ();
 	    }
 
-	    zs->current[output] = box;
+	    if (box.y1 < screen->outputDevs ()[output].y1 ())
+	    {
+		box.y2 += screen->outputDevs ()[output].y1 () - box.y1;
+		box.y1 = screen->outputDevs ()[output].y1 ();
+	    }
+	    else if (box.y2 > screen->outputDevs ()[output].y2 ())
+	    {
+		box.y1 -= box.y2 - screen->outputDevs ()[output].y2 ();
+		box.y2 = screen->outputDevs ()[output].y2 ();
+	    }
 
-	    damageScreen (s);
+	    current[output] = box;
+
+	    cScreen->damageScreen ();
 	}
 	else
 	{
 	    int x1, y1;
 
-	    if (zs->zoomed & (1 << output))
+	    if (zoomed & (1 << output))
 	    {
 		x1 = box.x1;
 		y1 = box.y1;
 	    }
 	    else
 	    {
-		x1 = s->outputDev[output].region.extents.x1;
-		y1 = s->outputDev[output].region.extents.y1;
+		x1 = screen->outputDevs ()[output].x1 ();
+		y1 = screen->outputDevs ()[output].y1 ();
 	    }
 
-	    zs->x2 = x1 +
-		((xRoot - s->outputDev[output].region.extents.x1) /
+	    this->x2 = x1 +
+		((xRoot - screen->outputDevs ()[output].x1 ()) /
 		 scale + 0.5f);
-	    zs->y2 = y1 +
-		((yRoot - s->outputDev[output].region.extents.y1) /
+	    this->y2 = y1 +
+		((yRoot - screen->outputDevs ()[output].y1 ()) /
 		 scale + 0.5f);
 
-	    damageScreen (s);
+	    cScreen->damageScreen ();
 	}
     }
 }
 
-static void
-zoomHandleEvent (CompDisplay *d,
-		 XEvent      *event)
+void
+ZoomScreen::handleEvent (XEvent *event)
 {
-    CompScreen *s;
-
-    ZOOM_DISPLAY (d);
-
     switch (event->type) {
-    case MotionNotify:
-	s = findScreenAtDisplay (d, event->xmotion.root);
-	if (s)
-	    zoomHandleMotionEvent (s, pointerX, pointerY);
-	break;
-    case EnterNotify:
-    case LeaveNotify:
-	s = findScreenAtDisplay (d, event->xcrossing.root);
-	if (s)
-	    zoomHandleMotionEvent (s, pointerX, pointerY);
-    default:
-	break;
+	case MotionNotify:
+	    if (event->xmotion.root == screen->root ())
+		handleMotionEvent (pointerX, pointerY);
+	    break;
+	case EnterNotify:
+	case LeaveNotify:
+	    if (event->xcrossing.root == screen->root ())
+		handleMotionEvent (pointerX, pointerY);
+	default:
+	    break;
     }
 
-    UNWRAP (zd, d, handleEvent);
-    (*d->handleEvent) (d, event);
-    WRAP (zd, d, handleEvent, zoomHandleEvent);
+    screen->handleEvent (event);
 }
 
-static CompOption *
-zoomGetDisplayOptions (CompPlugin  *plugin,
-		       CompDisplay *display,
-		       int	   *count)
+
+CompOption::Vector &
+ZoomScreen::getOptions ()
 {
-    ZOOM_DISPLAY (display);
-
-    *count = NUM_OPTIONS (zd);
-    return zd->opt;
+    return opt;
 }
-
-static Bool
-zoomSetDisplayOption (CompPlugin      *plugin,
-		      CompDisplay     *display,
-		      const char      *name,
-		      CompOptionValue *value)
+ 
+bool
+ZoomScreen::setOption (const char        *name,
+		       CompOption::Value &value)
 {
     CompOption *o;
-    int	       index;
-
-    ZOOM_DISPLAY (display);
-
-    o = compFindOption (zd->opt, NUM_OPTIONS (zd), name, &index);
+    unsigned int index;
+ 
+    o = CompOption::findOption (opt, name, &index);
     if (!o)
-	return FALSE;
+	return false;
 
-    switch (index) {
-    case ZOOM_DISPLAY_OPTION_OUT_BUTTON:
-	if (compSetActionOption (o, value))
-	    return TRUE;
-	break;
-    default:
-	return compSetDisplayOption (display, o, value);
-    }
-
-    return FALSE;
+    return CompOption::setOption (*o, value);
 }
 
-static const CompMetadataOptionInfo zoomDisplayOptionInfo[] = {
+static const CompMetadata::OptionInfo zoomOptionInfo[] = {
     { "initiate_button", "button", 0, zoomInitiate, zoomTerminate },
     { "zoom_in_button", "button", 0, zoomIn, 0 },
     { "zoom_out_button", "button", 0, zoomOut, 0 },
-    { "zoom_pan_button", "button", 0, zoomInitiatePan, zoomTerminatePan }
-};
-
-static Bool
-zoomInitDisplay (CompPlugin  *p,
-		 CompDisplay *d)
-{
-    ZoomDisplay *zd;
-
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
-
-    zd = (ZoomDisplay *) malloc (sizeof (ZoomDisplay));
-    if (!zd)
-	return FALSE;
-
-    if (!compInitDisplayOptionsFromMetadata (d,
-					     &zoomMetadata,
-					     zoomDisplayOptionInfo,
-					     zd->opt,
-					     ZOOM_DISPLAY_OPTION_NUM))
-    {
-	free (zd);
-	return FALSE;
-    }
-
-    zd->screenPrivateIndex = allocateScreenPrivateIndex (d);
-    if (zd->screenPrivateIndex < 0)
-    {
-	compFiniDisplayOptions (d, zd->opt, ZOOM_DISPLAY_OPTION_NUM);
-	free (zd);
-	return FALSE;
-    }
-
-    WRAP (zd, d, handleEvent, zoomHandleEvent);
-
-    d->base.privates[displayPrivateIndex].ptr = zd;
-
-    return TRUE;
-}
-
-static void
-zoomFiniDisplay (CompPlugin  *p,
-		 CompDisplay *d)
-{
-    ZOOM_DISPLAY (d);
-
-    freeScreenPrivateIndex (d, zd->screenPrivateIndex);
-
-    UNWRAP (zd, d, handleEvent);
-
-    compFiniDisplayOptions (d, zd->opt, ZOOM_DISPLAY_OPTION_NUM);
-
-    free (zd);
-}
-
-static const CompMetadataOptionInfo zoomScreenOptionInfo[] = {
+    { "zoom_pan_button", "button", 0, zoomInitiatePan, zoomTerminatePan },
     { "speed", "float", "<min>0.1</min>", 0, 0 },
     { "timestep", "float", "<min>0.1</min>", 0, 0 },
     { "zoom_factor", "float", "<min>1.01</min>", 0, 0 },
     { "filter_linear", "bool", 0, 0, 0 }
 };
 
-static Bool
-zoomInitScreen (CompPlugin *p,
-		CompScreen *s)
+ZoomScreen::ZoomScreen (CompScreen *screen) :
+    PrivateHandler<ZoomScreen,CompScreen> (screen),
+    cScreen (CompositeScreen::get (screen)),
+    gScreen (GLScreen::get (screen)),
+    opt(ZOOM_OPTION_NUM),
+    grabIndex (0),
+    grab (false),
+    zoomed (0),
+    adjust (false),
+    panGrabIndex (0),
+    velocity (0.0),
+    scale (0.0),
+    zoomOutput (0)
 {
-    ZoomScreen *zs;
-
-    ZOOM_DISPLAY (s->display);
-
-    zs = (ZoomScreen *) malloc (sizeof (ZoomScreen));
-    if (!zs)
-	return FALSE;
-
-    if (!compInitScreenOptionsFromMetadata (s,
-					    &zoomMetadata,
-					    zoomScreenOptionInfo,
-					    zs->opt,
-					    ZOOM_SCREEN_OPTION_NUM))
+    if (!zoomMetadata->initOptions (zoomOptionInfo, ZOOM_OPTION_NUM, opt))
     {
-	free (zs);
-	return FALSE;
+	setFailed ();
+	return;
     }
 
-    zs->grabIndex = 0;
-    zs->grab = FALSE;
+    panCursor = XCreateFontCursor (screen->dpy (), XC_fleur);
 
-    zs->velocity = 0.0f;
+    memset (&current, 0, sizeof (current));
+    memset (&last, 0, sizeof (last));
 
-    zs->zoomOutput = 0;
-
-    zs->zoomed = 0;
-    zs->adjust = FALSE;
-
-    zs->panGrabIndex = 0;
-    zs->panCursor = XCreateFontCursor (s->display->display, XC_fleur);
-
-    zs->scale = 0.0f;
-
-    memset (&zs->current, 0, sizeof (zs->current));
-    memset (&zs->last, 0, sizeof (zs->last));
-
-    WRAP (zs, s, preparePaintScreen, zoomPreparePaintScreen);
-    WRAP (zs, s, donePaintScreen, zoomDonePaintScreen);
-    WRAP (zs, s, paintOutput, zoomPaintOutput);
-
-    s->base.privates[zd->screenPrivateIndex].ptr = zs;
-
-    return TRUE;
+    ScreenInterface::setHandler (screen);
+    CompositeScreenInterface::setHandler (cScreen);
+    GLScreenInterface::setHandler (gScreen);
 }
 
-static void
-zoomFiniScreen (CompPlugin *p,
-		CompScreen *s)
+
+ZoomScreen::~ZoomScreen ()
 {
-    ZOOM_SCREEN (s);
-
-    if (zs->panCursor)
-	XFreeCursor (s->display->display, zs->panCursor);
-
-    UNWRAP (zs, s, preparePaintScreen);
-    UNWRAP (zs, s, donePaintScreen);
-    UNWRAP (zs, s, paintOutput);
-
-    compFiniScreenOptions (s, zs->opt, ZOOM_SCREEN_OPTION_NUM);
-
-    free (zs);
+    if (panCursor)
+	XFreeCursor (screen->dpy (), panCursor);
 }
 
-static CompBool
-zoomInitObject (CompPlugin *p,
-		CompObject *o)
+bool
+ZoomPluginVTable::init ()
 {
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) 0, /* InitCore */
-	(InitPluginObjectProc) zoomInitDisplay,
-	(InitPluginObjectProc) zoomInitScreen
-    };
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) |
+        !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
+        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+	 return false;
 
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
+    zoomMetadata = new CompMetadata (name (), zoomOptionInfo, ZOOM_OPTION_NUM);
+
+    if (!zoomMetadata)
+	return false;
+
+    zoomMetadata->addFromFile (name ());
+
+    return true;
 }
 
-static void
-zoomFiniObject (CompPlugin *p,
-		CompObject *o)
+void
+ZoomPluginVTable::fini ()
 {
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) 0, /* FiniCore */
-	(FiniPluginObjectProc) zoomFiniDisplay,
-	(FiniPluginObjectProc) zoomFiniScreen
-    };
-
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
+    delete zoomMetadata;
 }
 
-static CompOption *
-zoomGetObjectOptions (CompPlugin *plugin,
-		      CompObject *object,
-		      int	 *count)
+CompMetadata *
+ZoomPluginVTable::getMetadata ()
 {
-    static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) zoomGetDisplayOptions,
-	(GetPluginObjectOptionsProc) zoomGetScreenOptions
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (CompOption *) (*count = 0), (plugin, object, count));
+    return zoomMetadata;
 }
 
-static CompBool
-zoomSetObjectOption (CompPlugin      *plugin,
-		     CompObject      *object,
-		     const char      *name,
-		     CompOptionValue *value)
-{
-    static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) zoomSetDisplayOption,
-	(SetPluginObjectOptionProc) zoomSetScreenOption
-    };
+ZoomPluginVTable zoomVTable;
 
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
-		     (plugin, object, name, value));
-}
-
-static Bool
-zoomInit (CompPlugin *p)
-{
-    if (!compInitPluginMetadataFromInfo (&zoomMetadata,
-					 p->vTable->name,
-					 zoomDisplayOptionInfo,
-					 ZOOM_DISPLAY_OPTION_NUM,
-					 zoomScreenOptionInfo,
-					 ZOOM_SCREEN_OPTION_NUM))
-	return FALSE;
-
-    displayPrivateIndex = allocateDisplayPrivateIndex ();
-    if (displayPrivateIndex < 0)
-    {
-	compFiniMetadata (&zoomMetadata);
-	return FALSE;
-    }
-
-    compAddMetadataFromFile (&zoomMetadata, p->vTable->name);
-
-    return TRUE;
-}
-
-static void
-zoomFini (CompPlugin *p)
-{
-    freeDisplayPrivateIndex (displayPrivateIndex);
-    compFiniMetadata (&zoomMetadata);
-}
-
-static CompMetadata *
-zoomGetMetadata (CompPlugin *plugin)
-{
-    return &zoomMetadata;
-}
-
-CompPluginVTable zoomVTable = {
-    "zoom",
-    zoomGetMetadata,
-    zoomInit,
-    zoomFini,
-    zoomInitObject,
-    zoomFiniObject,
-    zoomGetObjectOptions,
-    zoomSetObjectOption
-};
-
-CompPluginVTable *
-getCompPluginInfo20070830 (void)
+CompPlugin::VTable *
+getCompPluginInfo20080805 (void)
 {
     return &zoomVTable;
 }
