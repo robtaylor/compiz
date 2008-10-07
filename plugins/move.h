@@ -83,7 +83,7 @@ class MoveWindow :
 	    cWindow (CompositeWindow::get (window))
 	{
 	    if (gWindow)
-		GLWindowInterface::setHandler (gWindow);
+		GLWindowInterface::setHandler (gWindow, false);
 	};
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,

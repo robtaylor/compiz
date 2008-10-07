@@ -133,6 +133,8 @@ moveInitiate (CompAction      *action,
 
 		if (mw->cWindow)
 		    mw->cWindow->addDamage ();
+		if (mw->gWindow)
+		mw->gWindow->glPaintSetEnabled (mw, true);
 	    }
 	}
     }
@@ -174,6 +176,8 @@ moveTerminate (CompAction      *action,
 
 	    if (mw->cWindow)
 		mw->cWindow->addDamage ();
+	    if (mw->gWindow)
+		mw->gWindow->glPaintSetEnabled (mw, false);
 	}
 
 	ms->w             = 0;
