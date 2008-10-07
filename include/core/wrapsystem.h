@@ -67,12 +67,12 @@ class WrapableInterface {
 		mHandler->unregisterWrap (static_cast<T2*> (this));
 	};
 
-	void setHandler (T *handler)
+	void setHandler (T *handler, bool enabled = true)
 	{
 	    if (mHandler)
 		mHandler->unregisterWrap (static_cast<T2*> (this));
 	    if (handler)
-		handler->registerWrap (static_cast<T2*> (this));
+		handler->registerWrap (static_cast<T2*> (this), enabled);
 	    mHandler = handler;
 	}
         T *mHandler;
@@ -82,7 +82,7 @@ template <typename T, unsigned int N>
 class WrapableHandler : public T {
 		
     public:
-	void registerWrap (T *);
+	void registerWrap (T *, bool);
 	void unregisterWrap (T *);
 
  	unsigned int numWrapClients () { return mInterface.size (); };
@@ -120,7 +120,7 @@ class WrapableHandler : public T {
 };
 
 template <typename T, unsigned int N>
-void WrapableHandler<T,N>::registerWrap (T *obj)
+void WrapableHandler<T,N>::registerWrap (T *obj, bool enabled)
 {
     typename WrapableHandler<T,N>::Interface in;
     in.obj = obj;
@@ -128,7 +128,7 @@ void WrapableHandler<T,N>::registerWrap (T *obj)
     if (!in.enabled)
 	return;
     for (unsigned int i = 0; i < N; i++)
-	in.enabled[i] = true;
+	in.enabled[i] = enabled;
     mInterface.insert (mInterface.begin(), in);
 };
 
