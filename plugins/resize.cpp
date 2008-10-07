@@ -312,10 +312,19 @@ resizeInitiate (CompAction         *action,
 		}
 	    }
 
-	    if (!GLScreen::get (screen) ||
-		!CompositeScreen::get (screen) ||
-		!CompositeScreen::get (screen)->compositingActive ())
+	    if (!rs->gScreen || !rs->cScreen ||
+		rs->cScreen->compositingActive ())
 		rs->mode = RESIZE_MODE_NORMAL;
+	}
+
+	if (rs->mode != RESIZE_MODE_NORMAL)
+	{
+	    RESIZE_WINDOW (w);
+	    if (rw->gWindow && rs->mode == RESIZE_MODE_STRETCH)
+		rw->gWindow->glPaintSetEnabled (rw, true);
+	    if (rw->cWindow && rs->mode == RESIZE_MODE_STRETCH)
+		rw->cWindow->damageRectSetEnabled (rw, true);
+	    rs->gScreen->glPaintOutputSetEnabled (rs, true);
 	}
 
 	if (!rs->grabIndex)
@@ -416,6 +425,16 @@ resizeTerminate (CompAction         *action,
 		xwc.height = geometry.height;
 
 		mask = CWX | CWY | CWWidth | CWHeight;
+	    }
+
+	    if (rs->mode != RESIZE_MODE_NORMAL)
+	    {
+		RESIZE_WINDOW (rs->w);
+		if (rw->gWindow && rs->mode == RESIZE_MODE_STRETCH)
+		    rw->gWindow->glPaintSetEnabled (rw, false);
+		if (rw->cWindow && rs->mode == RESIZE_MODE_STRETCH)
+		    rw->cWindow->damageRectSetEnabled (rw, false);
+		rs->gScreen->glPaintOutputSetEnabled (rs, false);
 	    }
 	}
 
@@ -1105,7 +1124,7 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     ScreenInterface::setHandler (s);
 
     if (gScreen)
-	GLScreenInterface::setHandler (gScreen);
+	GLScreenInterface::setHandler (gScreen, false);
 }
 
 ResizeScreen::~ResizeScreen ()
@@ -1142,10 +1161,10 @@ ResizeWindow::ResizeWindow (CompWindow *w) :
     WindowInterface::setHandler (window);
 
     if (cWindow)
-	CompositeWindowInterface::setHandler (cWindow);
+	CompositeWindowInterface::setHandler (cWindow, false);
 
     if (gWindow)
-	GLWindowInterface::setHandler (gWindow);
+	GLWindowInterface::setHandler (gWindow, false);
 }
 
 
