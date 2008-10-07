@@ -661,7 +661,7 @@ GLScreen::getProcAddress (const char *name)
     if (!funcPtr)
     {
 	if (!dlhand)
-	    dlhand = dlopen (NULL, RTLD_LAZY);
+	    dlhand = dlopen ("libGL.so", RTLD_LAZY);
 
 	if (dlhand)
 	{
@@ -848,6 +848,12 @@ GLTexture::Filter
 GLScreen::filter (int filter)
 {
     return priv->filter[filter];
+}
+
+void
+GLScreen::setFilter (int num, GLTexture::Filter filter)
+{
+    priv->filter[num] = filter;
 }
 
 GLFragment::Storage *

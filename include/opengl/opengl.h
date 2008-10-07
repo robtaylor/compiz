@@ -239,6 +239,7 @@ class GLScreen :
 	void updateBackground ();
 
 	GLTexture::Filter filter (int);
+	void setFilter (int, GLTexture::Filter);
 
 	GLFragment::Storage * fragmentStorage ();
 
