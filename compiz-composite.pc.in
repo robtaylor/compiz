@@ -7,6 +7,6 @@ Name: compiz-composite
 Description: Compositing plugin for compiz
 Version: @VERSION@
 
-Requires: compiz xdamage xcomposite
+Requires: compiz
 Libs: @_composite_plugin_LDFLAGS@ -l${libdir}/compiz/libcomposite.so
 Cflags: @COMPIZ_CFLAGS@ @_composite_plugin_CFLAGS@ -I${includedir}/compiz

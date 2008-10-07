@@ -42,6 +42,8 @@ if (NOT Boost_FOUND OR Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 
 endif (NOT Boost_FOUND OR Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 34)
 
 set (COMPIZ_REQUIRES
+    xdamage
+    xcomposite
     x11-xcb
     xrandr
     xinerama
