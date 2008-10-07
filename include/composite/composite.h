@@ -85,6 +85,8 @@ class CompositeScreen :
 
 	void detectRefreshRate ();
 	int getTimeToNextRedraw (struct timeval *tv);
+
+	int redrawTime ();
 	
 	bool handlePaintTimeout ();
 

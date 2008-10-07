@@ -703,6 +703,12 @@ CompositeScreen::getTimeToNextRedraw (struct timeval *tv)
     return priv->redrawTime - diff;
 }
 
+int
+CompositeScreen::redrawTime ()
+{
+    return priv->redrawTime;
+}
+
 bool
 CompositeScreen::handlePaintTimeout ()
 {
@@ -802,7 +808,10 @@ CompositeScreen::handlePaintTimeout ()
 
     gettimeofday (&tv, 0);
 
-    priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
+    if (priv->idle)
+	priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
+    else
+	priv->paintTimer.setTimes (getTimeToNextRedraw (&tv));
     return true;
 }
 
