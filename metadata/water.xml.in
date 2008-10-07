@@ -8,7 +8,7 @@
 		<plugin>video</plugin>
 	    </relation>
 	</deps>
-	<display>
+	<options>
 	    <option name="initiate_key" type="key">
 		<_short>Initiate</_short>
 		<_long>Enable pointer water effects</_long>
@@ -52,6 +52,6 @@
 		<_short>Line</_short>
 		<_long>Add line</_long>
 	    </option>
-	</display>
+	</options>
     </plugin>
 </compiz>

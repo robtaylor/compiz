@@ -23,122 +23,12 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
-#ifdef HAVE_CONFIG_H
-#  include "../config.h"
-#endif
+#include "water.h"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <math.h>
-
-#include <compiz-core.h>
-
-#define TEXTURE_SIZE 256
-
-#define K 0.1964f
-
-#define TEXTURE_NUM 3
-
-typedef struct _WaterFunction {
-    struct _WaterFunction *next;
-
-    int handle;
-    int target;
-    int param;
-    int unit;
-} WaterFunction;
-
-#define TINDEX(ws, i) (((ws)->tIndex + (i)) % TEXTURE_NUM)
-
-#define CLAMP(v, min, max) \
-    if ((v) > (max))	   \
-	(v) = (max);	   \
-    else if ((v) < (min))  \
-	(v) = (min)
-
-#define WATER_INITIATE_MODIFIERS_DEFAULT (ControlMask | CompSuperMask)
-
-static CompMetadata waterMetadata;
-
-static int displayPrivateIndex;
+static CompMetadata *waterMetadata;
 
 static int waterLastPointerX = 0;
 static int waterLastPointerY = 0;
-
-#define WATER_DISPLAY_OPTION_INITIATE_KEY     0
-#define WATER_DISPLAY_OPTION_TOGGLE_RAIN_KEY  1
-#define WATER_DISPLAY_OPTION_TOGGLE_WIPER_KEY 2
-#define WATER_DISPLAY_OPTION_OFFSET_SCALE     3
-#define WATER_DISPLAY_OPTION_RAIN_DELAY	      4
-#define WATER_DISPLAY_OPTION_TITLE_WAVE       5
-#define WATER_DISPLAY_OPTION_POINT            6
-#define WATER_DISPLAY_OPTION_LINE             7
-#define WATER_DISPLAY_OPTION_NUM              8
-
-typedef struct _WaterDisplay {
-    int		    screenPrivateIndex;
-
-    CompOption opt[WATER_DISPLAY_OPTION_NUM];
-
-    HandleEventProc handleEvent;
-
-    float offsetScale;
-} WaterDisplay;
-
-typedef struct _WaterScreen {
-    PreparePaintScreenProc preparePaintScreen;
-    DonePaintScreenProc    donePaintScreen;
-    DrawWindowTextureProc  drawWindowTexture;
-
-    int grabIndex;
-    int width, height;
-
-    GLuint program;
-    GLuint texture[TEXTURE_NUM];
-
-    int     tIndex;
-    GLenum  target;
-    GLfloat tx, ty;
-
-    int count;
-
-    GLuint fbo;
-    GLint  fboStatus;
-
-    void	  *data;
-    float	  *d0;
-    float	  *d1;
-    unsigned char *t0;
-
-    CompTimeoutHandle rainHandle;
-    CompTimeoutHandle wiperHandle;
-
-    float wiperAngle;
-    float wiperSpeed;
-
-    WaterFunction *bumpMapFunctions;
-} WaterScreen;
-
-#define GET_WATER_DISPLAY(d)					   \
-    ((WaterDisplay *) (d)->base.privates[displayPrivateIndex].ptr)
-
-#define WATER_DISPLAY(d)		     \
-    WaterDisplay *wd = GET_WATER_DISPLAY (d)
-
-#define GET_WATER_SCREEN(s, wd)					       \
-    ((WaterScreen *) (s)->base.privates[(wd)->screenPrivateIndex].ptr)
-
-#define WATER_SCREEN(s)							   \
-    WaterScreen *ws = GET_WATER_SCREEN (s, GET_WATER_DISPLAY (s->display))
-
-#define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
-
-static Bool
-waterRainTimeout (void *closure);
-
-static Bool
-waterWiperTimeout (void *closure);
 
 static const char *waterFpString =
     "!!ARBfp1.0"
@@ -200,9 +90,8 @@ static const char *waterFpString =
 
     "END";
 
-static int
-loadFragmentProgram (CompScreen *s,
-		     GLuint	*program,
+static bool
+loadFragmentProgram (GLuint	*program,
 		     const char *string)
 {
     GLint errorPos;
@@ -211,34 +100,34 @@ loadFragmentProgram (CompScreen *s,
     glGetError ();
 
     if (!*program)
-	(*s->genPrograms) (1, program);
+	GL::genPrograms (1, program);
 
-    (*s->bindProgram) (GL_FRAGMENT_PROGRAM_ARB, *program);
-    (*s->programString) (GL_FRAGMENT_PROGRAM_ARB,
-			 GL_PROGRAM_FORMAT_ASCII_ARB,
-			 strlen (string), string);
+    GL::bindProgram (GL_FRAGMENT_PROGRAM_ARB, *program);
+    GL::programString (GL_FRAGMENT_PROGRAM_ARB,
+		       GL_PROGRAM_FORMAT_ASCII_ARB,
+		       strlen (string), string);
 
     glGetIntegerv (GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
     if (glGetError () != GL_NO_ERROR || errorPos != -1)
     {
-	compLogMessage (s->display, "water", CompLogLevelError,
+	compLogMessage ("water", CompLogLevelError,
 			"failed to load bump map program");
 
-	(*s->deletePrograms) (1, program);
+	GL::deletePrograms (1, program);
 	*program = 0;
 
-	return 0;
+	return false;
     }
 
-    return 1;
+    return true;
 }
 
 static int
-loadWaterProgram (CompScreen *s)
+loadWaterProgram ()
 {
     char buffer[1024];
 
-    WATER_SCREEN (s);
+    WATER_SCREEN (screen);
 
     if (ws->target == GL_TEXTURE_2D)
 	sprintf (buffer, waterFpString,
@@ -252,217 +141,153 @@ loadWaterProgram (CompScreen *s)
 		 1.0f, 1.0f, 1.0f, 1.0f,
 		 "RECT", "RECT", "RECT", "RECT");
 
-    return loadFragmentProgram (s, &ws->program, buffer);
+    return loadFragmentProgram (&ws->program, buffer);
 }
 
-static int
-getBumpMapFragmentFunction (CompScreen  *s,
-			    CompTexture *texture,
-			    int		unit,
-			    int		param)
+GLFragment::FunctionId
+WaterScreen::getBumpMapFragmentFunction (GLTexture *texture,
+					 int       unit,
+					 int       param)
 {
-    WaterFunction    *function;
-    CompFunctionData *data;
-    int		     target;
+    GLFragment::FunctionData data;
+    int                      target;
+    WaterFunction            function;
 
-    WATER_SCREEN (s);
-
-    if (texture->target == GL_TEXTURE_2D)
+    if (texture->target () == GL_TEXTURE_2D)
 	target = COMP_FETCH_TARGET_2D;
     else
 	target = COMP_FETCH_TARGET_RECT;
 
-    for (function = ws->bumpMapFunctions; function; function = function->next)
+    foreach (WaterFunction &f, bumpMapFunctions)
     {
-	if (function->param  == param &&
-	    function->unit   == unit  &&
-	    function->target == target)
-	    return function->handle;
+	if (f.param  == param &&
+	    f.unit   == unit  &&
+	    f.target == target)
+	    return f.id;
     }
 
-    data = createFunctionData ();
-    if (data)
-    {
-	static char *temp[] = { "normal", "temp", "total", "bump", "offset" };
-	int	    i, handle = 0;
-	char	    str[1024];
+    static const char *temp[] = { "normal", "temp", "total", "bump", "offset" };
+    char        str[1024];
 
-	for (i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
-	{
-	    if (!addTempHeaderOpToFunctionData (data, temp[i]))
-	    {
-		destroyFunctionData (data);
-		return 0;
-	    }
-	}
+    for (unsigned int i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
+	data.addTempHeaderOp (temp[i]);
 
-	snprintf (str, 1024,
+    data.addDataOp (
+	/* get normal from normal map */
+	"TEX normal, fragment.texcoord[%d], texture[%d], %s;"
 
-		  /* get normal from normal map */
-		  "TEX normal, fragment.texcoord[%d], texture[%d], %s;"
+	/* save height */
+	"MOV offset, normal;"
 
-		  /* save height */
-		  "MOV offset, normal;"
+	/* remove scale and bias from normal */
+	"MAD normal, normal, 2.0, -1.0;"
 
-		  /* remove scale and bias from normal */
-		  "MAD normal, normal, 2.0, -1.0;"
+	/* normalize the normal map */
+	"DP3 temp, normal, normal;"
+	"RSQ temp, temp.x;"
+	"MUL normal, normal, temp;"
 
-		  /* normalize the normal map */
-		  "DP3 temp, normal, normal;"
-		  "RSQ temp, temp.x;"
-		  "MUL normal, normal, temp;"
+	/* scale down normal by height and constant and use as
+	    offset in texture */
+	"MUL offset, normal, offset.w;"
+	"MUL offset, offset, program.env[%d];",
 
-		  /* scale down normal by height and constant and use as
-		     offset in texture */
-		  "MUL offset, normal, offset.w;"
-		  "MUL offset, offset, program.env[%d];",
+	unit, unit,
+	(this->target == GL_TEXTURE_2D) ? "2D" : "RECT",
+	param);
 
-		  unit, unit,
-		  (ws->target == GL_TEXTURE_2D) ? "2D" : "RECT",
-		  param);
+    data.addFetchOp ("output", "offset.yxzz", target);
 
-	if (!addDataOpToFunctionData (data, str))
-	{
-	    destroyFunctionData (data);
-	    return 0;
-	}
+    data.addDataOp (
+	/* normal dot lightdir, this should eventually be
+	    changed to a real light vector */
+	"DP3 bump, normal, { 0.707, 0.707, 0.0, 0.0 };"
+	"MUL bump, bump, state.light[0].diffuse;");
 
-	if (!addFetchOpToFunctionData (data, "output", "offset.yxzz", target))
-	{
-	    destroyFunctionData (data);
-	    return 0;
-	}
 
-	snprintf (str, 1024,
+    data.addColorOp ("output", "output");
 
-		  /* normal dot lightdir, this should eventually be
-		     changed to a real light vector */
-		  "DP3 bump, normal, { 0.707, 0.707, 0.0, 0.0 };"
-		  "MUL bump, bump, state.light[0].diffuse;");
+    data.addDataOp (
+	/* diffuse per-vertex lighting, opacity and brightness
+	    and add lightsource bump color */
+	"ADD output, output, bump;");
 
-	if (!addDataOpToFunctionData (data, str))
-	{
-	    destroyFunctionData (data);
-	    return 0;
-	}
+    if (!data.status ())
+	return 0;
 
-	if (!addColorOpToFunctionData (data, "output", "output"))
-	{
-	    destroyFunctionData (data);
-	    return 0;
-	}
 
-	snprintf (str, 1024,
+    function.id = data.createFragmentFunction ("water");
 
-		  /* diffuse per-vertex lighting, opacity and brightness
-		     and add lightsource bump color */
-		  "ADD output, output, bump;");
+    function.target = target;
+    function.param  = param;
+    function.unit   = unit;
 
-	if (!addDataOpToFunctionData (data, str))
-	{
-	    destroyFunctionData (data);
-	    return 0;
-	}
+    bumpMapFunctions.push_back (function);
 
-	function = malloc (sizeof (WaterFunction));
-	if (function)
-	{
-	    handle = createFragmentFunction (s, "water", data);
-
-	    function->handle = handle;
-	    function->target = target;
-	    function->param  = param;
-	    function->unit   = unit;
-
-	    function->next = ws->bumpMapFunctions;
-	    ws->bumpMapFunctions = function;
-	}
-
-	destroyFunctionData (data);
-
-	return handle;
-    }
-
-    return 0;
+    return function.id;
 }
 
-static void
-allocTexture (CompScreen *s,
-	      int	 index)
+void
+WaterScreen::allocTexture (int index)
 {
-    WATER_SCREEN (s);
+    glGenTextures (1, &texture[index]);
+    glBindTexture (target, texture[index]);
 
-    glGenTextures (1, &ws->texture[index]);
-    glBindTexture (ws->target, ws->texture[index]);
+    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri (target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri (target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
-    glTexParameteri (ws->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri (ws->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri (ws->target, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri (ws->target, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    glTexImage2D (ws->target,
-		  0,
-		  GL_RGBA,
-		  ws->width,
-		  ws->height,
-		  0,
-		  GL_BGRA,
-
+    glTexImage2D (target, 0, GL_RGBA, width, height, 0, GL_BGRA,
 #if IMAGE_BYTE_ORDER == MSBFirst
 		  GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
 		  GL_UNSIGNED_BYTE,
 #endif
+		  t0);
 
-		  ws->t0);
-
-    glBindTexture (ws->target, 0);
+    glBindTexture (target, 0);
 }
 
-static int
-fboPrologue (CompScreen *s,
-	     int	tIndex)
+bool
+WaterScreen::fboPrologue (int tIndex)
 {
-    WATER_SCREEN (s);
+    if (!fbo)
+	return false;
 
-    if (!ws->fbo)
-	return 0;
+    if (!texture[tIndex])
+	allocTexture (tIndex);
 
-    if (!ws->texture[tIndex])
-	allocTexture (s, tIndex);
+    GL::bindFramebuffer (GL_FRAMEBUFFER_EXT, fbo);
 
-    (*s->bindFramebuffer) (GL_FRAMEBUFFER_EXT, ws->fbo);
-
-    (*s->framebufferTexture2D) (GL_FRAMEBUFFER_EXT,
-				GL_COLOR_ATTACHMENT0_EXT,
-				ws->target, ws->texture[tIndex],
-				0);
+    GL::framebufferTexture2D (GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+			      target, texture[tIndex], 0);
 
     glDrawBuffer (GL_COLOR_ATTACHMENT0_EXT);
     glReadBuffer (GL_COLOR_ATTACHMENT0_EXT);
 
     /* check status the first time */
-    if (!ws->fboStatus)
+    if (!fboStatus)
     {
-	ws->fboStatus = (*s->checkFramebufferStatus) (GL_FRAMEBUFFER_EXT);
-	if (ws->fboStatus != GL_FRAMEBUFFER_COMPLETE_EXT)
+	fboStatus = GL::checkFramebufferStatus (GL_FRAMEBUFFER_EXT);
+	if (fboStatus != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
-	    compLogMessage (s->display, "water", CompLogLevelError,
+	    compLogMessage ("water", CompLogLevelError,
 			    "framebuffer incomplete");
 
-	    (*s->bindFramebuffer) (GL_FRAMEBUFFER_EXT, 0);
-	    (*s->deleteFramebuffers) (1, &ws->fbo);
+	    GL::bindFramebuffer (GL_FRAMEBUFFER_EXT, 0);
+	    GL::deleteFramebuffers (1, &fbo);
 
 	    glDrawBuffer (GL_BACK);
 	    glReadBuffer (GL_BACK);
 
-	    ws->fbo = 0;
+	    fbo = 0;
 
-	    return 0;
+	    return false;
 	}
     }
 
-    glViewport (0, 0, ws->width, ws->height);
+    glViewport (0, 0, width, height);
     glMatrixMode (GL_PROJECTION);
     glPushMatrix ();
     glLoadIdentity ();
@@ -471,13 +296,13 @@ fboPrologue (CompScreen *s,
     glPushMatrix ();
     glLoadIdentity ();
 
-    return 1;
+    return true;
 }
 
-static void
-fboEpilogue (CompScreen *s)
+void
+WaterScreen::fboEpilogue ()
 {
-    (*s->bindFramebuffer) (GL_FRAMEBUFFER_EXT, 0);
+    GL::bindFramebuffer (GL_FRAMEBUFFER_EXT, 0);
 
     glMatrixMode (GL_PROJECTION);
     glLoadIdentity ();
@@ -487,9 +312,7 @@ fboEpilogue (CompScreen *s)
     glViewport (-1, -1, 2, 2);
     glRasterPos2f (0, 0);
 
-    s->rasterX = s->rasterY = 0;
-
-    setDefaultViewport (s);
+    gScreen->setDefaultViewport ();
 
     glMatrixMode (GL_PROJECTION);
     glPopMatrix ();
@@ -500,84 +323,77 @@ fboEpilogue (CompScreen *s)
     glReadBuffer (GL_BACK);
 }
 
-static int
-fboUpdate (CompScreen *s,
-	   float      dt,
-	   float      fade)
+bool
+WaterScreen::fboUpdate (float dt, float fade)
 {
-    WATER_SCREEN (s);
+    if (!fboPrologue (TINDEX (this, 1)))
+	return false;
 
-    if (!fboPrologue (s, TINDEX (ws, 1)))
-	return 0;
+    if (!texture[TINDEX (this, 2)])
+	allocTexture (TINDEX (this, 2));
 
-    if (!ws->texture[TINDEX (ws, 2)])
-	allocTexture (s, TINDEX (ws, 2));
+    if (!texture[TINDEX (this, 0)])
+	allocTexture (TINDEX (this, 0));
 
-    if (!ws->texture[TINDEX (ws, 0)])
-	allocTexture (s, TINDEX (ws, 0));
+    glEnable (target);
 
-    glEnable (ws->target);
+    GL::activeTexture (GL_TEXTURE0_ARB);
+    glBindTexture (target, texture[TINDEX (this, 2)]);
 
-    (*s->activeTexture) (GL_TEXTURE0_ARB);
-    glBindTexture (ws->target, ws->texture[TINDEX (ws, 2)]);
-
-    glTexParameteri (ws->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (ws->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    (*s->activeTexture) (GL_TEXTURE1_ARB);
-    glBindTexture (ws->target, ws->texture[TINDEX (ws, 0)]);
-    glTexParameteri (ws->target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri (ws->target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    GL::activeTexture (GL_TEXTURE1_ARB);
+    glBindTexture (target, texture[TINDEX (this, 0)]);
+    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
     glEnable (GL_FRAGMENT_PROGRAM_ARB);
-    (*s->bindProgram) (GL_FRAGMENT_PROGRAM_ARB, ws->program);
+    GL::bindProgram (GL_FRAGMENT_PROGRAM_ARB, program);
 
-    (*s->programLocalParameter4f) (GL_FRAGMENT_PROGRAM_ARB, 0,
-				   dt * K, fade, 1.0f, 1.0f);
+    GL::programLocalParameter4f (GL_FRAGMENT_PROGRAM_ARB, 0,
+				 dt * K, fade, 1.0f, 1.0f);
 
     glBegin (GL_QUADS);
 
     glTexCoord2f (0.0f, 0.0f);
     glVertex2f   (0.0f, 0.0f);
-    glTexCoord2f (ws->tx, 0.0f);
+    glTexCoord2f (tx, 0.0f);
     glVertex2f   (1.0f, 0.0f);
-    glTexCoord2f (ws->tx, ws->ty);
+    glTexCoord2f (tx, ty);
     glVertex2f   (1.0f, 1.0f);
-    glTexCoord2f (0.0f, ws->ty);
+    glTexCoord2f (0.0f, ty);
     glVertex2f   (0.0f, 1.0f);
 
     glEnd ();
 
     glDisable (GL_FRAGMENT_PROGRAM_ARB);
 
-    glTexParameteri (ws->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri (ws->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture (ws->target, 0);
-    (*s->activeTexture) (GL_TEXTURE0_ARB);
-    glTexParameteri (ws->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri (ws->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glBindTexture (ws->target, 0);
+    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture (target, 0);
+    GL::activeTexture (GL_TEXTURE0_ARB);
+    glTexParameteri (target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri (target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glBindTexture (target, 0);
 
-    glDisable (ws->target);
+    glDisable (target);
 
-    fboEpilogue (s);
+    fboEpilogue ();
 
     /* increment texture index */
-    ws->tIndex = TINDEX (ws, 1);
+    tIndex = TINDEX (this, 1);
 
-    return 1;
+    return true;
 }
 
-static int
-fboVertices (CompScreen *s,
-	     GLenum     type,
-	     XPoint     *p,
-	     int	n,
-	     float	v)
+bool
+WaterScreen::fboVertices (GLenum type,
+			  XPoint *p,
+			  int    n,
+			  float  v)
 {
-    WATER_SCREEN (s);
-
-    if (!fboPrologue (s, TINDEX (ws, 0)))
-	return 0;
+    if (!fboPrologue (TINDEX (this, 0)))
+	return false;
 
     glColorMask (GL_FALSE, GL_FALSE, GL_FALSE, GL_TRUE);
     glColor4f (0.0f, 0.0f, 0.0f, v);
@@ -585,7 +401,7 @@ fboVertices (CompScreen *s,
     glPointSize (3.0f);
     glLineWidth (1.0f);
 
-    glScalef (1.0f / ws->width, 1.0f / ws->height, 1.0);
+    glScalef (1.0f / width, 1.0f / height, 1.0);
     glTranslatef (0.5f, 0.5f, 0.0f);
 
     glBegin (type);
@@ -601,39 +417,35 @@ fboVertices (CompScreen *s,
     glColor4usv (defaultColor);
     glColorMask (GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 
-    fboEpilogue (s);
+    fboEpilogue ();
 
-    return 1;
+    return true;
 }
 
-static void
-softwareUpdate (CompScreen *s,
-		float      dt,
-		float      fade)
+void
+WaterScreen::softwareUpdate (float dt, float fade)
 {
-    float	   *dTmp;
-    int		   i, j;
-    float	   v0, v1, inv;
-    float	   accel, value;
+    float         *dTmp;
+    int           i, j;
+    float         v0, v1, inv;
+    float         accel, value;
     unsigned char *t0, *t;
-    int		  dWidth, dHeight;
-    float	  *d01, *d10, *d11, *d12;
+    int           dWidth, dHeight;
+    float         *d01, *d10, *d11, *d12;
 
-    WATER_SCREEN (s);
-
-    if (!ws->texture[TINDEX (ws, 0)])
-	allocTexture (s, TINDEX (ws, 0));
+    if (!texture[TINDEX (this, 0)])
+	allocTexture (TINDEX (this, 0));
 
     dt *= K * 2.0f;
     fade *= 0.99f;
 
-    dWidth  = ws->width  + 2;
-    dHeight = ws->height + 2;
+    dWidth  = width  + 2;
+    dHeight = height + 2;
 
 #define D(d, j) (*((d) + (j)))
 
-    d01 = ws->d0 + dWidth;
-    d10 = ws->d1;
+    d01 = d0 + dWidth;
+    d10 = d1;
     d11 = d10 + dWidth;
     d12 = d11 + dWidth;
 
@@ -660,12 +472,12 @@ softwareUpdate (CompScreen *s,
     }
 
     /* update border */
-    memcpy (ws->d0, ws->d0 + dWidth, dWidth * sizeof (GLfloat));
-    memcpy (ws->d0 + dWidth * (dHeight - 1),
-	    ws->d0 + dWidth * (dHeight - 2),
+    memcpy (d0, d0 + dWidth, dWidth * sizeof (GLfloat));
+    memcpy (d0 + dWidth * (dHeight - 1),
+	    d0 + dWidth * (dHeight - 2),
 	    dWidth * sizeof (GLfloat));
 
-    d01 = ws->d0 + dWidth;
+    d01 = d0 + dWidth;
 
     for (i = 1; i < dHeight - 1; i++)
     {
@@ -675,16 +487,16 @@ softwareUpdate (CompScreen *s,
 	d01 += dWidth;
     }
 
-    d10 = ws->d1;
+    d10 = d1;
     d11 = d10 + dWidth;
     d12 = d11 + dWidth;
 
-    t0 = ws->t0;
+    t0 = this->t0;
 
     /* update texture */
-    for (i = 0; i < ws->height; i++)
+    for (i = 0; i < height; i++)
     {
-	for (j = 0; j < ws->width; j++)
+	for (j = 0; j < width; j++)
 	{
 	    v0 = (D (d12, j)     - D (d10, j))     * 1.5f;
 	    v1 = (D (d11, j - 1) - D (d11, j + 1)) * 1.5f;
@@ -710,48 +522,37 @@ softwareUpdate (CompScreen *s,
 	d11 += dWidth;
 	d12 += dWidth;
 
-	t0 += ws->width * 4;
+	t0 += width * 4;
     }
 
 #undef D
 
     /* swap height maps */
-    dTmp   = ws->d0;
-    ws->d0 = ws->d1;
-    ws->d1 = dTmp;
+    dTmp   = d0;
+    d0 = d1;
+    d1 = dTmp;
 
-    if (ws->texture[TINDEX (ws, 0)])
+    if (texture[TINDEX (this, 0)])
     {
-	glBindTexture (ws->target, ws->texture[TINDEX (ws, 0)]);
-	glTexImage2D (ws->target,
-		      0,
-		      GL_RGBA,
-		      ws->width,
-		      ws->height,
-		      0,
-		      GL_BGRA,
-
+	glBindTexture (target, texture[TINDEX (this, 0)]);
+	glTexImage2D (target, 0, GL_RGBA, width, height, 0, GL_BGRA,
 #if IMAGE_BYTE_ORDER == MSBFirst
-		  GL_UNSIGNED_INT_8_8_8_8_REV,
+		      GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
-		  GL_UNSIGNED_BYTE,
+		      GL_UNSIGNED_BYTE,
 #endif
-
-		      ws->t0);
+		      this->t0);
     }
 }
 
 
-#define SET(x, y, v) *((ws->d1) + (ws->width + 2) * (y + 1) + (x + 1)) = (v)
+#define SET(x, y, v) *((d1) + (width + 2) * (y + 1) + (x + 1)) = (v)
 
-static void
-softwarePoints (CompScreen *s,
-		XPoint	   *p,
-		int	   n,
-		float	   add)
+void
+WaterScreen::softwarePoints (XPoint *p,
+			     int     n,
+			     float   add)
 {
-    WATER_SCREEN (s);
-
     while (n--)
     {
 	SET (p->x - 1, p->y - 1, add);
@@ -771,11 +572,10 @@ softwarePoints (CompScreen *s,
 }
 
 /* bresenham */
-static void
-softwareLines (CompScreen *s,
-	       XPoint	  *p,
-	       int	  n,
-	       float	  v)
+void
+WaterScreen::softwareLines (XPoint *p,
+			    int    n,
+			    float  v)
 {
     int	 x1, y1, x2, y2;
     Bool steep;
@@ -784,8 +584,6 @@ softwareLines (CompScreen *s,
     int  error = 0;
     int  yStep;
     int  x, y;
-
-    WATER_SCREEN (s);
 
 #define SWAP(v0, v1) \
     tmp = v0;	     \
@@ -853,212 +651,191 @@ softwareLines (CompScreen *s,
 
 #undef SET
 
-static void
-softwareVertices (CompScreen *s,
-		  GLenum     type,
-		  XPoint     *p,
-		  int	     n,
-		  float	     v)
+void
+WaterScreen::softwareVertices (GLenum type,
+			       XPoint *p,
+			       int    n,
+			       float  v)
 {
     switch (type) {
-    case GL_POINTS:
-	softwarePoints (s, p, n, v);
-	break;
-    case GL_LINES:
-	softwareLines (s, p, n, v);
-	break;
+	case GL_POINTS:
+	    softwarePoints (p, n, v);
+	    break;
+	case GL_LINES:
+	    softwareLines (p, n, v);
+	    break;
     }
 }
 
-static void
-waterUpdate (CompScreen *s,
-	     float	dt)
+void
+WaterScreen::waterUpdate (float dt)
 {
     GLfloat fade = 1.0f;
 
-    WATER_SCREEN (s);
-
-    if (ws->count < 1000)
+    if (count < 1000)
     {
-	if (ws->count > 1)
-	    fade = 0.90f + ws->count / 10000.0f;
+	if (count > 1)
+	    fade = 0.90f + count / 10000.0f;
 	else
 	    fade = 0.0f;
     }
 
-    if (!fboUpdate (s, dt, fade))
-	softwareUpdate (s, dt, fade);
+    if (!fboUpdate (dt, fade))
+	softwareUpdate (dt, fade);
 }
 
-static void
-scaleVertices (CompScreen *s,
-	       XPoint	  *p,
-	       int	  n)
+void
+WaterScreen::scaleVertices (XPoint *p, int n)
 {
-    WATER_SCREEN (s);
-
     while (n--)
     {
-	p[n].x = (ws->width  * p[n].x) / s->width;
-	p[n].y = (ws->height * p[n].y) / s->height;
+	p[n].x = (width  * p[n].x) / screen->size ().width ();
+	p[n].y = (height * p[n].y) / screen->size ().height ();
     }
 }
 
-static void
-waterVertices (CompScreen *s,
-	       GLenum     type,
-	       XPoint     *p,
-	       int	  n,
-	       float	  v)
+void
+WaterScreen::waterVertices (GLenum type,
+			    XPoint *p,
+			    int    n,
+			    float  v)
 {
-    WATER_SCREEN (s);
-
-    if (!s->fragmentProgram)
+    if (!GL::fragmentProgram)
 	return;
 
-    scaleVertices (s, p, n);
+    scaleVertices (p, n);
 
-    if (!fboVertices (s, type, p, n, v))
-	softwareVertices (s, type, p, n, v);
+    if (!fboVertices (type, p, n, v))
+	softwareVertices (type, p, n, v);
 
-    if (ws->count < 3000)
-	ws->count = 3000;
+    if (count < 3000)
+	count = 3000;
 }
 
-static Bool
-waterRainTimeout (void *closure)
+bool
+WaterScreen::rainTimeout ()
 {
-    CompScreen *s = closure;
     XPoint     p;
 
-    p.x = (int) (s->width  * (rand () / (float) RAND_MAX));
-    p.y = (int) (s->height * (rand () / (float) RAND_MAX));
+    p.x = (int) (screen->size ().width ()  * (rand () / (float) RAND_MAX));
+    p.y = (int) (screen->size ().height () * (rand () / (float) RAND_MAX));
 
-    waterVertices (s, GL_POINTS, &p, 1, 0.8f * (rand () / (float) RAND_MAX));
+    waterVertices (GL_POINTS, &p, 1, 0.8f * (rand () / (float) RAND_MAX));
 
-    damageScreen (s);
+    cScreen->damageScreen ();
 
-    return TRUE;
+    return true;
 }
 
-static Bool
-waterWiperTimeout (void *closure)
+bool
+WaterScreen::wiperTimeout ()
 {
-    CompScreen *s = closure;
-
-    WATER_SCREEN (s);
-
-    if (ws->count)
+    if (count)
     {
-	if (ws->wiperAngle == 0.0f)
-	    ws->wiperSpeed = 2.5f;
-	else if (ws->wiperAngle == 180.0f)
-	    ws->wiperSpeed = -2.5f;
+	if (wiperAngle == 0.0f)
+	    wiperSpeed = 2.5f;
+	else if (wiperAngle == 180.0f)
+	    wiperSpeed = -2.5f;
     }
 
-    return TRUE;
+    return true;
 }
 
-static void
-waterReset (CompScreen *s)
+void
+WaterScreen::waterReset ()
 {
     int size, i, j;
 
-    WATER_SCREEN (s);
+    height = TEXTURE_SIZE;
+    width  = (height * screen->size ().width ()) / screen->size ().height ();
 
-    ws->height = TEXTURE_SIZE;
-    ws->width  = (ws->height * s->width) / s->height;
-
-    if (s->textureNonPowerOfTwo ||
-	(POWER_OF_TWO (ws->width) && POWER_OF_TWO (ws->height)))
+    if (GL::textureNonPowerOfTwo ||
+	(POWER_OF_TWO (width) && POWER_OF_TWO (height)))
     {
-	ws->target = GL_TEXTURE_2D;
-	ws->tx = ws->ty = 1.0f;
+	target = GL_TEXTURE_2D;
+	tx = ty = 1.0f;
     }
     else
     {
-	ws->target = GL_TEXTURE_RECTANGLE_NV;
-	ws->tx = ws->width;
-	ws->ty = ws->height;
+	target = GL_TEXTURE_RECTANGLE_NV;
+	tx = width;
+	ty = height;
     }
 
-    if (!s->fragmentProgram)
+    if (!GL::fragmentProgram)
 	return;
 
-    if (s->fbo)
+    if (GL::fbo)
     {
-	loadWaterProgram (s);
-	if (!ws->fbo)
-	    (*s->genFramebuffers) (1, &ws->fbo);
+	loadWaterProgram ();
+	if (!fbo)
+	    GL::genFramebuffers (1, &fbo);
     }
 
-    ws->fboStatus = 0;
+    fboStatus = 0;
 
     for (i = 0; i < TEXTURE_NUM; i++)
     {
-	if (ws->texture[i])
+	if (texture[i])
 	{
-	    glDeleteTextures (1, &ws->texture[i]);
-	    ws->texture[i] = 0;
+	    glDeleteTextures (1, &texture[i]);
+	    texture[i] = 0;
 	}
     }
 
-    if (ws->data)
-	free (ws->data);
+    if (data)
+	free (data);
 
-    size = (ws->width + 2) * (ws->height + 2);
+    size = (width + 2) * (height + 2);
 
-    ws->data = calloc (1, (sizeof (float) * size * 2) +
-		       (sizeof (GLubyte) * ws->width * ws->height * 4));
-    if (!ws->data)
+    data = calloc (1, (sizeof (float) * size * 2) +
+		   (sizeof (GLubyte) * width * height * 4));
+    if (!data)
 	return;
 
-    ws->d0 = ws->data;
-    ws->d1 = (ws->d0 + (size));
-    ws->t0 = (unsigned char *) (ws->d1 + (size));
+    d0 = (float *)data;
+    d1 = (d0 + (size));
+    t0 = (unsigned char *) (d1 + (size));
 
-    for (i = 0; i < ws->height; i++)
+    for (i = 0; i < height; i++)
     {
-	for (j = 0; j < ws->width; j++)
+	for (j = 0; j < width; j++)
 	{
-	    (ws->t0 + (ws->width * 4 * i + j * 4))[0] = 0xff;
+	    (t0 + (width * 4 * i + j * 4))[0] = 0xff;
 	}
     }
 }
 
-static void
-waterDrawWindowTexture (CompWindow	     *w,
-			CompTexture	     *texture,
-			const FragmentAttrib *attrib,
-			unsigned int	     mask)
+void
+WaterWindow::glDrawTexture (GLTexture          *texture,
+			    GLFragment::Attrib &attrib,
+			    unsigned int       mask)
 {
-    WATER_SCREEN (w->screen);
-
-    if (ws->count)
+    if (wScreen->count)
     {
-	FragmentAttrib fa = *attrib;
-	Bool	       lighting = w->screen->lighting;
-	int	       param, function, unit;
-	GLfloat	       plane[4];
+	GLFragment::Attrib     fa (attrib);
+	bool                   lighting = wScreen->gScreen->lighting ();
+	int                    param, unit;
+	GLFragment::FunctionId function;
+	GLfloat                plane[4];
 
-	WATER_DISPLAY (w->screen->display);
+	param = fa.allocParameters (1);
+	unit  = fa.allocTextureUnits (1);
 
-	param = allocFragmentParameters (&fa, 1);
-	unit  = allocFragmentTextureUnits (&fa, 1);
-
-	function = getBumpMapFragmentFunction (w->screen, texture, unit, param);
+	function = wScreen->getBumpMapFragmentFunction (texture, unit, param);
 	if (function)
 	{
-	    addFragmentFunction (&fa, function);
+	    fa.addFunction (function);
 
-	    screenLighting (w->screen, TRUE);
+	    gScreen->setLighting (true);
 
-	    (*w->screen->activeTexture) (GL_TEXTURE0_ARB + unit);
+	    GL::activeTexture (GL_TEXTURE0_ARB + unit);
 
-	    glBindTexture (ws->target, ws->texture[TINDEX (ws, 0)]);
+	    glBindTexture (wScreen->target,
+			   wScreen->texture[TINDEX (wScreen, 0)]);
 
 	    plane[1] = plane[2] = 0.0f;
-	    plane[0] = ws->tx / (GLfloat) w->screen->width;
+	    plane[0] = wScreen->tx / (GLfloat) screen->size ().width ();
 	    plane[3] = 0.0f;
 
 	    glTexGeni (GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
@@ -1066,99 +843,92 @@ waterDrawWindowTexture (CompWindow	     *w,
 	    glEnable (GL_TEXTURE_GEN_S);
 
 	    plane[0] = plane[2] = 0.0f;
-	    plane[1] = ws->ty / (GLfloat) w->screen->height;
+	    plane[1] = wScreen->ty / (GLfloat) screen->size ().height ();
 	    plane[3] = 0.0f;
 
 	    glTexGeni (GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
 	    glTexGenfv (GL_T, GL_EYE_PLANE, plane);
 	    glEnable (GL_TEXTURE_GEN_T);
 
-	    (*w->screen->activeTexture) (GL_TEXTURE0_ARB);
+	    GL::activeTexture (GL_TEXTURE0_ARB);
 
-	    (*w->screen->programEnvParameter4f) (GL_FRAGMENT_PROGRAM_ARB, param,
-						 texture->matrix.yy *
-						 wd->offsetScale,
-						 -texture->matrix.xx *
-						 wd->offsetScale,
-						 0.0f, 0.0f);
+	    GL::programEnvParameter4f (GL_FRAGMENT_PROGRAM_ARB, param,
+				       texture->matrix ().yy *
+ 				       wScreen->offsetScale,
+				       -texture->matrix ().xx *
+				       wScreen->offsetScale,
+				       0.0f, 0.0f);
 	}
 
 	/* to get appropriate filtering of texture */
 	mask |= PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK;
 
-	UNWRAP (ws, w->screen, drawWindowTexture);
-	(*w->screen->drawWindowTexture) (w, texture, &fa, mask);
-	WRAP (ws, w->screen, drawWindowTexture, waterDrawWindowTexture);
+	gWindow->glDrawTexture (texture, fa, mask);
 
 	if (function)
 	{
-	    (*w->screen->activeTexture) (GL_TEXTURE0_ARB + unit);
+	    GL::activeTexture (GL_TEXTURE0_ARB + unit);
 	    glDisable (GL_TEXTURE_GEN_T);
 	    glDisable (GL_TEXTURE_GEN_S);
-	    glBindTexture (ws->target, 0);
-	    (*w->screen->activeTexture) (GL_TEXTURE0_ARB);
+	    glBindTexture (wScreen->target, 0);
+	    GL::activeTexture (GL_TEXTURE0_ARB);
 
-	    screenLighting (w->screen, lighting);
+	    gScreen->setLighting (lighting);
 	}
     }
     else
     {
-	UNWRAP (ws, w->screen, drawWindowTexture);
-	(*w->screen->drawWindowTexture) (w, texture, attrib, mask);
-	WRAP (ws, w->screen, drawWindowTexture, waterDrawWindowTexture);
+	gWindow->glDrawTexture (texture, attrib, mask);
     }
 }
 
 /* TODO: a way to control the speed */
-static void
-waterPreparePaintScreen (CompScreen *s,
-			 int	    msSinceLastPaint)
+void
+WaterScreen::preparePaint (int msSinceLastPaint)
 {
-    WATER_SCREEN (s);
-
-    if (ws->count)
+    if (count)
     {
-	ws->count -= 10;
-	if (ws->count < 0)
-	    ws->count = 0;
+	count -= 10;
+	if (count < 0)
+	    count = 0;
 
-	if (ws->wiperHandle)
+	if (wiperTimer.active ())
 	{
 	    float  step, angle0, angle1;
-	    Bool   wipe = FALSE;
+	    bool   wipe = false;
 	    XPoint p[3];
 
-	    p[1].x = s->width / 2;
-	    p[1].y = s->height;
+	    p[1].x = screen->size ().width () / 2;
+	    p[1].y = screen->size ().height ();
 
-	    step = ws->wiperSpeed * msSinceLastPaint / 20.0f;
+	    step = wiperSpeed * msSinceLastPaint / 20.0f;
 
-	    if (ws->wiperSpeed > 0.0f)
+	    if (wiperSpeed > 0.0f)
 	    {
-		if (ws->wiperAngle < 180.0f)
+		if (wiperAngle < 180.0f)
 		{
-		    angle0 = ws->wiperAngle;
+		    angle0 = wiperAngle;
 
-		    ws->wiperAngle += step;
-		    ws->wiperAngle = MIN (ws->wiperAngle, 180.0f);
+		    wiperAngle += step;
+		    wiperAngle = MIN (wiperAngle, 180.0f);
 
-		    angle1 = ws->wiperAngle;
+		    angle1 = wiperAngle;
 
-		    wipe = TRUE;
+		    wipe = true;
 		}
 	    }
 	    else
 	    {
-		if (ws->wiperAngle > 0.0f)
+		if (wiperAngle > 0.0f)
 		{
-		    angle1 = ws->wiperAngle;
+		    angle1 = wiperAngle;
 
-		    ws->wiperAngle += step;
-		    ws->wiperAngle = MAX (ws->wiperAngle, 0.0f);
+		    wiperAngle += step;
+		    wiperAngle = MAX (wiperAngle, 0.0f);
 
-		    angle0 = ws->wiperAngle;
+		    angle0 = wiperAngle;
 
-		    wipe = TRUE;
+		    wipe = true;
 		}
 	    }
 
@@ -1168,416 +938,330 @@ waterPreparePaintScreen (CompScreen *s,
 	    {
 		if (angle0 > 0.0f)
 		{
-		    p[2].x = s->width / 2 - s->height / TAN (angle0);
+		    p[2].x = screen->size ().width () / 2 -
+			     screen->size ().height () / TAN (angle0);
 		    p[2].y = 0;
 		}
 		else
 		{
 		    p[2].x = 0;
-		    p[2].y = s->height;
+		    p[2].y = screen->size ().height ();
 		}
 
 		if (angle1 < 180.0f)
 		{
-		    p[0].x = s->width / 2 - s->height / TAN (angle1);
+		    p[0].x = screen->size ().width () / 2 -
+			     screen->size ().height () / TAN (angle1);
 		    p[0].y = 0;
 		}
 		else
 		{
-		    p[0].x = s->width;
-		    p[0].y = s->height;
+		    p[0].x = screen->size ().width ();
+		    p[0].y = screen->size ().height ();
 		}
 
 		/* software rasterizer doesn't support triangles yet so wiper
 		   effect will only work with FBOs right now */
-		waterVertices (s, GL_TRIANGLES, p, 3, 0.0f);
+		waterVertices (GL_TRIANGLES, p, 3, 0.0f);
 	    }
 
 #undef TAN
 
 	}
 
-	waterUpdate (s, 0.8f);
+	waterUpdate (0.8f);
     }
 
-    UNWRAP (ws, s, preparePaintScreen);
-    (*s->preparePaintScreen) (s, msSinceLastPaint);
-    WRAP (ws, s, preparePaintScreen, waterPreparePaintScreen);
+    cScreen->preparePaint (msSinceLastPaint);
 }
 
-static void
-waterDonePaintScreen (CompScreen *s)
+void
+WaterScreen::donePaint ()
 {
-    WATER_SCREEN (s);
+    if (count)
+	cScreen->damageScreen ();
 
-    if (ws->count)
-	damageScreen (s);
-
-    UNWRAP (ws, s, donePaintScreen);
-    (*s->donePaintScreen) (s);
-    WRAP (ws, s, donePaintScreen, waterDonePaintScreen);
+    cScreen->donePaint ();
 }
 
-static void
-waterHandleMotionEvent (CompDisplay *d,
-			Window	    root)
+void
+WaterScreen::handleMotionEvent ()
 {
-    CompScreen *s;
-
-    s = findScreenAtDisplay (d, root);
-    if (s)
+    if (grabIndex)
     {
-	WATER_SCREEN (s);
+	XPoint p[2];
 
-	if (ws->grabIndex)
-	{
-	    XPoint p[2];
+	p[0].x = waterLastPointerX;
+	p[0].y = waterLastPointerY;
 
-	    p[0].x = waterLastPointerX;
-	    p[0].y = waterLastPointerY;
+	p[1].x = waterLastPointerX = pointerX;
+	p[1].y = waterLastPointerY = pointerY;
 
-	    p[1].x = waterLastPointerX = pointerX;
-	    p[1].y = waterLastPointerY = pointerY;
+	waterVertices (GL_LINES, p, 2, 0.2f);
 
-	    waterVertices (s, GL_LINES, p, 2, 0.2f);
-
-	    damageScreen (s);
-	}
+	cScreen->damageScreen ();
     }
+
 }
 
-static Bool
-waterInitiate (CompDisplay     *d,
-	       CompAction      *action,
-	       CompActionState state,
-	       CompOption      *option,
-	       int	       nOption)
+static bool
+waterInitiate (CompAction         *action,
+	       CompAction::State  state,
+	       CompOption::Vector &options)
 {
     CompScreen   *s;
     unsigned int ui;
     Window	 root, child;
     int	         xRoot, yRoot, i;
 
-    for (s = d->screens; s; s = s->next)
+    WATER_SCREEN (screen);
+
+    if (!screen->otherGrabExist ("water", 0))
     {
-	WATER_SCREEN (s);
-
-	if (otherScreenGrabExist (s, "water", 0))
-	    continue;
-
 	if (!ws->grabIndex)
-	    ws->grabIndex = pushScreenGrab (s, None, "water");
+	    ws->grabIndex = screen->pushGrab (None, "water");
 
-	if (XQueryPointer (d->display, s->root, &root, &child, &xRoot, &yRoot,
-			   &i, &i, &ui))
+	if (XQueryPointer (screen->dpy (), screen->root (), &root, &child,
+			   &xRoot, &yRoot, &i, &i, &ui))
 	{
 	    XPoint p;
 
 	    p.x = waterLastPointerX = xRoot;
 	    p.y = waterLastPointerY = yRoot;
 
-	    waterVertices (s, GL_POINTS, &p, 1, 0.8f);
+	    ws->waterVertices (GL_POINTS, &p, 1, 0.8f);
 
-	    damageScreen (s);
+	    ws->cScreen->damageScreen ();
 	}
     }
 
-    if (state & CompActionStateInitButton)
-	action->state |= CompActionStateTermButton;
+    if (state & CompAction::StateInitButton)
+	action->setState (action->state () | CompAction::StateTermButton);
 
-    if (state & CompActionStateInitKey)
-	action->state |= CompActionStateTermKey;
+    if (state & CompAction::StateInitKey)
+	action->setState (action->state () | CompAction::StateTermKey);
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterTerminate (CompDisplay	*d,
-		CompAction	*action,
-		CompActionState state,
-		CompOption	*option,
-		int		nOption)
+static bool
+waterTerminate (CompAction         *action,
+	        CompAction::State  state,
+	        CompOption::Vector &options)
 {
-    CompScreen *s;
+    WATER_SCREEN (screen);
 
-    for (s = d->screens; s; s = s->next)
+    if (ws->grabIndex)
     {
-	WATER_SCREEN (s);
-
-	if (ws->grabIndex)
-	{
-	    removeScreenGrab (s, ws->grabIndex, 0);
-	    ws->grabIndex = 0;
-	}
+	screen->removeGrab (ws->grabIndex, 0);
+	ws->grabIndex = 0;
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterToggleRain (CompDisplay     *d,
-		 CompAction      *action,
-		 CompActionState state,
-		 CompOption      *option,
-		 int	         nOption)
+static bool
+waterToggleRain (CompAction         *action,
+		 CompAction::State  state,
+		 CompOption::Vector &options)
 {
-    CompScreen *s;
+    WATER_SCREEN (screen);
 
-    WATER_DISPLAY (d);
-
-    s = findScreenAtDisplay (d, getIntOptionNamed (option, nOption, "root", 0));
-    if (s)
+    if (!ws->rainTimer.active ())
     {
-	WATER_SCREEN (s);
+	int delay;
 
-	if (!ws->rainHandle)
-	{
-	    int delay;
-
-	    delay = wd->opt[WATER_DISPLAY_OPTION_RAIN_DELAY].value.i;
-	    ws->rainHandle = compAddTimeout (delay, (float) delay * 1.2,
-					     waterRainTimeout, s);
-	}
-	else
-	{
-	    compRemoveTimeout (ws->rainHandle);
-	    ws->rainHandle = 0;
-	}
+	delay = ws->opt[WATER_OPTION_RAIN_DELAY].value ().i ();
+	ws->rainTimer.start (delay, (float) delay * 1.2);
+    }
+    else
+    {
+	ws->rainTimer.stop ();
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterToggleWiper (CompDisplay     *d,
-		  CompAction      *action,
-		  CompActionState state,
-		  CompOption      *option,
-		  int	          nOption)
+static bool
+waterToggleWiper (CompAction         *action,
+		  CompAction::State  state,
+		  CompOption::Vector &options)
 {
-    CompScreen *s;
+    WATER_SCREEN (screen);
 
-    s = findScreenAtDisplay (d, getIntOptionNamed (option, nOption, "root", 0));
-    if (s)
+    if (!ws->wiperTimer.active ())
     {
-	WATER_SCREEN (s);
-
-	if (!ws->wiperHandle)
-	{
-	    ws->wiperHandle = compAddTimeout (2000, 2400, waterWiperTimeout, s);
-	}
-	else
-	{
-	    compRemoveTimeout (ws->wiperHandle);
-	    ws->wiperHandle = 0;
-	}
+	ws->wiperTimer.start (2000, 2400);
+    }
+    else
+    {
+	ws->wiperTimer.stop ();
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterTitleWave (CompDisplay     *d,
-		CompAction      *action,
-		CompActionState state,
-		CompOption      *option,
-		int	        nOption)
+static bool
+waterTitleWave (CompAction         *action,
+		CompAction::State  state,
+		CompOption::Vector &options)
 {
     CompWindow *w;
     int	       xid;
 
-    xid = getIntOptionNamed (option, nOption, "window", d->activeWindow);
+    WATER_SCREEN (screen);
 
-    w = findWindowAtDisplay (d, xid);
+    xid = CompOption::getIntOptionNamed (options, "window",
+					 screen->activeWindow ());
+
+    w = screen->findWindow (xid);
     if (w)
     {
+	CompWindow::Geometry &g = w->geometry ();
 	XPoint p[2];
 
-	p[0].x = w->attrib.x - w->input.left;
-	p[0].y = w->attrib.y - w->input.top / 2;
+	p[0].x = g.x () - w->input ().left;
+	p[0].y = g.y () - w->input ().top / 2;
 
-	p[1].x = w->attrib.x + w->width + w->input.right;
+	p[1].x = g.x () + g.width () + w->input ().right;
 	p[1].y = p[0].y;
 
-	waterVertices (w->screen, GL_LINES, p, 2, 0.15f);
+	ws->waterVertices (GL_LINES, p, 2, 0.15f);
 
-	damageScreen (w->screen);
+	ws->cScreen->damageScreen ();
     }
 
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterPoint (CompDisplay     *d,
-	    CompAction      *action,
-	    CompActionState state,
-	    CompOption      *option,
-	    int	            nOption)
+static bool
+waterPoint (CompAction         *action,
+	    CompAction::State  state,
+	    CompOption::Vector &options)
 {
-    CompScreen *s;
-    int	       xid;
+    XPoint p;
+    float  amp;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    WATER_SCREEN (screen);
 
-    s = findScreenAtDisplay (d, xid);
-    if (s)
-    {
-	XPoint p;
-	float  amp;
+    p.x = CompOption::getIntOptionNamed (options, "x",
+					 screen->size ().width () / 2);
+    p.y = CompOption::getIntOptionNamed (options, "y",
+					 screen->size ().height () / 2);
 
-	p.x = getIntOptionNamed (option, nOption, "x", s->width / 2);
-	p.y = getIntOptionNamed (option, nOption, "y", s->height / 2);
+    amp = CompOption::getFloatOptionNamed (options, "amplitude", 0.5f);
 
-	amp = getFloatOptionNamed (option, nOption, "amplitude", 0.5f);
+    ws->waterVertices (GL_POINTS, &p, 1, amp);
 
-	waterVertices (s, GL_POINTS, &p, 1, amp);
+    ws->cScreen->damageScreen ();
 
-	damageScreen (s);
-    }
-
-    return FALSE;
+    return false;
 }
 
-static Bool
-waterLine (CompDisplay     *d,
-	   CompAction      *action,
-	   CompActionState state,
-	   CompOption      *option,
-	   int	           nOption)
+static bool
+waterLine (CompAction         *action,
+	   CompAction::State  state,
+	   CompOption::Vector &options)
 {
-    CompScreen *s;
-    int	       xid;
+    XPoint p[2];
+    float  amp;
 
-    xid = getIntOptionNamed (option, nOption, "root", 0);
+    WATER_SCREEN (screen);
 
-    s = findScreenAtDisplay (d, xid);
-    if (s)
-    {
-	XPoint p[2];
-	float  amp;
+    p[0].x = CompOption::getIntOptionNamed (options, "x0",
+					    screen->size ().width () / 4);
+    p[0].y = CompOption::getIntOptionNamed (options, "y0",
+					    screen->size ().height () / 2);
 
-	p[0].x = getIntOptionNamed (option, nOption, "x0", s->width / 4);
-	p[0].y = getIntOptionNamed (option, nOption, "y0", s->height / 2);
+    p[1].x = CompOption::getIntOptionNamed (options, "x1",
+					    screen->size ().width () -
+					    screen->size ().width () / 4);
+    p[1].y = CompOption::getIntOptionNamed (options, "y1",
+					    screen->size ().height () / 2);
 
-	p[1].x = getIntOptionNamed (option, nOption, "x1",
-				    s->width - s->width / 4);
-	p[1].y = getIntOptionNamed (option, nOption, "y1", s->height / 2);
+    amp = CompOption::getFloatOptionNamed (options, "amplitude", 0.25f);
 
+    ws->waterVertices (GL_LINES, p, 2, amp);
 
-	amp = getFloatOptionNamed (option, nOption, "amplitude", 0.25f);
+    ws->cScreen->damageScreen ();
 
-	waterVertices (s, GL_LINES, p, 2, amp);
-
-	damageScreen (s);
-    }
-
-    return FALSE;
+    return false;
 }
 
-static void
-waterHandleEvent (CompDisplay *d,
-		  XEvent      *event)
+void
+WaterScreen::handleEvent (XEvent *event)
 {
-    CompScreen *s;
-
-    WATER_DISPLAY (d);
-
     switch (event->type) {
-    case ButtonPress:
-	s = findScreenAtDisplay (d, event->xbutton.root);
-	if (s)
-	{
-	    WATER_SCREEN (s);
-
-	    if (ws->grabIndex)
+	case ButtonPress:
+	    if (event->xbutton.root == screen->root () && grabIndex)
 	    {
 		XPoint p;
 
 		p.x = pointerX;
 		p.y = pointerY;
 
-		waterVertices (s, GL_POINTS, &p, 1, 0.8f);
-		damageScreen (s);
+		waterVertices (GL_POINTS, &p, 1, 0.8f);
+		cScreen->damageScreen ();
 	    }
-	}
-	break;
-    case EnterNotify:
-    case LeaveNotify:
-	waterHandleMotionEvent (d, event->xcrossing.root);
-	break;
-    case MotionNotify:
-	waterHandleMotionEvent (d, event->xmotion.root);
-    default:
-	break;
+	    break;
+	case EnterNotify:
+	case LeaveNotify:
+	    if (event->xcrossing.root == screen->root () && grabIndex)
+		handleMotionEvent ();
+	    break;
+	case MotionNotify:
+	    if (event->xmotion.root == screen->root () && grabIndex)
+		handleMotionEvent ();
+	default:
+	    break;
     }
 
-    UNWRAP (wd, d, handleEvent);
-    (*d->handleEvent) (d, event);
-    WRAP (wd, d, handleEvent, waterHandleEvent);
+    screen->handleEvent (event);
 }
 
-static CompOption *
-waterGetDisplayOptions (CompPlugin  *plugin,
-			CompDisplay *display,
-			int	    *count)
+CompOption::Vector &
+WaterScreen::getOptions ()
 {
-    WATER_DISPLAY (display);
-
-    *count = NUM_OPTIONS (wd);
-    return wd->opt;
+    return opt;
 }
-
-static Bool
-waterSetDisplayOption (CompPlugin      *plugin,
-		       CompDisplay     *display,
-		       const char      *name,
-		       CompOptionValue *value)
+ 
+bool
+WaterScreen::setOption (const char        *name,
+		        CompOption::Value &value)
 {
     CompOption *o;
-    int	       index;
-
-    WATER_DISPLAY (display);
-
-    o = compFindOption (wd->opt, NUM_OPTIONS (wd), name, &index);
+    unsigned int index;
+ 
+    o = CompOption::findOption (opt, name, &index);
     if (!o)
-	return FALSE;
+	return false;
 
     switch (index) {
-    case WATER_DISPLAY_OPTION_OFFSET_SCALE:
-	if (compSetFloatOption (o, value))
-	{
-	    wd->offsetScale = o->value.f * 50.0f;
-	    return TRUE;
-	}
-	break;
-    case WATER_DISPLAY_OPTION_RAIN_DELAY:
-	if (compSetIntOption (o, value))
-	{
-	    CompScreen *s;
-
-	    for (s = display->screens; s; s = s->next)
+	case WATER_OPTION_OFFSET_SCALE:
+	    if (o->set (value))
 	    {
-		WATER_SCREEN (s);
-
-		if (!ws->rainHandle)
-		    continue;
-
-		compRemoveTimeout (ws->rainHandle);
-		ws->rainHandle = compAddTimeout (value->i,
-						 (float)value->i * 1.2,
-						 waterRainTimeout, s);
+		offsetScale = o->value ().f () * 50.0f;
+		return true;
 	    }
-	    return TRUE;
-	}
-	break;
-    default:
-	return compSetDisplayOption (display, o, value);
+	    break;
+	case WATER_OPTION_RAIN_DELAY:
+	    if (o->set (value))
+	    {
+		if (rainTimer.active ())
+		{
+		    rainTimer.setTimes (value.i (), (float)value.i () * 1.2);
+		}
+		return true;
+	    }
+	    break;
+	default:
+	    return CompOption::setOption (*o, value);
     }
 
-    return FALSE;
+    return false;
 }
 
-static const CompMetadataOptionInfo waterDisplayOptionInfo[] = {
+static const CompMetadata::OptionInfo waterOptionInfo[] = {
     { "initiate_key", "key", 0, waterInitiate, waterTerminate },
     { "toggle_rain_key", "key", 0, waterToggleRain, 0 },
     { "toggle_wiper_key", "key", 0, waterToggleWiper, 0 },
@@ -1588,236 +1272,115 @@ static const CompMetadataOptionInfo waterDisplayOptionInfo[] = {
     { "line", "action", 0, waterLine, 0 }
 };
 
-static Bool
-waterInitDisplay (CompPlugin  *p,
-		  CompDisplay *d)
+WaterScreen::WaterScreen (CompScreen *screen) :
+    PrivateHandler<WaterScreen,CompScreen> (screen),
+    cScreen (CompositeScreen::get (screen)),
+    gScreen (GLScreen::get (screen)),
+    opt(WATER_OPTION_NUM),
+    grabIndex (0),
+    width (0),
+    height (0),
+
+    program (0),
+
+    tIndex (0),
+    target (0),
+    tx (0),
+    ty (0),
+
+    count (0),
+
+    fbo (0),
+    fboStatus (0),
+
+    data (NULL),
+    d0 (NULL),
+    d1 (NULL),
+    t0 (NULL),
+
+    wiperAngle (0),
+    wiperSpeed (0),
+
+    bumpMapFunctions ()
 {
-    WaterDisplay *wd;
-
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
-
-    wd = malloc (sizeof (WaterDisplay));
-    if (!wd)
-	return FALSE;
-
-    if (!compInitDisplayOptionsFromMetadata (d,
-					     &waterMetadata,
-					     waterDisplayOptionInfo,
-					     wd->opt,
-					     WATER_DISPLAY_OPTION_NUM))
+    if (!waterMetadata->initOptions (waterOptionInfo, WATER_OPTION_NUM, opt))
     {
-	free (wd);
-	return FALSE;
+	setFailed ();
+	return;
     }
 
-    wd->screenPrivateIndex = allocateScreenPrivateIndex (d);
-    if (wd->screenPrivateIndex < 0)
+    offsetScale = opt[WATER_OPTION_OFFSET_SCALE].value ().f () * 50.0f;
+
+    memset (texture, 0, sizeof (GLuint) * TEXTURE_NUM);
+
+    wiperTimer.setCallback (boost::bind (&WaterScreen::wiperTimeout, this));
+    rainTimer.setCallback (boost::bind (&WaterScreen::rainTimeout, this));
+
+    waterReset ();
+
+    ScreenInterface::setHandler (screen, true);
+    CompositeScreenInterface::setHandler (cScreen, true);
+}
+
+WaterScreen::~WaterScreen ()
+{
+    if (fbo)
+	GL::deleteFramebuffers (1, &fbo);
+
+    for (unsigned int i = 0; i < TEXTURE_NUM; i++)
     {
-	compFiniDisplayOptions (d, wd->opt, WATER_DISPLAY_OPTION_NUM);
-	free (wd);
-	return FALSE;
+	if (texture[i])
+	    glDeleteTextures (1, &texture[i]);
     }
 
-    wd->offsetScale = wd->opt[WATER_DISPLAY_OPTION_OFFSET_SCALE].value.f * 50.0f;
+    if (program)
+	GL::deletePrograms (1, &program);
 
-    WRAP (wd, d, handleEvent, waterHandleEvent);
+    if (data)
+	free (data);
 
-    d->base.privates[displayPrivateIndex].ptr = wd;
-
-    return TRUE;
-}
-
-static void
-waterFiniDisplay (CompPlugin  *p,
-		  CompDisplay *d)
-{
-    WATER_DISPLAY (d);
-
-    freeScreenPrivateIndex (d, wd->screenPrivateIndex);
-
-    UNWRAP (wd, d, handleEvent);
-
-    compFiniDisplayOptions (d, wd->opt, WATER_DISPLAY_OPTION_NUM);
-
-    free (wd);
-}
-
-static Bool
-waterInitScreen (CompPlugin *p,
-		 CompScreen *s)
-{
-    WaterScreen *ws;
-
-    WATER_DISPLAY (s->display);
-
-    ws = calloc (1, sizeof (WaterScreen));
-    if (!ws)
-	return FALSE;
-
-    ws->grabIndex = 0;
-
-    WRAP (ws, s, preparePaintScreen, waterPreparePaintScreen);
-    WRAP (ws, s, donePaintScreen, waterDonePaintScreen);
-    WRAP (ws, s, drawWindowTexture, waterDrawWindowTexture);
-
-    s->base.privates[wd->screenPrivateIndex].ptr = ws;
-
-    waterReset (s);
-
-    return TRUE;
-}
-
-static void
-waterFiniScreen (CompPlugin *p,
-		 CompScreen *s)
-{
-    WaterFunction *function, *next;
-    int		  i;
-
-    WATER_SCREEN (s);
-
-    if (ws->rainHandle)
-	compRemoveTimeout (ws->rainHandle);
-
-    if (ws->wiperHandle)
-	compRemoveTimeout (ws->wiperHandle);
-
-    if (ws->fbo)
-	(*s->deleteFramebuffers) (1, &ws->fbo);
-
-    for (i = 0; i < TEXTURE_NUM; i++)
+    foreach (WaterFunction &f, bumpMapFunctions)
     {
-	if (ws->texture[i])
-	    glDeleteTextures (1, &ws->texture[i]);
+	GLFragment::destroyFragmentFunction (f.id);
     }
-
-    if (ws->program)
-	(*s->deletePrograms) (1, &ws->program);
-
-    if (ws->data)
-	free (ws->data);
-
-    function = ws->bumpMapFunctions;
-    while (function)
-    {
-	destroyFragmentFunction (s, function->handle);
-
-	next = function->next;
-	free (function);
-	function = next;
-    }
-
-    UNWRAP (ws, s, preparePaintScreen);
-    UNWRAP (ws, s, donePaintScreen);
-    UNWRAP (ws, s, drawWindowTexture);
-
-    free (ws);
 }
 
-static CompBool
-waterInitObject (CompPlugin *p,
-		 CompObject *o)
+bool
+WaterPluginVTable::init ()
 {
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) 0, /* InitCore */
-	(InitPluginObjectProc) waterInitDisplay,
-	(InitPluginObjectProc) waterInitScreen
-    };
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) |
+        !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
+        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+	 return false;
 
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
+
+    waterMetadata = new CompMetadata (name (), waterOptionInfo,
+				      WATER_OPTION_NUM);
+
+    if (!waterMetadata)
+	return false;
+
+    waterMetadata->addFromFile (name ());
+
+    return true;
 }
 
-static void
-waterFiniObject (CompPlugin *p,
-		 CompObject *o)
+void
+WaterPluginVTable::fini ()
 {
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) 0, /* FiniCore */
-	(FiniPluginObjectProc) waterFiniDisplay,
-	(FiniPluginObjectProc) waterFiniScreen
-    };
-
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
+    delete waterMetadata;
 }
 
-static CompOption *
-waterGetObjectOptions (CompPlugin *plugin,
-		       CompObject *object,
-		       int	  *count)
+CompMetadata *
+WaterPluginVTable::getMetadata ()
 {
-    static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) waterGetDisplayOptions
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
+    return waterMetadata;
 }
 
-static CompBool
-waterSetObjectOption (CompPlugin      *plugin,
-		      CompObject      *object,
-		      const char      *name,
-		      CompOptionValue *value)
-{
-    static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) waterSetDisplayOption
-    };
+WaterPluginVTable waterVTable;
 
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
-		     (plugin, object, name, value));
-}
-
-static Bool
-waterInit (CompPlugin *p)
-{
-    if (!compInitPluginMetadataFromInfo (&waterMetadata,
-					 p->vTable->name,
-					 waterDisplayOptionInfo,
-					 WATER_DISPLAY_OPTION_NUM,
-					 0, 0))
-	return FALSE;
-
-    displayPrivateIndex = allocateDisplayPrivateIndex ();
-    if (displayPrivateIndex < 0)
-    {
-	compFiniMetadata (&waterMetadata);
-	return FALSE;
-    }
-
-    compAddMetadataFromFile (&waterMetadata, p->vTable->name);
-
-    return TRUE;
-}
-
-static void
-waterFini (CompPlugin *p)
-{
-    freeDisplayPrivateIndex (displayPrivateIndex);
-    compFiniMetadata (&waterMetadata);
-}
-
-static CompMetadata *
-waterGetMetadata (CompPlugin *plugin)
-{
-    return &waterMetadata;
-}
-
-static CompPluginVTable waterVTable = {
-    "water",
-    waterGetMetadata,
-    waterInit,
-    waterFini,
-    waterInitObject,
-    waterFiniObject,
-    waterGetObjectOptions,
-    waterSetObjectOption
-};
-
-CompPluginVTable *
-getCompPluginInfo20070830 (void)
+CompPlugin::VTable *
+getCompPluginInfo20080805 (void)
 {
     return &waterVTable;
 }

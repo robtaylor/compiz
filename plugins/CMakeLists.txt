@@ -18,8 +18,11 @@ target_link_libraries (copytex composite opengl)
 add_library (zoom MODULE zoom.cpp)
 target_link_libraries (zoom composite opengl)
 
+add_library (water MODULE water.cpp)
+target_link_libraries (water composite opengl)
+
 install (
-    TARGETS decor move resize copytex zoom
+    TARGETS decor move resize copytex zoom water
     DESTINATION ${compiz_plugindir}
 )
 
