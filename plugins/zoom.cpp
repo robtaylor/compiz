@@ -136,6 +136,13 @@ ZoomScreen::donePaint ()
     if (adjust)
 	cScreen->damageScreen ();
 
+    if (!adjust && zoomed == 0)
+    {
+	cScreen->preparePaintSetEnabled (this, false);
+	cScreen->donePaintSetEnabled (this, false);
+	gScreen->glPaintOutputSetEnabled (this, false);
+    }
+
     cScreen->donePaint ();
 }
 
@@ -318,6 +325,9 @@ ZoomScreen::initiateForSelection (int output)
 
 	this->scale = 0.0f;
 	adjust = true;
+	cScreen->preparePaintSetEnabled (this, true);
+	cScreen->donePaintSetEnabled (this, true);
+	gScreen->glPaintOutputSetEnabled (this, true);
 	zoomOutput = output;
 	zoomed |= (1 << output);
 
@@ -339,7 +349,10 @@ zoomIn (CompAction         *action,
     output = screen->outputDeviceForPoint (pointerX, pointerY);
 
     if (!zs->grabIndex)
+    {
 	zs->grabIndex = screen->pushGrab (None, "zoom");
+	screen->handleEventSetEnabled (zs, true);
+    }
 
     if (zs->zoomed & (1 << output))
     {
@@ -387,7 +400,10 @@ zoomInitiate (CompAction         *action,
 	return false;
 
     if (!zs->grabIndex)
+    {
 	zs->grabIndex = screen->pushGrab (None, "zoom");
+	screen->handleEventSetEnabled (zs, true);
+    }
 
     if (state & CompAction::StateInitButton)
 	action->setState (action->state () | CompAction::StateTermButton);
@@ -426,6 +442,7 @@ zoomInitiate (CompAction         *action,
     zs->zoomOutput = output;
 
     zs->grab = true;
+    zs->gScreen->glPaintOutputSetEnabled (zs, true);
 
     zs->cScreen->damageScreen ();
 
@@ -459,6 +476,7 @@ zoomOut (CompAction         *action,
     {
 	screen->removeGrab (zs->grabIndex, NULL);
 	zs->grabIndex = 0;
+	screen->handleEventSetEnabled (zs, false);
     }
 
     zs->cScreen->damageScreen ();
@@ -727,9 +745,9 @@ ZoomScreen::ZoomScreen (CompScreen *screen) :
     memset (&current, 0, sizeof (current));
     memset (&last, 0, sizeof (last));
 
-    ScreenInterface::setHandler (screen);
-    CompositeScreenInterface::setHandler (cScreen);
-    GLScreenInterface::setHandler (gScreen);
+    ScreenInterface::setHandler (screen, false);
+    CompositeScreenInterface::setHandler (cScreen, false);
+    GLScreenInterface::setHandler (gScreen, false);
 }
 
 
