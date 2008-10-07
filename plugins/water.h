@@ -144,7 +144,7 @@ class WaterWindow :
 	    wScreen (WaterScreen::get (screen)),
 	    gScreen (GLScreen::get (screen))
 	{
-	    GLWindowInterface::setHandler (gWindow, true);
+	    GLWindowInterface::setHandler (gWindow, false);
 	}
 
 	void glDrawTexture (GLTexture *texture, GLFragment::Attrib &,

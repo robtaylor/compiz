@@ -708,6 +708,19 @@ WaterScreen::waterVertices (GLenum type,
     if (!fboVertices (type, p, n, v))
 	softwareVertices (type, p, n, v);
 
+    if (count <= 0)
+    {
+	WaterWindow *ww;
+
+	cScreen->preparePaintSetEnabled (this, true);
+	cScreen->donePaintSetEnabled (this, true);
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    ww = WaterWindow::get (w);
+	    ww->gWindow->glDrawTextureSetEnabled (ww, true);
+	}
+    }
+
     if (count < 3000)
 	count = 3000;
 }
@@ -980,6 +993,18 @@ WaterScreen::donePaint ()
 {
     if (count)
 	cScreen->damageScreen ();
+    else
+    {
+	WaterWindow *ww;
+
+	cScreen->preparePaintSetEnabled (this, false);
+	cScreen->donePaintSetEnabled (this, false);
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    ww = WaterWindow::get (w);
+	    ww->gWindow->glDrawTextureSetEnabled (ww, true);
+	}
+    }
 
     cScreen->donePaint ();
 }
@@ -1019,7 +1044,10 @@ waterInitiate (CompAction         *action,
     if (!screen->otherGrabExist ("water", 0))
     {
 	if (!ws->grabIndex)
+	{
 	    ws->grabIndex = screen->pushGrab (None, "water");
+	    screen->handleEventSetEnabled (ws, true);
+	}
 
 	if (XQueryPointer (screen->dpy (), screen->root (), &root, &child,
 			   &xRoot, &yRoot, &i, &i, &ui))
@@ -1055,6 +1083,7 @@ waterTerminate (CompAction         *action,
     {
 	screen->removeGrab (ws->grabIndex, 0);
 	ws->grabIndex = 0;
+	screen->handleEventSetEnabled (ws, false);
     }
 
     return false;
@@ -1318,8 +1347,8 @@ WaterScreen::WaterScreen (CompScreen *screen) :
 
     waterReset ();
 
-    ScreenInterface::setHandler (screen, true);
-    CompositeScreenInterface::setHandler (cScreen, true);
+    ScreenInterface::setHandler (screen, false);
+    CompositeScreenInterface::setHandler (cScreen, false);
 }
 
 WaterScreen::~WaterScreen ()
