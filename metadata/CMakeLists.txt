@@ -12,7 +12,6 @@ set (_plugin_files
     glib
     ini
     inotify
-    kconfig
     minimize
     move
     place
