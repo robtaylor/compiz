@@ -46,22 +46,6 @@ struct CompFileWatch {
     CompFileWatchHandle handle;
 };
 
-/* camera distance from screen, 0.5 * tan (FOV) */
-#define DEFAULT_Z_CAMERA 0.866025404f
-
-#define OPAQUE 0xffff
-#define COLOR  0xffff
-#define BRIGHT 0xffff
-
-#define PAINT_SCREEN_REGION_MASK		   (1 << 0)
-#define PAINT_SCREEN_FULL_MASK			   (1 << 1)
-#define PAINT_SCREEN_TRANSFORMED_MASK		   (1 << 2)
-#define PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK (1 << 3)
-#define PAINT_SCREEN_CLEAR_MASK			   (1 << 4)
-#define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
-#define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
-
-
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
 

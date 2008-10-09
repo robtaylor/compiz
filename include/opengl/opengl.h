@@ -10,8 +10,10 @@
 
 #define COMPIZ_OPENGL_ABI 1
 
-#define PLUGIN OpenGL
 #include <core/privatehandler.h>
+
+/* camera distance from screen, 0.5 * tan (FOV) */
+#define DEFAULT_Z_CAMERA 0.866025404f
 
 class PrivateGLScreen;
 class PrivateGLWindow;

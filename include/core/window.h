@@ -24,9 +24,6 @@ class CompIcon;
 class PrivateWindow;
 struct CompStartupSequence;
 
-#define GET_CORE_WINDOW(object) (dynamic_cast<CompWindow *> (object))
-#define CORE_WINDOW(object) CompWindow *w = GET_CORE_WINDOW (object)
-
 #define ROOTPARENT(x) (((x)->frame ()) ? (x)->frame () : (x)->id ())
 
 #define CompWindowProtocolDeleteMask	  (1 << 0)
@@ -125,61 +122,10 @@ struct CompStartupSequence;
 #define ClientTypeApplication  1
 #define ClientTypePager        2
 
-/*
-  window paint flags
-
-  bit 1-16 are used for read-only flags and they provide
-  information that describe the screen rendering pass
-  currently in process.
-
-  bit 17-32 are writable flags and they provide information
-  that is used to optimize rendering.
-*/
-
-/*
-  this flag is present when window is being painted
-  on a transformed screen.
-*/
-#define PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK (1 << 0)
-
-/*
-  this flag is present when window is being tested
-  for occlusion of other windows.
-*/
-#define PAINT_WINDOW_OCCLUSION_DETECTION_MASK   (1 << 1)
-
-/*
-  this flag indicates that the window ist painted with
-  an offset
-*/
-#define PAINT_WINDOW_WITH_OFFSET_MASK           (1 << 2)
-
-/*
-  flag indicate that window is translucent.
-*/
-#define PAINT_WINDOW_TRANSLUCENT_MASK           (1 << 16)
-
-/*
-  flag indicate that window is transformed.
-*/
-#define PAINT_WINDOW_TRANSFORMED_MASK           (1 << 17)
-
-/*
-  flag indicate that core PaintWindow function should
-  not draw this window.
-*/
-#define PAINT_WINDOW_NO_CORE_INSTANCE_MASK	(1 << 18)
-
-/*
-  flag indicate that blending is required.
-*/
-#define PAINT_WINDOW_BLEND_MASK			(1 << 19)
-
 #define CompWindowGrabKeyMask    (1 << 0)
 #define CompWindowGrabButtonMask (1 << 1)
 #define CompWindowGrabMoveMask   (1 << 2)
 #define CompWindowGrabResizeMask (1 << 3)
-
 
 
 enum CompStackingUpdateMode {
@@ -306,7 +252,6 @@ class CompWindow :
 
 	void close (Time serverTime);
 
-
 	bool inShowDesktopMode ();
 
 	void setShowDesktopMode (bool);
@@ -333,8 +278,7 @@ class CompWindow :
 
 	Window clientLeader ();
 
-	void
-	changeState (unsigned int newState);
+	void changeState (unsigned int newState);
 
 	void recalcActions ();
 
@@ -493,8 +437,6 @@ class CompWindow :
 	
     private:
 	PrivateWindow *priv;
-
-
 };
 
 #endif
