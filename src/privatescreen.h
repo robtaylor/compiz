@@ -17,13 +17,7 @@ typedef struct _CompWatchFd {
 } CompWatchFd;
 
 extern CompWindow *lastFoundWindow;
-extern CompWindow *lastDamagedWindow;
 extern bool	  useDesktopHints;
-extern bool       onlyCurrentScreen;
-
-extern int  defaultRefreshRate;
-extern const char *defaultTextureFilter;
-
 
 #define COMP_OPTION_ACTIVE_PLUGINS                   0
 #define COMP_OPTION_CLICK_TO_FOCUS                   1
@@ -196,141 +190,104 @@ class PrivateScreen {
 
 	void updatePassiveGrabs ();
 
-	short int
-	watchFdEvents (CompWatchFdHandle handle);
+	short int watchFdEvents (CompWatchFdHandle handle);
 
-	int
-	doPoll (int timeout);
+	int doPoll (int timeout);
 
-	void
-	handleTimers (struct timeval *tv);
+	void handleTimers (struct timeval *tv);
 
 	void addTimer (CompTimer *timer);
 	void removeTimer (CompTimer *timer);
 
-		void
-	updatePlugins ();
+	void updatePlugins ();
 
-	bool
-	triggerButtonPressBindings (CompOption::Vector &options,
-				    XButtonEvent       *event,
-				    CompOption::Vector &arguments);
+	bool triggerButtonPressBindings (CompOption::Vector &options,
+					 XButtonEvent       *event,
+					 CompOption::Vector &arguments);
 
-	bool
-	triggerButtonReleaseBindings (CompOption::Vector &options,
-				      XButtonEvent       *event,
+	bool triggerButtonReleaseBindings (CompOption::Vector &options,
+					   XButtonEvent       *event,
+					   CompOption::Vector &arguments);
+
+	bool triggerKeyPressBindings (CompOption::Vector &options,
+				      XKeyEvent          *event,
 				      CompOption::Vector &arguments);
 
-	bool
-	triggerKeyPressBindings (CompOption::Vector &options,
-				 XKeyEvent          *event,
-				 CompOption::Vector &arguments);
+	bool triggerKeyReleaseBindings (CompOption::Vector &options,
+					XKeyEvent          *event,
+					CompOption::Vector &arguments);
 
-	bool
-	triggerKeyReleaseBindings (CompOption::Vector &options,
-				   XKeyEvent          *event,
-				   CompOption::Vector &arguments);
+	bool triggerStateNotifyBindings (CompOption::Vector  &options,
+					 XkbStateNotifyEvent *event,
+					 CompOption::Vector  &arguments);
 
-	bool
-	triggerStateNotifyBindings (CompOption::Vector  &options,
-				    XkbStateNotifyEvent *event,
-				    CompOption::Vector  &arguments);
-	bool
-	triggerEdgeEnter (unsigned int       edge,
-			  CompAction::State  state,
-     			  CompOption::Vector &arguments);
+	bool triggerEdgeEnter (unsigned int       edge,
+			       CompAction::State  state,
+			       CompOption::Vector &arguments);
 
-	void
-	setAudibleBell (bool audible);
+	void setAudibleBell (bool audible);
 
-	bool
-	handlePingTimeout ();
+	bool handlePingTimeout ();
 	
-	bool
-	handleActionEvent (XEvent *event);
+	bool handleActionEvent (XEvent *event);
 
-	void
-	handleSelectionRequest (XEvent *event);
+	void handleSelectionRequest (XEvent *event);
 
-	void
-	handleSelectionClear (XEvent *event);
+	void handleSelectionClear (XEvent *event);
 	
-	bool
-	desktopHintEqual (unsigned long *data,
-			  int           size,
-			  int           offset,
-			  int           hintSize);
+	bool desktopHintEqual (unsigned long *data,
+			       int           size,
+			       int           offset,
+			       int           hintSize);
 
-	void
-	setDesktopHints ();
+	void setDesktopHints ();
 
-	void
-	setVirtualScreenSize (int hsize, int vsize);
+	void setVirtualScreenSize (int hsize, int vsize);
 
-	void
-	updateOutputDevices ();
+	void updateOutputDevices ();
 
-	void
-	detectOutputDevices ();
+	void detectOutputDevices ();
 
-	void
-	updateStartupFeedback ();
+	void updateStartupFeedback ();
 
-	void
-	updateScreenEdges ();
+	void updateScreenEdges ();
 
-	void
-	reshape (int w, int h);
+	void reshape (int w, int h);
 
-	bool
-	handleStartupSequenceTimeout();
+	bool handleStartupSequenceTimeout();
 
-	void
-	addSequence (SnStartupSequence *sequence);
+	void addSequence (SnStartupSequence *sequence);
 
-	void
-	removeSequence (SnStartupSequence *sequence);
+	void removeSequence (SnStartupSequence *sequence);
 
-	void
-	setSupportingWmCheck ();
+	void setSupportingWmCheck ();
 
-	void
-	setSupported ();
+	void setSupported ();
 
-	void
-	getDesktopHints ();
+	void getDesktopHints ();
 
-	void
-	grabUngrabOneKey (unsigned int modifiers,
-			  int          keycode,
-			  bool         grab);
+	void grabUngrabOneKey (unsigned int modifiers,
+			       int          keycode,
+			       bool         grab);
 
 
-	bool
-	grabUngrabKeys (unsigned int modifiers,
-			int          keycode,
-			bool         grab);
+	bool grabUngrabKeys (unsigned int modifiers,
+			     int          keycode,
+			     bool         grab);
 
-	bool
-	addPassiveKeyGrab (CompAction::KeyBinding &key);
+	bool addPassiveKeyGrab (CompAction::KeyBinding &key);
 
-	void
-	removePassiveKeyGrab (CompAction::KeyBinding &key);
+	void removePassiveKeyGrab (CompAction::KeyBinding &key);
 
-	void
-	updatePassiveKeyGrabs ();
+	void updatePassiveKeyGrabs ();
 
-	bool
-	addPassiveButtonGrab (CompAction::ButtonBinding &button);
+	bool addPassiveButtonGrab (CompAction::ButtonBinding &button);
 
-	void
-	removePassiveButtonGrab (CompAction::ButtonBinding &button);
+	void removePassiveButtonGrab (CompAction::ButtonBinding &button);
 
-	void
-	computeWorkareaForBox (BoxPtr pBox, XRectangle *area);
+	void computeWorkareaForBox (BoxPtr pBox, XRectangle *area);
 
 	void updateScreenInfo ();
-
 
 	void updateModifierMappings ();
 
@@ -440,8 +397,8 @@ class PrivateScreen {
 
 	SnDisplay *snDisplay;
 
-	unsigned int      lastPing;
-	CompTimer   pingTimer;
+	unsigned int lastPing;
+	CompTimer    pingTimer;
 
 	Window activeWindow;
 
@@ -456,9 +413,9 @@ class PrivateScreen {
 	KeyCode returnKeyCode;
 
 	CompTimer autoRaiseTimer;
-	Window	      autoRaiseWindow;
+	Window    autoRaiseWindow;
 
-	CompTimer edgeDelayTimer;
+	CompTimer               edgeDelayTimer;
 	CompDelayedEdgeSettings edgeDelaySettings;
 
 	CompOption::Value plugin;
@@ -469,26 +426,26 @@ class PrivateScreen {
 	CompWindowList windows;
 	CompWindow::Map windowsMap;
 
-	Colormap	      colormap;
-	int		      screenNum;
+	Colormap colormap;
+	int      screenNum;
 
-	CompSize              size;
-	CompPoint             vp;
-	CompSize              vpSize;
-	unsigned int      nDesktop;
-	unsigned int      currentDesktop;
+	CompSize     size;
+	CompPoint    vp;
+	CompSize     vpSize;
+	unsigned int nDesktop;
+	unsigned int currentDesktop;
 	CompRegion   region;
 
 	Window	      root;
 
 	XWindowAttributes attrib;
-	Window	      grabWindow;
+	Window            grabWindow;
 
-	Cursor	      invisibleCursor;
+	Cursor  invisibleCursor;
 
-	int		      desktopWindowCount;
-	unsigned int      mapNum;
-	unsigned int      activeNum;
+	int          desktopWindowCount;
+	unsigned int mapNum;
+	unsigned int activeNum;
 
 	CompOutput::vector outputDevs;
 	int	           currentOutputDev;
@@ -498,13 +455,13 @@ class PrivateScreen {
 	XRectangle lastViewport;
 
 	CompActiveWindowHistory history[ACTIVE_WINDOW_HISTORY_NUM];
-	int			    currentHistory;
+	int                     currentHistory;
 
 	CompScreenEdge screenEdge[SCREEN_EDGE_NUM];
 
 	SnMonitorContext                 *snContext;
 	std::list<CompStartupSequence *> startupSequences;
-	CompTimer                  startupSequenceTimer;
+	CompTimer                        startupSequenceTimer;
 
 	std::list<CompGroup *> groups;
 
@@ -518,16 +475,15 @@ class PrivateScreen {
 	Cursor busyCursor;
 
 	CompWindow **clientList;
-	int	       nClientList;
+	int        nClientList;
 
 	std::list<ButtonGrab> buttonGrabs;	
-	std::list<KeyGrab> keyGrabs;
+	std::list<KeyGrab>    keyGrabs;
 
 	std::list<Grab *> grabs;
 
-	unsigned int    pendingDestroys;
+	unsigned int pendingDestroys;
 	
-
 	XRectangle workArea;
 
 	unsigned int showingDesktopMask;
@@ -538,7 +494,6 @@ class PrivateScreen {
         bool initialized;
 
 	CompOption::Vector opt;
-
 };
 
 #endif
