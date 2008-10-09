@@ -1,5 +1,5 @@
 /*
- * Copyright © 2007 Dennis Kasprzyk
+ * Copyright © 2008 Dennis Kasprzyk
  * Copyright © 2007 Novell, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software
@@ -21,7 +21,7 @@
  * NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
- * Authors: Dennis Kasprzyk <onestone@deltatauchi.de>
+ * Authors: Dennis Kasprzyk <onestone@compiz-fusion.org>
  *          David Reveman <davidr@novell.com>
  */
 
