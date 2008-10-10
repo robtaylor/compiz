@@ -427,7 +427,8 @@ matchOpsToString (MatchOp::List &list)
 	}
     }
 
-    value.erase (value.length () - 1);
+    if (!value.empty ())
+	value.erase (value.length () - 1);
 
     return value;
 }
