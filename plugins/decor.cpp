@@ -1516,11 +1516,9 @@ DecorScreen::setOption (const char        *name,
 	     */
 
 	    matchString = value.match ().toString ();
-    	    if (matchString.find ("rgba=") == std::string::npos)
+    	    if (matchString.find ("rgba=") == CompString::npos)
 	    {
-		CompMatch rgbaMatch;
-
-		rgbaMatch = "rgba=0";
+		CompMatch rgbaMatch("rgba=0");
 		value.match () &= rgbaMatch;
 	    }
 	}
