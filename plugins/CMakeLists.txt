@@ -24,8 +24,11 @@ target_link_libraries (water composite opengl)
 add_library (ini MODULE ini.cpp)
 target_link_libraries (ini)
 
+add_library (inotify MODULE inotify.cpp)
+target_link_libraries (inotify)
+
 install (
-    TARGETS decor move resize copytex zoom water ini
+    TARGETS decor move resize copytex zoom water ini inotify
     DESTINATION ${compiz_plugindir}
 )
 

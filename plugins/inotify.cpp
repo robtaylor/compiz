@@ -23,294 +23,170 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
-#include <stdlib.h>
-#include <unistd.h>
-#include <poll.h>
-#include <sys/inotify.h>
+#include "inotify.h"
 
-#include <compiz-core.h>
+static CompMetadata *inotifyMetadata;
 
-static CompMetadata inotifyMetadata;
+InotifyScreen::InotifyScreen (CompScreen *screen) :
+    PrivateHandler<InotifyScreen, CompScreen> (screen)
+{
+    fd = inotify_init ();
 
-static int corePrivateIndex;
+    fdHandle = screen->addWatchFd (fd,
+				   POLLIN | POLLPRI | POLLHUP | POLLERR,
+				   boost::bind (&InotifyScreen::processEvents,
+						this));
 
-typedef struct _CompInotifyWatch {
-    struct _CompInotifyWatch *next;
-    CompFileWatchHandle	     handle;
-    int			     wd;
-} CompInotifyWatch;
+    ScreenInterface::setHandler (screen, true);
 
-typedef struct _InotifyCore {
-    int		      fd;
-    CompInotifyWatch  *watch;
-    CompWatchFdHandle watchFdHandle;
+    const CompFileWatchList           &watchList = screen->getFileWatches ();
+    CompFileWatchList::const_iterator iter;
 
-    FileWatchAddedProc   fileWatchAdded;
-    FileWatchRemovedProc fileWatchRemoved;
-} InotifyCore;
+    for (iter = watchList.begin (); iter != watchList.end (); ++iter)
+	fileWatchAdded (*iter);
+}
 
-#define GET_INOTIFY_CORE(c)				       \
-    ((InotifyCore *) (c)->base.privates[corePrivateIndex].ptr)
+InotifyScreen::~InotifyScreen ()
+{
+    const CompFileWatchList           &watchList = screen->getFileWatches ();
+    CompFileWatchList::const_iterator iter;
 
-#define INOTIFY_CORE(c)			   \
-    InotifyCore *ic = GET_INOTIFY_CORE (c)
+    for (iter = watchList.begin (); iter != watchList.end (); ++iter)
+	fileWatchRemoved (*iter);
 
+    screen->removeWatchFd (fdHandle);
 
-static Bool
-inotifyProcessEvents (void *data)
+    close (fd);
+}
+
+void
+InotifyScreen::processEvents ()
 {
     char buf[256 * (sizeof (struct inotify_event) + 16)];
     int	 len;
 
-    INOTIFY_CORE (&core);
-
-    len = read (ic->fd, buf, sizeof (buf));
+    len = read (fd, buf, sizeof (buf));
     if (len < 0)
     {
 	perror ("read");
     }
     else
     {
-	struct inotify_event *event;
-	CompInotifyWatch     *iw;
-	CompFileWatch	     *fw;
-	int		     i = 0;
+	struct inotify_event              *event;
+	int		                  i = 0;
+	WatchList::iterator               iter;
+	const CompFileWatchList           &list = screen->getFileWatches ();
+	CompFileWatchList::const_iterator wIter;
 
 	while (i < len)
 	{
-	    event = (struct inotify_event *) &buf[i];
-
-	    for (iw = ic->watch; iw; iw = iw->next)
-		if (iw->wd == event->wd)
+	    for (iter = watches.begin (); iter != watches.end (); ++iter)
+		if ((*iter).wd = event->wd)
 		    break;
 
-	    if (iw)
+	    if (iter != watches.end ())
 	    {
-		for (fw = core.fileWatch; fw; fw = fw->next)
-		    if (fw->handle == iw->handle)
+		for (wIter = list.begin (); wIter != list.end (); ++iter)
+		    if ((*iter).handle == (*wIter)->handle)
 			break;
 
-		if (fw)
+		if (wIter != list.end ())
 		{
-		    if (event->len)
-			(*fw->callBack) (event->name, fw->closure);
-		    else
-			(*fw->callBack) (NULL, fw->closure);
+		    const char *name = (event->len) ? event->name : NULL;
+		    (*wIter)->callBack (name);
 		}
 	    }
 
 	    i += sizeof (*event) + event->len;
 	}
     }
-
-    return TRUE;
 }
 
-static int
-inotifyMask (CompFileWatch *fileWatch)
+static unsigned int
+inotifyMask (CompFileWatch *watch)
 {
-    int mask = 0;
+    unsigned int mask = 0;
 
-    if (fileWatch->mask & NOTIFY_CREATE_MASK)
+    if (watch->mask & NOTIFY_CREATE_MASK)
 	mask |= IN_CREATE;
 
-    if (fileWatch->mask & NOTIFY_DELETE_MASK)
+    if (watch->mask & NOTIFY_DELETE_MASK)
 	mask |= IN_DELETE;
 
-    if (fileWatch->mask & NOTIFY_MOVE_MASK)
+    if (watch->mask & NOTIFY_MOVE_MASK)
 	mask |= IN_MOVE;
 
-    if (fileWatch->mask & NOTIFY_MODIFY_MASK)
+    if (watch->mask & NOTIFY_MODIFY_MASK)
 	mask |= IN_MODIFY;
 
     return mask;
 }
 
-static void
-inotifyFileWatchAdded (CompCore      *c,
-		       CompFileWatch *fileWatch)
+void
+InotifyScreen::fileWatchAdded (CompFileWatch *fileWatch)
 {
-    CompInotifyWatch *iw;
+    InotifyWatch iw;
 
-    INOTIFY_CORE (c);
-
-    iw = malloc (sizeof (CompInotifyWatch));
-    if (!iw)
-	return;
-
-    iw->handle = fileWatch->handle;
-    iw->wd     = inotify_add_watch (ic->fd,
-				    fileWatch->path,
-				    inotifyMask (fileWatch));
-    if (iw->wd < 0)
+    iw.handle = fileWatch->handle;
+    iw.wd     = inotify_add_watch (fd, fileWatch->path,
+				   inotifyMask (fileWatch));
+    if (iw.wd < 0)
     {
 	perror ("inotify_add_watch");
-	free (iw);
 	return;
     }
 
-    iw->next  = ic->watch;
-    ic->watch = iw;
+    watches.push_back (iw);
 }
 
-static void
-inotifyFileWatchRemoved (CompCore      *c,
-			 CompFileWatch *fileWatch)
+void
+InotifyScreen::fileWatchRemoved (CompFileWatch *fileWatch)
 {
-    CompInotifyWatch *p = 0, *iw;
+    WatchList::iterator iter;
 
-    INOTIFY_CORE (c);
-
-    for (iw = ic->watch; iw; iw = iw->next)
+    for (iter = watches.begin (); iter != watches.end (); ++iter)
     {
-	if (iw->handle == fileWatch->handle)
+	if ((*iter).handle == fileWatch->handle)
+	{
+	    if (inotify_rm_watch (fd, (*iter).wd))
+		perror ("inotify_rm_watch");
+	    watches.erase (iter);
 	    break;
-
-	p = iw;
-    }
-
-    if (iw)
-    {
-	if (p)
-	    p->next = iw->next;
-	else
-	    ic->watch = iw->next;
-
-	if (inotify_rm_watch (ic->fd, iw->wd))
-	    perror ("inotify_rm_watch");
-
-	free (iw);
+	}
     }
 }
 
-static Bool
-inotifyInitCore (CompPlugin *p,
-		 CompCore   *c)
+bool
+InotifyPluginVTable::init ()
 {
-    InotifyCore   *ic;
-    CompFileWatch *fw;
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
+	return false;
 
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
+    inotifyMetadata = new CompMetadata (name ());
+    if (!inotifyMetadata)
+	return false;
 
-    ic = malloc (sizeof (InotifyCore));
-    if (!ic)
-	return FALSE;
+    inotifyMetadata->addFromFile (name ());
 
-    ic->fd = inotify_init ();
-    if (ic->fd < 0)
-    {
-	perror ("inotify_init");
-	free (ic);
-	return FALSE;
-    }
-
-    ic->watch = NULL;
-
-    ic->watchFdHandle = compAddWatchFd (ic->fd,
-					POLLIN | POLLPRI | POLLHUP | POLLERR,
-					inotifyProcessEvents,
-					NULL);
-
-    WRAP (ic, c, fileWatchAdded, inotifyFileWatchAdded);
-    WRAP (ic, c, fileWatchRemoved, inotifyFileWatchRemoved);
-
-    c->base.privates[corePrivateIndex].ptr = ic;
-
-    for (fw = c->fileWatch; fw; fw = fw->next)
-	inotifyFileWatchAdded (c, fw);
-
-    return TRUE;
+    return true;
 }
 
-static void
-inotifyFiniCore (CompPlugin *p,
-		 CompCore   *c)
+void
+InotifyPluginVTable::fini ()
 {
-    CompFileWatch *fw;
-
-    INOTIFY_CORE (c);
-
-    compRemoveWatchFd (ic->watchFdHandle);
-
-    for (fw = c->fileWatch; fw; fw = fw->next)
-	inotifyFileWatchRemoved (c, fw);
-
-    close (ic->fd);
-
-    UNWRAP (ic, c, fileWatchAdded);
-    UNWRAP (ic, c, fileWatchRemoved);
-
-    free (ic);
+    delete inotifyMetadata;
 }
 
-static CompBool
-inotifyInitObject (CompPlugin *p,
-		   CompObject *o)
+CompMetadata *
+InotifyPluginVTable::getMetadata ()
 {
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) inotifyInitCore
-    };
-
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
+    return inotifyMetadata;
 }
 
-static void
-inotifyFiniObject (CompPlugin *p,
-		   CompObject *o)
-{
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) inotifyFiniCore
-    };
+InotifyPluginVTable inotifyVTable;
 
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
-}
-
-static Bool
-inotifyInit (CompPlugin *p)
-{
-    if (!compInitPluginMetadataFromInfo (&inotifyMetadata, p->vTable->name,
-					 0, 0, 0, 0))
-	return FALSE;
-
-    corePrivateIndex = allocateCorePrivateIndex ();
-    if (corePrivateIndex < 0)
-    {
-	compFiniMetadata (&inotifyMetadata);
-	return FALSE;
-    }
-
-    compAddMetadataFromFile (&inotifyMetadata, p->vTable->name);
-
-    return TRUE;
-}
-
-static void
-inotifyFini (CompPlugin *p)
-{
-    freeCorePrivateIndex (corePrivateIndex);
-    compFiniMetadata (&inotifyMetadata);
-}
-
-static CompMetadata *
-inotifyGetMetadata (CompPlugin *plugin)
-{
-    return &inotifyMetadata;
-}
-
-CompPluginVTable inotifyVTable = {
-    "inotify",
-    inotifyGetMetadata,
-    inotifyInit,
-    inotifyFini,
-    inotifyInitObject,
-    inotifyFiniObject,
-    0, /* GetObjectOptions */
-    0  /* SetObjectOption */
-};
-
-CompPluginVTable *
-getCompPluginInfo20070830 (void)
+CompPlugin::VTable *
+getCompPluginInfo20080805 (void)
 {
     return &inotifyVTable;
 }
