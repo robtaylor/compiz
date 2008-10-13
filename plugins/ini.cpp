@@ -431,9 +431,24 @@ IniFile::stringToOption (CompOption *option,
 void
 IniScreen::fileChanged (const char *name)
 {
-    /* extract plugin from filename */
+    CompString   fileName (name);
+    unsigned int length;
+    CompString   plugin;
+    CompPlugin   *p;
 
-    /* call load on plugin */
+    if (fileName.length () <= strlen (FILE_SUFFIX))
+	return;
+
+    length = fileName.length () - strlen (FILE_SUFFIX);
+    if (strcmp (fileName.c_str () + length, FILE_SUFFIX) != 0)
+	return;
+
+    p = CompPlugin::find (fileName.substr (0, length).c_str ());
+    if (p)
+    {
+	IniFile ini (screen, p);
+	ini.load ();
+    }
 }
 
 CompString
