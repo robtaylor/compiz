@@ -296,6 +296,7 @@ class CompScreen :
 	CompSize size ();
 
 	int desktopWindowCount ();
+	unsigned int activeNum () const;
 
 	CompOutput::vector & outputDevs ();
 	CompOutput & currentOutputDev () const;

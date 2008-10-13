@@ -4222,6 +4222,12 @@ CompScreen::desktopWindowCount ()
     return priv->desktopWindowCount;
 }
 
+unsigned int
+CompScreen::activeNum () const
+{
+    return priv->activeNum;
+}
+
 CompOutput::vector &
 CompScreen::outputDevs ()
 {
