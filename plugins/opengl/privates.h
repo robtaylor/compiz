@@ -25,8 +25,8 @@
  *          David Reveman <davidr@novell.com>
  */
 
-#ifndef _COMPOSITE_PRIVATES_H
-#define _COMPOSITE_PRIVATES_H
+#ifndef _OPENGL_PRIVATES_H
+#define _OPENGL_PRIVATES_H
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
