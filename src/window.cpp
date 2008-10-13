@@ -4808,6 +4808,12 @@ CompWindow::syncWait ()
 }
 
 bool
+CompWindow::inputHint () const
+{
+    return priv->inputHint;
+}
+
+bool
 CompWindow::alpha ()
 {
     return priv->alpha;

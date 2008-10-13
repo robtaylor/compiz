@@ -408,6 +408,8 @@ class CompWindow :
 
 	bool syncWait ();
 
+	bool inputHint () const;
+
 	bool alpha ();
 
 	bool alive ();
