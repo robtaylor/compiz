@@ -73,7 +73,7 @@ IniFile::open (bool write)
 void
 IniFile::load ()
 {
-    bool loaded, resave = false;
+    bool resave = false;
 
     if (!plugin)
 	return;
@@ -95,32 +95,28 @@ IniFile::load ()
     else
     {
 	CompOption::Vector& options = plugin->vTable->getOptions ();
+	CompString          line, optionValue;
 	CompOption          *option;
-	CompString          optionValue;
-	char                buffer[4096];
-	char                *delimiter;
+	unsigned int        pos;
 
-#warning fixme: is there a way to read a full line into a CompString?
-	while (optionFile.getline (buffer, 4096))
+	while (std::getline (optionFile, line))
 	{
-	    delimiter = strchr (buffer, '=');
-	    if (!delimiter)
+	    pos = line.find_first_of ('=');
+	    if (pos == CompString::npos)
 		continue;
 
-	    *delimiter  = 0;
-
-	    option = CompOption::findOption (options, buffer);
+	    option = CompOption::findOption (options, line.substr (pos + 1));
 	    if (!option)
 		continue;
 
-	    optionValue = delimiter + 1;
-	    stringToOption (option, optionValue);
+	    optionValue = line.substr (0, pos);
+	    if (!stringToOption (option, optionValue))
+		resave = true;
 	}
     }
 
-    optionFile.close ();
-
-    if (loaded && resave)
+    /* re-save whole file if we encountered invalid lines */
+    if (resave)
 	save ();
 }
 
@@ -152,8 +148,6 @@ IniFile::save ()
 	if (valid)
 	    optionFile << option.name () << "=" << optionValue << std::endl;
     }
-
-    optionFile.close ();
 }
 
 CompString
@@ -381,7 +375,7 @@ IniFile::stringToOptionValue (CompString        &string,
     return retval;
 }
 
-void
+bool
 IniFile::stringToOption (CompOption *option,
 			 CompString &valueString)
 {
@@ -426,6 +420,8 @@ IniFile::stringToOption (CompOption *option,
     if (valid)
 	screen->setOptionForPlugin (plugin->vTable->name (),
 				    option->name ().c_str (), value);
+
+    return valid;
 }
 
 void
