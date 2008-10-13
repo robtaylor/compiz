@@ -53,6 +53,15 @@ extern CompOutput *targetOutput;
 #define GREEN_SATURATION_WEIGHT 0.59f
 #define BLUE_SATURATION_WEIGHT  0.11f
 
+class GLIcon
+{
+    public:
+	GLIcon () : icon (NULL) {};
+	
+	CompIcon        *icon;
+	GLTexture::List textures;
+};
+
 class PrivateGLScreen :
     public ScreenInterface,
     public CompositeScreen::PaintHandler
@@ -123,6 +132,8 @@ class PrivateGLScreen :
 	std::vector<GLTexture::BindPixmapProc> bindPixmap;
 	bool hasCompositing;
 
+	GLIcon defaultIcon;
+
 	CompOption::Vector opt;
 };
 
@@ -167,6 +178,8 @@ class PrivateGLWindow :
 	unsigned int lastMask;
 
 	GLWindow::Geometry geometry;
+
+	std::list<GLIcon> icons;
 };
 
 

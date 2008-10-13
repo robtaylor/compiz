@@ -57,7 +57,8 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     updateReg (true),
     clip (),
     bindFailed (false),
-    geometry ()
+    geometry (),
+    icons ()
 {
     paint.xScale	= 1.0f;
     paint.yScale	= 1.0f;
@@ -315,6 +316,29 @@ const GLTexture::MatrixList &
 GLWindow::matrices () const
 {
     return priv->matrices;
+}
+
+GLTexture *
+GLWindow::getIcon (int width, int height)
+{
+    GLIcon   icon;
+    CompIcon *i = priv->window->getIcon (width, height);
+
+    if (!i)
+	return NULL;
+
+    foreach (GLIcon &icon, priv->icons)
+	if (icon.icon == i)
+	    return icon.textures[0];
+
+    icon.icon = i;
+    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (),
+						     i->width (), i->height ());
+
+    if (icon.textures.size () > 1 || icon.textures.size () == 0)
+	return NULL;
+
+    priv->icons.push_back (icon);
 }
 
 void

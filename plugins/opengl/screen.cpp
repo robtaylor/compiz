@@ -567,6 +567,12 @@ PrivateGLScreen::handleEvent (XEvent *event)
 		if (w)
 		    GLWindow::get (w)->updatePaintAttribs ();
 	    }
+	    else if (event->xproperty.atom == Atoms::wmIcon)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    GLWindow::get (w)->priv->icons.clear ();
+	    }
 	    break;
 	break;
 	default:
@@ -1133,5 +1139,25 @@ GLScreen::unregisterBindPixmap (GLTexture::BindPixmapHandle hnd)
     {
 	CompositeScreen::get (screen)->unregisterPaintHandler ();
 	priv->hasCompositing = false;
+    }
+}
+
+GLTexture *
+GLScreen::defaultIcon ()
+{
+    CompIcon *i = screen->defaultIcon ();
+    if (priv->defaultIcon.icon == i)
+	return priv->defaultIcon.textures[0];
+
+    priv->defaultIcon.textures =
+	GLTexture::imageBufferToTexture ((char *) i->data (),
+					 i->width (), i->height ());
+
+    if (priv->defaultIcon.textures.size () == 1)
+	priv->defaultIcon.icon = i;
+    else
+    {
+	priv->defaultIcon.icon = NULL;
+	priv->defaultIcon.textures.clear ();
     }
 }
