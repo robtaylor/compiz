@@ -344,13 +344,13 @@ IniFile::stringToOptionValue (CompString        &string,
 
 	    switch (type) {
 	    case CompOption::TypeKey:
-		action.keyFromString (string);
+		retval = action.keyFromString (string);
 		break;
 	    case CompOption::TypeButton:
-		action.buttonFromString (string);
+		retval = action.buttonFromString (string);
 		break;
 	    case CompOption::TypeEdge:
-		action.edgeMaskFromString (string);
+		retval = action.edgeMaskFromString (string);
 		break;
 	    case CompOption::TypeBell:
 		if (string == "true")
