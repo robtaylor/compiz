@@ -31,8 +31,7 @@ CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 		    unsigned int height) :
     mWidth (width),
     mHeight (height),
-    mData (new unsigned char[width * height * 4]),
-    mUpdateTex (true)
+    mData (new unsigned char[width * height * 4])
 {
 }
 
@@ -42,13 +41,13 @@ CompIcon::~CompIcon ()
 }
 
 unsigned int
-CompIcon::width ()
+CompIcon::width () const
 {
     return mWidth;
 }
 
 unsigned int
-CompIcon::height ()
+CompIcon::height () const
 {
     return mHeight;
 }
@@ -56,6 +55,5 @@ CompIcon::height ()
 unsigned char*
 CompIcon::data ()
 {
-    mUpdateTex = true;
     return mData;
 }

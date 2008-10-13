@@ -35,15 +35,14 @@ class CompIcon {
 	CompIcon (CompScreen *screen, unsigned width, unsigned int height);
 	~CompIcon ();
 
-	unsigned int width ();
-	unsigned int height ();
+	unsigned int width () const;
+	unsigned int height () const;
 	unsigned char* data ();
 
     private:
 	int           mWidth;
 	unsigned int  mHeight;
 	unsigned char *mData;
-	bool          mUpdateTex;
 };
 
 #endif
