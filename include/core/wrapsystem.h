@@ -37,7 +37,6 @@
 
 #define WRAPABLE_HND(num,itype,rtype, func, ...) 	\
    rtype func (__VA_ARGS__); 				\
-   rtype func ## Core (__VA_ARGS__); 			\
    void  func ## SetEnabled (itype *obj, bool enabled)	\
    {							\
        functionSetEnabled (obj, num, enabled);		\
