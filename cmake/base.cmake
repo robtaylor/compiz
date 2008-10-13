@@ -12,7 +12,10 @@ cmake_policy (SET CMP0003 NEW)
 cmake_policy (SET CMP0005 OLD)
 endif (CMAKE_MAJOR_VERSION GREATER 2 OR CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
 
-set (PKGCONFIG_REGEX ".*${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig.*")
+
+set (PKGCONFIG_REGEX "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig")
+string (REGEX REPLACE "([.+?\\])" "\\\\\\1" PKGCONFIG_REGEX ${PKGCONFIG_REGEX})
+set (PKGCONFIG_REGEX ".*${PKGCONFIG_REGEX}.*")
 
 # add install prefix to pkgconfig search path if needed
 if (NOT "$ENV{PKG_CONFIG_PATH}" MATCHES "${PKGCONFIG_REGEX}")
