@@ -526,11 +526,11 @@ IniScreen::IniScreen (CompScreen *screen) :
 	screen->addFileWatch (homeDir.c_str (), mask,
 			      boost::bind (&IniScreen::fileChanged, this, _1));
 
-    ScreenInterface::setHandler (screen, false);
+    ScreenInterface::setHandler (screen, true);
 
     /* FIXME: timer? */
     IniFile ini (screen, CompPlugin::find ("core"));
-    
+
     blockWrites = true;
     ini.load ();
     blockWrites = false;
