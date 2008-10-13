@@ -317,6 +317,8 @@ class CompScreen :
 
 	std::vector<XineramaScreenInfo> & screenInfo ();
 
+	CompIcon *defaultIcon () const;
+
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 

@@ -4034,6 +4034,12 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
     return highest;
 }
 
+CompIcon *
+CompScreen::defaultIcon () const
+{
+    return priv->defaultIcon;
+}
+
 bool
 PrivateScreen::updateDefaultIcon ()
 {
