@@ -448,9 +448,15 @@ CompAction::keyFromString (const CompString &str)
     bool retval = priv->key.fromString (str);
 
     if (retval)
+    {
 	priv->type = CompAction::BindingTypeKey;
+    }
     else
+    {
 	priv->type = CompAction::BindingTypeNone;
+	if (str == "Disabled")
+	    retval = true;
+    }
 
     return retval;
 }
@@ -471,8 +477,10 @@ CompAction::buttonFromString (const CompString &str)
     else
     {
 	priv->type = CompAction::BindingTypeNone;
+	if (str == "Disabled")
+	    retval = true;
     }
-    
+
     return retval;
 }
 
