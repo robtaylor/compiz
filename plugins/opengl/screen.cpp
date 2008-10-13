@@ -545,6 +545,12 @@ GLScreen::textureFilter ()
 }
 
 void
+GLScreen::setTextureFilter (GLenum filter)
+{
+    priv->textureFilter = filter;
+}
+
+void
 PrivateGLScreen::handleEvent (XEvent *event)
 {
     CompWindow *w;

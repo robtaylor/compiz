@@ -260,6 +260,7 @@ class GLScreen :
 	CompOption * getOption (const char *name);
 
 	GLenum textureFilter ();
+	void setTextureFilter (GLenum);
 
 	void clearTargetOutput (unsigned int mask);
 
