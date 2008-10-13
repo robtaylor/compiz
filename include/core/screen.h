@@ -296,6 +296,7 @@ class CompScreen :
 	int desktopWindowCount ();
 
 	CompOutput::vector & outputDevs ();
+	CompOutput & currentOutputDev () const;
 
 	XRectangle workArea ();
 

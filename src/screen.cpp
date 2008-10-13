@@ -4222,6 +4222,12 @@ CompScreen::outputDevs ()
     return priv->outputDevs;
 }
 
+CompOutput &
+CompScreen::currentOutputDev () const
+{
+    return priv->outputDevs [priv->currentOutputDev];
+}
+
 XRectangle
 CompScreen::workArea ()
 {
