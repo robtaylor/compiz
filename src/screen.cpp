@@ -220,6 +220,12 @@ CompScreen::removeFileWatch (CompFileWatchHandle handle)
     delete w;
 }
 
+const CompFileWatchList &
+CompScreen::getFileWatches () const
+{
+    return priv->fileWatch;
+}
+
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {

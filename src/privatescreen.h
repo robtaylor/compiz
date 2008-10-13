@@ -389,8 +389,8 @@ class PrivateScreen {
 
 	PrivateScreen *priv;
 
-	std::list<CompFileWatch *>  fileWatch;
-	CompFileWatchHandle         lastFileWatchHandle;
+	CompFileWatchList   fileWatch;
+	CompFileWatchHandle lastFileWatchHandle;
 
 	std::list<CompTimer *> timers;
 	struct timeval               lastTimeout;

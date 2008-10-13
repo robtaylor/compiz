@@ -72,6 +72,7 @@ struct CompFileWatch {
     FileWatchCallBack   callBack;
     CompFileWatchHandle handle;
 };
+typedef std::list<CompFileWatch *> CompFileWatchList;
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
@@ -146,6 +147,8 @@ class CompScreen :
 					  FileWatchCallBack callBack);
 
 	void removeFileWatch (CompFileWatchHandle handle);
+	
+	const CompFileWatchList& getFileWatches () const;
 	
 	CompWatchFdHandle addWatchFd (int             fd,
 				      short int       events,
