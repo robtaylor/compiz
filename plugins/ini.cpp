@@ -345,11 +345,9 @@ IniFile::stringToOptionValue (CompString        &string,
 	    switch (type) {
 	    case CompOption::TypeKey:
 		action.keyFromString (string);
-		retval = (action.type () != CompAction::BindingTypeNone);
 		break;
 	    case CompOption::TypeButton:
 		action.buttonFromString (string);
-		retval = (action.type () != CompAction::BindingTypeNone);
 		break;
 	    case CompOption::TypeEdge:
 		action.edgeMaskFromString (string);
@@ -442,11 +440,15 @@ IniScreen::fileChanged (const char *name)
     if (strcmp (fileName.c_str () + length, FILE_SUFFIX) != 0)
 	return;
 
-    p = CompPlugin::find (fileName.substr (0, length).c_str ());
+    plugin = fileName.substr (0, length);
+    p = CompPlugin::find (plugin == "general" ? "core" : plugin.c_str ());
     if (p)
     {
 	IniFile ini (screen, p);
+
+	blockWrites = true;
 	ini.load ();
+	blockWrites = false;
     }
 }
 
@@ -481,8 +483,12 @@ IniScreen::setOptionForPlugin (const char        *plugin,
 	p = CompPlugin::find (plugin);
 	if (p)
 	{
-	    IniFile ini (screen, p);
-	    ini.save ();
+	    CompOption *o;
+	    IniFile    ini (screen, p);
+
+	    o = CompOption::findOption (p->vTable->getOptions (), name);
+	    if (o && (o->value () != v))
+		ini.save ();
 	}
     }
 
