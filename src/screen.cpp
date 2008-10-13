@@ -2834,6 +2834,12 @@ CompScreen::unhookWindow (CompWindow *w)
 	lastFoundWindow = NULL;
 }
 
+Cursor
+CompScreen::invisibleCursor ()
+{
+    return priv->invisibleCursor;
+}
+
 #define POINTER_GRAB_MASK (ButtonReleaseMask | \
 			   ButtonPressMask   | \
 			   PointerMotionMask)

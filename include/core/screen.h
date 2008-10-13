@@ -249,6 +249,8 @@ class CompScreen :
 
 	void unhookWindow (CompWindow *w);
 
+	Cursor invisibleCursor ();
+
 	GrabHandle pushGrab (Cursor cursor, const char *name);
 
 	void updateGrab (GrabHandle handle, Cursor cursor);
