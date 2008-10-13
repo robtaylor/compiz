@@ -78,6 +78,10 @@ IniFile::load ()
     if (!plugin)
 	return;
 
+    CompOption::Vector& options = plugin->vTable->getOptions ();
+    if (options.empty ())
+	return;
+
     if (!open (false))
 	return;
 
@@ -94,10 +98,9 @@ IniFile::load ()
     }
     else
     {
-	CompOption::Vector& options = plugin->vTable->getOptions ();
-	CompString          line, optionValue;
-	CompOption          *option;
-	unsigned int        pos;
+	CompString   line, optionValue;
+	CompOption   *option;
+	unsigned int pos;
 
 	while (std::getline (optionFile, line))
 	{
@@ -105,11 +108,11 @@ IniFile::load ()
 	    if (pos == CompString::npos)
 		continue;
 
-	    option = CompOption::findOption (options, line.substr (pos + 1));
+	    option = CompOption::findOption (options, line.substr (0, pos));
 	    if (!option)
 		continue;
 
-	    optionValue = line.substr (0, pos);
+	    optionValue = line.substr (pos + 1);
 	    if (!stringToOption (option, optionValue))
 		resave = true;
 	}
