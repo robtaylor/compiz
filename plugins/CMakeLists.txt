@@ -1,3 +1,5 @@
+include (CheckIncludeFile)
+
 set (CMAKE_INSTALL_RPATH ${compiz_plugindir} ${libdir})
 
 add_subdirectory (composite)
@@ -24,8 +26,16 @@ target_link_libraries (water composite opengl)
 add_library (ini MODULE ini.cpp)
 target_link_libraries (ini)
 
-add_library (inotify MODULE inotify.cpp)
-target_link_libraries (inotify)
+check_include_file ("sys/inotify.h" HAS_INOTIFY)
+
+if (HAS_INOTIFY)
+    add_library (inotify MODULE inotify.cpp)
+    target_link_libraries (inotify)
+    install (
+	TARGETS inotify
+	DESTINATION ${compiz_plugindir}
+    )
+endif (HAS_INOTIFY)
 
 install (
     TARGETS decor move resize copytex zoom water ini inotify
