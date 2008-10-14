@@ -2,7 +2,7 @@
     <plugin name="switcher">
 	<_short>Application Switcher</_short>
 	<_long>Application Switcher</_long>
-	<display>
+	<options>
 	    <option name="next_button" type="button">
 		<_short>Next window</_short>
 		<_long>Popup switcher if not visible and select next window</_long>
@@ -71,8 +71,6 @@
 		<_short>Prev Panel</_short>
 		<_long>Select previous panel type window.</_long>
 	    </option>
-	</display>
-	<screen>
 	    <option name="speed" type="float">
 		<_short>Speed</_short>
 		<_long>Switcher speed</_long>
@@ -148,6 +146,6 @@
 		<_long>Rotate to the selected window while switching</_long>
 		<default>false</default>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

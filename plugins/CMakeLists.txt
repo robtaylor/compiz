@@ -26,6 +26,9 @@ target_link_libraries (water composite opengl)
 add_library (ini MODULE ini.cpp)
 target_link_libraries (ini)
 
+add_library (switcher MODULE switcher.cpp)
+target_link_libraries (switcher composite opengl)
+
 check_include_file ("sys/inotify.h" HAS_INOTIFY)
 
 if (HAS_INOTIFY)
@@ -38,7 +41,7 @@ if (HAS_INOTIFY)
 endif (HAS_INOTIFY)
 
 install (
-    TARGETS decor move resize copytex zoom water ini inotify
+    TARGETS decor move resize copytex zoom water ini switcher
     DESTINATION ${compiz_plugindir}
 )
 
