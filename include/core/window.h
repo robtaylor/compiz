@@ -310,8 +310,8 @@ class CompWindow :
 	bool grabbed ();
 
 	unsigned int activeNum ();
-	
-	int mapNum ();
+
+	int mapNum () const;
 
 	CompStruts * struts ();
 
@@ -424,15 +424,16 @@ class CompWindow :
 
 	bool syncWait ();
 
-	bool inputHint () const;
-
 	bool alpha ();
 
 	bool alive ();
 
 	bool overrideRedirect ();
 
-	bool isViewable ();
+	bool isMapped () const;
+	bool isViewable () const;
+
+	bool isFocussable () const;
 
 	int windowClass ();
 

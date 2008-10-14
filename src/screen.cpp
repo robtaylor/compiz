@@ -3242,7 +3242,7 @@ PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 
     foreach (CompWindow *w, windows)
     {
-	if (!w->mapNum ())
+	if (!w->isMapped ())
 	    continue;
 
 	if (w->struts ())
