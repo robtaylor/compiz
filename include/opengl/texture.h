@@ -48,7 +48,7 @@
 
 class PrivateTexture;
 
-class GLTexture {
+class GLTexture : public CompRect {
     public:
 
 	typedef enum {
@@ -91,7 +91,6 @@ class GLTexture {
 	virtual void enable (Filter filter);
 	virtual void disable ();
 
-	const CompRect &size () const;
 	bool mipmap () const;
 	void setMipmap (bool);
 	void setFilter (GLenum);
@@ -123,7 +122,6 @@ class GLTexture {
 	virtual ~GLTexture ();
 
 	void setData (GLenum target, Matrix &m, bool mipmap);
-	void setSize (const CompRect &);
 
     private:
 	PrivateTexture *priv;

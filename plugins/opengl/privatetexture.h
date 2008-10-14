@@ -59,7 +59,6 @@ class PrivateTexture {
 	bool              mipmapSupport;
 	bool              initial;
 	int               refCount;
-	CompRect          size;
 };
 
 class TfpTexture : public GLTexture {

@@ -1263,8 +1263,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    {
 		sAttrib.xScale = sAttrib.yScale = 1.0f;
 
-		wx = x + WIDTH  - icon->size ().width ()  - SPACE;
-		wy = y + HEIGHT - icon->size ().height () - SPACE;
+		wx = x + WIDTH  - icon->width ()  - SPACE;
+		wy = y + HEIGHT - icon->height () - SPACE;
 	    }
 	}
     }
@@ -1284,13 +1284,13 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    iw = width  - SPACE;
 	    ih = height - SPACE;
 
-	    if (icon->size ().width () < (iw >> 1))
-		sAttrib.xScale = (iw / icon->size ().width ());
+	    if (icon->width () < (iw >> 1))
+		sAttrib.xScale = (iw / icon->width ());
 	    else
 		sAttrib.xScale = 1.0f;
 
-	    if (icon->size ().height () < (ih >> 1))
-		sAttrib.yScale = (ih / icon->size ().height ());
+	    if (icon->height () < (ih >> 1))
+		sAttrib.yScale = (ih / icon->height ());
 	    else
 		sAttrib.yScale = 1.0f;
 
@@ -1299,8 +1299,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    else
 		sAttrib.xScale = sAttrib.yScale;
 
-	    width  = icon->size ().width ()  * sAttrib.xScale;
-	    height = icon->size ().height () * sAttrib.yScale;
+	    width  = icon->width ()  * sAttrib.xScale;
+	    height = icon->height () * sAttrib.yScale;
 
 	    wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
 	    wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
@@ -1309,8 +1309,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
     if (icon)
     {
-	CompRegion        iconReg (g.x (), g.y (), icon->size ().width (),
-				   icon->size ().height ());
+	CompRegion        iconReg (g.x (), g.y (), icon->width (),
+				   icon->height ());
 	GLTexture::MatrixList matrix (1);
 	int               addWindowGeometryIndex =
 	    gWindow->glAddGeometryGetCurrentIndex ();

@@ -129,7 +129,7 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
 	for (unsigned int i = 0; i < backgroundTextures.size (); i++)
 	{
 	    GLTexture *bg = backgroundTextures[i];
-	    CompRegion r = region & bg->size ();
+	    CompRegion r = region & *bg;
 
 	    pBox = const_cast <Region> (r.handle ())->rects;
 	    nBox = const_cast <Region> (r.handle ())->numRects;

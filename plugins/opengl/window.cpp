@@ -359,7 +359,7 @@ PrivateGLWindow::updateWindowRegions ()
 	regions.resize (textures.size ());
     for (unsigned int i = 0; i < textures.size (); i++)
     {
-	regions[i] = CompRegion (textures[i]->size ());
+	regions[i] = CompRegion (*textures[i]);
 	regions[i].translate (window->geometry ().x () - window->input ().left,
 			      window->geometry ().y () - window->input ().top);
 	regions[i] &= window->region ();

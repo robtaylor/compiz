@@ -96,6 +96,7 @@ GLTexture::List::clear ()
 }
 
 GLTexture::GLTexture () :
+    CompRect (0, 0, 0, 0),
     priv (new PrivateTexture (this))
 {
 }
@@ -114,8 +115,7 @@ PrivateTexture::PrivateTexture (GLTexture *texture) :
     mipmap  (true),
     mipmapSupport (false),
     initial (true),
-    refCount (1),
-    size (0, 0, 0, 0)
+    refCount (1)
 {
     glGenTextures (1, &name);
 }
@@ -156,12 +156,6 @@ GLenum
 GLTexture::filter () const
 {
     return priv->filter;
-}
-
-const CompRect &
-GLTexture::size () const
-{
-    return priv->size;
 }
 
 void
@@ -253,12 +247,6 @@ GLTexture::setData (GLenum target, Matrix &m, bool mipmap)
 }
 
 void
-GLTexture::setSize (const CompRect & size)
-{
-    priv->size = size;
-}
-
-void
 GLTexture::setMipmap (bool enable)
 {
     priv->mipmap = enable;
@@ -330,7 +318,7 @@ PrivateTexture::loadImageData (const char   *image,
     }
 
     t->setData (target, matrix, mipmap);
-    t->setSize (CompRect (0, width, 0, height));
+    t->setGeometry (0, width, 0, height);
 
     glBindTexture (target, t->name ());
 
@@ -571,7 +559,7 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
 
     tex = new TfpTexture ();
     tex->setData (texTarget, matrix, mipmap);
-    tex->setSize (CompRect (0, width, 0, height));
+    tex->setGeometry (0, width, 0, height);
     tex->pixmap = glxPixmap;
 
     rv[0] = tex;
