@@ -440,13 +440,10 @@ TfpTexture::~TfpTexture ()
     if (pixmap)
     {
 	glEnable (target ());
-	if (!strictBinding)
-	{
-	    glBindTexture (target (), name ());
 
-	    (*GL::releaseTexImage) (screen->dpy (), pixmap,
-				    GLX_FRONT_LEFT_EXT);
-	}
+	glBindTexture (target (), name ());
+
+	(*GL::releaseTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT);
 
 	glBindTexture (target (), 0);
 	glDisable (target ());
@@ -589,11 +586,8 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
 
     glBindTexture (texTarget, tex->name ());
 
-    if (!strictBinding)
-    {
-	(*GL::bindTexImage) (screen->dpy (), glxPixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
-    }
+
+    (*GL::bindTexImage) (screen->dpy (), glxPixmap, GLX_FRONT_LEFT_EXT, NULL);
 
     tex->setFilter (GL_NEAREST);
     tex->setWrap (GL_CLAMP_TO_EDGE);
@@ -613,10 +607,10 @@ TfpTexture::enable (GLTexture::Filter filter)
     glEnable (target ());
     glBindTexture (target (), name ());
 
-    if (strictBinding && pixmap)
+    if (damaged && pixmap)
     {
-	(*GL::bindTexImage) (screen->dpy (), pixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
+	(*GL::releaseTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT);
+	(*GL::bindTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT, NULL);
     }
 
     GLTexture::enable (filter);
@@ -626,21 +620,7 @@ TfpTexture::enable (GLTexture::Filter filter)
 	if (damaged)
 	{
 	    (*GL::generateMipmap) (target ());
-	    damaged = false;
 	}
     }
-}
-
-void
-TfpTexture::disable ()
-{
-    if (strictBinding && pixmap)
-    {
-	glBindTexture (target (), name ());
-
-	(*GL::releaseTexImage) (screen->dpy (), pixmap,
-				GLX_FRONT_LEFT_EXT);
-    }
-
-    GLTexture::disable ();
+    damaged = false;
 }

@@ -44,7 +44,6 @@ typedef std::list<CompWindow *> CompWindowList;
 extern char       *backgroundImage;
 extern bool       replaceCurrentWm;
 extern bool       indirectRendering;
-extern bool       strictBinding;
 extern bool       noDetection;
 
 extern CompScreen   *screen;
