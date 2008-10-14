@@ -42,7 +42,7 @@ class MatchOp {
 	    TypeExp
 	} Type;
 
-	typedef std::list<MatchOp> List;
+	typedef std::list<MatchOp *> List;
 
 	MatchOp ();
 	virtual ~MatchOp ();
@@ -55,6 +55,7 @@ class MatchOp {
 class MatchExpOp : public MatchOp {
     public:
 	MatchExpOp ();
+	MatchExpOp (const MatchExpOp &);
 
 	MatchOp::Type type () { return MatchOp::TypeExp; };
 
@@ -66,6 +67,10 @@ class MatchExpOp : public MatchOp {
 class MatchGroupOp : public MatchOp {
     public:
 	MatchGroupOp ();
+	~MatchGroupOp ();
+	MatchGroupOp (const MatchGroupOp &);
+
+	MatchGroupOp & operator= (const MatchGroupOp &);
 
 	MatchOp::Type type () { return MatchOp::TypeGroup; };
 
