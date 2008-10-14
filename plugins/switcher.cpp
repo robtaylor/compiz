@@ -206,7 +206,12 @@ SwitchScreen::createWindowList (int count)
     foreach (CompWindow *w, screen->windows ())
     {
 	if (SwitchWindow::get (w)->isSwitchWin ())
+	{
+	    SWITCH_WINDOW (w);
 	    windows.push_back (w);
+
+	    sw->cWindow->damageRectSetEnabled (sw, true);
+	}
     }
 
     windows.sort (compareWindows);
@@ -498,6 +503,18 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	switching  = true;
 	moreAdjust = true;
+
+	screen->handleEventSetEnabled (this, true);
+	cScreen->preparePaintSetEnabled (this, true);
+	cScreen->donePaintSetEnabled (this, true);
+	gScreen->glPaintOutputSetEnabled (this, true);
+
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    SWITCH_WINDOW (w);
+
+	    sw->gWindow->glPaintSetEnabled (sw, true);
+	}
     }
 }
 
@@ -556,6 +573,9 @@ switchTerminate (CompAction         *action,
 
 	screen->removeGrab (ss->grabIndex, 0);
 	ss->grabIndex = NULL;
+
+	if (!ss->popupWindow)
+	    screen->handleEventSetEnabled (ss, false);
 
 	if (!ss->zooming)
 	{
@@ -680,8 +700,13 @@ SwitchScreen::windowRemove (Window id)
 	int    count, j, i = 0;
 	Window selected, old;
 
-	if (!SwitchWindow::get (w)->isSwitchWin ())
+	SWITCH_WINDOW (w);
+
+	if (!sw->isSwitchWin ())
 	    return;
+
+	sw->cWindow->damageRectSetEnabled (sw, false);
+	sw->gWindow->glPaintSetEnabled (sw, false);
 
 	old = selected = selectedWindow;
 
@@ -1125,6 +1150,19 @@ SwitchScreen::donePaint ()
 		CompositeWindow::get (w)->addDamage ();
 	}
     }
+    else if (!grabIndex && !(zooming && translate > 0.001f) && !moreAdjust)
+    {
+	cScreen->preparePaintSetEnabled (this, false);
+	cScreen->donePaintSetEnabled (this, false);
+	gScreen->glPaintOutputSetEnabled (this, false);
+
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    SWITCH_WINDOW (w);
+	    sw->cWindow->damageRectSetEnabled (sw, false);
+	    sw->gWindow->glPaintSetEnabled (sw, false);
+	}
+    }
 
     cScreen->donePaint ();
 }
@@ -1566,9 +1604,9 @@ SwitchScreen::SwitchScreen (CompScreen *screen) :
 	XInternAtom (screen->dpy (), DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
 
 
-    ScreenInterface::setHandler (screen);
-    CompositeScreenInterface::setHandler (cScreen);
-    GLScreenInterface::setHandler (gScreen);
+    ScreenInterface::setHandler (screen, false);
+    CompositeScreenInterface::setHandler (cScreen, false);
+    GLScreenInterface::setHandler (gScreen, false);
 }
 
 SwitchScreen::~SwitchScreen ()

@@ -173,8 +173,11 @@ class SwitchWindow :
 	    sScreen (SwitchScreen::get (screen)),
 	    gScreen (GLScreen::get (screen))
 	{
-	    GLWindowInterface::setHandler (gWindow, true);
-	    CompositeWindowInterface::setHandler (cWindow, true);
+	    GLWindowInterface::setHandler (gWindow, false);
+	    CompositeWindowInterface::setHandler (cWindow, false);
+
+	    if (sScreen->popupWindow && sScreen->popupWindow == window->id ())
+		gWindow->glPaintSetEnabled (this, true);
 	}
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
