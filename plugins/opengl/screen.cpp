@@ -1161,15 +1161,14 @@ GLScreen::defaultIcon ()
     if (!i)
 	return NULL;
     
-    size = i->size ();
-    if (!size.width () || !size.height ())
+    if (!i->width () || !i->height ())
 	return NULL;
 
     if (priv->defaultIcon.icon == i)
 	return priv->defaultIcon.textures[0];
 
     priv->defaultIcon.textures =
-	GLTexture::imageBufferToTexture ((char *) i->data (), size);
+	GLTexture::imageBufferToTexture ((char *) i->data (), *i);
 
     if (priv->defaultIcon.textures.size () == 1)
 	priv->defaultIcon.icon = i;

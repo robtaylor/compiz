@@ -32,12 +32,11 @@
 
 class CompScreen;
 
-class CompIcon {
+class CompIcon : public CompSize {
     public:
 	CompIcon (CompScreen *screen, unsigned width, unsigned int height);
 	~CompIcon ();
 
-	const CompSize & size () const;
 	unsigned char* data ();
 
     private:
