@@ -1085,30 +1085,31 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompOption              *o;
-    CompPlugin              *p;
-    unsigned int            nPop, i, j;
-    CompPlugin::List        pop;
+    CompOption        *o;
+    CompOption::Value value;
+    CompPlugin        *p;
+    unsigned int      nPop, i, j;
+    CompPlugin::List  pop;
 
     dirtyPluginList = false;
 
-    o = &opt[COMP_OPTION_ACTIVE_PLUGINS];
+    o     = &opt[COMP_OPTION_ACTIVE_PLUGINS];
+    value = o->value ();
 
     /* The old plugin list always begins with the core plugin. To make sure
        we don't unnecessarily unload plugins if the new plugin list does not
        contain the core plugin, we have to use an offset */
 
-    if (o->value ().list ().size () > 0 &&
-	o->value ().list ()[0]. s (). compare ("core"))
+    if (value.list ().size () > 0 && value.list ()[0]. s () != "core")
 	i = 0;
     else
 	i = 1;
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
     for (j = 1; j < plugin.list ().size () &&
-	 i < o->value ().list ().size (); i++, j++)
+	 i < value.list ().size (); i++, j++)
     {
-	if (plugin.list ()[j].s ().compare (o->value ().list ()[i].s ()))
+	if (plugin.list ()[j].s () != value.list ()[i].s ())
 	    break;
     }
 
@@ -1120,12 +1121,12 @@ PrivateScreen::updatePlugins ()
 	plugin.list ().pop_back ();
     }
 
-    for (; i < o->value ().list ().size (); i++)
+    for (; i < value.list ().size (); i++)
     {
 	p = NULL;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (o->value ().list ()[i]. s ().compare (pp->vTable->name ()) == 0)
+	    if (value.list ()[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -1138,7 +1139,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0)
 	{
-	    p = CompPlugin::load (o->value ().list ()[i].s ().c_str ());
+	    p = CompPlugin::load (value.list ()[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
@@ -1150,17 +1151,14 @@ PrivateScreen::updatePlugins ()
 	}
 
 	if (p)
-	{
 	    plugin.list ().push_back (p->vTable->name ());
-	}
     }
 
     foreach (CompPlugin *pp, pop)
-    {
 	CompPlugin::unload (pp);
-    }
 
-    screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
+    if (!priv->dirtyPluginList)
+	screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
 }
 
 /* from fvwm2, Copyright Matthias Clasen, Dominik Vogt */
