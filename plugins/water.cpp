@@ -310,7 +310,8 @@ WaterScreen::fboEpilogue ()
     glLoadIdentity ();
     glDepthRange (0, 1);
     glViewport (-1, -1, 2, 2);
-    glRasterPos2f (0, 0);
+   
+    gScreen->resetRasterPos ();
 
     gScreen->setDefaultViewport ();
 

@@ -1173,3 +1173,11 @@ GLScreen::defaultIcon ()
 
     return priv->defaultIcon.textures[0];
 }
+
+void
+GLScreen::resetRasterPos ()
+{
+    glRasterPos2f (0, 0);
+    priv->rasterPos.setX (0);
+    priv->rasterPos.setY (0);
+}

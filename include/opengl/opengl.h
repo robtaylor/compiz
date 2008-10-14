@@ -288,6 +288,8 @@ class GLScreen :
 
 	GLTexture *defaultIcon ();
 
+	void resetRasterPos ();
+
 	WRAPABLE_HND (0, GLScreenInterface, bool, glPaintOutput,
 		      const GLScreenPaintAttrib &, const GLMatrix &,
 		      const CompRegion &, CompOutput *, unsigned int);
