@@ -312,6 +312,7 @@ IniFile::stringToOptionValue (CompString        &string,
 	{
 	    retval = false;
 	};
+	break;
     case CompOption::TypeFloat:
 	try
 	{
