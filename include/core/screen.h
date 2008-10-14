@@ -124,6 +124,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 
 class CompScreen :
+    public CompSize,
     public WrapableHandler<ScreenInterface, 17>,
     public CompPrivateStorage
 {
@@ -285,8 +286,6 @@ class CompScreen :
 	CompPoint vp ();
 
 	CompSize vpSize ();
-
-	CompSize size ();
 
 	int desktopWindowCount ();
 	unsigned int activeNum () const;

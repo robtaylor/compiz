@@ -113,8 +113,8 @@ SwitchWindow::isSwitchWin ()
 	    CompWindow::Geometry &sg = window->serverGeometry ();
 	    if (sg.x () + sg.width ()  <= 0    ||
 		sg.y () + sg.height () <= 0    ||
-		sg.x () >= screen->size ().width () ||
-		sg.y () >= screen->size ().height ())
+		sg.x () >= screen->width () ||
+		sg.y () >= screen->height ())
 		return false;
 	}
 	else
@@ -276,8 +276,8 @@ SwitchScreen::switchToWindow (bool toNext)
 	    xev.xclient.message_type = Atoms::desktopViewport;
 	    xev.xclient.window = screen->root ();
 
-	    xev.xclient.data.l[0] = pnt.x () * screen->size ().width ();
-	    xev.xclient.data.l[1] = pnt.y () * screen->size ().height ();
+	    xev.xclient.data.l[0] = pnt.x () * screen->width ();
+	    xev.xclient.data.l[1] = pnt.y () * screen->height ();
 	    xev.xclient.data.l[2] = 0;
 	    xev.xclient.data.l[3] = 0;
 	    xev.xclient.data.l[4] = 0;
@@ -338,7 +338,7 @@ SwitchScreen::countWindows ()
 		break;
 	}
 
-    if (count == 5 && screen->size ().width () <= WINDOW_WIDTH (5))
+    if (count == 5 && screen->width () <= WINDOW_WIDTH (5))
 	count = 3;
 
     return count;
@@ -436,8 +436,8 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	popupWindow =
 	    XCreateWindow (dpy, screen->root (),
-			   screen->size ().width () / 2 - xsh.width / 2,
-			   screen->size ().height () / 2 - xsh.height / 2,
+			   screen->width () / 2 - xsh.width / 2,
+			   screen->height () / 2 - xsh.height / 2,
 			   xsh.width, xsh.height, 0,
 			   32, InputOutput, visual,
 			   CWBackPixel | CWBorderPixel | CWColormap, &attr);
@@ -1391,7 +1391,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
-	glScissor (x1, 0, x2 - x1, screen->size ().height ());
+	glScissor (x1, 0, x2 - x1, screen->height ());
 
 	foreach (CompWindow *w, sScreen->windows)
 	{

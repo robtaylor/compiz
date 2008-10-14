@@ -360,7 +360,7 @@ GLScreen::glEnableOutputClipping (const GLMatrix   &transform,
 {
     WRAPABLE_HND_FUNC(3, glEnableOutputClipping, transform, region, output)
 
-    GLdouble h = screen->size ().height ();
+    GLdouble h = screen->height ();
 
     GLdouble p1[2] = { region.handle ()->extents.x1,
 		       h - region.handle ()->extents.y2 };

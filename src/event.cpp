@@ -1348,12 +1348,12 @@ CompScreen::handleEvent (XEvent *event)
 		CompOption::Value value;
 
 		value.set ((int) (event->xclient.data.l[0] /
-			   priv->size.width ()));
+			   width ()));
 
 		setOptionForPlugin ("core", "hsize", value);
 
 		value.set ((int) (event->xclient.data.l[1] /
-			   priv->size.height ()));
+			   height ()));
 
 		setOptionForPlugin ("core", "vsize", value);
 	    }

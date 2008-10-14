@@ -690,8 +690,8 @@ WaterScreen::scaleVertices (XPoint *p, int n)
 {
     while (n--)
     {
-	p[n].x = (width  * p[n].x) / screen->size ().width ();
-	p[n].y = (height * p[n].y) / screen->size ().height ();
+	p[n].x = (width  * p[n].x) / screen->width ();
+	p[n].y = (height * p[n].y) / screen->height ();
     }
 }
 
@@ -731,8 +731,8 @@ WaterScreen::rainTimeout ()
 {
     XPoint     p;
 
-    p.x = (int) (screen->size ().width ()  * (rand () / (float) RAND_MAX));
-    p.y = (int) (screen->size ().height () * (rand () / (float) RAND_MAX));
+    p.x = (int) (screen->width ()  * (rand () / (float) RAND_MAX));
+    p.y = (int) (screen->height () * (rand () / (float) RAND_MAX));
 
     waterVertices (GL_POINTS, &p, 1, 0.8f * (rand () / (float) RAND_MAX));
 
@@ -761,7 +761,7 @@ WaterScreen::waterReset ()
     int size, i, j;
 
     height = TEXTURE_SIZE;
-    width  = (height * screen->size ().width ()) / screen->size ().height ();
+    width  = (height * screen->width ()) / screen->height ();
 
     if (GL::textureNonPowerOfTwo ||
 	(POWER_OF_TWO (width) && POWER_OF_TWO (height)))
@@ -849,7 +849,7 @@ WaterWindow::glDrawTexture (GLTexture          *texture,
 			   wScreen->texture[TINDEX (wScreen, 0)]);
 
 	    plane[1] = plane[2] = 0.0f;
-	    plane[0] = wScreen->tx / (GLfloat) screen->size ().width ();
+	    plane[0] = wScreen->tx / (GLfloat) screen->width ();
 	    plane[3] = 0.0f;
 
 	    glTexGeni (GL_S, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
@@ -857,7 +857,7 @@ WaterWindow::glDrawTexture (GLTexture          *texture,
 	    glEnable (GL_TEXTURE_GEN_S);
 
 	    plane[0] = plane[2] = 0.0f;
-	    plane[1] = wScreen->ty / (GLfloat) screen->size ().height ();
+	    plane[1] = wScreen->ty / (GLfloat) screen->height ();
 	    plane[3] = 0.0f;
 
 	    glTexGeni (GL_T, GL_TEXTURE_GEN_MODE, GL_EYE_LINEAR);
@@ -912,8 +912,8 @@ WaterScreen::preparePaint (int msSinceLastPaint)
 	    bool   wipe = false;
 	    XPoint p[3];
 
-	    p[1].x = screen->size ().width () / 2;
-	    p[1].y = screen->size ().height ();
+	    p[1].x = screen->width () / 2;
+	    p[1].y = screen->height ();
 
 	    step = wiperSpeed * msSinceLastPaint / 20.0f;
 
@@ -952,26 +952,26 @@ WaterScreen::preparePaint (int msSinceLastPaint)
 	    {
 		if (angle0 > 0.0f)
 		{
-		    p[2].x = screen->size ().width () / 2 -
-			     screen->size ().height () / TAN (angle0);
+		    p[2].x = screen->width () / 2 -
+			     screen->height () / TAN (angle0);
 		    p[2].y = 0;
 		}
 		else
 		{
 		    p[2].x = 0;
-		    p[2].y = screen->size ().height ();
+		    p[2].y = screen->height ();
 		}
 
 		if (angle1 < 180.0f)
 		{
-		    p[0].x = screen->size ().width () / 2 -
-			     screen->size ().height () / TAN (angle1);
+		    p[0].x = screen->width () / 2 -
+			     screen->height () / TAN (angle1);
 		    p[0].y = 0;
 		}
 		else
 		{
-		    p[0].x = screen->size ().width ();
-		    p[0].y = screen->size ().height ();
+		    p[0].x = screen->width ();
+		    p[0].y = screen->height ();
 		}
 
 		/* software rasterizer doesn't support triangles yet so wiper
@@ -1175,9 +1175,9 @@ waterPoint (CompAction         *action,
     WATER_SCREEN (screen);
 
     p.x = CompOption::getIntOptionNamed (options, "x",
-					 screen->size ().width () / 2);
+					 screen->width () / 2);
     p.y = CompOption::getIntOptionNamed (options, "y",
-					 screen->size ().height () / 2);
+					 screen->height () / 2);
 
     amp = CompOption::getFloatOptionNamed (options, "amplitude", 0.5f);
 
@@ -1199,15 +1199,15 @@ waterLine (CompAction         *action,
     WATER_SCREEN (screen);
 
     p[0].x = CompOption::getIntOptionNamed (options, "x0",
-					    screen->size ().width () / 4);
+					    screen->width () / 4);
     p[0].y = CompOption::getIntOptionNamed (options, "y0",
-					    screen->size ().height () / 2);
+					    screen->height () / 2);
 
     p[1].x = CompOption::getIntOptionNamed (options, "x1",
-					    screen->size ().width () -
-					    screen->size ().width () / 4);
+					    screen->width () -
+					    screen->width () / 4);
     p[1].y = CompOption::getIntOptionNamed (options, "y1",
-					    screen->size ().height () / 2);
+					    screen->height () / 2);
 
     amp = CompOption::getFloatOptionNamed (options, "amplitude", 0.25f);
 
