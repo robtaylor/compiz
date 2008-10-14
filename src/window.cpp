@@ -1163,12 +1163,6 @@ CompWindow::map ()
     priv->updateRegion ();
     priv->updateSize ();
 
-    if (priv->frame)
-    {
-	XMapWindow (screen->dpy (), priv->frame);
-	XMapWindow (screen->dpy (), priv->wrapper);
-    }
-
     screen->priv->updateClientList ();
 
     if (priv->type & CompWindowTypeDesktopMask)
@@ -3318,6 +3312,12 @@ CompWindow::show ()
     windowNotify (CompWindowNotifyShow);
 
     priv->pendingMaps++;
+
+    if (priv->frame)
+    {
+	XMapWindow (screen->dpy (), priv->frame);
+	XMapWindow (screen->dpy (), priv->wrapper);
+    }
 
     XMapWindow (screen->dpy (), priv->id);
 
