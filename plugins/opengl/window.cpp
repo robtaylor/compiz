@@ -339,6 +339,8 @@ GLWindow::getIcon (int width, int height)
 	return NULL;
 
     priv->icons.push_back (icon);
+
+    return icon.textures[0];
 }
 
 void
