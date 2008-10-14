@@ -868,7 +868,7 @@ CompScreen::setOption (const char        *name,
 	    break;
 	case COMP_OPTION_DEFAULT_ICON:
 	    if (o->set (value))
-		return priv->updateDefaultIcon ();
+		return updateDefaultIcon ();
 	    break;
 	case COMP_OPTION_OUTPUTS:
 	    if (!noDetection &&
@@ -4026,7 +4026,7 @@ CompScreen::defaultIcon () const
 }
 
 bool
-PrivateScreen::updateDefaultIcon ()
+CompScreen::updateDefaultIcon ()
 {
     CompString file = priv->opt[COMP_OPTION_DEFAULT_ICON].value ().s ();
     void       *data;
@@ -4038,7 +4038,7 @@ PrivateScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!screen->readImageFromFile (file, size, data))
+    if (!readImageFromFile (file, size, data))
 	return false;
 
     priv->defaultIcon = new CompIcon (screen, size.width (), size.height ());

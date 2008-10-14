@@ -312,6 +312,8 @@ class CompScreen :
 
 	CompIcon *defaultIcon () const;
 
+	bool updateDefaultIcon ();
+
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
 

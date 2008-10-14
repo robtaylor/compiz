@@ -373,8 +373,6 @@ class PrivateScreen {
 
 	void setCurrentDesktop (unsigned int desktop);
 
-	bool updateDefaultIcon ();
-
 	void setCurrentActiveWindowHistory (int x, int y);
 
 	void addToCurrentActiveWindowHistory (Window id);
