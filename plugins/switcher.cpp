@@ -513,6 +513,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	{
 	    SWITCH_WINDOW (w);
 
+	    sw->cWindow->damageRectSetEnabled (sw, true);
 	    sw->gWindow->glPaintSetEnabled (sw, true);
 	}
     }
