@@ -62,7 +62,7 @@ SwitchScreen::setSelectedWindowHint ()
 bool
 SwitchWindow::isSwitchWin ()
 {
-    if (!window->mapNum () || !window->isViewable ())
+    if (!window->isViewable ())
     {
 	if (sScreen->opt[SWITCH_OPTION_MINIMIZED].value ().b ())
 	{
@@ -76,8 +76,7 @@ SwitchWindow::isSwitchWin ()
 	}
     }
 
-    if (!(window->inputHint () ||
-	(window->protocols ()& CompWindowProtocolTakeFocusMask)))
+    if (!window->isFocussable ())
 	return false;
 
     if (window->overrideRedirect ())

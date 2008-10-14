@@ -55,7 +55,7 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 					   Atoms::winSaturation, COLOR);
 	
     if (w->isViewable ())
-	priv->damaged   = true;
+	priv->damaged = true;
 }
 
 CompositeWindow::~CompositeWindow ()

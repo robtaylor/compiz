@@ -1198,7 +1198,7 @@ CompWindow::unmap ()
     if (priv->struts)
 	screen->priv->updateWorkarea ();
 
-    if (priv->attrib.map_state != IsViewable)
+    if (!isViewable ())
 	return;
 
     if (priv->type == CompWindowTypeDesktopMask)
@@ -1868,7 +1868,7 @@ PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 
     if (!w->priv->shaded && !w->priv->pendingMaps)
     {
-	if (w->priv->attrib.map_state != IsViewable || w->priv->mapNum == 0)
+	if (!w->isViewable ())
 	    return true;
     }
 
@@ -3253,7 +3253,7 @@ CompWindow::hide ()
 
     windowNotify (CompWindowNotifyHide);
 
-    if (!priv->pendingMaps && priv->attrib.map_state != IsViewable)
+    if (!priv->pendingMaps && !isViewable ())
 	return;
 
     priv->pendingUnmaps++;
@@ -3822,7 +3822,7 @@ CompWindow::onAllViewports ()
     if (overrideRedirect ())
 	return true;
 
-    if (!priv->managed && priv->attrib.map_state != IsViewable)
+    if (!priv->managed && !isViewable ())
 	return true;
 
     if (priv->type & (CompWindowTypeDesktopMask | CompWindowTypeDockMask))
@@ -4198,7 +4198,7 @@ CompWindow::frame ()
 }
 
 int
-CompWindow::mapNum ()
+CompWindow::mapNum () const
 {
     return priv->mapNum;
 }
@@ -4809,12 +4809,6 @@ CompWindow::syncWait ()
 }
 
 bool
-CompWindow::inputHint () const
-{
-    return priv->inputHint;
-}
-
-bool
 CompWindow::alpha ()
 {
     return priv->alpha;
@@ -4840,9 +4834,33 @@ PrivateWindow::setOverrideRedirect (bool overrideRedirect)
 }
 
 bool
-CompWindow::isViewable ()
+CompWindow::isMapped () const
 {
-    return priv->attrib.map_state == IsViewable;
+    return priv->mapNum > 0;
+}
+
+bool
+CompWindow::isViewable () const
+{
+    if (!priv->mapNum)
+	return false;
+
+    if (priv->attrib.map_state != IsViewable)
+	return false;
+
+    return true;
+}
+
+bool
+CompWindow::isFocussable () const
+{
+    if (priv->inputHint)
+	return true;
+
+    if (priv->protocols & CompWindowProtocolTakeFocusMask)
+	return true;
+
+    return false;
 }
 
 int
