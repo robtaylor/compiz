@@ -4361,12 +4361,6 @@ CompWindow::shaded ()
     return priv->shaded;
 }
 
-CompSize
-CompWindow::size ()
-{
-    return CompSize (priv->width, priv->height);
-}
-
 CompWindowExtents
 CompWindow::input ()
 {
