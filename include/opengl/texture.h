@@ -105,19 +105,16 @@ class GLTexture {
 					 int height,
 					 int depth);
 
-	static List imageBufferToTexture (const char   *image,
-					  unsigned int width,
-					  unsigned int height);
+	static List imageBufferToTexture (const char *image,
+					  CompSize   size);
 
-	static List imageDataToTexture (const char   *image,
-					unsigned int width,
-					unsigned int height,
-					GLenum       format,
-					GLenum       type);
+	static List imageDataToTexture (const char *image,
+					CompSize   size,
+					GLenum     format,
+					GLenum     type);
 
-	static List readImageToTexture (const char   *imageFileName,
-					unsigned int *returnWidth,
-					unsigned int *returnHeight);
+	static List readImageToTexture (CompString &imageFileName,
+					CompSize   &size);
 
 	friend class PrivateTexture;
 

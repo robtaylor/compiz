@@ -29,8 +29,7 @@
 
 CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 		    unsigned int height) :
-    mWidth (width),
-    mHeight (height),
+    mSize (width, height),
     mData (new unsigned char[width * height * 4])
 {
 }
@@ -40,16 +39,10 @@ CompIcon::~CompIcon ()
     delete mData;
 }
 
-unsigned int
-CompIcon::width () const
+const CompSize &
+CompIcon::size () const
 {
-    return mWidth;
-}
-
-unsigned int
-CompIcon::height () const
-{
-    return mHeight;
+    return mSize;
 }
 
 unsigned char*

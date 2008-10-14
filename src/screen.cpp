@@ -1298,52 +1298,46 @@ PrivateScreen::handleSelectionClear (XEvent *event)
 #define HOME_IMAGEDIR ".compiz/images"
 
 bool
-CompScreen::readImageFromFile (const char *name,
-			       int        *width,
-			       int        *height,
-			       void       **data)
+CompScreen::readImageFromFile (CompString &name,
+			       CompSize   &size,
+			       void       *&data)
 {
-    Bool status;
+    bool status;
     int  stride;
 
-    status = fileToImage (NULL, name, width, height, &stride, data);
+    status = fileToImage (name, size, stride, data);
     if (!status)
     {
-	char *home;
-
-	home = getenv ("HOME");
+	char       *home = getenv ("HOME");
+	CompString path;
 	if (home)
 	{
-	    char *path;
+	    path =  home;
+	    path += "/";
+	    path += HOME_IMAGEDIR;
+	    path += name;
 
-	    path = (char *) malloc (strlen (home) + strlen (HOME_IMAGEDIR) + 2);
-	    if (path)
-	    {
-		sprintf (path, "%s/%s", home, HOME_IMAGEDIR);
-		status = fileToImage (path, name, width, height, &stride, data);
+	    status = fileToImage (path, size, stride, data);
 
-		free (path);
-
-		if (status)
-		    return TRUE;
-	    }
+	    if (status)
+		return true;
 	}
 
-	status = fileToImage (IMAGEDIR, name, width, height, &stride, data);
+	path = IMAGEDIR + name;
+	status = fileToImage (path, size, stride, data);
     }
 
     return status;
 }
 
 bool
-CompScreen::writeImageToFile (const char *path,
-			      const char *name,
+CompScreen::writeImageToFile (CompString &path,
 			      const char *format,
-			      int        width,
-			      int        height,
+			      CompSize   &size,
 			      void       *data)
 {
-        return imageToFile (path, name, format, width, height, width * 4, data);
+    CompString formatString (format);
+    return imageToFile (path, formatString, size, size.width () * 4, data);
 }
 
 Window
@@ -1372,29 +1366,24 @@ PrivateScreen::getActiveWindow (Window root)
 
 
 bool
-CompScreen::fileToImage (const char *path,
-			 const char *name,
-			 int        *width,
-			 int        *height,
-			 int        *stride,
-			 void       **data)
+CompScreen::fileToImage (CompString &name,
+			 CompSize   &size,
+			 int        &stride,
+			 void       *&data)
 {
-    WRAPABLE_HND_FUNC_RETURN(8, bool, fileToImage, path, name, width, height,
-			     stride, data)
+    WRAPABLE_HND_FUNC_RETURN(8, bool, fileToImage, name, size, stride, data);
     return false;
 }
 
 bool
-CompScreen::imageToFile (const char *path,
-			 const char *name,
-			 const char *format,
-			 int        width,
-			 int        height,
+CompScreen::imageToFile (CompString &path,
+			 CompString &format,
+			 CompSize   &size,
 			 int        stride,
 			 void       *data)
 {
-    WRAPABLE_HND_FUNC_RETURN(9, bool, imageToFile, path, name, format, width,
-			     height, stride, data)
+    WRAPABLE_HND_FUNC_RETURN(9, bool, imageToFile, path, format, size,
+			     stride, data)
     return false;
 }
 
@@ -1856,23 +1845,19 @@ ScreenInterface::handleCompizEvent (const char         *plugin,
     WRAPABLE_DEF (handleCompizEvent, plugin, event, options)
 
 bool
-ScreenInterface::fileToImage (const char *path,
-			      const char *name,
-			      int        *width,
-			      int        *height,
-			      int        *stride,
-			      void       **data)
-    WRAPABLE_DEF (fileToImage, path, name, width, height, stride, data)
+ScreenInterface::fileToImage (CompString &name,
+			      CompSize   &size,
+			      int        &stride,
+			      void       *&data)
+    WRAPABLE_DEF (fileToImage, name, size, stride, data)
 
 bool
-ScreenInterface::imageToFile (const char *path,
-			      const char *name,
-			      const char *format,
-			      int        width,
-			      int        height,
+ScreenInterface::imageToFile (CompString &path,
+			      CompString &format,
+			      CompSize   &size,
 			      int        stride,
 			      void       *data)
-    WRAPABLE_DEF (imageToFile, path, name, format, width, height, stride, data)
+    WRAPABLE_DEF (imageToFile, path, format, size, stride, data)
 
 CompMatch::Expression *
 ScreenInterface::matchInitExp (const CompString value)
@@ -4045,7 +4030,7 @@ PrivateScreen::updateDefaultIcon ()
 {
     CompString file = priv->opt[COMP_OPTION_DEFAULT_ICON].value ().s ();
     void       *data;
-    int        width, height;
+    CompSize   size;
 
     if (priv->defaultIcon)
     {
@@ -4053,12 +4038,13 @@ PrivateScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!screen->readImageFromFile (file.c_str (), &width, &height, &data))
+    if (!screen->readImageFromFile (file, size, data))
 	return false;
 
-    priv->defaultIcon = new CompIcon (screen, width, height);
+    priv->defaultIcon = new CompIcon (screen, size.width (), size.height ());
 
-    memcpy (priv->defaultIcon->data (), data, width * height * sizeof (CARD32));
+    memcpy (priv->defaultIcon->data (), data,
+	    size.width () * size.height () * sizeof (CARD32));
 
     free (data);
 

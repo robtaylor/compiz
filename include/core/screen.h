@@ -102,12 +102,10 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
         virtual void handleCompizEvent (const char * plugin, const char *event,
 					CompOption::Vector &options);
 
-        virtual bool fileToImage (const char *path, const char *name,
-				  int *width, int *height,
-				  int *stride, void **data);
-	virtual bool imageToFile (const char *path, const char *name,
-				  const char *format, int width, int height,
-				  int stride, void *data);
+        virtual bool fileToImage (CompString &path, CompSize &size,
+				  int &stride, void *&data);
+	virtual bool imageToFile (CompString &path, CompString &format,
+				  CompSize &size, int stride, void *data);
 
 	virtual CompMatch::Expression *matchInitExp (const CompString value);
 
@@ -193,18 +191,14 @@ class CompScreen :
 	CompWindow * findTopLevelWindow (Window id,
 					 bool   override_redirect = false);
 
-	bool readImageFromFile (const char *name,
-				int        *width,
-				int        *height,
-				void       **data);
+	bool readImageFromFile (CompString &name,
+				CompSize   &size,
+				void       *&data);
 
-	bool writeImageToFile (const char *path,
-			       const char *name,
+	bool writeImageToFile (CompString &path,
 			       const char *format,
-			       int        width,
-			       int        height,
+			       CompSize   &size,
 			       void       *data);
-
 
 	unsigned int getWindowProp (Window       id,
 				    Atom         property,
@@ -338,11 +332,10 @@ class CompScreen :
 	WRAPABLE_HND (7, ScreenInterface, void, handleCompizEvent,
 		      const char *, const char *, CompOption::Vector &)
 
-	WRAPABLE_HND (8, ScreenInterface, bool, fileToImage, const char *,
-		     const char *,  int *, int *, int *, void **data)
-	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, const char *,
-		      const char *, const char *, int, int, int, void *)
-
+	WRAPABLE_HND (8, ScreenInterface, bool, fileToImage, CompString &,
+		      CompSize &, int &, void *&);
+	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, CompString &,
+		      CompString &, CompSize &, int, void *);
 	
 	WRAPABLE_HND (10, ScreenInterface, CompMatch::Expression *,
 		      matchInitExp, const CompString);

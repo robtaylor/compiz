@@ -323,11 +323,13 @@ GLWindow::getIcon (int width, int height)
 {
     GLIcon   icon;
     CompIcon *i = priv->window->getIcon (width, height);
+    CompSize size;
 
     if (!i)
 	return NULL;
 
-    if (!i->width () || !i->height ())
+    size = i->size ();
+    if (!size.width () || !size.height ())
 	return NULL;
 
     foreach (GLIcon &icon, priv->icons)
@@ -335,8 +337,7 @@ GLWindow::getIcon (int width, int height)
 	    return icon.textures[0];
  
     icon.icon = i;
-    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (),
-						     i->width (), i->height ());
+    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (), size);
 
     if (icon.textures.size () > 1 || icon.textures.size () == 0)
 	return NULL;

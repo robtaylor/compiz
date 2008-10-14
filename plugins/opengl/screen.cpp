@@ -782,8 +782,12 @@ PrivateGLScreen::updateScreenBackground ()
     }
 
     if (backgroundTextures.empty () && backgroundImage)
-	backgroundTextures =
-	    GLTexture::readImageToTexture (backgroundImage, &width, &height);
+    {
+	CompSize   size;
+	CompString fileName (backgroundImage);
+
+	backgroundTextures = GLTexture::readImageToTexture (fileName, size);
+    }
 
     if (!backgroundTextures.empty ())
     {
@@ -1152,16 +1156,20 @@ GLTexture *
 GLScreen::defaultIcon ()
 {
     CompIcon *i = screen->defaultIcon ();
+    CompSize size;
 
-    if (!i || !i->width () || !i->height ())
+    if (!i)
+	return NULL;
+    
+    size = i->size ();
+    if (!size.width () || !size.height ())
 	return NULL;
 
     if (priv->defaultIcon.icon == i)
 	return priv->defaultIcon.textures[0];
 
     priv->defaultIcon.textures =
-	GLTexture::imageBufferToTexture ((char *) i->data (),
-					 i->width (), i->height ());
+	GLTexture::imageBufferToTexture ((char *) i->data (), size);
 
     if (priv->defaultIcon.textures.size () == 1)
 	priv->defaultIcon.icon = i;

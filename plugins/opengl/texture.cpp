@@ -348,50 +348,42 @@ PrivateTexture::loadImageData (const char   *image,
 }
 
 GLTexture::List
-GLTexture::imageBufferToTexture (const char   *image,
-				 unsigned int width,
-				 unsigned int height)
+GLTexture::imageBufferToTexture (const char *image,
+				 CompSize   size)
 {
 #if IMAGE_BYTE_ORDER == MSBFirst
-    return PrivateTexture::loadImageData (image, width, height,
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
 					  GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV);
 #else
-    return PrivateTexture::loadImageData (image, width, height,
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
 					  GL_BGRA, GL_UNSIGNED_BYTE);
 #endif
 }
 
 GLTexture::List
-GLTexture::imageDataToTexture (const char   *image,
-			       unsigned int width,
-			       unsigned int height,
-			       GLenum       format,
-			       GLenum       type)
+GLTexture::imageDataToTexture (const char *image,
+			       CompSize   size,
+			       GLenum     format,
+			       GLenum     type)
 {
-    return PrivateTexture::loadImageData (image, width, height, format, type);
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
+					  format, type);
 }
 
 
 GLTexture::List
-GLTexture::readImageToTexture (const char   *imageFileName,
-			       unsigned int *returnWidth,
-			       unsigned int *returnHeight)
+GLTexture::readImageToTexture (CompString &imageFileName,
+			       CompSize   &size)
 {
-    void            *image;
-    int             width, height;
+    void *image;
 
-    if (screen->readImageFromFile (imageFileName, &width, &height, &image))
+    if (screen->readImageFromFile (imageFileName, size, image))
 	return GLTexture::List ();
 
     GLTexture::List rv =
-	GLTexture::imageBufferToTexture ((char *)image, width, height);
+	GLTexture::imageBufferToTexture ((char *)image, size);
 
     free (image);
-
-    if (returnWidth)
-	*returnWidth = width;
-    if (returnHeight)
-	*returnHeight = height;
 
     return rv;
 }
