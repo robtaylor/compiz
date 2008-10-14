@@ -327,10 +327,13 @@ GLWindow::getIcon (int width, int height)
     if (!i)
 	return NULL;
 
+    if (!i->width () || !i->height ())
+	return NULL;
+
     foreach (GLIcon &icon, priv->icons)
 	if (icon.icon == i)
 	    return icon.textures[0];
-
+ 
     icon.icon = i;
     icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (),
 						     i->width (), i->height ());

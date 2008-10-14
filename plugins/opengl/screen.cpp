@@ -1152,6 +1152,10 @@ GLTexture *
 GLScreen::defaultIcon ()
 {
     CompIcon *i = screen->defaultIcon ();
+
+    if (!i || !i->width () || !i->height ())
+	return NULL;
+
     if (priv->defaultIcon.icon == i)
 	return priv->defaultIcon.textures[0];
 
@@ -1166,4 +1170,6 @@ GLScreen::defaultIcon ()
 	priv->defaultIcon.icon = NULL;
 	priv->defaultIcon.textures.clear ();
     }
+
+    return priv->defaultIcon.textures[0];
 }
