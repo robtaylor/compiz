@@ -40,6 +40,16 @@ if (HAS_INOTIFY)
     )
 endif (HAS_INOTIFY)
 
+pkg_check_modules (LIBPNG libpng)
+if (LIBPNG_FOUND)
+    add_library (imgpng MODULE imgpng.cpp)
+    target_link_libraries (imgpng)
+    install (
+	TARGETS imgpng
+	DESTINATION ${compiz_plugindir}
+    )
+endif (LIBPNG_FOUND)
+
 install (
     TARGETS decor move resize copytex zoom water ini switcher
     DESTINATION ${compiz_plugindir}
