@@ -292,9 +292,9 @@ SvgWindow::glDraw (const GLMatrix     &transform,
 		rect.setGeometry (rect.x1 () - 1, rect.y1 () - 1,
 				  rect.x2 () + 1, rect.y2 () + 1);
 
-		xScale = screen->size ().width  () /
+		xScale = screen->width  () /
 		         (float) (sScreen->zoom.x2 () - sScreen->zoom.x1 ());
-		yScale = screen->size ().height () /
+		yScale = screen->height () /
 		         (float) (sScreen->zoom.y2 () - sScreen->zoom.y1 ());
 
 		dx = rect.width ();
