@@ -199,9 +199,9 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 
 	virtual bool focus ();
 	virtual void activate ();
-	virtual bool place (int x, int y, int *newX, int *newY);
+	virtual bool place (CompPoint &pos);
 
-	virtual void validateResizeRequest (unsigned int   *mask,
+	virtual void validateResizeRequest (unsigned int   &mask,
 					    XWindowChanges *xwc,
 					    unsigned int   source);
 
@@ -460,9 +460,9 @@ class CompWindow :
 
 	WRAPABLE_HND (2, WindowInterface, bool, focus);
 	WRAPABLE_HND (3, WindowInterface, void, activate);
-	WRAPABLE_HND (4, WindowInterface, bool, place, int, int, int*, int*);
+	WRAPABLE_HND (4, WindowInterface, bool, place, CompPoint &);
 	WRAPABLE_HND (5, WindowInterface, void, validateResizeRequest,
-		      unsigned int *, XWindowChanges *, unsigned int);
+		      unsigned int &, XWindowChanges *, unsigned int);
 
 	WRAPABLE_HND (6, WindowInterface, void, resizeNotify,
 		      int, int, int, int);

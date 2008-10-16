@@ -1570,17 +1570,14 @@ CompWindow::focus ()
 }
 
 bool
-CompWindow::place (int        x,
-		   int        y,
-		   int        *newX,
-		   int        *newY)
+CompWindow::place (CompPoint &pos)
 {
-    WRAPABLE_HND_FUNC_RETURN(4, bool, place, x, y, newX, newY)
+    WRAPABLE_HND_FUNC_RETURN(4, bool, place, pos)
     return false;
 }
 
 void
-CompWindow::validateResizeRequest (unsigned int   *mask,
+CompWindow::validateResizeRequest (unsigned int   &mask,
 				   XWindowChanges *xwc,
 				   unsigned int   source)
     WRAPABLE_HND_FUNC(5, validateResizeRequest, mask, xwc, source)
@@ -2669,7 +2666,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	}
     }
 
-    validateResizeRequest (&xwcm, xwc, source);
+    validateResizeRequest (xwcm, xwc, source);
 
     /* when horizontally maximized only allow width changes added by
        addWindowSizeChanges */
@@ -3900,11 +3897,11 @@ WindowInterface::activate ()
     WRAPABLE_DEF (activate)
 
 bool
-WindowInterface::place (int x, int y, int *newX, int *newY)
-    WRAPABLE_DEF (place, x, y, newX, newY)
+WindowInterface::place (CompPoint &pos)
+    WRAPABLE_DEF (place, pos)
 
 void
-WindowInterface::validateResizeRequest (unsigned int   *mask,
+WindowInterface::validateResizeRequest (unsigned int   &mask,
 					XWindowChanges *xwc,
 					unsigned int   source)
     WRAPABLE_DEF (validateResizeRequest, mask, xwc, source)
@@ -4103,14 +4100,15 @@ PrivateWindow::processMap ()
 
 	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity);
 
-	if (window->place (xwc.x, xwc.y, &newX, &newY))
+	CompPoint pos (xwc.x, xwc.y);
+	if (window->place (pos))
 	{
-	    xwc.x = newX;
-	    xwc.y = newY;
+	    xwc.x = pos.x ();
+	    xwc.y = pos.y ();
 	    xwcm |= CWX | CWY;
 	}
 
-	window->validateResizeRequest (&xwcm, &xwc, ClientTypeApplication);
+	window->validateResizeRequest (xwcm, &xwc, ClientTypeApplication);
 
 	if (xwcm)
 	    window->configureXWindow (xwcm, &xwc);
