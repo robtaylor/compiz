@@ -47,6 +47,9 @@ class CompRect {
 
 	void setGeometry (int, int, int, int);
 
+	bool operator== (const CompRect &) const;
+	bool operator!= (const CompRect &) const;
+
 	typedef std::vector<CompRect> vector;
 	typedef std::vector<CompRect *> ptrVector;
 	typedef std::list<CompRect *> ptrList;
