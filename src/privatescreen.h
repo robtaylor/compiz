@@ -454,7 +454,6 @@ class PrivateScreen {
 	Colormap colormap;
 	int      screenNum;
 
-	CompSize     size;
 	CompPoint    vp;
 	CompSize     vpSize;
 	unsigned int nDesktop;

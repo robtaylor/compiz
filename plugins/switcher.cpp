@@ -62,7 +62,7 @@ SwitchScreen::setSelectedWindowHint ()
 bool
 SwitchWindow::isSwitchWin ()
 {
-    if (!window->mapNum () || !window->isViewable ())
+    if (!window->isViewable ())
     {
 	if (sScreen->opt[SWITCH_OPTION_MINIMIZED].value ().b ())
 	{
@@ -76,8 +76,7 @@ SwitchWindow::isSwitchWin ()
 	}
     }
 
-    if (!(window->inputHint () ||
-	(window->protocols ()& CompWindowProtocolTakeFocusMask)))
+    if (!window->isFocussable ())
 	return false;
 
     if (window->overrideRedirect ())
@@ -113,8 +112,8 @@ SwitchWindow::isSwitchWin ()
 	    CompWindow::Geometry &sg = window->serverGeometry ();
 	    if (sg.x () + sg.width ()  <= 0    ||
 		sg.y () + sg.height () <= 0    ||
-		sg.x () >= screen->size ().width () ||
-		sg.y () >= screen->size ().height ())
+		sg.x () >= screen->width () ||
+		sg.y () >= screen->height ())
 		return false;
 	}
 	else
@@ -276,8 +275,8 @@ SwitchScreen::switchToWindow (bool toNext)
 	    xev.xclient.message_type = Atoms::desktopViewport;
 	    xev.xclient.window = screen->root ();
 
-	    xev.xclient.data.l[0] = pnt.x () * screen->size ().width ();
-	    xev.xclient.data.l[1] = pnt.y () * screen->size ().height ();
+	    xev.xclient.data.l[0] = pnt.x () * screen->width ();
+	    xev.xclient.data.l[1] = pnt.y () * screen->height ();
 	    xev.xclient.data.l[2] = 0;
 	    xev.xclient.data.l[3] = 0;
 	    xev.xclient.data.l[4] = 0;
@@ -338,7 +337,7 @@ SwitchScreen::countWindows ()
 		break;
 	}
 
-    if (count == 5 && screen->size ().width () <= WINDOW_WIDTH (5))
+    if (count == 5 && screen->width () <= WINDOW_WIDTH (5))
 	count = 3;
 
     return count;
@@ -436,8 +435,8 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	popupWindow =
 	    XCreateWindow (dpy, screen->root (),
-			   screen->size ().width () / 2 - xsh.width / 2,
-			   screen->size ().height () / 2 - xsh.height / 2,
+			   screen->width () / 2 - xsh.width / 2,
+			   screen->height () / 2 - xsh.height / 2,
 			   xsh.width, xsh.height, 0,
 			   32, InputOutput, visual,
 			   CWBackPixel | CWBorderPixel | CWColormap, &attr);
@@ -513,7 +512,6 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	{
 	    SWITCH_WINDOW (w);
 
-	    sw->cWindow->damageRectSetEnabled (sw, true);
 	    sw->gWindow->glPaintSetEnabled (sw, true);
 	}
     }
@@ -1263,8 +1261,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    {
 		sAttrib.xScale = sAttrib.yScale = 1.0f;
 
-		wx = x + WIDTH  - icon->size ().width ()  - SPACE;
-		wy = y + HEIGHT - icon->size ().height () - SPACE;
+		wx = x + WIDTH  - icon->width ()  - SPACE;
+		wy = y + HEIGHT - icon->height () - SPACE;
 	    }
 	}
     }
@@ -1284,13 +1282,13 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    iw = width  - SPACE;
 	    ih = height - SPACE;
 
-	    if (icon->size ().width () < (iw >> 1))
-		sAttrib.xScale = (iw / icon->size ().width ());
+	    if (icon->width () < (iw >> 1))
+		sAttrib.xScale = (iw / icon->width ());
 	    else
 		sAttrib.xScale = 1.0f;
 
-	    if (icon->size ().height () < (ih >> 1))
-		sAttrib.yScale = (ih / icon->size ().height ());
+	    if (icon->height () < (ih >> 1))
+		sAttrib.yScale = (ih / icon->height ());
 	    else
 		sAttrib.yScale = 1.0f;
 
@@ -1299,8 +1297,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    else
 		sAttrib.xScale = sAttrib.yScale;
 
-	    width  = icon->size ().width ()  * sAttrib.xScale;
-	    height = icon->size ().height () * sAttrib.yScale;
+	    width  = icon->width ()  * sAttrib.xScale;
+	    height = icon->height () * sAttrib.yScale;
 
 	    wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
 	    wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
@@ -1309,8 +1307,8 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
     if (icon)
     {
-	CompRegion        iconReg (g.x (), g.y (), icon->size ().width (),
-				   icon->size ().height ());
+	CompRegion        iconReg (g.x (), g.y (), icon->width (),
+				   icon->height ());
 	GLTexture::MatrixList matrix (1);
 	int               addWindowGeometryIndex =
 	    gWindow->glAddGeometryGetCurrentIndex ();
@@ -1391,7 +1389,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
-	glScissor (x1, 0, x2 - x1, screen->size ().height ());
+	glScissor (x1, 0, x2 - x1, screen->height ());
 
 	foreach (CompWindow *w, sScreen->windows)
 	{

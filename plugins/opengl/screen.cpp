@@ -919,14 +919,14 @@ GLScreen::clearOutput (CompOutput   *output,
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != (int) screen->size ().width () ||
-	pBox->y2 != (int) screen->size ().height ())
+	pBox->x2 != (int) screen->width () ||
+	pBox->y2 != (int) screen->height ())
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
 	glScissor (pBox->x1,
-		   screen->size ().height () - pBox->y2,
+		   screen->height () - pBox->y2,
 		   pBox->x2 - pBox->x1,
 		   pBox->y2 - pBox->y1);
 	glClear (mask);
@@ -943,7 +943,7 @@ void
 GLScreen::setDefaultViewport ()
 {
     priv->lastViewport.x      = screen->outputDevs ()[0].x1 ();
-    priv->lastViewport.y      = screen->size ().height () -
+    priv->lastViewport.y      = screen->height () -
 				screen->outputDevs ()[0].y2 ();
     priv->lastViewport.width  = screen->outputDevs ()[0].width ();
     priv->lastViewport.height = screen->outputDevs ()[0].height ();
@@ -998,7 +998,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	targetOutput = output;
 
 	r.x	 = output->x1 ();
-	r.y	 = screen->size ().height () - output->y2 ();
+	r.y	 = screen->height () - output->y2 ();
 	r.width  = output->width ();
 	r.height = output->height ();
 
@@ -1065,7 +1065,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	{
 	    while (nBox--)
 	    {
-		y = screen->size ().height () - pBox->y2;
+		y = screen->height () - pBox->y2;
 
 		(*GL::copySubBuffer) (screen->dpy (), cScreen->output (),
 				      pBox->x1, y,
@@ -1082,7 +1082,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 
 	    while (nBox--)
 	    {
-		y = screen->size ().height () - pBox->y2;
+		y = screen->height () - pBox->y2;
 
 		glBitmap (0, 0, 0, 0,
 			  pBox->x1 - rasterPos.x (),
@@ -1161,15 +1161,14 @@ GLScreen::defaultIcon ()
     if (!i)
 	return NULL;
     
-    size = i->size ();
-    if (!size.width () || !size.height ())
+    if (!i->width () || !i->height ())
 	return NULL;
 
     if (priv->defaultIcon.icon == i)
 	return priv->defaultIcon.textures[0];
 
     priv->defaultIcon.textures =
-	GLTexture::imageBufferToTexture ((char *) i->data (), size);
+	GLTexture::imageBufferToTexture ((char *) i->data (), *i);
 
     if (priv->defaultIcon.textures.size () == 1)
 	priv->defaultIcon.icon = i;

@@ -323,13 +323,11 @@ GLWindow::getIcon (int width, int height)
 {
     GLIcon   icon;
     CompIcon *i = priv->window->getIcon (width, height);
-    CompSize size;
 
     if (!i)
 	return NULL;
 
-    size = i->size ();
-    if (!size.width () || !size.height ())
+    if (!i->width () || !i->height ())
 	return NULL;
 
     foreach (GLIcon &icon, priv->icons)
@@ -337,7 +335,7 @@ GLWindow::getIcon (int width, int height)
 	    return icon.textures[0];
  
     icon.icon = i;
-    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (), size);
+    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (), *i);
 
     if (icon.textures.size () > 1 || icon.textures.size () == 0)
 	return NULL;
@@ -361,7 +359,7 @@ PrivateGLWindow::updateWindowRegions ()
 	regions.resize (textures.size ());
     for (unsigned int i = 0; i < textures.size (); i++)
     {
-	regions[i] = CompRegion (textures[i]->size ());
+	regions[i] = CompRegion (*textures[i]);
 	regions[i].translate (window->geometry ().x () - window->input ().left,
 			      window->geometry ().y () - window->input ().top);
 	regions[i] &= window->region ();

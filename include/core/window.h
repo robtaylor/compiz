@@ -231,7 +231,7 @@ class CompWindow :
 		Geometry ();
 		Geometry (int, int, unsigned int, unsigned int, unsigned int);
 
-		unsigned int border ();
+		unsigned int border () const;
 
 		void set (int, int, unsigned int, unsigned int, unsigned int);
 
@@ -256,6 +256,28 @@ class CompWindow :
 	CompWindow (Window     id,
 	            Window     aboveId);
 	~CompWindow ();
+
+	Geometry & geometry () const;
+
+	int x () const;
+	int y () const;
+	const CompPoint & pos () const;
+
+	/* With border */
+	unsigned int width () const;
+	unsigned int height () const;
+	const CompSize size () const;
+	
+	Geometry & serverGeometry () const;
+
+	int serverX () const;
+	int serverY () const;
+	const CompPoint & serverPos () const;
+
+	/* With border */
+	unsigned int serverWidth () const;
+	unsigned int serverHeight () const;
+	const CompSize serverSize () const;
 
 	Window id ();
 	Window frame ();
@@ -288,8 +310,8 @@ class CompWindow :
 	bool grabbed ();
 
 	unsigned int activeNum ();
-	
-	int mapNum ();
+
+	int mapNum () const;
 
 	CompStruts * struts ();
 
@@ -390,12 +412,6 @@ class CompWindow :
 
 	bool shaded ();
 
-	CompSize size ();
-
-	Geometry & geometry ();
-
-	Geometry & serverGeometry ();
-
 	CompWindowExtents input ();
 
 	CompWindowExtents output ();
@@ -408,15 +424,16 @@ class CompWindow :
 
 	bool syncWait ();
 
-	bool inputHint () const;
-
 	bool alpha ();
 
 	bool alive ();
 
 	bool overrideRedirect ();
 
-	bool isViewable ();
+	bool isMapped () const;
+	bool isViewable () const;
+
+	bool isFocussable () const;
 
 	int windowClass ();
 

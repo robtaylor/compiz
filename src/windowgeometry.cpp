@@ -44,7 +44,7 @@ CompWindow::Geometry::Geometry (int x, int y,
 }
 
 unsigned int
-CompWindow::Geometry::border ()
+CompWindow::Geometry::border () const
 {
     return mBorder;
 }
@@ -69,13 +69,91 @@ CompWindow::Geometry::set (int x, int y,
 }
 
 CompWindow::Geometry &
-CompWindow::serverGeometry ()
+CompWindow::serverGeometry () const
 {
     return priv->serverGeometry;
 }
 
 CompWindow::Geometry &
-CompWindow::geometry ()
+CompWindow::geometry () const
 {
     return priv->geometry;
+}
+
+
+int
+CompWindow::x () const
+{
+    return priv->geometry.x ();
+}
+
+int
+CompWindow::y () const
+{
+    return priv->geometry.y ();
+}
+
+const CompPoint &
+CompWindow::pos () const
+{
+    return priv->geometry;
+}
+
+/* With border */
+unsigned int
+CompWindow::width () const
+{
+    return priv->width;
+}
+
+unsigned int
+CompWindow::height () const
+{
+    return priv->height;
+}
+
+const CompSize
+CompWindow::size () const
+{
+    return CompSize (priv->width, priv->height);
+}
+
+
+int
+CompWindow::serverX () const
+{
+    return priv->serverGeometry.x ();
+}
+
+int
+CompWindow::serverY () const
+{
+    return priv->serverGeometry.y ();
+}
+
+const CompPoint &
+CompWindow::serverPos () const
+{
+    return priv->serverGeometry;
+}
+
+/* With border */
+unsigned int
+CompWindow::serverWidth () const
+{
+    return priv->serverGeometry.width () + (2 * priv->serverGeometry.border ());
+}
+
+unsigned int
+CompWindow::serverHeight () const
+{
+    return priv->serverGeometry.height () + (2 * priv->serverGeometry.border ());
+}
+
+const CompSize
+CompWindow::serverSize () const
+{
+    return CompSize (
+	priv->serverGeometry.width () + (2 * priv->serverGeometry.border ()),
+	priv->serverGeometry.height () + (2 * priv->serverGeometry.border ()));
 }
