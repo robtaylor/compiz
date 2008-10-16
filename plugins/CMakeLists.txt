@@ -29,6 +29,11 @@ target_link_libraries (ini)
 add_library (switcher MODULE switcher.cpp)
 target_link_libraries (switcher composite opengl)
 
+install (
+    TARGETS decor move resize copytex zoom water ini switcher
+    DESTINATION ${compiz_plugindir}
+)
+
 check_include_file ("sys/inotify.h" HAS_INOTIFY)
 
 if (HAS_INOTIFY)
@@ -50,10 +55,18 @@ if (LIBPNG_FOUND)
     )
 endif (LIBPNG_FOUND)
 
-install (
-    TARGETS decor move resize copytex zoom water ini switcher
-    DESTINATION ${compiz_plugindir}
-)
+pkg_check_modules (LIBRSVG cairo>=1.0 cairo-xlib librsvg-2.0>=2.14.0)
+if (LIBRSVG_FOUND)
+    add_library (imgsvg MODULE imgsvg.cpp)
+    target_link_libraries (imgsvg opengl decoration)
+    include_directories (
+	${LIBRSVG_INCLUDE_DIRS}
+    )
+    install (
+	TARGETS imgsvg
+	DESTINATION ${compiz_plugindir}
+    )
+endif (LIBRSVG_FOUND)
 
 link_directories (${compiz_plugindir})
 
