@@ -226,7 +226,8 @@ SvgWindow::SvgWindow (CompWindow *window) :
     source (NULL),
     context (NULL)
 {
-    GLWindowInterface::setHandler (gWindow, false);
+    if (gWindow)
+	GLWindowInterface::setHandler (gWindow, false);
 }
 
 SvgWindow::~SvgWindow ()
@@ -590,6 +591,9 @@ SvgWindow::setSvg (CompString    &data,
     RsvgHandle *svg = NULL;
     GError     *error = NULL;
 
+    if (!gWindow)
+	return;
+
     svg = rsvg_handle_new_from_data ((guint8 *) data.c_str (),
 				     data.length (), &error);
 
@@ -634,14 +638,15 @@ SvgWindow::setSvg (CompString    &data,
 	    delete context;
 	    context = NULL;
 	}
+
+	gWindow->glDrawSetEnabled (this, false);
     }
 }
 
 bool
 SvgPluginVTable::init ()
 {
-    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) ||
-	!CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
     svgMetadata = new CompMetadata (name (), svgOptionInfo, SVG_OPTION_NUM);
