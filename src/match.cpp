@@ -589,11 +589,6 @@ CompMatch::CompMatch (const CompString str) :
     priv (new PrivateMatch ())
 {
     matchAddFromString (priv->op.op, str);
-    printf("New Match with %d ops\n",priv->op.op.size ());
-    foreach (MatchOp *o, priv->op.op)
-    {
-	printf("Expression type %d\n",o->type());
-    }
 }
 
 CompMatch::CompMatch (const CompMatch &match) :
