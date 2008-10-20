@@ -150,7 +150,7 @@ PlaceWindow::place (CompPoint &pos)
     Bool      status = window->place (pos);
     CompPoint viewport;
 
-    if (!status)
+    if (status)
 	return status;
 
     doPlacement (pos);
