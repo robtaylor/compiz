@@ -29,8 +29,11 @@ target_link_libraries (ini)
 add_library (switcher MODULE switcher.cpp)
 target_link_libraries (switcher composite opengl)
 
+add_library (place MODULE place.cpp)
+target_link_libraries (place)
+
 install (
-    TARGETS decor move resize copytex zoom water ini switcher
+    TARGETS decor move resize copytex zoom water ini switcher place
     DESTINATION ${compiz_plugindir}
 )
 
