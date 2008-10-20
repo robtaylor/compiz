@@ -36,11 +36,11 @@ class CompOutput : public CompRect {
     public:
 	CompOutput ();
 
-	CompString name ();
+	CompString name () const;
 	
-	unsigned int id ();
+	unsigned int id () const;
 
-	XRectangle workArea ();
+	XRectangle workArea () const;
 
 	void setWorkArea (XRectangle);
 	void setGeometry (int, int, int, int);
