@@ -3621,6 +3621,12 @@ CompWindow::defaultViewport ()
     return CompPoint (vx, vy);
 }
 
+CompPoint &
+CompWindow::initialViewport () const
+{
+    return priv->initialViewport;
+}
+
 /* returns icon with dimensions as close as possible to width and height
    but never greater. */
 CompIcon *
@@ -4359,20 +4365,20 @@ CompWindow::shaded ()
     return priv->shaded;
 }
 
-CompWindowExtents
-CompWindow::input ()
+CompWindowExtents &
+CompWindow::input () const
 {
     return priv->input;
 }
 
-CompWindowExtents
-CompWindow::output ()
+CompWindowExtents &
+CompWindow::output () const
 {
     return priv->output;
 }
 
-XSizeHints
-CompWindow::sizeHints ()
+XSizeHints &
+CompWindow::sizeHints () const
 {
     return priv->sizeHints;
 }

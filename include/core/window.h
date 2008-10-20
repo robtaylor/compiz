@@ -392,6 +392,8 @@ class CompWindow :
 
 	CompPoint defaultViewport ();
 
+	CompPoint & initialViewport () const;
+
 	CompIcon * getIcon (int width, int height);
 
 	int outputDevice ();
@@ -412,11 +414,11 @@ class CompWindow :
 
 	bool shaded ();
 
-	CompWindowExtents input ();
+	CompWindowExtents & input () const;
 
-	CompWindowExtents output ();
+	CompWindowExtents & output () const;
 
-	XSizeHints sizeHints ();
+	XSizeHints & sizeHints () const;
 
 	bool destroyed ();
 
