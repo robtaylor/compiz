@@ -59,6 +59,8 @@ bool useCow = true;
 
 CompMetadata *coreMetadata = NULL;
 
+unsigned int privateHandlerIndex = 0;
+
 static void
 usage (void)
 {
