@@ -3759,6 +3759,12 @@ PrivateScreen::getTopWindow ()
 }
 
 int
+CompScreen::currentOutputDev () const
+{
+    return priv->currentOutputDev;
+}
+
+int
 CompScreen::outputDeviceForPoint (int x, int y)
 {
     return outputDeviceForGeometry (CompWindow::Geometry (x, y, 1, 1, 0));
