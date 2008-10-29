@@ -129,7 +129,7 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
 	for (unsigned int i = 0; i < backgroundTextures.size (); i++)
 	{
 	    GLTexture *bg = backgroundTextures[i];
-	    CompRegion r = region & bg->size ();
+	    CompRegion r = region & *bg;
 
 	    pBox = const_cast <Region> (r.handle ())->rects;
 	    nBox = const_cast <Region> (r.handle ())->numRects;
@@ -360,7 +360,7 @@ GLScreen::glEnableOutputClipping (const GLMatrix   &transform,
 {
     WRAPABLE_HND_FUNC(3, glEnableOutputClipping, transform, region, output)
 
-    GLdouble h = screen->size ().height ();
+    GLdouble h = screen->height ();
 
     GLdouble p1[2] = { region.handle ()->extents.x1,
 		       h - region.handle ()->extents.y2 };

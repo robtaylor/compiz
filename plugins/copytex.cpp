@@ -114,7 +114,7 @@ CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
     }
 
     setData (target, matrix, false);
-    setSize (dim);
+    setGeometry (dim.x1 (), dim.x2 (), dim.y1 (), dim.y2 ());
 
     glBindTexture (target, name ());
 

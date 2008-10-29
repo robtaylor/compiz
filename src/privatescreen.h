@@ -373,8 +373,6 @@ class PrivateScreen {
 
 	void setCurrentDesktop (unsigned int desktop);
 
-	bool updateDefaultIcon ();
-
 	void setCurrentActiveWindowHistory (int x, int y);
 
 	void addToCurrentActiveWindowHistory (Window id);
@@ -389,8 +387,8 @@ class PrivateScreen {
 
 	PrivateScreen *priv;
 
-	std::list<CompFileWatch *>  fileWatch;
-	CompFileWatchHandle         lastFileWatchHandle;
+	CompFileWatchList   fileWatch;
+	CompFileWatchHandle lastFileWatchHandle;
 
 	std::list<CompTimer *> timers;
 	struct timeval               lastTimeout;
@@ -456,7 +454,6 @@ class PrivateScreen {
 	Colormap colormap;
 	int      screenNum;
 
-	CompSize     size;
 	CompPoint    vp;
 	CompSize     vpSize;
 	unsigned int nDesktop;

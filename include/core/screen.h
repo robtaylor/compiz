@@ -44,7 +44,6 @@ typedef std::list<CompWindow *> CompWindowList;
 extern char       *backgroundImage;
 extern bool       replaceCurrentWm;
 extern bool       indirectRendering;
-extern bool       strictBinding;
 extern bool       noDetection;
 
 extern CompScreen   *screen;
@@ -72,6 +71,7 @@ struct CompFileWatch {
     FileWatchCallBack   callBack;
     CompFileWatchHandle handle;
 };
+typedef std::list<CompFileWatch *> CompFileWatchList;
 
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
@@ -102,12 +102,10 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
         virtual void handleCompizEvent (const char * plugin, const char *event,
 					CompOption::Vector &options);
 
-        virtual bool fileToImage (const char *path, const char *name,
-				  int *width, int *height,
-				  int *stride, void **data);
-	virtual bool imageToFile (const char *path, const char *name,
-				  const char *format, int width, int height,
-				  int stride, void *data);
+        virtual bool fileToImage (CompString &path, CompSize &size,
+				  int &stride, void *&data);
+	virtual bool imageToFile (CompString &path, CompString &format,
+				  CompSize &size, int stride, void *data);
 
 	virtual CompMatch::Expression *matchInitExp (const CompString value);
 
@@ -126,6 +124,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 
 class CompScreen :
+    public CompSize,
     public WrapableHandler<ScreenInterface, 17>,
     public CompPrivateStorage
 {
@@ -146,6 +145,8 @@ class CompScreen :
 					  FileWatchCallBack callBack);
 
 	void removeFileWatch (CompFileWatchHandle handle);
+	
+	const CompFileWatchList& getFileWatches () const;
 	
 	CompWatchFdHandle addWatchFd (int             fd,
 				      short int       events,
@@ -191,18 +192,14 @@ class CompScreen :
 	CompWindow * findTopLevelWindow (Window id,
 					 bool   override_redirect = false);
 
-	bool readImageFromFile (const char *name,
-				int        *width,
-				int        *height,
-				void       **data);
+	bool readImageFromFile (CompString &name,
+				CompSize   &size,
+				void       *&data);
 
-	bool writeImageToFile (const char *path,
-			       const char *name,
+	bool writeImageToFile (CompString &path,
 			       const char *format,
-			       int        width,
-			       int        height,
+			       CompSize   &size,
 			       void       *data);
-
 
 	unsigned int getWindowProp (Window       id,
 				    Atom         property,
@@ -245,6 +242,8 @@ class CompScreen :
 	void insertWindow (CompWindow *w, Window aboveId);
 
 	void unhookWindow (CompWindow *w);
+
+	Cursor invisibleCursor ();
 
 	GrabHandle pushGrab (Cursor cursor, const char *name);
 
@@ -290,11 +289,11 @@ class CompScreen :
 
 	CompSize vpSize ();
 
-	CompSize size ();
-
 	int desktopWindowCount ();
+	unsigned int activeNum () const;
 
 	CompOutput::vector & outputDevs ();
+	CompOutput & currentOutputDev () const;
 
 	XRectangle workArea ();
 
@@ -311,6 +310,10 @@ class CompScreen :
 	CompOutput & fullscreenOutput ();
 
 	std::vector<XineramaScreenInfo> & screenInfo ();
+
+	CompIcon *defaultIcon () const;
+
+	bool updateDefaultIcon ();
 
 	static int allocPrivateIndex ();
 	static void freePrivateIndex (int index);
@@ -332,11 +335,10 @@ class CompScreen :
 	WRAPABLE_HND (7, ScreenInterface, void, handleCompizEvent,
 		      const char *, const char *, CompOption::Vector &)
 
-	WRAPABLE_HND (8, ScreenInterface, bool, fileToImage, const char *,
-		     const char *,  int *, int *, int *, void **data)
-	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, const char *,
-		      const char *, const char *, int, int, int, void *)
-
+	WRAPABLE_HND (8, ScreenInterface, bool, fileToImage, CompString &,
+		      CompSize &, int &, void *&);
+	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, CompString &,
+		      CompString &, CompSize &, int, void *);
 	
 	WRAPABLE_HND (10, ScreenInterface, CompMatch::Expression *,
 		      matchInitExp, const CompString);

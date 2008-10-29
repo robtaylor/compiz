@@ -25,8 +25,8 @@
  *          David Reveman <davidr@novell.com>
  */
 
-#ifndef _COMPOSITE_PRIVATES_H
-#define _COMPOSITE_PRIVATES_H
+#ifndef _OPENGL_PRIVATES_H
+#define _OPENGL_PRIVATES_H
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -52,6 +52,15 @@ extern CompOutput *targetOutput;
 #define RED_SATURATION_WEIGHT   0.30f
 #define GREEN_SATURATION_WEIGHT 0.59f
 #define BLUE_SATURATION_WEIGHT  0.11f
+
+class GLIcon
+{
+    public:
+	GLIcon () : icon (NULL) {};
+	
+	CompIcon        *icon;
+	GLTexture::List textures;
+};
 
 class PrivateGLScreen :
     public ScreenInterface,
@@ -123,6 +132,8 @@ class PrivateGLScreen :
 	std::vector<GLTexture::BindPixmapProc> bindPixmap;
 	bool hasCompositing;
 
+	GLIcon defaultIcon;
+
 	CompOption::Vector opt;
 };
 
@@ -167,6 +178,8 @@ class PrivateGLWindow :
 	unsigned int lastMask;
 
 	GLWindow::Geometry geometry;
+
+	std::list<GLIcon> icons;
 };
 
 

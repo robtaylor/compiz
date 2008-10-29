@@ -40,19 +40,19 @@ CompOutput::CompOutput ()
 }
 
 CompString
-CompOutput::name ()
+CompOutput::name () const
 {
     return mName;
 }
 
 unsigned int
-CompOutput::id ()
+CompOutput::id () const
 {
     return mId;
 }
 
 XRectangle
-CompOutput::workArea ()
+CompOutput::workArea () const
 {
     return mWorkArea;
 }

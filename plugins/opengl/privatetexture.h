@@ -59,7 +59,6 @@ class PrivateTexture {
 	bool              mipmapSupport;
 	bool              initial;
 	int               refCount;
-	CompRect          size;
 };
 
 class TfpTexture : public GLTexture {
@@ -68,7 +67,6 @@ class TfpTexture : public GLTexture {
 	~TfpTexture ();
 
 	void enable (Filter filter);
-	void disable ();
 
 	static List bindPixmapToTexture (Pixmap pixmap,
 					 int width,

@@ -1220,7 +1220,7 @@ DecorWindow::updateWindowRegions ()
 	regions.resize (gWindow->textures ().size ());
     for (unsigned int i = 0; i < gWindow->textures ().size (); i++)
     {
-	regions[i] = CompRegion (gWindow->textures ()[i]->size ());
+	regions[i] = CompRegion (*gWindow->textures ()[i]);
 	regions[i].translate (window->geometry ().x () - window->input ().left,
 			      window->geometry ().y () - window->input ().top);
 	regions[i] &= window->frameRegion ();

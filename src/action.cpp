@@ -147,7 +147,7 @@ CompAction::KeyBinding::keycode ()
 }
 
 bool
-CompAction::KeyBinding::fromString (const CompString str)
+CompAction::KeyBinding::fromString (const CompString &str)
 {
     CompString   sStr;
     unsigned int mods;
@@ -262,7 +262,7 @@ CompAction::ButtonBinding::button ()
 }
 
 bool
-CompAction::ButtonBinding::fromString (const CompString str)
+CompAction::ButtonBinding::fromString (const CompString &str)
 {
     unsigned int mods;
     size_t       pos;
@@ -442,19 +442,31 @@ CompAction::operator= (const CompAction &action)
     return *this;
 }
 
-void
-CompAction::keyFromString (const CompString str)
+bool
+CompAction::keyFromString (const CompString &str)
 {
-    if (priv->key.fromString (str))
+    bool retval = priv->key.fromString (str);
+
+    if (retval)
+    {
 	priv->type = CompAction::BindingTypeKey;
+    }
     else
+    {
 	priv->type = CompAction::BindingTypeNone;
+	if (str == "Disabled")
+	    retval = true;
+    }
+
+    return retval;
 }
 
-void
-CompAction::buttonFromString (const CompString str)
+bool
+CompAction::buttonFromString (const CompString &str)
 {
-    if (priv->button.fromString (str))
+    bool retval = priv->button.fromString (str);
+
+    if (retval)
     {
 	priv->edgeMask = bindingStringToEdgeMask (str);
 	if (priv->edgeMask)
@@ -465,11 +477,15 @@ CompAction::buttonFromString (const CompString str)
     else
     {
 	priv->type = CompAction::BindingTypeNone;
+	if (str == "Disabled")
+	    retval = true;
     }
+
+    return retval;
 }
 
-void
-CompAction::edgeMaskFromString (const CompString str)
+bool
+CompAction::edgeMaskFromString (const CompString &str)
 {
     unsigned int edgeMask = 0;
     size_t       pos;
@@ -495,6 +511,8 @@ CompAction::edgeMaskFromString (const CompString str)
     }
 
     priv->edgeMask = edgeMask;
+
+    return (edgeMask != 0 || str.empty ());
 }
 
 CompString

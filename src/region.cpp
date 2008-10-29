@@ -114,7 +114,7 @@ CompRegion::operator== (const CompRegion &c) const
 bool
 CompRegion::operator!= (const CompRegion &c) const
 {
-    return *this == c;
+    return !(*this == c);
 }
 
 CompRect

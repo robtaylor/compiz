@@ -166,14 +166,14 @@ static void
 matchResetOps (MatchOp::List &list)
 {
     MatchExpOp *exp;
-    foreach (MatchOp &op, list)
+    foreach (MatchOp *op, list)
     {
-	switch (op.type ()) {
+	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		matchResetOps (dynamic_cast <MatchGroupOp &> (op).op);
+		matchResetOps (dynamic_cast <MatchGroupOp *> (op)->op);
 		break;
 	    case MatchOp::TypeExp:
-		exp = dynamic_cast <MatchExpOp *> (&op);
+		exp = dynamic_cast <MatchExpOp *> (op);
 		if (exp && exp->e)
 		{
 
@@ -200,24 +200,24 @@ matchOpsEqual (MatchOp::List &list1,
 
     while (it1 != list1.end ())
     {
-	if ((*it1).type () != (*it2).type ())
+	if ((*it1)->type () != (*it2)->type ())
 	    return false;
 
-	if ((*it1).flags != (*it2).flags)
+	if ((*it1)->flags != (*it2)->flags)
 	    return false;
 
-	switch ((*it1).type ()) {
+	switch ((*it1)->type ()) {
 	    case MatchOp::TypeGroup:
-		g1 = dynamic_cast<MatchGroupOp *> (&(*it1));
-		g2 = dynamic_cast<MatchGroupOp *> (&(*it2));
+		g1 = dynamic_cast<MatchGroupOp *> (*it1);
+		g2 = dynamic_cast<MatchGroupOp *> (*it2);
 
 		if (!matchOpsEqual (g1->op, g2->op))
 		    return false;
 
 		break;
 	    case MatchOp::TypeExp:
-		e1 = dynamic_cast<MatchExpOp *> (&(*it1));
-		e2 = dynamic_cast<MatchExpOp *> (&(*it2));
+		e1 = dynamic_cast<MatchExpOp *> (*it1);
+		e2 = dynamic_cast<MatchExpOp *> (*it2);
 
 		if (e1->value != e2->value)
 		    return false;
@@ -349,9 +349,9 @@ matchAddFromString (MatchOp::List &list,
 
 	    length = j - i;
 
-	    MatchGroupOp group;
-	    matchAddFromString (group.op, str.substr (i, length));
-	    group.flags = flags;
+	    MatchGroupOp *group = new MatchGroupOp ();
+	    matchAddFromString (group->op, str.substr (i, length));
+	    group->flags = flags;
 	    list.push_back (group);
 
 	    while (str[j] != '\0' && str[j] != '|' && str[j] != '&')
@@ -366,9 +366,9 @@ matchAddFromString (MatchOp::List &list,
 
 	    if (j > i)
 	    {
-		MatchExpOp exp;
-		exp.value = strndupValue (str.substr(i, j - i));
-		exp.flags = flags;
+		MatchExpOp *exp = new MatchExpOp ();
+		exp->value = strndupValue (str.substr(i, j - i));
+		exp->flags = flags;
 		list.push_back (exp);
 	    }
 	}
@@ -385,7 +385,7 @@ matchAddFromString (MatchOp::List &list,
     }
 
     if (list.size ())
-	list.front ().flags &= ~MATCH_OP_AND_MASK;
+	list.front ()->flags &= ~MATCH_OP_AND_MASK;
 
 }
 
@@ -394,19 +394,19 @@ matchOpsToString (MatchOp::List &list)
 {
     CompString value (""), group;
 
-    foreach (MatchOp &op, list)
+    foreach (MatchOp *op, list)
     {
-	switch (op.type ()) {
+	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		group = matchOpsToString (dynamic_cast <MatchGroupOp &> (op).op);
+		group = matchOpsToString (dynamic_cast <MatchGroupOp *> (op)->op);
 		if (group.length ())
 		{
 		    if (value.length ())
 		    {
-			value += ((op.flags & MATCH_OP_AND_MASK) ?
+			value += ((op->flags & MATCH_OP_AND_MASK) ?
 				  "& " : "| ");
 		    }
-		    if (op.flags & MATCH_OP_NOT_MASK)
+		    if (op->flags & MATCH_OP_NOT_MASK)
 			value += "!";
 		    value += "(" + group + ") ";
 		}
@@ -415,12 +415,13 @@ matchOpsToString (MatchOp::List &list)
 
 		if (value.length ())
 		{
-		    value += ((op.flags & MATCH_OP_AND_MASK) ?
+		    value += ((op->flags & MATCH_OP_AND_MASK) ?
 			      "& " : "| ");
 		}
-		if (op.flags & MATCH_OP_NOT_MASK)
+		if (op->flags & MATCH_OP_NOT_MASK)
 		    value += "!";
-		    value += dynamic_cast <MatchExpOp &> (op).value;
+		value += dynamic_cast <MatchExpOp *> (op)->value;
+		value += " ";
 		break;
 	    default:
 		break;
@@ -437,14 +438,14 @@ static void
 matchUpdateOps (MatchOp::List &list)
 {
     MatchExpOp *exp;
-    foreach (MatchOp &op, list)
+    foreach (MatchOp *op, list)
     {
-	switch (op.type ()) {
+	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		matchUpdateOps (dynamic_cast <MatchGroupOp &> (op).op);
+		matchUpdateOps (dynamic_cast <MatchGroupOp *> (op)->op);
 		break;
 	    case MatchOp::TypeExp:
-		exp = dynamic_cast <MatchExpOp *> (&op);
+		exp = dynamic_cast <MatchExpOp *> (op);
 		if (exp && screen)
 		    exp->e.reset (screen->matchInitExp (exp->value));
 		break;
@@ -461,10 +462,10 @@ matchEvalOps (MatchOp::List &list,
     bool       value, result = false;
     MatchExpOp *exp;
 
-    foreach (MatchOp &op, list)
+    foreach (MatchOp *op, list)
     {
 	/* fast evaluation */
-	if (op.flags & MATCH_OP_AND_MASK)
+	if (op->flags & MATCH_OP_AND_MASK)
 	{
 	    /* result will never be true */
 	    if (!result)
@@ -477,12 +478,12 @@ matchEvalOps (MatchOp::List &list,
 		return true;
 	}
 
-	switch (op.type ()) {
+	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		value = matchEvalOps (dynamic_cast <MatchGroupOp &> (op).op, w);
+		value = matchEvalOps (dynamic_cast <MatchGroupOp *> (op)->op, w);
 		break;
 	    case MatchOp::TypeExp:
-		exp = dynamic_cast <MatchExpOp *> (&op);
+		exp = dynamic_cast <MatchExpOp *> (op);
 		if (exp->e.get ())
 		    value = exp->e->evaluate (w);
 		else
@@ -493,10 +494,10 @@ matchEvalOps (MatchOp::List &list,
 		break;
 	}
 
-	if (op.flags & MATCH_OP_NOT_MASK)
+	if (op->flags & MATCH_OP_NOT_MASK)
 	    value = !value;
 
-	if (op.flags & MATCH_OP_AND_MASK)
+	if (op->flags & MATCH_OP_AND_MASK)
 	    result = (result && value);
 	else
 	    result = (result || value);
@@ -520,10 +521,58 @@ MatchExpOp::MatchExpOp () :
 {
 }
 
+MatchExpOp::MatchExpOp (const MatchExpOp &ex) :
+    value (ex.value),
+    e (ex.e)
+{
+}
+
 MatchGroupOp::MatchGroupOp () :
     op (0)
 {
 }
+
+MatchGroupOp::MatchGroupOp (const MatchGroupOp &gr) :
+    op (0)
+{
+    *this = gr;
+}
+
+MatchGroupOp::~MatchGroupOp ()
+{
+    foreach (MatchOp *o, op)
+	delete o;
+}
+
+MatchGroupOp &
+MatchGroupOp::operator= (const MatchGroupOp &gr)
+{
+    MatchGroupOp *gop;
+    MatchExpOp *eop;
+
+    foreach (MatchOp *o, op)
+	delete o;
+
+    op.clear ();
+
+    foreach (MatchOp *o, gr.op)
+    {
+	switch (o->type ())
+	{
+	    case MatchOp::TypeGroup:
+		gop = new MatchGroupOp (dynamic_cast <MatchGroupOp &> (*o));
+		op.push_back (gop);
+		break;
+	    case MatchOp::TypeExp:
+		eop = new MatchExpOp (dynamic_cast <MatchExpOp &> (*o));
+                op.push_back (eop);
+		break;
+	    default:
+		break; 
+	}
+    }
+}
+	
 
 PrivateMatch::PrivateMatch () :
     op ()
@@ -583,14 +632,12 @@ CompMatch::operator= (const CompMatch &match)
 CompMatch &
 CompMatch::operator&= (const CompMatch &match)
 {
-    MatchGroupOp g1;
-    MatchGroupOp g2;
+    MatchGroupOp *g1 = new MatchGroupOp (priv->op);
+    MatchGroupOp *g2 = new MatchGroupOp (match.priv->op);
 
-    g1.op = priv->op.op;
-    g2.op = match.priv->op.op;
-    g2.flags = MATCH_OP_AND_MASK;
+    g2->flags = MATCH_OP_AND_MASK;
 
-    priv->op.op.clear ();
+    priv->op = MatchGroupOp ();
     priv->op.op.push_back (g1);
     priv->op.op.push_back (g2);
 
@@ -600,13 +647,10 @@ CompMatch::operator&= (const CompMatch &match)
 CompMatch &
 CompMatch::operator|= (const CompMatch &match)
 {
-    MatchGroupOp g1;
-    MatchGroupOp g2;
+    MatchGroupOp *g1 = new MatchGroupOp (priv->op);
+    MatchGroupOp *g2 = new MatchGroupOp (match.priv->op);
 
-    g1.op = priv->op.op;
-    g2.op = match.priv->op.op;
-
-    priv->op.op.clear ();
+    priv->op = MatchGroupOp ();
     priv->op.op.push_back (g1);
     priv->op.op.push_back (g2);
 
@@ -628,10 +672,9 @@ CompMatch::operator| (const CompMatch &match)
 const CompMatch &
 CompMatch::operator! ()
 {
-    MatchGroupOp g;
-    g.op = priv->op.op;
-    g.flags ^= MATCH_OP_NOT_MASK;
-    priv->op.op.clear ();
+    MatchGroupOp *g = new MatchGroupOp (priv->op);
+    g->flags ^= MATCH_OP_NOT_MASK;
+    priv->op = MatchGroupOp ();
     priv->op.op.push_back (g);
     return *this;
 }
@@ -639,7 +682,7 @@ CompMatch::operator! ()
 CompMatch &
 CompMatch::operator= (const CompString &str)
 {
-    priv->op.op.clear ();
+    priv->op = MatchGroupOp ();
     matchAddFromString (priv->op.op, str);
     return *this;
 }

@@ -28,22 +28,20 @@
 #ifndef _COMPICON_H
 #define _COMPICON_H
 
+#include <core/size.h>
+
 class CompScreen;
 
-class CompIcon {
+class CompIcon : public CompSize {
     public:
 	CompIcon (CompScreen *screen, unsigned width, unsigned int height);
 	~CompIcon ();
 
-	unsigned int width ();
-	unsigned int height ();
 	unsigned char* data ();
 
     private:
-	int           mWidth;
-	unsigned int  mHeight;
+	CompSize      mSize;
 	unsigned char *mData;
-	bool          mUpdateTex;
 };
 
 #endif

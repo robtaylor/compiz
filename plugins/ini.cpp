@@ -73,9 +73,13 @@ IniFile::open (bool write)
 void
 IniFile::load ()
 {
-    bool loaded, resave = false;
+    bool resave = false;
 
     if (!plugin)
+	return;
+
+    CompOption::Vector& options = plugin->vTable->getOptions ();
+    if (options.empty ())
 	return;
 
     if (!open (false))
@@ -94,33 +98,28 @@ IniFile::load ()
     }
     else
     {
-	CompOption::Vector& options = plugin->vTable->getOptions ();
-	CompOption          *option;
-	CompString          optionValue;
-	char                buffer[4096];
-	char                *delimiter;
+	CompString   line, optionValue;
+	CompOption   *option;
+	unsigned int pos;
 
-#warning fixme: is there a way to read a full line into a CompString?
-	while (optionFile.getline (buffer, 4096))
+	while (std::getline (optionFile, line))
 	{
-	    delimiter = strchr (buffer, '=');
-	    if (!delimiter)
+	    pos = line.find_first_of ('=');
+	    if (pos == CompString::npos)
 		continue;
 
-	    *delimiter  = 0;
-
-	    option = CompOption::findOption (options, buffer);
+	    option = CompOption::findOption (options, line.substr (0, pos));
 	    if (!option)
 		continue;
 
-	    optionValue = delimiter + 1;
-	    stringToOption (option, optionValue);
+	    optionValue = line.substr (pos + 1);
+	    if (!stringToOption (option, optionValue))
+		resave = true;
 	}
     }
 
-    optionFile.close ();
-
-    if (loaded && resave)
+    /* re-save whole file if we encountered invalid lines */
+    if (resave)
 	save ();
 }
 
@@ -152,8 +151,6 @@ IniFile::save ()
 	if (valid)
 	    optionFile << option.name () << "=" << optionValue << std::endl;
     }
-
-    optionFile.close ();
 }
 
 CompString
@@ -315,6 +312,7 @@ IniFile::stringToOptionValue (CompString        &string,
 	{
 	    retval = false;
 	};
+	break;
     case CompOption::TypeFloat:
 	try
 	{
@@ -347,15 +345,13 @@ IniFile::stringToOptionValue (CompString        &string,
 
 	    switch (type) {
 	    case CompOption::TypeKey:
-		action.keyFromString (string);
-		retval = (action.type () != CompAction::BindingTypeNone);
+		retval = action.keyFromString (string);
 		break;
 	    case CompOption::TypeButton:
-		action.buttonFromString (string);
-		retval = (action.type () != CompAction::BindingTypeNone);
+		retval = action.buttonFromString (string);
 		break;
 	    case CompOption::TypeEdge:
-		action.edgeMaskFromString (string);
+		retval = action.edgeMaskFromString (string);
 		break;
 	    case CompOption::TypeBell:
 		if (string == "true")
@@ -381,7 +377,7 @@ IniFile::stringToOptionValue (CompString        &string,
     return retval;
 }
 
-void
+bool
 IniFile::stringToOption (CompOption *option,
 			 CompString &valueString)
 {
@@ -426,6 +422,8 @@ IniFile::stringToOption (CompOption *option,
     if (valid)
 	screen->setOptionForPlugin (plugin->vTable->name (),
 				    option->name ().c_str (), value);
+
+    return valid;
 }
 
 void
@@ -443,11 +441,15 @@ IniScreen::fileChanged (const char *name)
     if (strcmp (fileName.c_str () + length, FILE_SUFFIX) != 0)
 	return;
 
-    p = CompPlugin::find (fileName.substr (0, length).c_str ());
+    plugin = fileName.substr (0, length);
+    p = CompPlugin::find (plugin == "general" ? "core" : plugin.c_str ());
     if (p)
     {
 	IniFile ini (screen, p);
+
+	blockWrites = true;
 	ini.load ();
+	blockWrites = false;
     }
 }
 
@@ -482,8 +484,12 @@ IniScreen::setOptionForPlugin (const char        *plugin,
 	p = CompPlugin::find (plugin);
 	if (p)
 	{
-	    IniFile ini (screen, p);
-	    ini.save ();
+	    CompOption *o;
+	    IniFile    ini (screen, p);
+
+	    o = CompOption::findOption (p->vTable->getOptions (), name);
+	    if (o && (o->value () != v))
+		ini.save ();
 	}
     }
 

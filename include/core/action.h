@@ -88,7 +88,7 @@ class CompAction {
 		unsigned int modifiers ();
 		int keycode ();
 
-		bool fromString (const CompString str);
+		bool fromString (const CompString &str);
 		CompString toString ();
 
 	    private:
@@ -104,7 +104,7 @@ class CompAction {
 		unsigned int modifiers ();
 		int button ();
 
-		bool fromString (const CompString str);
+		bool fromString (const CompString &str);
 		CompString toString ();
 
 	    private:
@@ -146,9 +146,9 @@ class CompAction {
 	bool operator== (const CompAction& val);
 	CompAction & operator= (const CompAction &action);
 
-	void keyFromString (const CompString str);
-	void buttonFromString (const CompString str);
-	void edgeMaskFromString (const CompString str);
+	bool keyFromString (const CompString &str);
+	bool buttonFromString (const CompString &str);
+	bool edgeMaskFromString (const CompString &str);
 
 	CompString keyToString ();
 	CompString buttonToString ();

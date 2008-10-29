@@ -52,13 +52,14 @@ CompWindow *lastFoundWindow = 0;
 
 bool replaceCurrentWm = false;
 bool indirectRendering = false;
-bool strictBinding = true;
 bool noDetection = false;
 bool useDesktopHints = true;
 
 bool useCow = true;
 
 CompMetadata *coreMetadata = NULL;
+
+unsigned int privateHandlerIndex = 0;
 
 static void
 usage (void)
@@ -67,7 +68,6 @@ usage (void)
 	    "[--display DISPLAY] "
 	    "[--bg-image PNG] "
 	    "[--indirect-rendering] "
-	    "[--loose-binding] "
 	    "[--replace]\n       "
 	    "[--sm-disable] "
 	    "[--sm-client-id ID] "
@@ -187,10 +187,6 @@ main (int argc, char **argv)
 	else if (!strcmp (argv[i], "--indirect-rendering"))
 	{
 	    indirectRendering = TRUE;
-	}
-	else if (!strcmp (argv[i], "--loose-binding"))
-	{
-	    strictBinding = FALSE;
 	}
 	else if (!strcmp (argv[i], "--ignore-desktop-hints"))
 	{

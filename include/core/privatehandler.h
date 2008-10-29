@@ -33,15 +33,18 @@
 #include <core/screen.h>
 #include <core/privates.h>
 
+extern unsigned int privateHandlerIndex;
+
 class CompPrivateIndex {
     public:
 	CompPrivateIndex () : index(-1), refCount (0),
 			      initiated (false), failed (false) {}
 			
-	int  index;
-	int  refCount;
-	bool initiated;
-	bool failed;
+	int          index;
+	int          refCount;
+	bool         initiated;
+	bool         failed;
+	unsigned int privIndex;
 };
 
 template<class Tp, class Tb, int ABI = 0>
@@ -99,6 +102,7 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 		if (!screen->hasValue (keyName ()))
 		{
 		    screen->storeValue (keyName (), p);
+		    privateHandlerIndex++;
 		}
 		else
 		{
@@ -135,6 +139,7 @@ PrivateHandler<Tp,Tb,ABI>::~PrivateHandler ()
 	    Tb::freePrivateIndex (mIndex.index);
 	    mIndex.initiated = false;
 	    screen->eraseValue (keyName ());
+	    privateHandlerIndex++;
 	}
     }
 }
@@ -143,12 +148,12 @@ template<class Tp, class Tb, int ABI>
 Tp *
 PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
 {
-    if (mIndex.initiated)
+    if (mIndex.initiated && privateHandlerIndex == mIndex.privIndex)
     {
 	return static_cast<Tp *>
 	    (base->privates[mIndex.index].ptr);
     }
-    if (mIndex.failed)
+    if (mIndex.failed && privateHandlerIndex == mIndex.privIndex)
 	return NULL;
 
     if (screen->hasValue (keyName ()))
@@ -156,11 +161,13 @@ PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
 	mIndex.index     = screen->getValue (keyName ()).val;
 	mIndex.initiated = true;
 	mIndex.refCount  = -1;
+	mIndex.privIndex = privateHandlerIndex;
 	return static_cast<Tp *> (base->privates[mIndex.index].ptr);
     }
     else
     {
-	mIndex.failed = true;
+	mIndex.failed    = true;
+	mIndex.privIndex = privateHandlerIndex;
 	return NULL;
     }
 }

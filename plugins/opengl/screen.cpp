@@ -545,6 +545,12 @@ GLScreen::textureFilter ()
 }
 
 void
+GLScreen::setTextureFilter (GLenum filter)
+{
+    priv->textureFilter = filter;
+}
+
+void
 PrivateGLScreen::handleEvent (XEvent *event)
 {
     CompWindow *w;
@@ -566,6 +572,12 @@ PrivateGLScreen::handleEvent (XEvent *event)
 		w = screen->findWindow (event->xproperty.window);
 		if (w)
 		    GLWindow::get (w)->updatePaintAttribs ();
+	    }
+	    else if (event->xproperty.atom == Atoms::wmIcon)
+	    {
+		w = screen->findWindow (event->xproperty.window);
+		if (w)
+		    GLWindow::get (w)->priv->icons.clear ();
 	    }
 	    break;
 	break;
@@ -770,8 +782,12 @@ PrivateGLScreen::updateScreenBackground ()
     }
 
     if (backgroundTextures.empty () && backgroundImage)
-	backgroundTextures =
-	    GLTexture::readImageToTexture (backgroundImage, &width, &height);
+    {
+	CompSize   size;
+	CompString fileName (backgroundImage);
+
+	backgroundTextures = GLTexture::readImageToTexture (fileName, size);
+    }
 
     if (!backgroundTextures.empty ())
     {
@@ -903,14 +919,14 @@ GLScreen::clearOutput (CompOutput   *output,
 
     if (pBox->x1 != 0	     ||
 	pBox->y1 != 0	     ||
-	pBox->x2 != (int) screen->size ().width () ||
-	pBox->y2 != (int) screen->size ().height ())
+	pBox->x2 != (int) screen->width () ||
+	pBox->y2 != (int) screen->height ())
     {
 	glPushAttrib (GL_SCISSOR_BIT);
 
 	glEnable (GL_SCISSOR_TEST);
 	glScissor (pBox->x1,
-		   screen->size ().height () - pBox->y2,
+		   screen->height () - pBox->y2,
 		   pBox->x2 - pBox->x1,
 		   pBox->y2 - pBox->y1);
 	glClear (mask);
@@ -927,7 +943,7 @@ void
 GLScreen::setDefaultViewport ()
 {
     priv->lastViewport.x      = screen->outputDevs ()[0].x1 ();
-    priv->lastViewport.y      = screen->size ().height () -
+    priv->lastViewport.y      = screen->height () -
 				screen->outputDevs ()[0].y2 ();
     priv->lastViewport.width  = screen->outputDevs ()[0].width ();
     priv->lastViewport.height = screen->outputDevs ()[0].height ();
@@ -982,7 +998,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	targetOutput = output;
 
 	r.x	 = output->x1 ();
-	r.y	 = screen->size ().height () - output->y2 ();
+	r.y	 = screen->height () - output->y2 ();
 	r.width  = output->width ();
 	r.height = output->height ();
 
@@ -1049,7 +1065,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	{
 	    while (nBox--)
 	    {
-		y = screen->size ().height () - pBox->y2;
+		y = screen->height () - pBox->y2;
 
 		(*GL::copySubBuffer) (screen->dpy (), cScreen->output (),
 				      pBox->x1, y,
@@ -1066,7 +1082,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 
 	    while (nBox--)
 	    {
-		y = screen->size ().height () - pBox->y2;
+		y = screen->height () - pBox->y2;
 
 		glBitmap (0, 0, 0, 0,
 			  pBox->x1 - rasterPos.x (),
@@ -1134,4 +1150,41 @@ GLScreen::unregisterBindPixmap (GLTexture::BindPixmapHandle hnd)
 	CompositeScreen::get (screen)->unregisterPaintHandler ();
 	priv->hasCompositing = false;
     }
+}
+
+GLTexture *
+GLScreen::defaultIcon ()
+{
+    CompIcon *i = screen->defaultIcon ();
+    CompSize size;
+
+    if (!i)
+	return NULL;
+    
+    if (!i->width () || !i->height ())
+	return NULL;
+
+    if (priv->defaultIcon.icon == i)
+	return priv->defaultIcon.textures[0];
+
+    priv->defaultIcon.textures =
+	GLTexture::imageBufferToTexture ((char *) i->data (), *i);
+
+    if (priv->defaultIcon.textures.size () == 1)
+	priv->defaultIcon.icon = i;
+    else
+    {
+	priv->defaultIcon.icon = NULL;
+	priv->defaultIcon.textures.clear ();
+    }
+
+    return priv->defaultIcon.textures[0];
+}
+
+void
+GLScreen::resetRasterPos ()
+{
+    glRasterPos2f (0, 0);
+    priv->rasterPos.setX (0);
+    priv->rasterPos.setY (0);
 }

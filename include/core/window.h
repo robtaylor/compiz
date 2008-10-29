@@ -199,9 +199,9 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 
 	virtual bool focus ();
 	virtual void activate ();
-	virtual bool place (int x, int y, int *newX, int *newY);
+	virtual bool place (CompPoint &pos);
 
-	virtual void validateResizeRequest (unsigned int   *mask,
+	virtual void validateResizeRequest (unsigned int   &mask,
 					    XWindowChanges *xwc,
 					    unsigned int   source);
 
@@ -231,7 +231,7 @@ class CompWindow :
 		Geometry ();
 		Geometry (int, int, unsigned int, unsigned int, unsigned int);
 
-		unsigned int border ();
+		unsigned int border () const;
 
 		void set (int, int, unsigned int, unsigned int, unsigned int);
 
@@ -256,6 +256,28 @@ class CompWindow :
 	CompWindow (Window     id,
 	            Window     aboveId);
 	~CompWindow ();
+
+	Geometry & geometry () const;
+
+	int x () const;
+	int y () const;
+	const CompPoint & pos () const;
+
+	/* With border */
+	unsigned int width () const;
+	unsigned int height () const;
+	const CompSize size () const;
+	
+	Geometry & serverGeometry () const;
+
+	int serverX () const;
+	int serverY () const;
+	const CompPoint & serverPos () const;
+
+	/* With border */
+	unsigned int serverWidth () const;
+	unsigned int serverHeight () const;
+	const CompSize serverSize () const;
 
 	Window id ();
 	Window frame ();
@@ -288,8 +310,8 @@ class CompWindow :
 	bool grabbed ();
 
 	unsigned int activeNum ();
-	
-	int mapNum ();
+
+	int mapNum () const;
 
 	CompStruts * struts ();
 
@@ -370,6 +392,8 @@ class CompWindow :
 
 	CompPoint defaultViewport ();
 
+	CompPoint & initialViewport () const;
+
 	CompIcon * getIcon (int width, int height);
 
 	int outputDevice ();
@@ -390,17 +414,11 @@ class CompWindow :
 
 	bool shaded ();
 
-	CompSize size ();
+	CompWindowExtents & input () const;
 
-	Geometry & geometry ();
+	CompWindowExtents & output () const;
 
-	Geometry & serverGeometry ();
-
-	CompWindowExtents input ();
-
-	CompWindowExtents output ();
-
-	XSizeHints sizeHints ();
+	XSizeHints & sizeHints () const;
 
 	bool destroyed ();
 
@@ -414,7 +432,10 @@ class CompWindow :
 
 	bool overrideRedirect ();
 
-	bool isViewable ();
+	bool isMapped () const;
+	bool isViewable () const;
+
+	bool isFocussable () const;
 
 	int windowClass ();
 
@@ -441,9 +462,9 @@ class CompWindow :
 
 	WRAPABLE_HND (2, WindowInterface, bool, focus);
 	WRAPABLE_HND (3, WindowInterface, void, activate);
-	WRAPABLE_HND (4, WindowInterface, bool, place, int, int, int*, int*);
+	WRAPABLE_HND (4, WindowInterface, bool, place, CompPoint &);
 	WRAPABLE_HND (5, WindowInterface, void, validateResizeRequest,
-		      unsigned int *, XWindowChanges *, unsigned int);
+		      unsigned int &, XWindowChanges *, unsigned int);
 
 	WRAPABLE_HND (6, WindowInterface, void, resizeNotify,
 		      int, int, int, int);

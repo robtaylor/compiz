@@ -57,7 +57,8 @@ PrivateGLWindow::PrivateGLWindow (CompWindow *w,
     updateReg (true),
     clip (),
     bindFailed (false),
-    geometry ()
+    geometry (),
+    icons ()
 {
     paint.xScale	= 1.0f;
     paint.yScale	= 1.0f;
@@ -317,6 +318,33 @@ GLWindow::matrices () const
     return priv->matrices;
 }
 
+GLTexture *
+GLWindow::getIcon (int width, int height)
+{
+    GLIcon   icon;
+    CompIcon *i = priv->window->getIcon (width, height);
+
+    if (!i)
+	return NULL;
+
+    if (!i->width () || !i->height ())
+	return NULL;
+
+    foreach (GLIcon &icon, priv->icons)
+	if (icon.icon == i)
+	    return icon.textures[0];
+ 
+    icon.icon = i;
+    icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (), *i);
+
+    if (icon.textures.size () > 1 || icon.textures.size () == 0)
+	return NULL;
+
+    priv->icons.push_back (icon);
+
+    return icon.textures[0];
+}
+
 void
 PrivateGLWindow::updateFrameRegion (CompRegion &region)
 {
@@ -331,7 +359,7 @@ PrivateGLWindow::updateWindowRegions ()
 	regions.resize (textures.size ());
     for (unsigned int i = 0; i < textures.size (); i++)
     {
-	regions[i] = CompRegion (textures[i]->size ());
+	regions[i] = CompRegion (*textures[i]);
 	regions[i].translate (window->geometry ().x () - window->input ().left,
 			      window->geometry ().y () - window->input ().top);
 	regions[i] &= window->region ();

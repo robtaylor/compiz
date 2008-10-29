@@ -96,6 +96,7 @@ GLTexture::List::clear ()
 }
 
 GLTexture::GLTexture () :
+    CompRect (0, 0, 0, 0),
     priv (new PrivateTexture (this))
 {
 }
@@ -114,8 +115,7 @@ PrivateTexture::PrivateTexture (GLTexture *texture) :
     mipmap  (true),
     mipmapSupport (false),
     initial (true),
-    refCount (1),
-    size (0, 0, 0, 0)
+    refCount (1)
 {
     glGenTextures (1, &name);
 }
@@ -156,12 +156,6 @@ GLenum
 GLTexture::filter () const
 {
     return priv->filter;
-}
-
-const CompRect &
-GLTexture::size () const
-{
-    return priv->size;
 }
 
 void
@@ -253,12 +247,6 @@ GLTexture::setData (GLenum target, Matrix &m, bool mipmap)
 }
 
 void
-GLTexture::setSize (const CompRect & size)
-{
-    priv->size = size;
-}
-
-void
 GLTexture::setMipmap (bool enable)
 {
     priv->mipmap = enable;
@@ -330,7 +318,7 @@ PrivateTexture::loadImageData (const char   *image,
     }
 
     t->setData (target, matrix, mipmap);
-    t->setSize (CompRect (0, 0, width, height));
+    t->setGeometry (0, width, 0, height);
 
     glBindTexture (target, t->name ());
 
@@ -348,50 +336,42 @@ PrivateTexture::loadImageData (const char   *image,
 }
 
 GLTexture::List
-GLTexture::imageBufferToTexture (const char   *image,
-				 unsigned int width,
-				 unsigned int height)
+GLTexture::imageBufferToTexture (const char *image,
+				 CompSize   size)
 {
 #if IMAGE_BYTE_ORDER == MSBFirst
-    return PrivateTexture::loadImageData (image, width, height,
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
 					  GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV);
 #else
-    return PrivateTexture::loadImageData (image, width, height,
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
 					  GL_BGRA, GL_UNSIGNED_BYTE);
 #endif
 }
 
 GLTexture::List
-GLTexture::imageDataToTexture (const char   *image,
-			       unsigned int width,
-			       unsigned int height,
-			       GLenum       format,
-			       GLenum       type)
+GLTexture::imageDataToTexture (const char *image,
+			       CompSize   size,
+			       GLenum     format,
+			       GLenum     type)
 {
-    return PrivateTexture::loadImageData (image, width, height, format, type);
+    return PrivateTexture::loadImageData (image, size.width (), size.height (),
+					  format, type);
 }
 
 
 GLTexture::List
-GLTexture::readImageToTexture (const char   *imageFileName,
-			       unsigned int *returnWidth,
-			       unsigned int *returnHeight)
+GLTexture::readImageToTexture (CompString &imageFileName,
+			       CompSize   &size)
 {
-    void            *image;
-    int             width, height;
+    void *image;
 
-    if (screen->readImageFromFile (imageFileName, &width, &height, &image))
+    if (screen->readImageFromFile (imageFileName, size, image))
 	return GLTexture::List ();
 
     GLTexture::List rv =
-	GLTexture::imageBufferToTexture ((char *)image, width, height);
+	GLTexture::imageBufferToTexture ((char *)image, size);
 
     free (image);
-
-    if (returnWidth)
-	*returnWidth = width;
-    if (returnHeight)
-	*returnHeight = height;
 
     return rv;
 }
@@ -440,13 +420,10 @@ TfpTexture::~TfpTexture ()
     if (pixmap)
     {
 	glEnable (target ());
-	if (!strictBinding)
-	{
-	    glBindTexture (target (), name ());
 
-	    (*GL::releaseTexImage) (screen->dpy (), pixmap,
-				    GLX_FRONT_LEFT_EXT);
-	}
+	glBindTexture (target (), name ());
+
+	(*GL::releaseTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT);
 
 	glBindTexture (target (), 0);
 	glDisable (target ());
@@ -582,18 +559,15 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
 
     tex = new TfpTexture ();
     tex->setData (texTarget, matrix, mipmap);
-    tex->setSize (CompRect (0, 0, width, height));
+    tex->setGeometry (0, width, 0, height);
     tex->pixmap = glxPixmap;
 
     rv[0] = tex;
 
     glBindTexture (texTarget, tex->name ());
 
-    if (!strictBinding)
-    {
-	(*GL::bindTexImage) (screen->dpy (), glxPixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
-    }
+
+    (*GL::bindTexImage) (screen->dpy (), glxPixmap, GLX_FRONT_LEFT_EXT, NULL);
 
     tex->setFilter (GL_NEAREST);
     tex->setWrap (GL_CLAMP_TO_EDGE);
@@ -613,10 +587,10 @@ TfpTexture::enable (GLTexture::Filter filter)
     glEnable (target ());
     glBindTexture (target (), name ());
 
-    if (strictBinding && pixmap)
+    if (damaged && pixmap)
     {
-	(*GL::bindTexImage) (screen->dpy (), pixmap,
-			     GLX_FRONT_LEFT_EXT, NULL);
+	(*GL::releaseTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT);
+	(*GL::bindTexImage) (screen->dpy (), pixmap, GLX_FRONT_LEFT_EXT, NULL);
     }
 
     GLTexture::enable (filter);
@@ -626,21 +600,7 @@ TfpTexture::enable (GLTexture::Filter filter)
 	if (damaged)
 	{
 	    (*GL::generateMipmap) (target ());
-	    damaged = false;
 	}
     }
-}
-
-void
-TfpTexture::disable ()
-{
-    if (strictBinding && pixmap)
-    {
-	glBindTexture (target (), name ());
-
-	(*GL::releaseTexImage) (screen->dpy (), pixmap,
-				GLX_FRONT_LEFT_EXT);
-    }
-
-    GLTexture::disable ();
+    damaged = false;
 }

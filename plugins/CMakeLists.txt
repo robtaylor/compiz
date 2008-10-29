@@ -1,3 +1,5 @@
+include (CheckIncludeFile)
+
 set (CMAKE_INSTALL_RPATH ${compiz_plugindir} ${libdir})
 
 add_subdirectory (composite)
@@ -22,12 +24,53 @@ add_library (water MODULE water.cpp)
 target_link_libraries (water composite opengl)
 
 add_library (ini MODULE ini.cpp)
-target_link_libraries (ini)
+
+add_library (switcher MODULE switcher.cpp)
+target_link_libraries (switcher composite opengl)
+
+add_library (place MODULE place.cpp)
+target_link_libraries (place)
 
 install (
-    TARGETS decor move resize copytex zoom water ini
+    TARGETS decor move resize copytex zoom water ini switcher place
     DESTINATION ${compiz_plugindir}
 )
+
+check_include_file ("sys/inotify.h" HAS_INOTIFY)
+
+if (HAS_INOTIFY)
+    add_library (inotify MODULE inotify.cpp)
+    install (
+	TARGETS inotify
+	DESTINATION ${compiz_plugindir}
+    )
+endif (HAS_INOTIFY)
+
+pkg_check_modules (LIBPNG libpng)
+if (LIBPNG_FOUND)
+    add_library (imgpng MODULE imgpng.cpp)
+    target_link_libraries (imgpng ${LIBPNG_LIBRARIES})
+    include_directories (
+	${LIBPNG_INCLUDE_DIRS}
+    )
+    install (
+	TARGETS imgpng
+	DESTINATION ${compiz_plugindir}
+    )
+endif (LIBPNG_FOUND)
+
+pkg_check_modules (LIBRSVG cairo>=1.0 cairo-xlib librsvg-2.0>=2.14.0)
+if (LIBRSVG_FOUND)
+    add_library (imgsvg MODULE imgsvg.cpp)
+    target_link_libraries (imgsvg opengl decoration ${LIBRSVG_LIBRARIES})
+    include_directories (
+	${LIBRSVG_INCLUDE_DIRS}
+    )
+    install (
+	TARGETS imgsvg
+	DESTINATION ${compiz_plugindir}
+    )
+endif (LIBRSVG_FOUND)
 
 link_directories (${compiz_plugindir})
 

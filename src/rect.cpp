@@ -75,3 +75,23 @@ CompRect::setGeometry (int x1, int x2, int y1, int y2)
 	mRegion.extents.y2 = y2;
 }
 
+bool
+CompRect::operator== (const CompRect &rect) const
+{
+    if (mRegion.extents.x1 != rect.mRegion.extents.x1)
+	return false;
+    if (mRegion.extents.y1 != rect.mRegion.extents.y1)
+	return false;
+    if (mRegion.extents.x2 != rect.mRegion.extents.x2)
+	return false;
+    if (mRegion.extents.y2 != rect.mRegion.extents.y2)
+	return false;
+
+    return true;
+}
+
+bool
+CompRect::operator!= (const CompRect &rect) const
+{
+    return !(*this == rect);
+}

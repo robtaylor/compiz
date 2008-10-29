@@ -37,9 +37,6 @@
 #define CORE_NAME           "general"
 #define FILE_SUFFIX         ".conf"
 
-#define INI_SCREEN(s) \
-    IniScreen *is = IniScreen::get(s)
-
 class IniScreen :
     public ScreenInterface,
     public PrivateHandler<IniScreen, CompScreen>
@@ -98,7 +95,7 @@ class IniFile
 					CompOption::Type  type);
 	CompString optionToString (CompOption &option,
 				   bool       &valid);
-	void stringToOption (CompOption *option,
+	bool stringToOption (CompOption *option,
 			     CompString &valueString);
 	bool stringToOptionValue (CompString        &string,
 				  CompOption::Type  type,

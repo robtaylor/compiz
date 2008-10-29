@@ -1,5 +1,7 @@
 if (USE_GTK)
 
+    set (CMAKE_INSTALL_RPATH ${libdir})
+
     include_directories (
 	${compiz_SOURCE_DIR}/include
 	${CMAKE_BINARY_DIR}/gtk

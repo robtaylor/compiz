@@ -220,6 +220,12 @@ CompScreen::removeFileWatch (CompFileWatchHandle handle)
     delete w;
 }
 
+const CompFileWatchList &
+CompScreen::getFileWatches () const
+{
+    return priv->fileWatch;
+}
+
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
@@ -829,7 +835,7 @@ CompScreen::setOption (const char        *name,
 		if (!vsize)
 		    return false;
 
-		if (o->value ().i () * priv->size.width () > MAXSHORT)
+		if (o->value ().i () * width () > MAXSHORT)
 		    return false;
 
 		priv->setVirtualScreenSize (o->value ().i (), vsize->value ().i ());
@@ -846,7 +852,7 @@ CompScreen::setOption (const char        *name,
 		if (!hsize)
 		    return false;
 
-		if (o->value ().i () * priv->size.height () > MAXSHORT)
+		if (o->value ().i () * height () > MAXSHORT)
 		    return false;
 
 		priv->setVirtualScreenSize (hsize->value ().i (), o->value ().i ());
@@ -862,7 +868,7 @@ CompScreen::setOption (const char        *name,
 	    break;
 	case COMP_OPTION_DEFAULT_ICON:
 	    if (o->set (value))
-		return priv->updateDefaultIcon ();
+		return updateDefaultIcon ();
 	    break;
 	case COMP_OPTION_OUTPUTS:
 	    if (!noDetection &&
@@ -1079,30 +1085,31 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompOption              *o;
-    CompPlugin              *p;
-    unsigned int            nPop, i, j;
-    CompPlugin::List        pop;
+    CompOption        *o;
+    CompOption::Value value;
+    CompPlugin        *p;
+    unsigned int      nPop, i, j;
+    CompPlugin::List  pop;
 
     dirtyPluginList = false;
 
-    o = &opt[COMP_OPTION_ACTIVE_PLUGINS];
+    o     = &opt[COMP_OPTION_ACTIVE_PLUGINS];
+    value = o->value ();
 
     /* The old plugin list always begins with the core plugin. To make sure
        we don't unnecessarily unload plugins if the new plugin list does not
        contain the core plugin, we have to use an offset */
 
-    if (o->value ().list ().size () > 0 &&
-	o->value ().list ()[0]. s (). compare ("core"))
+    if (value.list ().size () > 0 && value.list ()[0]. s () != "core")
 	i = 0;
     else
 	i = 1;
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
     for (j = 1; j < plugin.list ().size () &&
-	 i < o->value ().list ().size (); i++, j++)
+	 i < value.list ().size (); i++, j++)
     {
-	if (plugin.list ()[j].s ().compare (o->value ().list ()[i].s ()))
+	if (plugin.list ()[j].s () != value.list ()[i].s ())
 	    break;
     }
 
@@ -1114,12 +1121,12 @@ PrivateScreen::updatePlugins ()
 	plugin.list ().pop_back ();
     }
 
-    for (; i < o->value ().list ().size (); i++)
+    for (; i < value.list ().size (); i++)
     {
 	p = NULL;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (o->value ().list ()[i]. s ().compare (pp->vTable->name ()) == 0)
+	    if (value.list ()[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -1132,7 +1139,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0)
 	{
-	    p = CompPlugin::load (o->value ().list ()[i].s ().c_str ());
+	    p = CompPlugin::load (value.list ()[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
@@ -1144,17 +1151,14 @@ PrivateScreen::updatePlugins ()
 	}
 
 	if (p)
-	{
 	    plugin.list ().push_back (p->vTable->name ());
-	}
     }
 
     foreach (CompPlugin *pp, pop)
-    {
 	CompPlugin::unload (pp);
-    }
 
-    screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
+    if (!priv->dirtyPluginList)
+	screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
 }
 
 /* from fvwm2, Copyright Matthias Clasen, Dominik Vogt */
@@ -1292,52 +1296,46 @@ PrivateScreen::handleSelectionClear (XEvent *event)
 #define HOME_IMAGEDIR ".compiz/images"
 
 bool
-CompScreen::readImageFromFile (const char *name,
-			       int        *width,
-			       int        *height,
-			       void       **data)
+CompScreen::readImageFromFile (CompString &name,
+			       CompSize   &size,
+			       void       *&data)
 {
-    Bool status;
+    bool status;
     int  stride;
 
-    status = fileToImage (NULL, name, width, height, &stride, data);
+    status = fileToImage (name, size, stride, data);
     if (!status)
     {
-	char *home;
-
-	home = getenv ("HOME");
+	char       *home = getenv ("HOME");
+	CompString path;
 	if (home)
 	{
-	    char *path;
+	    path =  home;
+	    path += "/";
+	    path += HOME_IMAGEDIR;
+	    path += name;
 
-	    path = (char *) malloc (strlen (home) + strlen (HOME_IMAGEDIR) + 2);
-	    if (path)
-	    {
-		sprintf (path, "%s/%s", home, HOME_IMAGEDIR);
-		status = fileToImage (path, name, width, height, &stride, data);
+	    status = fileToImage (path, size, stride, data);
 
-		free (path);
-
-		if (status)
-		    return TRUE;
-	    }
+	    if (status)
+		return true;
 	}
 
-	status = fileToImage (IMAGEDIR, name, width, height, &stride, data);
+	path = IMAGEDIR + name;
+	status = fileToImage (path, size, stride, data);
     }
 
     return status;
 }
 
 bool
-CompScreen::writeImageToFile (const char *path,
-			      const char *name,
+CompScreen::writeImageToFile (CompString &path,
 			      const char *format,
-			      int        width,
-			      int        height,
+			      CompSize   &size,
 			      void       *data)
 {
-        return imageToFile (path, name, format, width, height, width * 4, data);
+    CompString formatString (format);
+    return imageToFile (path, formatString, size, size.width () * 4, data);
 }
 
 Window
@@ -1366,29 +1364,24 @@ PrivateScreen::getActiveWindow (Window root)
 
 
 bool
-CompScreen::fileToImage (const char *path,
-			 const char *name,
-			 int        *width,
-			 int        *height,
-			 int        *stride,
-			 void       **data)
+CompScreen::fileToImage (CompString &name,
+			 CompSize   &size,
+			 int        &stride,
+			 void       *&data)
 {
-    WRAPABLE_HND_FUNC_RETURN(8, bool, fileToImage, path, name, width, height,
-			     stride, data)
+    WRAPABLE_HND_FUNC_RETURN(8, bool, fileToImage, name, size, stride, data);
     return false;
 }
 
 bool
-CompScreen::imageToFile (const char *path,
-			 const char *name,
-			 const char *format,
-			 int        width,
-			 int        height,
+CompScreen::imageToFile (CompString &path,
+			 CompString &format,
+			 CompSize   &size,
 			 int        stride,
 			 void       *data)
 {
-    WRAPABLE_HND_FUNC_RETURN(9, bool, imageToFile, path, name, format, width,
-			     height, stride, data)
+    WRAPABLE_HND_FUNC_RETURN(9, bool, imageToFile, path, format, size,
+			     stride, data)
     return false;
 }
 
@@ -1850,23 +1843,19 @@ ScreenInterface::handleCompizEvent (const char         *plugin,
     WRAPABLE_DEF (handleCompizEvent, plugin, event, options)
 
 bool
-ScreenInterface::fileToImage (const char *path,
-			      const char *name,
-			      int        *width,
-			      int        *height,
-			      int        *stride,
-			      void       **data)
-    WRAPABLE_DEF (fileToImage, path, name, width, height, stride, data)
+ScreenInterface::fileToImage (CompString &name,
+			      CompSize   &size,
+			      int        &stride,
+			      void       *&data)
+    WRAPABLE_DEF (fileToImage, name, size, stride, data)
 
 bool
-ScreenInterface::imageToFile (const char *path,
-			      const char *name,
-			      const char *format,
-			      int        width,
-			      int        height,
+ScreenInterface::imageToFile (CompString &path,
+			      CompString &format,
+			      CompSize   &size,
 			      int        stride,
 			      void       *data)
-    WRAPABLE_DEF (imageToFile, path, name, format, width, height, stride, data)
+    WRAPABLE_DEF (imageToFile, path, format, size, stride, data)
 
 CompMatch::Expression *
 ScreenInterface::matchInitExp (const CompString value)
@@ -1922,8 +1911,8 @@ PrivateScreen::setDesktopHints ()
 
     for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = vp.x () * size.width ();
-	data[offset + i * 2 + 1] = vp.y () * size.height ();
+	data[offset + i * 2 + 0] = vp.x () * screen->width ();
+	data[offset + i * 2 + 1] = vp.y () * screen->height ();
     }
 
     if (!desktopHintEqual (data, dSize, offset, hintSize))
@@ -1936,8 +1925,8 @@ PrivateScreen::setDesktopHints ()
 
     for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 2 + 0] = size.width () * vpSize.width ();
-	data[offset + i * 2 + 1] = size.height () * vpSize.height ();
+	data[offset + i * 2 + 0] = screen->width () * vpSize.width ();
+	data[offset + i * 2 + 1] = screen->height () * vpSize.height ();
     }
 
     if (!desktopHintEqual (data, dSize, offset, hintSize))
@@ -2006,16 +1995,16 @@ PrivateScreen::updateOutputDevices ()
     {
 	x      = 0;
 	y      = 0;
-	width  = size.width ();
-	height = size.height ();
+	width  = screen->width ();
+	height = screen->height ();
 
 	bits = XParseGeometry (value.s ().c_str (), &x, &y, &width, &height);
 
 	if (bits & XNegative)
-	    x = size.width () + x - width;
+	    x = screen->width () + x - width;
 
 	if (bits & YNegative)
-	    y = size.height () + y - height;
+	    y = screen->height () + y - height;
 
 	x1 = x;
 	y1 = y;
@@ -2026,10 +2015,10 @@ PrivateScreen::updateOutputDevices ()
 	    x1 = 0;
 	if (y1 < 0)
 	    y1 = 0;
-	if (x2 > (int) size.width ())
-	    x2 = size.width ();
-	if (y2 > (int) size.height ())
-	    y2 = size.height ();
+	if (x2 > (int) screen->width ())
+	    x2 = screen->width ();
+	if (y2 > (int) screen->height ())
+	    y2 = screen->height ();
 
 	if (x1 < x2 && y1 < y2)
 	{
@@ -2047,7 +2036,7 @@ PrivateScreen::updateOutputDevices ()
 	if (outputDevs.size () < 1)
 	    outputDevs.resize (1);
 
-	outputDevs[0].setGeometry (0, size.width (), 0, size.height ());
+	outputDevs[0].setGeometry (0, screen->width (), 0, screen->height ());
 	nOutput = 1;
     }
 
@@ -2093,8 +2082,8 @@ PrivateScreen::detectOutputDevices ()
 	else
 	{
 	    CompOption::Value::Vector l;
-	    l.push_back (compPrintf ("%dx%d+%d+%d", this->size.width(),
-				     this->size.height (), 0, 0));
+	    l.push_back (compPrintf ("%dx%d+%d+%d", screen->width(),
+				     screen->height (), 0, 0));
 	    value.set (CompOption::TypeString, l);
 	}
 
@@ -2247,10 +2236,10 @@ PrivateScreen::updateScreenEdges ()
     {
 	if (screenEdge[i].id)
 	    XMoveResizeWindow (dpy, screenEdge[i].id,
-			       geometry[i].xw * size.width () + geometry[i].x0,
-			       geometry[i].yh * size.height () + geometry[i].y0,
-			       geometry[i].ww * size.width () + geometry[i].w0,
-			       geometry[i].hh * size.height () + geometry[i].h0);
+			       geometry[i].xw * screen->width () + geometry[i].x0,
+			       geometry[i].yh * screen->height () + geometry[i].y0,
+			       geometry[i].ww * screen->width () + geometry[i].w0,
+			       geometry[i].hh * screen->height () + geometry[i].h0);
     }
 }
 
@@ -2271,8 +2260,8 @@ PrivateScreen::reshape (int w, int h)
 
     region = CompRegion (0, 0, w, h);
 
-    size.setWidth (w);
-    size.setHeight (h);
+    screen->setWidth (w);
+    screen->setHeight (h);
 
     fullscreenOutput.setId ("fullscreen", ~0);
     fullscreenOutput.setGeometry (0, 0, w, h);
@@ -2465,11 +2454,11 @@ PrivateScreen::getDesktopHints ()
 	    {
 		memcpy (data, propData, sizeof (unsigned long) * 2);
 
-		if (data[0] / size.width () < vpSize.width () - 1)
-		    vp.setX (data[0] / size.width ());
+		if (data[0] / screen->width () < vpSize.width () - 1)
+		    vp.setX (data[0] / screen->width ());
 
-		if (data[1] / size.height () < vpSize.height () - 1)
-		    vp.setY (data[1] / size.height ());
+		if (data[1] / screen->height () < vpSize.height () - 1)
+		    vp.setY (data[1] / screen->height ());
 	    }
 
 	    XFree (propData);
@@ -2826,6 +2815,12 @@ CompScreen::unhookWindow (CompWindow *w)
 
     if (w == lastFoundWindow)
 	lastFoundWindow = NULL;
+}
+
+Cursor
+CompScreen::invisibleCursor ()
+{
+    return priv->invisibleCursor;
 }
 
 #define POINTER_GRAB_MASK (ButtonReleaseMask | \
@@ -3247,7 +3242,7 @@ PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 
     foreach (CompWindow *w, windows)
     {
-	if (!w->mapNum ())
+	if (!w->isMapped ())
 	    continue;
 
 	if (w->struts ())
@@ -3343,8 +3338,8 @@ PrivateScreen::updateWorkarea ()
 
     box.x1 = 0;
     box.y1 = 0;
-    box.x2 = priv->size.width ();
-    box.y2 = priv->size.height ();
+    box.x2 = screen->width ();
+    box.y2 = screen->height ();
 
     priv->computeWorkareaForBox (&box, &workArea);
 
@@ -3584,8 +3579,8 @@ CompScreen::moveViewport (int tx, int ty, bool sync)
     priv->vp.setX (priv->vp.x () + tx);
     priv->vp.setY (priv->vp.y () + ty);
 
-    tx *= -priv->size.width ();
-    ty *= -priv->size.height ();
+    tx *= -width ();
+    ty *= -height ();
 
     foreach (CompWindow *w, priv->windows)
     {
@@ -3877,10 +3872,10 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
     {
 	centerX = gm.x () + (gm.width () >> 1);
 	if (centerX < 0)
-	    *viewportX = priv->vp.x () + ((centerX / priv->size.width ()) - 1) %
+	    *viewportX = priv->vp.x () + ((centerX / width ()) - 1) %
 		priv->vpSize.width ();
 	else
-	    *viewportX = priv->vp.x () + (centerX / priv->size.width ()) %
+	    *viewportX = priv->vp.x () + (centerX / width ()) %
 		priv->vpSize.width ();
     }
 
@@ -3889,9 +3884,9 @@ CompScreen::viewportForGeometry (CompWindow::Geometry gm,
 	centerY = gm.y () + (gm.height () >> 1);
 	if (centerY < 0)
 	    *viewportY = priv->vp.y () +
-		((centerY / priv->size.height ()) - 1) % priv->vpSize.height ();
+		((centerY / height ()) - 1) % priv->vpSize.height ();
 	else
-	    *viewportY = priv->vp.y () + (centerY / priv->size.height ()) %
+	    *viewportY = priv->vp.y () + (centerY / height ()) %
 		priv->vpSize.height ();
     }
 }
@@ -3940,19 +3935,19 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 	geomRect.x2 = gm.width () + 2 * gm.border ();
 	geomRect.y2 = gm.height () + 2 * gm.border ();
 
-	geomRect.x1 = gm.x () % priv->size.width ();
+	geomRect.x1 = gm.x () % width ();
 	centerX = (geomRect.x1 + (geomRect.x2 / 2));
 	if (centerX < 0)
-	    geomRect.x1 += priv->size.width ();
-	else if (centerX > priv->size.width ())
-	    geomRect.x1 -= priv->size.width ();
+	    geomRect.x1 += width ();
+	else if (centerX > width ())
+	    geomRect.x1 -= width ();
 
-	geomRect.y1 = gm.y () % priv->size.height ();
+	geomRect.y1 = gm.y () % height ();
 	centerY = (geomRect.y1 + (geomRect.y2 / 2));
 	if (centerY < 0)
-	    geomRect.y1 += priv->size.height ();
-	else if (centerY > priv->size.height ())
-	    geomRect.y1 -= priv->size.height ();
+	    geomRect.y1 += height ();
+	else if (centerY > height ())
+	    geomRect.y1 -= height ();
 
 	geomRect.x2 += geomRect.x1;
 	geomRect.y2 += geomRect.y1;
@@ -3961,12 +3956,12 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
     {
 	/* for biggest/smallest modes, only use the window center to determine
 	   the correct output device */
-	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % priv->size.width ();
+	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % width ();
 	if (geomRect.x1 < 0)
-	    geomRect.x1 += priv->size.width ();
-	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % priv->size.height ();
+	    geomRect.x1 += width ();
+	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % height ();
 	if (geomRect.y1 < 0)
-	    geomRect.y1 += priv->size.height ();
+	    geomRect.y1 += height ();
 
 	geomRect.x2 = geomRect.x1 + 1;
 	geomRect.y2 = geomRect.y1 + 1;
@@ -4028,12 +4023,18 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
     return highest;
 }
 
+CompIcon *
+CompScreen::defaultIcon () const
+{
+    return priv->defaultIcon;
+}
+
 bool
-PrivateScreen::updateDefaultIcon ()
+CompScreen::updateDefaultIcon ()
 {
     CompString file = priv->opt[COMP_OPTION_DEFAULT_ICON].value ().s ();
     void       *data;
-    int        width, height;
+    CompSize   size;
 
     if (priv->defaultIcon)
     {
@@ -4041,12 +4042,13 @@ PrivateScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!screen->readImageFromFile (file.c_str (), &width, &height, &data))
+    if (!readImageFromFile (file, size, data))
 	return false;
 
-    priv->defaultIcon = new CompIcon (screen, width, height);
+    priv->defaultIcon = new CompIcon (screen, size.width (), size.height ());
 
-    memcpy (priv->defaultIcon->data (), data, width * height * sizeof (CARD32));
+    memcpy (priv->defaultIcon->data (), data,
+	    size.width () * size.height () * sizeof (CARD32));
 
     free (data);
 
@@ -4129,13 +4131,13 @@ CompScreen::warpPointer (int dx, int dy)
     pointerX += dx;
     pointerY += dy;
 
-    if (pointerX >= (int) priv->size.width ())
-	pointerX = priv->size.width () - 1;
+    if (pointerX >= (int) width ())
+	pointerX = width () - 1;
     else if (pointerX < 0)
 	pointerX = 0;
 
-    if (pointerY >= (int) priv->size.height ())
-	pointerY = priv->size.height () - 1;
+    if (pointerY >= (int) height ())
+	pointerY = height () - 1;
     else if (pointerY < 0)
 	pointerY = 0;
 
@@ -4204,22 +4206,28 @@ CompScreen::vpSize ()
     return priv->vpSize;
 }
 
-CompSize
-CompScreen::size ()
-{
-    return priv->size;
-}
-
 int
 CompScreen::desktopWindowCount ()
 {
     return priv->desktopWindowCount;
 }
 
+unsigned int
+CompScreen::activeNum () const
+{
+    return priv->activeNum;
+}
+
 CompOutput::vector &
 CompScreen::outputDevs ()
 {
     return priv->outputDevs;
+}
+
+CompOutput &
+CompScreen::currentOutputDev () const
+{
+    return priv->outputDevs [priv->currentOutputDev];
 }
 
 XRectangle
@@ -4795,7 +4803,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     dirtyPluginList (true),
     screen(screen),
     windows (),
-    size (0, 0),
     vp (0, 0),
     vpSize (1, 1),
     nDesktop (1),

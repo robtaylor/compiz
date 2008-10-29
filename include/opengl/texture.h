@@ -48,7 +48,7 @@
 
 class PrivateTexture;
 
-class GLTexture {
+class GLTexture : public CompRect {
     public:
 
 	typedef enum {
@@ -91,7 +91,6 @@ class GLTexture {
 	virtual void enable (Filter filter);
 	virtual void disable ();
 
-	const CompRect &size () const;
 	bool mipmap () const;
 	void setMipmap (bool);
 	void setFilter (GLenum);
@@ -105,19 +104,16 @@ class GLTexture {
 					 int height,
 					 int depth);
 
-	static List imageBufferToTexture (const char   *image,
-					  unsigned int width,
-					  unsigned int height);
+	static List imageBufferToTexture (const char *image,
+					  CompSize   size);
 
-	static List imageDataToTexture (const char   *image,
-					unsigned int width,
-					unsigned int height,
-					GLenum       format,
-					GLenum       type);
+	static List imageDataToTexture (const char *image,
+					CompSize   size,
+					GLenum     format,
+					GLenum     type);
 
-	static List readImageToTexture (const char   *imageFileName,
-					unsigned int *returnWidth,
-					unsigned int *returnHeight);
+	static List readImageToTexture (CompString &imageFileName,
+					CompSize   &size);
 
 	friend class PrivateTexture;
 
@@ -126,7 +122,6 @@ class GLTexture {
 	virtual ~GLTexture ();
 
 	void setData (GLenum target, Matrix &m, bool mipmap);
-	void setSize (const CompRect &);
 
     private:
 	PrivateTexture *priv;

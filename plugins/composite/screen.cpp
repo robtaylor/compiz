@@ -895,7 +895,7 @@ PrivateCompositeScreen::outputChangeNotify ()
 #ifdef USE_COW
     if (useCow)
 	XMoveResizeWindow (screen->dpy (), overlay, 0, 0,
-			   screen->size ().width (), screen->size ().height ());
+			   screen->width (), screen->height ());
 #endif
     cScreen->damageScreen ();
 }

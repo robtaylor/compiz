@@ -260,6 +260,7 @@ class GLScreen :
 	CompOption * getOption (const char *name);
 
 	GLenum textureFilter ();
+	void setTextureFilter (GLenum);
 
 	void clearTargetOutput (unsigned int mask);
 
@@ -284,6 +285,10 @@ class GLScreen :
 	void unregisterBindPixmap (GLTexture::BindPixmapHandle);
 	
 	GLFBConfig * glxPixmapFBConfig (unsigned int depth);
+
+	GLTexture *defaultIcon ();
+
+	void resetRasterPos ();
 
 	WRAPABLE_HND (0, GLScreenInterface, bool, glPaintOutput,
 		      const GLScreenPaintAttrib &, const GLMatrix &,
@@ -380,6 +385,8 @@ class GLWindow :
 	void updatePaintAttribs ();
 
 	Geometry & geometry ();
+
+	GLTexture *getIcon (int width, int height);
 
 	WRAPABLE_HND (0, GLWindowInterface, bool, glPaint,
 		      const GLWindowPaintAttrib &, const GLMatrix &,
