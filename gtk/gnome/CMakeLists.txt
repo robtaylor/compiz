@@ -22,8 +22,19 @@ if (USE_GNOME)
     )
     install (
 	FILES ${desktop_file}
+	DESTINATION ${datadir}/applications
+    )
+
+    set (wmproperties_file ${CMAKE_CURRENT_BINARY_DIR}/compiz-wm.desktop)
+    translate_wmproperties_file (
+        ${CMAKE_CURRENT_SOURCE_DIR}/compiz-wm.desktop.in
+        ${desktop_file}
+    )
+    install (
+	FILES ${wmproperties_file}
 	DESTINATION ${windowsettingsdatadir}/gnome/wm-properties
     )
+
 
     if (USE_GNOME_KEYBINDINGS)
         translate_xml (
@@ -49,6 +60,7 @@ if (USE_GNOME)
 	compiz-window-manager.h
 	${key_xml}
 	${desktop_file}
+	${wmproperties_file}
     )
 
     set_target_properties (gnome-compiz
