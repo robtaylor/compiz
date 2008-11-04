@@ -11,3 +11,4 @@ install (
 add_subdirectory (core)
 add_subdirectory (composite)
 add_subdirectory (opengl)
+add_subdirectory (scale)

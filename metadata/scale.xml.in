@@ -2,9 +2,7 @@
     <plugin name="scale">
 	<_short>Scale</_short>
 	<_long>Scale windows</_long>
-	<display>
-	    <option name="abi" type="int" read_only="true"/>
-	    <option name="index" type="int" read_only="true"/>
+	<options>
 	    <option name="relayout_slots" type="action" read_only="true"/>
 	    <option name="initiate_edge" type="edge">
 		<_short>Initiate Window Picker</_short>
@@ -67,8 +65,6 @@
 		<_long>Enter Show Desktop mode when Desktop is clicked during Scale</_long>
 		<default>true</default>
 	    </option>
-	</display>
-	<screen>
 	    <option name="spacing" type="int">
 		<_short>Spacing</_short>
 		<_long>Space between windows</_long>
@@ -150,6 +146,6 @@
 		    <_name>On all output devices</_name>
 		</desc>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

@@ -107,6 +107,12 @@ generate_pkg_file (
     COMPIZ_CFLAGS
 )
 
+generate_pkg_file (
+    ${CMAKE_SOURCE_DIR}/compiz-scale.pc.in
+    ${CMAKE_BINARY_DIR}/compiz-scale.pc
+    COMPIZ_CFLAGS
+)
+
 add_subdirectory (src)
 add_subdirectory (include)
 add_subdirectory (images)

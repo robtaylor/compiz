@@ -4,6 +4,7 @@ set (CMAKE_INSTALL_RPATH ${compiz_plugindir} ${libdir})
 
 add_subdirectory (composite)
 add_subdirectory (opengl)
+add_subdirectory (scale)
 
 add_library (decor MODULE decor.cpp)
 target_link_libraries (decor composite opengl decoration)
