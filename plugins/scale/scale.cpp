@@ -806,6 +806,17 @@ PrivateScaleScreen::donePaint ()
 		   with other plugins. */
 		activateEvent (false);
 		state = SCALE_STATE_NONE;
+
+		cScreen->preparePaintSetEnabled (this, false);
+		cScreen->donePaintSetEnabled (this, false);
+		gScreen->glPaintOutputSetEnabled (this, false);
+
+		foreach (CompWindow *w, screen->windows ())
+		{
+		    SCALE_WINDOW (w);
+		    sw->priv->cWindow->damageRectSetEnabled (sw->priv, false);
+		    sw->priv->gWindow->glPaintSetEnabled (sw->priv, false);
+		}
 	    }
 	    else if (state == SCALE_STATE_OUT)
 		state = SCALE_STATE_WAIT;
@@ -1050,6 +1061,17 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
 	activateEvent (true);
 
 	cScreen->damageScreen ();
+
+	cScreen->preparePaintSetEnabled (this, true);
+	cScreen->donePaintSetEnabled (this, true);
+	gScreen->glPaintOutputSetEnabled (this, true);
+
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    SCALE_WINDOW (w);
+	    sw->priv->cWindow->damageRectSetEnabled (sw->priv, true);
+	    sw->priv->gWindow->glPaintSetEnabled (sw->priv, true);
+	}
     }
 
     if ((state & (CompAction::StateInitButton | EDGE_STATE)) ==
@@ -1599,8 +1621,8 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
 
 
     ScreenInterface::setHandler (s);
-    CompositeScreenInterface::setHandler (cScreen);
-    GLScreenInterface::setHandler (gScreen);
+    CompositeScreenInterface::setHandler (cScreen, false);
+    GLScreenInterface::setHandler (gScreen, false);
 }
 
 PrivateScaleScreen::~PrivateScaleScreen ()
@@ -1630,8 +1652,10 @@ PrivateScaleWindow::PrivateScaleWindow (CompWindow *w) :
     adjust (false),
     lastThumbOpacity (0.0)
 {
-    CompositeWindowInterface::setHandler (cWindow);
-    GLWindowInterface::setHandler (gWindow);
+    CompositeWindowInterface::setHandler (cWindow,
+					  spScreen->state != SCALE_STATE_NONE);
+    GLWindowInterface::setHandler (gWindow,
+				   spScreen->state != SCALE_STATE_NONE);
 }
 
 PrivateScaleWindow::~PrivateScaleWindow ()
