@@ -52,6 +52,16 @@ CompRect::CompRect (const CompRect& r)
     mRegion.rects = &mRegion.extents;
 }
 
+CompRect::CompRect (const XRectangle xr)
+{
+    mRegion.rects = &mRegion.extents;
+    mRegion.numRects = 1;
+    mRegion.extents.x1 = xr.x;
+    mRegion.extents.x2 = xr.x + xr.width;
+    mRegion.extents.y1 = xr.y;
+    mRegion.extents.y2 = xr.y + xr.height;
+}
+
 const Region
 CompRect::region () const
 {

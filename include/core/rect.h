@@ -32,6 +32,7 @@ class CompRect {
 	CompRect ();
 	CompRect (int, int, int, int);
 	CompRect (const CompRect&);
+	CompRect (const XRectangle);
 
 	int x () const;
 	int y () const;
