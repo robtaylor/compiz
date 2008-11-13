@@ -113,6 +113,7 @@ class CompositeScreen :
 	void damageRegion (const CompRegion &);
 	void damagePending ();
 	unsigned int damageMask ();
+	const CompRegion & currentDamage () const;
 
 	void showOutputWindow ();
 	void hideOutputWindow ();

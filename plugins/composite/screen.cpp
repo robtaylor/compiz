@@ -929,3 +929,9 @@ CompositeScreenInterface::paint (CompOutput::ptrList &outputs,
 CompWindowList
 CompositeScreenInterface::getWindowPaintList ()
     WRAPABLE_DEF (getWindowPaintList)
+
+const CompRegion &
+CompositeScreen::currentDamage () const
+{
+    return priv->damage;
+}
