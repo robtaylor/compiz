@@ -68,6 +68,10 @@ class CompRegion {
 	void translate (const CompPoint &);
 	CompRegion translated (int, int) const;
 	CompRegion translated (const CompPoint &) const;
+	void shrink (int, int);
+	void shrink (const CompPoint &);
+	CompRegion shrinked (int, int) const;
+	CompRegion shrinked (const CompPoint &) const;
 	CompRegion united (const CompRegion &) const;
 	CompRegion united (const CompRect &) const;
 	CompRegion xored (const CompRegion &) const;

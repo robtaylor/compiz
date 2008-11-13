@@ -248,6 +248,35 @@ CompRegion::translated (const CompPoint &p) const
     return rv;
 }
 
+void
+CompRegion::shrink (int dx, int dy)
+{
+    priv->makeReal ();
+    XShrinkRegion (handle (), dx, dy);
+}
+
+void
+CompRegion::shrink (const CompPoint &p)
+{
+    translate (p.x (), p.y ());
+}
+
+CompRegion
+CompRegion::shrinked (int dx, int dy) const
+{
+    CompRegion rv (*this);
+    rv.shrink (dx, dy);
+    return rv;
+}
+
+CompRegion
+CompRegion::shrinked (const CompPoint &p) const
+{
+    CompRegion rv (*this);
+    rv.shrink (p);
+    return rv;
+}
+
 CompRegion
 CompRegion::united (const CompRegion &r) const
 {
