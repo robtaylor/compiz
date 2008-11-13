@@ -376,6 +376,8 @@ class GLWindow :
 	GLWindowPaintAttrib & paintAttrib ();
 	GLWindowPaintAttrib & lastPaintAttrib ();
 
+	unsigned int lastMask () const;
+
 	bool bind ();
 	void release ();
 

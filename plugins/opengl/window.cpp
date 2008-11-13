@@ -366,3 +366,9 @@ PrivateGLWindow::updateWindowRegions ()
     }
     updateReg = false;
 }
+
+unsigned int
+GLWindow::lastMask () const
+{
+    return priv->lastMask;
+}
