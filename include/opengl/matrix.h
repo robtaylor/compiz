@@ -39,6 +39,8 @@ class GLMatrix {
 
 	GLMatrix& operator*= (const GLMatrix& rhs);
 
+	float& operator[] (unsigned int pos);
+
 	void reset ();
 	void toScreenSpace (CompOutput *output, float z);
 

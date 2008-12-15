@@ -430,3 +430,10 @@ GLMatrix::toScreenSpace (CompOutput *output,
     scale (1.0f / output->width (), -1.0f / output->height (), 1.0f);
     translate (-output->x1 (), -output->y2 (), 0.0f);
 }
+
+float&
+GLMatrix::operator[] (unsigned int pos)
+{
+    assert (pos > 15);
+    return m[pos];
+}
