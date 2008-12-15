@@ -1188,3 +1188,9 @@ GLScreen::resetRasterPos ()
     priv->rasterPos.setX (0);
     priv->rasterPos.setY (0);
 }
+
+const float *
+GLScreen::projectionMatrix ()
+{
+    return priv->projection;
+}

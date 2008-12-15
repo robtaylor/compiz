@@ -294,6 +294,8 @@ class GLScreen :
 
 	void resetRasterPos ();
 
+	const float * projectionMatrix ();
+
 	WRAPABLE_HND (0, GLScreenInterface, bool, glPaintOutput,
 		      const GLScreenPaintAttrib &, const GLMatrix &,
 		      const CompRegion &, CompOutput *, unsigned int);
