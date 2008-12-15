@@ -102,6 +102,11 @@ GLMatrix::GLMatrix ()
     memcpy (m, identity, sizeof (m));
 }
 
+GLMatrix::GLMatrix (const float *mat)
+{
+    memcpy (m, mat, sizeof (m));
+}
+
 void
 GLMatrix::reset ()
 {

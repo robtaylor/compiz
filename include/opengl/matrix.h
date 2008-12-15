@@ -33,6 +33,7 @@ class CompOutput;
 class GLMatrix {
     public:
 	GLMatrix ();
+	GLMatrix (const float *);
 
 	const float* getMatrix () const;
 
