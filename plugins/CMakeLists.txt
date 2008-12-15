@@ -73,6 +73,19 @@ if (LIBRSVG_FOUND)
     )
 endif (LIBRSVG_FOUND)
 
+find_package (OpenGL)
+if (OPENGL_GLU_FOUND)
+    add_library (blur MODULE blur.cpp)
+    target_link_libraries (blur opengl composite ${OPENGL_glu_LIBRARY})
+    include_directories (
+	${OPENGL_INCLUDE_DIR}
+    )
+    install (
+	TARGETS blur
+	DESTINATION ${compiz_plugindir}
+    )
+endif (OPENGL_GLU_FOUND)
+
 link_directories (${compiz_plugindir})
 
 include_directories (
