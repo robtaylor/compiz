@@ -158,9 +158,10 @@ PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
 
     if (screen->hasValue (keyName ()))
     {
+	if (!mIndex.initiated && !mIndex.failed)
+	    mIndex.refCount  = -1;
 	mIndex.index     = screen->getValue (keyName ()).val;
 	mIndex.initiated = true;
-	mIndex.refCount  = -1;
 	mIndex.privIndex = privateHandlerIndex;
 	return static_cast<Tp *> (base->privates[mIndex.index].ptr);
     }
