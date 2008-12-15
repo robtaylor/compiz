@@ -132,7 +132,7 @@ class WrapableHandler : public T {
 	{
 	    typename std::vector<Interface>::iterator it;
 		for (it = mInterface.begin(); it != mInterface.end(); it++)
-		    delete (*it).enabled;
+		    delete [] (*it).enabled;
 	    mInterface.clear ();
 	    delete [] mCurrFunction;
 	};
