@@ -42,6 +42,10 @@
 /* camera distance from screen, 0.5 * tan (FOV) */
 #define DEFAULT_Z_CAMERA 0.866025404f
 
+#define RED_SATURATION_WEIGHT   0.30f
+#define GREEN_SATURATION_WEIGHT 0.59f
+#define BLUE_SATURATION_WEIGHT  0.11f
+
 class PrivateGLScreen;
 class PrivateGLWindow;
 

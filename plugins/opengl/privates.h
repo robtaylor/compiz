@@ -48,11 +48,6 @@ extern const CompMetadata::OptionInfo
 
 extern CompOutput *targetOutput;
 
-
-#define RED_SATURATION_WEIGHT   0.30f
-#define GREEN_SATURATION_WEIGHT 0.59f
-#define BLUE_SATURATION_WEIGHT  0.11f
-
 class GLIcon
 {
     public:
