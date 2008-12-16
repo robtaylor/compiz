@@ -28,6 +28,7 @@
 
 #include <compiz.h>
 #include <core/option.h>
+#include <core/metadata.h>
 
 #include <map>
 
@@ -53,6 +54,22 @@ bool setOption (const char        *name,        \
     return false;                               \
 }
 
+#define COMPIZ_PLUGIN_20081216(name, classname)                           \
+    CompPlugin::VTable * name##VTable = NULL;                             \
+    extern "C" {                                                          \
+        CompPlugin::VTable * getCompPluginVTable20081216_##name ()        \
+	{                                                                 \
+	    if (!name##VTable)                                            \
+	    {                                                             \
+	        name##VTable = new classname ();                          \
+	        name##VTable->initVTable (TOSTRING(name), &name##VTable); \
+                return name##VTable;                                      \
+	    }                                                             \
+            else                                                          \
+                return name##VTable;                                      \
+	}                                                                 \
+    }
+
 class CompPlugin;
 
 typedef bool (*LoadPluginProc) (CompPlugin *p,
@@ -71,15 +88,19 @@ class CompPlugin {
     public:
 	class VTable {
 	    public:
+		VTable ();
 		virtual ~VTable ();
- 	
-		virtual const char * name () = 0;
 
-		virtual CompMetadata * getMetadata ();
+		void initVTable (CompString         name,
+				 CompPlugin::VTable **self = NULL);
+		
+		const CompString name () const;
+
+		CompMetadata * getMetadata () const;
 
 		virtual bool init () = 0;
 
-		virtual void fini () = 0;
+		virtual void fini ();
 
 		virtual bool initScreen (CompScreen *screen);
 
@@ -93,6 +114,10 @@ class CompPlugin {
 
 		virtual bool setOption (const char        *name,
 					CompOption::Value &value);
+	    private:
+		CompString   mName;
+		CompMetadata *mMetadata;
+		VTable       **mSelf;
         };
 
 	template <typename T, typename T2>

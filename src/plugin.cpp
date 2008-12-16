@@ -43,13 +43,7 @@ class CorePluginVTable : public CompPlugin::VTable
 {
     public:
 
-	const char * name () { return "core"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-
-	void fini ();
 
 	CompOption::Vector & getOptions ();
 
@@ -57,21 +51,22 @@ class CorePluginVTable : public CompPlugin::VTable
 			CompOption::Value &value);
 };
 
+COMPIZ_PLUGIN_20081216 (core, CorePluginVTable)
+
+CompPlugin::VTable * getCoreVTable ()
+{
+    if (!coreVTable)
+    {
+	return getCompPluginVTable20081216_core ();
+    }
+
+    return coreVTable;
+}
+
 bool
 CorePluginVTable::init ()
 {
     return true;
-}
-
-void
-CorePluginVTable::fini ()
-{
-}
-
-CompMetadata *
-CorePluginVTable::getMetadata ()
-{
-    return coreMetadata;
 }
 
 CompOption::Vector &
@@ -87,8 +82,6 @@ CorePluginVTable::setOption (const char        *name,
     return screen->setOption (name, value);
 }
 
-CorePluginVTable coreVTable;
-
 static bool
 cloaderLoadPlugin (CompPlugin *p,
 		   const char *path,
@@ -97,10 +90,10 @@ cloaderLoadPlugin (CompPlugin *p,
     if (path)
 	return false;
 
-    if (strcmp (name, coreVTable.name ()))
+    if (strcmp (name, getCoreVTable ()->name ().c_str ()))
 	return false;
 
-    p->vTable	      = &coreVTable;
+    p->vTable	      = getCoreVTable ();
     p->devPrivate.ptr = NULL;
     p->devType	      = "cloader";
 
@@ -120,7 +113,7 @@ cloaderListPlugins (const char *path)
     if (path)
 	return CompStringList ();
 
-    rv.push_back (CompString (coreVTable.name ()));
+    rv.push_back (CompString (getCoreVTable ()->name ()));
 
     return rv;
 }
@@ -147,11 +140,13 @@ dlloaderLoadPlugin (CompPlugin *p,
     {
 	PluginGetInfoProc getInfo;
 	char		  *error;
+	char              sym[1024];
 
 	dlerror ();
 
+	snprintf(sym, 1024, "getCompPluginVTable20081216_%s", name);
 	getInfo = (PluginGetInfoProc)
-	    dlsym (dlhand, "getCompPluginInfo20080805");
+	    dlsym (dlhand, sym);
 
 	error = dlerror ();
 	if (error)
@@ -202,7 +197,10 @@ static void
 dlloaderUnloadPlugin (CompPlugin *p)
 {
     if (p->devType.compare ("dlloader") == 0)
+    {
+	delete p->vTable;
 	dlclose (p->devPrivate.ptr);
+    }
     else
 	cloaderUnloadPlugin (p);
 }
@@ -263,7 +261,7 @@ initPlugin (CompPlugin *p)
     if (!p->vTable->init ())
     {
 	compLogMessage ("core", CompLogLevelError,
-			"InitPlugin '%s' failed", p->vTable->name ());
+			"InitPlugin '%s' failed", p->vTable->name ().c_str ());
 	return false;
     }
 
@@ -271,7 +269,7 @@ initPlugin (CompPlugin *p)
     {
 	if (!p->vTable->initScreen (screen))
 	{
-	    compLogMessage (p->vTable->name (), CompLogLevelError,
+	    compLogMessage (p->vTable->name ().c_str (), CompLogLevelError,
                             "initScreen failed");
 	    p->vTable->fini ();
 	    return false;
@@ -314,7 +312,7 @@ CompScreen::initPluginForScreen (CompPlugin *p)
 	w = *it;
 	if (!p->vTable->initWindow (w))
 	{
-	    compLogMessage (p->vTable->name (), CompLogLevelError,
+	    compLogMessage (p->vTable->name ().c_str (), CompLogLevelError,
                             "initWindow failed");
             fail   = it;
             status = false;
@@ -467,7 +465,7 @@ CompPlugin::load (const char *name)
 bool
 CompPlugin::push (CompPlugin *p)
 {
-    const char *name = p->vTable->name ();
+    const char *name = p->vTable->name ().c_str ();
 
     std::pair<CompPlugin::Map::iterator, bool> insertRet =
         pluginsMap.insert (std::pair<const char *, CompPlugin *> (name, p));
@@ -476,7 +474,7 @@ CompPlugin::push (CompPlugin *p)
     {
 	compLogMessage ("core", CompLogLevelWarn,
 			"Plugin '%s' already active",
-			p->vTable->name ());
+			p->vTable->name ().c_str ());
 
 	return false;
     }
@@ -508,7 +506,7 @@ CompPlugin::pop (void)
     if (!p)
 	return 0;
 
-    pluginsMap.erase (p->vTable->name ());
+    pluginsMap.erase (p->vTable->name ().c_str ());
 
     finiPlugin (p);
 
@@ -621,16 +619,51 @@ CompPlugin::checkPluginABI (const char *name,
     return true;
 }
 
+CompPlugin::VTable::VTable () :
+    mName (""),
+    mMetadata (NULL),
+    mSelf (NULL)
+{
+}
+
 CompPlugin::VTable::~VTable ()
 {
+    if (mSelf)
+	*mSelf = NULL;
+    if (mMetadata)
+	delete mMetadata;
+}
+
+void
+CompPlugin::VTable::initVTable (CompString         name,
+				CompPlugin::VTable **self)
+{
+    mName = name;
+    if (self)
+    {
+	mSelf = self;
+	*mSelf = this;
+    }
+    if (!mMetadata)
+	mMetadata = new CompMetadata (name);
 }
 
 CompMetadata *
-CompPlugin::VTable::getMetadata ()
+CompPlugin::VTable::getMetadata () const
 {
-    return NULL;
+    return mMetadata;
 }
 
+const CompString
+CompPlugin::VTable::name () const
+{
+    return mName;
+}
+
+void
+CompPlugin::VTable::fini ()
+{
+}
 
 bool
 CompPlugin::VTable::initScreen (CompScreen *)

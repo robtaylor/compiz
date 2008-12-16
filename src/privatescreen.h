@@ -33,6 +33,9 @@
 #include <core/size.h>
 #include <core/point.h>
 #include <core/timer.h>
+#include <core/plugin.h>
+
+CompPlugin::VTable * getCoreVTable ();
 
 extern bool shutDown;
 extern bool restartSignal;
