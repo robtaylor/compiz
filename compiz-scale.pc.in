@@ -8,5 +8,5 @@ Description: Scale plugin for compiz
 Version: @VERSION@
 
 Requires: compiz compiz-composite compiz-opengl
-Libs: -l${plugindir}/compiz/libscale.so
+Libs: -l${libdir}/compiz/libscale.so
 Cflags: @COMPIZ_CFLAGS@ -I${includedir}/compiz
