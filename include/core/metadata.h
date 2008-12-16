@@ -40,6 +40,8 @@
 #define MAXTOSTRING(x) "<max>" TOSTRING (x) "</max>"
 #define RESTOSTRING(min, max) MINTOSTRING (min) MAXTOSTRING (max)
 
+class PrivateMetadata;
+
 class CompMetadata {
     public:
 	struct OptionInfo {
@@ -58,11 +60,15 @@ class CompMetadata {
 
 	std::vector<xmlDoc *> &doc ();
 
-	bool addFromFile (CompString file);
-	bool addFromString (CompString string);
+	bool addFromFile (CompString file, bool prepend = false);
+	bool addFromString (CompString string, bool prepend = false);
 	bool addFromIO (xmlInputReadCallback  ioread,
 		        xmlInputCloseCallback ioclose,
-		        void                  *ioctx);
+		        void                  *ioctx,
+		        bool                  prepend = false);
+	bool addFromOptionInfo (const OptionInfo *optionInfo,
+		                unsigned int     nOptionInfo,
+				bool             prepend = false);
 
 	bool initOption (CompOption *option,
 			 CompString name);
@@ -95,8 +101,7 @@ class CompMetadata {
 				    unsigned int                   length);
 
     private:
-	CompString            mPath;
-	std::vector<xmlDoc *> mDoc;
+	PrivateMetadata *priv;
 };
 
 #endif

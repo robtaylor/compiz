@@ -38,6 +38,7 @@
 #include <core/metadata.h>
 #include <core/screen.h>
 #include "privatescreen.h"
+#include "privatemetadata.h"
 
 #define HOME_METADATADIR ".compiz/metadata"
 #define EXTENSION ".xml"
@@ -876,18 +877,17 @@ initOptionFromMetadataPath (CompMetadata  *metadata,
 
 
 
-CompMetadata::CompMetadata () :
-    mPath ("core"),
-    mDoc (0)
+CompMetadata::CompMetadata ()
 {
+    priv = new PrivateMetadata ("core", "core");
 }
 
 CompMetadata::CompMetadata (CompString       plugin,
 			    const OptionInfo *optionInfo,
-			    unsigned int     nOptionInfo) :
-    mPath (compPrintf ("plugin[@name=\"%s\"]", plugin.c_str ())),
-    mDoc (0)
+			    unsigned int     nOptionInfo)
 {
+    priv = new PrivateMetadata (plugin, compPrintf ("plugin[@name=\"%s\"]",
+						    plugin.c_str ()));
     if (nOptionInfo)
     {
 	CompIOCtx ctx;
@@ -903,19 +903,18 @@ CompMetadata::CompMetadata (CompString       plugin,
 
 CompMetadata::~CompMetadata ()
 {
-    foreach (xmlDoc *d, mDoc)
-	xmlFreeDoc (d);
+    delete priv;
 }
 
 std::vector<xmlDoc *> &
 CompMetadata::doc ()
 {
-    return mDoc;
+    return priv->mDoc;
 }
 
 
 bool
-CompMetadata::addFromFile (CompString file)
+CompMetadata::addFromFile (CompString file, bool prepend)
 {
     xmlDoc     *doc;
     CompString home (getenv ("HOME"));
@@ -928,7 +927,11 @@ CompMetadata::addFromFile (CompString file)
 	doc = readXmlFile (file, path);
 	if (doc)
 	{
-	    mDoc.push_back (doc);
+	    if (prepend)
+		priv->mDoc.insert (priv->mDoc.begin (), doc);
+	    else
+		priv->mDoc.push_back (doc);
+
 	    status = true;
 	}
     }
@@ -936,7 +939,11 @@ CompMetadata::addFromFile (CompString file)
     doc = readXmlFile (file, CompString (METADATADIR));
     if (doc)
     {
-	mDoc.push_back (doc);
+	if (prepend)
+	    priv->mDoc.insert (priv->mDoc.begin (), doc);
+	else
+	    priv->mDoc.push_back (doc);
+
 	status |= true;
     }
 
@@ -953,7 +960,7 @@ CompMetadata::addFromFile (CompString file)
 }
 
 bool
-CompMetadata::addFromString (CompString string)
+CompMetadata::addFromString (CompString string, bool prepend)
 {
     xmlDoc *doc;
 
@@ -966,7 +973,10 @@ CompMetadata::addFromString (CompString string)
 	return false;
     }
 
-    mDoc.push_back (doc);
+    if (prepend)
+	priv->mDoc.insert (priv->mDoc.begin (), doc);
+    else
+	priv->mDoc.push_back (doc);
 
     return true;
 }
@@ -974,7 +984,8 @@ CompMetadata::addFromString (CompString string)
 bool
 CompMetadata::addFromIO (xmlInputReadCallback  ioread,
 			 xmlInputCloseCallback ioclose,
-			 void                  *ioctx)
+			 void                  *ioctx,
+			 bool                  prepend)
 {
     xmlDoc *doc;
 
@@ -987,9 +998,32 @@ CompMetadata::addFromIO (xmlInputReadCallback  ioread,
 	return false;
     }
 
-    mDoc.push_back (doc);
+    if (prepend)
+	priv->mDoc.insert (priv->mDoc.begin (), doc);
+    else
+	priv->mDoc.push_back (doc);
 
     return true;
+}
+
+bool
+CompMetadata::addFromOptionInfo (const OptionInfo *optionInfo,
+				 unsigned int     nOptionInfo,
+				 bool             prepend)
+{
+    if (nOptionInfo)
+    {
+	CompIOCtx ctx;
+
+	ctx.offset	  = 0;
+	ctx.name	  = priv->mPlugin.c_str ();
+	ctx.oInfo  = optionInfo;
+	ctx.nOInfo = nOptionInfo;
+
+	return addFromIO (readPluginXmlCallback, NULL, (void *) &ctx, prepend);
+    }
+    else
+	return false;
 }
 
 bool
@@ -999,7 +1033,7 @@ CompMetadata::initOption (CompOption  *option,
     char str[1024];
 
     sprintf (str, "/compiz/%s/options//option[@name=\"%s\"]",
-	     mPath.c_str (), name.c_str ());
+	     priv->mPath.c_str (), name.c_str ());
 
     return initOptionFromMetadataPath (this, option, BAD_CAST str);
 }
@@ -1033,14 +1067,14 @@ CompString
 CompMetadata::getShortPluginDescription ()
 {
     return getStringFromPath (
-	compPrintf ("/compiz/%s/short/child::text()", mPath.c_str ()));
+	compPrintf ("/compiz/%s/short/child::text()", priv->mPath.c_str ()));
 }
 
 CompString
 CompMetadata::getLongPluginDescription ()
 {
     return getStringFromPath (
-	compPrintf ("/compiz/%s/long/child::text()", mPath.c_str ()));
+	compPrintf ("/compiz/%s/long/child::text()", priv->mPath.c_str ()));
 }
 
 CompString
@@ -1049,7 +1083,7 @@ CompMetadata::getShortOptionDescription (CompOption *option)
     return getStringFromPath (
 	compPrintf (
 	    "/compiz/%s/options//option[@name=\"%s\"]/short/child::text()",
-	    mPath.c_str (), option->name ().c_str ()));
+	    priv->mPath.c_str (), option->name ().c_str ()));
 }
 
 CompString
@@ -1058,7 +1092,7 @@ CompMetadata::getLongOptionDescription (CompOption *option)
     return getStringFromPath (
 	compPrintf (
 	    "/compiz/%s/options//option[@name=\"%s\"]/long/child::text()",
-	    mPath.c_str (), option->name ().c_str ()));
+	    priv->mPath.c_str (), option->name ().c_str ()));
 }
 
 
@@ -1142,3 +1176,17 @@ CompMetadata::readXmlChunkFromOptionInfo (const CompMetadata::OptionInfo *info,
 
     return i;
 }
+
+PrivateMetadata::PrivateMetadata (CompString plugin, CompString path) :
+    mPlugin (plugin),
+    mPath (path),
+    mDoc (0)
+{
+}
+
+PrivateMetadata::~PrivateMetadata ()
+{
+    foreach (xmlDoc *d, mDoc)
+	xmlFreeDoc (d);
+}
+
