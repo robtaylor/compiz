@@ -115,8 +115,8 @@ readCoreXmlCallback (void *context,
     unsigned int offset = ctx->offset;
     unsigned int i, j;
 
-    i = CompMetadata::readXmlChunk ("<compiz><core><options>", &offset, buffer,
-				    length);
+    i = CompMetadata::readXmlChunk ("<compiz><plugin name=\"core\"><options>",
+				    &offset, buffer, length);
 
     for (j = 0; j < COMP_OPTION_NUM; j++)
     {
@@ -135,7 +135,7 @@ readCoreXmlCallback (void *context,
 						       buffer + i, length - i);
     }
 
-    i += CompMetadata::readXmlChunk ("</options></core></compiz>", &offset,
+    i += CompMetadata::readXmlChunk ("</options></plugin></compiz>", &offset,
 				     buffer + i, length - 1);
 
     if (!offset && length > (int)i)

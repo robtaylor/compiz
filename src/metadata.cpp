@@ -875,13 +875,6 @@ initOptionFromMetadataPath (CompMetadata  *metadata,
     return TRUE;
 }
 
-
-
-CompMetadata::CompMetadata ()
-{
-    priv = new PrivateMetadata ("core", "core");
-}
-
 CompMetadata::CompMetadata (CompString       plugin,
 			    const OptionInfo *optionInfo,
 			    unsigned int     nOptionInfo)

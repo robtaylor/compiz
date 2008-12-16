@@ -52,8 +52,7 @@ class CompMetadata {
 	    CompAction::CallBack terminate;
 	};
     public:
-	CompMetadata ();
-        CompMetadata (CompString       plugin,
+        CompMetadata (CompString       plugin = "core",
 		      const OptionInfo *optionInfo = NULL,
 		      unsigned int     nOptionInfo = 0);
 	~CompMetadata ();
