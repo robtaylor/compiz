@@ -244,11 +244,4 @@ void CompPlugin::VTableForScreen<T>::finiScreen (CompScreen *screen)
 
 typedef CompPlugin::VTable *(*PluginGetInfoProc) (void);
 
-COMPIZ_BEGIN_DECLS
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void);
-
-COMPIZ_END_DECLS
-
 #endif

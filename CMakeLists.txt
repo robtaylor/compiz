@@ -71,20 +71,18 @@ set (_commonfile "${CMAKE_BINARY_DIR}/compiz-common.h")
 file (WRITE  ${_commonfile} "#ifndef COMPIZ_COMMON_H\n")
 file (APPEND ${_commonfile} "#define COMPIZ_COMMON_H\n")
 file (APPEND ${_commonfile} "\n")
-file (APPEND ${_commonfile} "#ifdef  __cplusplus\n")
-file (APPEND ${_commonfile} "# define COMPIZ_BEGIN_DECLS  extern \"C\" {\n")
-file (APPEND ${_commonfile} "# define COMPIZ_END_DECLS    }\n")
-file (APPEND ${_commonfile} "#else\n")
-file (APPEND ${_commonfile} "# define COMPIZ_BEGIN_DECLS\n")
-file (APPEND ${_commonfile} "# define COMPIZ_END_DECLS\n")
-file (APPEND ${_commonfile} "#endif\n")
-file (APPEND ${_commonfile} "\n")
 file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MAJOR ${COMPIZ_VERSION_MAJOR}\n")
 file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MINOR ${COMPIZ_VERSION_MINOR}\n")
 file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MICRO ${COMPIZ_VERSION_MICRO}\n")
 file (APPEND ${_commonfile} "\n")
 file (APPEND ${_commonfile} "#define COMPIZ_VERSION_STRING \"${VERSION}\"\n")
 file (APPEND ${_commonfile} "#endif\n")
+
+install (
+        FILES ${_commonfile}
+        DESTINATION ${includedir}/compiz
+)
+
 
 generate_pkg_file (
     ${CMAKE_SOURCE_DIR}/compiz.pc.in
