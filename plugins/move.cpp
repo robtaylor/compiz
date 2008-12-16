@@ -724,6 +724,7 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     status (RectangleOut),
     releaseButton (0),
     grab(NULL),
+    hasCompositing (false),
     opt(MOVE_OPTION_NUM)
 {
     if (!moveVTable->getMetadata ()->initOptions (moveOptionInfo,
