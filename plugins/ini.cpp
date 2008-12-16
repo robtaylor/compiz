@@ -29,7 +29,7 @@
 #include "ini.h"
 #include <boost/lexical_cast.hpp>
 
-static CompMetadata *iniMetadata;
+COMPIZ_PLUGIN_20081216 (ini, IniPluginVTable)
 
 IniFile::IniFile (CompScreen *s, CompPlugin *p) :
     screen (s), plugin (p)
@@ -53,7 +53,7 @@ IniFile::open (bool write)
 	return false;
 
     filePath =  homeDir;
-    if (strcmp (plugin->vTable->name (), "core") == 0)
+    if (strcmp (plugin->vTable->name ().c_str (), "core") == 0)
 	filePath += "general";
     else
 	filePath += plugin->vTable->name ();
@@ -89,7 +89,7 @@ IniFile::load ()
     {
 	compLogMessage ("ini", CompLogLevelWarn,
 			"Could not open config for plugin %s - using defaults.",
-			plugin->vTable->name ());
+			plugin->vTable->name ().c_str ());
 
 	save ();
 
@@ -420,7 +420,7 @@ IniFile::stringToOption (CompOption *option,
     }
 
     if (valid)
-	screen->setOptionForPlugin (plugin->vTable->name (),
+	screen->setOptionForPlugin (plugin->vTable->name ().c_str (),
 				    option->name ().c_str (), value);
 
     return valid;
@@ -554,31 +554,9 @@ IniPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
-    iniMetadata = new CompMetadata (name ());
-    if (!iniMetadata)
-	return false;
-
-    iniMetadata->addFromFile (name ());
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-IniPluginVTable::fini ()
-{
-    delete iniMetadata;
-}
 
-CompMetadata *
-IniPluginVTable::getMetadata ()
-{
-    return iniMetadata;
-}
-
-IniPluginVTable iniVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &iniVTable;
-}

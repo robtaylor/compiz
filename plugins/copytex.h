@@ -111,11 +111,6 @@ class CopytexPluginVTable :
 {
     public:
 
-	const char * name () { return "copytex"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 };

@@ -186,12 +186,7 @@ class WaterPluginVTable :
 {
     public:
 
-	const char * name () { return "water"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (WaterScreen);
 

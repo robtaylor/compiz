@@ -94,7 +94,8 @@ GLScreen::GLScreen (CompScreen *s) :
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     XWindowAttributes    attr;
 
-    if (!glMetadata->initOptions (glOptionInfo, GL_OPTION_NUM, priv->opt))
+    if (!openglVTable->getMetadata ()->initOptions (glOptionInfo, GL_OPTION_NUM,
+						    priv->opt))
     {
 	setFailed ();
 	return;

@@ -25,7 +25,7 @@
 
 #include "zoom.h"
 
-static CompMetadata *zoomMetadata;
+COMPIZ_PLUGIN_20081216 (zoom, ZoomPluginVTable)
 
 static int
 adjustZoomVelocity (ZoomScreen *zs)
@@ -734,7 +734,8 @@ ZoomScreen::ZoomScreen (CompScreen *screen) :
     scale (0.0),
     zoomOutput (0)
 {
-    if (!zoomMetadata->initOptions (zoomOptionInfo, ZOOM_OPTION_NUM, opt))
+    if (!zoomVTable->getMetadata ()->initOptions (zoomOptionInfo,
+						  ZOOM_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -765,32 +766,9 @@ ZoomPluginVTable::init ()
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
 
-    zoomMetadata = new CompMetadata (name (), zoomOptionInfo, ZOOM_OPTION_NUM);
-
-    if (!zoomMetadata)
-	return false;
-
-    zoomMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (zoomOptionInfo, ZOOM_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-ZoomPluginVTable::fini ()
-{
-    delete zoomMetadata;
-}
-
-CompMetadata *
-ZoomPluginVTable::getMetadata ()
-{
-    return zoomMetadata;
-}
-
-ZoomPluginVTable zoomVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &zoomVTable;
-}

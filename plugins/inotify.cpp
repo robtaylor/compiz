@@ -25,7 +25,7 @@
 
 #include "inotify.h"
 
-static CompMetadata *inotifyMetadata;
+COMPIZ_PLUGIN_20081216 (inotify, InotifyPluginVTable)
 
 InotifyScreen::InotifyScreen (CompScreen *screen) :
     PrivateHandler<InotifyScreen, CompScreen> (screen)
@@ -164,31 +164,8 @@ InotifyPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
-    inotifyMetadata = new CompMetadata (name ());
-    if (!inotifyMetadata)
-	return false;
-
-    inotifyMetadata->addFromFile (name ());
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-InotifyPluginVTable::fini ()
-{
-    delete inotifyMetadata;
-}
-
-CompMetadata *
-InotifyPluginVTable::getMetadata ()
-{
-    return inotifyMetadata;
-}
-
-InotifyPluginVTable inotifyVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &inotifyVTable;
-}

@@ -25,7 +25,7 @@
 
 #include "imgsvg.h"
 
-static CompMetadata *svgMetadata;
+COMPIZ_PLUGIN_20081216 (imgsvg, SvgPluginVTable)
 
 static bool
 svgSet (CompAction         *action,
@@ -74,7 +74,8 @@ SvgScreen::SvgScreen (CompScreen *screen) :
     PrivateHandler<SvgScreen, CompScreen> (screen),
     opt (SVG_OPTION_NUM)
 {
-    if (!svgMetadata->initOptions (svgOptionInfo, SVG_OPTION_NUM, opt))
+    if (!imgsvgVTable->getMetadata ()->initOptions (svgOptionInfo,
+						    SVG_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -649,11 +650,8 @@ SvgPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
-    svgMetadata = new CompMetadata (name (), svgOptionInfo, SVG_OPTION_NUM);
-    if (!svgMetadata)
-	return false;
-
-    svgMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (svgOptionInfo, SVG_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     rsvg_init ();
 
@@ -663,21 +661,6 @@ SvgPluginVTable::init ()
 void
 SvgPluginVTable::fini ()
 {
-    delete svgMetadata;
-
     rsvg_term ();
 }
 
-CompMetadata *
-SvgPluginVTable::getMetadata ()
-{
-    return svgMetadata;
-}
-
-SvgPluginVTable svgVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &svgVTable;
-}

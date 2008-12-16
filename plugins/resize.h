@@ -186,13 +186,7 @@ class ResizePluginVTable :
     public CompPlugin::VTableForScreenAndWindow<ResizeScreen, ResizeWindow>
 {
     public:
-
-	const char * name () { return "resize"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (ResizeScreen)
 

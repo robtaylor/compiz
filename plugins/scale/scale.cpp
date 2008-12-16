@@ -43,7 +43,19 @@
 #define WIN_W(w) ((w)->width + (w)->input.left + (w)->input.right)
 #define WIN_H(w) ((w)->height + (w)->input.top + (w)->input.bottom)
 
-CompMetadata *scaleMetadata;
+class ScalePluginVTable :
+    public CompPlugin::VTableForScreenAndWindow<ScaleScreen, ScaleWindow>
+{
+    public:
+
+	bool init ();
+
+	void fini ();
+
+	PLUGIN_OPTION_HELPER (ScaleScreen)
+};
+
+COMPIZ_PLUGIN_20081216 (scale, ScalePluginVTable)
 
 bool
 PrivateScaleWindow::isNeverScaleWin () const
@@ -1604,7 +1616,8 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
     nSlots (0),
     currentMatch (&match)
 {
-    if (!scaleMetadata->initOptions (scaleOptionInfo, SCALE_OPTION_NUM, opt))
+    if (!scaleVTable->getMetadata ()->initOptions (scaleOptionInfo,
+						   SCALE_OPTION_NUM, opt))
     {
 	ScaleScreen::get (s)->setFailed ();
 	return;
@@ -1702,22 +1715,6 @@ ScaleScreen::setOption (const char        *name,
     return false;
 }
 
-class ScalePluginVTable :
-    public CompPlugin::VTableForScreenAndWindow<ScaleScreen, ScaleWindow>
-{
-    public:
-
-	const char * name () { return "scale"; };
-
-	CompMetadata * getMetadata ();
-
-	bool init ();
-
-	void fini ();
-
-	PLUGIN_OPTION_HELPER (ScaleScreen)
-};
-
 bool
 ScalePluginVTable::init ()
 {
@@ -1730,13 +1727,8 @@ ScalePluginVTable::init ()
     p.uval = COMPIZ_SCALE_ABI;
     screen->storeValue ("scale_ABI", p);
 
-    scaleMetadata = new CompMetadata (name (), scaleOptionInfo,
-				      SCALE_OPTION_NUM);
-
-    if (!scaleMetadata)
-	return false;
-
-    scaleMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (scaleOptionInfo, SCALE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
@@ -1745,19 +1737,4 @@ void
 ScalePluginVTable::fini ()
 {
     screen->eraseValue ("scale_ABI");
-    delete scaleMetadata;
-}
-
-CompMetadata *
-ScalePluginVTable::getMetadata ()
-{
-    return scaleMetadata;
-}
-
-ScalePluginVTable scaleVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &scaleVTable;
 }

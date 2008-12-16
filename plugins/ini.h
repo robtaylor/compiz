@@ -65,12 +65,8 @@ class IniPluginVTable :
     public CompPlugin::VTableForScreen<IniScreen>
 {
     public:
-	const char * name () { return "ini"; };
-
-	CompMetadata * getMetadata ();
 
 	bool init ();
-	void fini ();
 };
 
 class IniFile

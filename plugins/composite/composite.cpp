@@ -30,22 +30,18 @@
 
 #include "privates.h"
 
-CompMetadata *compositeMetadata = NULL;
-
 class CompositePluginVTable :
     public CompPlugin::VTableForScreenAndWindow<CompositeScreen, CompositeWindow>
 {
     public:
-
-	const char * name () { return "composite"; };
-
-	CompMetadata * getMetadata ();
 
 	bool init ();
 	void fini ();
 
 	PLUGIN_OPTION_HELPER (CompositeScreen)
 };
+
+COMPIZ_PLUGIN_20081216 (composite, CompositePluginVTable)
 
 const CompMetadata::OptionInfo
     compositeOptionInfo[COMPOSITE_OPTION_NUM] = {
@@ -121,13 +117,9 @@ CompositePluginVTable::init ()
     p.uval = COMPIZ_COMPOSITE_ABI;
     screen->storeValue ("composite_ABI", p);
 
-    compositeMetadata = new CompMetadata
-	(name (), compositeOptionInfo, COMPOSITE_OPTION_NUM);
-
-    if (!compositeMetadata)
-	return false;
-
-    compositeMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (compositeOptionInfo,
+				       COMPOSITE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
@@ -136,19 +128,4 @@ void
 CompositePluginVTable::fini ()
 {
     screen->eraseValue ("composite_ABI");
-    delete compositeMetadata;
-}
-
-CompMetadata *
-CompositePluginVTable::getMetadata ()
-{
-    return compositeMetadata;
-}
-
-CompositePluginVTable compositeVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &compositeVTable;
 }

@@ -125,12 +125,7 @@ class PlacePluginVTable :
     public CompPlugin::VTableForScreenAndWindow<PlaceScreen, PlaceWindow>
 {
     public:
-	const char * name () { return "place"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (PlaceScreen);
 };

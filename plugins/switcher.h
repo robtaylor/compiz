@@ -229,12 +229,7 @@ class SwitchPluginVTable :
 {
     public:
 
-	const char * name () { return "switcher"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (SwitchScreen);
 

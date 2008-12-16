@@ -43,7 +43,7 @@ extern bool       useCow;
 #define COMPOSITE_OPTION_FORCE_INDEPENDENT   4
 #define COMPOSITE_OPTION_NUM                 5
 
-extern CompMetadata *compositeMetadata;
+extern CompPlugin::VTable *compositeVTable;
 
 extern const CompMetadata::OptionInfo
    compositeOptionInfo[COMPOSITE_OPTION_NUM];

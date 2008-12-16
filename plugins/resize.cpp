@@ -35,7 +35,7 @@
 #include <core/atoms.h>
 #include "resize.h"
 
-static CompMetadata *resizeMetadata;
+COMPIZ_PLUGIN_20081216 (resize, ResizePluginVTable)
 
 void
 ResizeScreen::getPaintRectangle (BoxPtr pBox)
@@ -1090,7 +1090,8 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
 
     Display *dpy = s->dpy ();
 
-    if (!resizeMetadata->initOptions (resizeOptionInfo, RESIZE_OPTION_NUM, opt))
+    if (!resizeVTable->getMetadata ()->initOptions (resizeOptionInfo,
+						    RESIZE_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -1179,32 +1180,9 @@ ResizePluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
 
-    resizeMetadata = new CompMetadata (name (),resizeOptionInfo,
-				       RESIZE_OPTION_NUM);
-    if (!resizeMetadata)
-	return false;
-
-    resizeMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (resizeOptionInfo, RESIZE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-ResizePluginVTable::fini ()
-{
-    delete resizeMetadata;
-}
-
-CompMetadata *
-ResizePluginVTable::getMetadata ()
-{
-    return resizeMetadata;
-}
-
-ResizePluginVTable resizeVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &resizeVTable;
-}

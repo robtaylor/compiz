@@ -41,7 +41,7 @@
 #define GL_OPTION_TEXTURE_COMPRESSION 3
 #define GL_OPTION_NUM                 4
 
-extern CompMetadata *glMetadata;
+extern CompPlugin::VTable *openglVTable;
 
 extern const CompMetadata::OptionInfo
     glOptionInfo[GL_OPTION_NUM];

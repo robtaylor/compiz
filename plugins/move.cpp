@@ -32,7 +32,7 @@
 #include <core/atoms.h>
 #include "move.h"
 
-static CompMetadata *moveMetadata;
+COMPIZ_PLUGIN_20081216 (move, MovePluginVTable)
 
 static bool
 moveInitiate (CompAction      *action,
@@ -726,7 +726,8 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     grab(NULL),
     opt(MOVE_OPTION_NUM)
 {
-    if (!moveMetadata->initOptions (moveOptionInfo, MOVE_OPTION_NUM, opt))
+    if (!moveVTable->getMetadata ()->initOptions (moveOptionInfo,
+						  MOVE_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -758,32 +759,9 @@ MovePluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
 
-    moveMetadata = new CompMetadata (name (), moveOptionInfo, MOVE_OPTION_NUM);
-
-    if (!moveMetadata)
-	return false;
-
-    moveMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (moveOptionInfo, MOVE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-MovePluginVTable::fini ()
-{
-    delete moveMetadata;
-}
-
-CompMetadata *
-MovePluginVTable::getMetadata ()
-{
-    return moveMetadata;
-}
-
-MovePluginVTable moveVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &moveVTable;
-}

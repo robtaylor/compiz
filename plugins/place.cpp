@@ -22,7 +22,7 @@
 
 #include "place.h"
 
-static CompMetadata *placeMetadata;
+COMPIZ_PLUGIN_20081216 (place, PlacePluginVTable)
 
 static const CompMetadata::OptionInfo placeOptionInfo[] = {
     { "workarounds", "bool", 0, 0, 0 },
@@ -43,7 +43,8 @@ PlaceScreen::PlaceScreen (CompScreen *screen) :
     PrivateHandler<PlaceScreen, CompScreen> (screen),
     opt (PLACE_OPTION_NUM)
 {
-    if (!placeMetadata->initOptions (placeOptionInfo, PLACE_OPTION_NUM, opt))
+    if (!placeVTable->getMetadata ()->initOptions (placeOptionInfo,
+						   PLACE_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -1290,33 +1291,11 @@ PlacePluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
-    placeMetadata = new CompMetadata (name (), placeOptionInfo,
-				      PLACE_OPTION_NUM);
-    if (!placeMetadata)
-	return false;
-
-    placeMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (placeOptionInfo, PLACE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-PlacePluginVTable::fini ()
-{
-    delete placeMetadata;
-}
 
-CompMetadata *
-PlacePluginVTable::getMetadata ()
-{
-    return placeMetadata;
-}
-
-PlacePluginVTable placeVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &placeVTable;
-}
 

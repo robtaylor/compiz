@@ -25,7 +25,7 @@
 
 #include "water.h"
 
-static CompMetadata *waterMetadata;
+COMPIZ_PLUGIN_20081216 (water, WaterPluginVTable)
 
 static int waterLastPointerX = 0;
 static int waterLastPointerY = 0;
@@ -1333,7 +1333,8 @@ WaterScreen::WaterScreen (CompScreen *screen) :
 
     bumpMapFunctions ()
 {
-    if (!waterMetadata->initOptions (waterOptionInfo, WATER_OPTION_NUM, opt))
+    if (!waterVTable->getMetadata ()->initOptions (waterOptionInfo,
+						   WATER_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -1383,34 +1384,9 @@ WaterPluginVTable::init ()
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
 
-
-    waterMetadata = new CompMetadata (name (), waterOptionInfo,
-				      WATER_OPTION_NUM);
-
-    if (!waterMetadata)
-	return false;
-
-    waterMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (waterOptionInfo, WATER_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-WaterPluginVTable::fini ()
-{
-    delete waterMetadata;
-}
-
-CompMetadata *
-WaterPluginVTable::getMetadata ()
-{
-    return waterMetadata;
-}
-
-WaterPluginVTable waterVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &waterVTable;
-}

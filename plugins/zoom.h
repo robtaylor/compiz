@@ -120,12 +120,7 @@ class ZoomPluginVTable :
 {
     public:
 
-	const char * name () { return "zoom"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (ZoomScreen);
 

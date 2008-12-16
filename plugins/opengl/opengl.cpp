@@ -76,23 +76,18 @@ GLScreen::setOption (const char        *name,
     return false;
 }
 
-CompMetadata *glMetadata;
-
 class OpenglPluginVTable :
     public CompPlugin::VTableForScreenAndWindow<GLScreen, GLWindow>
 {
     public:
 
-	const char * name () { return "opengl"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-
 	void fini ();
 
 	PLUGIN_OPTION_HELPER (GLScreen)
 };
+
+COMPIZ_PLUGIN_20081216 (opengl, OpenglPluginVTable)
 
 bool
 OpenglPluginVTable::init ()
@@ -105,12 +100,8 @@ OpenglPluginVTable::init ()
     p.uval = COMPIZ_OPENGL_ABI;
     screen->storeValue ("opengl_ABI", p);
 
-    glMetadata = new CompMetadata (name (), glOptionInfo, GL_OPTION_NUM);
-
-    if (!glMetadata)
-	return false;
-
-    glMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (glOptionInfo, GL_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
@@ -119,19 +110,4 @@ void
 OpenglPluginVTable::fini ()
 {
     screen->eraseValue ("opengl_ABI");
-    delete glMetadata;
-}
-
-CompMetadata *
-OpenglPluginVTable::getMetadata ()
-{
-    return glMetadata;
-}
-
-OpenglPluginVTable openglVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &openglVTable;
 }

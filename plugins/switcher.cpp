@@ -25,7 +25,7 @@
 
 #include "switcher.h"
 
-static CompMetadata *switchMetadata;
+COMPIZ_PLUGIN_20081216 (switcher, SwitchPluginVTable)
 
 static float _boxVertices[] =
 {
@@ -1582,7 +1582,8 @@ SwitchScreen::SwitchScreen (CompScreen *screen) :
     selection (CurrentViewport),
     ignoreSwitcher (false)
 {
-    if (!switchMetadata->initOptions (switchOptionInfo, SWITCH_OPTION_NUM, opt))
+    if (!switcherVTable->getMetadata ()->initOptions (switchOptionInfo,
+						      SWITCH_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -1622,33 +1623,9 @@ SwitchPluginVTable::init ()
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
 
-    switchMetadata = new CompMetadata (name (), switchOptionInfo,
-				       SWITCH_OPTION_NUM);
-
-    if (!switchMetadata)
-	return false;
-
-    switchMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (switchOptionInfo, SWITCH_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-SwitchPluginVTable::fini ()
-{
-    delete switchMetadata;
-}
-
-CompMetadata *
-SwitchPluginVTable::getMetadata ()
-{
-    return switchMetadata;
-}
-
-SwitchPluginVTable switchVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &switchVTable;
-}

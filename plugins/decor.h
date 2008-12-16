@@ -239,12 +239,7 @@ class DecorPluginVTable :
 {
     public:
 
-	const char * name () { return "decor"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (DecorScreen);
 };

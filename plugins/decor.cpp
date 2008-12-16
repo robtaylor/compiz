@@ -40,7 +40,7 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
 
-static CompMetadata *decorMetadata;
+COMPIZ_PLUGIN_20081216 (decor, DecorPluginVTable)
 
 bool
 DecorWindow::glDraw (const GLMatrix     &transform,
@@ -1640,7 +1640,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
     cmActive (false),
     opt (DECOR_OPTION_NUM)
 {
-    if (!decorMetadata->initOptions (decorOptionInfo, DECOR_OPTION_NUM, opt))
+    if (!decorVTable->getMetadata ()->initOptions (decorOptionInfo,
+						   DECOR_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -1754,32 +1755,9 @@ DecorPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
 
-    decorMetadata = new CompMetadata (name (), decorOptionInfo,
-				      DECOR_OPTION_NUM);
-    if (!decorMetadata)
-	return false;
-
-    decorMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (decorOptionInfo, DECOR_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-DecorPluginVTable::fini ()
-{
-    delete decorMetadata;
-}
-
-CompMetadata *
-DecorPluginVTable::getMetadata ()
-{
-    return decorMetadata;
-}
-
-DecorPluginVTable decorVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &decorVTable;
-}

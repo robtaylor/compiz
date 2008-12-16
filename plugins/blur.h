@@ -258,12 +258,7 @@ class BlurPluginVTable :
 {
     public:
 
-	const char * name () { return "blur"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (BlurScreen);
 

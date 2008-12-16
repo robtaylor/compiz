@@ -135,9 +135,6 @@ class SvgPluginVTable :
     public CompPlugin::VTableForScreenAndWindow<SvgScreen, SvgWindow>
 {
     public:
-	const char * name () { return "svg"; };
-
-	CompMetadata * getMetadata ();
 
 	bool init ();
 	void fini ();

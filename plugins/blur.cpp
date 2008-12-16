@@ -25,6 +25,8 @@
 
 #include <blur.h>
 
+COMPIZ_PLUGIN_20081216 (blur, BlurPluginVTable)
+
 /* pascal triangle based kernel generator */
 static int
 blurCreateGaussianLinearKernel (int   radius,
@@ -2280,7 +2282,8 @@ BlurScreen::BlurScreen (CompScreen *screen) :
     fbo (0),
     fboStatus (0)
 {
-    if (!blurMetadata->initOptions (blurOptionInfo, BLUR_OPTION_NUM, opt))
+    if (!blurVTable->getMetadata ()->initOptions (blurOptionInfo,
+						  BLUR_OPTION_NUM, opt))
     {
 	setFailed ();
 	return;
@@ -2384,35 +2387,9 @@ BlurPluginVTable::init ()
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
 
-
-    blurMetadata = new CompMetadata (name (), blurOptionInfo,
-				     BLUR_OPTION_NUM);
-
-    if (!blurMetadata)
-	return false;
-
-    blurMetadata->addFromFile (name ());
+    getMetadata ()->addFromOptionInfo (blurOptionInfo, BLUR_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
     return true;
-}
-
-void
-BlurPluginVTable::fini ()
-{
-    delete blurMetadata;
-}
-
-CompMetadata *
-BlurPluginVTable::getMetadata ()
-{
-    return blurMetadata;
-}
-
-BlurPluginVTable blurVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &blurVTable;
 }
 

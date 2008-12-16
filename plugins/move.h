@@ -131,12 +131,7 @@ class MovePluginVTable :
 {
     public:
 
-	const char * name () { return "move"; };
-
-	CompMetadata * getMetadata ();
-
 	bool init ();
-	void fini ();
 
 	PLUGIN_OPTION_HELPER (MoveScreen);
 

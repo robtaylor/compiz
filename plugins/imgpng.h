@@ -64,11 +64,6 @@ class PngPluginVTable :
     public CompPlugin::VTableForScreen<PngScreen>
 {
     public:
-	const char * name () { return "png"; };
-
-	CompMetadata *getMetadata ();
-
 	bool init ();
-	void fini ();
 };
 

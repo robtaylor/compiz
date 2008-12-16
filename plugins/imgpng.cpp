@@ -25,7 +25,7 @@
 
 #include "imgpng.h"
 
-static CompMetadata *pngMetadata;
+COMPIZ_PLUGIN_20081216 (imgpng, PngPluginVTable)
 
 PngScreen::PngScreen (CompScreen *screen) :
     PrivateHandler<PngScreen, CompScreen> (screen)
@@ -353,31 +353,9 @@ PngPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
 
-    pngMetadata = new CompMetadata (name ());
-    if (!pngMetadata)
-	return false;
 
-    pngMetadata->addFromFile (name ());
+    getMetadata ()->addFromFile (name ());
 
     return true;
 }
 
-void
-PngPluginVTable::fini ()
-{
-    delete pngMetadata;
-}
-
-CompMetadata *
-PngPluginVTable::getMetadata ()
-{
-    return pngMetadata;
-}
-
-PngPluginVTable pngVTable;
-
-CompPlugin::VTable *
-getCompPluginInfo20080805 (void)
-{
-    return &pngVTable;
-}

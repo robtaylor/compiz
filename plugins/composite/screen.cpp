@@ -201,8 +201,9 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
 {
     int	compositeMajor, compositeMinor;
 
-    if (!compositeMetadata->initOptions (compositeOptionInfo,
-					 COMPOSITE_OPTION_NUM, priv->opt))
+    if (!compositeVTable->getMetadata ()->initOptions (compositeOptionInfo,
+					               COMPOSITE_OPTION_NUM,
+						       priv->opt))
     {
 	setFailed ();
 	return;

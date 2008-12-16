@@ -61,10 +61,6 @@ class InotifyPluginVTable :
     public CompPlugin::VTableForScreen<InotifyScreen>
 {
     public:
-	const char * name () { return "inotify"; };
-
-	CompMetadata * getMetadata ();
 
 	bool init ();
-	void fini ();
 };
