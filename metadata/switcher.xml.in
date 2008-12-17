@@ -2,6 +2,11 @@
     <plugin name="switcher">
 	<_short>Application Switcher</_short>
 	<_long>Application Switcher</_long>
+	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	</deps>
 	<options>
 	    <option name="next_button" type="button">
 		<_short>Next window</_short>

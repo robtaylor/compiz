@@ -2,6 +2,12 @@
     <plugin name="move">
 	<_short>Move Window</_short>
 	<_long>Move window</_long>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
 	<options>
 	    <option name="initiate_button" type="button">
 		<_short>Initiate Window Move</_short>

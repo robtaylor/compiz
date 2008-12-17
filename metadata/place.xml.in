@@ -2,7 +2,7 @@
     <plugin name="place">
 	<_short>Place Windows</_short>
 	<_long>Place windows at appropriate positions when mapped</_long>
-	<screen>
+	<options>
 	    <option name="workarounds" type="bool">
 		<_short>Workarounds</_short>
 		<_long>Window placement workarounds</_long>
@@ -97,6 +97,6 @@
 		<min>1</min>
 		<max>32</max>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

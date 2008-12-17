@@ -10,6 +10,10 @@
 		<plugin>scale</plugin>
 		<plugin>wobbly</plugin>
 	    </relation>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
 	</deps>
 	<options>
 	    <option name="shadow_radius" type="float">

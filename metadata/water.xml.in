@@ -7,6 +7,9 @@
 		<plugin>blur</plugin>
 		<plugin>video</plugin>
 	    </relation>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
 	</deps>
 	<options>
 	    <option name="initiate_key" type="key">

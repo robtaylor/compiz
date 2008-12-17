@@ -10,6 +10,9 @@
 	    <relation type="after">
 		<plugin>decoration</plugin>
 	    </relation>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
 	</deps>
 	<options>
 	    <option name="pulse" type="bell">

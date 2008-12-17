@@ -2,6 +2,12 @@
     <plugin name="resize">
 	<_short>Resize Window</_short>
 	<_long>Resize window</_long>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
 	<options>
 	    <option name="initiate_normal_key" type="key">
 		<_short>Initiate Normal Window Resize</_short>
