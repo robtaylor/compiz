@@ -1198,7 +1198,7 @@ CompWindow::unmap ()
     if (priv->struts)
 	screen->priv->updateWorkarea ();
 
-    if (!isViewable ())
+    if (priv->attrib.map_state != IsViewable)
 	return;
 
     if (priv->type == CompWindowTypeDesktopMask)
