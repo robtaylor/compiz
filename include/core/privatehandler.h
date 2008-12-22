@@ -38,12 +38,14 @@ extern unsigned int privateHandlerIndex;
 class CompPrivateIndex {
     public:
 	CompPrivateIndex () : index(-1), refCount (0),
-			      initiated (false), failed (false) {}
+			      initiated (false), failed (false),
+			      privFailed (false), privIndex (0) {}
 			
 	int          index;
 	int          refCount;
 	bool         initiated;
 	bool         failed;
+	bool         privFailed;
 	unsigned int privIndex;
 };
 
@@ -67,7 +69,6 @@ class PrivateHandler {
 
     private:
 	bool mFailed;
-	bool mPrivFailed;
 	Tb   *mBase;
 
 	static CompPrivateIndex mIndex;
@@ -79,13 +80,11 @@ CompPrivateIndex PrivateHandler<Tp,Tb,ABI>::mIndex;
 template<class Tp, class Tb, int ABI>
 PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
     mFailed (false),
-    mPrivFailed (false),
     mBase (base)
 {
-    if (mIndex.failed)
+    if (mIndex.privFailed)
     {
 	mFailed = true;
-	mPrivFailed = true;
     }
     else
     {
@@ -95,6 +94,8 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 	    if (mIndex.index >= 0)
 	    {
 		mIndex.initiated = true;
+		mIndex.failed    = false;
+		mIndex.privIndex = privateHandlerIndex;
 
 		CompPrivate p;
 		p.val = mIndex.index;
@@ -114,7 +115,9 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 	    else
 	    {
 		mIndex.failed = true;
-		mPrivFailed = true;
+		mIndex.initiated = false;
+		mIndex.privFailed = true;
+		mIndex.privIndex = privateHandlerIndex;
 		mFailed = true;
 	    }
 	}
@@ -130,7 +133,7 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 template<class Tp, class Tb, int ABI>
 PrivateHandler<Tp,Tb,ABI>::~PrivateHandler ()
 {
-    if (!mPrivFailed && !mIndex.failed)
+    if (!mIndex.privFailed)
     {
 	mIndex.refCount--;
 
@@ -138,6 +141,8 @@ PrivateHandler<Tp,Tb,ABI>::~PrivateHandler ()
 	{
 	    Tb::freePrivateIndex (mIndex.index);
 	    mIndex.initiated = false;
+	    mIndex.failed = false;
+	    mIndex.privIndex = privateHandlerIndex;
 	    screen->eraseValue (keyName ());
 	    privateHandlerIndex++;
 	}
@@ -158,8 +163,6 @@ PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
 
     if (screen->hasValue (keyName ()))
     {
-	if (!mIndex.initiated && !mIndex.failed)
-	    mIndex.refCount  = -1;
 	mIndex.index     = screen->getValue (keyName ()).val;
 	mIndex.initiated = true;
 	mIndex.failed    = false;
