@@ -585,6 +585,15 @@ CompOption::rest ()
 bool
 CompOption::set (CompOption::Value &val)
 {
+    if (priv->type == CompOption::TypeKey ||
+	priv->type == CompOption::TypeButton ||
+	priv->type == CompOption::TypeEdge ||
+	priv->type == CompOption::TypeBell)
+	val.action ().copyState (priv->value.action ());
+
+    if (priv->value == val)
+	return false;
+
     if (isAction () &&
         priv->value.action ().state () & CompAction::StateAutoGrab && screen)
     {
@@ -597,15 +606,6 @@ CompOption::set (CompOption::Value &val)
 	    screen->removeAction (&priv->value.action ());
 	}
     }
-    
-    if (priv->type == CompOption::TypeKey ||
-	priv->type == CompOption::TypeButton ||
-	priv->type == CompOption::TypeEdge ||
-	priv->type == CompOption::TypeBell)
-	val.action ().copyState (priv->value.action ());
-
-    if (priv->value == val)
-	return false;
 
     switch (priv->type)
     {
