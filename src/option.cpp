@@ -585,6 +585,19 @@ CompOption::rest ()
 bool
 CompOption::set (CompOption::Value &val)
 {
+    if (isAction () &&
+        priv->value.action ().state () & CompAction::StateAutoGrab && screen)
+    {
+	if (!screen->addAction (&val.action ()))
+	{
+	    return false;
+	}
+	else
+	{
+	    screen->removeAction (&priv->value.action ());
+	}
+    }
+    
     if (priv->type == CompOption::TypeKey ||
 	priv->type == CompOption::TypeButton ||
 	priv->type == CompOption::TypeEdge ||
@@ -800,21 +813,6 @@ bool
 CompOption::setOption (CompOption        &o,
 		       CompOption::Value &value)
 {
-    if (o.isAction () &&
-        o.value ().action ().state () & CompAction::StateAutoGrab && screen)
-    {
-	if (!screen->addAction (&value.action ()))
-	{
-	    return false;
-	}
-	else
-	{
-    	    screen->removeAction (&o.value ().action ());
-	}
-
-	return o.set (value);
-    }
-
     return o.set (value);
 }
 
