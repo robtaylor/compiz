@@ -134,14 +134,20 @@ CompAction::KeyBinding::KeyBinding (const KeyBinding& k) :
 {
 }
 
+CompAction::KeyBinding::KeyBinding (int keycode, unsigned int modifiers) :
+    mModifiers (modifiers),
+    mKeycode (keycode)
+{
+}
+
 unsigned int
-CompAction::KeyBinding::modifiers ()
+CompAction::KeyBinding::modifiers () const
 {
     return mModifiers;
 }
 
 int
-CompAction::KeyBinding::keycode ()
+CompAction::KeyBinding::keycode () const
 {
     return mKeycode;
 }
@@ -207,7 +213,7 @@ CompAction::KeyBinding::fromString (const CompString &str)
 }
 
 CompString
-CompAction::KeyBinding::toString ()
+CompAction::KeyBinding::toString () const
 {
     CompString binding = "";
 
@@ -249,14 +255,20 @@ CompAction::ButtonBinding::ButtonBinding (const ButtonBinding& b) :
 {
 }
 
+CompAction::ButtonBinding::ButtonBinding (int button, unsigned int modifiers) :
+    mModifiers (modifiers),
+    mButton (button)
+{
+}
+
 unsigned int
-CompAction::ButtonBinding::modifiers ()
+CompAction::ButtonBinding::modifiers () const
 {
     return mModifiers;
 }
 
 int
-CompAction::ButtonBinding::button ()
+CompAction::ButtonBinding::button () const
 {
     return mButton;
 }
@@ -294,7 +306,7 @@ CompAction::ButtonBinding::fromString (const CompString &str)
 }
 
 CompString
-CompAction::ButtonBinding::toString ()
+CompAction::ButtonBinding::toString () const
 {
     CompString binding;
 
@@ -364,10 +376,44 @@ CompAction::key ()
     return priv->key;
 }
 
+void
+CompAction::setKey (const CompAction::KeyBinding &key)
+{
+    priv->key = key;
+
+    if (key.modifiers () || key.keycode ())
+    {
+	priv->type = CompAction::BindingTypeKey;
+    }
+    else
+    {
+	priv->type = CompAction::BindingTypeNone;
+    }
+}
+
 CompAction::ButtonBinding &
 CompAction::button ()
 {
     return priv->button;
+}
+
+void
+CompAction::setButton (const CompAction::ButtonBinding &button)
+{
+    priv->button = button;
+
+    if (button.modifiers () || button.button ())
+    {
+	if (priv->edgeMask)
+	    priv->type = CompAction::BindingTypeEdgeButton;
+	else
+	    priv->type = CompAction::BindingTypeButton;
+    }
+    else
+    {
+	priv->type = CompAction::BindingTypeNone;
+    }
+
 }
 
 unsigned int
@@ -380,6 +426,15 @@ void
 CompAction::setEdgeMask (unsigned int edge)
 {
     priv->edgeMask = edge;
+
+    if (priv->type == CompAction::BindingTypeEdgeButton ||
+        priv->type == CompAction::BindingTypeButton)
+    {
+	if (priv->edgeMask)
+	    priv->type = CompAction::BindingTypeEdgeButton;
+	else
+	    priv->type = CompAction::BindingTypeButton;
+    }
 }
 
 bool

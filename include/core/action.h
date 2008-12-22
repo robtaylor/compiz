@@ -84,12 +84,13 @@ class CompAction {
 	    public:
 		KeyBinding ();
 		KeyBinding (const KeyBinding&);
+		KeyBinding (int keycode, unsigned int modifiers = 0);
 
-		unsigned int modifiers ();
-		int keycode ();
+		unsigned int modifiers () const;
+		int keycode () const;
 
 		bool fromString (const CompString &str);
-		CompString toString ();
+		CompString toString () const;
 
 	    private:
 		unsigned int mModifiers;
@@ -100,12 +101,13 @@ class CompAction {
 	    public:
 		ButtonBinding ();
 		ButtonBinding (const ButtonBinding&);
+		ButtonBinding (int button, unsigned int modifiers = 0);
 
-		unsigned int modifiers ();
-		int button ();
+		unsigned int modifiers () const;
+		int button () const;
 
 		bool fromString (const CompString &str);
-		CompString toString ();
+		CompString toString () const;
 
 	    private:
 		unsigned int mModifiers;
@@ -131,7 +133,10 @@ class CompAction {
 	BindingType type ();
 
 	KeyBinding & key ();
+	void setKey (const KeyBinding &key);
+	
 	ButtonBinding & button ();
+	void setButton (const ButtonBinding &button);
 
 	unsigned int edgeMask ();
 	void setEdgeMask (unsigned int edge);
