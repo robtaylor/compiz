@@ -1090,6 +1090,8 @@ PrivateScreen::updatePlugins ()
     CompPlugin        *p;
     unsigned int      nPop, i, j;
     CompPlugin::List  pop;
+    bool              failedPush;
+    
 
     dirtyPluginList = false;
 
@@ -1112,7 +1114,7 @@ PrivateScreen::updatePlugins ()
 	if (plugin.list ()[j].s () != value.list ()[i].s ())
 	    break;
     }
-
+    
     nPop = plugin.list ().size () - j;
 
     for (j = 0; j < nPop; j++)
@@ -1124,6 +1126,7 @@ PrivateScreen::updatePlugins ()
     for (; i < value.list ().size (); i++)
     {
 	p = NULL;
+	failedPush = false;
 	foreach (CompPlugin *pp, pop)
 	{
 	    if (value.list ()[i]. s () == pp->vTable->name ())
@@ -1134,10 +1137,18 @@ PrivateScreen::updatePlugins ()
 		    pop.erase (std::find (pop.begin (), pop.end (), pp));
 		    break;
 		}
+		else
+		{
+		    pop.erase (std::find (pop.begin (), pop.end (), pp));
+		    CompPlugin::unload (pp);
+		    p = NULL;
+		    failedPush = true;
+		    break;
+		}
 	    }
 	}
 
-	if (p == 0)
+	if (p == 0 && !failedPush)
 	{
 	    p = CompPlugin::load (value.list ()[i].s ().c_str ());
 	    if (p)
