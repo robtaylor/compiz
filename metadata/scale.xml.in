@@ -2,6 +2,11 @@
     <plugin name="scale">
 	<_short>Scale</_short>
 	<_long>Scale windows</_long>
+	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	</deps>
 	<options>
 	    <option name="relayout_slots" type="action" read_only="true"/>
 	    <option name="initiate_edge" type="edge">
