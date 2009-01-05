@@ -51,7 +51,7 @@ set (COMPIZ_REQUIRES
     sm
     libxml-2.0
     libxslt
-    libstartup-notification-1.0 >= 0.7
+    "libstartup-notification-1.0 >= 0.7"
 )
 
 set (DECORATION_REQUIRES xrender)
