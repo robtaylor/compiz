@@ -8,5 +8,5 @@ Description: Opengl compositing plugin for compiz
 Version: @VERSION@
 
 Requires: compiz compiz-composite
-Libs: -l@OPENGL_gl_LIBRARY@ -l${libdir}/compiz/libopengl.so
+Libs: -lGL -L${libdir}/compiz -lopengl
 Cflags: @COMPIZ_CFLAGS@ -I${includedir}/compiz

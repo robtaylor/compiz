@@ -8,5 +8,5 @@ Description: Compositing plugin for compiz
 Version: @VERSION@
 
 Requires: compiz
-Libs: @_composite_plugin_LDFLAGS@ -l${libdir}/compiz/libcomposite.so
+Libs: @_composite_plugin_LDFLAGS@ -L${libdir}/compiz -lcomposite
 Cflags: @COMPIZ_CFLAGS@ @_composite_plugin_CFLAGS@ -I${includedir}/compiz
