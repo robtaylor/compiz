@@ -653,9 +653,9 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    }
 	    else if (action == Atoms::toolkitActionRunDialogAtom)
 	    {
-		QDBusInterface krunner ("org.kde.krunner", "/Interface",
-					"org.kde.krunner.Interface");
-		krunner.call ("display", "");
+		QDBusInterface krunner ("org.kde.krunner", "/App",
+					"org.kde.krunner.App");
+		krunner.call ("display");
 	    }
 	    else if (action == Atoms::toolkitActionForceQuitDialogAtom)
 	    {
