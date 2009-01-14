@@ -4,7 +4,7 @@ set (USE_KDE4 1 CACHE BOOL "Build KDE 4 window decorator")
 
 if (USE_KDE4)
 
-    find_package(KDE4 4.1.80 REQUIRED)
+    find_package(KDE4 4.1.80)
 
     if (KDE4_FOUND)
 
