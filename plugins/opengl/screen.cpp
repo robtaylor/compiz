@@ -529,6 +529,7 @@ PrivateGLScreen::PrivateGLScreen (GLScreen   *gs) :
     bindPixmap (),
     hasCompositing (false)
 {
+    ScreenInterface::setHandler (screen);
 }
 
 PrivateGLScreen::~PrivateGLScreen ()
