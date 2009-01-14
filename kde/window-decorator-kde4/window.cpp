@@ -2246,3 +2246,26 @@ KWD::Window::eventFilter( QObject* o, QEvent* e )
     }
     return false;
 }
+
+// unsable API part
+void
+KWD::Window::repaintShadow()
+{
+}
+
+bool
+KWD::Window::compositingActive() const
+{
+    return false;
+}
+
+bool
+KWD::Window::shadowsActive() const
+{
+    return false;
+}
+
+double KWD::Window::opacity() const
+{
+    return 1.0;
+}
