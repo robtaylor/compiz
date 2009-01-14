@@ -1610,7 +1610,8 @@ KWD::Window::updateSelected (WId selectedId)
 void
 KWD::Window::updateWindowGeometry (void)
 {
-    KWindowInfo wInfo = KWindowSystem::windowInfo (mClientId, NET::WMGeometry);
+    KWindowInfo wInfo = KWindowSystem::windowInfo (mClientId, NET::WMGeometry |
+						   NET::WMDesktop);
     QRect	geometry = wInfo.geometry ();
     int         w, h;
 
