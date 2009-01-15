@@ -73,7 +73,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 		box.y1 () < box.y2 ())
 	    {
 		ml[0] = wd->quad[i].matrix;
-		gWindow->glAddGeometry (ml, CompRegion (box), region);
+		gWindow->glAddGeometry (ml, CompRegion (box), reg);
 	    }
 	}
 
