@@ -709,8 +709,8 @@ SwitchScreen::windowRemove (Window id)
 
 	old = selected = selectedWindow;
 
-	for (CompWindowList::iterator it = windows.begin ();
-	     it != windows.end (); it++)
+	CompWindowList::iterator it = windows.begin ();
+	while (it != windows.end ())
 	{
 	    if (*it == w)
 	    {
@@ -726,8 +726,12 @@ SwitchScreen::windowRemove (Window id)
 		    it--;
 		}
 
-		windows.erase (it);
+		CompWindowList::iterator del = it;
+		it++;
+		windows.erase (del);
 	    }
+	    else
+		it++;
 	}
 
 	if (!inList)
