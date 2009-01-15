@@ -95,7 +95,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 	{
 	    ml[0] = gWindow->matrices ()[0];
 	    gWindow->geometry ().reset ();
-	    gWindow->glAddGeometry (ml, window->frameRegion (), region);
+	    gWindow->glAddGeometry (ml, window->frameRegion (), reg);
 
 	    if (gWindow->geometry ().vCount)
 		gWindow->glDrawTexture (gWindow->textures ()[0], attrib, mask);
@@ -108,7 +108,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 	    {
 		ml[0] = gWindow->matrices ()[i];
 		gWindow->geometry ().reset ();
-		gWindow->glAddGeometry (ml, regions[i], region);
+		gWindow->glAddGeometry (ml, regions[i], reg);
 
 		if (gWindow->geometry ().vCount)
 		    gWindow->glDrawTexture (gWindow->textures ()[i], attrib,
