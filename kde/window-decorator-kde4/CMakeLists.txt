@@ -10,14 +10,10 @@ if (USE_KDE4)
         include(KDE4Defaults)
 	include(FindPkgConfig)
 	include(MacroLibrary)
-    endif (KDE4_FOUND)
-
-    if (KDE4_FOUND)
 
         add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 
 	qt4_add_dbus_adaptor (kwd4_SRCS org.kde.KWin.xml decorator.h KWD::Decorator kwinadaptor)
-
 
 	pkg_check_modules (KWD4 REQUIRED xdamage xrender xcomposite)
 
@@ -30,6 +26,7 @@ if (USE_KDE4)
 	    ${KWD4_INCLUDE_DIRS}
 	    ${KDE4_INCLUDES}
 	    ${KDE4_INCLUDE_DIR}
+	    ${KDE4_PLASMA_INCLUDE_DIR}
 	    ${QT_INCLUDES}
 	)
 
