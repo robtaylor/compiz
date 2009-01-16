@@ -253,6 +253,8 @@ class CompScreen :
 
 	bool otherGrabExist (const char *, ...);
 
+	bool grabExist (const char *);
+
 	bool addAction (CompAction *action);
 
 	void removeAction (CompAction *action);

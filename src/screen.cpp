@@ -2960,6 +2960,17 @@ CompScreen::otherGrabExist (const char *first, ...)
     return false;
 }
 
+bool
+CompScreen::grabExist (const char *grab)
+{
+    foreach (PrivateScreen::Grab* g, priv->grabs)
+    {
+	if (strcmp (g->name, grab) == 0)
+	    return true;
+    }
+    return false;
+}
+
 void
 PrivateScreen::grabUngrabOneKey (unsigned int modifiers,
 				 int          keycode,
