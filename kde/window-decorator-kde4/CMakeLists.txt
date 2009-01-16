@@ -10,10 +10,9 @@ if (USE_KDE4)
         include(KDE4Defaults)
 	include(FindPkgConfig)
 	include(MacroLibrary)
-	include(FindPlasma)
     endif (KDE4_FOUND)
 
-    if (KDE4_FOUND AND PLASMA_FOUND)
+    if (KDE4_FOUND)
 
         add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 
@@ -56,7 +55,7 @@ if (USE_KDE4)
 	    ${KWD4_LIBRARIES}
             ${KDE4_KDECORE_LIBS}
 	    ${KDE4_KDEUI_LIBS}
-	    ${PLASMA_LIBS}
+	    ${KDE4_PLASMA_LIBS}
 	    kdecorations
 	)
 
@@ -65,8 +64,8 @@ if (USE_KDE4)
 	    DESTINATION ${exec_prefix}
 	)
 
-    else (KDE4_FOUND AND PLASMA_FOUND)
+    else (KDE4_FOUND)
 	set (USE_KDE4 0)
-    endif (KDE4_FOUND AND PLASMA_FOUND)
+    endif (KDE4_FOUND)
 
 endif (USE_KDE4)
