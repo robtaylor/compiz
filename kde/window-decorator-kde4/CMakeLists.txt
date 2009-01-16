@@ -7,11 +7,14 @@ if (USE_KDE4)
     find_package(KDE4 4.1.80)
 
     if (KDE4_FOUND)
-
-	include(KDE4Defaults)
+        include(KDE4Defaults)
 	include(FindPkgConfig)
 	include(MacroLibrary)
-	    
+	include(FindPlasma)
+    endif (KDE4_FOUND)
+
+    if (KDE4_FOUND AND PLASMA_FOUND)
+
         add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 
 	qt4_add_dbus_adaptor (kwd4_SRCS org.kde.KWin.xml decorator.h KWD::Decorator kwinadaptor)
@@ -28,7 +31,6 @@ if (USE_KDE4)
 	    ${KWD4_INCLUDE_DIRS}
 	    ${KDE4_INCLUDES}
 	    ${KDE4_INCLUDE_DIR}
-	    ${PLASMA_INCLUDE_DIR}
 	    ${QT_INCLUDES}
 	)
 
@@ -52,9 +54,9 @@ if (USE_KDE4)
 	    kde4-window-decorator
 	    decoration
 	    ${KWD4_LIBRARIES}
-	    ${PLASMA_LIBS}
-	    ${KDE4_KDECORE_LIBS}
+            ${KDE4_KDECORE_LIBS}
 	    ${KDE4_KDEUI_LIBS}
+	    ${PLASMA_LIBS}
 	    kdecorations
 	)
 
@@ -63,8 +65,8 @@ if (USE_KDE4)
 	    DESTINATION ${exec_prefix}
 	)
 
-    else (KDE4_FOUND)
+    else (KDE4_FOUND AND PLASMA_FOUND)
 	set (USE_KDE4 0)
-    endif (KDE4_FOUND)
+    endif (KDE4_FOUND AND PLASMA_FOUND)
 
 endif (USE_KDE4)
