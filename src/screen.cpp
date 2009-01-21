@@ -4139,6 +4139,12 @@ CompScreen::root ()
     return priv->root;
 }
 
+int
+CompScreen::xkbEvent ()
+{
+    return priv->xkbEvent;
+}
+
 void
 CompScreen::warpPointer (int dx, int dy)
 {

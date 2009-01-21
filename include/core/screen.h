@@ -223,6 +223,8 @@ class CompScreen :
 	
 	Window root ();
 
+	int xkbEvent ();
+
 	XWindowAttributes attrib ();
 
 	int screenNum ();
