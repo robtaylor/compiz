@@ -564,7 +564,7 @@ CompWindow::recalcActions ()
 	    actions &= ~CompWindowActionCloseMask;
     }
 
-    getAllowedActions (&setActions, &clearActions);
+    getAllowedActions (setActions, clearActions);
     actions &= ~clearActions;
     actions |= setActions;
 
@@ -576,12 +576,12 @@ CompWindow::recalcActions ()
 }
 
 void
-CompWindow::getAllowedActions (unsigned int *setActions,
-			       unsigned int *clearActions)
+CompWindow::getAllowedActions (unsigned int &setActions,
+			       unsigned int &clearActions)
 {
     WRAPABLE_HND_FUNC(1, getAllowedActions, setActions, clearActions)
-    *setActions   = 0;
-    *clearActions = 0;
+    setActions   = 0;
+    clearActions = 0;
 }
 
 unsigned int
@@ -3890,8 +3890,8 @@ WindowInterface::getOutputExtents (CompWindowExtents *output)
     WRAPABLE_DEF (getOutputExtents, output)
 
 void
-WindowInterface::getAllowedActions (unsigned int *setActions,
-				    unsigned int *clearActions)
+WindowInterface::getAllowedActions (unsigned int &setActions,
+				    unsigned int &clearActions)
     WRAPABLE_DEF (getAllowedActions, setActions, clearActions)
 
 bool

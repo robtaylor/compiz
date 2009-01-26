@@ -194,8 +194,8 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
     public:
 	virtual void getOutputExtents (CompWindowExtents *output);
 
-	virtual void getAllowedActions (unsigned int *setActions,
-					unsigned int *clearActions);
+	virtual void getAllowedActions (unsigned int &setActions,
+					unsigned int &clearActions);
 
 	virtual bool focus ();
 	virtual void activate ();
@@ -458,7 +458,7 @@ class CompWindow :
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents *);
 	WRAPABLE_HND (1, WindowInterface, void, getAllowedActions,
-		      unsigned int *, unsigned int *);
+		      unsigned int &, unsigned int &);
 
 	WRAPABLE_HND (2, WindowInterface, bool, focus);
 	WRAPABLE_HND (3, WindowInterface, void, activate);
