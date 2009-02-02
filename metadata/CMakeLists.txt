@@ -10,18 +10,18 @@ set (_plugin_files
     fs
     gconf
     glib
+    imgpng
+    imgsvg
     ini
     inotify
     minimize
     move
     place
-    png
     regex
     resize
     rotate
     scale
     screenshot
-    svg
     switcher
     video
     water
