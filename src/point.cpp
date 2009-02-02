@@ -48,3 +48,15 @@ CompPoint::setY (int y)
 {
     mY = y;
 }
+
+bool
+CompPoint::operator== (const CompPoint &point) const
+{
+    return (mX == point.mX) && (mY == point.mY);
+}
+
+bool
+CompPoint::operator!= (const CompPoint &point) const
+{
+    return !(*this == point);
+}

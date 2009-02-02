@@ -41,6 +41,9 @@ class CompPoint {
 	void setX (int);
 	void setY (int);
 
+	bool operator== (const CompPoint &) const;
+	bool operator!= (const CompPoint &) const;
+
 	typedef std::vector<CompPoint> vector;
 	typedef std::vector<CompPoint *> ptrVector;
 	typedef std::list<CompPoint> list;
