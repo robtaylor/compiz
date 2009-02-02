@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="png">
+    <plugin name="imgpng">
 	<_short>Png</_short>
 	<_long>Png image loader</_long>
 	<feature>imageext:png</feature>

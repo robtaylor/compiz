@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="svg">
+    <plugin name="imgsvg">
 	<_short>Svg</_short>
 	<_long>Svg image loader</_long>
 	<feature>imageext:svg</feature>
