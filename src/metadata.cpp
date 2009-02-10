@@ -365,24 +365,26 @@ initKeyValue (CompOption::Value &v,
 
     action.setState (state | CompAction::StateInitKey);
 
-    if (!doc)
-	return;
-
-    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
-    if (value)
+    if (doc)
     {
-	char *binding = (char *) value;
+	value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
+	if (value)
+	{
+	    char *binding = (char *) value;
 
-	if (strcasecmp (binding, "disabled") && *binding)
-	    action.keyFromString (binding);
+	    if (strcasecmp (binding, "disabled") && *binding)
+		action.keyFromString (binding);
 
-	xmlFree (value);
+	    xmlFree (value);
+	}
+
+	v.set (action);
+
+	if (state & CompAction::StateAutoGrab)
+	    screen->addAction (&v.action ());
     }
-
-    v.set (action);
-
-    if (state & CompAction::StateAutoGrab)
-	screen->addAction (&v.action ());
+    else
+	v.set (action);
 }
 
 static void
@@ -398,24 +400,26 @@ initButtonValue (CompOption::Value &v,
     action.setState (state | CompAction::StateInitButton |
 		     CompAction::StateInitEdge);
 
-    if (!doc)
-	return;
-
-    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
-    if (value)
+    if (doc)
     {
-	char *binding = (char *) value;
+	value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
+	if (value)
+	{
+	    char *binding = (char *) value;
 
-	if (strcasecmp (binding, "disabled") && *binding)
-	    action.buttonFromString (binding);
+	    if (strcasecmp (binding, "disabled") && *binding)
+		action.buttonFromString (binding);
 
-	xmlFree (value);
+	    xmlFree (value);
+	}
+
+	v.set (action);
+
+	if (state & CompAction::StateAutoGrab)
+	    screen->addAction (&v.action ());
     }
-
-    v.set (action);
-
-    if (state & CompAction::StateAutoGrab)
-	screen->addAction (&v.action ());
+    else
+	v.set (action);
 }
 
 static void
@@ -431,30 +435,35 @@ initEdgeValue (CompOption::Value &v,
 
     action.setState (state | CompAction::StateInitEdge);
 
-    if (!doc)
-	return;
-
-    for (child = node->xmlChildrenNode; child; child = child->next)
+    if (doc)
     {
-	value = xmlGetProp (child, BAD_CAST "name");
-	if (value)
+	for (child = node->xmlChildrenNode; child; child = child->next)
 	{
-	    int i;
+	    value = xmlGetProp (child, BAD_CAST "name");
+	    if (value)
+	    {
+		int i;
 
-	    for (i = 0; i < SCREEN_EDGE_NUM; i++)
-		if (strcasecmp ((char *) value,
-				CompAction::edgeToString (i).c_str ()) == 0)
-		    edge |= (1 << i);
+		for (i = 0; i < SCREEN_EDGE_NUM; i++)
+		    if (strcasecmp ((char *) value,
+				    CompAction::edgeToString (i).c_str ()) == 0)
+			edge |= (1 << i);
 
-	    xmlFree (value);
+		xmlFree (value);
+	    }
 	}
+
+	action.setEdgeMask (edge);
+	v.set (action);
+
+	if (state & CompAction::StateAutoGrab)
+	    screen->addAction (&v.action ());
     }
-
-    action.setEdgeMask (edge);
-    v.set (action);
-
-    if (state & CompAction::StateAutoGrab)
-	screen->addAction (&v.action ());
+    else
+    {
+	action.setEdgeMask (edge);
+	v.set (action);
+    }
 }
 
 static void
@@ -468,16 +477,16 @@ initBellValue (CompOption::Value &v,
 
     action.setState (state | CompAction::StateInitBell);
 
-    if (!doc)
-	return;
-
-    value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
-    if (value)
+    if (doc)
     {
-	if (strcasecmp ((char *) value, "true") == 0)
-	    action.setBell (true);
+	value = xmlNodeListGetString (doc, node->xmlChildrenNode, 1);
+	if (value)
+	{
+	    if (strcasecmp ((char *) value, "true") == 0)
+		action.setBell (true);
 
-	xmlFree (value);
+	    xmlFree (value);
+	}
     }
     v.set (action);
 }
