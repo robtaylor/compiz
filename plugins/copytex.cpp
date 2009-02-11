@@ -84,7 +84,8 @@ CopyPixmap::~CopyPixmap ()
 {
     if (damage)
 	XDamageDestroy (screen->dpy (), damage);
-    CopytexScreen::get (screen)->pixmaps.erase (damage);
+    if (CopytexScreen::get (screen))
+	CopytexScreen::get (screen)->pixmaps.erase (damage);
 }
 
 CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
