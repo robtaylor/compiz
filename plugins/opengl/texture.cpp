@@ -363,9 +363,9 @@ GLTexture::List
 GLTexture::readImageToTexture (CompString &imageFileName,
 			       CompSize   &size)
 {
-    void *image;
+    void *image = NULL;
 
-    if (screen->readImageFromFile (imageFileName, size, image))
+    if (!screen->readImageFromFile (imageFileName, size, image) || !image)
 	return GLTexture::List ();
 
     GLTexture::List rv =
