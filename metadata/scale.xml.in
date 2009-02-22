@@ -8,7 +8,6 @@
 	    </requirement>
 	</deps>
 	<options>
-	    <option name="relayout_slots" type="action" read_only="true"/>
 	    <option name="initiate_edge" type="edge">
 		<_short>Initiate Window Picker</_short>
 		<_long>Layout and start transforming windows</_long>

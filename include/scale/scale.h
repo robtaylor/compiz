@@ -52,8 +52,23 @@ class ScaleScreen :
     public PrivateHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI>
 {
     public:
+	typedef enum {
+	    Idle,
+	    Out,
+	    Wait,
+	    In
+	} State;
+
+	typedef std::list<ScaleWindow *> WindowList;
 	ScaleScreen (CompScreen *s);
 	~ScaleScreen ();
+
+	bool hasGrab () const;
+	State getState () const;
+	const CompMatch & getCustomMatch () const;
+	const WindowList& getWindows () const;
+
+	void relayoutSlots (const CompMatch& match);
 
 	CompOption::Vector & getOptions ();
         bool setOption (const char *name, CompOption::Value &value);
@@ -89,6 +104,8 @@ class ScaleWindow :
 	ScaleWindow (CompWindow *w);
 	~ScaleWindow ();
 
+	bool hasSlot () const;
+
 	WRAPABLE_HND (0, ScaleWindowInterface, void, scalePaintDecoration,
 		      const GLWindowPaintAttrib &, const GLMatrix &,
 		      const CompRegion &, unsigned int)
@@ -104,6 +121,10 @@ class ScaleWindow :
 	PrivateScaleWindow *priv;
 };
 
+#define SCALE_SCREEN(s) \
+    ScaleScreen *ss = ScaleScreen::get (s)
 
+#define SCALE_WINDOW(w) \
+    ScaleWindow *sw = ScaleWindow::get (w)
 
 #endif

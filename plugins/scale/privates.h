@@ -28,17 +28,6 @@
 
 #include <scale/scale.h>
 
-#define SCALE_SCREEN(s) \
-    ScaleScreen *ss = ScaleScreen::get (s)
-
-#define SCALE_WINDOW(w) \
-    ScaleWindow *sw = ScaleWindow::get (w)
-
-#define SCALE_STATE_NONE 0
-#define SCALE_STATE_OUT  1
-#define SCALE_STATE_WAIT 2
-#define SCALE_STATE_IN   3
-
 #define SCALE_ICON_NONE   0
 #define SCALE_ICON_EMBLEM 1
 #define SCALE_ICON_BIG    2
@@ -61,17 +50,16 @@
 #define SCALE_OPTION_INITIATE_OUTPUT_BUTTON 10
 #define SCALE_OPTION_INITIATE_OUTPUT_KEY    11
 #define SCALE_OPTION_SHOW_DESKTOP           12
-#define SCALE_OPTION_RELAYOUT               13
-#define SCALE_OPTION_SPACING                14
-#define SCALE_OPTION_SPEED                  15
-#define SCALE_OPTION_TIMESTEP               16
-#define SCALE_OPTION_WINDOW_MATCH           17
-#define SCALE_OPTION_DARKEN_BACK            18
-#define SCALE_OPTION_OPACITY                19
-#define SCALE_OPTION_ICON                   20
-#define SCALE_OPTION_HOVER_TIME             21
-#define SCALE_OPTION_MULTIOUTPUT_MODE       22
-#define SCALE_OPTION_NUM                    23
+#define SCALE_OPTION_SPACING                13
+#define SCALE_OPTION_SPEED                  14
+#define SCALE_OPTION_TIMESTEP               15
+#define SCALE_OPTION_WINDOW_MATCH           16
+#define SCALE_OPTION_DARKEN_BACK            17
+#define SCALE_OPTION_OPACITY                18
+#define SCALE_OPTION_ICON                   19
+#define SCALE_OPTION_HOVER_TIME             20
+#define SCALE_OPTION_MULTIOUTPUT_MODE       21
+#define SCALE_OPTION_NUM                    22
 
 
 class ScaleSlot {
@@ -147,10 +135,6 @@ class PrivateScaleScreen :
 
 	void moveFocusWindow (int dx, int dy);
 
-	static bool scaleRelayoutSlots (CompAction         *action,
-					CompAction::State  state,
-					CompOption::Vector &options);
-
 	void windowRemove (Window id);
 
 	bool hoverTimeout ();
@@ -176,15 +160,15 @@ class PrivateScaleScreen :
 
 	CompTimer hover;
 
-	int state;
-	int moreAdjust;
+	ScaleScreen::State state;
+	int                moreAdjust;
 
 	Cursor cursor;
 
 	std::vector<ScaleSlot> slots;
 	int                  nSlots;
 
-	std::list<ScaleWindow *> windows;
+	ScaleScreen::WindowList windows;
 
 	GLushort opacity;
 
@@ -193,7 +177,7 @@ class PrivateScaleScreen :
 	Window clientLeader;
 
 	CompMatch match;
-	CompMatch *currentMatch;
+	CompMatch currentMatch;
 
 	CompOption::Vector opt;
 };

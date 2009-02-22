@@ -103,7 +103,7 @@ PrivateScaleWindow::isScaleWin () const
 	    break;
     }
 
-    if (!spScreen->currentMatch->evaluate (window))
+    if (!spScreen->currentMatch.evaluate (window))
 	return false;
 
     return true;
@@ -273,7 +273,7 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
     {
 	if (priv->window->id ()     != priv->spScreen->selectedWindow &&
 	    priv->spScreen->opacity != OPAQUE                         &&
-	    priv->spScreen->state   != SCALE_STATE_IN)
+	    priv->spScreen->state   != ScaleScreen::In)
 	{
 	    /* modify opacity of windows that are not active */
 	    attrib.opacity = (attrib.opacity * priv->spScreen->opacity) >> 16;
@@ -281,7 +281,7 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
 
 	drawScaled = true;
     }
-    else if (priv->spScreen->state != SCALE_STATE_IN)
+    else if (priv->spScreen->state != ScaleScreen::In)
     {
 	if (priv->spScreen->opt[SCALE_OPTION_DARKEN_BACK].value ().b ())
 	{
@@ -321,7 +321,7 @@ PrivateScaleWindow::glPaint (const GLWindowPaintAttrib &attrib,
 {
     bool status;
 
-    if (spScreen->state != SCALE_STATE_NONE)
+    if (spScreen->state != ScaleScreen::Idle)
     {
 	GLWindowPaintAttrib sAttrib (attrib);
 	bool                scaled;
@@ -645,6 +645,30 @@ ScaleScreen::layoutSlotsAndAssignWindows ()
 }
 
 bool
+ScaleScreen::hasGrab () const
+{
+    return priv->grab;
+}
+
+ScaleScreen::State
+ScaleScreen::getState () const
+{
+    return priv->state;
+}
+
+const CompMatch&
+ScaleScreen::getCustomMatch () const
+{
+    return priv->match;
+}
+
+const ScaleScreen::WindowList&
+ScaleScreen::getWindows () const
+{
+    return priv->windows;
+}
+
+bool
 PrivateScaleScreen::layoutThumbs ()
 {
     windows.clear ();
@@ -749,7 +773,7 @@ PrivateScaleScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 {
     bool status;
 
-    if (state != SCALE_STATE_NONE)
+    if (state != ScaleScreen::Idle)
 	mask |= PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK;
 
     status = gScreen->glPaintOutput (sAttrib, transform, region, output, mask);
@@ -760,7 +784,7 @@ PrivateScaleScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 void
 PrivateScaleScreen::preparePaint (int msSinceLastPaint)
 {
-    if (state != SCALE_STATE_NONE && state != SCALE_STATE_WAIT)
+    if (state != ScaleScreen::Idle && state != ScaleScreen::Wait)
     {
 	int        steps;
 	float      amount, chunk;
@@ -803,7 +827,7 @@ PrivateScaleScreen::preparePaint (int msSinceLastPaint)
 void
 PrivateScaleScreen::donePaint ()
 {
-    if (state != SCALE_STATE_NONE)
+    if (state != ScaleScreen::Idle)
     {
 	if (moreAdjust)
 	{
@@ -811,13 +835,13 @@ PrivateScaleScreen::donePaint ()
 	}
 	else
 	{
-	    if (state == SCALE_STATE_IN)
+	    if (state == ScaleScreen::In)
 	    {
 		/* The FALSE activate event is sent when scale state
 		   goes back to normal, to avoid animation conflicts
 		   with other plugins. */
 		activateEvent (false);
-		state = SCALE_STATE_NONE;
+		state = ScaleScreen::Idle;
 
 		cScreen->preparePaintSetEnabled (this, false);
 		cScreen->donePaintSetEnabled (this, false);
@@ -830,8 +854,8 @@ PrivateScaleScreen::donePaint ()
 		    sw->priv->gWindow->glPaintSetEnabled (sw->priv, false);
 		}
 	    }
-	    else if (state == SCALE_STATE_OUT)
-		state = SCALE_STATE_WAIT;
+	    else if (state == ScaleScreen::Out)
+		state = ScaleScreen::Wait;
 	}
     }
 
@@ -917,7 +941,7 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 
 	    ss->priv->grab = false;
 
-	    if (ss->priv->state != SCALE_STATE_NONE)
+	    if (ss->priv->state != ScaleScreen::Idle)
 	    {
 		foreach (CompWindow *w, ::screen->windows ())
 		{
@@ -941,7 +965,7 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 			    w->moveInputFocusTo ();
 		    }
 		}
-		else if (ss->priv->state != SCALE_STATE_IN)
+		else if (ss->priv->state != ScaleScreen::In)
 		{
 		    CompWindow *w =
 			::screen->findWindow (ss->priv->selectedWindow);
@@ -949,7 +973,7 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 			w->activate ();
 		}
 
-		ss->priv->state = SCALE_STATE_IN;
+		ss->priv->state = ScaleScreen::In;
 
 		ss->priv->cScreen->damageScreen ();
 	    }
@@ -1007,8 +1031,8 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
     {
 	SCALE_SCREEN (::screen);
 
-	if (ss->priv->state != SCALE_STATE_WAIT &&
-	    ss->priv->state != SCALE_STATE_OUT)
+	if (ss->priv->state != ScaleScreen::Wait &&
+	    ss->priv->state != ScaleScreen::Out)
 	{
 	    ss->priv->type = type;
 	    return ss->priv->scaleInitiateCommon (action, state, options);
@@ -1031,17 +1055,13 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
     if (screen->otherGrabExist ("scale", 0))
 	return false;
 
-    currentMatch = &opt[SCALE_OPTION_WINDOW_MATCH].value ().match ();
+    match = CompOption::getMatchOptionNamed (options, "match",
+					     CompMatch::emptyMatch);
+    if (match.isEmpty ())
+	match = opt[SCALE_OPTION_WINDOW_MATCH].value ().match ();
 
-    CompMatch empty;
-    CompMatch match (CompOption::getMatchOptionNamed (options, "match", empty));
-
-    if (!(match == empty))
-    {
-	this->match = match;
-	this->match.update ();
-	currentMatch = &this->match;
-    }
+    /* TODO: match.update() ? */
+    currentMatch = match;
 
     if (!layoutThumbs ())
 	return false;
@@ -1068,7 +1088,7 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
 	selectedWindow       = screen->activeWindow ();
 	hoveredWindow        = None;
 
-	this->state = SCALE_STATE_OUT;
+	this->state = ScaleScreen::Out;
 
 	activateEvent (true);
 
@@ -1122,6 +1142,12 @@ ScaleWindow::scaleSelectWindow ()
 	if (newW)
 	    CompositeWindow::get (newW)->addDamage ();
     }
+}
+
+bool
+ScaleWindow::hasSlot () const
+{
+    return priv->slot != NULL;
 }
 
 bool
@@ -1219,31 +1245,23 @@ PrivateScaleScreen::moveFocusWindow (int dx, int dy)
     }
 }
 
-bool
-PrivateScaleScreen::scaleRelayoutSlots (CompAction         *action,
-					CompAction::State  state,
-					CompOption::Vector &options)
+void
+ScaleScreen::relayoutSlots (const CompMatch& match)
 {
-    Window xid = CompOption::getIntOptionNamed (options, "root");
+    if (match.isEmpty ())
+	priv->currentMatch = priv->match;
+    else
+	priv->currentMatch = match;
 
-    if (::screen->root () == xid)
+    if (priv->state == ScaleScreen::Idle || priv->state == ScaleScreen::In)
+	return;
+
+    if (priv->layoutThumbs ())
     {
-	SCALE_SCREEN (::screen);
-	if (ss->priv->state != SCALE_STATE_NONE &&
-	    ss->priv->state != SCALE_STATE_IN)
-	{
-	    if (ss->priv->layoutThumbs ())
-	    {
-		ss->priv->state = SCALE_STATE_OUT;
-		ss->priv->moveFocusWindow (0, 0);
-		ss->priv->cScreen->damageScreen ();
-	    }
-	}
-
-	return true;
+	priv->state = ScaleScreen::Out;
+	priv->moveFocusWindow (0, 0);
+	priv->cScreen->damageScreen ();
     }
-
-    return false;
 }
 
 void
@@ -1252,7 +1270,7 @@ PrivateScaleScreen::windowRemove (Window id)
     CompWindow *w = screen->findWindow (id);
     if (w)
     {
-	if (state != SCALE_STATE_NONE && state != SCALE_STATE_IN)
+	if (state != ScaleScreen::Idle && state != ScaleScreen::In)
 	{
 	    foreach (ScaleWindow *lw, windows)
 	    {
@@ -1260,7 +1278,7 @@ PrivateScaleScreen::windowRemove (Window id)
 		{
 		    if (layoutThumbs ())
 		    {
-			state = SCALE_STATE_OUT;
+			state = ScaleScreen::Out;
 			cScreen->damageScreen ();
 			break;
 		    }
@@ -1294,7 +1312,7 @@ PrivateScaleScreen::windowRemove (Window id)
 bool
 PrivateScaleScreen::hoverTimeout ()
 {
-    if (grab && state != SCALE_STATE_IN)
+    if (grab && state != ScaleScreen::In)
     {
 	CompWindow *w;
 	CompOption::Vector o (0);
@@ -1349,7 +1367,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		{
 		    int option;
 
-		    if (grabIndex && state != SCALE_STATE_IN)
+		    if (grabIndex && state != ScaleScreen::In)
 		    {
 			CompOption::Vector o (0);
 			o.push_back (CompOption ("root", CompOption::TypeInt));
@@ -1392,7 +1410,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	case MotionNotify:
 	    if (screen->root () == event->xmotion.root)
 	    {
-		if (grabIndex && state != SCALE_STATE_IN)
+		if (grabIndex && state != ScaleScreen::In)
 		{
 		    bool focus = false;
 		    CompOption *o = screen->getOption ("click_to_focus");
@@ -1423,8 +1441,8 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		    if (w->id () == dndTarget)
 			sendDndStatusMessage (event->xclient.data.l[0]);
 
-		    if (grab			&&
-			state != SCALE_STATE_IN &&
+		    if (grab			 &&
+			state != ScaleScreen::In &&
 			w->id () == dndTarget)
 		    {
 			int x = event->xclient.data.l[2] >> 16;
@@ -1468,8 +1486,8 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		{
 		    int option;
 
-		    if (grab			&&
-			state != SCALE_STATE_IN &&
+		    if (grab			 &&
+			state != ScaleScreen::In &&
 			w->id () == dndTarget)
 		    {
 			CompOption::Vector o (0);
@@ -1511,12 +1529,12 @@ PrivateScaleWindow::damageRect (bool initial, const CompRect &rect)
 	{
 	    if (spScreen->layoutThumbs ())
 	    {
-		spScreen->state = SCALE_STATE_OUT;
+		spScreen->state = ScaleScreen::Out;
 		spScreen->cScreen->damageScreen ();
 	    }
 	}
     }
-    else if (spScreen->state == SCALE_STATE_WAIT)
+    else if (spScreen->state == ScaleScreen::Wait)
     {
 	if (slot)
 	{
@@ -1559,8 +1577,6 @@ static const CompMetadata::OptionInfo scaleOptionInfo[] = {
     { "initiate_output_key", "key", 0,
       SCALEBIND(ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
     { "show_desktop", "bool", 0, 0, 0 },
-    { "relayout_slots", "action", 0,
-      PrivateScaleScreen::scaleRelayoutSlots, 0 },
     { "spacing", "int", "<min>0</min>", 0, 0 },
     { "speed", "float", "<min>0.1</min>", 0, 0 },
     { "timestep", "float", "<min>0.1</min>", 0, 0 },
@@ -1596,7 +1612,6 @@ ScaleWindow::~ScaleWindow ()
     delete priv;
 }
 
-
 PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
     cScreen (CompositeScreen::get (s)),
     gScreen (GLScreen::get (s)),
@@ -1610,11 +1625,10 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
     grab (false),
     grabIndex (0),
     dndTarget (None),
-    state (SCALE_STATE_NONE),
+    state (ScaleScreen::Idle),
     moreAdjust (false),
     cursor (0),
-    nSlots (0),
-    currentMatch (&match)
+    nSlots (0)
 {
     if (!scaleVTable->getMetadata ()->initOptions (scaleOptionInfo,
 						   SCALE_OPTION_NUM, opt))
@@ -1666,9 +1680,9 @@ PrivateScaleWindow::PrivateScaleWindow (CompWindow *w) :
     lastThumbOpacity (0.0)
 {
     CompositeWindowInterface::setHandler (cWindow,
-					  spScreen->state != SCALE_STATE_NONE);
+					  spScreen->state != ScaleScreen::Idle);
     GLWindowInterface::setHandler (gWindow,
-				   spScreen->state != SCALE_STATE_NONE);
+				   spScreen->state != ScaleScreen::Idle);
 }
 
 PrivateScaleWindow::~PrivateScaleWindow ()
