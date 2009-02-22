@@ -42,7 +42,7 @@ class GLMatrix {
 	float& operator[] (unsigned int pos);
 
 	void reset ();
-	void toScreenSpace (CompOutput *output, float z);
+	void toScreenSpace (const CompOutput *output, float z);
 
 	void rotate (const float angle, const float x,
 		     const float y, const float z);

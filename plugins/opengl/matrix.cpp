@@ -423,8 +423,8 @@ GLMatrix::translate (const GLVector& vector)
 }
 
 void
-GLMatrix::toScreenSpace (CompOutput *output,
-			   float      z)
+GLMatrix::toScreenSpace (const CompOutput *output,
+			 float            z)
 {
     translate (-0.5f, -0.5f, z);
     scale (1.0f / output->width (), -1.0f / output->height (), 1.0f);
