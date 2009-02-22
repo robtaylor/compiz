@@ -672,24 +672,24 @@ CompOption::operator= (const CompOption &option)
 
 
 bool
-CompOption::getBoolOptionNamed (Vector &options, CompString name,
-				bool defaultValue)
+CompOption::getBoolOptionNamed (const Vector&     options,
+				const CompString& name,
+				bool              defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeBool &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeBool && o.priv->name == name)
 	    return o.priv->value.b ();
 
     return defaultValue;
 }
 
 int
-CompOption::getIntOptionNamed (Vector &options, CompString name,
-			       int defaultValue)
+CompOption::getIntOptionNamed (const Vector&     options,
+			       const CompString& name,
+			       int               defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeInt &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeInt && o.priv->name == name)
 	    return o.priv->value.i ();
 
     return defaultValue;
@@ -697,12 +697,12 @@ CompOption::getIntOptionNamed (Vector &options, CompString name,
 
 
 float
-CompOption::getFloatOptionNamed (Vector &options, CompString name,
-				 float defaultValue)
+CompOption::getFloatOptionNamed (const Vector&     options,
+				 const CompString& name,
+				 const float&      defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeFloat &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeFloat && o.priv->name == name)
 	    return o.priv->value.f ();
 
     return defaultValue;
@@ -710,12 +710,12 @@ CompOption::getFloatOptionNamed (Vector &options, CompString name,
 
 
 CompString
-CompOption::getStringOptionNamed (Vector &options, CompString name,
-				  CompString defaultValue)
+CompOption::getStringOptionNamed (const Vector&     options,
+				  const CompString& name,
+				  const CompString& defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeString &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeString && o.priv->name == name)
 	    return o.priv->value.s ();
 
     return defaultValue;
@@ -723,25 +723,25 @@ CompOption::getStringOptionNamed (Vector &options, CompString name,
 
 
 unsigned short *
-CompOption::getColorOptionNamed (Vector &options, CompString name,
-				 unsigned short *defaultValue)
+CompOption::getColorOptionNamed (const Vector&        options,
+				 const CompString&    name,
+				 unsigned short       *defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeColor &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeColor && o.priv->name == name)
 	    return o.priv->value.c ();
 
     return defaultValue;
 }
 
 
-CompMatch &
-CompOption::getMatchOptionNamed (Vector &options, CompString name,
-				 CompMatch &defaultValue)
+CompMatch
+CompOption::getMatchOptionNamed (const Vector&     options,
+				 const CompString& name,
+				 const CompMatch&  defaultValue)
 {
-    foreach (CompOption &o, options)
-	if (o.priv->type == CompOption::TypeMatch &&
-	    o.priv->name.compare(name) == 0)
+    foreach (const CompOption &o, options)
+	if (o.priv->type == CompOption::TypeMatch && o.priv->name == name)
 	    return o.priv->value.match ();
 
     return defaultValue;

@@ -150,26 +150,35 @@ class CompOption {
 	static CompOption * findOption (Vector &options, CompString name,
 					unsigned int *index = NULL);
 
-	static bool getBoolOptionNamed (Vector &options, CompString name,
-					bool defaultValue = false);
+	static bool
+	getBoolOptionNamed (const Vector& options,
+			    const CompString& name,
+			    bool defaultValue = false);
 
-	static int getIntOptionNamed (Vector &options, CompString name,
-				      int defaultValue = 0);
+	static int
+	getIntOptionNamed (const Vector& options,
+			   const CompString& name,
+			   int defaultValue = 0);
 
-	static float getFloatOptionNamed (Vector &options, CompString name,
-					  float defaultValue = 0.0);
+	static float
+	getFloatOptionNamed (const Vector& options,
+			     const CompString& name,
+			     const float& defaultValue = 0.0);
 
-	static CompString getStringOptionNamed (Vector &options,
-						CompString name,
-						CompString defaultValue = "");
+	static CompString
+	getStringOptionNamed (const Vector& options,
+			      const CompString& name,
+			      const CompString& defaultValue = "");
 
-	static unsigned short * getColorOptionNamed (Vector &options,
-						     CompString name,
-						     unsigned short *defaultValue);
+	static unsigned short *
+	getColorOptionNamed (const Vector& options,
+			     const CompString& name,
+			     unsigned short *defaultValue);
 
-	static CompMatch & getMatchOptionNamed (Vector &options,
-						CompString name,
-						CompMatch &defaultValue);
+	static CompMatch
+	getMatchOptionNamed (const Vector& options,
+			     const CompString& name,
+			     const CompMatch& defaultValue);
 
 	static CompString typeToString (Type type);
 
