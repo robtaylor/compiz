@@ -39,6 +39,8 @@
 #include "privatescreen.h"
 #include "privatewindow.h"
 
+const CompMatch CompMatch::emptyMatch;
+
 class CoreExp : public CompMatch::Expression {
     public:
 	virtual ~CoreExp () {};
@@ -609,7 +611,7 @@ CompMatch::update ()
     matchResetOps (priv->op.op);
     matchUpdateOps (priv->op.op);
 }
-	
+
 bool
 CompMatch::evaluate (CompWindow *window)
 {
@@ -617,9 +619,15 @@ CompMatch::evaluate (CompWindow *window)
 }
 
 CompString
-CompMatch::toString ()
+CompMatch::toString () const
 {
     return matchOpsToString (priv->op.op);
+}
+
+bool
+CompMatch::isEmpty () const
+{
+    return (*this == emptyMatch);
 }
 
 CompMatch &
@@ -712,7 +720,13 @@ CompMatch::operator| (const CompString &str)
 }
 
 bool
-CompMatch::operator== (const CompMatch &match)
+CompMatch::operator== (const CompMatch &match) const
 {
     return matchOpsEqual (priv->op.op, match.priv->op.op);
+}
+
+bool
+CompMatch::operator!= (const CompMatch &match) const
+{
+    return !(*this == match);
 }

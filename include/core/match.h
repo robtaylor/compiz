@@ -49,10 +49,13 @@ class CompMatch {
 	CompMatch (const CompMatch &);
 	~CompMatch ();
 
+	static const CompMatch emptyMatch;
+
 	void update ();
 	bool evaluate (CompWindow *window);
 
-	CompString toString ();
+	CompString toString () const;
+	bool isEmpty () const;
 
 	CompMatch & operator= (const CompMatch &);
 	CompMatch & operator&= (const CompMatch &);
@@ -69,7 +72,8 @@ class CompMatch {
 	const CompMatch & operator& (const CompString &);
 	const CompMatch & operator| (const CompString &);
 
-	bool operator== (const CompMatch &);
+	bool operator== (const CompMatch &) const;
+	bool operator!= (const CompMatch &) const;
 
     private:
 	PrivateMatch *priv;
