@@ -27,6 +27,7 @@
  */
 
 #include "ini.h"
+#include <errno.h>
 #include <boost/lexical_cast.hpp>
 
 COMPIZ_PLUGIN_20081216 (ini, IniPluginVTable)
@@ -52,7 +53,7 @@ IniFile::open (bool write)
     if (homeDir.empty ())
 	return false;
 
-    filePath =  homeDir;
+    filePath = homeDir;
     if (strcmp (plugin->vTable->name ().c_str (), "core") == 0)
 	filePath += "general";
     else
@@ -61,13 +62,8 @@ IniFile::open (bool write)
 
     mode = write ? std::ios::out : std::ios::in;
     optionFile.open (filePath.c_str (), mode);
-    if (optionFile.fail ())
-    {
-	mkdir (homeDir.c_str (), 0700);
-	optionFile.open (filePath.c_str (), mode);
-    }
-
-    return true;
+    
+    return !optionFile.fail ();
 }
 
 void
@@ -83,9 +79,6 @@ IniFile::load ()
 	return;
 
     if (!open (false))
-	return;
-
-    if (optionFile.fail ())
     {
 	compLogMessage ("ini", CompLogLevelWarn,
 			"Could not open config for plugin %s - using defaults.",
@@ -471,6 +464,33 @@ IniScreen::getHomeDir ()
 }
 
 bool
+IniScreen::createDir (const CompString& path)
+{
+    size_t pos;
+
+    if (mkdir (path.c_str (), 0700) == 0)
+	return true;
+
+    /* did it already exist? */
+    if (errno == EEXIST)
+	return true;
+
+    /* was parent present? if yes, fail */
+    if (errno != ENOENT)
+	return false;
+
+    /* skip last character which may be a '/' */
+    pos = path.rfind ('/', path.size () - 2);
+    if (pos == CompString::npos)
+	return false;
+
+    if (!createDir (path.substr (0, pos)))
+	return false;
+
+    return (mkdir (path.c_str (), 0700) == 0);
+}
+
+bool
 IniScreen::setOptionForPlugin (const char        *plugin,
 			       const char        *name,
 			       CompOption::Value &v)
@@ -520,7 +540,7 @@ IniScreen::IniScreen (CompScreen *screen) :
     int        mask;
 
     homeDir = getHomeDir ();
-    if (homeDir.empty ())
+    if (homeDir.empty () || !createDir (homeDir))
     {
 	setFailed ();
 	return;
