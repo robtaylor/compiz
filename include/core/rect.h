@@ -48,6 +48,7 @@ class CompRect {
 
 	void setGeometry (int, int, int, int);
 
+	bool contains (const CompPoint &) const;
 	bool operator== (const CompRect &) const;
 	bool operator!= (const CompRect &) const;
 

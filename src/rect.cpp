@@ -86,6 +86,21 @@ CompRect::setGeometry (int x1, int x2, int y1, int y2)
 }
 
 bool
+CompRect::contains (const CompPoint& point) const
+{
+    if (point.x () < x1 ())
+	return false;
+    if (point.x () > x2 ())
+	return false;
+    if (point.y () < y1 ())
+	return false;
+    if (point.y () > y2 ())
+	return false;
+
+    return true;
+}
+
+bool
 CompRect::operator== (const CompRect &rect) const
 {
     if (mRegion.extents.x1 != rect.mRegion.extents.x1)
