@@ -4106,6 +4106,8 @@ PrivateWindow::processMap ()
 
 	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity);
 
+	window->validateResizeRequest (xwcm, &xwc, ClientTypeApplication);
+
 	CompPoint pos (xwc.x, xwc.y);
 	if (window->place (pos))
 	{
@@ -4113,8 +4115,6 @@ PrivateWindow::processMap ()
 	    xwc.y = pos.y ();
 	    xwcm |= CWX | CWY;
 	}
-
-	window->validateResizeRequest (xwcm, &xwc, ClientTypeApplication);
 
 	if (xwcm)
 	    window->configureXWindow (xwcm, &xwc);

@@ -32,6 +32,7 @@ static const CompMetadata::OptionInfo placeOptionInfo[] = {
     { "position_matches", "list", "<type>match</type>", 0, 0 },
     { "position_x_values", "list", "<type>int</type>", 0, 0 },
     { "position_y_values", "list", "<type>int</type>", 0, 0 },
+    { "position_constrain_workarea", "list", "<type>bool</type>", 0, 0 },
     { "viewport_matches", "list", "<type>match</type>", 0, 0 },
     { "viewport_x_values", "list",
 	"<type>int</type><min>1</min><max>32</max>", 0, 0 },
@@ -55,6 +56,89 @@ PlaceScreen::PlaceScreen (CompScreen *screen) :
 
 PlaceScreen::~PlaceScreen ()
 {
+}
+
+static void
+getWindowExtentsRect (CompWindow *w,
+		      XRectangle &rect)
+{
+    rect.x      = w->serverX () - w->input ().left;
+    rect.y      = w->serverY () - w->input ().top;
+    rect.width  = w->serverWidth ();
+    rect.height = w->serverHeight ();
+}
+
+void
+PlaceScreen::handleScreenSizeChange (int width,
+				     int height)
+{
+    int            vpX, vpY, shiftX, shiftY;
+    XRectangle     extents;
+    unsigned int   mask;
+    XWindowChanges xwc;
+
+    foreach (CompWindow *w, screen->windows ())
+    {
+	if (!w->managed ())
+	    continue;
+	
+	if (w->wmType () & (CompWindowTypeDockMask |
+			    CompWindowTypeDesktopMask))
+	    continue;
+
+	mask = 0;
+	getWindowExtentsRect (w, extents);
+
+	vpX = extents.x / screen->width ();
+	if (extents.x < 0)
+	    vpX -= 1;
+	vpY = extents.y / screen->height ();
+	if (extents.y < 0)
+	    vpY -= 1;
+
+	shiftX = vpX * (width - screen->width ());
+	shiftY = vpY * (height - screen->height ());
+
+	extents.x = extents.x % screen->width ();
+	if (extents.x < 0)
+	    extents.x += screen->width ();
+	extents.y = extents.y % screen->height ();
+	if (extents.y < 0)
+	    extents.y += screen->height ();
+
+	if (extents.x + extents.width > width)
+	    shiftX += width - extents.x - extents.width;
+	if (extents.y + extents.height > height)
+	    shiftY += height - extents.y - extents.height;
+	
+	if (shiftX)
+	{
+	    mask |= CWX;
+	    xwc.x = w->serverX () + shiftX;
+	}
+
+	if (shiftY)
+	{
+	    mask |= CWY;
+	    xwc.y = w->serverY () + shiftY;
+	}
+
+	if (mask)
+	    w->configureXWindow (mask, &xwc);
+    }
+}
+
+void
+PlaceScreen::handleEvent (XEvent *event)
+{
+    if (event->type == ConfigureNotify &&
+	event->xconfigure.window == screen->root ())
+    {
+	handleScreenSizeChange (event->xconfigure.width,
+				event->xconfigure.height);
+    }
+
+    screen->handleEvent (event);
 }
 
 CompOption::Vector &
@@ -191,6 +275,12 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 
     window->validateResizeRequest (mask, xwc, source);
 
+    if (!mask)
+	return;
+
+    if (source == ClientTypePager)
+	return;
+
     if (window->state () & CompWindowStateFullscreenMask)
 	return;
 
@@ -217,11 +307,11 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
        sizes as we don't need to validate movements to other viewports;
        we are only interested in inner-viewport movements */
     x = xwc->x % screen->width ();
-    if (x < 0)
+    if ((x + xwc->width) < 0)
 	x += screen->width ();
 
     y = xwc->y % screen->height ();
-    if (y < 0)
+    if ((y + xwc->height) < 0)
 	y += screen->height ();
 
     left   = x - window->input ().left;
@@ -237,7 +327,12 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
     if (xwc->width >= workArea.width &&
 	xwc->height >= workArea.height)
     {
-	sendMaximizationRequest ();
+	if ((window->actions () & MAXIMIZE_STATE) == MAXIMIZE_STATE &&
+	    (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))   &&
+	    !(window->state () & CompWindowStateFullscreenMask))
+	{
+	    sendMaximizationRequest ();
+	}
     }
 
     if ((right - left) > workArea.width)
@@ -322,17 +417,19 @@ PlaceWindow::doPlacement (CompPoint &pos)
     XRectangle        workArea;
     CompPoint         targetVp;
     PlacementStrategy strategy;
+    bool              keepInWorkarea;
 
     PLACE_SCREEN (screen);
 
-    strategy = getStrategy ();
-    if (strategy == NoPlacement)
-	return;
-
-    if (matchPosition (pos))
+    if (matchPosition (pos, keepInWorkarea))
     {
-	/* FIXME: perhaps ConstrainOnly? */
-	strategy = NoPlacement;
+	strategy = keepInWorkarea ? ConstrainOnly : NoPlacement;
+    }
+    else
+    {
+	strategy = getStrategy ();
+	if (strategy == NoPlacement)
+	    return;
     }
 
     const CompOutput &output = getPlacementOutput (strategy, pos);
@@ -700,16 +797,6 @@ PlaceWindow::placeSmart (XRectangle &workArea,
 }
 
 static void
-getWindowExtentsRect (CompWindow *w,
-		      XRectangle &rect)
-{
-    rect.x      = w->serverX () - w->input ().left;
-    rect.y      = w->serverY () - w->input ().top;
-    rect.width  = w->serverWidth ();
-    rect.height = w->serverHeight ();
-}
-
-static void
 centerTileRectInArea (XRectangle &rect,
 		      XRectangle &workArea)
 {
@@ -1065,7 +1152,10 @@ PlaceWindow::getStrategy ()
        (window->type () & (CompWindowTypeDialogMask |
 			   CompWindowTypeModalDialogMask)))
     {
-	return PlaceOverParent;
+	CompWindow *parent = screen->findWindow (window->transientFor ());
+
+	if (parent && parent->managed ())
+	    return PlaceOverParent;
     }
 
     if (window->type () & (CompWindowTypeDialogMask      |
@@ -1161,35 +1251,31 @@ PlaceWindow::constrainToWorkarea (XRectangle &workArea,
 				  CompPoint  &pos)
 {
     CompWindowExtents extents;
-    int               width, height;
+    int               delta;
 
     extents.left   = pos.x ()- window->input ().left;
     extents.top    = pos.y () - window->input ().top;
     extents.right  = extents.left + window->serverWidth ();
     extents.bottom = extents.top + window->serverHeight ();
 
-    width  = extents.right - extents.left;
-    height = extents.bottom - extents.top;
+    delta = workArea.x + workArea.width - extents.right;
+    if (delta < 0)
+	extents.left += delta;
 
-    if (extents.left < workArea.x)
-    {
-	pos.setX (pos.x () + workArea.x - extents.left);
-    }
-    else if (width <= workArea.width &&
-	     extents.right > workArea.x + workArea.width)
-    {
-	pos.setX (pos.x () + workArea.x + workArea.width - extents.right);
-    }
+    delta = workArea.x - extents.left;
+    if (delta > 0)
+	extents.left += delta;
 
-    if (extents.top < workArea.y)
-    {
-	pos.setY (pos.y () + workArea.y - extents.top);
-    }
-    else if (height <= workArea.height &&
-	     extents.bottom > workArea.y + workArea.height)
-    {
-	pos.setY (pos.y () + workArea.y + workArea.height - extents.bottom);
-    }
+    delta = workArea.y + workArea.height - extents.bottom;
+    if (delta < 0)
+	extents.top += delta;
+
+    delta = workArea.y - extents.top;
+    if (delta > 0)
+	extents.top += delta;
+
+   pos.setX (extents.left + window->input ().left);
+   pos.setY (extents.top  + window->input ().top);
 }
 
 bool
@@ -1234,7 +1320,9 @@ bool
 PlaceWindow::matchXYValue (CompOption::Value::Vector &matches,
 			   CompOption::Value::Vector &xValues,
 			   CompOption::Value::Vector &yValues,
-			   CompPoint                 &pos)
+			   CompPoint                 &pos,
+			   CompOption::Value::Vector *constrainValues,
+			   bool                      *keepInWorkarea)
 {
     int i, min;
 
@@ -1251,6 +1339,14 @@ PlaceWindow::matchXYValue (CompOption::Value::Vector &matches,
 	    pos.setX (xValues[i].i ());
 	    pos.setY (yValues[i].i ());
 
+	    if (keepInWorkarea)
+	    {
+		if (constrainValues && constrainValues->size () > i)
+		    *keepInWorkarea = (*constrainValues)[i].b ();
+		else
+		    *keepInWorkarea = true;
+	    }
+
 	    return true;
 	}
     }
@@ -1259,7 +1355,8 @@ PlaceWindow::matchXYValue (CompOption::Value::Vector &matches,
 }
 
 bool
-PlaceWindow::matchPosition (CompPoint &pos)
+PlaceWindow::matchPosition (CompPoint &pos,
+			    bool      &keepInWorkarea)
 {
     PLACE_SCREEN (screen);
 
@@ -1267,7 +1364,9 @@ PlaceWindow::matchPosition (CompPoint &pos)
 	ps->opt[PLACE_OPTION_POSITION_MATCHES].value ().list (),
 	ps->opt[PLACE_OPTION_POSITION_X_VALUES].value ().list (),
 	ps->opt[PLACE_OPTION_POSITION_Y_VALUES].value ().list (),
-	pos);
+	pos,
+	&ps->opt[PLACE_OPTION_POSITION_CONSTRAIN].value ().list (),
+	&keepInWorkarea);
 }
 
 bool
