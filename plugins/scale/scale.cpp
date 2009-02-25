@@ -1260,8 +1260,9 @@ ScaleScreen::relayoutSlots (const CompMatch& match)
     {
 	priv->state = ScaleScreen::Out;
 	priv->moveFocusWindow (0, 0);
-	priv->cScreen->damageScreen ();
     }
+	
+    priv->cScreen->damageScreen ();
 }
 
 void
