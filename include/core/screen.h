@@ -66,7 +66,7 @@ typedef int CompFileWatchHandle;
 typedef int CompWatchFdHandle;
 
 struct CompFileWatch {
-    char		*path;
+    CompString		path;
     int			mask;
     FileWatchCallBack   callBack;
     CompFileWatchHandle handle;

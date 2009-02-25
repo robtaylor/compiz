@@ -103,6 +103,8 @@ GLTexture::GLTexture () :
 
 GLTexture::~GLTexture ()
 {
+    if (priv)
+	delete priv;
 }
 
 PrivateTexture::PrivateTexture (GLTexture *texture) :

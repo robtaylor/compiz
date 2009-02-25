@@ -1702,7 +1702,7 @@ DecorScreen::~DecorScreen ()
 {
     for (unsigned int i = 0; i < DECOR_NUM; i++)
 	if (decor[i])
-	    delete decor[i];
+	    Decoration::release (decor[i]);
 }
 
 DecorWindow::DecorWindow (CompWindow *w) :

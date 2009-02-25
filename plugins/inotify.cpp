@@ -130,7 +130,7 @@ InotifyScreen::fileWatchAdded (CompFileWatch *fileWatch)
     InotifyWatch iw;
 
     iw.handle = fileWatch->handle;
-    iw.wd     = inotify_add_watch (fd, fileWatch->path,
+    iw.wd     = inotify_add_watch (fd, fileWatch->path.c_str (),
 				   inotifyMask (fileWatch));
     if (iw.wd < 0)
     {

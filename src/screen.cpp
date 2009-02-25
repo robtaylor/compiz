@@ -184,7 +184,7 @@ CompScreen::addFileWatch (const char        *path,
     if (!fileWatch)
 	return 0;
 
-    fileWatch->path	= strdup (path);
+    fileWatch->path	= path;
     fileWatch->mask	= mask;
     fileWatch->callBack = callBack;
     fileWatch->handle   = priv->lastFileWatchHandle++;
@@ -4789,14 +4789,14 @@ CompScreen::~CompScreen ()
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
-    XSync (priv->dpy, False);
-    XCloseDisplay (priv->dpy);
-
     if (priv->modMap)
 	XFreeModifiermap (priv->modMap);
 
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
+
+    XSync (priv->dpy, False);
+    XCloseDisplay (priv->dpy);
 
     delete priv;
 
