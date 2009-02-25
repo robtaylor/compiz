@@ -41,6 +41,7 @@
      (w)->attrib.x - (w)->output.left >= (int) screen->width () || \
      (w)->attrib.y - (w)->output.top >= (int) screen->height () )
 
+typedef CompWindowExtents CompFullscreenMonitorSet;
 
 class PrivateWindow {
 
@@ -59,7 +60,6 @@ class PrivateWindow {
 	bool initializeSyncCounter ();
 
 	bool isGroupTransient (Window clientLeader);
-
 
 	static bool stackLayerCheck (CompWindow *w,
 				     Window     clientLeader,
@@ -186,6 +186,8 @@ class PrivateWindow {
 
 	void processMap ();
 
+	void setFullscreenMonitors (CompFullscreenMonitorSet *monitors);
+
 	static unsigned int windowTypeFromString (const char *str);
 
 	static int compareWindowActiveness (CompWindow *w1,
@@ -237,6 +239,9 @@ class PrivateWindow {
 
 	Time initialTimestamp;
 	Bool initialTimestampSet;
+
+	bool     fullscreenMonitorsSet;
+	CompRect fullscreenMonitorRect;
 
 	bool placed;
 	bool minimized;

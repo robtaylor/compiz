@@ -123,6 +123,8 @@ namespace Atoms {
 
     extern Atom wmSyncRequestCounter;
 
+    extern Atom wmFullscreenMonitors;
+
     extern Atom closeWindow;
     extern Atom wmMoveResize;
     extern Atom moveResizeWindow;

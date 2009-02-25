@@ -409,6 +409,55 @@ PrivateWindow::getStartupId ()
 }
 
 void
+PrivateWindow::setFullscreenMonitors (CompFullscreenMonitorSet *monitors)
+{
+    bool         hadFsMonitors = fullscreenMonitorsSet;
+    unsigned int outputs = screen->outputDevs ().size ();
+
+    fullscreenMonitorsSet = false;
+
+    if (monitors                   &&
+	monitors->left   < outputs &&
+	monitors->right  < outputs &&
+	monitors->top    < outputs &&
+	monitors->bottom < outputs)
+    {
+	CompRect fsRect (screen->outputDevs ()[monitors->left].x1 (),
+			 screen->outputDevs ()[monitors->top].y1 (),
+			 screen->outputDevs ()[monitors->right].x2 (),
+			 screen->outputDevs ()[monitors->bottom].y2 ());
+
+	if (fsRect.x1 () < fsRect.x2 () && fsRect.y1 () < fsRect.y2 ())
+	{
+	    fullscreenMonitorsSet = true;
+	    fullscreenMonitorRect = fsRect;
+	}
+    }
+
+    if (fullscreenMonitorsSet)
+    {
+	long data[4];
+
+	data[0] = monitors->top;
+	data[1] = monitors->bottom;
+	data[2] = monitors->left;
+	data[3] = monitors->right;
+
+	XChangeProperty (screen->dpy (), id, Atoms::wmFullscreenMonitors,
+			 XA_CARDINAL, 32, PropModeReplace,
+			 (unsigned char *) data, 4);
+    }
+    else if (hadFsMonitors)
+    {
+	XDeleteProperty (screen->dpy (), id, Atoms::wmFullscreenMonitors);
+    }
+
+    if (state & CompWindowStateFullscreenMask)
+	if (fullscreenMonitorsSet || hadFsMonitors)
+	    window->updateAttributes (CompStackingUpdateModeNone);
+}
+
+void
 CompWindow::changeState (unsigned int newState)
 {
     unsigned int oldState;
@@ -2297,7 +2346,7 @@ CompWindow::configureXWindow (unsigned int valueMask,
 }
 
 int
-PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
+PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 				     CompWindow::Geometry old)
 {
     XRectangle workArea;
@@ -2318,11 +2367,24 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
     {
 	saveGeometry (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 
-	xwc->width	  = screen->outputDevs ()[output].width ();
-	xwc->height	  = screen->outputDevs ()[output].height ();
+	if (fullscreenMonitorsSet)
+	{
+	    xwc->x      = x + fullscreenMonitorRect.x ();
+	    xwc->y      = y + fullscreenMonitorRect.y ();
+	    xwc->width  = fullscreenMonitorRect.width ();
+	    xwc->height = fullscreenMonitorRect.height ();
+	}
+	else
+	{
+	    xwc->x      = x + screen->outputDevs ()[output].x ();
+	    xwc->y      = y + screen->outputDevs ()[output].y ();
+	    xwc->width  = screen->outputDevs ()[output].width ();
+	    xwc->height = screen->outputDevs ()[output].height ();
+	}
+
 	xwc->border_width = 0;
 
-	mask |= CWWidth | CWHeight | CWBorderWidth;
+	mask |= CWX | CWY | CWWidth | CWHeight | CWBorderWidth;
     }
     else
     {
@@ -2383,18 +2445,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges *xwc,
 	    xwc->height = sizeHints.max_height;
 	    mask |= CWHeight;
 	}
-    }
 
-    if (mask & (CWWidth | CWHeight))
-    {
-	if (type & CompWindowTypeFullscreenMask)
-	{
-	    xwc->x = x + screen->outputDevs ()[output].x1 ();
-	    xwc->y = y + screen->outputDevs ()[output].y1 ();
-
-	    mask |= CWX | CWY;
-	}
-	else
+	if (mask & (CWWidth | CWHeight))
 	{
 	    int width, height, max;
 
@@ -4719,6 +4771,8 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
 
     initialTimestamp (0),
     initialTimestampSet (false),
+
+    fullscreenMonitorsSet (false),
 
     placed (false),
     minimized (false),

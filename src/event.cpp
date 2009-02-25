@@ -1475,6 +1475,21 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w)
 		w->priv->setDesktop (event->xclient.data.l[0]);
 	}
+	else if (event->xclient.message_type == Atoms::wmFullscreenMonitors)
+	{
+	    w = findWindow (event->xclient.window);
+	    if (w)
+	    {
+		CompFullscreenMonitorSet monitors;
+
+		monitors.top    = event->xclient.data.l[0];
+		monitors.bottom = event->xclient.data.l[1];
+		monitors.left   = event->xclient.data.l[2];
+		monitors.right  = event->xclient.data.l[3];
+
+		w->priv->setFullscreenMonitors (&monitors);
+	    }
+	}
 	break;
     case MappingNotify:
 	priv->updateModifierMappings ();

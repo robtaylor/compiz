@@ -120,6 +120,8 @@ namespace Atoms {
 
     Atom wmSyncRequestCounter;
 
+    Atom wmFullscreenMonitors;
+
     Atom closeWindow;
     Atom wmMoveResize;
     Atom moveResizeWindow;
@@ -282,6 +284,9 @@ namespace Atoms {
 
 	wmSyncRequestCounter =
 	    XInternAtom (dpy, "_NET_WM_SYNC_REQUEST_COUNTER", 0);
+
+	wmFullscreenMonitors =
+	    XInternAtom (dpy, "_NET_WM_FULLSCREEN_MONITORS", 0);
 
 	closeWindow      = XInternAtom (dpy, "_NET_CLOSE_WINDOW", 0);
 	wmMoveResize     = XInternAtom (dpy, "_NET_WM_MOVERESIZE", 0);

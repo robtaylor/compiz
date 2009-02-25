@@ -2064,10 +2064,15 @@ PrivateScreen::updateOutputDevices ()
 	outputDevs[i].setId (str, i);
     }
 
-
     hasOverlappingOutputs = false;
 
     setCurrentOutput (currentOutputDev);
+
+    /* clear out fullscreen monitor hints of all windows as
+       suggested on monitor layout changes in EWMH */
+    foreach (CompWindow *w, windows)
+	if (w->priv->fullscreenMonitorsSet)
+	    w->priv->setFullscreenMonitors (NULL);
 
     updateWorkarea ();
 
@@ -2424,6 +2429,8 @@ PrivateScreen::setSupported ()
     data[i++] = Atoms::wmMoveResize;
     data[i++] = Atoms::moveResizeWindow;
     data[i++] = Atoms::restackWindow;
+
+    data[i++] = Atoms::wmFullscreenMonitors;
 
     XChangeProperty (dpy, root, Atoms::supported,
 		     XA_ATOM, 32, PropModeReplace, (unsigned char *) data, i);
