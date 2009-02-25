@@ -40,7 +40,7 @@ class RegexScreen :
 
 	void handleEvent (XEvent *event);
 
-	CompMatch::Expression * matchInitExp (const CompString value);
+	CompMatch::Expression * matchInitExp (const CompString& value);
 
 	Atom roleAtom;
 	Atom visibleNameAtom;

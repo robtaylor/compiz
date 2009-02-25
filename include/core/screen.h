@@ -107,7 +107,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 	virtual bool imageToFile (CompString &path, CompString &format,
 				  CompSize &size, int stride, void *data);
 
-	virtual CompMatch::Expression *matchInitExp (const CompString value);
+	virtual CompMatch::Expression *matchInitExp (const CompString& value);
 
 	virtual void matchExpHandlerChanged ();
 	virtual void matchPropertyChanged (CompWindow *window);
@@ -343,7 +343,7 @@ class CompScreen :
 		      CompString &, CompSize &, int, void *);
 	
 	WRAPABLE_HND (10, ScreenInterface, CompMatch::Expression *,
-		      matchInitExp, const CompString);
+		      matchInitExp, const CompString&);
 	WRAPABLE_HND (11, ScreenInterface, void, matchExpHandlerChanged)
 	WRAPABLE_HND (12, ScreenInterface, void, matchPropertyChanged,
 		      CompWindow *)

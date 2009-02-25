@@ -1869,7 +1869,7 @@ ScreenInterface::imageToFile (CompString &path,
     WRAPABLE_DEF (imageToFile, path, format, size, stride, data)
 
 CompMatch::Expression *
-ScreenInterface::matchInitExp (const CompString value)
+ScreenInterface::matchInitExp (const CompString& value)
     WRAPABLE_DEF (matchInitExp, value)
 
 void

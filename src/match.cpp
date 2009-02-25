@@ -53,7 +53,7 @@ class CoreExp : public CompMatch::Expression {
 	    TypeType
 	} Type;
 	
-	CoreExp (CompString str)
+	CoreExp (const CompString& str)
 	{
 	    if (str.compare (0, 4, "xid=") == 0)
 	    {
@@ -78,11 +78,11 @@ class CoreExp : public CompMatch::Expression {
 	    }
 	    else
 	    {
-		if (str.compare (0, 5, "type=") == 0)
-		    str = str.substr (5);
+		size_t offset = (str.compare (0, 5, "type=") == 0) ? 5 : 0;
 
 		mType = TypeType;
-		priv.uval = PrivateWindow::windowTypeFromString (str.c_str ());
+		priv.uval = PrivateWindow::windowTypeFromString (
+		    str.substr (offset).c_str ());
 	    }
 	}
 
@@ -114,7 +114,7 @@ class CoreExp : public CompMatch::Expression {
 };
 
 CompMatch::Expression *
-CompScreen::matchInitExp (const CompString str)
+CompScreen::matchInitExp (const CompString& str)
 {
     WRAPABLE_HND_FUNC_RETURN(10, CompMatch::Expression *, matchInitExp, str)
 

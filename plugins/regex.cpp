@@ -38,7 +38,7 @@ class RegexExp : public CompMatch::Expression
 	    TypeName,
 	} Type;
 
-	RegexExp (CompString str, int item);
+	RegexExp (const CompString& str, int item);
 	virtual ~RegexExp ();
 
 	bool evaluate (CompWindow *w);
@@ -69,7 +69,7 @@ const RegexExp::Prefix RegexExp::prefix[] = {
     { "iname=",  6, TypeName, REG_ICASE  }
 };
 
-RegexExp::RegexExp (CompString str, int item) :
+RegexExp::RegexExp (const CompString& str, int item) :
     mRegex (NULL)
 {
     if (item < sizeof (prefix) / sizeof (prefix[0]))
@@ -153,7 +153,7 @@ RegexExp::matches (const CompString& str)
 }
 
 CompMatch::Expression *
-RegexScreen::matchInitExp (const CompString str)
+RegexScreen::matchInitExp (const CompString& str)
 {
     int item = RegexExp::matches (str);
 
