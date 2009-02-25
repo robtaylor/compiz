@@ -28,6 +28,9 @@
 #include <string.h>
 #include <dlfcn.h>
 #include <dirent.h>
+#include <errno.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <list>
 
 #include <boost/foreach.hpp>
@@ -123,19 +126,34 @@ dlloaderLoadPlugin (CompPlugin *p,
 		    const char *path,
 		    const char *name)
 {
-    char *file;
-    void *dlhand;
+    CompString  file;
+    void        *dlhand;
+    bool        loaded = false;
+    struct stat fileInfo;
 
-    file = (char *) malloc ((path ? strlen (path) : 0) + strlen (name) + 8);
-    if (!file)
-	return false;
+    if (cloaderLoadPlugin (p, path, name))
+	return true;
 
     if (path)
-	sprintf (file, "%s/lib%s.so", path, name);
-    else
-	sprintf (file, "lib%s.so", name);
+    {
+	file  = path;
+	file += "/";
+    }
 
-    dlhand = dlopen (file, RTLD_LAZY);
+    file += "lib";
+    file += name;
+    file += ".so";
+
+    if (stat (file.c_str (), &fileInfo) != 0)
+    {
+	/* file likely not present */
+	compLogMessage ("core", CompLogLevelDebug,
+			"Could not stat() file %s : %s",
+			file.c_str (), strerror (errno));
+	return false;
+    }
+
+    dlhand = dlopen (file.c_str (), RTLD_LAZY);
     if (dlhand)
     {
 	PluginGetInfoProc getInfo;
@@ -144,15 +162,13 @@ dlloaderLoadPlugin (CompPlugin *p,
 
 	dlerror ();
 
-	snprintf(sym, 1024, "getCompPluginVTable20081216_%s", name);
-	getInfo = (PluginGetInfoProc)
-	    dlsym (dlhand, sym);
+	snprintf (sym, 1024, "getCompPluginVTable20081216_%s", name);
+	getInfo = (PluginGetInfoProc) dlsym (dlhand, sym);
 
 	error = dlerror ();
 	if (error)
 	{
 	    compLogMessage ("core", CompLogLevelError, "dlsym: %s", error);
-
 	    getInfo = 0;
 	}
 
@@ -162,41 +178,34 @@ dlloaderLoadPlugin (CompPlugin *p,
 	    if (!p->vTable)
 	    {
 		compLogMessage ("core", CompLogLevelError,
-				"Couldn't get vtable from '%s' plugin", file);
-
-		dlclose (dlhand);
-		free (file);
-
-		return false;
+				"Couldn't get vtable from '%s' plugin",
+				file.c_str ());
 	    }
-	}
-	else
-	{
-	    dlclose (dlhand);
-	    free (file);
-
-	    return false;
+	    else
+	    {
+		p->devPrivate.ptr = dlhand;
+		p->devType	  = "dlloader";
+		loaded            = true;
+	    }
 	}
     }
     else
     {
-	free (file);
-
-	return cloaderLoadPlugin (p, path, name);
+	compLogMessage ("core", CompLogLevelError,
+			"Couldn't load plugin '%s' : %s",
+			file.c_str (), dlerror ());
     }
 
-    free (file);
+    if (!loaded && dlhand)
+	dlclose (dlhand);
 
-    p->devPrivate.ptr = dlhand;
-    p->devType	      = "dlloader";
-
-    return true;
+    return loaded;
 }
 
 static void
 dlloaderUnloadPlugin (CompPlugin *p)
 {
-    if (p->devType.compare ("dlloader") == 0)
+    if (p->devType == "dlloader")
     {
 	delete p->vTable;
 	dlclose (p->devPrivate.ptr);

@@ -54,6 +54,7 @@ bool replaceCurrentWm = false;
 bool indirectRendering = false;
 bool noDetection = false;
 bool useDesktopHints = true;
+bool debugOutput = false;
 
 bool useCow = true;
 
@@ -73,7 +74,8 @@ usage (void)
 	    "[--sm-client-id ID] "
 	    "[--no-detection]\n       "
 	    "[--ignore-desktop-hints] "
-	    " [--use-root-window]\n       "
+	    "[--use-root-window]\n       "
+	    "[--debug] "
 	    "[--version] "
 	    "[--help] "
 	    "[PLUGIN]...\n",
@@ -178,6 +180,10 @@ main (int argc, char **argv)
 	{
 	    printf (PACKAGE_STRING "\n");
 	    return 0;
+	}
+	else if (!strcmp (argv[i], "--debug"))
+	{
+	    debugOutput = true;
 	}
 	else if (!strcmp (argv[i], "--display"))
 	{

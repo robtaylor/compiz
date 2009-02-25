@@ -1422,6 +1422,9 @@ logMessage (const char   *componentName,
 	    CompLogLevel level,
 	    const char   *message)
 {
+    if (!debugOutput && level >= CompLogLevelDebug)
+	return;
+
     fprintf (stderr, "%s (%s) - %s: %s\n",
 	     programName, componentName,
 	     logLevelToString (level), message);
