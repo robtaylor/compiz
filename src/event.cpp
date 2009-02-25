@@ -1626,7 +1626,6 @@ CompScreen::handleEvent (XEvent *event)
 	    if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b () &&
 		priv->grabs.empty ()                                 &&
 		event->xcrossing.mode   != NotifyGrab                &&
-		event->xcrossing.mode   != NotifyUngrab              &&
 		event->xcrossing.detail != NotifyInferior)
 	    {
 		Bool raise;
