@@ -87,13 +87,13 @@ PlaceScreen::setOption (const char        *name,
     return true;
 }
 
-/* sort sort functions */
+/* sort functions */
 
 static bool
 compareLeftmost (CompWindow *a,
 		 CompWindow *b)
 {
-    int	ax, bx;
+    int ax, bx;
 
     ax = a->serverX () - a->input ().left;
     bx = b->serverX () - b->input ().left;
@@ -105,7 +105,7 @@ static bool
 compareTopmost (CompWindow *a,
 		CompWindow *b)
 {
-    int	ay, by;
+    int ay, by;
 
     ay = a->serverY () - a->input ().top;
     by = b->serverY () - b->input ().top;
@@ -117,9 +117,9 @@ static bool
 compareNorthWestCorner (CompWindow *a,
 			CompWindow *b)
 {
-    int	fromOriginA;
-    int	fromOriginB;
-    int	ax, ay, bx, by;
+    int fromOriginA;
+    int fromOriginB;
+    int ax, ay, bx, by;
 
     ax = a->serverX () - a->input ().left;
     ay = a->serverY () - a->input ().top;
@@ -1016,6 +1016,8 @@ PlaceWindow::cascadeFindNext (CompWindowList &windows,
 PlaceWindow::PlacementStrategy
 PlaceWindow::getStrategy ()
 {
+    int opt;
+
     PLACE_SCREEN (screen);
 
     if (window->type () & (CompWindowTypeDockMask       |
@@ -1030,7 +1032,8 @@ PlaceWindow::getStrategy ()
 	return NoPlacement;
     }
 
-    if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
+    if (window->wmType () & (CompWindowTypeDockMask |
+			     CompWindowTypeDesktopMask))
     {
 	/* see above */
 	return NoPlacement;
@@ -1040,7 +1043,8 @@ PlaceWindow::getStrategy ()
     if (!(window->actions () & CompWindowActionMoveMask))
 	return NoPlacement;
 
-    if (!ps->opt[PLACE_OPTION_FORCE_PLACEMENT].value ().match ().evaluate (window))
+    opt = PLACE_OPTION_FORCE_PLACEMENT;
+    if (!ps->opt[opt].value ().match ().evaluate (window))
     {
 	if ((window->type () & CompWindowTypeNormalMask) ||
 	    ps->opt[PLACE_OPTION_WORKAROUND].value ().b ())
@@ -1058,12 +1062,13 @@ PlaceWindow::getStrategy ()
     }
 
    if (window->transientFor () &&
-	(window->type () & (CompWindowTypeDialogMask | CompWindowTypeModalDialogMask)))
+       (window->type () & (CompWindowTypeDialogMask |
+			   CompWindowTypeModalDialogMask)))
     {
 	return PlaceOverParent;
     }
 
-    if (window->type () & (CompWindowTypeDialogMask |
+    if (window->type () & (CompWindowTypeDialogMask      |
 			   CompWindowTypeModalDialogMask |
 			   CompWindowTypeSplashMask))
     {
