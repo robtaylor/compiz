@@ -23,229 +23,150 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include "regexplugin.h"
 #include <limits.h>
 
-#include <regex.h>
+COMPIZ_PLUGIN_20081216 (regex, RegexPluginVTable);
 
-#include <X11/Xatom.h>
-
-#include <compiz-core.h>
-
-static CompMetadata regexMetadata;
-
-static int displayPrivateIndex;
-
-typedef struct _RegexDisplay {
-    int		     screenPrivateIndex;
-    HandleEventProc  handleEvent;
-    MatchInitExpProc matchInitExp;
-    Atom	     roleAtom;
-    Atom             visibleNameAtom;
-} RegexDisplay;
-
-typedef struct _RegexScreen {
-    int	windowPrivateIndex;
-} RegexScreen;
-
-typedef struct _RegexWindow {
-    char *title;
-    char *role;
-} RegexWindow;
-
-#define GET_REGEX_DISPLAY(d)					   \
-    ((RegexDisplay *) (d)->base.privates[displayPrivateIndex].ptr)
-
-#define REGEX_DISPLAY(d)		     \
-    RegexDisplay *rd = GET_REGEX_DISPLAY (d)
-
-#define GET_REGEX_SCREEN(s, rd)					       \
-    ((RegexScreen *) (s)->base.privates[(rd)->screenPrivateIndex].ptr)
-
-#define REGEX_SCREEN(s)							   \
-    RegexScreen *rs = GET_REGEX_SCREEN (s, GET_REGEX_DISPLAY (s->display))
-
-#define GET_REGEX_WINDOW(w, rs)					       \
-    ((RegexWindow *) (w)->base.privates[(rs)->windowPrivateIndex].ptr)
-
-#define REGEX_WINDOW(w)					       \
-    RegexWindow *rw = GET_REGEX_WINDOW  (w,		       \
-		      GET_REGEX_SCREEN  (w->screen,	       \
-		      GET_REGEX_DISPLAY (w->screen->display)))
-
-static void
-regexMatchExpFini (CompDisplay *d,
-		   CompPrivate private)
+class RegexExp : public CompMatch::Expression
 {
-    regex_t *preg = (regex_t *) private.ptr;
+    public:
+	typedef enum {
+	    TypeTitle,
+	    TypeRole,
+	    TypeClass,
+	    TypeName,
+	} Type;
 
-    if (preg)
+	RegexExp (CompString str, int item);
+	virtual ~RegexExp ();
+
+	bool evaluate (CompWindow *w);
+	static int matches (const CompString& str);
+
+    private:
+	typedef struct {
+	    const char   *name;
+	    size_t       length;
+	    Type         type;
+	    unsigned int flags;
+	} Prefix;
+	
+	static const Prefix prefix[];
+
+	Type    mType;
+	regex_t *mRegex;
+};
+
+const RegexExp::Prefix RegexExp::prefix[] = {
+    { "title=", 6, TypeTitle, 0 },
+    { "role=",  5, TypeRole, 0  },
+    { "class=", 6, TypeClass, 0 },
+    { "name=",  5, TypeName, 0  },
+    { "ititle=", 7, TypeTitle, REG_ICASE },
+    { "irole=",  6, TypeRole, REG_ICASE  },
+    { "iclass=", 7, TypeClass, REG_ICASE },
+    { "iname=",  6, TypeName, REG_ICASE  }
+};
+
+RegexExp::RegexExp (CompString str, int item) :
+    mRegex (NULL)
+{
+    if (item < sizeof (prefix) / sizeof (prefix[0]))
     {
-	regfree (preg);
-	free (preg);
-    }
-}
+	int        status;
+	CompString value;
 
-static Bool
-regexMatchExpEvalTitle (CompDisplay *d,
-			CompWindow  *w,
-			CompPrivate private)
-{
-    regex_t *preg = (regex_t *) private.ptr;
-    int	    status;
+	value  = str.substr (prefix[item].length);
+	mRegex = new regex_t;
+	status = regcomp (mRegex, value.c_str (),
+			  REG_NOSUB | prefix[item].flags);
 
-    REGEX_WINDOW (w);
-
-    if (!preg)
-	return FALSE;
-
-    if (!rw->title)
-	return FALSE;
-
-    status = regexec (preg, rw->title, 0, NULL, 0);
-    if (status)
-	return FALSE;
-
-    return TRUE;
-}
-
-static Bool
-regexMatchExpEvalRole (CompDisplay *d,
-		       CompWindow  *w,
-		       CompPrivate private)
-{
-    regex_t *preg = (regex_t *) private.ptr;
-    int	    status;
-
-    REGEX_WINDOW (w);
-
-    if (!preg)
-	return FALSE;
-
-    if (!rw->role)
-	return FALSE;
-
-    status = regexec (preg, rw->role, 0, NULL, 0);
-    if (status)
-	return FALSE;
-
-    return TRUE;
-}
-
-static Bool
-regexMatchExpEvalClass (CompDisplay *d,
-			CompWindow  *w,
-			CompPrivate private)
-{
-    regex_t *preg = (regex_t *) private.ptr;
-    int	    status;
-
-    if (!preg)
-	return FALSE;
-
-    if (!w->resClass)
-	return FALSE;
-
-    status = regexec (preg, w->resClass, 0, NULL, 0);
-    if (status)
-	return FALSE;
-
-    return TRUE;
-}
-
-static Bool
-regexMatchExpEvalName (CompDisplay *d,
-		       CompWindow  *w,
-		       CompPrivate private)
-{
-    regex_t *preg = (regex_t *) private.ptr;
-    int	    status;
-
-    if (!preg)
-	return FALSE;
-
-    if (!w->resName)
-	return FALSE;
-
-    status = regexec (preg, w->resName, 0, NULL, 0);
-    if (status)
-	return FALSE;
-
-    return TRUE;
-}
-
-static void
-regexMatchInitExp (CompDisplay  *d,
-		   CompMatchExp *exp,
-		   const char	*value)
-{
-    static struct _Prefix {
-	char		     *s;
-	int		     len;
-	CompMatchExpEvalProc eval;
-	unsigned int         flags;
-    } prefix[] = {
-	{ "title=", 6, regexMatchExpEvalTitle, 0 },
-	{ "role=",  5, regexMatchExpEvalRole, 0  },
-	{ "class=", 6, regexMatchExpEvalClass, 0 },
-	{ "name=",  5, regexMatchExpEvalName, 0  },
-	{ "ititle=", 7, regexMatchExpEvalTitle, REG_ICASE },
-	{ "irole=",  6, regexMatchExpEvalRole, REG_ICASE  },
-	{ "iclass=", 7, regexMatchExpEvalClass, REG_ICASE },
-	{ "iname=",  6, regexMatchExpEvalName, REG_ICASE  },
-    };
-    int	i;
-
-    REGEX_DISPLAY (d);
-
-    for (i = 0; i < sizeof (prefix) / sizeof (prefix[0]); i++)
-	if (strncmp (value, prefix[i].s, prefix[i].len) == 0)
-	    break;
-
-    if (i < sizeof (prefix) / sizeof (prefix[0]))
-    {
-	regex_t *preg;
-
-	preg = malloc (sizeof (regex_t));
-	if (preg)
+	if (status)
 	{
-	    int status;
+	    char errMsg[1024];
 
-	    value += prefix[i].len;
+	    regerror (status, mRegex, errMsg, sizeof (errMsg));
 
-	    status = regcomp (preg, value, REG_NOSUB | prefix[i].flags);
-	    if (status)
-	    {
-		char errMsg[1024];
+	    compLogMessage ("regex", CompLogLevelWarn,
+			    "%s = %s", errMsg, value.c_str ());
 
-		regerror (status, preg, errMsg, sizeof (errMsg));
-
-		compLogMessage (d, "regex", CompLogLevelWarn,
-				"%s = %s", errMsg, value);
-
-		regfree (preg);
-		free (preg);
-		preg = NULL;
-	    }
+	    regfree (mRegex);
+	    delete mRegex;
+	    mRegex = NULL;
 	}
 
-	exp->fini     = regexMatchExpFini;
-	exp->eval     = prefix[i].eval;
-	exp->priv.ptr = preg;
-    }
-    else
-    {
-	UNWRAP (rd, d, matchInitExp);
-	(*d->matchInitExp) (d, exp, value);
-	WRAP (rd, d, matchInitExp, regexMatchInitExp);
+	mType = prefix[item].type;
     }
 }
 
-static char *
-regexGetStringProperty (CompWindow *w,
-			Atom       propAtom,
-			Atom       formatAtom)
+RegexExp::~RegexExp ()
+{
+    if (mRegex)
+    {
+	regfree (mRegex);
+	delete mRegex;
+    }
+}
+
+bool
+RegexExp::evaluate (CompWindow *w)
+{
+    CompString  *string = NULL;
+    RegexWindow *rw = RegexWindow::get (w);
+
+    switch (mType)
+    {
+	case TypeRole:
+	    string = &rw->role;
+	    break;
+	case TypeTitle:
+	    string = &rw->title;
+	    break;
+	case TypeClass:
+	    string = &rw->resClass;
+	    break;
+	case TypeName:
+	    string = &rw->resName;
+	    break;
+    }
+
+    if (!mRegex || !string)
+	return false;
+
+    if (regexec (mRegex, string->c_str (), 0, NULL, 0))
+	return false;
+
+    return true;
+}
+
+int
+RegexExp::matches (const CompString& str)
+{
+    int i;
+
+    for (i = 0; i < sizeof (prefix) / sizeof (prefix[0]); i++)
+	if (str.compare (0, prefix[i].length, prefix[i].name) == 0)
+	    return i;
+
+    return -1;
+}
+
+CompMatch::Expression *
+RegexScreen::matchInitExp (const CompString str)
+{
+    int item = RegexExp::matches (str);
+
+    if (item >= 0)
+	return new RegexExp (str, item);
+
+    return screen->matchInitExp (str);
+}
+
+bool
+RegexWindow::getStringProperty (Atom        nameAtom,
+				Atom        typeAtom,
+				CompString& string)
 {
     Atom	  type;
     unsigned long nItems;
@@ -254,305 +175,138 @@ regexGetStringProperty (CompWindow *w,
     int		  format, result;
     char	  *retval;
 
-    result = XGetWindowProperty (w->screen->display->display,
-				 w->id, propAtom, 0, LONG_MAX,
-				 FALSE, formatAtom, &type, &format, &nItems,
-				 &bytesAfter, (unsigned char **) &str);
+    result = XGetWindowProperty (screen->dpy (), window->id (), nameAtom, 0,
+				 LONG_MAX, FALSE, typeAtom, &type, &format,
+				 &nItems, &bytesAfter, (unsigned char **) &str);
 
     if (result != Success)
-	return NULL;
+	return false;
 
-    if (type != formatAtom)
+    if (type != typeAtom)
     {
 	XFree (str);
-	return NULL;
+	return false;
     }
 
-    retval = strdup ((char *) str);
+    string = (char *) str;
 
     XFree (str);
 
-    return retval;
+    return true;
 }
 
-static char *
-regexGetWindowTitle (CompWindow *w)
+void
+RegexWindow::updateRole ()
 {
-    CompDisplay *d = w->screen->display;
-    char	*title;
+    RegexScreen *rs = RegexScreen::get (screen);
 
-    REGEX_DISPLAY (d);
-
-    title = regexGetStringProperty (w, rd->visibleNameAtom, d->utf8StringAtom);
-    if (title)
-	return title;
-
-    title = regexGetStringProperty (w, d->wmNameAtom, d->utf8StringAtom);
-    if (title)
-	return title;
-
-    return regexGetStringProperty (w, XA_WM_NAME, XA_STRING);
+    role = "";
+    getStringProperty (rs->roleAtom, XA_STRING, role);
 }
 
-static void
-regexHandleEvent (CompDisplay *d,
-		  XEvent      *event)
+void
+RegexWindow::updateTitle ()
 {
-    REGEX_DISPLAY (d);
+    RegexScreen *rs = RegexScreen::get (screen);
 
-    UNWRAP (rd, d, handleEvent);
-    (*d->handleEvent) (d, event);
-    WRAP (rd, d, handleEvent, regexHandleEvent);
+    title = "";
 
-    if (event->type == PropertyNotify)
+    if (getStringProperty (rs->visibleNameAtom, Atoms::utf8String, title))
+	return;
+
+    if (getStringProperty (Atoms::wmName, Atoms::utf8String, title))
+	return;
+
+    getStringProperty (XA_WM_NAME, XA_STRING, title);
+}
+
+void RegexWindow::updateClass ()
+{
+    XClassHint classHint;
+
+    resClass = "";
+    resName  = "";
+
+    if (!XGetClassHint (screen->dpy (), window->id (), &classHint) != Success)
+	return;
+
+    if (classHint.res_name)
     {
-	CompWindow *w;
+	resName = classHint.res_name;
+	XFree (classHint.res_name);
+    }
 
-	if (event->xproperty.atom == XA_WM_NAME)
-	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w)
-	    {
-		REGEX_WINDOW (w);
-
-		if (rw->title)
-		    free (rw->title);
-
-		rw->title = regexGetWindowTitle (w);
-
-		(*d->matchPropertyChanged) (d, w);
-	    }
-	}
-	if (event->xproperty.atom == rd->roleAtom)
-	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w)
-	    {
-		REGEX_WINDOW (w);
-
-		if (rw->role)
-		    free (rw->role);
-
-		rw->role = regexGetStringProperty (w, rd->roleAtom, XA_STRING);
-
-		(*d->matchPropertyChanged) (d, w);
-	    }
-	}
-	else if (event->xproperty.atom == XA_WM_CLASS)
-	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w)
-		(*d->matchPropertyChanged) (d, w);
-	}
+    if (classHint.res_class)
+    {
+	resClass = classHint.res_class;
+	XFree (classHint.res_class);
     }
 }
 
-static Bool
-regexRegisterExpHandler (void *closure)
+void
+RegexScreen::handleEvent (XEvent *event)
 {
-    CompDisplay *display = (CompDisplay *) closure;
+    CompWindow *w;
 
-    (*display->matchExpHandlerChanged) (display);
+    screen->handleEvent (event);
 
-    return FALSE;
-}
+    if (event->type != PropertyNotify)
+	return;
 
-static Bool
-regexInitDisplay (CompPlugin  *p,
-		  CompDisplay *d)
-{
-    RegexDisplay *rd;
+    w = screen->findWindow (event->xproperty.window);
+    if (!w)
+	return;
 
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
-
-    rd = malloc (sizeof (RegexDisplay));
-    if (!rd)
-	return FALSE;
-
-    rd->screenPrivateIndex = allocateScreenPrivateIndex (d);
-    if (rd->screenPrivateIndex < 0)
+    if (event->xproperty.atom == XA_WM_NAME)
     {
-	free (rd);
-	return FALSE;
+	RegexWindow::get (w)->updateTitle ();
+	screen->matchPropertyChanged (w);
     }
-
-    rd->roleAtom        = XInternAtom (d->display, "WM_WINDOW_ROLE", 0);
-    rd->visibleNameAtom = XInternAtom (d->display, "_NET_WM_VISIBLE_NAME", 0);
-
-    WRAP (rd, d, handleEvent, regexHandleEvent);
-    WRAP (rd, d, matchInitExp, regexMatchInitExp);
-
-    d->base.privates[displayPrivateIndex].ptr = rd;
-
-    /* one shot timeout to which will register the expression handler
-       after all screens and windows have been initialized */
-    compAddTimeout (0, 0, regexRegisterExpHandler, (void *) d);
-
-    return TRUE;
-}
-
-static void
-regexFiniDisplay (CompPlugin  *p,
-		  CompDisplay *d)
-{
-    REGEX_DISPLAY (d);
-
-    freeScreenPrivateIndex (d, rd->screenPrivateIndex);
-
-    UNWRAP (rd, d, handleEvent);
-    UNWRAP (rd, d, matchInitExp);
-
-    if (d->base.parent)
-	(*d->matchExpHandlerChanged) (d);
-
-    free (rd);
-}
-
-static Bool
-regexInitScreen (CompPlugin *p,
-		 CompScreen *s)
-{
-    RegexScreen *rs;
-
-    REGEX_DISPLAY (s->display);
-
-    rs = malloc (sizeof (RegexScreen));
-    if (!rs)
-	return FALSE;
-
-    rs->windowPrivateIndex = allocateWindowPrivateIndex (s);
-    if (rs->windowPrivateIndex < 0)
+    else if (event->xproperty.atom == roleAtom)
     {
-	free (rs);
-	return FALSE;
+	RegexWindow::get (w)->updateRole ();
+	screen->matchPropertyChanged (w);
     }
-
-    s->base.privates[rd->screenPrivateIndex].ptr = rs;
-
-    return TRUE;
-}
-
-static void
-regexFiniScreen (CompPlugin *p,
-		 CompScreen *s)
-{
-    REGEX_SCREEN (s);
-
-    freeWindowPrivateIndex (s, rs->windowPrivateIndex);
-
-    free (rs);
-}
-
-static Bool
-regexInitWindow (CompPlugin *p,
-		 CompWindow *w)
-{
-    RegexWindow *rw;
-
-    REGEX_DISPLAY (w->screen->display);
-    REGEX_SCREEN (w->screen);
-
-    rw = malloc (sizeof (RegexWindow));
-    if (!rw)
-	return FALSE;
-
-    rw->title = regexGetWindowTitle (w);
-    rw->role  = regexGetStringProperty (w, rd->roleAtom, XA_STRING);
-
-    w->base.privates[rs->windowPrivateIndex].ptr = rw;
-
-    return TRUE;
-}
-
-static void
-regexFiniWindow (CompPlugin *p,
-		 CompWindow *w)
-{
-    REGEX_WINDOW (w);
-
-    if (rw->title)
-	free (rw->title);
-
-    if (rw->role)
-	free (rw->role);
-
-    free (rw);
-}
-
-static CompBool
-regexInitObject (CompPlugin *p,
-		 CompObject *o)
-{
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) 0, /* InitCore */
-	(InitPluginObjectProc) regexInitDisplay,
-	(InitPluginObjectProc) regexInitScreen,
-	(InitPluginObjectProc) regexInitWindow
-    };
-
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
-}
-
-static void
-regexFiniObject (CompPlugin *p,
-		 CompObject *o)
-{
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) 0, /* FiniCore */
-	(FiniPluginObjectProc) regexFiniDisplay,
-	(FiniPluginObjectProc) regexFiniScreen,
-	(FiniPluginObjectProc) regexFiniWindow
-    };
-
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
-}
-
-static Bool
-regexInit (CompPlugin *p)
-{
-    if (!compInitPluginMetadataFromInfo (&regexMetadata, p->vTable->name,
-					 0, 0, 0, 0))
-	return FALSE;
-
-    displayPrivateIndex = allocateDisplayPrivateIndex ();
-    if (displayPrivateIndex < 0)
+    else if (event->xproperty.atom == XA_WM_CLASS)
     {
-	compFiniMetadata (&regexMetadata);
-	return FALSE;
+	RegexWindow::get (w)->updateClass ();
+	screen->matchPropertyChanged (w);
     }
-
-    compAddMetadataFromFile (&regexMetadata, p->vTable->name);
-
-    return TRUE;
 }
 
-static void
-regexFini (CompPlugin *p)
+RegexScreen::RegexScreen (CompScreen *s) :
+    PrivateHandler<RegexScreen, CompScreen> (s)
 {
-    freeDisplayPrivateIndex (displayPrivateIndex);
-    compFiniMetadata (&regexMetadata);
+    ScreenInterface::setHandler (s);
+
+    roleAtom        = XInternAtom (s->dpy (), "WM_WINDOW_ROLE", 0);
+    visibleNameAtom = XInternAtom (s->dpy (), "_NET_WM_VISIBLE_NAME", 0);
+
+    s->matchExpHandlerChanged ();
 }
 
-static CompMetadata *
-regexGetMetadata (CompPlugin *plugin)
+RegexScreen::~RegexScreen ()
 {
-    return &regexMetadata;
+    screen->matchInitExpSetEnabled (this, false);
+    screen->matchExpHandlerChanged ();
 }
 
-static CompPluginVTable regexVTable = {
-    "regex",
-    regexGetMetadata,
-    regexInit,
-    regexFini,
-    regexInitObject,
-    regexFiniObject,
-    0, /* GetObjectOptions */
-    0  /* SetObjectOption */
-};
-
-CompPluginVTable *
-getCompPluginInfo20070830 (void)
+RegexWindow::RegexWindow (CompWindow *w) :
+    PrivateHandler<RegexWindow, CompWindow> (w),
+    window (w)
 {
-    return &regexVTable;
+    updateRole ();
+    updateTitle ();
+    updateClass ();
+}
+
+bool
+RegexPluginVTable::init ()
+{
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
+	return false;
+
+    getMetadata ()->addFromFile (name ());
+
+    return true;
 }
