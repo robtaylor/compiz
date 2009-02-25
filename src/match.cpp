@@ -88,10 +88,8 @@ class CoreExp : public CompMatch::Expression {
 
 	bool evaluate (CompWindow *w)
 	{
-
 	    switch (mType)
 	    {
-		
 		case TypeXid:
 		    return ((unsigned int) priv.val == w->id ());
 		case TypeState:
@@ -527,6 +525,7 @@ MatchExpOp::MatchExpOp (const MatchExpOp &ex) :
     value (ex.value),
     e (ex.e)
 {
+    flags = ex.flags;
 }
 
 MatchGroupOp::MatchGroupOp () :
@@ -538,6 +537,7 @@ MatchGroupOp::MatchGroupOp (const MatchGroupOp &gr) :
     op (0)
 {
     *this = gr;
+    flags = gr.flags;
 }
 
 MatchGroupOp::~MatchGroupOp ()
@@ -698,25 +698,33 @@ CompMatch::operator= (const CompString &str)
 CompMatch &
 CompMatch::operator&= (const CompString &str)
 {
-    return CompMatch (*this) &= CompMatch (str);
+    *this &= CompMatch (str);
+
+    return *this;
 }
 
 CompMatch &
 CompMatch::operator|= (const CompString &str)
 {
-    return CompMatch (*this) |= CompMatch (str);
+    *this |= CompMatch (str);
+
+    return *this;
 }
 
 const CompMatch &
 CompMatch::operator& (const CompString &str)
 {
-    return CompMatch(*this) &= str;
+    *this &= str;
+
+    return *this;
 }
 
 const CompMatch &
 CompMatch::operator| (const CompString &str)
 {
-    return CompMatch(*this) |= str;
+    *this |= str;
+
+    return *this;
 }
 
 bool
