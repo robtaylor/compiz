@@ -59,6 +59,7 @@ class IniScreen :
 
     public:
 	static CompString getHomeDir ();
+	static bool createDir (const CompString& path);
 };
 
 class IniPluginVTable :
