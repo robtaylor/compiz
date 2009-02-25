@@ -105,7 +105,7 @@ class PrivateScaleScreen :
 
 	void activateEvent (bool activating);
 
-	void layoutSlotsForArea (CompRect, int);
+	void layoutSlotsForArea (const CompRect&, int);
 	void layoutSlots ();
 	void findBestSlots ();
 	bool fillInWindows ();

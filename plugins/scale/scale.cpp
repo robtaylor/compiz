@@ -49,7 +49,6 @@ class ScalePluginVTable :
     public:
 
 	bool init ();
-
 	void fini ();
 
 	PLUGIN_OPTION_HELPER (ScaleScreen)
@@ -63,7 +62,8 @@ PrivateScaleWindow::isNeverScaleWin () const
     if (window->overrideRedirect ())
 	return true;
 
-    if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
+    if (window->wmType () & (CompWindowTypeDockMask |
+			     CompWindowTypeDesktopMask))
 	return true;
 
     return false;
@@ -124,24 +124,24 @@ PrivateScaleScreen::activateEvent (bool activating)
 }
 
 void
-ScaleWindowInterface::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
-					    const GLMatrix &transform,
-					    const CompRegion &region,
-					    unsigned int mask)
+ScaleWindowInterface::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
+					    const GLMatrix&           transform,
+					    const CompRegion&         region,
+					    unsigned int              mask)
     WRAPABLE_DEF (scalePaintDecoration, attrib, transform, region, mask)
 
 void
-ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
-				   const GLMatrix &transform,
-				   const CompRegion &region, unsigned int mask)
+ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
+				   const GLMatrix&            transform,
+				   const CompRegion&          region,
+				   unsigned int               mask)
 {
-    WRAPABLE_HND_FUNC(0, scalePaintDecoration, attrib, transform,
-		      region, mask)
+    WRAPABLE_HND_FUNC(0, scalePaintDecoration, attrib, transform, region, mask)
 
     if (priv->spScreen->opt[SCALE_OPTION_ICON].value ().i () != SCALE_ICON_NONE)
     {
 	GLWindowPaintAttrib sAttrib (attrib);
-	GLTexture *icon;
+	GLTexture           *icon;
 
 	icon = priv->gWindow->getIcon (96, 96);
 	if (!icon)
@@ -167,7 +167,7 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
 		default:
 		    sAttrib.opacity /= 3;
 		    scale = MIN (((float) scaledWinWidth / icon->width ()),
-				((float) scaledWinHeight / icon->height ()));
+				 ((float) scaledWinHeight / icon->height ()));
 		    break;
 	    }
 
@@ -192,20 +192,18 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
 
 	    if (priv->slot)
 	    {
-		priv->delta =
-		    fabs (priv->slot->x1 - priv->window->x ()) +
-		    fabs (priv->slot->y1 - priv->window->y ()) +
-		    fabs (1.0f - priv->slot->scale) * 500.0f;
+		priv->delta = fabs (priv->slot->x1 - priv->window->x ()) +
+			      fabs (priv->slot->y1 - priv->window->y ()) +
+			      fabs (1.0f - priv->slot->scale) * 500.0f;
 	    }
 
 	    if (priv->delta)
 	    {
 		float o;
 
-		ds =
-		    fabs (priv->tx) +
-		    fabs (priv->ty) +
-		    fabs (1.0f - priv->scale) * 500.0f;
+		ds = fabs (priv->tx) +
+		     fabs (priv->ty) +
+		     fabs (1.0f - priv->scale) * 500.0f;
 
 		if (ds > priv->delta)
 		    ds = priv->delta;
@@ -230,18 +228,19 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
 
 	    mask |= PAINT_WINDOW_BLEND_MASK;
 
-	    CompRegion iconReg (0, 0, width, height);
+	    CompRegion            iconReg (0, 0, width, height);
 	    GLTexture::MatrixList ml (1);
-	    ml[0] = icon->matrix ();
 
+	    ml[0] = icon->matrix ();
 	    priv->gWindow->geometry().reset ();
+
 	    if (width && height)
 		priv->gWindow->glAddGeometry (ml, iconReg, iconReg);
 
 	    if (priv->gWindow->geometry().vCount)
 	    {
 		GLFragment::Attrib fragment (sAttrib);
-		GLMatrix wTransform (transform);
+		GLMatrix           wTransform (transform);
 
 		wTransform.scale (scale, scale, 1.0f);
 		wTransform.translate (x / scale, y / scale, 0.0f);
@@ -258,12 +257,11 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib &attrib,
 }
 
 bool
-ScaleWindowInterface::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
+ScaleWindowInterface::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
     WRAPABLE_DEF (setScaledPaintAttributes, attrib)
 
-
 bool
-ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
+ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
 {
     WRAPABLE_HND_FUNC_RETURN (1, bool, setScaledPaintAttributes, attrib)
 
@@ -293,14 +291,15 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
 	   that are not in scale mode */
 	if (!priv->isNeverScaleWin ())
 	{
-	    int moMode;
-	    moMode = priv->spScreen->opt[SCALE_OPTION_MULTIOUTPUT_MODE].
-			value ().i ();
+	    int opt, moMode, output;
+
+	    opt    = SCALE_OPTION_MULTIOUTPUT_MODE;
+	    moMode = priv->spScreen->opt[opt].value ().i ();
 
 	    switch (moMode) {
 		case SCALE_MOMODE_CURRENT:
-		    if (priv->window->outputDevice () ==
-			screen->currentOutputDev ().id ())
+		    output = screen->currentOutputDev ().id ();
+		    if (priv->window->outputDevice () == output)
 			attrib.opacity = 0;
 		    break;
 		default:
@@ -314,10 +313,10 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib &attrib)
 }
 
 bool
-PrivateScaleWindow::glPaint (const GLWindowPaintAttrib &attrib,
-			     const GLMatrix &transform,
-			     const CompRegion &region,
-			     unsigned int mask)
+PrivateScaleWindow::glPaint (const GLWindowPaintAttrib& attrib,
+			     const GLMatrix&            transform,
+			     const CompRegion&          region,
+			     unsigned int               mask)
 {
     bool status;
 
@@ -336,7 +335,7 @@ PrivateScaleWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	if (scaled)
 	{
 	    GLFragment::Attrib fragment (gWindow->lastPaintAttrib ());
-	    GLMatrix wTransform (transform);
+	    GLMatrix           wTransform (transform);
 
 	    if (mask & PAINT_WINDOW_OCCLUSION_DETECTION_MASK)
 		return false;
@@ -376,7 +375,8 @@ PrivateScaleWindow::compareWindowsDistance (ScaleWindow *w1,
 }
 
 void
-PrivateScaleScreen::layoutSlotsForArea (CompRect workArea, int nWindows)
+PrivateScaleScreen::layoutSlotsForArea (const CompRect& workArea,
+					int             nWindows)
 {
     int i, j;
     int x, y, width, height;
@@ -395,8 +395,7 @@ PrivateScaleScreen::layoutSlotsForArea (CompRect workArea, int nWindows)
 
     for (i = 0; i < lines; i++)
     {
-	n = MIN (nWindows - nSlots,
-		 ceilf ((float)nWindows / lines));
+	n = MIN (nWindows - nSlots, ceilf ((float) nWindows / lines));
 
 	x     = workArea.x () + spacing;
 	width = (workArea.width () - (n + 1) * spacing) / n;
@@ -423,7 +422,7 @@ PrivateScaleScreen::layoutSlotsForArea (CompRect workArea, int nWindows)
 SlotArea::vector
 PrivateScaleScreen::getSlotAreas ()
 {
-    int                i;
+    int                i = 0;
     CompRect           workArea;
     std::vector<float> size;
     float              sizePerWindow, sum = 0.0f;
@@ -435,7 +434,6 @@ PrivateScaleScreen::getSlotAreas ()
 
     left = windows.size ();
 
-    i = 0;
     foreach (CompOutput &o, screen->outputDevs ())
     {
 	/* determine the size of the workarea for each output device */
@@ -500,7 +498,6 @@ PrivateScaleScreen::layoutSlots ()
     if (screen->outputDevs ().size () == 1)
 	moMode = SCALE_MOMODE_CURRENT;
 
-    
     nSlots = 0;
 
     switch (moMode)
@@ -509,11 +506,8 @@ PrivateScaleScreen::layoutSlots ()
 	    {
 		SlotArea::vector slotAreas = getSlotAreas ();
 		if (slotAreas.size ())
-		{
 		    foreach (SlotArea &sa, slotAreas)
-			layoutSlotsForArea (sa.workArea,
-					    sa.nWindows);
-		}
+			layoutSlotsForArea (sa.workArea, sa.nWindows);
 	    }
 	    break;
 	case SCALE_MOMODE_CURRENT:
@@ -530,7 +524,7 @@ void
 PrivateScaleScreen::findBestSlots ()
 {
     CompWindow *w;
-    int        i, j, d, d0 = 0;
+    int        i, d, d0 = 0;
     float      sx, sy, cx, cy;
 
     foreach (ScaleWindow *sw, windows)
@@ -543,12 +537,12 @@ PrivateScaleScreen::findBestSlots ()
 	sw->priv->sid      = 0;
 	sw->priv->distance = MAXSHORT;
 
-	for (j = 0; j < nSlots; j++)
+	for (i = 0; i < nSlots; i++)
 	{
-	    if (!slots[j].filled)
+	    if (!slots[i].filled)
 	    {
-		sx = (slots[j].x2 + slots[j].x1) / 2;
-		sy = (slots[j].y2 + slots[j].y1) / 2;
+		sx = (slots[i].x2 + slots[i].x1) / 2;
+		sy = (slots[i].y2 + slots[i].y1) / 2;
 
 		cx = w->serverX () + w->width () / 2;
 		cy = w->serverY () + w->height () / 2;
@@ -559,7 +553,7 @@ PrivateScaleScreen::findBestSlots ()
 		d = sqrt (cx * cx + cy * cy);
 		if (d0 + d < sw->priv->distance)
 		{
-		    sw->priv->sid      = j;
+		    sw->priv->sid      = i;
 		    sw->priv->distance = d0 + d;
 		}
 	    }
@@ -638,7 +632,6 @@ ScaleScreen::layoutSlotsAndAssignWindows ()
 
 	/* sort windows, window with closest distance to a slot first */
 	priv->windows.sort (PrivateScaleWindow::compareWindowsDistance);
-
     } while (priv->fillInWindows ());
 
     return true;
@@ -765,20 +758,16 @@ PrivateScaleWindow::adjustScaleVelocity ()
 }
 
 bool
-PrivateScaleScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
-				   const GLMatrix &transform,
-				   const CompRegion &region,
-				   CompOutput *output,
-				   unsigned int mask)
+PrivateScaleScreen::glPaintOutput (const GLScreenPaintAttrib& sAttrib,
+				   const GLMatrix&            transform,
+				   const CompRegion&          region,
+				   CompOutput                 *output,
+				   unsigned int               mask)
 {
-    bool status;
-
     if (state != ScaleScreen::Idle)
 	mask |= PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK;
 
-    status = gScreen->glPaintOutput (sAttrib, transform, region, output, mask);
-
-    return status;
+    return gScreen->glPaintOutput (sAttrib, transform, region, output, mask);
 }
 
 void
@@ -786,15 +775,16 @@ PrivateScaleScreen::preparePaint (int msSinceLastPaint)
 {
     if (state != ScaleScreen::Idle && state != ScaleScreen::Wait)
     {
-	int        steps;
-	float      amount, chunk;
+	int   steps;
+	float amount, chunk;
 
 	amount = msSinceLastPaint * 0.05f *
-	    opt[SCALE_OPTION_SPEED].value ().f ();
-	steps  = amount /
-	    (0.5f * opt[SCALE_OPTION_TIMESTEP].value ().f ());
-	if (!steps) steps = 1;
-	chunk  = amount / (float) steps;
+		 opt[SCALE_OPTION_SPEED].value ().f ();
+	steps  = amount / (0.5f * opt[SCALE_OPTION_TIMESTEP].value ().f ());
+
+	if (!steps)
+	    steps = 1;
+	chunk = amount / (float) steps;
 
 	while (steps--)
 	{
@@ -865,7 +855,7 @@ PrivateScaleScreen::donePaint ()
 ScaleWindow *
 PrivateScaleScreen::checkForWindowAt (int x, int y)
 {
-    int        x1, y1, x2, y2;
+    int                              x1, y1, x2, y2;
     CompWindowList::reverse_iterator rit = screen->windows ().rbegin ();
 
     for (; rit != screen->windows ().rend (); rit++)
@@ -877,8 +867,10 @@ PrivateScaleScreen::checkForWindowAt (int x, int y)
 	{
 	    x1 = w->x () - w->input ().left * sw->priv->scale;
 	    y1 = w->y () - w->input ().top  * sw->priv->scale;
-	    x2 = w->x () + (w->width () + w->input ().right)  * sw->priv->scale;
-	    y2 = w->y () + (w->height () + w->input ().bottom) * sw->priv->scale;
+	    x2 = w->x () +
+		 (w->width () + w->input ().right) * sw->priv->scale;
+	    y2 = w->y () +
+		 (w->height () + w->input ().bottom) * sw->priv->scale;
 
 	    x1 += sw->priv->tx;
 	    y1 += sw->priv->ty;
@@ -919,72 +911,67 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 				    CompAction::State  state,
 				    CompOption::Vector &options)
 {
-    CompScreen *s;
-    Window     xid;
+    Window xid;
+
+    action->setState (action->state () & ~(CompAction::StateTermKey |
+					   CompAction::StateTermButton));
 
     xid = CompOption::getIntOptionNamed (options, "root");
+    if (xid && ::screen->root () != xid)
+	return false;
 
-    if (!xid || ::screen->root () == xid)
+    SCALE_SCREEN (::screen);
+
+    if (!ss->priv->grab)
+	return false;
+
+    if (ss->priv->grabIndex)
     {
-	SCALE_SCREEN (::screen);
-
-	if (ss->priv->grab)
-	{
-	    if (ss->priv->grabIndex)
-	    {
-		::screen->removeGrab (ss->priv->grabIndex, 0);
-		ss->priv->grabIndex = 0;
-	    }
-
-	    if (ss->priv->dndTarget)
-		XUnmapWindow (::screen->dpy (), ss->priv->dndTarget);
-
-	    ss->priv->grab = false;
-
-	    if (ss->priv->state != ScaleScreen::Idle)
-	    {
-		foreach (CompWindow *w, ::screen->windows ())
-		{
-		    SCALE_WINDOW (w);
-
-		    if (sw->priv->slot)
-		    {
-			sw->priv->slot   = NULL;
-			sw->priv->adjust = true;
-		    }
-		}
-
-		if (state & CompAction::StateCancel)
-		{
-		    if (::screen->activeWindow () !=
-			ss->priv->previousActiveWindow)
-		    {
-			CompWindow *w =
-			    ::screen->findWindow (ss->priv->previousActiveWindow);
-			if (w)
-			    w->moveInputFocusTo ();
-		    }
-		}
-		else if (ss->priv->state != ScaleScreen::In)
-		{
-		    CompWindow *w =
-			::screen->findWindow (ss->priv->selectedWindow);
-		    if (w)
-			w->activate ();
-		}
-
-		ss->priv->state = ScaleScreen::In;
-
-		ss->priv->cScreen->damageScreen ();
-	    }
-
-	    ss->priv->lastActiveNum = 0;
-	}
+	::screen->removeGrab (ss->priv->grabIndex, 0);
+	ss->priv->grabIndex = 0;
     }
 
-    action->setState (action->state () &
-		      ~(CompAction::StateTermKey |
-			CompAction::StateTermButton));
+    if (ss->priv->dndTarget)
+	XUnmapWindow (::screen->dpy (), ss->priv->dndTarget);
+
+    ss->priv->grab = false;
+
+    if (ss->priv->state != ScaleScreen::Idle)
+    {
+	foreach (CompWindow *w, ::screen->windows ())
+	{
+	    SCALE_WINDOW (w);
+
+	    if (sw->priv->slot)
+	    {
+		sw->priv->slot   = NULL;
+		sw->priv->adjust = true;
+	    }
+	}
+
+	if (state & CompAction::StateCancel)
+	{
+	    if (::screen->activeWindow () != ss->priv->previousActiveWindow)
+	    {
+		CompWindow *w;
+		
+		w = ::screen->findWindow (ss->priv->previousActiveWindow);
+		if (w)
+		    w->moveInputFocusTo ();
+	    }
+	}
+	else if (ss->priv->state != ScaleScreen::In)
+	{
+	    CompWindow *w = ::screen->findWindow (ss->priv->selectedWindow);
+	    if (w)
+		w->activate ();
+	}
+
+	ss->priv->state = ScaleScreen::In;
+	ss->priv->cScreen->damageScreen ();
+    }
+
+    ss->priv->lastActiveNum = 0;
 
     return false;
 }
@@ -1040,7 +1027,9 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
 	else if (state & EDGE_STATE)
 	{
 	    if (ss->priv->type == type)
-		return scaleTerminate (action, CompAction::StateCancel, options);
+		return scaleTerminate (action,
+				       CompAction::StateCancel,
+				       options);
 	}
     }
 
@@ -1151,7 +1140,9 @@ ScaleWindow::hasSlot () const
 }
 
 bool
-PrivateScaleScreen::selectWindowAt (int x, int y, bool moveInputFocus)
+PrivateScaleScreen::selectWindowAt (int  x,
+				    int  y,
+				    bool moveInputFocus)
 {
     ScaleWindow *w = checkForWindowAt (x, y);
     if (w && w->priv->isScaleWin ())
@@ -1177,7 +1168,8 @@ PrivateScaleScreen::selectWindowAt (int x, int y, bool moveInputFocus)
 }
 
 void
-PrivateScaleScreen::moveFocusWindow (int dx, int dy)
+PrivateScaleScreen::moveFocusWindow (int dx,
+				     int dy)
 {
     CompWindow *active;
     CompWindow *focus = NULL;
@@ -1269,42 +1261,39 @@ void
 PrivateScaleScreen::windowRemove (Window id)
 {
     CompWindow *w = screen->findWindow (id);
-    if (w)
+    if (!w)
+	return;
+
+    if (state != ScaleScreen::Idle && state != ScaleScreen::In)
+	return;
+
+    foreach (ScaleWindow *lw, windows)
     {
-	if (state != ScaleScreen::Idle && state != ScaleScreen::In)
+	if (lw->priv->window == w)
 	{
-	    foreach (ScaleWindow *lw, windows)
+	    if (layoutThumbs ())
 	    {
-		if (lw->priv->window == w)
-		{
-		    if (layoutThumbs ())
-		    {
-			state = ScaleScreen::Out;
-			cScreen->damageScreen ();
-			break;
-		    }
-		    else
-		    {
-    
-			CompOption::Vector o (0);
-			CompAction *action;
+		state = ScaleScreen::Out;
+		cScreen->damageScreen ();
+		break;
+	    }
+	    else
+	    {
+		CompOption::Vector o (0);
+		CompAction         *action;
 
-			/* terminate scale mode if the recently closed
-			 * window was the last scaled window */
+		/* terminate scale mode if the recently closed
+		 * window was the last scaled window */
 
-			o.push_back (CompOption ("root", CompOption::TypeInt));
-			o[0].value ().set ((int) screen->root ());
+		o.push_back (CompOption ("root", CompOption::TypeInt));
+		o[0].value ().set ((int) screen->root ());
 
-			action =
-			    &opt[SCALE_OPTION_INITIATE_EDGE].value ().action ();
-			scaleTerminate (action, CompAction::StateCancel, o);
+		action = &opt[SCALE_OPTION_INITIATE_EDGE].value ().action ();
+		scaleTerminate (action, CompAction::StateCancel, o);
 
-			action =
-			    &opt[SCALE_OPTION_INITIATE_KEY].value ().action ();
-			scaleTerminate (action, CompAction::StateCancel, o);
-			break;
-		    }
-		}
+		action = &opt[SCALE_OPTION_INITIATE_KEY].value ().action ();
+		scaleTerminate (action, CompAction::StateCancel, o);
+		break;
 	    }
 	}
     }
@@ -1315,9 +1304,9 @@ PrivateScaleScreen::hoverTimeout ()
 {
     if (grab && state != ScaleScreen::In)
     {
-	CompWindow *w;
+	CompWindow         *w;
 	CompOption::Vector o (0);
-	int	   option;
+	int	           option;
 
 	w = screen->findWindow (selectedWindow);
 	if (w)
@@ -1343,7 +1332,6 @@ PrivateScaleScreen::hoverTimeout ()
 void
 PrivateScaleScreen::handleEvent (XEvent *event)
 {
-
     switch (event->type) {
 	case KeyPress:
 	    if (screen->root () == event->xkey.root)
@@ -1362,67 +1350,55 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ButtonPress:
-	    if (event->xbutton.button == Button1)
+	    if (event->xbutton.button == Button1       &&
+		screen->root () == event->xbutton.root &&
+		grabIndex                              &&
+		state != ScaleScreen::In)
 	    {
-		if (screen->root () == event->xbutton.root)
+		XButtonEvent       *button = &event->xbutton;
+		int                option;
+		CompOption::Vector o (0);
+
+		o.push_back (CompOption ("root", CompOption::TypeInt));
+		o[0].value ().set ((int) screen->root ());
+
+		if (selectWindowAt (button->x_root, button->y_root, true))
 		{
-		    int option;
+		    option = SCALE_OPTION_INITIATE_EDGE;
+		    scaleTerminate (&opt[option].value ().action (), 0, o);
+		    option = SCALE_OPTION_INITIATE_KEY;
+		    scaleTerminate (&opt[option].value ().action (), 0, o);
+		}
+		else if (opt[SCALE_OPTION_SHOW_DESKTOP].value ().b ())
+		{
+		    CompPoint pointer (button->x_root, button->y_root);
+		    CompRect  workArea (screen->workArea ());
 
-		    if (grabIndex && state != ScaleScreen::In)
+		    if (workArea.contains (pointer))
 		    {
-			CompOption::Vector o (0);
-			o.push_back (CompOption ("root", CompOption::TypeInt));
-			o[0].value ().set ((int) screen->root ());
-
-
-			if (selectWindowAt (event->xbutton.x_root,
-					    event->xbutton.y_root,
-					    true))
-			{
-			    option = SCALE_OPTION_INITIATE_EDGE;
-			    scaleTerminate (&opt[option].value ().action (),
-					    0, o);
-			    option = SCALE_OPTION_INITIATE_KEY;
-			    scaleTerminate (&opt[option].value ().action (),
-					    0, o);
-			}
-			else if (event->xbutton.x_root > screen->workArea ().x &&
-				 event->xbutton.x_root < (screen->workArea ().x +
-							screen->workArea ().width) &&
-				event->xbutton.y_root > screen->workArea ().y &&
-				event->xbutton.y_root < (screen->workArea ().y +
-							screen->workArea ().height))
-			{
-			    if (opt[SCALE_OPTION_SHOW_DESKTOP].value ().b ())
-			    {
-				option = SCALE_OPTION_INITIATE_EDGE;
-				scaleTerminate (&opt[option].value ().action (),
-						0, o);
-				option = SCALE_OPTION_INITIATE_KEY;
-				scaleTerminate (&opt[option].value ().action (),
-						0, o);
-				screen->enterShowDesktopMode ();
-			    }
-			}
+			option = SCALE_OPTION_INITIATE_EDGE;
+			scaleTerminate (&opt[option].value ().action (), 0, o);
+			option = SCALE_OPTION_INITIATE_KEY;
+			scaleTerminate (&opt[option].value ().action (), 0, o);
+			screen->enterShowDesktopMode ();
 		    }
 		}
 	    }
 	    break;
 	case MotionNotify:
-	    if (screen->root () == event->xmotion.root)
+	    if (screen->root () == event->xmotion.root &&
+		grabIndex                              &&
+		state != ScaleScreen::In)
 	    {
-		if (grabIndex && state != ScaleScreen::In)
-		{
-		    bool focus = false;
-		    CompOption *o = screen->getOption ("click_to_focus");
+		bool       focus = false;
+		CompOption *o = screen->getOption ("click_to_focus");
 
-		    if (o && o->value ().b ())
-			focus = true;
+		if (o && o->value ().b ())
+		    focus = true;
 
-		    selectWindowAt (event->xmotion.x_root,
-				    event->xmotion.y_root,
-				    focus);
-		}
+		selectWindowAt (event->xmotion.x_root,
+				event->xmotion.y_root,
+				focus);
 	    }
 	    break;
 	case ClientMessage:
@@ -1433,7 +1409,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
-		    bool focus = false;
+		    bool       focus = false;
 		    CompOption *o = screen->getOption ("click_to_focus");
 
 		    if (o && o->value ().b ())
@@ -1459,15 +1435,11 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 			    if (hover.active ())
 			    {
 				if (w->id () != selectedWindow)
-				{
 				    hover.stop ();
-				}
 			    }
 
 			    if (!hover.active ())
-				hover.start (boost::bind (&PrivateScaleScreen::hoverTimeout, this),
-					     time, (float) time * 1.2);
-
+				hover.start (time, (float) time * 1.2);
 
 			    selectWindowAt (x, y, focus);
 			}
@@ -1480,7 +1452,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		}
 	    }
 	    else if (event->xclient.message_type == Atoms::xdndDrop ||
-		    event->xclient.message_type == Atoms::xdndLeave)
+		     event->xclient.message_type == Atoms::xdndLeave)
 	    {
 		CompWindow *w = screen->findWindow (event->xclient.window);
 		if (w)
@@ -1516,11 +1488,11 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    windowRemove (event->xdestroywindow.window);
 	    break;
     }
-
 }
 
 bool
-PrivateScaleWindow::damageRect (bool initial, const CompRect &rect)
+PrivateScaleWindow::damageRect (bool            initial,
+				const CompRect& rect)
 {
     bool status = false;
 
@@ -1550,33 +1522,34 @@ PrivateScaleWindow::damageRect (bool initial, const CompRect &rect)
     return status;
 }
 
-#define SCALEBIND(a) boost::bind (PrivateScaleScreen::scaleInitiate, _1, _2, _3, a)
+#define SCALEBIND(a)                                              \
+    boost::bind (PrivateScaleScreen::scaleInitiate, _1, _2, _3, a)
 
 static const CompMetadata::OptionInfo scaleOptionInfo[] = {
     { "initiate_edge", "edge", 0,
-      SCALEBIND(ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
     { "initiate_button", "button", 0,
-      SCALEBIND(ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
     { "initiate_key", "key", 0,
-      SCALEBIND(ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
     { "initiate_all_edge", "edge", 0,
-      SCALEBIND(ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
     { "initiate_all_button", "button", 0,
-      SCALEBIND(ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
     { "initiate_all_key", "key", 0,
-      SCALEBIND(ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
     { "initiate_group_edge", "edge", 0,
-      SCALEBIND(ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
     { "initiate_group_button", "button", 0,
-      SCALEBIND(ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
     { "initiate_group_key", "key", 0,
-      SCALEBIND(ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
     { "initiate_output_edge", "edge", 0,
-      SCALEBIND(ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
     { "initiate_output_button", "button", 0,
-      SCALEBIND(ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
     { "initiate_output_key", "key", 0,
-      SCALEBIND(ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
+      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
     { "show_desktop", "bool", 0, 0, 0 },
     { "spacing", "int", "<min>0</min>", 0, 0 },
     { "speed", "float", "<min>0.1</min>", 0, 0 },
@@ -1647,6 +1620,7 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
 
     opacity = (OPAQUE * opt[SCALE_OPTION_OPACITY].value ().i ()) / 100;
 
+    hover.setCallback (boost::bind (&PrivateScaleScreen::hoverTimeout, this));
 
     ScreenInterface::setHandler (s);
     CompositeScreenInterface::setHandler (cScreen, false);
@@ -1699,8 +1673,7 @@ ScaleScreen::getOptions ()
 CompOption *
 ScaleScreen::getOption (const char *name)
 {
-    CompOption *o = CompOption::findOption (priv->opt, name);
-    return o;
+    return CompOption::findOption (priv->opt, name);
 }
 
 bool
