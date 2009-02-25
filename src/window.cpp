@@ -1913,7 +1913,7 @@ PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 
 /* goes through the stack, top-down until we find a window we should
    stack above, normal windows can be stacked above fullscreen windows
-   if aboveFs is TRUE. */
+   (and fullscreen windows over others in their layer) if aboveFs is TRUE. */
 CompWindow *
 PrivateWindow::findSiblingBelow (CompWindow *w,
 				 bool       aboveFs)
@@ -1951,6 +1951,9 @@ PrivateWindow::findSiblingBelow (CompWindow *w,
 	    /* desktop window layer */
 	    break;
 	case CompWindowTypeFullscreenMask:
+	    if (aboveFs)
+		return below;
+	    /* otherwise fall-through */
 	case CompWindowTypeDockMask:
 	    /* fullscreen and dock layer */
 	    if (below->priv->type & (CompWindowTypeFullscreenMask |
@@ -2852,9 +2855,17 @@ CompWindow::raise ()
 {
     XWindowChanges xwc;
     int		   mask;
+    bool	   aboveFs = false;
+
+    /* an active fullscreen window should be raised over all other
+       windows in its layer */
+    if (priv->type & CompWindowTypeFullscreenMask)
+	if (priv->id == screen->activeWindow ())
+	    aboveFs = true;
 
     mask = priv->addWindowStackChanges (&xwc,
-	PrivateWindow::findSiblingBelow (this, false));
+	PrivateWindow::findSiblingBelow (this, aboveFs));
+
     if (mask)
 	configureXWindow (mask, &xwc);
 }
@@ -2961,10 +2972,21 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 
     if (stackingMode != CompStackingUpdateModeNone)
     {
-	Bool       aboveFs;
+	bool       aboveFs;
 	CompWindow *sibling;
 
 	aboveFs = (stackingMode == CompStackingUpdateModeAboveFullscreen);
+	if (priv->type & CompWindowTypeFullscreenMask)
+	{
+	    /* put active or soon-to-be-active fullscreen windows over
+	       all others in their layer */
+	    if (priv->id == screen->activeWindow () ||
+		stackingMode == CompStackingUpdateModeInitialMap)
+	    {
+		aboveFs = true;
+	    }
+	}
+
 	sibling = PrivateWindow::findSiblingBelow (this, aboveFs);
 
 	if (sibling &&
