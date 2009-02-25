@@ -872,8 +872,6 @@ PrivateWindow::updateStruts ()
     bool	  hasOld, hasNew;
     CompStruts    old, c_new;
 
-#define MIN_EMPTY 76
-
     if (priv->struts)
     {
 	hasOld = true;
@@ -921,35 +919,25 @@ PrivateWindow::updateStruts ()
 
 	if (n == 12)
 	{
-	    int gap;
-
 	    hasNew = true;
 
-	    gap = screen->width () - struts[0] - struts[1];
-	    gap -= MIN_EMPTY;
+	    c_new.left.y        = struts[4];
+	    c_new.left.width    = struts[0];
+	    c_new.left.height   = struts[5] - c_new.left.y + 1;
 
-	    c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
-	    c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
+	    c_new.right.width   = struts[1];
+	    c_new.right.x       = screen->width () - c_new.right.width;
+	    c_new.right.y       = struts[6];
+	    c_new.right.height  = struts[7] - c_new.right.y + 1;
 
-	    gap = screen->height () - struts[2] - struts[3];
-	    gap -= MIN_EMPTY;
+	    c_new.top.x         = struts[8];
+	    c_new.top.width     = struts[9] - c_new.top.x + 1;
+	    c_new.top.height    = struts[2];
 
-	    c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
-	    c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
-
-	    c_new.right.x  = screen->width () - c_new.right.width;
-	    c_new.bottom.y = screen->height () -
-			     c_new.bottom.height;
-
-	    c_new.left.y       = struts[4];
-	    c_new.left.height  = struts[5] - c_new.left.y + 1;
-	    c_new.right.y      = struts[6];
-	    c_new.right.height = struts[7] - c_new.right.y + 1;
-
-	    c_new.top.x        = struts[8];
-	    c_new.top.width    = struts[9] - c_new.top.x + 1;
-	    c_new.bottom.x     = struts[10];
-	    c_new.bottom.width = struts[11] - c_new.bottom.x + 1;
+	    c_new.bottom.x      = struts[10];
+	    c_new.bottom.width  = struts[11] - c_new.bottom.x + 1;
+	    c_new.bottom.height = struts[3];
+	    c_new.bottom.y      = screen->height () - c_new.bottom.height;
 	}
 
 	XFree (data);
@@ -968,29 +956,19 @@ PrivateWindow::updateStruts ()
 
 	    if (n == 4)
 	    {
-		int gap;
-
 		hasNew = true;
 
-		gap = screen->width () - struts[0] - struts[1];
-		gap -= MIN_EMPTY;
+		c_new.left.x        = 0;
+		c_new.left.width    = struts[0];
 
-		c_new.left.width  = (int) struts[0] + MIN (0, gap / 2);
-		c_new.right.width = (int) struts[1] + MIN (0, gap / 2);
+		c_new.right.width   = struts[1];
+		c_new.right.x       = screen->width () - c_new.right.width;
 
-		gap = screen->height () - struts[2] - struts[3];
-		gap -= MIN_EMPTY;
+		c_new.top.y         = 0;
+		c_new.top.height    = struts[2];
 
-		c_new.top.height    = (int) struts[2] + MIN (0, gap / 2);
-		c_new.bottom.height = (int) struts[3] + MIN (0, gap / 2);
-
-		c_new.left.x  = 0;
-		c_new.right.x = screen->width () -
-				c_new.right.width;
-
-		c_new.top.y    = 0;
-		c_new.bottom.y = screen->height () -
-				 c_new.bottom.height;
+		c_new.bottom.height = struts[3];
+		c_new.bottom.y      = screen->height () - c_new.bottom.height;
 	    }
 
 	    XFree (data);
@@ -1013,8 +991,11 @@ PrivateWindow::updateStruts ()
 
 	    strutX1 = c_new.left.x;
 	    strutX2 = strutX1 + c_new.left.width;
+	    strutY1 = c_new.left.y;
+	    strutY2 = strutY1 + c_new.left.height;
 
-	    if (strutX2 > x1 && strutX2 <= x2)
+	    if (strutX2 > x1 && strutX2 <= x2 &&
+		strutY1 < y2 && strutY2 > y1)
 	    {
 		c_new.left.x     = x1;
 		c_new.left.width = strutX2 - x1;
@@ -1022,26 +1003,35 @@ PrivateWindow::updateStruts ()
 
 	    strutX1 = c_new.right.x;
 	    strutX2 = strutX1 + c_new.right.width;
+	    strutY1 = c_new.right.y;
+	    strutY2 = strutY1 + c_new.right.height;
 
-	    if (strutX1 > x1 && strutX1 <= x2)
+	    if (strutX1 > x1 && strutX1 <= x2 &&
+		strutY1 < y2 && strutY2 > y1)
 	    {
 		c_new.right.x     = strutX1;
 		c_new.right.width = x2 - strutX1;
 	    }
 
+	    strutX1 = c_new.top.x;
+	    strutX2 = strutX1 + c_new.top.width;
 	    strutY1 = c_new.top.y;
 	    strutY2 = strutY1 + c_new.top.height;
 
-	    if (strutY2 > y1 && strutY2 <= y2)
+	    if (strutX1 < x2 && strutX2 > x1 &&
+		strutY2 > y1 && strutY2 <= y2)
 	    {
 		c_new.top.y      = y1;
 		c_new.top.height = strutY2 - y1;
 	    }
 
+	    strutX1 = c_new.bottom.x;
+	    strutX2 = strutX1 + c_new.bottom.width;
 	    strutY1 = c_new.bottom.y;
 	    strutY2 = strutY1 + c_new.bottom.height;
 
-	    if (strutY1 > y1 && strutY1 <= y2)
+	    if (strutX1 < x2 && strutX2 > x1 &&
+		strutY1 > y1 && strutY1 <= y2)
 	    {
 		c_new.bottom.y      = strutY1;
 		c_new.bottom.height = y2 - strutY1;
