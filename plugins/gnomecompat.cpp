@@ -138,6 +138,25 @@ GnomeCompatScreen::GnomeCompatScreen (CompScreen *s) :
 	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_RUN_DIALOG", FALSE);
 }
 
+CompOption::Vector&
+GnomeCompatScreen::getOptions ()
+{
+    return opt;
+}
+
+bool
+GnomeCompatScreen::setOption (const char         *name,
+			      CompOption::Value& value)
+{
+    CompOption *o;
+
+    o = CompOption::findOption (opt, name, NULL);
+    if (!o)
+	return false;
+
+    return CompOption::setOption (*o, value);
+}
+
 bool
 GnomeCompatPluginVTable::init ()
 {
