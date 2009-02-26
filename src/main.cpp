@@ -53,7 +53,7 @@ CompWindow *lastFoundWindow = 0;
 bool replaceCurrentWm = false;
 bool indirectRendering = false;
 bool noDetection = false;
-bool useDesktopHints = true;
+bool useDesktopHints = false;
 bool debugOutput = false;
 
 bool useCow = true;
@@ -73,7 +73,7 @@ usage (void)
 	    "[--sm-client-id ID]\n       "
 	    "[--bg-image PNG] "
 	    "[--no-detection] "
-	    "[--ignore-desktop-hints]\n       "
+	    "[--keep-desktop-hints]\n       "
 	    "[--use-root-window] "
 	    "[--debug] "
 	    "[--version] "
@@ -194,9 +194,13 @@ main (int argc, char **argv)
 	{
 	    indirectRendering = TRUE;
 	}
+	else if (!strcmp (argv[i], "--keep-desktop-hints"))
+	{
+	    useDesktopHints = true;
+	}
 	else if (!strcmp (argv[i], "--ignore-desktop-hints"))
 	{
-	    useDesktopHints = FALSE;
+	    /* backward compatibility */
 	}
 	else if (!strcmp (argv[i], "--use-root-window"))
 	{
