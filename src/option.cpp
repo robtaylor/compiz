@@ -255,42 +255,54 @@ CompOption::Value::operator== (const CompOption::Value &val)
 {
     if (priv->type != val.priv->type)
 	return false;
+
     switch (priv->type)
     {
 	case CompOption::TypeBool:
 	    return priv->value.b == val.priv->value.b;
 	    break;
+
 	case CompOption::TypeInt:
 	    return priv->value.i == val.priv->value.i;
 	    break;
+
 	case CompOption::TypeFloat:
 	    return priv->value.f == val.priv->value.f;
 	    break;
+
 	case CompOption::TypeColor:
 	    return (priv->value.c[0] == val.priv->value.c[0]) &&
 		   (priv->value.c[1] == val.priv->value.c[1]) &&
 		   (priv->value.c[2] == val.priv->value.c[2]) &&
 		   (priv->value.c[3] == val.priv->value.c[3]);
 	    break;
+
 	case CompOption::TypeString:
 	    return priv->string.compare (val.priv->string) == 0;
 	    break;
+
 	case CompOption::TypeMatch:
 	    return priv->match == val.priv->match;
 	    break;
+
 	case CompOption::TypeAction:
 	    return priv->action == val.priv->action;
 	    break;
+
 	case CompOption::TypeList:
 	    if (priv->listType != val.priv->listType)
 		return false;
+
 	    if (priv->list.size () != val.priv->list.size ())
 		return false;
+
 	    for (unsigned int i = 0; i < priv->list.size (); i++)
 		if (priv->list[i] != val.priv->list[i])
 		    return false;
+
 	    return true;
 	    break;
+
 	default:
 	    break;
     }
@@ -309,6 +321,7 @@ CompOption::Value::operator= (const CompOption::Value &val)
 {
     delete priv;
     priv = new PrivateValue (*val.priv);
+
     return *this;
 }
 
@@ -462,7 +475,6 @@ CompOption::Restriction::operator= (const CompOption::Restriction &rest)
     return *this;
 }
 
-
 CompOption *
 CompOption::findOption (CompOption::Vector &options,
 			CompString         name,
@@ -511,12 +523,15 @@ finiScreenOptionValue (CompScreen        *s,
 	case CompOption::TypeButton:
 	case CompOption::TypeEdge:
 	case CompOption::TypeBell:
-if (v.action ().state () & CompAction::StateAutoGrab)
+	    if (v.action ().state () & CompAction::StateAutoGrab)
 		s->removeAction (&v.action ());
 	    break;
+
 	case CompOption::TypeList:
 	    foreach (CompOption::Value &val, v.list ())
 		finiScreenOptionValue (s, val, v.listType ());
+	    break;
+
 	default:
 	    break;
     }
@@ -533,13 +548,14 @@ finiOptionValue (CompOption::Value &v,
 	case CompOption::TypeEdge:
 	case CompOption::TypeBell:
 	    if (v.action ().state () & CompAction::StateAutoGrab && screen)
-	    {
 		screen->removeAction (&v.action ());
-	    }
 	    break;
+
 	case CompOption::TypeList:
 	    foreach (CompOption::Value &val, v.list ())
 		finiOptionValue (val, v.listType ());
+	    break;
+
 	default:
 	    break;
     }
@@ -585,10 +601,7 @@ CompOption::rest ()
 bool
 CompOption::set (CompOption::Value &val)
 {
-    if (priv->type == CompOption::TypeKey ||
-	priv->type == CompOption::TypeButton ||
-	priv->type == CompOption::TypeEdge ||
-	priv->type == CompOption::TypeBell)
+    if (isAction () && priv->type != CompOption::TypeAction)
 	val.action ().copyState (priv->value.action ());
 
     if (priv->value == val)
@@ -598,21 +611,18 @@ CompOption::set (CompOption::Value &val)
         priv->value.action ().state () & CompAction::StateAutoGrab && screen)
     {
 	if (!screen->addAction (&val.action ()))
-	{
 	    return false;
-	}
 	else
-	{
 	    screen->removeAction (&priv->value.action ());
-	}
     }
 
     switch (priv->type)
     {
-	case CompOption::TypeInt:	    
+	case CompOption::TypeInt:
 	    if (!priv->rest.inRange (val.i ()))
 		return false;
 	    break;
+
 	case CompOption::TypeFloat:
 	{
 	    float v, p;
@@ -627,21 +637,27 @@ CompOption::set (CompOption::Value &val)
 	    priv->value.set (v);
 	    return true;
 	}
+
 	case CompOption::TypeAction:
 	    return false;
+
 	case CompOption::TypeKey:
 	    if (!(val.action ().type () & CompAction::BindingTypeKey))
 		return false;
 	    break;
+
 	case CompOption::TypeButton:
 	    if (!(val.action ().type () & (CompAction::BindingTypeButton |
 					   CompAction::BindingTypeEdgeButton)))
 		return false;
 	    break;
+
 	default:
 	    break;
     }
+
     priv->value = val;
+
     return true;
 }
 
@@ -670,7 +686,6 @@ CompOption::operator= (const CompOption &option)
     return *this;
 }
 
-
 bool
 CompOption::getBoolOptionNamed (const Vector&     options,
 				const CompString& name,
@@ -695,7 +710,6 @@ CompOption::getIntOptionNamed (const Vector&     options,
     return defaultValue;
 }
 
-
 float
 CompOption::getFloatOptionNamed (const Vector&     options,
 				 const CompString& name,
@@ -707,7 +721,6 @@ CompOption::getFloatOptionNamed (const Vector&     options,
 
     return defaultValue;
 }
-
 
 CompString
 CompOption::getStringOptionNamed (const Vector&     options,
@@ -721,7 +734,6 @@ CompOption::getStringOptionNamed (const Vector&     options,
     return defaultValue;
 }
 
-
 unsigned short *
 CompOption::getColorOptionNamed (const Vector&        options,
 				 const CompString&    name,
@@ -734,7 +746,6 @@ CompOption::getColorOptionNamed (const Vector&        options,
     return defaultValue;
 }
 
-
 CompMatch
 CompOption::getMatchOptionNamed (const Vector&     options,
 				 const CompString& name,
@@ -746,8 +757,6 @@ CompOption::getMatchOptionNamed (const Vector&     options,
 
     return defaultValue;
 }
-
-
 
 bool
 CompOption::stringToColor (CompString     color,

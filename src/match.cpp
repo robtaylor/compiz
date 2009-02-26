@@ -160,8 +160,6 @@ CompScreen::matchPropertyChanged (CompWindow *w)
     WRAPABLE_HND_FUNC(12, matchPropertyChanged, w)
 }
 
-
-
 static void
 matchResetOps (MatchOp::List &list)
 {
@@ -175,10 +173,7 @@ matchResetOps (MatchOp::List &list)
 	    case MatchOp::TypeExp:
 		exp = dynamic_cast <MatchExpOp *> (op);
 		if (exp && exp->e)
-		{
-
 		    exp->e.reset ();
-		}
 		break;
 	    default:
 		break;
@@ -190,11 +185,10 @@ static bool
 matchOpsEqual (MatchOp::List &list1,
 	       MatchOp::List &list2)
 {
+    MatchGroupOp            *g1, *g2;
+    MatchExpOp              *e1, *e2;
     MatchOp::List::iterator it1 = list1.begin (), it2 = list2.begin ();
 
-    MatchGroupOp *g1, *g2;
-    MatchExpOp *e1, *e2;
-    
     if (list1.size () != list2.size ())
 	return false;
 
@@ -234,7 +228,6 @@ matchOpsEqual (MatchOp::List &list1,
     return true;
 }
 
-
 static unsigned int
 nextIndex (CompString   &str,
 	   unsigned int i)
@@ -245,7 +238,6 @@ nextIndex (CompString   &str,
 
     return i;
 }
-
 
 static CompString
 strndupValue (CompString str)
@@ -398,7 +390,9 @@ matchOpsToString (MatchOp::List &list)
     {
 	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		group = matchOpsToString (dynamic_cast <MatchGroupOp *> (op)->op);
+		group =
+		    matchOpsToString (dynamic_cast <MatchGroupOp *> (op)->op);
+
 		if (group.length ())
 		{
 		    if (value.length ())
@@ -412,14 +406,12 @@ matchOpsToString (MatchOp::List &list)
 		}
 		break;
 	    case MatchOp::TypeExp:
-
 		if (value.length ())
-		{
-		    value += ((op->flags & MATCH_OP_AND_MASK) ?
-			      "& " : "| ");
-		}
+		    value += ((op->flags & MATCH_OP_AND_MASK) ? "& " : "| ");
+
 		if (op->flags & MATCH_OP_NOT_MASK)
 		    value += "!";
+
 		value += dynamic_cast <MatchExpOp *> (op)->value;
 		value += " ";
 		break;
@@ -480,7 +472,8 @@ matchEvalOps (MatchOp::List &list,
 
 	switch (op->type ()) {
 	    case MatchOp::TypeGroup:
-		value = matchEvalOps (dynamic_cast <MatchGroupOp *> (op)->op, w);
+		value =
+		    matchEvalOps (dynamic_cast <MatchGroupOp *> (op)->op, w);
 		break;
 	    case MatchOp::TypeExp:
 		exp = dynamic_cast <MatchExpOp *> (op);
@@ -681,9 +674,11 @@ const CompMatch &
 CompMatch::operator! ()
 {
     MatchGroupOp *g = new MatchGroupOp (priv->op);
+
     g->flags ^= MATCH_OP_NOT_MASK;
     priv->op = MatchGroupOp ();
     priv->op.op.push_back (g);
+
     return *this;
 }
 
@@ -692,6 +687,7 @@ CompMatch::operator= (const CompString &str)
 {
     priv->op = MatchGroupOp ();
     matchAddFromString (priv->op.op, str);
+
     return *this;
 }
 

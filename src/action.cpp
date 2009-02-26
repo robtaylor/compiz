@@ -72,7 +72,7 @@ struct _Edge {
 static CompString
 modifiersToString (unsigned int modMask)
 {
-    CompString binding = "";
+    CompString binding;
 
     for (unsigned int i = 0; i < N_MODIFIERS; i++)
     {
@@ -112,8 +112,8 @@ bindingStringToEdgeMask (CompString  str)
 static CompString
 edgeMaskToBindingString (unsigned int edgeMask)
 {
-    CompString binding = "";
-    int  i;
+    CompString binding;
+    int        i;
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	if (edgeMask & (1 << i))
@@ -185,8 +185,9 @@ CompAction::KeyBinding::fromString (const CompString &str)
 	return false;
     }
 
-    sStr = str.substr (pos);
+    sStr   = str.substr (pos);
     keysym = XStringToKeysym (sStr.c_str ());
+
     if (keysym != NoSymbol)
     {
 	KeyCode keycode;
@@ -215,7 +216,7 @@ CompAction::KeyBinding::fromString (const CompString &str)
 CompString
 CompAction::KeyBinding::toString () const
 {
-    CompString binding = "";
+    CompString binding;
 
     if (!screen)
 	return "";
@@ -231,13 +232,9 @@ CompAction::KeyBinding::toString () const
 	keyname = XKeysymToString (keysym);
 
 	if (keyname)
-	{
 	    binding += keyname;
-	}
 	else
-	{
 	    binding += compPrintf ("0x%x", mKeycode);
-	}
     }
 
     return binding;
@@ -288,7 +285,8 @@ CompAction::ButtonBinding::fromString (const CompString &str)
     while (pos < str.size () && !isalnum (str[pos]))
 	pos++;
 
-    if (pos != std::string::npos && pos != str.size () &&
+    if (pos != std::string::npos &&
+	pos != str.size ()       &&
         str.compare (pos, 6, "Button") == 0)
     {
 	int buttonNum;
@@ -382,13 +380,9 @@ CompAction::setKey (const CompAction::KeyBinding &key)
     priv->key = key;
 
     if (key.modifiers () || key.keycode ())
-    {
 	priv->type = CompAction::BindingTypeKey;
-    }
     else
-    {
 	priv->type = CompAction::BindingTypeNone;
-    }
 }
 
 CompAction::ButtonBinding &
@@ -413,7 +407,6 @@ CompAction::setButton (const CompAction::ButtonBinding &button)
     {
 	priv->type = CompAction::BindingTypeNone;
     }
-
 }
 
 unsigned int
@@ -458,9 +451,10 @@ CompAction::setState (CompAction::State state)
 void
 CompAction::copyState (const CompAction &action)
 {
-    priv->initiate = action.priv->initiate;
+    priv->initiate  = action.priv->initiate;
     priv->terminate = action.priv->terminate;
-    priv->state = action.priv->state;
+    priv->state     = action.priv->state;
+
     memcpy (&priv->priv, &action.priv->priv, sizeof (CompPrivate));
 }
 
@@ -494,6 +488,7 @@ CompAction::operator= (const CompAction &action)
 {
     delete priv;
     priv = new PrivateAction (*action.priv);
+
     return *this;
 }
 
@@ -576,7 +571,7 @@ CompAction::keyToString ()
     CompString binding;
 
     binding = priv->key.toString ();
-    if (binding.size () == 0)
+    if (!binding.size ())
 	return "Disabled";
 
     return binding;
@@ -585,14 +580,14 @@ CompAction::keyToString ()
 CompString
 CompAction::buttonToString ()
 {
-    CompString binding = "", edge = "";
+    CompString binding, edge;
 
     binding = modifiersToString (priv->button.modifiers ());
     binding += edgeMaskToBindingString (priv->edgeMask);
 
     binding += compPrintf ("Button%d", priv->button.button ());
 
-    if (priv->button.button () == 0)
+    if (!priv->button.button ())
 	return "Disabled";
 
     return binding;
@@ -621,7 +616,7 @@ CompAction::edgeMaskToString ()
 CompString
 CompAction::edgeToString (unsigned int edge)
 {
-    return CompString (edges[edge].name);
+    return edges[edge].name;
 }
 
 PrivateAction::PrivateAction () :
