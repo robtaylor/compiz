@@ -51,38 +51,6 @@ CompScreen::closeWin (CompAction         *action,
 }
 
 bool
-CompScreen::mainMenu (CompAction         *action,
-		      CompAction::State  state,
-		      CompOption::Vector &options)
-{
-    unsigned int time;
-
-    time = CompOption::getIntOptionNamed (options, "time", CurrentTime);
-
-    if (screen->priv->grabs.empty ())
-	screen->toolkitAction (Atoms::toolkitActionMainMenu, time,
-			       screen->priv->root, 0, 0, 0);
-
-    return true;
-}
-
-bool
-CompScreen::runDialog (CompAction         *action,
-		       CompAction::State  state,
-		       CompOption::Vector &options)
-{
-    unsigned int time;
-
-    time = CompOption::getIntOptionNamed (options, "time", CurrentTime);
-
-    if (screen->priv->grabs.empty ())
-	screen->toolkitAction (Atoms::toolkitActionRunDialog, time,
-			       screen->priv->root , 0, 0, 0);
-
-    return true;
-}
-
-bool
 CompScreen::unmaximizeWin (CompAction         *action,
 			   CompAction::State  state,
 			   CompOption::Vector &options)
@@ -236,39 +204,6 @@ CompScreen::runCommandDispatch (CompAction         *action,
 
     if (index > 0)
 	screen->runCommand (screen->priv->opt[index].value ().s ());
-
-    return true;
-}
-
-bool
-CompScreen::runCommandScreenshot (CompAction         *action,
-				  CompAction::State  state,
-				  CompOption::Vector &options)
-{
-    screen->runCommand (
-	screen->priv->opt[COMP_OPTION_SCREENSHOT].value ().s ());
-
-    return true;
-}
-
-bool
-CompScreen::runCommandWindowScreenshot (CompAction         *action,
-					CompAction::State  state,
-					CompOption::Vector &options)
-{
-    screen->runCommand (
-	screen->priv->opt[COMP_OPTION_WINDOW_SCREENSHOT].value ().s ());
-
-    return true;
-}
-
-bool
-CompScreen::runCommandTerminal (CompAction         *action,
-				CompAction::State  state,
-				CompOption::Vector &options)
-{
-    screen->runCommand (
-	screen->priv->opt[COMP_OPTION_TERMINAL].value ().s ());
 
     return true;
 }

@@ -135,8 +135,6 @@ namespace Atoms {
     extern Atom xBackground[2];
 
     extern Atom toolkitAction;
-    extern Atom toolkitActionMainMenu;
-    extern Atom toolkitActionRunDialog;
     extern Atom toolkitActionWindowMenu;
     extern Atom toolkitActionForceQuitDialog;
 

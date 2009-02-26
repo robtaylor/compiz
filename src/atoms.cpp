@@ -132,8 +132,6 @@ namespace Atoms {
     Atom xBackground[2];
 
     Atom toolkitAction;
-    Atom toolkitActionMainMenu;
-    Atom toolkitActionRunDialog;
     Atom toolkitActionWindowMenu;
     Atom toolkitActionForceQuitDialog;
 
@@ -300,10 +298,6 @@ namespace Atoms {
 
 	toolkitAction                =
 	    XInternAtom (dpy, "_COMPIZ_TOOLKIT_ACTION", 0);
-	toolkitActionMainMenu        =
-	    XInternAtom (dpy, "_COMPIZ_TOOLKIT_ACTION_MAIN_MENU", 0);
-	toolkitActionRunDialog       =
-	    XInternAtom (dpy, "_COMPIZ_TOOLKIT_ACTION_RUN_DIALOG", 0);
 	toolkitActionWindowMenu      =
 	    XInternAtom (dpy, "_COMPIZ_TOOLKIT_ACTION_WINDOW_MENU", 0);
 	toolkitActionForceQuitDialog =

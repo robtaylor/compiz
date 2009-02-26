@@ -44,16 +44,6 @@
 		<_short>Close Window</_short>
 		<_long>Close active window</_long>
 	    </option>
-	    <option name="main_menu_key" type="key">
-		<_short>Show Main Menu</_short>
-		<_long>Show the main menu</_long>
-		<default>&lt;Alt&gt;F1</default>
-	    </option>
-	    <option name="run_key" type="key">
-		<_short>Run Dialog</_short>
-		<_long>Show Run Application dialog</_long>
-		<default>&lt;Alt&gt;F2</default>
-	    </option>
 	    <option name="command0" type="string">
 		<_short>Command line 0</_short>
 		<_long>Command line to be executed in shell when run_command0 is invoked</_long>
@@ -207,26 +197,6 @@
 		<_short>Maximize Window Vertically</_short>
 		<_long>Maximize active window vertically</_long>
 	    </option>
-            <option name="command_screenshot" type="string">
-		<_short>Screenshot command line</_short>
-		<_long>Screenshot command line</_long>
-		<default>gnome-screenshot</default>
-	    </option>
-	    <option name="run_command_screenshot_key" type="key">
-		<_short>Take a screenshot</_short>
-		<_long>Take a screenshot</_long>
-		<default>Print</default>
-	    </option>
-	    <option name="command_window_screenshot" type="string">
-		<_short>Window screenshot command line</_short>
-		<_long>Window screenshot command line</_long>
-		<default>gnome-screenshot --window</default>
-	    </option>
-	    <option name="run_command_window_screenshot_key" type="key">
-		<_short>Take a screenshot of a window</_short>
-		<_long>Take a screenshot of a window</_long>
-		<default>&lt;Alt&gt;Print</default>
-	    </option>
 	    <option name="window_menu_button" type="button">
 		<_short>Window Menu</_short>
 		<_long>Window menu button binding</_long>
@@ -287,15 +257,6 @@
 		<_short>Ignore Hints When Maximized</_short>
 		<_long>Ignore size increment and aspect hints when window is maximized</_long>
 		<default>true</default>
-	    </option>
-	    <option name="command_terminal" type="string">
-		<_short>Terminal command line</_short>
-		<_long>Terminal command line</_long>
-		<default></default>
-	    </option>
-	    <option name="run_command_terminal_key" type="key">
-		<_short>Open a terminal</_short>
-		<_long>Open a terminal</_long>
 	    </option>
 	    <option name="ping_delay" type="int">
 		<_short>Ping Delay</_short>
