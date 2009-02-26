@@ -4703,6 +4703,10 @@ CompScreen::init (const char *name)
 	    focusDefaultWindow ();
     }
 
+    priv->pingTimer.setTimes (
+	priv->opt[COMP_OPTION_PING_DELAY].value ().i (),
+	priv->opt[COMP_OPTION_PING_DELAY].value ().i () + 500);
+
     priv->pingTimer.start ();
 
     priv->initialized = true;
@@ -4820,8 +4824,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
 
     pingTimer.setCallback (
 	boost::bind(&PrivateScreen::handlePingTimeout, this));
-    pingTimer.setTimes (opt[COMP_OPTION_PING_DELAY].value ().i (),
-			opt[COMP_OPTION_PING_DELAY].value ().i () + 500);
 
     startupSequenceTimer.setCallback (
 	boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this));
