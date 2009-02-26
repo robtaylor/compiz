@@ -1453,7 +1453,7 @@ DecorWindow::damageRect (bool initial, const CompRect &rect)
 }
 
 void
-DecorWindow::getOutputExtents (CompWindowExtents *output)
+DecorWindow::getOutputExtents (CompWindowExtents& output)
 {
     window->getOutputExtents (output);
 
@@ -1461,14 +1461,14 @@ DecorWindow::getOutputExtents (CompWindowExtents *output)
     {
 	CompWindowExtents *e = &wd->decor->output;
 
-	if (e->left > output->left)
-	    output->left = e->left;
-	if (e->right > output->right)
-	    output->right = e->right;
-	if (e->top > output->top)
-	    output->top = e->top;
-	if (e->bottom > output->bottom)
-	    output->bottom = e->bottom;
+	if (e->left > output.left)
+	    output.left = e->left;
+	if (e->right > output.right)
+	    output.right = e->right;
+	if (e->top > output.top)
+	    output.top = e->top;
+	if (e->bottom > output.bottom)
+	    output.bottom = e->bottom;
     }
 }
 

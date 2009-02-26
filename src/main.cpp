@@ -55,7 +55,6 @@ bool indirectRendering = false;
 bool noDetection = false;
 bool useDesktopHints = false;
 bool debugOutput = false;
-
 bool useCow = true;
 
 CompMetadata *coreMetadata = NULL;
@@ -82,7 +81,6 @@ usage (void)
 	    programName);
 }
 
-
 static void
 signalHandler (int sig)
 {
@@ -93,11 +91,11 @@ signalHandler (int sig)
 	waitpid (-1, &status, WNOHANG | WUNTRACED);
 	break;
     case SIGHUP:
-	restartSignal = TRUE;
+	restartSignal = true;
 	break;
     case SIGINT:
     case SIGTERM:
-	shutDown = TRUE;
+	shutDown = true;
     default:
 	break;
     }
@@ -192,7 +190,7 @@ main (int argc, char **argv)
 	}
 	else if (!strcmp (argv[i], "--indirect-rendering"))
 	{
-	    indirectRendering = TRUE;
+	    indirectRendering = true;
 	}
 	else if (!strcmp (argv[i], "--keep-desktop-hints"))
 	{
@@ -204,15 +202,15 @@ main (int argc, char **argv)
 	}
 	else if (!strcmp (argv[i], "--use-root-window"))
 	{
-	    useCow = FALSE;
+	    useCow = false;
 	}
 	else if (!strcmp (argv[i], "--replace"))
 	{
-	    replaceCurrentWm = TRUE;
+	    replaceCurrentWm = true;
 	}
 	else if (!strcmp (argv[i], "--sm-disable"))
 	{
-	    disableSm = TRUE;
+	    disableSm = true;
 	}
 	else if (!strcmp (argv[i], "--sm-client-id"))
 	{
@@ -221,7 +219,7 @@ main (int argc, char **argv)
 	}
 	else if (!strcmp (argv[i], "--no-detection"))
 	{
-	    noDetection = TRUE;
+	    noDetection = true;
 	}
 	else if (!strcmp (argv[i], "--bg-image"))
 	{

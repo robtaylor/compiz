@@ -192,7 +192,7 @@ struct CompStruts {
 
 class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
     public:
-	virtual void getOutputExtents (CompWindowExtents *output);
+	virtual void getOutputExtents (CompWindowExtents& output);
 
 	virtual void getAllowedActions (unsigned int &setActions,
 					unsigned int &clearActions);
@@ -456,7 +456,7 @@ class CompWindow :
 	static void freePrivateIndex (int index);
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
-		      CompWindowExtents *);
+		      CompWindowExtents&);
 	WRAPABLE_HND (1, WindowInterface, void, getAllowedActions,
 		      unsigned int &, unsigned int &);
 

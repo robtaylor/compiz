@@ -173,7 +173,7 @@ class DecorWindow :
 	DecorWindow (CompWindow *w);
 	~DecorWindow ();
 
-	void getOutputExtents (CompWindowExtents *);
+	void getOutputExtents (CompWindowExtents&);
 	void resizeNotify (int, int, int, int);
 	void moveNotify (int, int, bool);
 	void stateChangeNotify (unsigned int);

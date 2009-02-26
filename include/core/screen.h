@@ -283,8 +283,7 @@ class CompScreen :
 
 
 	void viewportForGeometry (CompWindow::Geometry gm,
-				  int                  *viewportX,
-				  int                  *viewportY);
+				  CompPoint            &viewport);
 
 	int outputDeviceForGeometry (CompWindow::Geometry gm);
 

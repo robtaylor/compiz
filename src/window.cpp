@@ -46,23 +46,25 @@
 #include "privatewindow.h"
 #include "privatescreen.h"
 
-
 CompPrivateStorage::Indices windowPrivateIndices (0);
 
 int
 CompWindow::allocPrivateIndex ()
 {
-    int i = CompPrivateStorage::allocatePrivateIndex (&windowPrivateIndices);
-    foreach (CompWindow *w, ::screen->windows ())
+    int i = CompPrivateStorage::allocatePrivateIndex (windowPrivateIndices);
+
+    foreach (CompWindow *w, screen->windows ())
 	if (windowPrivateIndices.size () != w->privates.size ())
 	    w->privates.resize (windowPrivateIndices.size ());
+
     return i;
 }
 
 void
 CompWindow::freePrivateIndex (int index)
 {
-    CompPrivateStorage::freePrivateIndex (&windowPrivateIndices, index);
+    CompPrivateStorage::freePrivateIndex (windowPrivateIndices, index);
+
     foreach (CompWindow *w, ::screen->windows ())
 	if (windowPrivateIndices.size () != w->privates.size ())
 	    w->privates.resize (windowPrivateIndices.size ());
@@ -91,7 +93,7 @@ PrivateWindow::recalcNormalHints ()
     int maxSize;
 
 #warning fixme to max Texture size
-    maxSize = MAXSHORT;
+    maxSize  = MAXSHORT;
     maxSize -= serverGeometry.border () * 2;
 
     sizeHints.x      = serverGeometry.x ();
@@ -325,7 +327,7 @@ PrivateWindow::updateIconGeometry ()
 	    priv->iconGeometry.width  = geometry[2];
 	    priv->iconGeometry.height = geometry[3];
 
-	    priv->iconGeometrySet = TRUE;
+	    priv->iconGeometrySet = true;
 	}
 
 	XFree (data);
@@ -628,7 +630,8 @@ void
 CompWindow::getAllowedActions (unsigned int &setActions,
 			       unsigned int &clearActions)
 {
-    WRAPABLE_HND_FUNC(1, getAllowedActions, setActions, clearActions)
+    WRAPABLE_HND_FUNC (1, getAllowedActions, setActions, clearActions)
+
     setActions   = 0;
     clearActions = 0;
 }
@@ -714,12 +717,17 @@ CompWindow::recalcType ()
 	    type = CompWindowTypeDialogMask;
     }
 
-    if (type == CompWindowTypeDockMask && (priv->state & CompWindowStateBelowMask))
+    if (type == CompWindowTypeDockMask &&
+	(priv->state & CompWindowStateBelowMask))
+    {
 	type = CompWindowTypeNormalMask;
+    }
 
     if ((type & (CompWindowTypeNormalMask | CompWindowTypeDialogMask)) &&
 	(priv->state & CompWindowStateModalMask))
+    {
 	type = CompWindowTypeModalDialogMask;
+    }
 
     priv->type = type;
 }
@@ -774,7 +782,7 @@ CompWindow::updateWindowOutputExtents ()
 {
     CompWindowExtents output;
 
-    getOutputExtents (&output);
+    getOutputExtents (output);
 
     if (output.left   != priv->output.left  ||
 	output.right  != priv->output.right ||
@@ -788,13 +796,14 @@ CompWindow::updateWindowOutputExtents ()
 }
 
 void
-CompWindow::getOutputExtents (CompWindowExtents *output)
+CompWindow::getOutputExtents (CompWindowExtents& output)
 {
-    WRAPABLE_HND_FUNC(0, getOutputExtents, output)
-    output->left   = 0;
-    output->right  = 0;
-    output->top    = 0;
-    output->bottom = 0;
+    WRAPABLE_HND_FUNC (0, getOutputExtents, output)
+
+    output.left   = 0;
+    output.right  = 0;
+    output.top    = 0;
+    output.bottom = 0;
 }
 
 void
@@ -870,16 +879,16 @@ PrivateWindow::updateStruts ()
     unsigned long n, left;
     unsigned char *data;
     bool	  hasOld, hasNew;
-    CompStruts    old, c_new;
+    CompStruts    oldStrut, newStrut;
 
     if (priv->struts)
     {
 	hasOld = true;
 
-	old.left   = priv->struts->left;
-	old.right  = priv->struts->right;
-	old.top    = priv->struts->top;
-	old.bottom = priv->struts->bottom;
+	oldStrut.left   = priv->struts->left;
+	oldStrut.right  = priv->struts->right;
+	oldStrut.top    = priv->struts->top;
+	oldStrut.bottom = priv->struts->bottom;
     }
     else
     {
@@ -888,25 +897,25 @@ PrivateWindow::updateStruts ()
 
     hasNew = true;
 
-    c_new.left.x	    = 0;
-    c_new.left.y	    = 0;
-    c_new.left.width  = 0;
-    c_new.left.height = screen->height ();
+    newStrut.left.x	    = 0;
+    newStrut.left.y	    = 0;
+    newStrut.left.width  = 0;
+    newStrut.left.height = screen->height ();
 
-    c_new.right.x      = screen->width ();
-    c_new.right.y      = 0;
-    c_new.right.width  = 0;
-    c_new.right.height = screen->height ();
+    newStrut.right.x      = screen->width ();
+    newStrut.right.y      = 0;
+    newStrut.right.width  = 0;
+    newStrut.right.height = screen->height ();
 
-    c_new.top.x	   = 0;
-    c_new.top.y	   = 0;
-    c_new.top.width  = screen->width ();
-    c_new.top.height = 0;
+    newStrut.top.x	   = 0;
+    newStrut.top.y	   = 0;
+    newStrut.top.width  = screen->width ();
+    newStrut.top.height = 0;
 
-    c_new.bottom.x      = 0;
-    c_new.bottom.y      = screen->height ();
-    c_new.bottom.width  = screen->width ();
-    c_new.bottom.height = 0;
+    newStrut.bottom.x      = 0;
+    newStrut.bottom.y      = screen->height ();
+    newStrut.bottom.width  = screen->width ();
+    newStrut.bottom.height = 0;
 
     result = XGetWindowProperty (screen->dpy (), priv->id,
 				 Atoms::wmStrutPartial,
@@ -921,23 +930,23 @@ PrivateWindow::updateStruts ()
 	{
 	    hasNew = true;
 
-	    c_new.left.y        = struts[4];
-	    c_new.left.width    = struts[0];
-	    c_new.left.height   = struts[5] - c_new.left.y + 1;
+	    newStrut.left.y        = struts[4];
+	    newStrut.left.width    = struts[0];
+	    newStrut.left.height   = struts[5] - newStrut.left.y + 1;
 
-	    c_new.right.width   = struts[1];
-	    c_new.right.x       = screen->width () - c_new.right.width;
-	    c_new.right.y       = struts[6];
-	    c_new.right.height  = struts[7] - c_new.right.y + 1;
+	    newStrut.right.width   = struts[1];
+	    newStrut.right.x       = screen->width () - newStrut.right.width;
+	    newStrut.right.y       = struts[6];
+	    newStrut.right.height  = struts[7] - newStrut.right.y + 1;
 
-	    c_new.top.x         = struts[8];
-	    c_new.top.width     = struts[9] - c_new.top.x + 1;
-	    c_new.top.height    = struts[2];
+	    newStrut.top.x         = struts[8];
+	    newStrut.top.width     = struts[9] - newStrut.top.x + 1;
+	    newStrut.top.height    = struts[2];
 
-	    c_new.bottom.x      = struts[10];
-	    c_new.bottom.width  = struts[11] - c_new.bottom.x + 1;
-	    c_new.bottom.height = struts[3];
-	    c_new.bottom.y      = screen->height () - c_new.bottom.height;
+	    newStrut.bottom.x      = struts[10];
+	    newStrut.bottom.width  = struts[11] - newStrut.bottom.x + 1;
+	    newStrut.bottom.height = struts[3];
+	    newStrut.bottom.y      = screen->height () - newStrut.bottom.height;
 	}
 
 	XFree (data);
@@ -958,17 +967,17 @@ PrivateWindow::updateStruts ()
 	    {
 		hasNew = true;
 
-		c_new.left.x        = 0;
-		c_new.left.width    = struts[0];
+		newStrut.left.x        = 0;
+		newStrut.left.width    = struts[0];
 
-		c_new.right.width   = struts[1];
-		c_new.right.x       = screen->width () - c_new.right.width;
+		newStrut.right.width   = struts[1];
+		newStrut.right.x       = screen->width () - newStrut.right.width;
 
-		c_new.top.y         = 0;
-		c_new.top.height    = struts[2];
+		newStrut.top.y         = 0;
+		newStrut.top.height    = struts[2];
 
-		c_new.bottom.height = struts[3];
-		c_new.bottom.y      = screen->height () - c_new.bottom.height;
+		newStrut.bottom.height = struts[3];
+		newStrut.bottom.y      = screen->height () - newStrut.bottom.height;
 	    }
 
 	    XFree (data);
@@ -989,58 +998,59 @@ PrivateWindow::updateStruts ()
 	    x2 = x1 + screen->screenInfo ()[i].width;
 	    y2 = y1 + screen->screenInfo ()[i].height;
 
-	    strutX1 = c_new.left.x;
-	    strutX2 = strutX1 + c_new.left.width;
-	    strutY1 = c_new.left.y;
-	    strutY2 = strutY1 + c_new.left.height;
+	    strutX1 = newStrut.left.x;
+	    strutX2 = strutX1 + newStrut.left.width;
+	    strutY1 = newStrut.left.y;
+	    strutY2 = strutY1 + newStrut.left.height;
 
 	    if (strutX2 > x1 && strutX2 <= x2 &&
 		strutY1 < y2 && strutY2 > y1)
 	    {
-		c_new.left.x     = x1;
-		c_new.left.width = strutX2 - x1;
+		newStrut.left.x     = x1;
+		newStrut.left.width = strutX2 - x1;
 	    }
 
-	    strutX1 = c_new.right.x;
-	    strutX2 = strutX1 + c_new.right.width;
-	    strutY1 = c_new.right.y;
-	    strutY2 = strutY1 + c_new.right.height;
+	    strutX1 = newStrut.right.x;
+	    strutX2 = strutX1 + newStrut.right.width;
+	    strutY1 = newStrut.right.y;
+	    strutY2 = strutY1 + newStrut.right.height;
 
 	    if (strutX1 > x1 && strutX1 <= x2 &&
 		strutY1 < y2 && strutY2 > y1)
 	    {
-		c_new.right.x     = strutX1;
-		c_new.right.width = x2 - strutX1;
+		newStrut.right.x     = strutX1;
+		newStrut.right.width = x2 - strutX1;
 	    }
 
-	    strutX1 = c_new.top.x;
-	    strutX2 = strutX1 + c_new.top.width;
-	    strutY1 = c_new.top.y;
-	    strutY2 = strutY1 + c_new.top.height;
+	    strutX1 = newStrut.top.x;
+	    strutX2 = strutX1 + newStrut.top.width;
+	    strutY1 = newStrut.top.y;
+	    strutY2 = strutY1 + newStrut.top.height;
 
 	    if (strutX1 < x2 && strutX2 > x1 &&
 		strutY2 > y1 && strutY2 <= y2)
 	    {
-		c_new.top.y      = y1;
-		c_new.top.height = strutY2 - y1;
+		newStrut.top.y      = y1;
+		newStrut.top.height = strutY2 - y1;
 	    }
 
-	    strutX1 = c_new.bottom.x;
-	    strutX2 = strutX1 + c_new.bottom.width;
-	    strutY1 = c_new.bottom.y;
-	    strutY2 = strutY1 + c_new.bottom.height;
+	    strutX1 = newStrut.bottom.x;
+	    strutX2 = strutX1 + newStrut.bottom.width;
+	    strutY1 = newStrut.bottom.y;
+	    strutY2 = strutY1 + newStrut.bottom.height;
 
 	    if (strutX1 < x2 && strutX2 > x1 &&
 		strutY1 > y1 && strutY1 <= y2)
 	    {
-		c_new.bottom.y      = strutY1;
-		c_new.bottom.height = y2 - strutY1;
+		newStrut.bottom.y      = strutY1;
+		newStrut.bottom.height = y2 - strutY1;
 	    }
 	}
     }
 
-    if (hasOld != hasNew || (hasNew && hasOld &&
-			     memcmp (&c_new, &old, sizeof (CompStruts))))
+    if (hasOld != hasNew ||
+	(hasNew && hasOld &&
+	 memcmp (&newStrut, &oldStrut, sizeof (CompStruts))))
     {
 	if (hasNew)
 	{
@@ -1051,7 +1061,7 @@ PrivateWindow::updateStruts ()
 		    return false;
 	    }
 
-	    *priv->struts = c_new;
+	    *priv->struts = newStrut;
 	}
 	else
 	{
@@ -1092,8 +1102,6 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
     wa->override_redirect     = TRUE;
     wa->screen		      = NULL;
 }
-
-
 
 void
 CompWindow::destroy ()
@@ -1290,7 +1298,10 @@ CompWindow::resize (XWindowAttributes attr)
 }
 
 bool
-CompWindow::resize (int x, int y, unsigned int width, unsigned int height,
+CompWindow::resize (int          x,
+		    int          y,
+		    unsigned int width,
+		    unsigned int height,
 		    unsigned int border)
 {
     return resize (Geometry (x, y, width, height, border));
@@ -1310,9 +1321,7 @@ CompWindow::resize (CompWindow::Geometry gm)
 	ph = gm.height () + gm.border () * 2;
 
 	if (priv->shaded)
-	{
 	    ph = 0;
-	}
 
 	dx      = gm.x () - priv->attrib.x;
 	dy      = gm.y () - priv->attrib.y;
@@ -1461,15 +1470,13 @@ CompWindow::sendSyncRequest ()
 
     syncValueIncrement (&priv->syncValue);
 
-    XSendEvent (screen->dpy (), priv->id, FALSE, 0,
-		(XEvent *) &xev);
+    XSendEvent (screen->dpy (), priv->id, FALSE, 0, (XEvent *) &xev);
 
-    priv->syncWait     = TRUE;
+    priv->syncWait     = true;
     priv->syncGeometry = priv->serverGeometry;
 
     if (!priv->syncWaitTimer.active ())
-	priv->syncWaitTimer.start (
-	    boost::bind (&PrivateWindow::handleSyncAlarm, priv), 1000, 1200);
+	priv->syncWaitTimer.start ();
 }
 
 void
@@ -1544,7 +1551,9 @@ PrivateWindow::circulate (XCirculateEvent *ce)
 }
 
 void
-CompWindow::move (int dx, int dy, bool immediate)
+CompWindow::move (int  dx,
+		  int  dy,
+		  bool immediate)
 {
     if (dx || dy)
     {
@@ -1585,7 +1594,7 @@ CompWindow::syncPosition ()
 bool
 CompWindow::focus ()
 {
-    WRAPABLE_HND_FUNC_RETURN(2, bool, focus)
+    WRAPABLE_HND_FUNC_RETURN (2, bool, focus)
 
     if (overrideRedirect ())
 	return false;
@@ -1611,7 +1620,7 @@ CompWindow::focus ()
 bool
 CompWindow::place (CompPoint &pos)
 {
-    WRAPABLE_HND_FUNC_RETURN(4, bool, place, pos)
+    WRAPABLE_HND_FUNC_RETURN (4, bool, place, pos)
     return false;
 }
 
@@ -1619,45 +1628,45 @@ void
 CompWindow::validateResizeRequest (unsigned int   &mask,
 				   XWindowChanges *xwc,
 				   unsigned int   source)
-    WRAPABLE_HND_FUNC(5, validateResizeRequest, mask, xwc, source)
+    WRAPABLE_HND_FUNC (5, validateResizeRequest, mask, xwc, source)
 
 void
 CompWindow::resizeNotify (int dx,
 			  int dy,
 			  int dwidth,
 			  int dheight)
-    WRAPABLE_HND_FUNC(6, resizeNotify, dx, dy, dwidth, dheight)
+    WRAPABLE_HND_FUNC (6, resizeNotify, dx, dy, dwidth, dheight)
 
 void
 CompWindow::moveNotify (int  dx,
 			int  dy,
 			bool immediate)
-    WRAPABLE_HND_FUNC(7, moveNotify, dx, dy, immediate)
+    WRAPABLE_HND_FUNC (7, moveNotify, dx, dy, immediate)
 
 void
 CompWindow::windowNotify (CompWindowNotify n)
     WRAPABLE_HND_FUNC (8, windowNotify, n)
 
 void
-CompWindow::grabNotify (int	       x,
-			int	       y,
+CompWindow::grabNotify (int	     x,
+			int	     y,
 			unsigned int state,
 			unsigned int mask)
 {
-    WRAPABLE_HND_FUNC(9, grabNotify, x, y, state, mask)
+    WRAPABLE_HND_FUNC (9, grabNotify, x, y, state, mask)
     priv->grabbed = true;
 }
 
 void
 CompWindow::ungrabNotify ()
 {
-    WRAPABLE_HND_FUNC(10, ungrabNotify)
+    WRAPABLE_HND_FUNC (10, ungrabNotify)
     priv->grabbed = false;
 }
 
 void
 CompWindow::stateChangeNotify (unsigned int lastState)
-    WRAPABLE_HND_FUNC(11, stateChangeNotify, lastState);
+    WRAPABLE_HND_FUNC (11, stateChangeNotify, lastState);
 
 bool
 PrivateWindow::isGroupTransient (Window clientLeader)
@@ -1751,7 +1760,8 @@ CompWindow::moveInputFocusTo ()
 
     if (priv->state & CompWindowStateHiddenMask)
     {
-	XSetInputFocus (s->dpy (), priv->frame, RevertToPointerRoot, CurrentTime);
+	XSetInputFocus (s->dpy (), priv->frame,
+			RevertToPointerRoot, CurrentTime);
 	XChangeProperty (s->dpy (), s->root (), Atoms::winActive,
 			 XA_WINDOW, 32, PropModeReplace,
 			 (unsigned char *) &priv->id, 1);
@@ -2196,18 +2206,19 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
     if (frame)
     {
 	XWindowChanges wc = *xwc;
+
 	wc.x      -= input.left;
 	wc.y      -= input.top;
 	wc.width  += input.left + input.right;
 	wc.height += input.top + input.bottom;
 	
-	XConfigureWindow (screen->dpy (), frame,
-			  valueMask, &wc);
+	XConfigureWindow (screen->dpy (), frame, valueMask, &wc);
 	valueMask &= ~(CWSibling | CWStackMode);
+
 	xwc->x = input.left;
 	xwc->y = input.top;
-	XConfigureWindow (screen->dpy (), wrapper,
-			  valueMask, xwc);
+	XConfigureWindow (screen->dpy (), wrapper, valueMask, xwc);
+
 	xwc->x = 0;
 	xwc->y = 0;
     }
@@ -2258,10 +2269,13 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 			       XWindowChanges *xwc)
 {
     CompWindow *transient = NULL;
+
     if (w->priv->transientFor)
 	transient = screen->findWindow (w->priv->transientFor);
-    if (transient && (xwc->sibling != transient->priv->id &&
-	(!transient->priv->frame || xwc->sibling != transient->priv->frame)))
+
+    if (transient                           &&
+	xwc->sibling != transient->priv->id &&
+	(!transient->priv->frame || xwc->sibling != transient->priv->frame))
     {
 	CompWindow *ancestor;
 
@@ -2292,7 +2306,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 	for (a = screen->windows ().back (); a; a = a->prev)
 	{
 	    if (a->priv->clientLeader == w->priv->clientLeader &&
-		a->priv->transientFor == None		   &&
+		a->priv->transientFor == None		       &&
 		!a->priv->isGroupTransient (w->priv->clientLeader))
 	    {
 		if (xwc->sibling == a->priv->id ||
@@ -2310,8 +2324,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 			break;
 
 		if (a->priv->mapNum || a->priv->pendingMaps)
-		    a->priv->reconfigureXWindow (CWSibling | CWStackMode,
-						 xwc);
+		    a->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
 	    }
 	}
     }
@@ -2345,13 +2358,13 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
     XRectangle workArea;
     int	       mask = 0;
     int	       x, y;
-    int	       vx, vy;
     int	       output;
+    CompPoint  viewport;
 
-    screen->viewportForGeometry (old, &vx, &vy);
+    screen->viewportForGeometry (old, viewport);
 
-    x = (vx - screen->vp ().x ()) * screen->width ();
-    y = (vy - screen->vp ().y ()) * screen->height ();
+    x = (viewport.x () - screen->vp ().x ()) * screen->width ();
+    y = (viewport.y () - screen->vp ().y ()) * screen->height ();
 
     output = screen->outputDeviceForGeometry (old);
     screen->getWorkareaForOutput (output, &workArea);
@@ -2669,7 +2682,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 
     xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity);
 
-    if (!(priv->type & (CompWindowTypeDockMask       |
+    if (!(priv->type & (CompWindowTypeDockMask    |
 		     CompWindowTypeFullscreenMask |
 		     CompWindowTypeUnknownMask)))
     {
@@ -3047,9 +3060,9 @@ PrivateWindow::ensureWindowVisibility ()
     if (struts || attrib.override_redirect)
 	return;
 
-    if (type & (CompWindowTypeDockMask	|
-		   CompWindowTypeFullscreenMask |
-		   CompWindowTypeUnknownMask))
+    if (type & (CompWindowTypeDockMask	     |
+		CompWindowTypeFullscreenMask |
+		CompWindowTypeUnknownMask))
 	return;
 
     x1 = screen->workArea ().x - screen->width () * screen->vp ().x ();
@@ -3341,7 +3354,7 @@ CompWindow::show ()
 	return;
 
     if (priv->minimized || priv->inShowDesktopMode ||
-	priv->hidden || !onDesktop)
+	priv->hidden    || !onDesktop)
     {
 	/* no longer hidden but not on current desktop */
 	if (!priv->minimized && !priv->inShowDesktopMode && !priv->hidden)
@@ -3457,7 +3470,7 @@ CompWindow::maximize (unsigned int state)
 }
 
 bool
-PrivateWindow::getUserTime (Time *time)
+PrivateWindow::getUserTime (Time& time)
 {
     Atom	  actual;
     int		  result, format;
@@ -3478,7 +3491,7 @@ PrivateWindow::getUserTime (Time *time)
 
 	    memcpy (&value, data, sizeof (CARD32));
 	    retval = true;
-	    *time  = (Time) value;
+	    time   = (Time) value;
 	}
 
 	XFree ((void *) data);
@@ -3527,14 +3540,14 @@ PrivateWindow::setUserTime (Time time)
 	)
 
 bool
-PrivateWindow::getUsageTimestamp (Time *timestamp)
+PrivateWindow::getUsageTimestamp (Time& timestamp)
 {
     if (getUserTime (timestamp))
 	return true;
 
     if (initialTimestampSet)
     {
-	*timestamp = initialTimestamp;
+	timestamp = initialTimestamp;
 	return true;
     }
 
@@ -3565,7 +3578,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
     else
     {
-	gotTimestamp = getUsageTimestamp (&wUserTime);
+	gotTimestamp = getUsageTimestamp (wUserTime);
     }
 
     /* if we got no timestamp for the window, try to get at least a timestamp
@@ -3576,8 +3589,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
 
 	parent = screen->findWindow (transientFor);
 	if (parent)
-	    gotTimestamp =
-		parent->priv->getUsageTimestamp (&wUserTime);
+	    gotTimestamp = parent->priv->getUsageTimestamp (wUserTime);
     }
 
     if (gotTimestamp && !wUserTime)
@@ -3627,7 +3639,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* can't get user time for active window */
-    if (!active->priv->getUserTime (&aUserTime))
+    if (!active->priv->getUserTime (aUserTime))
 	return true;
 
     if (XSERVER_TIME_IS_BEFORE (wUserTime, aUserTime))
@@ -3650,11 +3662,13 @@ PrivateWindow::allowWindowFocus (unsigned int noFocusMask,
 	return false;
 
     /* window doesn't take focus */
-    if (!priv->inputHint && !(priv->protocols & CompWindowProtocolTakeFocusMask))
+    if (!priv->inputHint &&
+	!(priv->protocols & CompWindowProtocolTakeFocusMask))
+    {
 	return false;
+    }
 
     retval = priv->isWindowFocusAllowed (timestamp);
-
     if (!retval)
     {
 	/* add demands attention state if focus was prevented */
@@ -3667,22 +3681,19 @@ PrivateWindow::allowWindowFocus (unsigned int noFocusMask,
 CompPoint
 CompWindow::defaultViewport ()
 {
-    int vx, vy;
+    CompPoint viewport;
 
-    if (priv->serverGeometry.x () < (int) screen->width ()    &&
+    if (priv->serverGeometry.x () < (int) screen->width ()            &&
 	priv->serverGeometry.x () + priv->serverGeometry.width () > 0 &&
-	priv->serverGeometry.y () < (int) screen->height ()   &&
+	priv->serverGeometry.y () < (int) screen->height ()           &&
 	priv->serverGeometry.y ()+ priv->serverGeometry.height () > 0)
     {
-	vx = screen->vp ().x ();
-	vy = screen->vp ().y ();
-    }
-    else
-    {
-	screen->viewportForGeometry (priv->serverGeometry, &vx, &vy);
+	return screen->vp ();
     }
 
-    return CompPoint (vx, vy);
+    screen->viewportForGeometry (priv->serverGeometry, viewport);
+
+    return viewport;
 }
 
 CompPoint &
@@ -3694,7 +3705,8 @@ CompWindow::initialViewport () const
 /* returns icon with dimensions as close as possible to width and height
    but never greater. */
 CompIcon *
-CompWindow::getIcon (int width, int height)
+CompWindow::getIcon (int width,
+		     int height)
 {
     CompIcon     *icon;
     int          wh, diff, oldDiff;
@@ -3708,12 +3720,9 @@ CompWindow::getIcon (int width, int height)
 	unsigned long n, left;
 	unsigned char *data;
 
-	result = XGetWindowProperty (screen->dpy (), priv->id,
-				     Atoms::wmIcon,
-				     0L, 65536L,
-				     FALSE, XA_CARDINAL,
-				     &actual, &format, &n,
-				     &left, &data);
+	result = XGetWindowProperty (screen->dpy (), priv->id, Atoms::wmIcon,
+				     0L, 65536L, FALSE, XA_CARDINAL,
+				     &actual, &format, &n, &left, &data);
 
 	if (result == Success && data)
 	{
@@ -3806,9 +3815,7 @@ void
 PrivateWindow::freeIcons ()
 {
     for (unsigned int i = 0; i < priv->icons.size (); i++)
-    {
 	delete priv->icons[i];
-    }
 
     priv->icons.resize (0);
     priv->noIcons = false;
@@ -3823,9 +3830,11 @@ CompWindow::outputDevice ()
 bool
 CompWindow::onCurrentDesktop ()
 {
-    if (priv->desktop == 0xffffffff || priv->desktop ==
-	screen->currentDesktop ())
+    if (priv->desktop == 0xffffffff ||
+	priv->desktop == screen->currentDesktop ())
+    {
 	return true;
+    }
 
     return false;
 }
@@ -3950,7 +3959,7 @@ CompWindow::getMovementForOffset (CompPoint offset)
 }
 
 void
-WindowInterface::getOutputExtents (CompWindowExtents *output)
+WindowInterface::getOutputExtents (CompWindowExtents& output)
     WRAPABLE_DEF (getOutputExtents, output)
 
 void
@@ -3977,11 +3986,16 @@ WindowInterface::validateResizeRequest (unsigned int   &mask,
     WRAPABLE_DEF (validateResizeRequest, mask, xwc, source)
 
 void
-WindowInterface::resizeNotify (int dx, int dy, int dwidth, int dheight)
+WindowInterface::resizeNotify (int dx,
+			       int dy,
+			       int dwidth,
+			       int dheight)
     WRAPABLE_DEF (resizeNotify, dx, dy, dwidth, dheight)
 
 void
-WindowInterface::moveNotify (int dx, int dy, bool immediate)
+WindowInterface::moveNotify (int  dx,
+			     int  dy,
+			     bool immediate)
     WRAPABLE_DEF (moveNotify, dx, dy, immediate)
 
 void
@@ -3990,8 +4004,8 @@ WindowInterface::windowNotify (CompWindowNotify n)
 
 		
 void
-WindowInterface::grabNotify (int x,
-			     int y,
+WindowInterface::grabNotify (int          x,
+			     int          y,
 			     unsigned int state,
 			     unsigned int mask)
     WRAPABLE_DEF (grabNotify, x, y, state, mask)
@@ -4060,8 +4074,7 @@ CompWindow::close (Time serverTime)
 	    ev.xclient.data.l[3]    = 0;
 	    ev.xclient.data.l[4]    = 0;
 
-	    XSendEvent (screen->dpy (), priv->id, false,
-			NoEventMask, &ev);
+	    XSendEvent (screen->dpy (), priv->id, false, NoEventMask, &ev);
 	}
 	else
 	{
@@ -4103,10 +4116,9 @@ PrivateWindow::handlePingTimeout (unsigned int lastPing)
 
 		if (priv->closeRequests)
 		{
-		    screen->toolkitAction (
-			Atoms::toolkitActionForceQuitDialog,
-			priv->lastCloseRequestTime,
-			priv->id, true, 0, 0);
+		    screen->toolkitAction (Atoms::toolkitActionForceQuitDialog,
+					   priv->lastCloseRequestTime,
+					   priv->id, true, 0, 0);
 
 		    priv->closeRequests = 0;
 		}
@@ -4129,10 +4141,9 @@ PrivateWindow::handlePing (int lastPing)
 
 	if (priv->lastCloseRequestTime)
 	{
-	    screen->toolkitAction (
-		Atoms::toolkitActionForceQuitDialog,
-		priv->lastCloseRequestTime,
-		priv->id, false, 0, 0);
+	    screen->toolkitAction (Atoms::toolkitActionForceQuitDialog,
+				   priv->lastCloseRequestTime,
+				   priv->id, false, 0, 0);
 
 	    priv->lastCloseRequestTime = 0;
 	}
@@ -4146,8 +4157,7 @@ PrivateWindow::processMap ()
     bool                   allowFocus;
     CompStackingUpdateMode stackingMode;
 
-    priv->initialViewport.setX (screen->vp ().x ());
-    priv->initialViewport.setY (screen->vp ().y ());
+    priv->initialViewport = screen->vp ();
 
     priv->initialTimestampSet = false;
 
@@ -4290,12 +4300,13 @@ CompWindow::saveWc ()
 }
 
 void
-CompWindow::moveToViewportPosition (int x, int y, bool sync)
+CompWindow::moveToViewportPosition (int  x,
+				    int  y,
+				    bool sync)
 {
-    int	tx, vWidth = screen->width () *
-		     screen->vpSize ().width ();
-    int ty, vHeight = screen->height () *
-		      screen->vpSize ().height ();
+    int tx, ty;
+    int vWidth  = screen->width () * screen->vpSize ().width ();
+    int vHeight = screen->height () * screen->vpSize ().height ();
 
     if (screen->vpSize ().width () != 1)
     {
@@ -4334,8 +4345,7 @@ CompWindow::moveToViewportPosition (int x, int y, bool sync)
 	{
 	    m = priv->attrib.x + tx;
 
-	    if (m - priv->output.left <
-		(int) screen->width () - vWidth)
+	    if (m - priv->output.left < (int) screen->width () - vWidth)
 		wx = tx + vWidth;
 	    else if (m + priv->width + priv->output.right > vWidth)
 		wx = tx - vWidth;
@@ -4345,8 +4355,7 @@ CompWindow::moveToViewportPosition (int x, int y, bool sync)
 	{
 	    m = priv->attrib.y + ty;
 
-	    if (m - priv->output.top <
-		(int) screen->height () - vHeight)
+	    if (m - priv->output.top < (int) screen->height () - vHeight)
 		wy = ty + vHeight;
 	    else if (m + priv->height + priv->output.bottom > vHeight)
 		wy = ty - vHeight;
@@ -4451,9 +4460,7 @@ CompWindow::sizeHints () const
 void
 PrivateWindow::updateMwmHints ()
 {
-    screen->priv->getMwmHints (priv->id, &priv->mwmFunc,
-				     &priv->mwmDecor);
-
+    screen->priv->getMwmHints (priv->id, &priv->mwmFunc, &priv->mwmDecor);
     window->recalcActions ();
 }
 
@@ -4514,9 +4521,9 @@ CompWindow::syncAlarm ()
 }
 
 
-CompWindow::CompWindow (Window     id,
-			Window     aboveId) :
-   CompPrivateStorage (&windowPrivateIndices)
+CompWindow::CompWindow (Window id,
+			Window aboveId) :
+   CompPrivateStorage (windowPrivateIndices)
 {
     priv = new PrivateWindow (this);
     assert (priv);
@@ -4839,6 +4846,10 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     output.right  = 0;
     output.top    = 0;
     output.bottom = 0;
+
+    syncWaitTimer.setTimes (1000, 1200);
+    syncWaitTimer.setCallback (boost::bind (&PrivateWindow::handleSyncAlarm,
+					    this));
 }
 
 PrivateWindow::~PrivateWindow ()
@@ -4965,7 +4976,7 @@ CompWindow::updateFrameRegion ()
     int        x, y;
 
     if ((priv->input.left || priv->input.right ||
-	priv->input.top || priv->input.bottom) && priv->frame)
+	 priv->input.top || priv->input.bottom) && priv->frame)
     {
 
 	priv->frameRegion = CompRegion ();
@@ -5020,7 +5031,7 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 }
 
 void
-CompWindow::updateFrameRegion (CompRegion & region)
+CompWindow::updateFrameRegion (CompRegion& region)
     WRAPABLE_HND_FUNC(12, updateFrameRegion, region)
 
 bool
@@ -5031,7 +5042,6 @@ PrivateWindow::reparent ()
     int                  mask;
     XEvent               e;
     CompWindow::Geometry sg = serverGeometry;
-
     Display              *dpy = screen->dpy ();
 
     if (frame)
@@ -5095,7 +5105,9 @@ PrivateWindow::reparent ()
 	XSync (dpy, FALSE);
 	if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
 	    screen->activeWindow () == id)
+	{
 	    window->moveInputFocusTo ();
+	}
 	pendingUnmaps++;
 	pendingMaps++;
     }
@@ -5108,11 +5120,10 @@ PrivateWindow::reparent ()
 void
 PrivateWindow::unreparent ()
 {
-    Display *dpy = screen->dpy ();
+    Display        *dpy = screen->dpy ();
     XEvent         e;
     XWindowChanges xwc;
-
-    bool alive = true;
+    bool           alive = true;
 
     if (!frame)
 	return;
@@ -5152,5 +5163,4 @@ PrivateWindow::unreparent ()
     wrapper = None;
     frame = None;
 
-    window->windowNotify (CompWindowNotifyUnreparent);
-}
+    window->windowNotify (CompWindowNotifyUnreparent);}

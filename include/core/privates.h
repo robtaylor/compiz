@@ -43,14 +43,14 @@ class CompPrivateStorage {
 	typedef std::vector<bool> Indices;
 
     public:
-	CompPrivateStorage (Indices *iList);
+	CompPrivateStorage (Indices& iList);
 
     public:
 	std::vector<CompPrivate> privates;
 
     protected:
-	static int allocatePrivateIndex (Indices *iList);
-	static void freePrivateIndex (Indices *iList, int idx);
+	static int allocatePrivateIndex (Indices& iList);
+	static void freePrivateIndex (Indices& iList, int idx);
 };
 
 #endif

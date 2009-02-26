@@ -117,7 +117,7 @@ class PrivateWindow {
 	static void unminimizeTransients (CompWindow *w,
 					  CompWindow *ancestor);
 
-	bool getUsageTimestamp (Time *timestamp);
+	bool getUsageTimestamp (Time& timestamp);
 
 	bool isWindowFocusAllowed (Time timestamp);
 
@@ -169,8 +169,7 @@ class PrivateWindow {
 	
 	void updateSize ();
 
-	bool getUserTime (Time *time);
-
+	bool getUserTime (Time& time);
 	void setUserTime (Time time);
 
 	bool allowWindowFocus (unsigned int noFocusMask,
@@ -238,7 +237,7 @@ class PrivateWindow {
 	CompPoint initialViewport;
 
 	Time initialTimestamp;
-	Bool initialTimestampSet;
+	bool initialTimestampSet;
 
 	bool     fullscreenMonitorsSet;
 	CompRect fullscreenMonitorRect;
