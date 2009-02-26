@@ -10,6 +10,7 @@ set (_plugin_files
     fs
     gconf
     glib
+    gnomecompat
     imgpng
     imgsvg
     ini
