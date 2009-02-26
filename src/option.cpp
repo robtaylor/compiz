@@ -250,6 +250,56 @@ CompOption::Value::list ()
     return priv->list;
 }
 
+CompOption::Value::operator bool ()
+{
+    return b();
+}
+
+CompOption::Value::operator int ()
+{
+    return i();
+}
+
+CompOption::Value::operator float()
+{
+    return f();
+}
+
+CompOption::Value::operator unsigned short * ()
+{
+    return c();
+}
+
+CompOption::Value::operator CompString ()
+{
+    return s();
+}
+
+CompOption::Value::operator CompMatch & ()
+{
+    return match();
+}
+
+CompOption::Value::operator CompAction & ()
+{
+    return action();
+}
+
+CompOption::Value::operator CompAction * ()
+{
+    return &action();
+}
+
+CompOption::Value::operator Type ()
+{
+    return listType();
+}
+
+CompOption::Value::operator Vector & ()
+{
+    return list();
+}
+
 bool
 CompOption::Value::operator== (const CompOption::Value &val)
 {
