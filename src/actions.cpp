@@ -183,32 +183,6 @@ CompScreen::lowerWin (CompAction         *action,
 }
 
 bool
-CompScreen::runCommandDispatch (CompAction         *action,
-				CompAction::State  state,
-				CompOption::Vector &options)
-{
-    int index = -1;
-    int i = COMP_OPTION_RUN_COMMAND0_KEY;
-
-    while (i <= COMP_OPTION_RUN_COMMAND11_KEY)
-    {
-	if (action == &screen->priv->opt[i].value ().action ())
-	{
-	    index = i - COMP_OPTION_RUN_COMMAND0_KEY +
-		COMP_OPTION_COMMAND0;
-	    break;
-	}
-
-	i++;
-    }
-
-    if (index > 0)
-	screen->runCommand (screen->priv->opt[index].value ().s ());
-
-    return true;
-}
-
-bool
 CompScreen::windowMenu (CompAction         *action,
 			CompAction::State  state,
 			CompOption::Vector &options)

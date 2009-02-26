@@ -366,30 +366,6 @@ class CompScreen :
 
     public :
 
-	static bool runCommandDispatch (CompAction         *action,
-					CompAction::State  state,
-					CompOption::Vector &options);
-
-	static bool runCommandScreenshot(CompAction         *action,
-					 CompAction::State  state,
-					 CompOption::Vector &options);
-
-	static bool runCommandWindowScreenshot(CompAction         *action,
-					       CompAction::State  state,
-					       CompOption::Vector &options);
-
-	static bool runCommandTerminal (CompAction         *action,
-					CompAction::State  state,
-					CompOption::Vector &options);
-
-	static bool mainMenu (CompAction         *action,
-			      CompAction::State  state,
-			      CompOption::Vector &options);
-
-	static bool runDialog (CompAction         *action,
-			       CompAction::State  state,
-			       CompOption::Vector &options);
-
 	static bool showDesktop (CompAction         *action,
 				 CompAction::State  state,
 				 CompOption::Vector &options);
