@@ -225,16 +225,47 @@ PrivateWindow::updateNormalHints ()
 void
 PrivateWindow::updateWmHints ()
 {
-    XWMHints *hints;
+    XWMHints *newHints;
+    long     dFlags = 0;
+    bool     iconChanged = false;
 
-    hints = XGetWMHints (screen->dpy (), priv->id);
     if (hints)
-    {
-	if (hints->flags & InputHint)
-	    priv->inputHint = hints->input;
+	dFlags = hints->flags;
 
-	XFree (hints);
+    inputHint = true;
+
+    newHints = XGetWMHints (screen->dpy (), id);
+    if (newHints)
+    {
+	dFlags ^= newHints->flags;
+
+	if (newHints->flags & InputHint)
+	    inputHint = newHints->input;
+
+	if (hints)
+	{
+	    if ((newHints->flags & IconPixmapHint) &&
+		(hints->icon_pixmap != newHints->icon_pixmap))
+	    {
+		iconChanged = true;
+	    }
+	    else if ((newHints->flags & IconMaskHint) &&
+		     (hints->icon_mask != newHints->icon_mask))
+	    {
+		iconChanged = true;
+	    }
+	}
     }
+
+    iconChanged |= (dFlags & (IconPixmapHint | IconMaskHint));
+
+    if (iconChanged)
+	freeIcons ();
+
+    if (hints)
+	XFree (hints);
+
+    hints = newHints;
 }
 
 void
@@ -3702,6 +3733,82 @@ CompWindow::initialViewport () const
     return priv->initialViewport;
 }
 
+void
+PrivateWindow::readIconHint ()
+{
+    XImage       *image, *maskImage = NULL;
+    Display      *dpy = screen->dpy ();
+    unsigned int width, height, dummy;
+    int          i, j, k, iDummy;
+    Window       wDummy;
+    CompIcon     *icon;
+    XColor       *colors;
+    CARD32       *p;
+
+    if (!XGetGeometry (dpy, hints->icon_pixmap, &wDummy, &iDummy,
+		       &iDummy, &width, &height, &dummy, &dummy))
+	return;
+
+    image = XGetImage (dpy, hints->icon_pixmap, 0, 0, width, height,
+		       AllPlanes, ZPixmap);
+    if (!image)
+	return;
+
+    colors = new XColor[width * height];
+    if (!colors)
+    {
+	XDestroyImage (image);
+	return;
+    }
+
+    k = 0;
+    for (j = 0; j < height; j++)
+	for (i = 0; i < width; i++)
+	    colors[k++].pixel = XGetPixel (image, i, j);
+
+    for (i = 0; i < k; i += 256)
+	XQueryColors (dpy, screen->priv->colormap,
+		      &colors[i], MIN (k - i, 256));
+
+    XDestroyImage (image);
+
+    icon = new CompIcon (screen, width, height);
+    if (!icon)
+    {
+	free (colors);
+	return;
+    }
+
+    if (hints->flags & IconMaskHint)
+	maskImage = XGetImage (dpy, hints->icon_mask, 0, 0,
+			       width, height, AllPlanes, ZPixmap);
+
+    k = 0;
+    p = (CARD32 *) icon->data ();
+
+    for (j = 0; j < height; j++)
+    {
+	for (i = 0; i < width; i++)
+	{
+	    if (maskImage && !XGetPixel (maskImage, i, j))
+		*p++ = 0;
+	    else
+		*p++ = 0xff000000                             | /* alpha */
+		       (((colors[k].red >> 8) & 0xff) << 16)  | /* red */
+		       (((colors[k].green >> 8) & 0xff) << 8) | /* green */
+		       ((colors[k].blue >> 8) & 0xff);          /* blue */
+
+	    k++;
+	}
+    }
+
+    free (colors);
+    if (maskImage)
+	XDestroyImage (maskImage);
+
+    icons.push_back (icon);
+}
+
 /* returns icon with dimensions as close as possible to width and height
    but never greater. */
 CompIcon *
@@ -3774,6 +3881,10 @@ CompWindow::getIcon (int width,
 	    }
 
 	    XFree (data);
+	}
+	else if (priv->hints && (priv->hints->flags & IconPixmapHint))
+	{
+	    priv->readIconHint ();
 	}
 
 	/* don't fetch property again */
@@ -4769,6 +4880,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     activeNum (0),
     transientFor (None),
     clientLeader (None),
+    hints (NULL),
     inputHint (true),
     alpha (false),
     width (0),
@@ -4864,6 +4976,9 @@ PrivateWindow::~PrivateWindow ()
 
     if (struts)
 	free (struts);
+
+    if (hints)
+	XFree (hints);
 
     if (icons.size ())
 	freeIcons ();

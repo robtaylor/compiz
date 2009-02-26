@@ -165,7 +165,6 @@ class PrivateWindow {
 	unsigned int adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						       unsigned int   xwcm,
 						       int            gravity);
-
 	
 	void updateSize ();
 
@@ -194,6 +193,8 @@ class PrivateWindow {
 
 	void setOverrideRedirect (bool overrideRedirect);
 
+	void readIconHint ();
+
     public:
 
 	PrivateWindow *priv;
@@ -212,6 +213,7 @@ class PrivateWindow {
 	Window               transientFor;
 	Window               clientLeader;
 	XSizeHints	     sizeHints;
+	XWMHints             *hints;
 
 	bool       inputHint;
 	bool       alpha;
