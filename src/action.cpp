@@ -601,13 +601,14 @@ CompAction::buttonToString ()
 CompString
 CompAction::edgeMaskToString ()
 {
-    CompString edge = "";
+    CompString edge;
 
     for (int i = 0; i < SCREEN_EDGE_NUM; i++)
     {
 	if (priv->edgeMask & (1 << i))
 	{
-	    edge += " | ";
+	    if (!edge.empty ())
+		edge += " | ";
 
 	    edge += edgeToString (i);
 	}
