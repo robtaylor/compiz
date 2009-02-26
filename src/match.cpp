@@ -122,7 +122,7 @@ CompScreen::matchInitExp (const CompString& str)
 }
 
 static void
-matchUpdateMatchOptions (CompOption::Vector options)
+matchUpdateMatchOptions (CompOption::Vector& options)
 {
     foreach (CompOption &option, options)
     {
