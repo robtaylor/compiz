@@ -3,6 +3,7 @@ set (_plugin_files
     annotate
     blur
     clone
+    commands
     cube
     dbus
     decor

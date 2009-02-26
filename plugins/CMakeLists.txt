@@ -38,8 +38,12 @@ target_link_libraries (regex)
 add_library (gnomecompat MODULE gnomecompat.cpp)
 target_link_libraries (gnomecompat)
 
+add_library (commands MODULE commands.cpp)
+target_link_libraries (commands)
+
 install (
-    TARGETS decor move resize copytex zoom water ini switcher place regex gnomecompat
+    TARGETS decor move resize copytex zoom water ini switcher
+	    place regex gnomecompat commands
     DESTINATION ${compiz_plugindir}
 )
 

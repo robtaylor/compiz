@@ -6,6 +6,7 @@ gtk/window-decorator/gtk-window-decorator.c
 metadata/annotate.xml.in
 metadata/blur.xml.in
 metadata/clone.xml.in
+metadata/commands.xml.in
 metadata/composite.xml.in
 metadata/copytex.xml.in
 metadata/core.xml.in
