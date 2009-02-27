@@ -186,6 +186,24 @@ CompOption::Value::set (CompOption::Type type, const Vector& l)
 }
 
 
+static bool
+checkIsAction (CompOption::Type type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    return true;
+	default:
+	    break;
+    }
+
+    return false;
+}
+
+
 bool
 CompOption::Value::b ()
 {
@@ -251,11 +269,7 @@ CompOption::Value::match ()
 CompAction &
 CompOption::Value::action ()
 {
-    if (priv->type != CompOption::TypeAction &&
-        priv->type != CompOption::TypeKey &&
-        priv->type != CompOption::TypeButton &&
-        priv->type != CompOption::TypeEdge &&
-        priv->type != CompOption::TypeBell)
+    if (!checkIsAction(priv->type))
 	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not an action");
     return priv->action;
 }
@@ -724,18 +738,7 @@ CompOption::set (CompOption::Value &val)
 bool
 CompOption::isAction ()
 {
-    switch (priv->type) {
-	case CompOption::TypeAction:
-	case CompOption::TypeKey:
-	case CompOption::TypeButton:
-	case CompOption::TypeEdge:
-	case CompOption::TypeBell:
-	    return true;
-	default:
-	    break;
-    }
-
-    return false;
+    return checkIsAction (priv->type);
 }
 
 CompOption &
