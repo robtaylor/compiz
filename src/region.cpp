@@ -133,8 +133,11 @@ CompRegion::contains (const CompPoint &p) const
 bool
 CompRegion::contains (const CompRect &r) const
 {
-    return XRectInRegion (handle (), r.x (), r.y (), r.width (), r.height ())
-	   != RectangleOut;
+    int result;
+
+    result = XRectInRegion (handle (), r.x (), r.y (), r.width (), r.height ());
+
+    return result == RectangleIn;
 }
 
 CompRegion
@@ -164,7 +167,10 @@ CompRegion::intersects (const CompRegion &r) const
 bool
 CompRegion::intersects (const CompRect &r) const
 {
-    return !intersected (r).isEmpty ();
+    int result;
+    result = XRectInRegion (handle (), r.x (), r.y (), r.width (), r.height ());
+
+    return result != RectangleOut;
 }
 
 bool

@@ -57,7 +57,7 @@ class CompRegion {
 
 	bool contains (const CompPoint &) const;
 	bool contains (const CompRect &) const;
-	
+
 	CompRegion intersected (const CompRegion &) const;
 	CompRegion intersected (const CompRect &) const;
 	bool intersects (const CompRegion &) const;
