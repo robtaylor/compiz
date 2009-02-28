@@ -98,6 +98,17 @@ class CompOption {
 		bool operator!= (const Value& val);
 		Value & operator= (const Value &val);
 
+		operator bool ();
+		operator int ();
+		operator float();
+		operator unsigned short * ();
+		operator CompString ();
+		operator CompMatch & ();
+		operator CompAction & ();
+		operator CompAction * ();
+		operator Type ();
+		operator Vector & ();
+
 	    private:
 		PrivateValue *priv;
 	};

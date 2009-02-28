@@ -371,7 +371,7 @@ bool
 PrivateScaleWindow::compareWindowsDistance (ScaleWindow *w1,
 					    ScaleWindow *w2)
 {
-    return w2->priv->distance < w1->priv->distance;
+    return w1->priv->distance < w2->priv->distance;
 }
 
 void

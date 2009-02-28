@@ -11,6 +11,7 @@
 	    <option name="directory" type="string">
 		<_short>Directory</_short>
 		<_long>Put screenshot images in this directory</_long>
+		<hints>directory;</hints>
 		<default>Desktop</default>
 	    </option>
 	    <option name="launch_app" type="string">

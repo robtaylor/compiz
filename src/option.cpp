@@ -186,11 +186,32 @@ CompOption::Value::set (CompOption::Type type, const Vector& l)
 }
 
 
+static bool
+checkIsAction (CompOption::Type type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    return true;
+	default:
+	    break;
+    }
+
+    return false;
+}
+
+
 bool
 CompOption::Value::b ()
 {
     if (priv->type != CompOption::TypeBool)
+    {
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a bool");
 	return false;
+    }
     return priv->value.b;
 }
 
@@ -198,7 +219,10 @@ int
 CompOption::Value::i ()
 {
     if (priv->type != CompOption::TypeInt)
+    {
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not an int");
 	return 0;
+    }
     return priv->value.i;
 }
 
@@ -206,7 +230,10 @@ float
 CompOption::Value::f ()
 {
     if (priv->type != CompOption::TypeFloat)
+    {
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a float");
 	return 0.0;
+    }
     return priv->value.f;
 }
 
@@ -216,38 +243,101 @@ unsigned short*
 CompOption::Value::c ()
 {
     if (priv->type != CompOption::TypeColor)
+    {
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a color");
 	return reinterpret_cast<unsigned short *> (&defaultColor);
+    }
     return priv->value.c;
 }
 
 CompString
 CompOption::Value::s ()
 {
+    if (priv->type != CompOption::TypeString)
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a string");
     return priv->string;
 }
 
 CompMatch &
 CompOption::Value::match ()
 {
+    if (priv->type != CompOption::TypeMatch)
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a match");
     return priv->match;
 }
 
 CompAction &
 CompOption::Value::action ()
 {
+    if (!checkIsAction(priv->type))
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not an action");
     return priv->action;
 }
 
 CompOption::Type
 CompOption::Value::listType ()
 {
+    if (priv->type != CompOption::TypeList)
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a list");
     return priv->listType;
 }
 
 CompOption::Value::Vector &
 CompOption::Value::list ()
 {
+    if (priv->type != CompOption::TypeList)
+	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a list");
     return priv->list;
+}
+
+CompOption::Value::operator bool ()
+{
+    return b();
+}
+
+CompOption::Value::operator int ()
+{
+    return i();
+}
+
+CompOption::Value::operator float()
+{
+    return f();
+}
+
+CompOption::Value::operator unsigned short * ()
+{
+    return c();
+}
+
+CompOption::Value::operator CompString ()
+{
+    return s();
+}
+
+CompOption::Value::operator CompMatch & ()
+{
+    return match();
+}
+
+CompOption::Value::operator CompAction & ()
+{
+    return action();
+}
+
+CompOption::Value::operator CompAction * ()
+{
+    return &action();
+}
+
+CompOption::Value::operator Type ()
+{
+    return listType();
+}
+
+CompOption::Value::operator Vector & ()
+{
+    return list();
 }
 
 bool
@@ -664,18 +754,7 @@ CompOption::set (CompOption::Value &val)
 bool
 CompOption::isAction ()
 {
-    switch (priv->type) {
-	case CompOption::TypeAction:
-	case CompOption::TypeKey:
-	case CompOption::TypeButton:
-	case CompOption::TypeEdge:
-	case CompOption::TypeBell:
-	    return true;
-	default:
-	    break;
-    }
-
-    return false;
+    return checkIsAction (priv->type);
 }
 
 CompOption &
