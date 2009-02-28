@@ -38,8 +38,8 @@
 
 CompOption::Vector noOptions (0);
 
-CompOption::Value::Value () :
-    priv (new PrivateValue ())
+CompOption::Value::Value (Type type, Type listType) :
+    priv (new PrivateValue (type, listType))
 {
 }
 
@@ -434,12 +434,12 @@ CompOption::Value::operator= (const CompOption::Value &val)
     return *this;
 }
 
-PrivateValue::PrivateValue () :
-    type (CompOption::TypeBool),
+PrivateValue::PrivateValue (CompOption::Type t, CompOption::Type lt) :
+    type (t),
     string (""),
     action (),
     match (),
-    listType (CompOption::TypeBool),
+    listType (lt),
     list ()
 {
     memset (&value, 0, sizeof (ValueUnion));
