@@ -185,7 +185,6 @@ CompOption::Value::set (CompOption::Type type, const Vector& l)
     priv->listType = type;
 }
 
-
 static bool
 checkIsAction (CompOption::Type type)
 {
@@ -203,15 +202,16 @@ checkIsAction (CompOption::Type type)
     return false;
 }
 
-
 bool
 CompOption::Value::b ()
 {
     if (priv->type != CompOption::TypeBool)
     {
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a bool");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a bool");
 	return false;
     }
+
     return priv->value.b;
 }
 
@@ -220,9 +220,11 @@ CompOption::Value::i ()
 {
     if (priv->type != CompOption::TypeInt)
     {
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not an int");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not an int");
 	return 0;
     }
+
     return priv->value.i;
 }
 
@@ -231,22 +233,26 @@ CompOption::Value::f ()
 {
     if (priv->type != CompOption::TypeFloat)
     {
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a float");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a float");
 	return 0.0;
     }
+
     return priv->value.f;
 }
 
 static unsigned short defaultColor[4] = { 0x0, 0x0, 0x0, 0xffff};
 
-unsigned short*
+unsigned short *
 CompOption::Value::c ()
 {
     if (priv->type != CompOption::TypeColor)
     {
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a color");
-	return reinterpret_cast<unsigned short *> (&defaultColor);
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a color");
+	return reinterpret_cast<unsigned short *> (defaultColor);
     }
+
     return priv->value.c;
 }
 
@@ -254,7 +260,12 @@ CompString
 CompOption::Value::s ()
 {
     if (priv->type != CompOption::TypeString)
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a string");
+    {
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a string");
+	return "";
+    }
+
     return priv->string;
 }
 
@@ -262,7 +273,9 @@ CompMatch &
 CompOption::Value::match ()
 {
     if (priv->type != CompOption::TypeMatch)
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a match");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a match");
+
     return priv->match;
 }
 
@@ -270,7 +283,9 @@ CompAction &
 CompOption::Value::action ()
 {
     if (!checkIsAction(priv->type))
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not an action");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not an action");
+
     return priv->action;
 }
 
@@ -278,7 +293,9 @@ CompOption::Type
 CompOption::Value::listType ()
 {
     if (priv->type != CompOption::TypeList)
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a list");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a list");
+
     return priv->listType;
 }
 
@@ -286,58 +303,60 @@ CompOption::Value::Vector &
 CompOption::Value::list ()
 {
     if (priv->type != CompOption::TypeList)
-	compLogMessage("core", CompLogLevelWarn, "CompOption::Value not a list");
+	compLogMessage("core", CompLogLevelWarn,
+		       "CompOption::Value not a list");
+
     return priv->list;
 }
 
 CompOption::Value::operator bool ()
 {
-    return b();
+    return b ();
 }
 
 CompOption::Value::operator int ()
 {
-    return i();
+    return i ();
 }
 
-CompOption::Value::operator float()
+CompOption::Value::operator float ()
 {
-    return f();
+    return f ();
 }
 
 CompOption::Value::operator unsigned short * ()
 {
-    return c();
+    return c ();
 }
 
 CompOption::Value::operator CompString ()
 {
-    return s();
+    return s ();
 }
 
 CompOption::Value::operator CompMatch & ()
 {
-    return match();
+    return match ();
 }
 
 CompOption::Value::operator CompAction & ()
 {
-    return action();
+    return action ();
 }
 
 CompOption::Value::operator CompAction * ()
 {
-    return &action();
+    return &action ();
 }
 
 CompOption::Value::operator Type ()
 {
-    return listType();
+    return listType ();
 }
 
 CompOption::Value::operator Vector & ()
 {
-    return list();
+    return list ();
 }
 
 bool

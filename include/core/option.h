@@ -100,7 +100,7 @@ class CompOption {
 
 		operator bool ();
 		operator int ();
-		operator float();
+		operator float ();
 		operator unsigned short * ();
 		operator CompString ();
 		operator CompMatch & ();
@@ -200,8 +200,6 @@ class CompOption {
 
 
 	static bool setOption (CompOption  &o, Value &value);
-
-
 
     private:
 	PrivateOption *priv;
