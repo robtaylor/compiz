@@ -205,12 +205,8 @@ checkIsAction (CompOption::Type type)
 bool
 CompOption::Value::b ()
 {
-    if (priv->type != CompOption::TypeBool)
-    {
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a bool");
+    if (!priv->checkType (CompOption::TypeBool))
 	return false;
-    }
 
     return priv->value.b;
 }
@@ -218,12 +214,8 @@ CompOption::Value::b ()
 int
 CompOption::Value::i ()
 {
-    if (priv->type != CompOption::TypeInt)
-    {
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not an int");
+    if (!priv->checkType (CompOption::TypeInt))
 	return 0;
-    }
 
     return priv->value.i;
 }
@@ -231,12 +223,8 @@ CompOption::Value::i ()
 float
 CompOption::Value::f ()
 {
-    if (priv->type != CompOption::TypeFloat)
-    {
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a float");
+    if (!priv->checkType (CompOption::TypeFloat))
 	return 0.0;
-    }
 
     return priv->value.f;
 }
@@ -246,12 +234,8 @@ static unsigned short defaultColor[4] = { 0x0, 0x0, 0x0, 0xffff};
 unsigned short *
 CompOption::Value::c ()
 {
-    if (priv->type != CompOption::TypeColor)
-    {
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a color");
+    if (!priv->checkType (CompOption::TypeColor))
 	return reinterpret_cast<unsigned short *> (defaultColor);
-    }
 
     return priv->value.c;
 }
@@ -259,12 +243,8 @@ CompOption::Value::c ()
 CompString
 CompOption::Value::s ()
 {
-    if (priv->type != CompOption::TypeString)
-    {
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a string");
+    if (!priv->checkType (CompOption::TypeString))
 	return "";
-    }
 
     return priv->string;
 }
@@ -272,9 +252,7 @@ CompOption::Value::s ()
 CompMatch &
 CompOption::Value::match ()
 {
-    if (priv->type != CompOption::TypeMatch)
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a match");
+    priv->checkType (CompOption::TypeMatch);
 
     return priv->match;
 }
@@ -282,7 +260,9 @@ CompOption::Value::match ()
 CompAction &
 CompOption::Value::action ()
 {
-    if (!checkIsAction(priv->type))
+    priv->checkType (priv->type);
+
+    if (!checkIsAction (priv->type))
 	compLogMessage("core", CompLogLevelWarn,
 		       "CompOption::Value not an action");
 
@@ -292,9 +272,7 @@ CompOption::Value::action ()
 CompOption::Type
 CompOption::Value::listType ()
 {
-    if (priv->type != CompOption::TypeList)
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a list");
+    priv->checkType (CompOption::TypeList);
 
     return priv->listType;
 }
@@ -302,9 +280,7 @@ CompOption::Value::listType ()
 CompOption::Value::Vector &
 CompOption::Value::list ()
 {
-    if (priv->type != CompOption::TypeList)
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not a list");
+    priv->checkType (CompOption::TypeList);
 
     return priv->list;
 }
@@ -435,11 +411,11 @@ CompOption::Value::operator= (const CompOption::Value &val)
 }
 
 PrivateValue::PrivateValue () :
-    type (CompOption::TypeBool),
+    type (CompOption::TypeUnset),
     string (""),
     action (),
     match (),
-    listType (CompOption::TypeBool),
+    listType (CompOption::TypeUnset),
     list ()
 {
     memset (&value, 0, sizeof (ValueUnion));
@@ -454,6 +430,27 @@ PrivateValue::PrivateValue (const PrivateValue& p) :
     list (p.list)
 {
     memcpy (&value, &p.value, sizeof (ValueUnion));
+}
+
+bool
+PrivateValue::checkType (CompOption::Type refType)
+{
+    if (type == CompOption::TypeUnset)
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"Value type is not yet set");
+	return false;
+    }
+
+    if (type != refType)
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"Value type does not match (is %d, expected %d)",
+			type, refType);
+	return false;
+    }
+
+    return true;
 }
 
 void
@@ -925,7 +922,7 @@ CompOption::setOption (CompOption        &o,
 
 PrivateOption::PrivateOption () :
     name (""),
-    type (CompOption::TypeBool),
+    type (CompOption::TypeUnset),
     value (),
     rest ()
 {

@@ -69,7 +69,8 @@ class PrivateValue {
 	PrivateValue (const PrivateValue&);
 
 	void reset ();
-	
+	bool checkType (CompOption::Type refType);
+
 	CompOption::Type          type;
 	ValueUnion                value;
 	CompString                string;

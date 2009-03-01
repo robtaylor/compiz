@@ -53,7 +53,9 @@ class CompOption {
 	    TypeEdge,
 	    TypeBell,
 	    TypeMatch,
-	    TypeList
+	    TypeList,
+	    /* internal use only */
+	    TypeUnset
 	} Type;
 
 	class Value {
