@@ -387,9 +387,10 @@ IniFile::stringToOption (CompOption *option,
 	type = option->value ().listType ();
 	if (validListItemType (type))
 	{
-	    CompString        listItem;
-	    unsigned int      delim, pos = 0;
-	    CompOption::Value item;
+	    CompString                listItem;
+	    unsigned int              delim, pos = 0;
+	    CompOption::Value         item;
+	    CompOption::Value::Vector list;
 
 	    do
 	    {
@@ -402,12 +403,13 @@ IniFile::stringToOption (CompOption *option,
 
 		valid = stringToOptionValue (listItem, type, item);
 		if (valid)
-		    value.list ().push_back (item);
+		    list.push_back (item);
 
 		pos = delim + 1;
 	    }
 	    while (delim != CompString::npos);
 
+	    value.set (type, list);
 	    valid = true;
 	}
     }
