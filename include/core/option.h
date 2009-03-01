@@ -61,7 +61,7 @@ class CompOption {
 		typedef std::vector<Value> Vector;
 
 	    public:
-		Value (Type type = TypeBool, Type listType = TypeBool);
+		Value ();
 		Value (const Value &);
 		Value (const bool b);
 		Value (const int i);

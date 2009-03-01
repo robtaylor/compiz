@@ -1,4 +1,5 @@
-/* * Copyright © 2008 Dennis Kasprzyk
+/*
+ * Copyright © 2008 Dennis Kasprzyk
  * Copyright © 2007 Novell, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software
@@ -64,8 +65,7 @@ typedef union {
 
 class PrivateValue {
     public:
-	PrivateValue (CompOption::Type type = CompOption::TypeBool,
-		      CompOption::Type listType = CompOption::TypeBool);
+	PrivateValue ();
 	PrivateValue (const PrivateValue&);
 
 	void reset ();

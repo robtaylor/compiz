@@ -374,14 +374,9 @@ bool
 IniFile::stringToOption (CompOption *option,
 			 CompString &valueString)
 {
-    CompOption::Type type = option->type ();
-    CompOption::Type listType = CompOption::TypeBool;
-    bool             valid = false;
-
-    if (type == CompOption::TypeList)
-	listType = option->value ().listType ();
-
-    CompOption::Value value (type, listType);
+    CompOption::Value value;
+    bool              valid = false;
+    CompOption::Type  type = option->type ();
 
     if (validItemType (type))
     {
