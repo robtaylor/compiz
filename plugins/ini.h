@@ -73,7 +73,7 @@ class IniPluginVTable :
 class IniFile
 {
     public:
-	IniFile (CompScreen *s, CompPlugin *p);
+	IniFile (CompPlugin *p);
 	~IniFile ();
 
 	void load ();
@@ -81,7 +81,6 @@ class IniFile
 
     private:
 	CompPlugin *plugin;
-	CompScreen *screen;
 	CompString filePath;
 
 	std::fstream optionFile;

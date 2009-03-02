@@ -32,8 +32,8 @@
 
 COMPIZ_PLUGIN_20081216 (ini, IniPluginVTable)
 
-IniFile::IniFile (CompScreen *s, CompPlugin *p) :
-    screen (s), plugin (p)
+IniFile::IniFile (CompPlugin *p) :
+    plugin (p)
 {
 }
 
@@ -54,7 +54,7 @@ IniFile::open (bool write)
 	return false;
 
     filePath = homeDir;
-    if (strcmp (plugin->vTable->name ().c_str (), "core") == 0)
+    if (plugin->vTable->name () == "core")
 	filePath += "general";
     else
 	filePath += plugin->vTable->name ();
@@ -62,7 +62,7 @@ IniFile::open (bool write)
 
     mode = write ? std::ios::out : std::ios::in;
     optionFile.open (filePath.c_str (), mode);
-    
+
     return !optionFile.fail ();
 }
 
@@ -440,7 +440,7 @@ IniScreen::fileChanged (const char *name)
     p = CompPlugin::find (plugin == "general" ? "core" : plugin.c_str ());
     if (p)
     {
-	IniFile ini (screen, p);
+	IniFile ini (p);
 
 	blockWrites = true;
 	ini.load ();
@@ -507,11 +507,13 @@ IniScreen::setOptionForPlugin (const char        *plugin,
 	if (p)
 	{
 	    CompOption *o;
-	    IniFile    ini (screen, p);
 
 	    o = CompOption::findOption (p->vTable->getOptions (), name);
 	    if (o && (o->value () != v))
+	    {
+		IniFile ini (p);
 		ini.save ();
+	    }
 	}
     }
 
@@ -525,7 +527,7 @@ IniScreen::initPluginForScreen (CompPlugin *p)
 
     if (status)
     {
-	IniFile ini (screen, p);
+	IniFile ini (p);
 
 	blockWrites = true;
 	ini.load ();
@@ -536,7 +538,8 @@ IniScreen::initPluginForScreen (CompPlugin *p)
 }
 
 IniScreen::IniScreen (CompScreen *screen) :
-    PrivateHandler<IniScreen, CompScreen> (screen)
+    PrivateHandler<IniScreen, CompScreen> (screen),
+    blockWrites (false)
 {
     CompString homeDir;
     int        mask;
@@ -554,14 +557,11 @@ IniScreen::IniScreen (CompScreen *screen) :
 	screen->addFileWatch (homeDir.c_str (), mask,
 			      boost::bind (&IniScreen::fileChanged, this, _1));
 
-    ScreenInterface::setHandler (screen, true);
 
-    /* FIXME: timer? */
-    IniFile ini (screen, CompPlugin::find ("core"));
-
-    blockWrites = true;
+    IniFile ini (CompPlugin::find ("core"));
     ini.load ();
-    blockWrites = false;
+
+    ScreenInterface::setHandler (screen, true);
 }
 
 IniScreen::~IniScreen ()
