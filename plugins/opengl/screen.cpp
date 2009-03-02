@@ -702,7 +702,7 @@ GLScreen::getProcAddress (const char *name)
     if (!funcPtr)
     {
 	if (!dlhand)
-	    dlhand = dlopen ("libGL.so", RTLD_LAZY);
+	    dlhand = dlopen ("libopengl.so", RTLD_LAZY);
 
 	if (dlhand)
 	{
