@@ -204,9 +204,6 @@ PrivateGLWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyFrameUpdate:
 	    gWindow->release ();
 	    break;
-	case CompWindowNotifyAliveChanged:
-	    gWindow->updatePaintAttribs ();
-	    break;
 	default:
 	    break;
 	
@@ -220,18 +217,9 @@ GLWindow::updatePaintAttribs ()
 {
     CompositeWindow *cw = CompositeWindow::get (priv->window);
 
-    if (priv->window->alive ())
-    {
-	priv->paint.opacity    = cw->opacity ();
-	priv->paint.brightness = cw->brightness ();
-	priv->paint.saturation = cw->saturation ();
-    }
-    else
-    {
-	priv->paint.opacity    = cw->opacity ();
-	priv->paint.brightness = 0xa8a8;
-	priv->paint.saturation = 0;
-    }
+    priv->paint.opacity    = cw->opacity ();
+    priv->paint.brightness = cw->brightness ();
+    priv->paint.saturation = cw->saturation ();
 }
 
 GLWindow::Geometry &
