@@ -3,7 +3,7 @@
 	<_short>Commands</_short>
 	<_long>Assigns bindings to arbitrary commands</_long>
 	<category>General</category>
-	<display>
+	<options>
 	    <group>
 		<_short>Commands</_short>
 		<option name="command0" type="string">
@@ -220,6 +220,6 @@
 		    <_long>An edge binding that when invoked, will run the shell command identified by command11</_long>
 		</option>
 	    </group>
-	</display>
+	</options>
     </plugin>
 </compiz>

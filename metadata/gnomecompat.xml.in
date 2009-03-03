@@ -3,7 +3,7 @@
 	<_short>Gnome Compatibility</_short>
 	<_long>Options that keep Compiz compatible to the Gnome desktop environment</_long>
 	<category>General</category>
-	<display>
+	<options>
 	    <option name="main_menu_key" type="key">
 		<_short>Show Main Menu</_short>
 		<_long>Show the main menu</_long>
@@ -47,6 +47,6 @@
 		    <_long>Open a terminal</_long>
 		</option>
 	    </group>
-	</display>
+	</options>
     </plugin>
 </compiz>
