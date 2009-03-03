@@ -23,899 +23,407 @@
  * Author: David Reveman <davidr@novell.com>
  */
 
-#include <stdlib.h>
-#include <string.h>
+#include "fade.h"
+#include <core/atoms.h>
 
-#include <compiz-core.h>
+COMPIZ_PLUGIN_20081216 (fade, FadePluginVTable);
 
-static CompMetadata fadeMetadata;
-
-static int displayPrivateIndex;
-
-typedef struct _FadeDisplay {
-    int			       screenPrivateIndex;
-    HandleEventProc	       handleEvent;
-    MatchExpHandlerChangedProc matchExpHandlerChanged;
-    int			       displayModals;
-} FadeDisplay;
-
-#define FADE_SCREEN_OPTION_FADE_SPEED		  0
-#define FADE_SCREEN_OPTION_WINDOW_MATCH		  1
-#define FADE_SCREEN_OPTION_VISUAL_BELL		  2
-#define FADE_SCREEN_OPTION_FULLSCREEN_VISUAL_BELL 3
-#define FADE_SCREEN_OPTION_MINIMIZE_OPEN_CLOSE	  4
-#define FADE_SCREEN_OPTION_NUM			  5
-
-typedef struct _FadeScreen {
-    int			   windowPrivateIndex;
-    int			   fadeTime;
-
-    CompOption opt[FADE_SCREEN_OPTION_NUM];
-
-    PreparePaintScreenProc preparePaintScreen;
-    PaintWindowProc	   paintWindow;
-    DamageWindowRectProc   damageWindowRect;
-    FocusWindowProc	   focusWindow;
-    WindowResizeNotifyProc windowResizeNotify;
-
-    CompMatch match;
-} FadeScreen;
-
-typedef struct _FadeWindow {
-    GLushort opacity;
-    GLushort brightness;
-    GLushort saturation;
-
-    int dModal;
-
-    int destroyCnt;
-    int unmapCnt;
-
-    Bool shaded;
-    Bool fadeOut;
-
-    int steps;
-} FadeWindow;
-
-#define GET_FADE_DISPLAY(d)					  \
-    ((FadeDisplay *) (d)->base.privates[displayPrivateIndex].ptr)
-
-#define FADE_DISPLAY(d)			   \
-    FadeDisplay *fd = GET_FADE_DISPLAY (d)
-
-#define GET_FADE_SCREEN(s, fd)					      \
-    ((FadeScreen *) (s)->base.privates[(fd)->screenPrivateIndex].ptr)
-
-#define FADE_SCREEN(s)							\
-    FadeScreen *fs = GET_FADE_SCREEN (s, GET_FADE_DISPLAY (s->display))
-
-#define GET_FADE_WINDOW(w, fs)					      \
-    ((FadeWindow *) (w)->base.privates[(fs)->windowPrivateIndex].ptr)
-
-#define FADE_WINDOW(w)					     \
-    FadeWindow *fw = GET_FADE_WINDOW  (w,		     \
-		     GET_FADE_SCREEN  (w->screen,	     \
-		     GET_FADE_DISPLAY (w->screen->display)))
-
-#define NUM_OPTIONS(s) (sizeof ((s)->opt) / sizeof (CompOption))
-
-static void
-fadeUpdateWindowFadeMatch (CompDisplay     *display,
-			   CompOptionValue *value,
-			   CompMatch       *match)
-{
-    matchFini (match);
-    matchInit (match);
-    matchAddFromString (match, "!type=desktop");
-    matchAddGroup (match, MATCH_OP_AND_MASK, &value->match);
-    matchUpdate (display, match);
-}
-
-static CompOption *
-fadeGetScreenOptions (CompPlugin *plugin,
-		      CompScreen *screen,
-		      int	 *count)
-{
-    FADE_SCREEN (screen);
-
-    *count = NUM_OPTIONS (fs);
-    return fs->opt;
-}
-
-static Bool
-fadeSetScreenOption (CompPlugin      *plugin,
-		     CompScreen      *screen,
-		     const char	     *name,
-		     CompOptionValue *value)
-{
-    CompOption *o;
-    int	       index;
-
-    FADE_SCREEN (screen);
-
-    o = compFindOption (fs->opt, NUM_OPTIONS (fs), name, &index);
-    if (!o)
-	return FALSE;
-
-    switch (index) {
-    case FADE_SCREEN_OPTION_FADE_SPEED:
-	if (compSetFloatOption (o, value))
-	{
-	    fs->fadeTime = 1000.0f / o->value.f;
-	    return TRUE;
-	}
-	break;
-    case FADE_SCREEN_OPTION_WINDOW_MATCH:
-	if (compSetMatchOption (o, value))
-	{
-	    fadeUpdateWindowFadeMatch (screen->display, &o->value, &fs->match);
-	    return TRUE;
-	}
-	break;
-    default:
-	if (compSetOption (o, value))
-	    return TRUE;
-	break;
-    }
-
-    return FALSE;
-}
-
-static void
-fadePreparePaintScreen (CompScreen *s,
-			int	   msSinceLastPaint)
-{
-    CompWindow *w;
-    int	       steps;
-
-    FADE_SCREEN (s);
-
-    steps = (msSinceLastPaint * OPAQUE) / fs->fadeTime;
-    if (steps < 12)
-	steps = 12;
-
-    for (w = s->windows; w; w = w->next)
-	GET_FADE_WINDOW (w, fs)->steps = steps;
-
-    UNWRAP (fs, s, preparePaintScreen);
-    (*s->preparePaintScreen) (s, msSinceLastPaint);
-    WRAP (fs, s, preparePaintScreen, fadePreparePaintScreen);
-}
-
-static void
-fadeWindowStop (CompWindow *w)
-{
-    FADE_WINDOW (w);
-
-    while (fw->unmapCnt)
-    {
-	unmapWindow (w);
-	fw->unmapCnt--;
-    }
-
-    while (fw->destroyCnt)
-    {
-	destroyWindow (w);
-	fw->destroyCnt--;
-    }
-}
-
-static Bool
-fadePaintWindow (CompWindow		 *w,
-		 const WindowPaintAttrib *attrib,
-		 const CompTransform	 *transform,
-		 Region			 region,
-		 unsigned int		 mask)
-{
-    CompScreen *s = w->screen;
-    Bool       status;
-
-    FADE_SCREEN (s);
-    FADE_WINDOW (w);
-
-    if (!w->screen->canDoSlightlySaturated)
-	fw->saturation = attrib->saturation;
-
-    if (fw->destroyCnt			     ||
-	fw->unmapCnt			     ||
-	fw->opacity    != attrib->opacity    ||
-	fw->brightness != attrib->brightness ||
-	fw->saturation != attrib->saturation)
-    {
-	WindowPaintAttrib fAttrib = *attrib;
-
-	if (fw->fadeOut)
-	    fAttrib.opacity = 0;
-
-	if (fw->steps)
-	{
-	    GLint opacity;
-	    GLint brightness;
-	    GLint saturation;
-
-	    opacity = fw->opacity;
-	    if (fAttrib.opacity > fw->opacity)
-	    {
-		opacity = fw->opacity + fw->steps;
-		if (opacity > fAttrib.opacity)
-		    opacity = fAttrib.opacity;
-	    }
-	    else if (fAttrib.opacity < fw->opacity)
-	    {
-		if (w->type & CompWindowTypeUnknownMask)
-		    opacity = fw->opacity - (fw->steps >> 1);
-		else
-		    opacity = fw->opacity - fw->steps;
-
-		if (opacity < fAttrib.opacity)
-		    opacity = fAttrib.opacity;
-	    }
-
-	    brightness = fw->brightness;
-	    if (attrib->brightness > fw->brightness)
-	    {
-		brightness = fw->brightness + (fw->steps / 12);
-		if (brightness > attrib->brightness)
-		    brightness = attrib->brightness;
-	    }
-	    else if (attrib->brightness < fw->brightness)
-	    {
-		brightness = fw->brightness - (fw->steps / 12);
-		if (brightness < attrib->brightness)
-		    brightness = attrib->brightness;
-	    }
-
-	    saturation = fw->saturation;
-	    if (attrib->saturation > fw->saturation)
-	    {
-		saturation = fw->saturation + (fw->steps / 6);
-		if (saturation > attrib->saturation)
-		    saturation = attrib->saturation;
-	    }
-	    else if (attrib->saturation < fw->saturation)
-	    {
-		saturation = fw->saturation - (fw->steps / 6);
-		if (saturation < attrib->saturation)
-		    saturation = attrib->saturation;
-	    }
-
-	    fw->steps = 0;
-
-	    if (opacity > 0)
-	    {
-		fw->opacity    = opacity;
-		fw->brightness = brightness;
-		fw->saturation = saturation;
-
-		if (opacity    != attrib->opacity    ||
-		    brightness != attrib->brightness ||
-		    saturation != attrib->saturation)
-		    addWindowDamage (w);
-	    }
-	    else
-	    {
-		fw->opacity = 0;
-
-		fadeWindowStop (w);
-	    }
-	}
-
-	fAttrib.opacity	   = fw->opacity;
-	fAttrib.brightness = fw->brightness;
-	fAttrib.saturation = fw->saturation;
-
-	UNWRAP (fs, s, paintWindow);
-	status = (*s->paintWindow) (w, &fAttrib, transform, region, mask);
-	WRAP (fs, s, paintWindow, fadePaintWindow);
-    }
-    else
-    {
-	UNWRAP (fs, s, paintWindow);
-	status = (*s->paintWindow) (w, attrib, transform, region, mask);
-	WRAP (fs, s, paintWindow, fadePaintWindow);
-    }
-
-    return status;
-}
-
-static void
-fadeAddDisplayModal (CompDisplay *d,
-		     CompWindow  *w)
-{
-    FADE_DISPLAY (d);
-    FADE_WINDOW (w);
-
-    if (!(w->state & CompWindowStateDisplayModalMask))
-	return;
-
-    if (fw->dModal)
-	return;
-
-    fw->dModal = 1;
-
-    fd->displayModals++;
-    if (fd->displayModals == 1)
-    {
-	CompScreen *s;
-
-	for (s = d->screens; s; s = s->next)
-	{
-	    for (w = s->windows; w; w = w->next)
-	    {
-		FADE_WINDOW (w);
-
-		if (fw->dModal)
-		    continue;
-
-		w->paint.brightness = 0xa8a8;
-		w->paint.saturation = 0;
-	    }
-
-	    damageScreen (s);
-	}
-    }
-}
-
-static void
-fadeRemoveDisplayModal (CompDisplay *d,
-			CompWindow  *w)
-{
-    FADE_DISPLAY (d);
-    FADE_WINDOW (w);
-
-    if (!fw->dModal)
-	return;
-
-    fw->dModal = 0;
-
-    fd->displayModals--;
-    if (fd->displayModals == 0)
-    {
-	CompScreen *s;
-
-	for (s = d->screens; s; s = s->next)
-	{
-	    for (w = s->windows; w; w = w->next)
-	    {
-		FADE_WINDOW (w);
-
-		if (fw->dModal)
-		    continue;
-
-		if (w->alive)
-		{
-		    w->paint.brightness = w->brightness;
-		    w->paint.saturation = w->saturation;
-		}
-	    }
-
-	    damageScreen (s);
-	}
-    }
-}
-
-static void
-fadeHandleEvent (CompDisplay *d,
-		 XEvent      *event)
+void
+FadeScreen::handleEvent (XEvent *event)
 {
     CompWindow *w;
 
-    FADE_DISPLAY (d);
+    if (event->type == screen->xkbEvent ())
+    {
+	XkbAnyEvent *xkbEvent = (XkbAnyEvent *) event;
 
-    switch (event->type) {
-    case DestroyNotify:
-	w = findWindowAtDisplay (d, event->xdestroywindow.window);
-	if (w)
+	if (xkbEvent->xkb_type == XkbBellNotify)
 	{
-	    FADE_SCREEN (w->screen);
+	    XkbBellNotifyEvent *xkbBellEvent = (XkbBellNotifyEvent *) xkbEvent;
 
-	    if (!fs->opt[FADE_SCREEN_OPTION_MINIMIZE_OPEN_CLOSE].value.b)
-		break;
+	    w = screen->findWindow (xkbBellEvent->window);
+	    if (!w)
+		w = screen->findWindow (screen->activeWindow ());
 
-	    if (w->texture->pixmap && matchEval (&fs->match, w))
+	    if (w)
 	    {
-		FADE_WINDOW (w);
-
-		if (fw->opacity == 0xffff)
-		    fw->opacity = 0xfffe;
-
-		fw->destroyCnt++;
-		w->destroyRefCnt++;
-
-		fw->fadeOut = TRUE;
-
-		addWindowDamage (w);
-	    }
-
-	    fadeRemoveDisplayModal (d, w);
-	}
-	break;
-    case UnmapNotify:
-	w = findWindowAtDisplay (d, event->xunmap.window);
-	if (w)
-	{
-	    FADE_SCREEN (w->screen);
-	    FADE_WINDOW (w);
-
-	    fw->shaded = w->shaded;
-
-	    if (!fs->opt[FADE_SCREEN_OPTION_MINIMIZE_OPEN_CLOSE].value.b)
-		break;
-
-	    if (!fw->shaded && w->texture->pixmap && matchEval (&fs->match, w))
-	    {
-		if (fw->opacity == 0xffff)
-		    fw->opacity = 0xfffe;
-
-		fw->unmapCnt++;
-		w->unmapRefCnt++;
-
-		fw->fadeOut = TRUE;
-
-		addWindowDamage (w);
-	    }
-
-	    fadeRemoveDisplayModal (d, w);
-	}
-	break;
-    case MapNotify:
-	w = findWindowAtDisplay (d, event->xmap.window);
-	if (w)
-	{
-	    FADE_SCREEN(w->screen);
-
-	    if (!fs->opt[FADE_SCREEN_OPTION_MINIMIZE_OPEN_CLOSE].value.b)
-		break;
-
-	    fadeWindowStop (w);
-
-	    if (w->state & CompWindowStateDisplayModalMask)
-		fadeAddDisplayModal (d, w);
-	}
-	break;
-    default:
-	if (event->type == d->xkbEvent)
-	{
-	    XkbAnyEvent *xkbEvent = (XkbAnyEvent *) event;
-
-	    if (xkbEvent->xkb_type == XkbBellNotify)
-	    {
-		XkbBellNotifyEvent *xkbBellEvent = (XkbBellNotifyEvent *)
-		    xkbEvent;
-
-		w = findWindowAtDisplay (d, xkbBellEvent->window);
-		if (!w)
-		    w = findWindowAtDisplay (d, d->activeWindow);
-
-		if (w)
+		if (opt[FADE_OPTION_VISUAL_BELL].value ().b ())
 		{
-		    CompScreen *s = w->screen;
-
-		    FADE_SCREEN (s);
-
-		    if (fs->opt[FADE_SCREEN_OPTION_VISUAL_BELL].value.b)
+		    if (opt[FADE_OPTION_FULLSCREEN_VISUAL_BELL].value ().b ())
 		    {
-			int option;
-
-			option = FADE_SCREEN_OPTION_FULLSCREEN_VISUAL_BELL;
-			if (fs->opt[option].value.b)
+			foreach (CompWindow *w, screen->windows ())
 			{
-			    for (w = s->windows; w; w = w->next)
-			    {
-				if (w->destroyed)
-				    continue;
+			    if (w->destroyed ())
+				continue;
 
-				if (w->attrib.map_state != IsViewable)
-				    continue;
+			    if (!w->isViewable ())
+				continue;
 
-				if (w->damaged)
-				{
-				    FADE_WINDOW (w);
-
-				    fw->brightness = w->paint.brightness / 2;
-				}
-			    }
-
-			    damageScreen (s);
+			    FadeWindow::get (w)->dim (false);
 			}
-			else
-			{
-			    FADE_WINDOW (w);
 
-			    fw->brightness = w->paint.brightness / 2;
-
-			    addWindowDamage (w);
-			}
+			cScreen->damageScreen ();
+		    }
+		    else
+		    {
+			FadeWindow::get (w)->dim (true);
 		    }
 		}
 	    }
 	}
-	break;
     }
 
-    UNWRAP (fd, d, handleEvent);
-    (*d->handleEvent) (d, event);
-    WRAP (fd, d, handleEvent, fadeHandleEvent);
+    screen->handleEvent (event);
 
-    switch (event->type) {
-    case PropertyNotify:
-	if (event->xproperty.atom == d->winStateAtom)
+    if (event->type == PropertyNotify &&
+	event->xproperty.atom == Atoms::winState)
+    {
+	w = screen->findWindow (event->xproperty.window);
+	if (w && w->isViewable ())
 	{
-	    w = findWindowAtDisplay (d, event->xproperty.window);
-	    if (w && w->attrib.map_state == IsViewable)
+	    if (w->state () & CompWindowStateDisplayModalMask)
+		FadeWindow::get (w)->addDisplayModal ();
+	    else
+		FadeWindow::get (w)->removeDisplayModal ();
+	}
+    }
+}
+
+void
+FadeScreen::preparePaint (int msSinceLastPaint)
+{
+    int          steps;
+    unsigned int mode = opt[FADE_OPTION_FADE_MODE].value ().i ();
+
+    foreach (CompWindow *w, screen->windows ())
+	FadeWindow::get (w)->paintStep (mode, msSinceLastPaint, steps);
+
+    cScreen->preparePaint (msSinceLastPaint);
+}
+
+void
+FadeWindow::dim (bool damage)
+{
+    if (!cWindow->damaged ())
+	return;
+
+    brightness = cWindow->brightness () / 2;
+
+    if (damage)
+	cWindow->addDamage ();
+}
+
+void
+FadeWindow::addDisplayModal ()
+{
+    if (!(window->state () & CompWindowStateDisplayModalMask))
+	return;
+
+    if (dModal)
+	return;
+
+    dModal = true;
+
+    fScreen->displayModals++;
+    if (fScreen->displayModals == 1)
+	fScreen->cScreen->damageScreen ();
+}
+
+void
+FadeWindow::removeDisplayModal ()
+{
+    if (!dModal)
+	return;
+
+    dModal = false;
+
+    fScreen->displayModals--;
+    if (fScreen->displayModals == 0)
+	fScreen->cScreen->damageScreen ();
+}
+
+void
+FadeWindow::paintStep (unsigned int mode,
+		       int          msSinceLastPaint,
+		       int          step)
+{
+    if (mode == FADE_MODE_CONSTANTSPEED)
+    {
+	steps    = step;
+	fadeTime = 0;
+    }
+    else if (mode == FADE_MODE_CONSTANTTIME)
+    {
+	if (fadeTime)
+	{
+	    steps     = 1;
+	    fadeTime -= msSinceLastPaint;
+	    if (fadeTime < 0)
+		fadeTime = 0;
+	}
+	else
+	{
+	    steps = 0;
+	}
+    }
+}
+
+void
+FadeWindow::windowNotify (CompWindowNotify n)
+{
+    window->windowNotify (n);
+
+    if (n == CompWindowNotifyAliveChanged)
+	cWindow->addDamage ();
+}
+
+bool
+FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
+		     const GLMatrix&            transform,
+		     const CompRegion&          region,
+		     unsigned int               mask)
+{
+    if (!GL::canDoSlightlySaturated)
+	saturation = attrib.saturation;
+
+    if (window->alive ()                &&
+	opacity    == attrib.opacity    &&
+	brightness == attrib.brightness &&
+	saturation == attrib.saturation &&
+	!fScreen->displayModals)
+    {
+	return gWindow->glPaint (attrib, transform, region, mask);
+    }
+
+    GLWindowPaintAttrib fAttrib = attrib;
+    int                 mode;
+    
+    mode = fScreen->opt[FADE_OPTION_FADE_MODE].value ().i ();
+
+    if (!window->alive () &&
+	fScreen->opt[FADE_OPTION_DIM_UNRESPONSIVE].value ().b ())
+    {
+	GLuint value;
+
+	value = fScreen->opt[FADE_OPTION_UNRESPONSIVE_BRIGHTNESS].value ().i ();
+	if (value != 100)
+	    fAttrib.brightness = fAttrib.brightness * value / 100;
+
+	value = fScreen->opt[FADE_OPTION_UNRESPONSIVE_SATURATION].value ().i ();
+	if (value != 100 && GL::canDoSlightlySaturated)
+	    fAttrib.saturation = fAttrib.saturation * value / 100;
+    }
+    else if (fScreen->displayModals && !dModal)
+    {
+	fAttrib.brightness = 0xa8a8;
+	fAttrib.saturation = 0;
+    }
+
+    if (mode == FADE_MODE_CONSTANTTIME)
+    {
+	if (fAttrib.opacity    != targetOpacity    ||
+	    fAttrib.brightness != targetBrightness ||
+	    fAttrib.saturation != targetSaturation)
+	{
+	    fadeTime = fScreen->opt[FADE_OPTION_FADE_TIME].value ().i ();
+	    steps    = 1;
+
+	    opacityDiff    = fAttrib.opacity - opacity;
+	    brightnessDiff = fAttrib.brightness - brightness;
+	    saturationDiff = fAttrib.saturation - saturation;
+
+	    targetOpacity    = fAttrib.opacity;
+	    targetBrightness = fAttrib.brightness;
+	    targetSaturation = fAttrib.saturation;
+	}
+    }
+
+    if (steps)
+    {
+	GLint newOpacity = OPAQUE;
+	GLint newBrightness = BRIGHT;
+	GLint newSaturation = COLOR;
+
+	if (mode == FADE_MODE_CONSTANTSPEED)
+	{
+	    newOpacity = opacity;
+	    if (fAttrib.opacity > opacity)
+		newOpacity = MIN (opacity + steps, fAttrib.opacity);
+	    else if (fAttrib.opacity < opacity)
+		opacity = MAX (opacity - steps, fAttrib.opacity);
+
+	    newBrightness = brightness;
+	    if (fAttrib.brightness > brightness)
+		newBrightness = MIN (brightness + (steps / 12),
+				     fAttrib.brightness);
+	    else if (fAttrib.brightness < brightness)
+		newBrightness = MAX (brightness - (steps / 12),
+				     fAttrib.brightness);
+
+	    newSaturation = saturation;
+	    if (fAttrib.saturation > saturation)
+		saturation = MIN (saturation + (steps / 6),
+				  fAttrib.saturation);
+	    else if (fAttrib.saturation < saturation)
+		saturation = MAX (saturation - (steps / 6),
+				  fAttrib.saturation);
+	}
+	else if (mode == FADE_MODE_CONSTANTTIME)
+	{
+	    int opt           = FADE_OPTION_FADE_TIME;
+	    int totalFadeTime = fScreen->opt[opt].value ().i ();
+
+	    newOpacity = fAttrib.opacity -
+		            (opacityDiff * fadeTime / totalFadeTime);
+	    newBrightness = fAttrib.brightness -
+		            (brightnessDiff * fadeTime / totalFadeTime);
+	    newSaturation = fAttrib.saturation -
+		            (saturationDiff * fadeTime / totalFadeTime);
+	}
+
+	steps = 0;
+
+	if (newOpacity > 0)
+	{
+	    opacity    = newOpacity;
+	    brightness = newBrightness;
+	    saturation = newSaturation;
+
+	    if (newOpacity    != fAttrib.opacity    ||
+		newBrightness != fAttrib.brightness ||
+		newSaturation != fAttrib.saturation)
 	    {
-		if (w->state & CompWindowStateDisplayModalMask)
-		    fadeAddDisplayModal (d, w);
-		else
-		    fadeRemoveDisplayModal (d, w);
+		cWindow->addDamage ();
 	    }
 	}
-	break;
-    }
-}
-
-static Bool
-fadeDamageWindowRect (CompWindow *w,
-		      Bool	 initial,
-		      BoxPtr     rect)
-{
-    Bool status;
-
-    FADE_SCREEN (w->screen);
-
-    if (initial)
-    {
-	FADE_WINDOW (w);
-
-	fw->fadeOut = FALSE;
-
-	if (fw->shaded)
+	else
 	{
-	    fw->shaded = w->shaded;
-	}
-	else if (matchEval (&fs->match, w))
-	{
-	    if (fs->opt[FADE_SCREEN_OPTION_MINIMIZE_OPEN_CLOSE].value.b)
-	    {
-		fw->opacity = 0;
-	    }
+	    opacity = 0;
 	}
     }
 
-    UNWRAP (fs, w->screen, damageWindowRect);
-    status = (*w->screen->damageWindowRect) (w, initial, rect);
-    WRAP (fs, w->screen, damageWindowRect, fadeDamageWindowRect);
+    fAttrib.opacity	   = opacity;
+    fAttrib.brightness = brightness;
+    fAttrib.saturation = saturation;
 
-    return status;
+    return gWindow->glPaint (fAttrib, transform, region, mask);
 }
 
-static Bool
-fadeFocusWindow (CompWindow *w)
-{
-    Bool status;
-
-    FADE_SCREEN (w->screen);
-    FADE_WINDOW (w);
-
-    if (fw->destroyCnt || fw->unmapCnt)
-	return FALSE;
-
-    UNWRAP (fs, w->screen, focusWindow);
-    status = (*w->screen->focusWindow) (w);
-    WRAP (fs, w->screen, focusWindow, fadeFocusWindow);
-
-    return status;
-}
-
-static void
-fadeWindowResizeNotify (CompWindow *w,
-			int	   dx,
-			int	   dy,
-			int	   dwidth,
-			int	   dheight)
-{
-    FADE_SCREEN (w->screen);
-
-    if (!w->mapNum)
-	fadeWindowStop (w);
-
-    UNWRAP (fs, w->screen, windowResizeNotify);
-    (*w->screen->windowResizeNotify) (w, dx, dy, dwidth, dheight);
-    WRAP (fs, w->screen, windowResizeNotify, fadeWindowResizeNotify);
-}
-
-static void
-fadeMatchExpHandlerChanged (CompDisplay *d)
-{
-    CompScreen *s;
-
-    FADE_DISPLAY (d);
-
-    for (s = d->screens; s; s = s->next)
-	matchUpdate (d, &GET_FADE_SCREEN (s,fd)->match);
-
-    UNWRAP (fd, d, matchExpHandlerChanged);
-    (*d->matchExpHandlerChanged) (d);
-    WRAP (fd, d, matchExpHandlerChanged, fadeMatchExpHandlerChanged);
-}
-
-static Bool
-fadeInitDisplay (CompPlugin  *p,
-		 CompDisplay *d)
-{
-    FadeDisplay *fd;
-
-    if (!checkPluginABI ("core", CORE_ABIVERSION))
-	return FALSE;
-
-    fd = malloc (sizeof (FadeDisplay));
-    if (!fd)
-	return FALSE;
-
-    fd->screenPrivateIndex = allocateScreenPrivateIndex (d);
-    if (fd->screenPrivateIndex < 0)
-    {
-	free (fd);
-	return FALSE;
-    }
-
-    fd->displayModals = 0;
-
-    WRAP (fd, d, handleEvent, fadeHandleEvent);
-    WRAP (fd, d, matchExpHandlerChanged, fadeMatchExpHandlerChanged);
-
-    d->base.privates[displayPrivateIndex].ptr = fd;
-
-    return TRUE;
-}
-
-static void
-fadeFiniDisplay (CompPlugin  *p,
-		 CompDisplay *d)
-{
-    FADE_DISPLAY (d);
-
-    freeScreenPrivateIndex (d, fd->screenPrivateIndex);
-
-    UNWRAP (fd, d, handleEvent);
-    UNWRAP (fd, d, matchExpHandlerChanged);
-
-    free (fd);
-}
-
-static const CompMetadataOptionInfo fadeScreenOptionInfo[] = {
+static const CompMetadata::OptionInfo fadeOptionInfo[] = {
+    { "fade_mode", "int", RESTOSTRING (0, FADE_MODE_MAX), 0, 0 },
     { "fade_speed", "float", "<min>0.1</min>", 0, 0 },
+    { "fade_time", "int", "<min>1</min>", 0, 0 },
     { "window_match", "match", "<helper>true</helper>", 0, 0 },
     { "visual_bell", "bool", 0, 0, 0 },
     { "fullscreen_visual_bell", "bool", 0, 0, 0 },
-    { "minimize_open_close", "bool", 0, 0, 0 }
+    { "minimize_open_close", "bool", 0, 0, 0 },
+    { "dim_unresponsive", "bool", 0, 0, 0 },
+    { "unresponsive_brightness", "int", "<min>0</min><max>100</max>", 0, 0 },
+    { "unresponsive_saturation", "int", "<min>0</min><max>100</max>", 0, 0 }
 };
 
-static Bool
-fadeInitScreen (CompPlugin *p,
-		CompScreen *s)
+FadeScreen::FadeScreen (CompScreen *s) :
+    PrivateHandler<FadeScreen, CompScreen> (s),
+    cScreen (CompositeScreen::get (s)),
+    gScreen (GLScreen::get (s)),
+    displayModals (0)
 {
-    FadeScreen *fs;
-
-    FADE_DISPLAY (s->display);
-
-    fs = malloc (sizeof (FadeScreen));
-    if (!fs)
-	return FALSE;
-
-    if (!compInitScreenOptionsFromMetadata (s,
-					    &fadeMetadata,
-					    fadeScreenOptionInfo,
-					    fs->opt,
-					    FADE_SCREEN_OPTION_NUM))
+    if (!fadeVTable->getMetadata ()->initOptions (fadeOptionInfo,
+						  FADE_OPTION_NUM, opt))
     {
-	free (fs);
-	return FALSE;
+	setFailed ();
+	return;
     }
 
-    fs->windowPrivateIndex = allocateWindowPrivateIndex (s);
-    if (fs->windowPrivateIndex < 0)
-    {
-	compFiniScreenOptions (s, fs->opt, FADE_SCREEN_OPTION_NUM);
-	free (fs);
-	return FALSE;
+    fadeTime = 1000.0f / opt[FADE_OPTION_FADE_SPEED].value ().f ();
+
+    ScreenInterface::setHandler (screen);
+    CompositeScreenInterface::setHandler (cScreen);
+    GLScreenInterface::setHandler (gScreen);
+}
+
+CompOption::Vector&
+FadeScreen::getOptions ()
+{
+    return opt;
+}
+
+bool
+FadeScreen::setOption (const char         *name,
+		       CompOption::Value& value)
+{
+    CompOption   *o;
+    unsigned int index;
+
+    o = CompOption::findOption (opt, name, &index);
+    if (!o)
+	return false;
+
+    switch (index) {
+    case FADE_OPTION_FADE_SPEED:
+	if (o->set (value))
+	{
+	    fadeTime = 1000.0f / o->value ().f ();
+	    return true;
+	}
+	break;
+    case FADE_OPTION_WINDOW_MATCH:
+	if (o->set (value))
+	{
+	    cScreen->damageScreen ();
+	    return true;
+	}
+	break;
+    default:
+	return CompOption::setOption (*o, value);
+	break;
     }
 
-    fs->fadeTime = 1000.0f / fs->opt[FADE_SCREEN_OPTION_FADE_SPEED].value.f;
-
-    matchInit (&fs->match);
-
-    fadeUpdateWindowFadeMatch (s->display,
-			       &fs->opt[FADE_SCREEN_OPTION_WINDOW_MATCH].value,
-			       &fs->match);
-
-    WRAP (fs, s, preparePaintScreen, fadePreparePaintScreen);
-    WRAP (fs, s, paintWindow, fadePaintWindow);
-    WRAP (fs, s, damageWindowRect, fadeDamageWindowRect);
-    WRAP (fs, s, focusWindow, fadeFocusWindow);
-    WRAP (fs, s, windowResizeNotify, fadeWindowResizeNotify);
-
-    s->base.privates[fd->screenPrivateIndex].ptr = fs;
-
-    return TRUE;
+    return false;
 }
 
-static void
-fadeFiniScreen (CompPlugin *p,
-		CompScreen *s)
+FadeWindow::FadeWindow (CompWindow *w) :
+    PrivateHandler<FadeWindow, CompWindow> (w),
+    fScreen (FadeScreen::get (screen)),
+    window (w),
+    cWindow (CompositeWindow::get (w)),
+    gWindow (GLWindow::get (w)),
+    opacity (cWindow->opacity ()),
+    brightness (cWindow->brightness ()),
+    saturation (cWindow->saturation ()),
+    targetOpacity (opacity),
+    targetBrightness (brightness),
+    targetSaturation (saturation),
+    dModal (false),
+    steps (0),
+    fadeTime (0),
+    opacityDiff (0),
+    brightnessDiff (0),
+    saturationDiff (0)
 {
-    FADE_SCREEN (s);
+    if (window->isViewable ())
+	addDisplayModal ();
 
-    matchFini (&fs->match);
-
-    freeWindowPrivateIndex (s, fs->windowPrivateIndex);
-
-    UNWRAP (fs, s, preparePaintScreen);
-    UNWRAP (fs, s, paintWindow);
-    UNWRAP (fs, s, damageWindowRect);
-    UNWRAP (fs, s, focusWindow);
-    UNWRAP (fs, s, windowResizeNotify);
-
-    compFiniScreenOptions (s, fs->opt, FADE_SCREEN_OPTION_NUM);
-
-    free (fs);
+    GLWindowInterface::setHandler (gWindow);
 }
 
-static Bool
-fadeInitWindow (CompPlugin *p,
-		CompWindow *w)
+FadeWindow::~FadeWindow ()
 {
-    FadeWindow *fw;
+    removeDisplayModal ();
+}
 
-    FADE_SCREEN (w->screen);
-
-    fw = malloc (sizeof (FadeWindow));
-    if (!fw)
-	return FALSE;
-
-    fw->opacity	   = w->paint.opacity;
-    fw->brightness = w->paint.brightness;
-    fw->saturation = w->paint.saturation;
-
-    fw->dModal = 0;
-
-    fw->destroyCnt = 0;
-    fw->unmapCnt   = 0;
-    fw->shaded     = w->shaded;
-    fw->fadeOut    = FALSE;
-
-    w->base.privates[fs->windowPrivateIndex].ptr = fw;
-
-    if (w->attrib.map_state == IsViewable)
+bool
+FadePluginVTable::init ()
+{
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION)           |
+	!CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
+	!CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
     {
-	if (w->state & CompWindowStateDisplayModalMask)
-	    fadeAddDisplayModal (w->screen->display, w);
+	return false;
     }
 
-    return TRUE;
-}
+    getMetadata ()->addFromOptionInfo (fadeOptionInfo, FADE_OPTION_NUM);
+    getMetadata ()->addFromFile (name ());
 
-static void
-fadeFiniWindow (CompPlugin *p,
-		CompWindow *w)
-{
-    FADE_WINDOW (w);
-
-    fadeRemoveDisplayModal (w->screen->display, w);
-    fadeWindowStop (w);
-
-    w->paint.opacity    = w->opacity;
-    w->paint.brightness = w->brightness;
-    w->paint.saturation = w->saturation;
-
-    free (fw);
-}
-
-static CompBool
-fadeInitObject (CompPlugin *p,
-		CompObject *o)
-{
-    static InitPluginObjectProc dispTab[] = {
-	(InitPluginObjectProc) 0, /* InitCore */
-	(InitPluginObjectProc) fadeInitDisplay,
-	(InitPluginObjectProc) fadeInitScreen,
-	(InitPluginObjectProc) fadeInitWindow
-    };
-
-    RETURN_DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), TRUE, (p, o));
-}
-
-static void
-fadeFiniObject (CompPlugin *p,
-		CompObject *o)
-{
-    static FiniPluginObjectProc dispTab[] = {
-	(FiniPluginObjectProc) 0, /* FiniCore */
-	(FiniPluginObjectProc) fadeFiniDisplay,
-	(FiniPluginObjectProc) fadeFiniScreen,
-	(FiniPluginObjectProc) fadeFiniWindow
-    };
-
-    DISPATCH (o, dispTab, ARRAY_SIZE (dispTab), (p, o));
-}
-
-static CompOption *
-fadeGetObjectOptions (CompPlugin *plugin,
-		      CompObject *object,
-		      int	 *count)
-{
-    static GetPluginObjectOptionsProc dispTab[] = {
-	(GetPluginObjectOptionsProc) 0, /* GetCoreOptions */
-	(GetPluginObjectOptionsProc) 0, /* GetDisplayOptions */
-	(GetPluginObjectOptionsProc) fadeGetScreenOptions
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab),
-		     (void *) (*count = 0), (plugin, object, count));
-}
-
-static CompBool
-fadeSetObjectOption (CompPlugin      *plugin,
-		     CompObject      *object,
-		     const char      *name,
-		     CompOptionValue *value)
-{
-    static SetPluginObjectOptionProc dispTab[] = {
-	(SetPluginObjectOptionProc) 0, /* SetCoreOption */
-	(SetPluginObjectOptionProc) 0, /* SetDisplayOption */
-	(SetPluginObjectOptionProc) fadeSetScreenOption
-    };
-
-    RETURN_DISPATCH (object, dispTab, ARRAY_SIZE (dispTab), FALSE,
-		     (plugin, object, name, value));
-}
-
-static Bool
-fadeInit (CompPlugin *p)
-{
-    if (!compInitPluginMetadataFromInfo (&fadeMetadata, p->vTable->name, 0, 0,
-					 fadeScreenOptionInfo,
-					 FADE_SCREEN_OPTION_NUM))
-	return FALSE;
-
-    displayPrivateIndex = allocateDisplayPrivateIndex ();
-    if (displayPrivateIndex < 0)
-    {
-	compFiniMetadata (&fadeMetadata);
-	return FALSE;
-    }
-
-    compAddMetadataFromFile (&fadeMetadata, p->vTable->name);
-
-    return TRUE;
-}
-
-static void
-fadeFini (CompPlugin *p)
-{
-    freeDisplayPrivateIndex (displayPrivateIndex);
-    compFiniMetadata (&fadeMetadata);
-}
-
-static CompMetadata *
-fadeGetMetadata (CompPlugin *plugin)
-{
-    return &fadeMetadata;
-}
-
-static CompPluginVTable fadeVTable = {
-    "fade",
-    fadeGetMetadata,
-    fadeInit,
-    fadeFini,
-    fadeInitObject,
-    fadeFiniObject,
-    fadeGetObjectOptions,
-    fadeSetObjectOption
-};
-
-CompPluginVTable *
-getCompPluginInfo20070830 (void)
-{
-    return &fadeVTable;
+    return true;
 }

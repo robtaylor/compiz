@@ -8,7 +8,7 @@
 		<plugin>scale</plugin>
 	    </relation>
 	</deps>
-	<screen>
+	<options>
 	    <option name="fade_speed" type="float">
 		<_short>Fade Speed</_short>
 		<_long>Window fade speed</_long>
@@ -37,6 +37,6 @@
 		<_long>Fade effect on minimize/open/close window events</_long>
 		<default>true</default>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>

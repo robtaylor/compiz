@@ -41,9 +41,12 @@ target_link_libraries (gnomecompat)
 add_library (commands MODULE commands.cpp)
 target_link_libraries (commands)
 
+add_library (fade MODULE fade.cpp)
+target_link_libraries (fade)
+
 install (
     TARGETS decor move resize copytex zoom water ini switcher
-	    place regex gnomecompat commands
+	    place regex gnomecompat commands fade
     DESTINATION ${compiz_plugindir}
 )
 
