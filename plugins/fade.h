@@ -46,7 +46,6 @@
 class FadeScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public GLScreenInterface,
     public PrivateHandler<FadeScreen, CompScreen>
 {
     public:
@@ -64,10 +63,10 @@ class FadeScreen :
 	CompOption::Vector opt;
 
 	CompositeScreen *cScreen;
-	GLScreen        *gScreen;
 };
 
 class FadeWindow :
+    public WindowInterface,
     public GLWindowInterface,
     public PrivateHandler<FadeWindow, CompWindow>
 {

@@ -42,7 +42,7 @@ add_library (commands MODULE commands.cpp)
 target_link_libraries (commands)
 
 add_library (fade MODULE fade.cpp)
-target_link_libraries (fade)
+target_link_libraries (fade composite opengl)
 
 install (
     TARGETS decor move resize copytex zoom water ini switcher

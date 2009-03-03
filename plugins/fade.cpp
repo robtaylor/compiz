@@ -197,7 +197,7 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 
     GLWindowPaintAttrib fAttrib = attrib;
     int                 mode;
-    
+
     mode = fScreen->opt[FADE_OPTION_FADE_MODE].value ().i ();
 
     if (!window->alive () &&
@@ -273,6 +273,9 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	    int opt           = FADE_OPTION_FADE_TIME;
 	    int totalFadeTime = fScreen->opt[opt].value ().i ();
 
+	    if (totalFadeTime == 0)
+		totalFadeTime = fadeTime;
+
 	    newOpacity = fAttrib.opacity -
 		            (opacityDiff * fadeTime / totalFadeTime);
 	    newBrightness = fAttrib.brightness -
@@ -302,7 +305,7 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	}
     }
 
-    fAttrib.opacity	   = opacity;
+    fAttrib.opacity    = opacity;
     fAttrib.brightness = brightness;
     fAttrib.saturation = saturation;
 
@@ -325,7 +328,6 @@ static const CompMetadata::OptionInfo fadeOptionInfo[] = {
 FadeScreen::FadeScreen (CompScreen *s) :
     PrivateHandler<FadeScreen, CompScreen> (s),
     cScreen (CompositeScreen::get (s)),
-    gScreen (GLScreen::get (s)),
     displayModals (0)
 {
     if (!fadeVTable->getMetadata ()->initOptions (fadeOptionInfo,
@@ -339,7 +341,6 @@ FadeScreen::FadeScreen (CompScreen *s) :
 
     ScreenInterface::setHandler (screen);
     CompositeScreenInterface::setHandler (cScreen);
-    GLScreenInterface::setHandler (gScreen);
 }
 
 CompOption::Vector&
@@ -374,6 +375,14 @@ FadeScreen::setOption (const char         *name,
 	    return true;
 	}
 	break;
+    case FADE_OPTION_DIM_UNRESPONSIVE:
+	if (o->set (value))
+	{
+	    foreach (CompWindow *w, screen->windows ())
+		w->windowNotifySetEnabled (FadeWindow::get (w), value.b ());
+	    return true;
+	}
+	break;
     default:
 	return CompOption::setOption (*o, value);
 	break;
@@ -404,7 +413,11 @@ FadeWindow::FadeWindow (CompWindow *w) :
     if (window->isViewable ())
 	addDisplayModal ();
 
+    WindowInterface::setHandler (window, false);
     GLWindowInterface::setHandler (gWindow);
+
+    if (fScreen->opt[FADE_OPTION_DIM_UNRESPONSIVE].value ().b ())
+	window->windowNotifySetEnabled (this, true);
 }
 
 FadeWindow::~FadeWindow ()
