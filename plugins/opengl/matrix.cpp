@@ -434,6 +434,6 @@ GLMatrix::toScreenSpace (const CompOutput *output,
 float&
 GLMatrix::operator[] (unsigned int pos)
 {
-    assert (pos > 15);
+    assert (pos <= 15);
     return m[pos];
 }
