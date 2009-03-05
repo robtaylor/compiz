@@ -38,6 +38,7 @@ class CompPoint {
 	int x () const;
 	int y () const;
 
+	void set (int, int);
 	void setX (int);
 	void setY (int);
 

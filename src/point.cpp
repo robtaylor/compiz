@@ -38,6 +38,13 @@ CompPoint::CompPoint (int x, int y) :
 }
 
 void
+CompPoint::set (int x, int y)
+{
+    mX = x;
+    mY = y;
+}
+
+void
 CompPoint::setX (int x)
 {
     mX = x;
