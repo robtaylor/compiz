@@ -396,7 +396,6 @@ initButtonValue (CompOption::Value &v,
     xmlChar    *value;
     CompAction action;
 
-
     action.setState (state | CompAction::StateInitButton |
 		     CompAction::StateInitEdge);
 

@@ -157,7 +157,7 @@ CompAction::KeyBinding::fromString (const CompString &str)
 {
     CompString   sStr;
     unsigned int mods;
-    size_t       pos;
+    size_t       pos, start = 0;
     KeySym	 keysym;
 
     if (!screen)
@@ -167,12 +167,12 @@ CompAction::KeyBinding::fromString (const CompString &str)
 
     pos = str.rfind ('>');
     if (pos != std::string::npos)
-	pos++;
+	start = pos + 1;
 
-    while (pos < str.size () && !isalnum (str[pos]))
-	pos++;
+    while (start < str.size () && !isalnum (str[start]))
+	start++;
 
-    if (pos == std::string::npos || pos == str.size ())
+    if (start == str.size ())
     {
 	if (mods)
 	{
@@ -185,7 +185,7 @@ CompAction::KeyBinding::fromString (const CompString &str)
 	return false;
     }
 
-    sStr   = str.substr (pos);
+    sStr   = str.substr (start);
     keysym = XStringToKeysym (sStr.c_str ());
 
     if (keysym != NoSymbol)
@@ -274,24 +274,22 @@ bool
 CompAction::ButtonBinding::fromString (const CompString &str)
 {
     unsigned int mods;
-    size_t       pos;
+    size_t       pos, start = 0;
 
     mods = stringToModifiers (str);
 
     pos = str.rfind ('>');
     if (pos != std::string::npos)
-	pos++;
+	start = pos + 1;
 
-    while (pos < str.size () && !isalnum (str[pos]))
-	pos++;
+    while (start < str.size () && !isalnum (str[start]))
+	start++;
 
-    if (pos != std::string::npos &&
-	pos != str.size ()       &&
-        str.compare (pos, 6, "Button") == 0)
+    if (start != str.size () && str.compare (start, 6, "Button") == 0)
     {
 	int buttonNum;
 
-	if (sscanf (str.substr (pos + 6).c_str (), "%d", &buttonNum) == 1)
+	if (sscanf (str.substr (start + 6).c_str (), "%d", &buttonNum) == 1)
 	{
 	    mButton    = buttonNum;
 	    mModifiers = mods;
