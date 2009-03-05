@@ -92,7 +92,7 @@ FadeScreen::handleEvent (XEvent *event)
 void
 FadeScreen::preparePaint (int msSinceLastPaint)
 {
-    int          steps;
+    int          steps = MAX (12, (msSinceLastPaint * OPAQUE) / fadeTime);
     unsigned int mode = opt[FADE_OPTION_FADE_MODE].value ().i ();
 
     foreach (CompWindow *w, screen->windows ())
