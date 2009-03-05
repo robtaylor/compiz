@@ -2247,7 +2247,7 @@ PrivateScreen::reshape (int w, int h)
     screen->setHeight (h);
 
     fullscreenOutput.setId ("fullscreen", ~0);
-    fullscreenOutput.setGeometry (0, 0, w, h);
+    fullscreenOutput.setGeometry (0, w, 0, h);
 
     updateScreenEdges ();
 }
