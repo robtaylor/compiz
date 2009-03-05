@@ -50,6 +50,8 @@ class IniScreen :
 				 const char        *name,
 				 CompOption::Value &v);
 
+	void updateDirectoryWatch (const CompString&);
+
     private:
 	CompFileWatchHandle directoryWatchHandle;
 

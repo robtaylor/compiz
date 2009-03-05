@@ -131,6 +131,16 @@ IniFile::save ()
 
     if (!open (true))
     {
+	IniScreen  *is = IniScreen::get (screen);
+	CompString homeDir;
+
+	homeDir = is->getHomeDir ();
+	is->createDir (homeDir);
+	is->updateDirectoryWatch (homeDir);
+    }
+
+    if (!open (true))
+    {
 	compLogMessage ("ini", CompLogLevelError,
 			"Failed to write to config file %s, please "
 			"check if you have sufficient permissions.",
@@ -427,13 +437,14 @@ IniFile::stringToOption (CompOption *option,
 void
 IniScreen::fileChanged (const char *name)
 {
-    CompString   fileName (name);
+    CompString   fileName, plugin;
     unsigned int length;
-    CompString   plugin;
     CompPlugin   *p;
 
-    if (fileName.length () <= strlen (FILE_SUFFIX))
+    if (!name || strlen (name) <= strlen (FILE_SUFFIX))
 	return;
+
+    fileName = name;
 
     length = fileName.length () - strlen (FILE_SUFFIX);
     if (strcmp (fileName.c_str () + length, FILE_SUFFIX) != 0)
@@ -495,6 +506,19 @@ IniScreen::createDir (const CompString& path)
     return (mkdir (path.c_str (), 0700) == 0);
 }
 
+void
+IniScreen::updateDirectoryWatch (const CompString& path)
+{
+    int mask = NOTIFY_CREATE_MASK | NOTIFY_DELETE_MASK | NOTIFY_MODIFY_MASK;
+
+    if (directoryWatchHandle)
+	screen->removeFileWatch (directoryWatchHandle);
+
+    directoryWatchHandle =
+	screen->addFileWatch (path.c_str (), mask,
+			      boost::bind (&IniScreen::fileChanged, this, _1));
+}
+
 bool
 IniScreen::setOptionForPlugin (const char        *plugin,
 			       const char        *name,
@@ -542,10 +566,10 @@ IniScreen::initPluginForScreen (CompPlugin *p)
 
 IniScreen::IniScreen (CompScreen *screen) :
     PrivateHandler<IniScreen, CompScreen> (screen),
+    directoryWatchHandle (0),
     blockWrites (false)
 {
     CompString homeDir;
-    int        mask;
 
     homeDir = getHomeDir ();
     if (homeDir.empty () || !createDir (homeDir))
@@ -554,12 +578,7 @@ IniScreen::IniScreen (CompScreen *screen) :
 	return;
     }
 
-    mask = NOTIFY_CREATE_MASK | NOTIFY_DELETE_MASK | NOTIFY_MODIFY_MASK;
-
-    directoryWatchHandle =
-	screen->addFileWatch (homeDir.c_str (), mask,
-			      boost::bind (&IniScreen::fileChanged, this, _1));
-
+    updateDirectoryWatch (homeDir);
 
     IniFile ini (CompPlugin::find ("core"));
     ini.load ();
