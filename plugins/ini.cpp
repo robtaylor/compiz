@@ -49,6 +49,9 @@ IniFile::open (bool write)
     CompString              homeDir;
     std::ios_base::openmode mode;
 
+    if (optionFile.is_open ())
+	optionFile.close ();
+
     homeDir = IniScreen::getHomeDir ();
     if (homeDir.empty ())
 	return false;
