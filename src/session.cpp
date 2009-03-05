@@ -49,7 +49,7 @@ static SmcConn		 smcConnection;
 static CompWatchFdHandle iceWatchFdHandle;
 static bool		 connected = false;
 static bool		 iceConnected = false;
-static char		 *smClientId, *smPrevClientId;
+static char              *smClientId, *smPrevClientId;
 
 static void iceInit (void);
 
@@ -193,7 +193,7 @@ dieCallback (SmcConn   connection,
 {
     screen->sessionEvent (CompSession::EventDie, noOptions);
 
-    CompSession::closeSession ();
+    CompSession::close ();
     exit (0);
 }
 
@@ -212,7 +212,7 @@ shutdownCancelledCallback (SmcConn   connection,
 }
 
 void
-CompSession::initSession (char *prevClientId)
+CompSession::init (char *prevClientId)
 {
     static SmcCallbacks callbacks;
 
@@ -261,7 +261,7 @@ CompSession::initSession (char *prevClientId)
 }
 
 void
-CompSession::closeSession (void)
+CompSession::close ()
 {
     if (connected)
     {
@@ -269,6 +269,7 @@ CompSession::closeSession (void)
 
 	if (SmcCloseConnection (smcConnection, 0, NULL) != SmcConnectionInUse)
 	    connected = FALSE;
+
 	if (smClientId)
 	{
 	    free (smClientId);
@@ -282,24 +283,22 @@ CompSession::closeSession (void)
     }
 }
 
-char *
-CompSession::getSessionClientId (CompSession::ClientIdType type)
+CompString
+CompSession::getClientId (CompSession::ClientIdType type)
 {
     if (!connected)
-	return NULL;
+	return "";
 
     switch (type) {
 	case CompSession::ClientId:
 	    if (smClientId)
-		return strdup (smClientId);
-	    break;
+		return smClientId;
 	case CompSession::PrevClientId:
 	    if (smPrevClientId)
-		return strdup (smPrevClientId);
-	    break;
+		return smPrevClientId;
     }
 
-    return NULL;
+    return "";
 }
 /* ice connection handling taken and updated from gnome-ice.c
  * original gnome-ice.c code written by Tom Tromey <tromey@cygnus.com>

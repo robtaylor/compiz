@@ -43,11 +43,11 @@ namespace CompSession {
 	PrevClientId
     };
 
-    void initSession (char *smPrevClientId);
+    void init (char *prevClientId);
 
-    void closeSession (void);
+    void close ();
 
-    char *getSessionClientId (ClientIdType type);
+    CompString getClientId (ClientIdType type);
 };
 
 #endif

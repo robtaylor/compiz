@@ -282,12 +282,12 @@ main (int argc, char **argv)
 	return 1;
 
     if (!disableSm)
-	CompSession::initSession (clientId);
+	CompSession::init (clientId);
 
     screen->eventLoop ();
 
     if (!disableSm)
-	CompSession::closeSession ();
+	CompSession::close ();
 
     delete screen;
     delete coreMetadata;
