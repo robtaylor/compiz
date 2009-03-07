@@ -36,14 +36,14 @@ CompRect::CompRect ()
     mRegion.extents.y2 = 0;
 }
 
-CompRect::CompRect (int x1, int x2, int y1, int y2)
+CompRect::CompRect (int x, int y, unsigned int width, unsigned int height)
 {
     mRegion.rects = &mRegion.extents;
     mRegion.numRects = 1;
-    mRegion.extents.x1 = x1;
-    mRegion.extents.x2 = x2;
-    mRegion.extents.y1 = y1;
-    mRegion.extents.y2 = y2;
+    mRegion.extents.x1 = x;
+    mRegion.extents.y1 = y;
+    mRegion.extents.x2 = x + width;
+    mRegion.extents.y2 = y + height;
 }
 
 CompRect::CompRect (const CompRect& r)
@@ -57,8 +57,8 @@ CompRect::CompRect (const XRectangle xr)
     mRegion.rects = &mRegion.extents;
     mRegion.numRects = 1;
     mRegion.extents.x1 = xr.x;
-    mRegion.extents.x2 = xr.x + xr.width;
     mRegion.extents.y1 = xr.y;
+    mRegion.extents.x2 = xr.x + xr.width;
     mRegion.extents.y2 = xr.y + xr.height;
 }
 
@@ -68,21 +68,36 @@ CompRect::region () const
     return const_cast<const Region> (&mRegion);
 }
 
+
 void
-CompRect::setGeometry (int x1, int x2, int y1, int y2)
+CompRect::setGeometry (int x,
+		       int y,
+		       unsigned int width,
+		       unsigned int height)
 {
-    mRegion.extents.x1 = x1;
-    mRegion.extents.y1 = y1;
+    mRegion.extents.x1 = x;
+    mRegion.extents.y1 = y;
+    mRegion.extents.x2 = x + width;
+    mRegion.extents.y2 = y + height;
+}
 
-    if (x2 < x1)
-	mRegion.extents.x2 = x1;
-    else
-	mRegion.extents.x2 = x2;
+void CompRect::setX (int x)
+{
+    mRegion.extents.x1 = x;
+}
 
-    if (y2 < y1)
-	mRegion.extents.y2 = y1;
-    else
-	mRegion.extents.y2 = y2;
+void CompRect::setY (int y)
+{
+    mRegion.extents.y1 = y;
+
+}
+void CompRect::setWidth (unsigned int width)
+{
+    mRegion.extents.x2 = mRegion.extents.x1 + width;
+}
+void CompRect::setHeight (unsigned int height)
+{
+    mRegion.extents.y2 = mRegion.extents.y1 + height;
 }
 
 bool

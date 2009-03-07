@@ -30,23 +30,34 @@ class CompRect {
 
     public:
 	CompRect ();
-	CompRect (int, int, int, int);
+	CompRect (int x, int y, unsigned int width, unsigned int height);
 	CompRect (const CompRect&);
 	CompRect (const XRectangle);
 
 	int x () const;
 	int y () const;
 
+	unsigned int width () const;
+	unsigned int height () const;
+
 	int x1 () const;
 	int y1 () const;
 	int x2 () const;
 	int y2 () const;
-	unsigned int width () const;
-	unsigned int height () const;
+
+	int left   () const;
+	int right  () const;
+	int top    () const;
+	int bottom () const;
 
 	const Region region () const;
 
-	void setGeometry (int, int, int, int);
+	void setGeometry (int x, int y, unsigned int width, unsigned int height);
+
+	void setX      (int);
+	void setY      (int);
+	void setWidth  (unsigned int);
+	void setHeight (unsigned int);
 
 	bool contains (const CompPoint &) const;
 	bool operator== (const CompRect &) const;
@@ -70,6 +81,18 @@ inline int
 CompRect::y () const
 {
     return mRegion.extents.y1;
+}
+
+inline unsigned int
+CompRect::width () const
+{
+    return mRegion.extents.x2 - mRegion.extents.x1;
+}
+
+inline unsigned int
+CompRect::height () const
+{
+    return mRegion.extents.y2 - mRegion.extents.y1;
 }
 
 inline int
@@ -96,16 +119,29 @@ CompRect::y2 () const
     return mRegion.extents.y2;
 }
 
-inline unsigned int
-CompRect::width () const
+inline int
+CompRect::left () const
 {
-    return mRegion.extents.x2 - mRegion.extents.x1;
+    return mRegion.extents.x1;
 }
 
-inline unsigned int
-CompRect::height () const
+inline int
+CompRect::right () const
 {
-    return mRegion.extents.y2 - mRegion.extents.y1;
+    return mRegion.extents.x2;
+}
+
+inline int
+CompRect::top () const
+{
+    return mRegion.extents.y1;
+}
+
+
+inline int
+CompRect::bottom () const
+{
+    return mRegion.extents.y2;
 }
 
 #endif
