@@ -66,11 +66,12 @@ DecorWindow::glDraw (const GLMatrix     &transform,
 
 	for (int i = 0; i < wd->nQuad; i++)
 	{
-	    box.setGeometry (wd->quad[i].box.x1, wd->quad[i].box.x2,
-			     wd->quad[i].box.y1, wd->quad[i].box.y2);
+	    box.setGeometry (wd->quad[i].box.x1,
+			     wd->quad[i].box.y1,
+			     wd->quad[i].box.x2 - wd->quad[i].box.x1,
+			     wd->quad[i].box.y2 - wd->quad[i].box.y1);
 
-	    if (box.x1 () < box.x2 () &&
-		box.y1 () < box.y2 ())
+	    if (box.width () > 0 && box.height () > 0)
 	    {
 		ml[0] = wd->quad[i].matrix;
 		gWindow->glAddGeometry (ml, CompRegion (box), reg);

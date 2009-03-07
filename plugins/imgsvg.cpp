@@ -265,12 +265,15 @@ SvgWindow::glDraw (const GLMatrix     &transform,
 	GLTexture::MatrixList matrix (1);
 	REGION	              r;
 	int                   i, j;
+	int		      x1, y1, x2, y2;
 	CompRect              rect = context->box.boundingRect ();
 
-	rect.setGeometry (MIN (rect.x1 (), sScreen->zoom.x1 ()),
-			  MIN (rect.y1 (), sScreen->zoom.y1 ()),
-			  MAX (rect.x2 (), sScreen->zoom.y1 ()),
-			  MAX (rect.y2 (), sScreen->zoom.y1 ()));
+	x1 = MIN (rect.x1 (), sScreen->zoom.x1 ());
+	y1 = MIN (rect.y1 (), sScreen->zoom.y1 ());
+	x2 = MAX (rect.x2 (), sScreen->zoom.x2 ());
+	y2 = MAX (rect.y2 (), sScreen->zoom.y2 ());
+
+	rect.setGeometry (x1, y1, x2 - x1, y2 - y1);
 
 	for (i = 0; i < context->texture[0].textures.size (); i++)
 	{
@@ -291,13 +294,15 @@ SvgWindow::glDraw (const GLMatrix     &transform,
 		int      width, height;
 		int      saveFilter;
 
-		rect.setGeometry (rect.x1 () - 1, rect.y1 () - 1,
-				  rect.x2 () + 1, rect.y2 () + 1);
+		rect.setGeometry (rect.x1 () - 1,
+				  rect.y1 () - 1,
+				  rect.width () + 1,
+				  rect.height () + 1);
 
 		xScale = screen->width  () /
-		         (float) (sScreen->zoom.x2 () - sScreen->zoom.x1 ());
+		         (float) (sScreen->zoom.width ());
 		yScale = screen->height () /
-		         (float) (sScreen->zoom.y2 () - sScreen->zoom.y1 ());
+		         (float) (sScreen->zoom.height ());
 
 		dx = rect.width ();
 		dy = rect.height ();
@@ -490,7 +495,7 @@ SvgWindow::updateSvgContext ()
 
 	initTexture (source, context->texture[1], CompSize ());
 
-	context->box += CompRect (x1, y1, x2, y2);
+	context->box += CompRect (x1, y1, x2 - x1, y2 - y1);
 	context->box.translate (window->geometry ().x (), window->geometry ().y ());
 
 	updateSvgMatrix ();

@@ -98,7 +98,7 @@ ResizeScreen::damageRectangle (BoxPtr pBox)
     y2 = pBox->y2 + 1;
 
     if (cScreen)
-	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
+	cScreen->damageRegion (CompRegion (CompRect (x1, y1, x2 - x1, y2 - y1)));
 }
 
 Cursor

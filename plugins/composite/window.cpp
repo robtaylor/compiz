@@ -245,7 +245,7 @@ CompositeWindow::damageTransformedRect (float          xScale,
 	x2 += geom.x () + geom.border ();
 	y2 += geom.y () + geom.border ();
 
-	priv->cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
+	priv->cScreen->damageRegion (CompRegion (CompRect (x1, y1, x2 - x1, y2 - y1)));
     }
 }
 
@@ -270,14 +270,14 @@ CompositeWindow::damageOutputExtents ()
 	y2 = -geom.border ();
 
 	if (x1 < x2 && y1 < y2)
-	    addDamageRect (CompRect (x1, x2, y1, y2));
+	    addDamageRect (CompRect (x1, y1, x2 - x1, y2 - y1));
 
 	/* bottom */
 	y1 = priv->window->size ().height () - geom.border ();
 	y2 = y1 + output.bottom - geom.border ();
 
 	if (x1 < x2 && y1 < y2)
-	    addDamageRect (CompRect (x1, x2, y1, y2));
+	    addDamageRect (CompRect (x1, y1, x2 - x1, y2 - y1));
 
 	/* left */
 	x1 = -output.left - geom.border ();
@@ -286,39 +286,37 @@ CompositeWindow::damageOutputExtents ()
 	y2 = priv->window->size ().height () - geom.border ();
 
 	if (x1 < x2 && y1 < y2)
-	    addDamageRect (CompRect (x1, x2, y1, y2));
+	    addDamageRect (CompRect (x1, y1, x2 - x1, y2 - y1));
 
 	/* right */
 	x1 = priv->window->size ().width () - geom.border ();
 	x2 = x1 + output.right - geom.border ();
 
 	if (x1 < x2 && y1 < y2)
-	    addDamageRect (CompRect (x1, x2, y1, y2));
+	    addDamageRect (CompRect (x1, y1, x2 - x1, y2 - y1));
     }
 }
 
 void
 CompositeWindow::addDamageRect (const CompRect &rect)
 {
-    int x1, x2, y1, y2;
+    int x, y;
 
     if (priv->cScreen->damageMask () & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
     if (!damageRect (false, rect))
     {
-	x1 = rect.x1 ();
-	x2 = rect.x2 ();
-	y1 = rect.y1 ();
-	y2 = rect.y2 ();
+	x = rect.x ();
+	y = rect.y ();
 
 	CompWindow::Geometry geom = priv->window->geometry ();
-	x1 += geom.x () + geom.border ();
-	y1 += geom.y () + geom.border ();
-	x2 += geom.x () + geom.border ();
-	y2 += geom.y () + geom.border ();
+	x += geom.x () + geom.border ();
+	y += geom.y () + geom.border ();
 
-	priv->cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
+	priv->cScreen->damageRegion (CompRegion (CompRect (x, y,
+							   rect.width (),
+							   rect.height ())));
     }
 }
 
@@ -333,16 +331,17 @@ CompositeWindow::addDamage (bool force)
     {
 	int    border = priv->window->geometry ().border ();
 
-	CompRect r (-MAX (priv->window->output ().left,
-		          priv->window->input ().left) - border,
-		    priv->window->size ().width () +
-		    MAX (priv->window->output ().right,
-		         priv->window->input ().right),
-	            -MAX (priv->window->output ().top,
-		          priv->window->input ().top) - border,
-		    priv->window->size ().height () +
-		    MAX (priv->window->output ().bottom,
-		         priv->window->input ().bottom));
+	int x1 = -MAX (priv->window->output ().left,
+		       priv->window->input ().left) - border;
+	int y1 = -MAX (priv->window->output ().top,
+		       priv->window->input ().top) - border;
+	int x2 = priv->window->size ().width () +
+		 MAX (priv->window->output ().right,
+		      priv->window->input ().right) ;
+	int y2 = priv->window->size ().height () +
+		 MAX (priv->window->output ().bottom,
+		      priv->window->input ().bottom) ;
+	CompRect r (x1, y1, x2 - x1, y2 - y1);
 
 	addDamageRect (r);
     }
@@ -387,7 +386,6 @@ PrivateCompositeWindow::handleDamageRect (CompositeWindow *w,
 					  int             width,
 					  int             height)
 {
-    int    x2, y2;
     bool   initial = false;
 
     if (!w->priv->redirected)
@@ -398,19 +396,14 @@ PrivateCompositeWindow::handleDamageRect (CompositeWindow *w,
 	w->priv->damaged = initial = true;
     }
 
-    x2 = x + width;
-    y2 = y + height;
-
-    if (!w->damageRect (initial, CompRect (x, x2, y, y2)))
+    if (!w->damageRect (initial, CompRect (x, y, width, height)))
     {
 	CompWindow::Geometry geom = w->priv->window->geometry ();
 
 	x += geom.x () + geom.border ();
 	y += geom.y () + geom.border ();
-	x2 += geom.x () + geom.border ();
-	y2 += geom.y () + geom.border ();
 
-	w->priv->cScreen->damageRegion (CompRegion (CompRect (x, x2, y, y2)));
+	w->priv->cScreen->damageRegion (CompRegion (CompRect (x, y, width, height)));
     }
 
     if (initial)
@@ -569,7 +562,7 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	y2 = y + window->size ().height () +
 	     window->output ().bottom - dy - dheight;
 
-	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
+	cScreen->damageRegion (CompRegion (CompRect (x1, y1, x2 - x1, y2 - y1)));
     }
 
     if (window->mapNum () && redirected)
@@ -614,7 +607,7 @@ PrivateCompositeWindow::moveNotify (int dx, int dy, bool now)
 	y2 = y + window->size ().height () +
 	     window->output ().bottom - dy;
 
-	cScreen->damageRegion (CompRegion (CompRect (x1, x2, y1, y2)));
+	cScreen->damageRegion (CompRegion (CompRect (x1, y1, x2 - x1, y2 - y1)));
     }
     cWindow->addDamage ();
 

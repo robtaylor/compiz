@@ -43,7 +43,7 @@ class CompOutput : public CompRect {
 	XRectangle workArea () const;
 
 	void setWorkArea (XRectangle);
-	void setGeometry (int, int, int, int);
+	void setGeometry (int x, int y, unsigned int width, unsigned int height);
 	void setId (CompString, unsigned int);
 
 	typedef std::vector<CompOutput> vector;

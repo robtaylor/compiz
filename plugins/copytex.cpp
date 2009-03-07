@@ -72,8 +72,9 @@ CopyPixmap::CopyPixmap (Pixmap pixmap,
 	for (int y = 0, h = height; y < nHeight; y++, h -= maxTS)
 	    textures[y + (x * nHeight)] =
 		new CopyTexture (this, CompRect (x * maxTS,
-				 (x * maxTS) + MIN (w, maxTS),
-				 y * maxTS, (y * maxTS) +  MIN (h, maxTS)));
+						 y * maxTS,
+						 MIN (w, maxTS),
+						 MIN (h, maxTS)));
 
 
     damage = XDamageCreate (screen->dpy (), pixmap, XDamageReportRawRectangles);
@@ -91,7 +92,7 @@ CopyPixmap::~CopyPixmap ()
 CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
     cp (cp),
     dim (dim),
-    damage (0, dim.width(), 0, dim.height ())
+    damage (0, 0, dim.width(), dim.height ())
 {
     GLenum            target;
     GLTexture::Matrix matrix = _identity_matrix;
@@ -115,7 +116,7 @@ CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
     }
 
     setData (target, matrix, false);
-    setGeometry (dim.x1 (), dim.x2 (), dim.y1 (), dim.y2 ());
+    setGeometry (dim.x1 (), dim.y1 (), dim.x2 () - dim.x1 (), dim.y2 () - dim.y1 ());
 
     glBindTexture (target, name ());
 
@@ -250,7 +251,7 @@ CopytexScreen::handleEvent (XEvent *event)
 		}
 		
 		if (x1 < x2 && y1 < y2)
-		    t->damage.setGeometry (x1, x2, y1, y2);
+		    t->damage.setGeometry (x1, y1, x2 - x1, y2 - y1);
 
 	    }
 	}

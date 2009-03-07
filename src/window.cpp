@@ -892,7 +892,7 @@ PrivateWindow::updateRegion ()
 	    x2 += priv->attrib.x;
 	    y2 += priv->attrib.y;
 
-	    priv->region += CompRect (x1, x2, y1, y2);
+	    priv->region += CompRect (x1, y1, x2 - x1, y2 - y1);
 	}
     }
 
@@ -5101,8 +5101,10 @@ CompWindow::updateFrameRegion ()
 	r = priv->region.boundingRect ();
 	priv->frameRegion -= r;
 
-	r.setGeometry (r.x1 () - priv->input.left, r.x2 () + priv->input.right,
-		       r.y1 () - priv->input.top, r.y2 () + priv->input.bottom);
+	r.setGeometry (r.x1 () - priv->input.left, 
+		       r.y1 () - priv->input.top,
+		       r.width  () + priv->input.right + priv->input.left,
+		       r.height () + priv->input.bottom + priv->input.top);
 
 	priv->frameRegion &= CompRegion (r);
 

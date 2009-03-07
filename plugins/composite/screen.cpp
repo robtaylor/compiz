@@ -875,8 +875,10 @@ PrivateCompositeScreen::handleExposeEvent (XExposeEvent *event)
     if (output == event->window)
 	return;
 
-    exposeRects.push_back (CompRect (event->x, event->x + event->width,
-			   event->y, event->y + event->height));
+    exposeRects.push_back (CompRect (event->x,
+				     event->y,
+				     event->width,
+				     event->height));
 
     if (event->count == 0)
     {

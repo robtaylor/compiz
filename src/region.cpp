@@ -33,8 +33,8 @@
 
 #include "privateregion.h"
 
-const CompRegion infiniteRegion (CompRect (MINSHORT, MAXSHORT,
-				           MINSHORT, MAXSHORT));
+const CompRegion infiniteRegion (CompRect (MINSHORT, MINSHORT,
+				           MAXSHORT * 2, MAXSHORT * 2));
 const CompRegion emptyRegion;
 
 CompRegion::CompRegion ()
@@ -58,7 +58,7 @@ CompRegion::CompRegion (const CompRegion &c)
 CompRegion::CompRegion ( int x, int y, int w, int h)
 {
     priv = new PrivateRegion ();
-    priv->box.extents = CompRect (x, x + w, y, y + h).region ()->extents;
+    priv->box.extents = CompRect (x, y, w, h).region ()->extents;
     priv->box.numRects = 1;
     priv->box.rects = &priv->box.extents;
 }
@@ -121,7 +121,7 @@ CompRect
 CompRegion::boundingRect () const
 {
     BOX b = handle ()->extents;
-    return CompRect (b.x1, b.x2, b.y1, b.y2);
+    return CompRect (b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1);
 }
 
 bool
@@ -193,8 +193,10 @@ CompRegion::rects () const
 	return rv;
     if (!priv->region)
     {
-	rv.push_back (CompRect (priv->box.extents.x1, priv->box.extents.x2,
-		                priv->box.extents.y1, priv->box.extents.y2));
+	rv.push_back (CompRect (priv->box.extents.x1,
+		                priv->box.extents.y1,
+				priv->box.extents.x2 - priv->box.extents.x1,
+				priv->box.extents.y2 - priv->box.extents.y1));
 	return rv;
     }
 
@@ -202,7 +204,7 @@ CompRegion::rects () const
     for (int i = 0; i < priv->region->numRects; i++)
     {
 	b = priv->region->rects[i];
-	rv.push_back (CompRect (b.x1, b.x2, b.y1, b.y2));
+	rv.push_back (CompRect (b.x1, b.y1, b.x2 - b.x1, b.y2 - b.y1));
     }
     return rv;
 }

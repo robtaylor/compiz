@@ -2002,7 +2002,7 @@ PrivateScreen::updateOutputDevices ()
 	    if (outputDevs.size () < nOutput + 1)
 		outputDevs.resize (nOutput + 1);
 
-	    outputDevs[nOutput].setGeometry (x1, x2, y1, y2);
+	    outputDevs[nOutput].setGeometry (x1, y1, x2 - x1, y2 - y1);
 	    nOutput++;
 	}
     }
@@ -2013,7 +2013,7 @@ PrivateScreen::updateOutputDevices ()
 	if (outputDevs.size () < 1)
 	    outputDevs.resize (1);
 
-	outputDevs[0].setGeometry (0, screen->width (), 0, screen->height ());
+	outputDevs[0].setGeometry (0, 0, screen->width (), screen->height ());
 	nOutput = 1;
     }
 
@@ -2247,7 +2247,7 @@ PrivateScreen::reshape (int w, int h)
     screen->setHeight (h);
 
     fullscreenOutput.setId ("fullscreen", ~0);
-    fullscreenOutput.setGeometry (0, w, 0, h);
+    fullscreenOutput.setGeometry (0, 0, w, h);
 
     updateScreenEdges ();
 }

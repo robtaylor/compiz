@@ -82,26 +82,14 @@ CompOutput::setWorkArea (XRectangle workarea)
 
 }
 void
-CompOutput::setGeometry (int x1, int x2, int y1, int y2)
+CompOutput::setGeometry (int x1, int y1, unsigned int width, unsigned int height)
 {
-    if (x1 < 0)
-	x1 = 0;
-
-    if (y1 < 0)
-	y1 = 0;
-
-    if (x2 < 0)
-	x2 = 0;
-
-    if (y2 < 0)
-	y2 = 0;
-
-    CompRect::setGeometry (x1, x2, y1, y2);
+    CompRect::setGeometry (x1, y1, width, height);
 
     mWorkArea.x      = this->x1 ();
     mWorkArea.y      = this->y1 ();
-    mWorkArea.width  = width ();
-    mWorkArea.height = height ();
+    mWorkArea.width  = this->width ();
+    mWorkArea.height = this->height ();
 }
 
 void

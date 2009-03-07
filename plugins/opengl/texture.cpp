@@ -320,7 +320,7 @@ PrivateTexture::loadImageData (const char   *image,
     }
 
     t->setData (target, matrix, mipmap);
-    t->setGeometry (0, width, 0, height);
+    t->setGeometry (0, 0, width, height);
 
     glBindTexture (target, t->name ());
 
@@ -561,7 +561,7 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
 
     tex = new TfpTexture ();
     tex->setData (texTarget, matrix, mipmap);
-    tex->setGeometry (0, width, 0, height);
+    tex->setGeometry (0, 0, width, height);
     tex->pixmap = glxPixmap;
 
     rv[0] = tex;
