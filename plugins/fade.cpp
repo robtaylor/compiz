@@ -195,7 +195,7 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	return gWindow->glPaint (attrib, transform, region, mask);
     }
 
-    GLWindowPaintAttrib fAttrib = attrib;
+    GLWindowPaintAttrib fAttrib (attrib);
     int                 mode;
 
     mode = fScreen->opt[FADE_OPTION_FADE_MODE].value ().i ();
@@ -250,7 +250,7 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	    if (fAttrib.opacity > opacity)
 		newOpacity = MIN (opacity + steps, fAttrib.opacity);
 	    else if (fAttrib.opacity < opacity)
-		opacity = MAX (opacity - steps, fAttrib.opacity);
+		newOpacity = MAX (opacity - steps, fAttrib.opacity);
 
 	    newBrightness = brightness;
 	    if (fAttrib.brightness > brightness)
