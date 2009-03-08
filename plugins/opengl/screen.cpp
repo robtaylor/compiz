@@ -94,6 +94,13 @@ GLScreen::GLScreen (CompScreen *s) :
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     XWindowAttributes    attr;
 
+    if (indirectRendering)
+    {
+	/* force Mesa libGL into indirect rendering mode, because
+	   glXQueryExtensionsString is context-independant */
+	setenv ("LIBGL_ALWAYS_INDIRECT", "1", True);
+    }
+
     if (!openglVTable->getMetadata ()->initOptions (glOptionInfo, GL_OPTION_NUM,
 						    priv->opt))
     {
