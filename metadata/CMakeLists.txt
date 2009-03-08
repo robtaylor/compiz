@@ -18,6 +18,7 @@ set (_plugin_files
     inotify
     minimize
     move
+    obs
     place
     regex
     resize

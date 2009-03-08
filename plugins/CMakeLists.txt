@@ -44,9 +44,12 @@ target_link_libraries (commands)
 add_library (fade MODULE fade.cpp)
 target_link_libraries (fade composite opengl)
 
+add_library (obs MODULE obs.cpp)
+target_link_libraries (obs composite opengl)
+
 install (
     TARGETS decor move resize copytex zoom water ini switcher
-	    place regex gnomecompat commands fade
+	    place regex gnomecompat commands fade obs
     DESTINATION ${compiz_plugindir}
 )
 
