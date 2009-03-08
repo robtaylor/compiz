@@ -6,6 +6,9 @@
 	    <requirement>
 		<plugin>opengl</plugin>
 	    </requirement>
+	    <relation type="after">
+		<plugin>fade</plugin>
+	    </relation>
 	</deps>
 	<options>
 	    <option name="initiate_edge" type="edge">
