@@ -143,7 +143,6 @@ setRestartStyle (SmcConn connection,
 
 static void
 setProgramInfo (SmcConn    connection,
-		const char *program,
 		pid_t      pid,
 		uid_t      uid)
 {
@@ -158,8 +157,8 @@ setProgramInfo (SmcConn    connection,
     progProp.type     = const_cast<char *> (SmARRAY8);
     progProp.num_vals = 1;
     progProp.vals     = &progVal;
-    progVal.value     = (SmPointer) program;
-    progVal.length    = strlen (program);
+    progVal.value     = (SmPointer) "compiz";
+    progVal.length    = strlen (progVal.value);
 
     props[count++] = &progProp;
 
@@ -214,7 +213,7 @@ saveYourselfCallback (SmcConn	connection,
 
     setCloneRestartCommands (connection);
     setRestartStyle (connection, SmRestartImmediately);
-    setProgramInfo (connection, programName, getpid (), getuid ());
+    setProgramInfo (connection, getpid (), getuid ());
     SmcSaveYourselfDone (connection, 1);
 }
 
