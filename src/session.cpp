@@ -158,7 +158,7 @@ setProgramInfo (SmcConn    connection,
     progProp.num_vals = 1;
     progProp.vals     = &progVal;
     progVal.value     = (SmPointer) "compiz";
-    progVal.length    = strlen (progVal.value);
+    progVal.length    = strlen ((char *) progVal.value);
 
     props[count++] = &progProp;
 

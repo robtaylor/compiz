@@ -26,9 +26,9 @@ if (USE_GNOME)
     )
 
     set (wmproperties_file ${CMAKE_CURRENT_BINARY_DIR}/compiz-wm.desktop)
-    translate_wmproperties_file (
+    translate_desktop_file (
         ${CMAKE_CURRENT_SOURCE_DIR}/compiz-wm.desktop.in
-        ${desktop_file}
+        ${wmproperties_file}
     )
     install (
 	FILES ${wmproperties_file}
