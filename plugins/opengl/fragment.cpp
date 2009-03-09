@@ -61,7 +61,7 @@ namespace GLFragment {
 	    };
 
 	public:
-	    std::list<FunctionId> signature;
+	    std::vector<FunctionId> signature;
 
 	    bool blending;
 
@@ -217,9 +217,8 @@ namespace GLFragment {
 	    if (p->signature.size () != nSignature)
 		continue;
 
-	    i = 0;
-	    foreach (FunctionId id, p->signature)
-		if (i == nSignature || signature[i++] != id)
+	    for (i = 0; i < nSignature; i++)
+		if (signature[i] != p->signature[i])
 		    break;
 
 	    if (i == nSignature)
@@ -991,14 +990,21 @@ namespace GLFragment {
 	std::vector<Program *>::iterator it;
 
 	do {
+	    program = NULL;
+
 	    it = s->fragmentStorage ()->programs.begin ();
+
 	    for (; it != s->fragmentStorage ()->programs.end (); it++)
 	    {
-		program = (*it);
-		foreach (FunctionId i, program->signature)
+		foreach (FunctionId i, (*it)->signature)
 		    if (i == id)
+		    {
+			program = (*it);
 			break;
-		program = NULL;
+		    }
+
+		if (program)
+		    break;
 	    }
 
 	    if (program)
