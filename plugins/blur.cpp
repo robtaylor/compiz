@@ -1312,7 +1312,6 @@ BlurWindow::projectRegion (CompOutput     *output,
 	}
     }
 
-
     if (!bScreen->projectVertices (output, transform, vertices, scrv,
 				   nVertices * nQuadCombine))
 	return;
@@ -1395,7 +1394,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 		CompRect (window->x () - window->output ().left,
 			  window->x (),
 			  window->y (),
-			  window->y () + window->width ()));
+			  window->y () + window->height ()));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
@@ -1406,7 +1405,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 			  window->x () + window->width () +
 			  window->output ().right,
 			  window->y (),
-			  window->y () + window->width ()));
+			  window->y () + window->height ()));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
@@ -1419,7 +1418,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 		CompRect (window->x (),
 			  window->x () + window->width (),
 			  window->y (),
-			  window->y () + window->width ()));
+			  window->y () + window->height ()));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
@@ -1646,10 +1645,10 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 
 	    if (!clientThreshold)
 	    {
-		bScreen->region -= CompRect (window->x (),
-					     window->x () + window->width (),
-					     window->y (),
-					     window->y () + window->height ());
+		bScreen->tmpRegion -= CompRect (window->x (),
+						window->x () + window->width (),
+						window->y (),
+						window->y () + window->height ());
 	    }
 
 	    if (clipped)
