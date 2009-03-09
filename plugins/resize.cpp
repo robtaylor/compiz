@@ -239,10 +239,10 @@ resizeInitiate (CompAction         *action,
 		mask |= ResizeDownMask;
 
 	    /* if the pointer was in the middle of the window,
-	       do nothing */
+	       just prevent input to the window */
 
 	    if (!mask)
-		return false;
+		return true;
 	}
 
 	if (screen->otherGrabExist ("resize", 0))
