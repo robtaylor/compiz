@@ -178,7 +178,7 @@ finiXPath (CompXPath *xPath)
 }
 
 static CompOption::Type
-getOptionType (char *name)
+getOptionType (const char *name)
 {
     static struct _TypeMap {
 	const char       *name;
@@ -577,13 +577,12 @@ initListValue (CompOption::Value       &v,
     }
 }
 
-static char *
+static CompString
 stringFromMetadataPathElement (CompMetadata *metadata,
 			       const char   *path,
 			       const char   *element)
 {
-    return strdup (metadata->getStringFromPath (
-	compPrintf ("%s/%s", path, element)).c_str ());
+    return metadata->getStringFromPath (compPrintf ("%s/%s", path, element));
 }
 
 static Bool
@@ -593,16 +592,12 @@ boolFromMetadataPathElement (CompMetadata *metadata,
 			     Bool	  defaultValue)
 {
     Bool value = FALSE;
-    char *str;
+    CompString str;
 
     str = stringFromMetadataPathElement (metadata, path, element);
-    if (!str)
-	return defaultValue;
 
-    if (strcasecmp (str, "true") == 0)
+    if (strcasecmp (str.c_str (), "true") == 0)
 	value = TRUE;
-
-    free (str);
 
     return value;
 }
@@ -612,22 +607,17 @@ initIntRestriction (CompMetadata            *metadata,
 		    CompOption::Restriction &r,
 		    const char              *path)
 {
-    char *value;
+    CompString value;
     int  min = MINSHORT, max = MAXSHORT;
 
     value = stringFromMetadataPathElement (metadata, path, "min");
-    if (value)
-    {
-	min = strtol ((char *) value, NULL, 0);
-	free (value);
-    }
+    if (!value.empty ())
+	min = strtol (value.c_str (), NULL, 0);
 
     value = stringFromMetadataPathElement (metadata, path, "max");
-    if (value)
-    {
-	max = strtol ((char *) value, NULL, 0);
-	free (value);
-    }
+    if (!value.empty ())
+	max = strtol (value.c_str (), NULL, 0);
+
     r.set (min, max);
 }
 
@@ -636,7 +626,7 @@ initFloatRestriction (CompMetadata            *metadata,
 		      CompOption::Restriction &r,
 		      const char              *path)
 {
-    char *value;
+    CompString value;
     char *loc;
 
     float min       = MINSHORT;
@@ -646,25 +636,17 @@ initFloatRestriction (CompMetadata            *metadata,
     loc = setlocale (LC_NUMERIC, NULL);
     setlocale (LC_NUMERIC, "C");
     value = stringFromMetadataPathElement (metadata, path, "min");
-    if (value)
-    {
-	min = strtod ((char *) value, NULL);
-	free (value);
-    }
+    if (!value.empty ())
+	min = strtod (value.c_str (), NULL);
 
     value = stringFromMetadataPathElement (metadata, path, "max");
-    if (value)
-    {
-	max = strtod ((char *) value, NULL);
-	free (value);
-    }
+    if (!value.empty ())
+	max = strtod (value.c_str (), NULL);
 
     value = stringFromMetadataPathElement (metadata, path, "precision");
-    if (value)
-    {
-	precision = strtod ((char *) value, NULL);
-	free (value);
-    }
+    if (!value.empty ())
+	precision = strtod (value.c_str (), NULL);
+
     r.set (min, max, precision);
 
     setlocale (LC_NUMERIC, loc);
@@ -688,31 +670,21 @@ initActionState (CompMetadata      *metadata,
     };
 
     CompXPath xPath;
-    char      *grab;
+    CompString value;
 
     *state = CompAction::StateAutoGrab;
 
-    grab = stringFromMetadataPathElement (metadata, path, "passive_grab");
-    if (grab)
-    {
-	if (strcmp (grab, "false") == 0)
+    value = stringFromMetadataPathElement (metadata, path, "passive_grab");
+    if (!value.empty ())
+	if (value == "false")
 	    *state = 0;
-
-	free (grab);
-    }
 
     if (type == CompOption::TypeEdge)
     {
-	char *noEdgeDelay;
-
-	noEdgeDelay = stringFromMetadataPathElement (metadata, path, "nodelay");
-	if (noEdgeDelay)
-	{
-	    if (strcmp (noEdgeDelay, "true") == 0)
+	value = stringFromMetadataPathElement (metadata, path, "nodelay");
+	if (!value.empty ())
+	    if (value == "true")
 		*state |= CompAction::StateNoEdgeDelay;
-
-	    free (noEdgeDelay);
-	}
     }
 
     if (!initXPathFromMetadataPathElement (&xPath, metadata, BAD_CAST path,
@@ -745,7 +717,7 @@ initOptionFromMetadataPath (CompMetadata  *metadata,
     xmlNodePtr	      node, defaultNode;
     xmlDocPtr	      defaultDoc;
     xmlChar	      *name, *type;
-    char	      *value;
+    CompString	      value;
     CompAction::State state = 0;
     bool	      helper = false;
     CompOption::Type  oType = CompOption::TypeBool;
@@ -835,15 +807,10 @@ initOptionFromMetadataPath (CompMetadata  *metadata,
 	case CompOption::TypeList:
 	    value = stringFromMetadataPathElement (metadata, (char *) path,
 						   "type");
-	    if (value)
-	    {
-		option->value ().set (getOptionType ((char *) value), emptyList);
-		free (value);
-	    }
+	    if (!value.empty ())
+		option->value ().set (getOptionType (value.c_str ()), emptyList);
 	    else
-	    {
 		option->value ().set (CompOption::TypeBool, emptyList);
-	    }
 
 	    switch (option->value ().listType ()) {
 		case CompOption::TypeInt:
