@@ -168,7 +168,7 @@ regionFromBoxes (std::vector<BlurBox> boxes,
 			     &x2, &y2);
 
 	if (x2 > x1 && y2 > y1)
-	    region += CompRect (x1, x2, y1, y2);
+	    region += CompRect (x1, y1, x2 - x1, y2 - y1);
     }
 
     return region;
@@ -182,11 +182,11 @@ BlurWindow::updateRegion ()
     if (state[BLUR_STATE_DECOR].threshold)
     {
 	region += CompRect (-window->output ().left,
-			    window->width () + window->output ().right,
 			    -window->output ().top,
+			    window->width () + window->output ().right,
 			    window->height () + window->output ().bottom);
 
-	region -= CompRect (0, window->width (), 0, window->height ());
+	region -= CompRect (0, 0, window->width (), window->height ());
 
 	state[BLUR_STATE_DECOR].clipped = false;
 
@@ -1340,12 +1340,16 @@ BlurWindow::projectRegion (CompOutput     *output,
 		maxY = scr[j + 1];
 	}
 
-	bScreen->tmpRegion3 +=
-	    CompRect (minX - bScreen->filterRadius,
-		      maxX + bScreen->filterRadius + 0.5f,
-		      screen->height () - maxY - bScreen->filterRadius,
-		      screen->height () - minY + bScreen->filterRadius + 0.5f);
-	
+	int x1, y1, x2, y2;
+
+        x1 = minX - bScreen->filterRadius;
+        y1 = screen->height () - maxY - bScreen->filterRadius;
+        x2 = maxX + bScreen->filterRadius + 0.5f;
+        y2 = screen->height () - minY + bScreen->filterRadius + 0.5f;
+
+
+        bScreen->tmpRegion3 += CompRect (x1, y1, x2 - x1, y2 - y1);
+
     }
 }
 
@@ -1366,46 +1370,51 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 
 	if (state[BLUR_STATE_DECOR].threshold)
 	{
-	    // top
+	    int  xx, yy, ww, hh;
+ 	    // top
+	    xx = window->x () - window->output ().left;
+	    yy = window->y () - window->output ().top;
+	    ww = window->width () + window->output ().left + window->output ().right;
+	    hh = window->output ().top;
+
 	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
-		CompRect (window->x () - window->output ().left,
-			  window->x () + window->width () +
-			  window->output ().right,
-			  window->y () - window->output ().top,
-			  window->y ()));
+		CompRect (xx, yy, ww, hh));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
 
 	    // bottom
+	    xx = window->x () - window->output ().left;
+	    yy = window->y () + window->height ();
+            ww = window->width () + window->output ().left + window->output ().right;
+	    hh = window->output ().bottom;
+
 	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
-		CompRect (window->x () - window->output ().left,
-			  window->x () + window->width () +
-			  window->output ().right,
-			  window->y () + window->height (),
-			  window->y () + window->height () +
-			  window->output ().bottom));
+		CompRect (xx, yy, ww, hh));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
 
 	    // left
-	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
-		CompRect (window->x () - window->output ().left,
-			  window->x (),
-			  window->y (),
-			  window->y () + window->height ()));
+	    xx = window->x () - window->output ().left;
+	    yy = window->y ();
+	    ww = window->output ().left;
+	    hh = window->height ();
+
+            bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
+		CompRect (xx, yy, ww, hh));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
 
 	    // right
-	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
-		CompRect (window->x () + window->width (),
-			  window->x () + window->width () +
-			  window->output ().right,
-			  window->y (),
-			  window->y () + window->height ()));
+	    xx = window->x () + window->width ();
+	    yy = window->y ();
+	    ww = window->output ().right;
+	    hh = window->height ();
+
+            bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
+		CompRect (xx, yy, ww, hh));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
@@ -1416,9 +1425,9 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    // center
 	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
 		CompRect (window->x (),
-			  window->x () + window->width (),
 			  window->y (),
-			  window->y () + window->height ()));
+			  window->width (),
+			  window->height ()));
 
 	    if (!bScreen->tmpRegion2.isEmpty ())
 		projectRegion (bScreen->output, transform);
@@ -1542,8 +1551,8 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	glCopyTexSubImage2D (bScreen->target, 0,
 			     br.x1 (), y,
 			     br.x1 (), y,
-			     br.x2 () - br.x1 (),
-			     br.y2 () - br.y1 ());
+			     br.width (),
+			     br.height ());
     }
 
     switch (filter) {
@@ -1674,8 +1683,8 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 			glEnable (GL_SCISSOR_TEST);
 			glScissor (clearBox.x1 (),
 				   screen->height () - clearBox.y2 (),
-				   clearBox.x2 () - clearBox.x1 (),
-				   clearBox.y2 () - clearBox.y1 ());
+				   clearBox.width (),
+				   clearBox.height ());
 			glClear (GL_STENCIL_BUFFER_BIT);
 			glPopAttrib ();
 		    }
