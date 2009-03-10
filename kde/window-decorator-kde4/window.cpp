@@ -72,6 +72,8 @@ KWD::Window::Window (WId  parentId,
     mClientId (clientId),
     mSelectedId (0),
     mDecor (0),
+    mTexturePixmap (0),
+    mTexturePixmapBuffer (0),
     mPixmap (0),
     mDamageId (0),
     mShadow (0),
@@ -169,6 +171,12 @@ KWD::Window::~Window (void)
 
     if (mDecorationPicture)
 	XRenderFreePicture (QX11Info::display(), mDecorationPicture);
+
+    if (mTexturePixmap)
+	XFreePixmap (QX11Info::display(), mTexturePixmap);
+
+    if (mTexturePixmapBuffer)
+	XFreePixmap (QX11Info::display(), mTexturePixmapBuffer);
 
     if (mDecor)
 	delete mDecor;
@@ -1091,19 +1099,30 @@ KWD::Window::updateShadow (void)
     if (mTexturePicture)
 	XRenderFreePicture (QX11Info::display(), mTexturePicture);
 
-    mTexturePixmap       = QPixmap (mLayout.width, mLayout.height);
-    mTexturePixmapBuffer = QPixmap (mLayout.width, mLayout.height);
+    if (mTexturePixmap)
+	XFreePixmap (QX11Info::display(), mTexturePixmap);
+
+    if (mTexturePixmapBuffer)
+	XFreePixmap (QX11Info::display(), mTexturePixmapBuffer);
+
+    mTexturePixmap       = XCreatePixmap (QX11Info::display(),
+					  QX11Info::appRootWindow (),
+					  mLayout.width, mLayout.height, 32);
+    mTexturePixmapBuffer = XCreatePixmap (QX11Info::display(),
+					  QX11Info::appRootWindow (),
+					  mLayout.width, mLayout.height, 32);
+    mTexturePixmapSize = QSize (mLayout.width, mLayout.height);
 
     xformat = XRenderFindStandardFormat (QX11Info::display(),
 					 PictStandardARGB32);
 
     mDecorationPicture =
 	XRenderCreatePicture (QX11Info::display(),
-			      mTexturePixmap.handle (),
+			      mTexturePixmap,
 			      xformat, 0, NULL);
     mTexturePicture =
 	XRenderCreatePicture (QX11Info::display(),
-			      mTexturePixmapBuffer.handle (),
+			      mTexturePixmapBuffer,
 			      xformat, 0, NULL);
 
     decor_fill_picture_extents_with_shadow (QX11Info::display(),
@@ -1554,7 +1573,7 @@ KWD::Window::updateProperty (void)
 	    minWidth = 1;
 	}
 
-	decor_quads_to_property (data, mTexturePixmap.handle (),
+	decor_quads_to_property (data, mTexturePixmap,
 				&normExtents, &maxExtents,
 				minWidth, 0,
 				quads, nQuad);
@@ -1564,7 +1583,6 @@ KWD::Window::updateProperty (void)
 	decor_gen_window_property (data, &normExtents, &maxExtents, 1, 0);
      }
  
-
     KWD::trapXError ();
     XChangeProperty (QX11Info::display(), mClientId, atom,
 		     XA_INTEGER,
@@ -2184,8 +2202,8 @@ KWD::Window::processDamage (void)
 		      0, 0,
 		      0, 0,
 		      0, 0,
-		      mTexturePixmap.width (),
-		      mTexturePixmap.height ());
+		      mTexturePixmapSize.width (),
+		      mTexturePixmapSize.height ());
 
     if (mUpdateProperty)
 	updateProperty ();
