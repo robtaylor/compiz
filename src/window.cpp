@@ -345,24 +345,24 @@ PrivateWindow::updateIconGeometry ()
 				 0L, 1024L, False, XA_CARDINAL,
 				 &actual, &format, &n, &left, &data);
 
-    priv->iconGeometrySet = false;
-
     if (result == Success && data)
     {
 	if (n == 4)
 	{
 	    unsigned long *geometry = (unsigned long *) data;
 
-	    priv->iconGeometry.x      = geometry[0];
-	    priv->iconGeometry.y      = geometry[1];
-	    priv->iconGeometry.width  = geometry[2];
-	    priv->iconGeometry.height = geometry[3];
-
-	    priv->iconGeometrySet = true;
+	    priv->iconGeometry.setX (geometry[0]);
+	    priv->iconGeometry.setY (geometry[1]);
+	    priv->iconGeometry.setWidth (geometry[2]);
+	    priv->iconGeometry.setHeight (geometry[3]);
 	}
+	else
+	    priv->iconGeometry.setGeometry (0, 0, 0, 0);
 
 	XFree (data);
     }
+    else
+	priv->iconGeometry.setGeometry (0, 0, 0, 0);
 }
 
 Window
@@ -3921,6 +3921,12 @@ CompWindow::getIcon (int width,
     return icon;
 }
 
+CompRect
+CompWindow::iconGeometry ()
+{
+    return priv->iconGeometry;
+}
+
 void
 PrivateWindow::freeIcons ()
 {
@@ -4931,7 +4937,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     icons (0),
     noIcons (false),
 
-    iconGeometrySet (false),
+    iconGeometry (0, 0, 0, 0),
 
     saveMask (0),
     syncCounter (0),
@@ -4942,12 +4948,6 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     closeRequests (false),
     lastCloseRequestTime (0)
 {
-    iconGeometry.x      = 0;
-    iconGeometry.y      = 0;
-    iconGeometry.width  = 0;
-    iconGeometry.height = 0;
-    iconGeometrySet     = FALSE;
-
     input.left   = 0;
     input.right  = 0;
     input.top    = 0;

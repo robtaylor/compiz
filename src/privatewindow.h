@@ -273,8 +273,7 @@ class PrivateWindow {
 	std::vector<CompIcon *> icons;
 	bool noIcons;
 
-	XRectangle iconGeometry;
-	bool       iconGeometrySet;
+	CompRect   iconGeometry;
 
 	XWindowChanges saveWc;
 	int		   saveMask;
