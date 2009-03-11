@@ -68,7 +68,6 @@ CompRect::region () const
     return const_cast<const Region> (&mRegion);
 }
 
-
 void
 CompRect::setGeometry (int x,
 		       int y,
@@ -81,23 +80,42 @@ CompRect::setGeometry (int x,
     mRegion.extents.y2 = y + height;
 }
 
-void CompRect::setX (int x)
+void
+CompRect::setX (int x)
 {
     mRegion.extents.x1 = x;
 }
 
-void CompRect::setY (int y)
+void
+CompRect::setY (int y)
 {
     mRegion.extents.y1 = y;
-
 }
-void CompRect::setWidth (unsigned int width)
+
+void
+CompRect::setPos (const CompPoint& pos)
+{
+    mRegion.extents.x1 = pos.x ();
+    mRegion.extents.y1 = pos.y ();
+}
+
+void
+CompRect::setWidth (unsigned int width)
 {
     mRegion.extents.x2 = mRegion.extents.x1 + width;
 }
-void CompRect::setHeight (unsigned int height)
+
+void
+CompRect::setHeight (unsigned int height)
 {
     mRegion.extents.y2 = mRegion.extents.y1 + height;
+}
+
+void
+CompRect::setSize (const CompSize& size)
+{
+    mRegion.extents.x2 = mRegion.extents.x1 + size.width ();
+    mRegion.extents.y2 = mRegion.extents.y1 + size.height ();
 }
 
 bool
@@ -113,6 +131,58 @@ CompRect::contains (const CompPoint& point) const
 	return false;
 
     return true;
+}
+
+bool
+CompRect::contains (const CompRect& rect) const
+{
+    if (rect.x1 () < x1 ())
+	return false;
+    if (rect.x2 () > x2 ())
+	return false;
+    if (rect.y1 () < y1 ())
+	return false;
+    if (rect.y2 () > y2 ())
+	return false;
+
+    return true;
+}
+
+bool
+CompRect::intersects (const CompRect& rect) const
+{
+    int l, r, t, b;
+
+    /* extents of overlapping rectangle */
+    l = MAX (left (), rect.left ());
+    r = MIN (right (), rect.right ());
+    t = MAX (top (), rect.top ());
+    b = MIN (bottom (), rect.bottom ());
+
+    return (l < r) && (t < b);
+}
+
+bool
+CompRect::isEmpty () const
+{
+    if (mRegion.extents.x1 != mRegion.extents.x2)
+	return false;
+    if (mRegion.extents.y1 != mRegion.extents.y2)
+	return false;
+
+    return true;
+}
+
+unsigned int
+CompRect::area () const
+{
+    if (mRegion.extents.x2 < mRegion.extents.x1)
+	return 0;
+    if (mRegion.extents.y2 < mRegion.extents.y1)
+	return 0;
+
+    return (mRegion.extents.x2 - mRegion.extents.x1) *
+	   (mRegion.extents.y2 - mRegion.extents.y1);
 }
 
 bool
@@ -134,4 +204,32 @@ bool
 CompRect::operator!= (const CompRect &rect) const
 {
     return !(*this == rect);
+}
+
+CompRect
+CompRect::operator& (const CompRect &rect) const
+{
+    CompRect result (*this);
+
+    result &= rect;
+    return result;
+}
+
+CompRect&
+CompRect::operator&= (const CompRect &rect)
+{
+    int l, r, t, b;
+
+    /* extents of overlapping rectangle */
+    l = MAX (left (), rect.left ());
+    r = MIN (right (), rect.right ());
+    t = MAX (top (), rect.top ());
+    b = MIN (bottom (), rect.bottom ());
+
+    mRegion.extents.x1 = l;
+    mRegion.extents.x2 = r;
+    mRegion.extents.y1 = t;
+    mRegion.extents.y2 = b;
+
+    return *this;
 }

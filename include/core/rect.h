@@ -50,18 +50,35 @@ class CompRect {
 	int top    () const;
 	int bottom () const;
 
+	int centerX () const;
+	int centerY () const;
+	CompPoint center () const;
+
+	unsigned int area () const;
+
 	const Region region () const;
 
-	void setGeometry (int x, int y, unsigned int width, unsigned int height);
+	void setGeometry (int x, int y,
+			  unsigned int width, unsigned int height);
 
 	void setX      (int);
 	void setY      (int);
 	void setWidth  (unsigned int);
 	void setHeight (unsigned int);
 
+	void setPos (const CompPoint&);
+	void setSize (const CompSize&);
+
 	bool contains (const CompPoint &) const;
+	bool contains (const CompRect &) const;
+	bool intersects (const CompRect &) const;
+	bool isEmpty () const;
+
 	bool operator== (const CompRect &) const;
 	bool operator!= (const CompRect &) const;
+
+	CompRect operator& (const CompRect &) const;
+	CompRect& operator&= (const CompRect &);
 
 	typedef std::vector<CompRect> vector;
 	typedef std::vector<CompRect *> ptrVector;
@@ -70,6 +87,7 @@ class CompRect {
     private:
 	REGION       mRegion;
 };
+
 
 inline int
 CompRect::x () const
@@ -142,6 +160,24 @@ inline int
 CompRect::bottom () const
 {
     return mRegion.extents.y2;
+}
+
+inline int
+CompRect::centerX () const
+{
+    return x () + width () / 2;
+}
+
+inline int
+CompRect::centerY () const
+{
+    return y () + height () / 2;
+}
+
+inline CompPoint
+CompRect::center () const
+{
+    return CompPoint (centerX (), centerY ());
 }
 
 #endif
