@@ -395,7 +395,7 @@ class CompWindow :
 
 	CompIcon * getIcon (int width, int height);
 
-	CompRect iconGeometry ();
+	const CompRect & iconGeometry () const;
 
 	int outputDevice ();
 

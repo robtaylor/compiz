@@ -340,6 +340,8 @@ PrivateWindow::updateIconGeometry ()
     unsigned long n, left;
     unsigned char *data;
 
+    priv->iconGeometry.setGeometry (0, 0, 0, 0);
+
     result = XGetWindowProperty (screen->dpy (), priv->id,
 				 Atoms::wmIconGeometry,
 				 0L, 1024L, False, XA_CARDINAL,
@@ -356,13 +358,9 @@ PrivateWindow::updateIconGeometry ()
 	    priv->iconGeometry.setWidth (geometry[2]);
 	    priv->iconGeometry.setHeight (geometry[3]);
 	}
-	else
-	    priv->iconGeometry.setGeometry (0, 0, 0, 0);
 
 	XFree (data);
     }
-    else
-	priv->iconGeometry.setGeometry (0, 0, 0, 0);
 }
 
 Window
@@ -3921,8 +3919,8 @@ CompWindow::getIcon (int width,
     return icon;
 }
 
-CompRect
-CompWindow::iconGeometry ()
+const CompRect&
+CompWindow::iconGeometry () const
 {
     return priv->iconGeometry;
 }
@@ -4936,8 +4934,6 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
 
     icons (0),
     noIcons (false),
-
-    iconGeometry (0, 0, 0, 0),
 
     saveMask (0),
     syncCounter (0),
