@@ -225,7 +225,7 @@ class CompWindow :
 
     public:
 
-	class Geometry : public CompPoint, public CompSize {
+	class Geometry : public CompRect {
 
 	    public:
 		Geometry ();
@@ -234,7 +234,6 @@ class CompWindow :
 		unsigned int border () const;
 
 		void set (int, int, unsigned int, unsigned int, unsigned int);
-
 		void setBorder (unsigned int);
 
 	    private:
@@ -261,18 +260,18 @@ class CompWindow :
 
 	int x () const;
 	int y () const;
-	const CompPoint & pos () const;
+	CompPoint pos () const;
 
 	/* With border */
 	unsigned int width () const;
 	unsigned int height () const;
-	const CompSize size () const;
+	CompSize size () const;
 	
 	Geometry & serverGeometry () const;
 
 	int serverX () const;
 	int serverY () const;
-	const CompPoint & serverPos () const;
+	CompPoint serverPos () const;
 
 	/* With border */
 	unsigned int serverWidth () const;

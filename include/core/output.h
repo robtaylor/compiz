@@ -40,9 +40,9 @@ class CompOutput : public CompRect {
 	
 	unsigned int id () const;
 
-	XRectangle workArea () const;
+	const CompRect& workArea () const;
 
-	void setWorkArea (XRectangle);
+	void setWorkArea (const CompRect&);
 	void setGeometry (int x, int y, unsigned int width, unsigned int height);
 	void setId (CompString, unsigned int);
 
@@ -55,7 +55,7 @@ class CompOutput : public CompRect {
 	CompString   mName;
 	unsigned int mId;
 
-	XRectangle   mWorkArea;
+	CompRect     mWorkArea;
 };
 
 #endif

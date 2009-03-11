@@ -1919,10 +1919,10 @@ PrivateScreen::setDesktopHints ()
 
     for (i = 0; i < nDesktop; i++)
     {
-	data[offset + i * 4 + 0] = workArea.x;
-	data[offset + i * 4 + 1] = workArea.y;
-	data[offset + i * 4 + 2] = workArea.width;
-	data[offset + i * 4 + 3] = workArea.height;
+	data[offset + i * 4 + 0] = workArea.x ();
+	data[offset + i * 4 + 1] = workArea.y ();
+	data[offset + i * 4 + 2] = workArea.width ();
+	data[offset + i * 4 + 3] = workArea.height ();
     }
 
     if (!desktopHintEqual (data, dSize, offset, hintSize))
@@ -3212,30 +3212,13 @@ CompScreen::removeAction (CompAction *action)
     }
 }
 
-void
-PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
-				      XRectangle *area)
+CompRect
+PrivateScreen::computeWorkareaForBox (const CompRect& box)
 {
-    Region     region;
-    REGION     r;
-    int	       x1, y1, x2, y2;
+    CompRegion region;
+    int        x1, y1, x2, y2;
 
-    region = XCreateRegion ();
-    if (!region)
-    {
-	area->x      = pBox->x1;
-	area->y      = pBox->y1;
-	area->width  = pBox->x1 - pBox->x1;
-	area->height = pBox->y2 - pBox->y1;
-
-	return;
-    }
-
-    r.rects    = &r.extents;
-    r.numRects = r.size = 1;
-    r.extents  = *pBox;
-
-    XUnionRegion (&r, region, region);
+    region += box;
 
     foreach (CompWindow *w, windows)
     {
@@ -3244,110 +3227,74 @@ PrivateScreen::computeWorkareaForBox (BoxPtr     pBox,
 
 	if (w->struts ())
 	{
-	    r.extents.y1 = pBox->y1;
-	    r.extents.y2 = pBox->y2;
-
 	    x1 = w->struts ()->left.x;
 	    y1 = w->struts ()->left.y;
 	    x2 = x1 + w->struts ()->left.width;
 	    y2 = y1 + w->struts ()->left.height;
 
-	    if (y1 < pBox->y2 && y2 > pBox->y1)
-	    {
-		r.extents.x1 = x1;
-		r.extents.x2 = x2;
-
-		XSubtractRegion (region, &r, region);
-	    }
+	    if (y1 < box.y2 () && y2 > box.y1 ())
+		region -= CompRect (x1, box.y1 (), x2 - x1, box.height ());
 
 	    x1 = w->struts ()->right.x;
 	    y1 = w->struts ()->right.y;
 	    x2 = x1 + w->struts ()->right.width;
 	    y2 = y1 + w->struts ()->right.height;
 
-	    if (y1 < pBox->y2 && y2 > pBox->y1)
-	    {
-		r.extents.x1 = x1;
-		r.extents.x2 = x2;
-
-		XSubtractRegion (region, &r, region);
-	    }
-
-	    r.extents.x1 = pBox->x1;
-	    r.extents.x2 = pBox->x2;
+	    if (y1 < box.y2 () && y2 > box.y1 ())
+		region -= CompRect (x1, box.y1 (), x2 - x1, box.height ());
 
 	    x1 = w->struts ()->top.x;
 	    y1 = w->struts ()->top.y;
 	    x2 = x1 + w->struts ()->top.width;
 	    y2 = y1 + w->struts ()->top.height;
 
-	    if (x1 < pBox->x2 && x2 > pBox->x1)
-	    {
-		r.extents.y1 = y1;
-		r.extents.y2 = y2;
-
-		XSubtractRegion (region, &r, region);
-	    }
+	    if (x1 < box.x2 () && x2 > box.x1 ())
+		region -= CompRect (box.x1 (), y1, box.width (), y2 - y1);
 
 	    x1 = w->struts ()->bottom.x;
 	    y1 = w->struts ()->bottom.y;
 	    x2 = x1 + w->struts ()->bottom.width;
 	    y2 = y1 + w->struts ()->bottom.height;
 
-	    if (x1 < pBox->x2 && x2 > pBox->x1)
-	    {
-		r.extents.y1 = y1;
-		r.extents.y2 = y2;
-
-		XSubtractRegion (region, &r, region);
-	    }
+	    if (x1 < box.x2 () && x2 > box.x1 ())
+		region -= CompRect (box.x1 (), y1, box.width (), y2 - y1);
 	}
     }
 
-    if (XEmptyRegion (region))
+    if (region.isEmpty ())
     {
 	compLogMessage ("core", CompLogLevelWarn,
 			"Empty box after applying struts, ignoring struts");
-	region->extents = *pBox;
+	return box;
     }
 
-    area->x      = region->extents.x1;
-    area->y      = region->extents.y1;
-    area->width  = region->extents.x2 - region->extents.x1;
-    area->height = region->extents.y2 - region->extents.y1;
-
-    XDestroyRegion (region);
+    return region.boundingRect ();
 }
 
 void
 PrivateScreen::updateWorkarea ()
 {
-    XRectangle workArea;
-    BoxRec     box;
-    bool       workAreaChanged = false;
+    CompRect workArea;
+    bool     workAreaChanged = false;
 
     for (unsigned int i = 0; i < priv->outputDevs.size (); i++)
     {
-	XRectangle oldWorkArea = priv->outputDevs[i].workArea ();
+	CompRect oldWorkArea = priv->outputDevs[i].workArea ();
 
-	priv->computeWorkareaForBox (&priv->outputDevs[i].region ()->extents,
-				     &workArea);
+	workArea = priv->computeWorkareaForBox (priv->outputDevs[i]);
 
-	if (memcmp (&workArea, &oldWorkArea, sizeof (XRectangle)))
+	if (workArea != oldWorkArea)
 	{
 	    workAreaChanged = true;
 	    priv->outputDevs[i].setWorkArea (workArea);
 	}
     }
 
-    box.x1 = 0;
-    box.y1 = 0;
-    box.x2 = screen->width ();
-    box.y2 = screen->height ();
+    workArea = priv->computeWorkareaForBox (CompRect (0, 0,
+						      screen->width (),
+						      screen->height ()));
 
-    priv->computeWorkareaForBox (&box, &workArea);
-
-    if (memcmp (&workArea, &priv->workArea, sizeof (XRectangle)))
+    if (priv->workArea != workArea)
     {
 	workAreaChanged = true;
 	priv->workArea = workArea;
@@ -3759,23 +3706,15 @@ PrivateScreen::getTopWindow ()
 int
 CompScreen::outputDeviceForPoint (int x, int y)
 {
-    return outputDeviceForGeometry (CompWindow::Geometry (x, y, 1, 1, 0));
+    CompWindow::Geometry geom (x, y, 1, 1, 0);
+
+    return outputDeviceForGeometry (geom);
 }
 
-void
-CompScreen::getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2)
+CompRect
+CompScreen::getCurrentOutputExtents ()
 {
-    if (x1)
-	*x1 = priv->outputDevs[priv->currentOutputDev].x1 ();
-
-    if (y1)
-	*y1 = priv->outputDevs[priv->currentOutputDev].y1 ();
-
-    if (x2)
-	*x2 = priv->outputDevs[priv->currentOutputDev].x2 ();
-
-    if (y2)
-	*y2 = priv->outputDevs[priv->currentOutputDev].y2 ();
+    return priv->outputDevs[priv->currentOutputDev];
 }
 
 void
@@ -3835,10 +3774,10 @@ PrivateScreen::setCurrentDesktop (unsigned int desktop)
 		     (unsigned char *) &data, 1);
 }
 
-void
-CompScreen::getWorkareaForOutput (int output, XRectangle *area)
+const CompRect&
+CompScreen::getWorkareaForOutput (int output) const
 {
-    *area = priv->outputDevs[output].workArea ();
+    return priv->outputDevs[output].workArea ();
 }
 
 void
@@ -3853,61 +3792,32 @@ CompScreen::outputChangeNotify ()
    is currently computed as the viewport where the center of the window is
    located. */
 void
-CompScreen::viewportForGeometry (CompWindow::Geometry gm,
-				 CompPoint&           viewport)
+CompScreen::viewportForGeometry (const CompWindow::Geometry& gm,
+				 CompPoint&                  viewport)
 {
-    int	centerX;
-    int	centerY;
+    CompRect rect (gm);
+    int      offset;
 
-    gm.setWidth  (gm.width () + (gm.border () * 2));
-    gm.setHeight (gm.height () + (gm.border () * 2));
+    rect.setWidth  (rect.width () + (gm.border () * 2));
+    rect.setHeight (rect.height () + (gm.border () * 2));
 
-    centerX = gm.x () + (gm.width () >> 1);
-    if (centerX < 0)
-	viewport.setX (priv->vp.x () + ((centerX / width ()) - 1) %
-		       priv->vpSize.width ());
-    else
-	viewport.setX (priv->vp.x () + (centerX / width ()) %
-		       priv->vpSize.width ());
+    offset = rect.centerX () < 0 ? -1 : 0;
+    viewport.setX (priv->vp.x () + ((rect.centerX () / width ()) + offset) %
+		   priv->vpSize.width ());
 
-    centerY = gm.y () + (gm.height () >> 1);
-    if (centerY < 0)
-	viewport.setY (priv->vp.y () +
-		       ((centerY / height ()) - 1) % priv->vpSize.height ());
-    else
-	viewport.setY (priv->vp.y () + (centerY / height ()) %
-		       priv->vpSize.height ());
-}
-
-static int
-rectangleOverlapArea (BOX& rect1,
-		      BOX& rect2)
-{
-    int left, right, top, bottom;
-
-    /* extents of overlapping rectangle */
-    left = MAX (rect1.x1, rect2.x1);
-    right = MIN (rect1.x2, rect2.x2);
-    top = MAX (rect1.y1, rect2.y1);
-    bottom = MIN (rect1.y2, rect2.y2);
-
-    if (left > right || top > bottom)
-    {
-	/* no overlap */
-	return 0;
-    }
-
-    return (right - left) * (bottom - top);
+    offset = rect.centerY () < 0 ? -1 : 0;
+    viewport.setY (priv->vp.y () + ((rect.centerY () / height ()) + offset ) %
+		   priv->vpSize.height ());
 }
 
 int
-CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
+CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
 {
     int          overlapAreas[priv->outputDevs.size ()];
     int          highest, seen, highestScore;
-    int          strategy;
+    int          x, y, strategy;
     unsigned int i;
-    BOX          geomRect;
+    CompRect     geomRect;
 
     if (priv->outputDevs.size () == 1)
 	return 0;
@@ -3920,46 +3830,45 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 
 	/* for smart mode, calculate the overlap of the whole rectangle
 	   with the output device rectangle */
-	geomRect.x2 = gm.width () + 2 * gm.border ();
-	geomRect.y2 = gm.height () + 2 * gm.border ();
+	geomRect.setWidth (gm.width () + 2 * gm.border ());
+	geomRect.setHeight (gm.height () + 2 * gm.border ());
 
-	geomRect.x1 = gm.x () % width ();
-	centerX = (geomRect.x1 + (geomRect.x2 / 2));
+	x = gm.x () % width ();
+	centerX = (x + (geomRect.width () / 2));
 	if (centerX < 0)
-	    geomRect.x1 += width ();
+	    x += width ();
 	else if (centerX > width ())
-	    geomRect.x1 -= width ();
+	    x -= width ();
+	geomRect.setX (x);
 
-	geomRect.y1 = gm.y () % height ();
-	centerY = (geomRect.y1 + (geomRect.y2 / 2));
+	y = gm.y () % height ();
+	centerY = (y + (geomRect.height () / 2));
 	if (centerY < 0)
-	    geomRect.y1 += height ();
+	    y += height ();
 	else if (centerY > height ())
-	    geomRect.y1 -= height ();
-
-	geomRect.x2 += geomRect.x1;
-	geomRect.y2 += geomRect.y1;
+	    y -= height ();
+	geomRect.setY (y);
     }
     else
     {
 	/* for biggest/smallest modes, only use the window center to determine
 	   the correct output device */
-	geomRect.x1 = (gm.x () + (gm.width () / 2) + gm.border ()) % width ();
-	if (geomRect.x1 < 0)
-	    geomRect.x1 += width ();
-	geomRect.y1 = (gm.y () + (gm.height () / 2) + gm.border()) % height ();
-	if (geomRect.y1 < 0)
-	    geomRect.y1 += height ();
+	x = (gm.x () + (gm.width () / 2) + gm.border ()) % width ();
+	if (x < 0)
+	    x += width ();
+	y = (gm.y () + (gm.height () / 2) + gm.border()) % height ();
+	if (y < 0)
+	    y += height ();
 
-	geomRect.x2 = geomRect.x1 + 1;
-	geomRect.y2 = geomRect.y1 + 1;
+	geomRect.setGeometry (x, y, 1, 1);
     }
 
     /* get amount of overlap on all output devices */
     for (i = 0; i < priv->outputDevs.size (); i++)
-	overlapAreas[i] =
-		rectangleOverlapArea (priv->outputDevs[i].region ()->extents,
-				      geomRect);
+    {
+	CompRect overlap = priv->outputDevs[i] & geomRect;
+	overlapAreas[i] = overlap.area ();
+    }
 
     /* find output with largest overlap */
     for (i = 0, highest = 0, highestScore = 0;
@@ -3993,10 +3902,9 @@ CompScreen::outputDeviceForGeometry (CompWindow::Geometry gm)
 	for (i = 0, highest = 0; i < priv->outputDevs.size (); i++)
 	    if (overlapAreas[i] == highestScore)
 	    {
-		BOX  *box = &priv->outputDevs[i].region ()->extents;
-		Bool bestFit;
+		bool bestFit;
 
-		currentSize = (box->x2 - box->x1) * (box->y2 - box->y1);
+		currentSize = priv->outputDevs[i].area ();
 
 		if (searchLargest)
 		    bestFit = (currentSize > bestOutputSize);
@@ -4228,8 +4136,8 @@ CompScreen::currentOutputDev () const
     return priv->outputDevs [priv->currentOutputDev];
 }
 
-XRectangle
-CompScreen::workArea ()
+const CompRect &
+CompScreen::workArea () const
 {
     return priv->workArea;
 }
@@ -4558,11 +4466,10 @@ CompScreen::init (const char *name)
     if (!XGetWindowAttributes (dpy, priv->root, &priv->attrib))
 	return false;
 
-    priv->workArea.x      = 0;
-    priv->workArea.y      = 0;
-    priv->workArea.width  = priv->attrib.width;
-    priv->workArea.height = priv->attrib.height;
-    priv->grabWindow      = None;
+    priv->workArea.setWidth (priv->attrib.width);
+    priv->workArea.setHeight (priv->attrib.height);
+
+    priv->grabWindow = None;
 
     templ.visualid = XVisualIDFromVisual (priv->attrib.visual);
 

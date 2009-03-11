@@ -38,8 +38,7 @@ CompWindow::Geometry::Geometry (int          x,
 				unsigned int width,
 				unsigned int height,
 				unsigned int border) :
-    CompPoint (x, y),
-    CompSize (width, height),
+    CompRect (x, y, width, height),
     mBorder (border)
 {
 }
@@ -94,10 +93,10 @@ CompWindow::y () const
     return priv->geometry.y ();
 }
 
-const CompPoint &
+CompPoint
 CompWindow::pos () const
 {
-    return priv->geometry;
+    return CompPoint (priv->geometry.x (), priv->geometry.y ());
 }
 
 /* With border */
@@ -113,7 +112,7 @@ CompWindow::height () const
     return priv->height;
 }
 
-const CompSize
+CompSize
 CompWindow::size () const
 {
     return CompSize (priv->width, priv->height);
@@ -131,10 +130,11 @@ CompWindow::serverY () const
     return priv->serverGeometry.y ();
 }
 
-const CompPoint &
+CompPoint
 CompWindow::serverPos () const
 {
-    return priv->serverGeometry;
+    return CompPoint (priv->serverGeometry.x (),
+		      priv->serverGeometry.y ());
 }
 
 /* With border */

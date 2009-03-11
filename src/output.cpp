@@ -32,11 +32,6 @@ CompOutput::CompOutput ()
 {
     mName = "";
     mId = ~0;
-
-    mWorkArea.x      = 0;
-    mWorkArea.y      = 0;
-    mWorkArea.width  = 0;
-    mWorkArea.height = 0;
 }
 
 CompString
@@ -51,45 +46,39 @@ CompOutput::id () const
     return mId;
 }
 
-XRectangle
+const CompRect&
 CompOutput::workArea () const
 {
     return mWorkArea;
 }
 
 void
-CompOutput::setWorkArea (XRectangle workarea)
+CompOutput::setWorkArea (const CompRect& workarea)
 {
-    if (workarea.x < (int) x1 ())
-	mWorkArea.x = x1 ();
-    else
-	mWorkArea.x = workarea.x;
+    mWorkArea = workarea;
 
-    if (workarea.y < (int) y1 ())
-	mWorkArea.y = y1 ();
-    else
-	mWorkArea.y = workarea.y;
+    if (workarea.x () < (int) x1 ())
+	mWorkArea.setX (x1 ());
 
-    if (workarea.x + workarea.width > (int) x2 ())
-	mWorkArea.width = x2 () - mWorkArea.x;
-    else
-	mWorkArea.width = workarea.width;
+    if (workarea.y () < (int) y1 ())
+	mWorkArea.setY (y1 ());
 
-    if (workarea.y + workarea.height > (int) y2 ())
-	mWorkArea.height = y2 () - mWorkArea.y;
-    else
-	mWorkArea.height = workarea.height;
+    if (workarea.x2 () > (int) x2 ())
+	mWorkArea.setWidth (x2 () - mWorkArea.x ());
 
+    if (workarea.y2 () > (int) y2 ())
+	mWorkArea.setHeight (y2 () - mWorkArea.y ());
 }
-void
-CompOutput::setGeometry (int x1, int y1, unsigned int width, unsigned int height)
-{
-    CompRect::setGeometry (x1, y1, width, height);
 
-    mWorkArea.x      = this->x1 ();
-    mWorkArea.y      = this->y1 ();
-    mWorkArea.width  = this->width ();
-    mWorkArea.height = this->height ();
+void
+CompOutput::setGeometry (int          x,
+			 int          y,
+			 unsigned int width,
+			 unsigned int height)
+{
+    CompRect::setGeometry (x, y, width, height);
+
+    mWorkArea = *this;
 }
 
 void

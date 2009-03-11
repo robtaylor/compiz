@@ -277,15 +277,14 @@ class CompScreen :
 
 	int outputDeviceForPoint (int x, int y);
 
-	void getCurrentOutputExtents (int *x1, int *y1, int *x2, int *y2);
+	CompRect getCurrentOutputExtents ();
 
-	void getWorkareaForOutput (int output, XRectangle *area);
+	const CompRect & getWorkareaForOutput (int output) const;
 
+	void viewportForGeometry (const CompWindow::Geometry &gm,
+				  CompPoint                   &viewport);
 
-	void viewportForGeometry (CompWindow::Geometry gm,
-				  CompPoint            &viewport);
-
-	int outputDeviceForGeometry (CompWindow::Geometry gm);
+	int outputDeviceForGeometry (const CompWindow::Geometry& gm);
 
 	CompPoint vp ();
 
@@ -297,7 +296,7 @@ class CompScreen :
 	CompOutput::vector & outputDevs ();
 	CompOutput & currentOutputDev () const;
 
-	XRectangle workArea ();
+	const CompRect & workArea () const;
 
 	unsigned int currentDesktop ();
 

@@ -283,7 +283,7 @@ class PrivateScreen {
 
 	void removePassiveButtonGrab (CompAction::ButtonBinding &button);
 
-	void computeWorkareaForBox (BoxPtr pBox, XRectangle *area);
+	CompRect computeWorkareaForBox (const CompRect &box);
 
 	void updateScreenInfo ();
 
@@ -479,7 +479,7 @@ class PrivateScreen {
 
 	unsigned int pendingDestroys;
 	
-	XRectangle workArea;
+	CompRect workArea;
 
 	unsigned int showingDesktopMask;
 

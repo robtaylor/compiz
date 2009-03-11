@@ -945,7 +945,7 @@ CompScreen::handleEvent (XEvent *event)
 	if (event->xbutton.root == priv->root)
 	    priv->setCurrentOutput (
 		outputDeviceForPoint (event->xbutton.x_root,
-				      event->xbutton.y_root));
+						 event->xbutton.y_root));
 	break;
     case MotionNotify:
 	if (event->xmotion.root == priv->root)

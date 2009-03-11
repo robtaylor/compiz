@@ -58,22 +58,21 @@ PlaceScreen::~PlaceScreen ()
 {
 }
 
-static void
-getWindowExtentsRect (CompWindow *w,
-		      XRectangle &rect)
+static CompRect
+getWindowExtentsRect (CompWindow *w)
 {
-    rect.x      = w->serverX () - w->input ().left;
-    rect.y      = w->serverY () - w->input ().top;
-    rect.width  = w->serverWidth ();
-    rect.height = w->serverHeight ();
+    return CompRect (w->serverX () - w->input ().left,
+		     w->serverY () - w->input ().top,
+		     w->serverWidth () + w->input ().left + w->input ().right,
+		     w->serverHeight () + w->input ().top + w->input ().bottom);
 }
 
 void
 PlaceScreen::handleScreenSizeChange (int width,
 				     int height)
 {
-    int            vpX, vpY, shiftX, shiftY;
-    XRectangle     extents;
+    int            x, y, vpX, vpY, shiftX, shiftY;
+    CompRect       extents;
     unsigned int   mask;
     XWindowChanges xwc;
 
@@ -87,29 +86,29 @@ PlaceScreen::handleScreenSizeChange (int width,
 	    continue;
 
 	mask = 0;
-	getWindowExtentsRect (w, extents);
+	extents = getWindowExtentsRect (w);
 
-	vpX = extents.x / screen->width ();
-	if (extents.x < 0)
+	vpX = extents.x () / screen->width ();
+	if (extents.x () < 0)
 	    vpX -= 1;
-	vpY = extents.y / screen->height ();
-	if (extents.y < 0)
+	vpY = extents.y () / screen->height ();
+	if (extents.y () < 0)
 	    vpY -= 1;
 
 	shiftX = vpX * (width - screen->width ());
 	shiftY = vpY * (height - screen->height ());
 
-	extents.x = extents.x % screen->width ();
-	if (extents.x < 0)
-	    extents.x += screen->width ();
-	extents.y = extents.y % screen->height ();
-	if (extents.y < 0)
-	    extents.y += screen->height ();
+	x = extents.x () % screen->width ();
+	if (x < 0)
+	    x += screen->width ();
+	y = extents.y () % screen->height ();
+	if (y < 0)
+	    y += screen->height ();
 
-	if (extents.x + extents.width > width)
-	    shiftX += width - extents.x - extents.width;
-	if (extents.y + extents.height > height)
-	    shiftY += height - extents.y - extents.height;
+	if (x + extents.width () > width)
+	    shiftX += width - x - extents.width ();
+	if (y + extents.height () > height)
+	    shiftY += height - y - extents.height ();
 	
 	if (shiftX)
 	{
@@ -267,7 +266,7 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 				    XWindowChanges *xwc,
 				    unsigned int   source)
 {
-    XRectangle           workArea;
+    CompRect             workArea;
     int                  x, y, left, right, top, bottom;
     int                  output;
     CompWindow::Geometry geom;
@@ -321,11 +320,11 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 
     geom.set (xwc->x, xwc->y, xwc->width, xwc->height,
 	      window->serverGeometry ().border ());
-    output = screen->outputDeviceForGeometry (geom);
-    screen->getWorkareaForOutput (output, &workArea);
+    output   = screen->outputDeviceForGeometry (geom);
+    workArea = screen->getWorkareaForOutput (output);
 
-    if (xwc->width >= workArea.width &&
-	xwc->height >= workArea.height)
+    if (xwc->width >= workArea.width () &&
+	xwc->height >= workArea.height ())
     {
 	if ((window->actions () & MAXIMIZE_STATE) == MAXIMIZE_STATE &&
 	    (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))   &&
@@ -335,43 +334,43 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	}
     }
 
-    if ((right - left) > workArea.width)
+    if ((right - left) > workArea.width ())
     {
-	left  = workArea.x;
-	right = left + workArea.width;
+	left  = workArea.left ();
+	right = workArea.right ();
     }
     else
     {
-	if (left < workArea.x)
+	if (left < workArea.left ())
 	{
-	    right += workArea.x - left;
-	    left  = workArea.x;
+	    right += workArea.left () - left;
+	    left  = workArea.left ();
 	}
 
-	if (right > (workArea.x + workArea.width))
+	if (right > workArea.right ())
 	{
-	    left -= right - (workArea.x + workArea.width);
-	    right = workArea.x + workArea.width;
+	    left -= right - workArea.right ();
+	    right = workArea.right ();
 	}
     }
 
-    if ((bottom - top) > workArea.height)
+    if ((bottom - top) > workArea.height ())
     {
-	top    = workArea.y;
-	bottom = top + workArea.height;
+	top    = workArea.top ();
+	bottom = workArea.bottom ();
     }
     else
     {
-	if (top < workArea.y)
+	if (top < workArea.top ())
 	{
-	    bottom += workArea.y - top;
-	    top    = workArea.y;
+	    bottom += workArea.top () - top;
+	    top    = workArea.top ();
 	}
 
-	if (bottom > (workArea.y + workArea.height))
+	if (bottom > workArea.bottom ())
 	{
-	    top   -= bottom - (workArea.y + workArea.height);
-	    bottom = workArea.y + workArea.height;
+	    top   -= bottom - workArea.bottom ();
+	    bottom = workArea.bottom ();
 	}
     }
 
@@ -414,7 +413,7 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 void
 PlaceWindow::doPlacement (CompPoint &pos)
 {
-    XRectangle        workArea;
+    CompRect          workArea;
     CompPoint         targetVp;
     PlacementStrategy strategy;
     bool              keepInWorkarea;
@@ -484,8 +483,10 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	strategy = ConstrainOnly;
     }
 
-    workArea.x += (targetVp.x () - screen->vp ().x ()) * screen->width ();
-    workArea.y += (targetVp.y () - screen->vp ().y ()) * screen->height ();
+    workArea.setX (workArea.x () +
+                   (targetVp.x () - screen->vp ().x ()) * screen->width ());
+    workArea.setY (workArea.y () +
+                   (targetVp.y () - screen->vp ().y ()) * screen->height ());
 
     if (strategy == PlaceOnly || strategy == PlaceAndConstrain)
     {
@@ -514,16 +515,17 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	    int                  id;
 	    CompWindow::Geometry geom (window->serverGeometry ());
 
-	    geom.setX (pos.x ());
-	    geom.setY (pos.y ());
+	    geom.setPos (pos);
 
-	    id = screen->outputDeviceForGeometry (geom);
-	    screen->getWorkareaForOutput (id, &workArea);
+	    id       = screen->outputDeviceForGeometry (geom);
+	    workArea = screen->getWorkareaForOutput (id);
 
-	    workArea.x += (targetVp.x () - screen->vp ().x ()) *
-			  screen->width ();
-	    workArea.y += (targetVp.y () - screen->vp ().y ()) *
-			  screen->height ();
+	    workArea.setX (workArea.x () +
+	                   (targetVp.x () - screen->vp ().x ()) *
+			   screen->width ());
+	    workArea.setY (workArea.y () +
+	                   (targetVp.y () - screen->vp ().y ()) *
+			   screen->height ());
 	}
 
 	/* Maximize windows if they are too big for their work area (bit of
@@ -534,8 +536,8 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	    (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))   &&
 	    !(window->state () & CompWindowStateFullscreenMask))
 	{
-	    if (window->serverWidth () >= workArea.width &&
-		window->serverHeight () >= workArea.height)
+	    if (window->serverWidth () >= workArea.width () &&
+		window->serverHeight () >= workArea.height ())
 	    {
 		sendMaximizationRequest ();
 	    }
@@ -547,8 +549,8 @@ PlaceWindow::doPlacement (CompPoint &pos)
 }
 
 void
-PlaceWindow::placeCascade (XRectangle &workArea,
-			   CompPoint  &pos)
+PlaceWindow::placeCascade (const CompRect &workArea,
+			   CompPoint      &pos)
 {
     CompWindowList windows;
 
@@ -565,10 +567,10 @@ PlaceWindow::placeCascade (XRectangle &workArea,
 			  CompWindowTypeUnknownMask))
 	    continue;
 
-	if (w->serverX () >= workArea.x + workArea.width                 ||
-	    w->serverX () + w->serverGeometry ().width () <= workArea.x  ||
-	    w->serverY () >= workArea.y + workArea.height                ||
-	    w->serverY () + w->serverGeometry ().height () <= workArea.y)
+	if (w->serverX () >= workArea.right ()                              ||
+	    w->serverX () + w->serverGeometry ().width () <= workArea.x  () ||
+	    w->serverY () >= workArea.bottom ()                             ||
+	    w->serverY () + w->serverGeometry ().height () <= workArea.y ())
 	    continue;
 
 	windows.push_back (w);
@@ -584,29 +586,29 @@ PlaceWindow::placeCascade (XRectangle &workArea,
 }
 
 void
-PlaceWindow::placeCentered (XRectangle &workArea,
-			    CompPoint  &pos)
+PlaceWindow::placeCentered (const CompRect &workArea,
+			    CompPoint      &pos)
 {
-    pos.setX (workArea.x +
-	      (workArea.width - window->serverGeometry ().width ()) / 2);
-    pos.setY (workArea.y +
-	      (workArea.height - window->serverGeometry ().height ()) / 2);
+    pos.setX (workArea.x () +
+	      (workArea.width () - window->serverGeometry ().width ()) / 2);
+    pos.setY (workArea.y () +
+	      (workArea.height () - window->serverGeometry ().height ()) / 2);
 }
 
 void
-PlaceWindow::placeRandom (XRectangle &workArea,
-			  CompPoint  &pos)
+PlaceWindow::placeRandom (const CompRect &workArea,
+			  CompPoint      &pos)
 {
     int remainX, remainY;
 
-    pos.setX (workArea.x);
-    pos.setY (workArea.y);
+    pos.setX (workArea.x ());
+    pos.setY (workArea.y ());
 
-    remainX = workArea.width - window->serverGeometry ().width ();
+    remainX = workArea.width () - window->serverGeometry ().width ();
     if (remainX > 0)
 	pos.setX (pos.x () + (rand () % remainX));
 
-    remainY = workArea.height - window->serverGeometry ().height ();
+    remainY = workArea.height () - window->serverGeometry ().height ();
     if (remainY > 0)
 	pos.setY (pos.y () + (rand () % remainY));
 }
@@ -617,8 +619,8 @@ PlaceWindow::placeRandom (XRectangle &workArea,
 #define W_WRONG -2
 
 void
-PlaceWindow::placeSmart (XRectangle &workArea,
-			 CompPoint  &pos)
+PlaceWindow::placeSmart (const CompRect &workArea,
+			 CompPoint      &pos)
 {
     /*
      * SmartPlacement by Cristian Tibirna (tibirna@kde.org)
@@ -643,8 +645,8 @@ PlaceWindow::placeSmart (XRectangle &workArea,
     Bool firstPass = TRUE;
 
     /* get the maximum allowed windows space */
-    int xTmp = workArea.x;
-    int yTmp = workArea.y;
+    int xTmp = workArea.x ();
+    int yTmp = workArea.y ();
 
     /* client gabarit */
     int cw = window->serverWidth () - 1;
@@ -657,9 +659,9 @@ PlaceWindow::placeSmart (XRectangle &workArea,
     do
     {
 	/* test if enough room in x and y directions */
-	if (yTmp + ch > workArea.y + workArea.height && ch < workArea.height)
+	if (yTmp + ch > workArea.bottom () && ch < workArea.height ())
 	    overlap = H_WRONG; /* this throws the algorithm to an exit */
-	else if (xTmp + cw > workArea.x + workArea.width)
+	else if (xTmp + cw > workArea.right ())
 	    overlap = W_WRONG;
 	else
 	{
@@ -722,7 +724,7 @@ PlaceWindow::placeSmart (XRectangle &workArea,
 	/* really need to loop? test if there's any overlap */
 	if (overlap > NONE)
 	{
-	    possible = workArea.x + workArea.width;
+	    possible = workArea.right ();
 
 	    if (possible - cw > xTmp)
 		possible -= cw;
@@ -756,8 +758,8 @@ PlaceWindow::placeSmart (XRectangle &workArea,
 	/* else ==> not enough x dimension (overlap was wrong on horizontal) */
 	else if (overlap == W_WRONG)
 	{
-	    xTmp     = workArea.x;
-	    possible = workArea.y + workArea.height;
+	    xTmp     = workArea.x ();
+	    possible = workArea.bottom ();
 
 	    if (possible - ch > yTmp)
 		possible -= ch;
@@ -786,19 +788,18 @@ PlaceWindow::placeSmart (XRectangle &workArea,
 	    yTmp = possible;
 	}
     }
-    while (overlap != NONE && overlap != H_WRONG &&
-	   yTmp < workArea.y + workArea.height);
+    while (overlap != NONE && overlap != H_WRONG && yTmp < workArea.bottom ());
 
-    if (ch >= workArea.height)
-	yOptimal = workArea.y;
+    if (ch >= workArea.height ())
+	yOptimal = workArea.y ();
 
     pos.setX (xOptimal + window->input ().left);
     pos.setY (yOptimal + window->input ().top);
 }
 
 static void
-centerTileRectInArea (XRectangle &rect,
-		      XRectangle &workArea)
+centerTileRectInArea (CompRect       &rect,
+		      const CompRect &workArea)
 {
     int fluff;
 
@@ -808,69 +809,22 @@ centerTileRectInArea (XRectangle &rect,
      * as a group)
      */
 
-    fluff  = (workArea.width % (rect.width + 1)) / 2;
-    rect.x = workArea.x + fluff;
+    fluff  = (workArea.width () % (rect.width () + 1)) / 2;
+    rect.setX (workArea.x () + fluff);
 
-    fluff  = (workArea.height % (rect.height + 1)) / 3;
-    rect.y = workArea.y + fluff;
+    fluff  = (workArea.height () % (rect.height () + 1)) / 3;
+    rect.setY (workArea.y () + fluff);
 }
 
 static bool
-rectFitsInWorkarea (XRectangle &workArea,
-		    XRectangle &rect)
+rectOverlapsWindow (const CompRect       &rect,
+		    const CompWindowList &windows)
 {
-    if (rect.x < workArea.x)
-	return false;
-
-    if (rect.y < workArea.y)
-	return false;
-
-    if (rect.x + rect.width > workArea.x + workArea.width)
-	return false;
-
-    if (rect.y + rect.height > workArea.y + workArea.height)
-	return false;
-
-    return true;
-}
-
-static bool
-rectangleIntersect (XRectangle &src1,
-		    XRectangle &src2,
-		    XRectangle &dest)
-{
-    int destX, destY;
-    int destW, destH;
-
-    destX = MAX (src1.x, src2.x);
-    destY = MAX (src1.y, src2.y);
-    destW = MIN (src1.x + src1.width, src2.x + src2.width) - destX;
-    destH = MIN (src1.y + src1.height, src2.y + src2.height) - destY;
-
-    if (destW <= 0 || destH <= 0)
-    {
-	dest.width  = 0;
-	dest.height = 0;
-	return false;
-    }
-
-    dest.x      = destX;
-    dest.y      = destY;
-    dest.width  = destW;
-    dest.height = destH;
-
-    return true;
-}
-
-static bool
-rectOverlapsWindow (XRectangle     &rect,
-		    CompWindowList &windows)
-{
-    XRectangle dest;
+    CompRect dest;
 
     foreach (CompWindow *other, windows)
     {
-	XRectangle otherRect;
+	CompRect intersect;
 
 	switch (other->type ()) {
 	case CompWindowTypeDockMask:
@@ -885,9 +839,8 @@ rectOverlapsWindow (XRectangle     &rect,
 	case CompWindowTypeUtilMask:
 	case CompWindowTypeToolbarMask:
 	case CompWindowTypeMenuMask:
-	    getWindowExtentsRect (other, otherRect);
-
-	    if (rectangleIntersect (rect, otherRect, dest))
+	    intersect = rect & getWindowExtentsRect (other);
+	    if (!intersect.isEmpty ())
 		return true;
 	    break;
 	}
@@ -905,9 +858,9 @@ rectOverlapsWindow (XRectangle     &rect,
  * don't want to create a 1x1 Emacs.
  */
 bool
-PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
-				  XRectangle     &workArea,
-				  CompPoint      &pos)
+PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
+				  const CompRect       &workArea,
+				  CompPoint            &pos)
 {
     /* This algorithm is limited - it just brute-force tries
      * to fit the window in a small number of locations that are aligned
@@ -919,7 +872,7 @@ PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
     bool           retval = FALSE;
     unsigned int   i;
     CompWindowList belowSorted, rightSorted;
-    XRectangle     rect;
+    CompRect       rect;
 
     /* Below each window */
     belowSorted = windows;
@@ -931,14 +884,13 @@ PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
     rightSorted.sort (compareTopmost);
     rightSorted.sort (compareLeftmost);
 
-    getWindowExtentsRect (window, rect);
+    rect = getWindowExtentsRect (window);
     centerTileRectInArea (rect, workArea);
 
-    if (rectFitsInWorkarea (workArea, rect) &&
-	!rectOverlapsWindow (rect, windows))
+    if (workArea.contains (rect) && !rectOverlapsWindow (rect, windows))
     {
-	pos.setX (rect.x + window->input ().left);
-	pos.setY (rect.y + window->input ().top);
+	pos.setX (rect.x () + window->input ().left);
+	pos.setY (rect.y () + window->input ().top);
 	retval = true;
     }
 
@@ -947,21 +899,21 @@ PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
 	/* try below each window */
 	foreach (CompWindow *w, belowSorted)
 	{
-	    XRectangle outerRect;
+	    CompRect outerRect;
 
 	    if (retval)
 		break;
 
-	    getWindowExtentsRect (w, outerRect);
+	    outerRect = getWindowExtentsRect (w);
 
-	    rect.x = outerRect.x;
-	    rect.y = outerRect.y + outerRect.height;
+	    rect.setX (outerRect.x ());
+	    rect.setY (outerRect.bottom ());
 
-	    if (rectFitsInWorkarea (workArea, rect) &&
+	    if (workArea.contains (rect) &&
 		!rectOverlapsWindow (rect, belowSorted))
 	    {
-		pos.setX (rect.x + window->input ().left);
-		pos.setY (rect.y + window->input ().top);
+		pos.setX (rect.x () + window->input ().left);
+		pos.setY (rect.y () + window->input ().top);
 		retval = true;
 	    }
 	}
@@ -972,21 +924,21 @@ PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
 	/* try to the right of each window */
 	foreach (CompWindow *w, rightSorted)
 	{
-	    XRectangle outerRect;
+	    CompRect outerRect;
 
 	    if (retval)
 		break;
 
-	    getWindowExtentsRect (w, outerRect);
+	    outerRect = getWindowExtentsRect (w);
 
-	    rect.x = outerRect.x + outerRect.width;
-	    rect.y = outerRect.y;
+	    rect.setX (outerRect.right ());
+	    rect.setY (outerRect.y ());
 
-	    if (rectFitsInWorkarea (workArea, rect) &&
+	    if (workArea.contains (rect) &&
 		!rectOverlapsWindow (rect, rightSorted))
 	    {
-		pos.setX (rect.x + w->input ().left);
-		pos.setY (rect.y + w->input ().top);
+		pos.setX (rect.x () + w->input ().left);
+		pos.setY (rect.y () + w->input ().top);
 		retval = true;
 	    }
 	}
@@ -996,9 +948,9 @@ PlaceWindow::cascadeFindFirstFit (CompWindowList &windows,
 }
 
 void
-PlaceWindow::cascadeFindNext (CompWindowList &windows,
-			      XRectangle     &workArea,
-			      CompPoint      &pos)
+PlaceWindow::cascadeFindNext (const CompWindowList &windows,
+			      const CompRect       &workArea,
+			      CompPoint            &pos)
 {
     CompWindowList           sorted;
     CompWindowList::iterator iter;
@@ -1029,8 +981,8 @@ PlaceWindow::cascadeFindNext (CompWindowList &windows,
      * of NW corner of window frame.
      */
 
-    cascadeX = MAX (0, workArea.x);
-    cascadeY = MAX (0, workArea.y);
+    cascadeX = MAX (0, workArea.x ());
+    cascadeY = MAX (0, workArea.y ());
 
     /* Find first cascade position that's not used. */
 
@@ -1058,11 +1010,11 @@ PlaceWindow::cascadeFindNext (CompWindowList &windows,
 	    wy = cascadeY = w->serverY ();
 
 	    /* If we go off the screen, start over with a new cascade */
-	    if ((cascadeX + winWidth > workArea.x + workArea.width) ||
-		(cascadeY + winHeight > workArea.y + workArea.height))
+	    if ((cascadeX + winWidth > workArea.right ()) ||
+		(cascadeY + winHeight > workArea.bottom ()))
 	    {
-		cascadeX = MAX (0, workArea.x);
-		cascadeY = MAX (0, workArea.y);
+		cascadeX = MAX (0, workArea.x ());
+		cascadeY = MAX (0, workArea.y ());
 
 #define CASCADE_INTERVAL 50 /* space between top-left corners of cascades */
 
@@ -1072,7 +1024,7 @@ PlaceWindow::cascadeFindNext (CompWindowList &windows,
 		/* start over with a new cascade translated to the right,
 		 * unless we are out of space
 		 */
-		if (cascadeX + winWidth < workArea.x + workArea.width)
+		if (cascadeX + winWidth < workArea.right ())
 		{
 		    iter = sorted.begin ();
 		    continue;
@@ -1080,7 +1032,7 @@ PlaceWindow::cascadeFindNext (CompWindowList &windows,
 		else
 		{
 		    /* All out of space, this cascade_x won't work */
-		    cascadeX = MAX (0, workArea.x);
+		    cascadeX = MAX (0, workArea.x ());
 		    break;
 		}
 	    }
@@ -1190,8 +1142,7 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
 	{
 	    CompWindow::Geometry geom = window->serverGeometry ();
 
-	    geom.setX (pos.x ());
-	    geom.setY (pos.y ());
+	    geom.setPos (pos);
 	    output = screen->outputDeviceForGeometry (geom);
 	}
 	break;
@@ -1247,8 +1198,8 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
 }
 
 void
-PlaceWindow::constrainToWorkarea (XRectangle &workArea,
-				  CompPoint  &pos)
+PlaceWindow::constrainToWorkarea (const CompRect &workArea,
+				  CompPoint      &pos)
 {
     CompWindowExtents extents;
     int               delta;
@@ -1258,19 +1209,19 @@ PlaceWindow::constrainToWorkarea (XRectangle &workArea,
     extents.right  = extents.left + window->serverWidth ();
     extents.bottom = extents.top + window->serverHeight ();
 
-    delta = workArea.x + workArea.width - extents.right;
+    delta = workArea.right () - extents.right;
     if (delta < 0)
 	extents.left += delta;
 
-    delta = workArea.x - extents.left;
+    delta = workArea.left () - extents.left;
     if (delta > 0)
 	extents.left += delta;
 
-    delta = workArea.y + workArea.height - extents.bottom;
+    delta = workArea.bottom () - extents.bottom;
     if (delta < 0)
 	extents.top += delta;
 
-    delta = workArea.y - extents.top;
+    delta = workArea.top () - extents.top;
     if (delta > 0)
 	extents.top += delta;
 

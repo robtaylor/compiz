@@ -2386,19 +2386,19 @@ int
 PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 				     CompWindow::Geometry old)
 {
-    XRectangle workArea;
-    int	       mask = 0;
-    int	       x, y;
-    int	       output;
-    CompPoint  viewport;
+    CompRect  workArea;
+    int	      mask = 0;
+    int	      x, y;
+    int	      output;
+    CompPoint viewport;
 
     screen->viewportForGeometry (old, viewport);
 
     x = (viewport.x () - screen->vp ().x ()) * screen->width ();
     y = (viewport.y () - screen->vp ().y ()) * screen->height ();
 
-    output = screen->outputDeviceForGeometry (old);
-    screen->getWorkareaForOutput (output, &workArea);
+    output   = screen->outputDeviceForGeometry (old);
+    workArea = screen->getWorkareaForOutput (output);
 
     if (type & CompWindowTypeFullscreenMask)
     {
@@ -2431,8 +2431,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 	{
 	    saveGeometry (CWY | CWHeight);
 
-	    xwc->height = workArea.height - input.top -
-		input.bottom - old.border () * 2;
+	    xwc->height = workArea.height () - input.top -
+		          input.bottom - old.border () * 2;
 
 	    mask |= CWHeight;
 	}
@@ -2445,8 +2445,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 	{
 	    saveGeometry (CWX | CWWidth);
 
-	    xwc->width = workArea.width - input.left -
-		input.right - old.border () * 2;
+	    xwc->width = workArea.width () - input.left -
+		         input.right - old.border () * 2;
 
 	    mask |= CWWidth;
 	}
@@ -2513,16 +2513,16 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 
 	    if (state & CompWindowStateMaximizedVertMask)
 	    {
-		if (old.y () < y + workArea.y + input.top)
+		if (old.y () < y + workArea.y () + input.top)
 		{
-		    xwc->y = y + workArea.y + input.top;
+		    xwc->y = y + workArea.y () + input.top;
 		    mask |= CWY;
 		}
 		else
 		{
 		    height = xwc->height + old.border () * 2;
 
-		    max = y + workArea.y + workArea.height;
+		    max = y + workArea.bottom ();
 		    if (old.y () + (int) old.height () + input.bottom > max)
 		    {
 			xwc->y = max - height - input.bottom;
@@ -2530,9 +2530,9 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 		    }
 		    else if (old.y () + height + input.bottom > max)
 		    {
-			xwc->y = y + workArea.y +
-			    (workArea.height - input.top - height -
-			     input.bottom) / 2 + input.top;
+			xwc->y = y + workArea.y () +
+			         (workArea.height () - input.top - height -
+				  input.bottom) / 2 + input.top;
 			mask |= CWY;
 		    }
 		}
@@ -2540,16 +2540,16 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 
 	    if (state & CompWindowStateMaximizedHorzMask)
 	    {
-		if (old.x () < x + workArea.x + input.left)
+		if (old.x () < x + workArea.x () + input.left)
 		{
-		    xwc->x = x + workArea.x + input.left;
+		    xwc->x = x + workArea.x () + input.left;
 		    mask |= CWX;
 		}
 		else
 		{
 		    width = xwc->width + old.border () * 2;
 
-		    max = x + workArea.x + workArea.width;
+		    max = x + workArea.right ();
 		    if (old.x () + (int) old.width () + input.right > max)
 		    {
 			xwc->x = max - width - input.right;
@@ -2557,9 +2557,9 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 		    }
 		    else if (old.x () + width + input.right > max)
 		    {
-			xwc->x = x + workArea.x +
-			    (workArea.width - input.left - width -
-			     input.right) / 2 + input.left;
+			xwc->x = x + workArea.x () +
+			         (workArea.width () - input.left - width -
+				  input.right) / 2 + input.left;
 			mask |= CWX;
 		    }
 		}
@@ -2721,9 +2721,8 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	{
 	    int min, max;
 
-	    min = screen->workArea ().y + priv->input.top;
-	    max = screen->workArea ().y +
-		  screen->workArea ().height;
+	    min = screen->workArea ().y () + priv->input.top;
+	    max = screen->workArea ().bottom ();
 
 	    min -= screen->vp ().y () * screen->height ();
 	    max += (screen->vpSize ().height () -
@@ -2740,8 +2739,8 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	{
 	    int min, max;
 
-	    min = screen->workArea ().x + priv->input.left;
-	    max = screen->workArea ().x + screen->workArea ().width;
+	    min = screen->workArea ().x () + priv->input.left;
+	    max = screen->workArea ().right ();
 
 	    min -= screen->vp ().x () * screen->width ();
 	    max += (screen->vpSize ().width () -
@@ -3096,11 +3095,11 @@ PrivateWindow::ensureWindowVisibility ()
 		CompWindowTypeUnknownMask))
 	return;
 
-    x1 = screen->workArea ().x - screen->width () * screen->vp ().x ();
-    y1 = screen->workArea ().y - screen->height () * screen->vp ().y ();
-    x2 = x1 + screen->workArea ().width + screen->vpSize ().width () *
+    x1 = screen->workArea ().x () - screen->width () * screen->vp ().x ();
+    y1 = screen->workArea ().y () - screen->height () * screen->vp ().y ();
+    x2 = x1 + screen->workArea ().width () + screen->vpSize ().width () *
 	 screen->width ();
-    y2 = y1 + screen->workArea ().height + screen->vpSize ().height () *
+    y2 = y1 + screen->workArea ().height () + screen->vpSize ().height () *
 	 screen->height ();
 
     if (serverGeometry.x () - input.left >= x2)

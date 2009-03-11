@@ -49,7 +49,7 @@ moveInitiate (CompAction      *action,
     w = screen->findWindow (xid);
     if (w && (w->actions () & CompWindowActionMoveMask))
     {
-	XRectangle   workArea;
+	CompRect     workArea;
 	unsigned int mods;
 	int          x, y, button;
 
@@ -100,10 +100,10 @@ moveInitiate (CompAction      *action,
 
 	ms->origState = w->state ();
 
-	s->getWorkareaForOutput (w->outputDevice (), &workArea);
+	workArea = s->getWorkareaForOutput (w->outputDevice ());
 
-	ms->snapBackY = w->serverGeometry ().y () - workArea.y;
-	ms->snapOffY  = y - workArea.y;
+	ms->snapBackY = w->serverGeometry ().y () - workArea.y ();
+	ms->snapOffY  = y - workArea.y ();
 
 	if (!ms->grab)
 	    ms->grab = s->pushGrab (ms->moveCursor, "move");
@@ -198,7 +198,7 @@ moveGetYConstrainRegion (CompScreen *s)
     CompWindow   *w;
     Region       region;
     REGION       r;
-    XRectangle   workArea;
+    CompRect     workArea;
     BoxRec       extents;
     unsigned int i;
 
@@ -225,7 +225,7 @@ moveGetYConstrainRegion (CompScreen *s)
     {
 	XUnionRegion (s->outputDevs ()[i].region (), region, region);
 
-	s->getWorkareaForOutput (i, &workArea);
+	workArea = s->getWorkareaForOutput (i);
 	extents = s->outputDevs ()[i].region ()->extents;
 
 	foreach (w, s->windows ())
@@ -251,7 +251,7 @@ moveGetYConstrainRegion (CompScreen *s)
 
 		if (r.extents.x1 < r.extents.x2 && r.extents.y1 < r.extents.y2)
 		{
-		    if (r.extents.y2 <= workArea.y)
+		    if (r.extents.y2 <= workArea.y ())
 			XSubtractRegion (region, &r, region);
 		}
 
@@ -271,7 +271,7 @@ moveGetYConstrainRegion (CompScreen *s)
 
 		if (r.extents.x1 < r.extents.x2 && r.extents.y1 < r.extents.y2)
 		{
-		    if (r.extents.y1 >= (workArea.y + workArea.height))
+		    if (r.extents.y1 >= workArea.bottom ())
 			XSubtractRegion (region, &r, region);
 		}
 	    }
@@ -313,13 +313,13 @@ moveHandleMotionEvent (CompScreen *s,
 	}
 	else
 	{
-	    XRectangle workArea;
-	    int	       min, max;
+	    CompRect workArea;
+	    int	     min, max;
 
 	    dx = ms->x;
 	    dy = ms->y;
 
-	    s->getWorkareaForOutput (w->outputDevice (), &workArea);
+	    workArea = s->getWorkareaForOutput (w->outputDevice ());
 
 	    if (ms->opt[MOVE_OPTION_CONSTRAIN_Y].value ().b ())
 	    {
@@ -381,7 +381,7 @@ moveHandleMotionEvent (CompScreen *s,
 	    {
 		if (w->state () & CompWindowStateMaximizedVertMask)
 		{
-		    if (abs ((yRoot - workArea.y) - ms->snapOffY) >= SNAP_OFF)
+		    if (abs (yRoot - workArea.y () - ms->snapOffY) >= SNAP_OFF)
 		    {
 			if (!s->otherGrabExist ("move", 0))
 			{
@@ -407,7 +407,7 @@ moveHandleMotionEvent (CompScreen *s,
 		}
 		else if (ms->origState & CompWindowStateMaximizedVertMask)
 		{
-		    if (abs ((yRoot - workArea.y) - ms->snapBackY) < SNAP_BACK)
+		    if (abs (yRoot - workArea.y () - ms->snapBackY) < SNAP_BACK)
 		    {
 			if (!s->otherGrabExist ("move", 0))
 			{
@@ -420,7 +420,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 			    w->maximize (ms->origState);
 
-			    wy  = workArea.y + (w->input ().top >> 1);
+			    wy  = workArea.y () + (w->input ().top >> 1);
 			    wy += w->sizeHints ().height_inc >> 1;
 
 			    s->warpPointer (0, wy - pointerY);
@@ -433,8 +433,8 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (w->state () & CompWindowStateMaximizedVertMask)
 	    {
-		min = workArea.y + w->input ().top;
-		max = workArea.y + workArea.height - w->input ().bottom - wHeight;
+		min = workArea.y () + w->input ().top;
+		max = workArea.bottom () - w->input ().bottom - wHeight;
 
 		if (wY + dy < min)
 		    dy = min - wY;
@@ -451,8 +451,8 @@ moveHandleMotionEvent (CompScreen *s,
 		if (wX + wWidth < 0)
 		    return;
 
-		min = workArea.x + w->input ().left;
-		max = workArea.x + workArea.width - w->input ().right - wWidth;
+		min = workArea.x () + w->input ().left;
+		max = workArea.right () - w->input ().right - wWidth;
 
 		if (wX + dx < min)
 		    dx = min - wX;

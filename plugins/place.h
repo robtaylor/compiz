@@ -102,16 +102,18 @@ class PlaceWindow :
 	const CompOutput & getPlacementOutput (PlacementStrategy strategy,
 					       CompPoint pos);
 	void sendMaximizationRequest ();
-	void constrainToWorkarea (XRectangle &workArea, CompPoint &pos);
+	void constrainToWorkarea (const CompRect& workArea, CompPoint& pos);
 
-	void placeCascade (XRectangle &workArea, CompPoint &pos);
-	void placeCentered (XRectangle &workArea, CompPoint &pos);
-	void placeRandom (XRectangle &workArea, CompPoint &pos);
-	void placeSmart (XRectangle &workArea, CompPoint &pos);
+	void placeCascade (const CompRect& workArea, CompPoint& pos);
+	void placeCentered (const CompRect& workArea, CompPoint& pos);
+	void placeRandom (const CompRect& workArea, CompPoint& pos);
+	void placeSmart (const CompRect& workArea, CompPoint& pos);
 
-	bool cascadeFindFirstFit (CompWindowList &windows, XRectangle &workArea,
+	bool cascadeFindFirstFit (const CompWindowList& windows,
+				  const CompRect& workArea,
 				  CompPoint &pos);
-	void cascadeFindNext (CompWindowList &windows, XRectangle &workArea,
+	void cascadeFindNext (const CompWindowList& windows,
+			      const CompRect& workArea,
 			      CompPoint &pos);
 
 	bool matchPosition (CompPoint &pos, bool& keepInWorkarea);
