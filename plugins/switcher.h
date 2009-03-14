@@ -32,7 +32,7 @@
 
 #include <decoration.h>
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 #include <core/atoms.h>
 
 #include <composite/composite.h>
@@ -84,7 +84,7 @@ class SwitchScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PrivateHandler<SwitchScreen,CompScreen>
+    public PluginClassHandler<SwitchScreen,CompScreen>
 {
     public:
 	
@@ -162,11 +162,11 @@ class SwitchScreen :
 class SwitchWindow :
     public CompositeWindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<SwitchWindow,CompWindow>
+    public PluginClassHandler<SwitchWindow,CompWindow>
 {
     public:
 	SwitchWindow (CompWindow *window) :
-	    PrivateHandler<SwitchWindow,CompWindow> (window),
+	    PluginClassHandler<SwitchWindow,CompWindow> (window),
 	    window (window),
 	    gWindow (GLWindow::get (window)),
 	    cWindow (CompositeWindow::get (window)),

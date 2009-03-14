@@ -79,7 +79,7 @@ namespace GL {
 CompOutput *targetOutput = NULL;
 
 GLScreen::GLScreen (CompScreen *s) :
-    PrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
+    PluginClassHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI> (s),
     priv (new PrivateGLScreen (this))
 {
     Display		 *dpy = s->dpy ();

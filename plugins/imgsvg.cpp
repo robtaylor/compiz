@@ -71,7 +71,7 @@ static const CompMetadata::OptionInfo svgOptionInfo[] = {
 };
 
 SvgScreen::SvgScreen (CompScreen *screen) :
-    PrivateHandler<SvgScreen, CompScreen> (screen),
+    PluginClassHandler<SvgScreen, CompScreen> (screen),
     opt (SVG_OPTION_NUM)
 {
     if (!imgsvgVTable->getMetadata ()->initOptions (svgOptionInfo,
@@ -219,7 +219,7 @@ SvgScreen::readSvgToImage (const char *file,
 }
 
 SvgWindow::SvgWindow (CompWindow *window) :
-    PrivateHandler<SvgWindow, CompWindow> (window),
+    PluginClassHandler<SvgWindow, CompWindow> (window),
     sScreen (SvgScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     window (window),

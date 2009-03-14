@@ -23,37 +23,23 @@
  * Authors: Dennis Kasprzyk <onestone@compiz-fusion.org>
  */
 
-#ifndef _COMPPRIVATEHANDLER_H
-#define _COMPPRIVATEHANDLER_H
+#ifndef _COMPPLUGINCLASSHANDLER_H
+#define _COMPPLUGINCLASSHANDLER_H
 
 #include <typeinfo>
 #include <boost/preprocessor/cat.hpp>
 
 #include <compiz.h>
 #include <core/screen.h>
-#include <core/privates.h>
+#include <core/pluginclasses.h>
 
-extern unsigned int privateHandlerIndex;
-
-class CompPrivateIndex {
-    public:
-	CompPrivateIndex () : index(-1), refCount (0),
-			      initiated (false), failed (false),
-			      privFailed (false), privIndex (0) {}
-			
-	int          index;
-	int          refCount;
-	bool         initiated;
-	bool         failed;
-	bool         privFailed;
-	unsigned int privIndex;
-};
+extern unsigned int pluginClassHandlerIndex;
 
 template<class Tp, class Tb, int ABI = 0>
-class PrivateHandler {
+class PluginClassHandler {
     public:
-	PrivateHandler (Tb *);
-	~PrivateHandler ();
+	PluginClassHandler (Tb *);
+	~PluginClassHandler ();
 
 	void setFailed () { mFailed = true; };
 	bool loadFailed () { return mFailed; };
@@ -71,18 +57,18 @@ class PrivateHandler {
 	bool mFailed;
 	Tb   *mBase;
 
-	static CompPrivateIndex mIndex;
+	static PluginClassIndex mIndex;
 };
 
 template<class Tp, class Tb, int ABI>
-CompPrivateIndex PrivateHandler<Tp,Tb,ABI>::mIndex;
+PluginClassIndex PluginClassHandler<Tp,Tb,ABI>::mIndex;
 
 template<class Tp, class Tb, int ABI>
-PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
+PluginClassHandler<Tp,Tb,ABI>::PluginClassHandler (Tb *base) :
     mFailed (false),
     mBase (base)
 {
-    if (mIndex.privFailed)
+    if (mIndex.pcFailed)
     {
 	mFailed = true;
     }
@@ -90,12 +76,12 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
     {
 	if (!mIndex.initiated)
 	{
-	    mIndex.index = Tb::allocPrivateIndex ();
+	    mIndex.index = Tb::allocPluginClassIndex ();
 	    if (mIndex.index >= 0)
 	    {
 		mIndex.initiated = true;
 		mIndex.failed    = false;
-		mIndex.privIndex = privateHandlerIndex;
+		mIndex.pcIndex = pluginClassHandlerIndex;
 
 		CompPrivate p;
 		p.val = mIndex.index;
@@ -103,7 +89,7 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 		if (!screen->hasValue (keyName ()))
 		{
 		    screen->storeValue (keyName (), p);
-		    privateHandlerIndex++;
+		    pluginClassHandlerIndex++;
 		}
 		else
 		{
@@ -116,8 +102,8 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 	    {
 		mIndex.failed = true;
 		mIndex.initiated = false;
-		mIndex.privFailed = true;
-		mIndex.privIndex = privateHandlerIndex;
+		mIndex.pcFailed = true;
+		mIndex.pcIndex = pluginClassHandlerIndex;
 		mFailed = true;
 	    }
 	}
@@ -125,40 +111,40 @@ PrivateHandler<Tp,Tb,ABI>::PrivateHandler (Tb *base) :
 	if (!mIndex.failed)
 	{
 	    mIndex.refCount++;
-	    mBase->privates[mIndex.index].ptr = static_cast<Tp *> (this);
+	    mBase->pluginClasses[mIndex.index] = static_cast<Tp *> (this);
 	}
     }
 }
 
 template<class Tp, class Tb, int ABI>
-PrivateHandler<Tp,Tb,ABI>::~PrivateHandler ()
+PluginClassHandler<Tp,Tb,ABI>::~PluginClassHandler ()
 {
-    if (!mIndex.privFailed)
+    if (!mIndex.pcFailed)
     {
 	mIndex.refCount--;
 
 	if (mIndex.refCount == 0)
 	{
-	    Tb::freePrivateIndex (mIndex.index);
+	    Tb::freePluginClassIndex (mIndex.index);
 	    mIndex.initiated = false;
 	    mIndex.failed = false;
-	    mIndex.privIndex = privateHandlerIndex;
+	    mIndex.pcIndex = pluginClassHandlerIndex;
 	    screen->eraseValue (keyName ());
-	    privateHandlerIndex++;
+	    pluginClassHandlerIndex++;
 	}
     }
 }
 
 template<class Tp, class Tb, int ABI>
 Tp *
-PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
+PluginClassHandler<Tp,Tb,ABI>::get (Tb *base)
 {
-    if (mIndex.initiated && privateHandlerIndex == mIndex.privIndex)
+    if (mIndex.initiated && pluginClassHandlerIndex == mIndex.pcIndex)
     {
 	return static_cast<Tp *>
-	    (base->privates[mIndex.index].ptr);
+	    (base->pluginClasses[mIndex.index]);
     }
-    if (mIndex.failed && privateHandlerIndex == mIndex.privIndex)
+    if (mIndex.failed && pluginClassHandlerIndex == mIndex.pcIndex)
 	return NULL;
 
     if (screen->hasValue (keyName ()))
@@ -166,14 +152,14 @@ PrivateHandler<Tp,Tb,ABI>::get (Tb *base)
 	mIndex.index     = screen->getValue (keyName ()).val;
 	mIndex.initiated = true;
 	mIndex.failed    = false;
-	mIndex.privIndex = privateHandlerIndex;
-	return static_cast<Tp *> (base->privates[mIndex.index].ptr);
+	mIndex.pcIndex = pluginClassHandlerIndex;
+	return static_cast<Tp *> (base->pluginClasses[mIndex.index]);
     }
     else
     {
 	mIndex.initiated = false;
 	mIndex.failed    = true;
-	mIndex.privIndex = privateHandlerIndex;
+	mIndex.pcIndex = pluginClassHandlerIndex;
 	return NULL;
     }
 }

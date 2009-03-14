@@ -326,7 +326,7 @@ static const CompMetadata::OptionInfo fadeOptionInfo[] = {
 };
 
 FadeScreen::FadeScreen (CompScreen *s) :
-    PrivateHandler<FadeScreen, CompScreen> (s),
+    PluginClassHandler<FadeScreen, CompScreen> (s),
     cScreen (CompositeScreen::get (s)),
     displayModals (0)
 {
@@ -392,7 +392,7 @@ FadeScreen::setOption (const char         *name,
 }
 
 FadeWindow::FadeWindow (CompWindow *w) :
-    PrivateHandler<FadeWindow, CompWindow> (w),
+    PluginClassHandler<FadeWindow, CompWindow> (w),
     fScreen (FadeScreen::get (screen)),
     window (w),
     cWindow (CompositeWindow::get (w)),

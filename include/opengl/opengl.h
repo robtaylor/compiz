@@ -37,7 +37,7 @@
 
 #define COMPIZ_OPENGL_ABI 1
 
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 /* camera distance from screen, 0.5 * tan (FOV) */
 #define DEFAULT_Z_CAMERA 0.866025404f
@@ -253,7 +253,7 @@ class GLScreenInterface :
 
 class GLScreen :
     public WrapableHandler<GLScreenInterface, 5>,
-    public PrivateHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
+    public PluginClassHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
 {
     public:
 	GLScreen (CompScreen *s);
@@ -345,7 +345,7 @@ class GLWindowInterface :
 
 class GLWindow :
     public WrapableHandler<GLWindowInterface, 5>,
-    public PrivateHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
+    public PluginClassHandler<GLWindow, CompWindow, COMPIZ_OPENGL_ABI>
 {
     public:
 

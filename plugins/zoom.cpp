@@ -721,7 +721,7 @@ static const CompMetadata::OptionInfo zoomOptionInfo[] = {
 };
 
 ZoomScreen::ZoomScreen (CompScreen *screen) :
-    PrivateHandler<ZoomScreen,CompScreen> (screen),
+    PluginClassHandler<ZoomScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     opt(ZOOM_OPTION_NUM),

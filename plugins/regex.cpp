@@ -275,7 +275,7 @@ RegexScreen::handleEvent (XEvent *event)
 }
 
 RegexScreen::RegexScreen (CompScreen *s) :
-    PrivateHandler<RegexScreen, CompScreen> (s)
+    PluginClassHandler<RegexScreen, CompScreen> (s)
 {
     ScreenInterface::setHandler (s);
 
@@ -292,7 +292,7 @@ RegexScreen::~RegexScreen ()
 }
 
 RegexWindow::RegexWindow (CompWindow *w) :
-    PrivateHandler<RegexWindow, CompWindow> (w),
+    PluginClassHandler<RegexWindow, CompWindow> (w),
     window (w)
 {
     updateRole ();

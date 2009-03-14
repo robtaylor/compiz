@@ -26,7 +26,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 #include "privates.h"
 
 const CompMetadata::OptionInfo glOptionInfo[GL_OPTION_NUM] = {

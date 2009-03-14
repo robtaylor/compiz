@@ -66,7 +66,7 @@ typedef XBool Bool;
 #  define BITMAP_BIT_ORDER LSBFirst
 #endif
 
-#include <core/privates.h>
+#include <core/pluginclasses.h>
 #include <core/screen.h>
 #include <core/window.h>
 #include <core/plugin.h>

@@ -1565,7 +1565,7 @@ static const CompMetadata::OptionInfo scaleOptionInfo[] = {
 #undef SCALEBIND
 
 ScaleScreen::ScaleScreen (CompScreen *s) :
-    PrivateHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI> (s),
+    PluginClassHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI> (s),
     priv (new PrivateScaleScreen (s))
 {
 }
@@ -1576,7 +1576,7 @@ ScaleScreen::~ScaleScreen ()
 }
 
 ScaleWindow::ScaleWindow (CompWindow *w) :
-    PrivateHandler<ScaleWindow, CompWindow, COMPIZ_SCALE_ABI> (w),
+    PluginClassHandler<ScaleWindow, CompWindow, COMPIZ_SCALE_ABI> (w),
     priv (new PrivateScaleWindow (w))
 {
 }

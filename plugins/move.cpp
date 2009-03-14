@@ -718,7 +718,7 @@ static const CompMetadata::OptionInfo moveOptionInfo[] = {
 };
 
 MoveScreen::MoveScreen (CompScreen *screen) :
-    PrivateHandler<MoveScreen,CompScreen> (screen),
+    PluginClassHandler<MoveScreen,CompScreen> (screen),
     w (0),
     region (NULL),
     status (RectangleOut),

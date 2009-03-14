@@ -24,7 +24,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -59,7 +59,7 @@
 
 class ObsScreen :
     public ScreenInterface,
-    public PrivateHandler<ObsScreen, CompScreen>
+    public PluginClassHandler<ObsScreen, CompScreen>
 {
     public:
 	ObsScreen (CompScreen *);
@@ -80,7 +80,7 @@ class ObsScreen :
 
 class ObsWindow :
     public GLWindowInterface,
-    public PrivateHandler<ObsWindow, CompWindow>
+    public PluginClassHandler<ObsWindow, CompWindow>
 {
     public:
 	ObsWindow (CompWindow *);

@@ -31,7 +31,7 @@
 #include <fstream>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #define HOME_OPTIONDIR     ".compiz/options"
 #define CORE_NAME           "general"
@@ -39,7 +39,7 @@
 
 class IniScreen :
     public ScreenInterface,
-    public PrivateHandler<IniScreen, CompScreen>
+    public PluginClassHandler<IniScreen, CompScreen>
 {
     public:
 	IniScreen (CompScreen *screen);

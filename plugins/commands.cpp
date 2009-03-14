@@ -115,7 +115,7 @@ static const CompMetadata::OptionInfo commandsOptionInfo[] = {
 };
 
 CommandsScreen::CommandsScreen (CompScreen *s) :
-    PrivateHandler<CommandsScreen, CompScreen> (s)
+    PluginClassHandler<CommandsScreen, CompScreen> (s)
 {
     if (!commandsVTable->getMetadata ()->initOptions (commandsOptionInfo,
 						      COMMANDS_OPTION_NUM,

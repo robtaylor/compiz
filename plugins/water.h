@@ -32,7 +32,7 @@
 #include <X11/cursorfont.h>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -77,7 +77,7 @@ struct WaterFunction {
 class WaterScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public PrivateHandler<WaterScreen,CompScreen>
+    public PluginClassHandler<WaterScreen,CompScreen>
 {
     public:
 	
@@ -159,11 +159,11 @@ class WaterScreen :
 
 class WaterWindow :
     public GLWindowInterface,
-    public PrivateHandler<WaterWindow,CompWindow>
+    public PluginClassHandler<WaterWindow,CompWindow>
 {
     public:
 	WaterWindow (CompWindow *window) :
-	    PrivateHandler<WaterWindow,CompWindow> (window),
+	    PluginClassHandler<WaterWindow,CompWindow> (window),
 	    window (window),
 	    gWindow (GLWindow::get (window)),
 	    wScreen (WaterScreen::get (screen)),

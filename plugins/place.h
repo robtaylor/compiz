@@ -26,7 +26,7 @@
 
 #include <core/core.h>
 #include <core/atoms.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #define PLACE_MODE_CASCADE  0
 #define PLACE_MODE_CENTERED 1
@@ -57,7 +57,7 @@
 #define PLACE_SCREEN(s) PlaceScreen *ps = PlaceScreen::get (s)
 
 class PlaceScreen :
-    public PrivateHandler<PlaceScreen, CompScreen>,
+    public PluginClassHandler<PlaceScreen, CompScreen>,
     public ScreenInterface
 {
     public:
@@ -74,7 +74,7 @@ class PlaceScreen :
 };
 
 class PlaceWindow :
-    public PrivateHandler<PlaceWindow, CompWindow>,
+    public PluginClassHandler<PlaceWindow, CompWindow>,
     public WindowInterface
 {
     public:

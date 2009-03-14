@@ -84,6 +84,13 @@ extern LoadPluginProc   loaderLoadPlugin;
 extern UnloadPluginProc loaderUnloadPlugin;
 extern ListPluginsProc  loaderListPlugins;
 
+union CompPrivate {
+    void	  *ptr;
+    long	  val;
+    unsigned long uval;
+    void	  *(*fptr) (void);
+};
+
 class CompPlugin {
     public:
 	class VTable {

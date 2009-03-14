@@ -33,13 +33,13 @@
 #include <fstream>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #define PNG_SIG_SIZE 8
 
 class PngScreen :
     public ScreenInterface,
-    public PrivateHandler<PngScreen, CompScreen>
+    public PluginClassHandler<PngScreen, CompScreen>
 {
     public:
 	PngScreen (CompScreen *screen);

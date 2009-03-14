@@ -24,7 +24,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
@@ -46,7 +46,7 @@
 class FadeScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public PrivateHandler<FadeScreen, CompScreen>
+    public PluginClassHandler<FadeScreen, CompScreen>
 {
     public:
 	FadeScreen (CompScreen *s);
@@ -68,7 +68,7 @@ class FadeScreen :
 class FadeWindow :
     public WindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<FadeWindow, CompWindow>
+    public PluginClassHandler<FadeWindow, CompWindow>
 {
     public:
 	FadeWindow (CompWindow *w);

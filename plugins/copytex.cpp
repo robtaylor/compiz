@@ -260,7 +260,7 @@ CopytexScreen::handleEvent (XEvent *event)
 
 
 CopytexScreen::CopytexScreen (CompScreen *screen) :
-    PrivateHandler<CopytexScreen,CompScreen> (screen)
+    PluginClassHandler<CopytexScreen,CompScreen> (screen)
 {
     useShm = false;
     if (XShmQueryExtension (screen->dpy ()))

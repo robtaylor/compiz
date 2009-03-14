@@ -1303,7 +1303,7 @@ static const CompMetadata::OptionInfo waterOptionInfo[] = {
 };
 
 WaterScreen::WaterScreen (CompScreen *screen) :
-    PrivateHandler<WaterScreen,CompScreen> (screen),
+    PluginClassHandler<WaterScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     opt(WATER_OPTION_NUM),

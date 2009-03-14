@@ -27,7 +27,7 @@
 #define _COMPIZ_SCALE_H
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -49,7 +49,7 @@ class ScaleScreenInterface :
 
 class ScaleScreen :
     public WrapableHandler<ScaleScreenInterface, 1>,
-    public PrivateHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI>
+    public PluginClassHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI>
 {
     public:
 	typedef enum {
@@ -98,7 +98,7 @@ class ScaleWindowInterface :
 
 class ScaleWindow :
     public WrapableHandler<ScaleWindowInterface, 3>,
-    public PrivateHandler<ScaleWindow, CompWindow, COMPIZ_SCALE_ABI>
+    public PluginClassHandler<ScaleWindow, CompWindow, COMPIZ_SCALE_ABI>
 {
     public:
 	ScaleWindow (CompWindow *w);

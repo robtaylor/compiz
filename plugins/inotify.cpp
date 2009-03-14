@@ -28,7 +28,7 @@
 COMPIZ_PLUGIN_20081216 (inotify, InotifyPluginVTable)
 
 InotifyScreen::InotifyScreen (CompScreen *screen) :
-    PrivateHandler<InotifyScreen, CompScreen> (screen)
+    PluginClassHandler<InotifyScreen, CompScreen> (screen)
 {
     fd = inotify_init ();
 

@@ -29,7 +29,7 @@ add_executable (compiz
     option.cpp
     string.cpp
     match.cpp
-    privates.cpp
+    pluginclasses.cpp
     event.cpp
     plugin.cpp
     session.cpp

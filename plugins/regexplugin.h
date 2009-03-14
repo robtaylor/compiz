@@ -28,10 +28,10 @@
 
 #include <core/core.h>
 #include <core/atoms.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 class RegexScreen :
-    public PrivateHandler<RegexScreen, CompScreen>,
+    public PluginClassHandler<RegexScreen, CompScreen>,
     public ScreenInterface
 {
     public:
@@ -47,7 +47,7 @@ class RegexScreen :
 };
 
 class RegexWindow :
-    public PrivateHandler<RegexWindow, CompWindow>
+    public PluginClassHandler<RegexWindow, CompWindow>
 {
     public:
 	RegexWindow (CompWindow *w);

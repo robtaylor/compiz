@@ -1563,7 +1563,7 @@ SwitchScreen::setOption (const char        *name,
 }
 
 SwitchScreen::SwitchScreen (CompScreen *screen) :
-    PrivateHandler<SwitchScreen,CompScreen> (screen),
+    PluginClassHandler<SwitchScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     opt(SWITCH_OPTION_NUM),

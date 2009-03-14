@@ -2275,7 +2275,7 @@ BlurScreen::setOption (const char        *name,
 }
 
 BlurScreen::BlurScreen (CompScreen *screen) :
-    PrivateHandler<BlurScreen,CompScreen> (screen),
+    PluginClassHandler<BlurScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     opt(BLUR_OPTION_NUM),
@@ -2355,7 +2355,7 @@ BlurScreen::~BlurScreen ()
 }
 
 BlurWindow::BlurWindow (CompWindow *w) :
-    PrivateHandler<BlurWindow,CompWindow> (w),
+    PluginClassHandler<BlurWindow,CompWindow> (w),
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),

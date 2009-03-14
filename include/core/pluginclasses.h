@@ -25,50 +25,39 @@
  *          David Reveman <davidr@novell.com>
  */
 
-#include <core/privates.h>
+#ifndef _PLUGINCLASSES_H
+#define _PLUGINCLASSES_H
 
-CompPrivateStorage::CompPrivateStorage (CompPrivateStorage::Indices& iList) :
-    privates (0)
-{
-    if (iList.size() > 0)
-	privates.resize (iList.size ());
-}
+#include <vector>
 
-int
-CompPrivateStorage::allocatePrivateIndex (CompPrivateStorage::Indices& iList)
-{
-    unsigned int i;
+class PluginClassIndex {
+    public:
+	PluginClassIndex () : index(-1), refCount (0),
+			      initiated (false), failed (false),
+			      pcFailed (false), pcIndex (0) {}
+			
+	int          index;
+	int          refCount;
+	bool         initiated;
+	bool         failed;
+	bool         pcFailed;
+	unsigned int pcIndex;
+};
 
-    for (i = 0; i < iList.size (); i++)
-    {
-	if (!iList.at (i))
-	{
-	    iList.at (i) = true;
-	    return i;
-	}
-    }
+class PluginClassStorage {
 
-    i = iList.size ();
-    iList.resize (i + 1);
-    iList.at (i) = true;
+    public:
+	typedef std::vector<bool> Indices;
 
-    return i;
-}
+    public:
+	PluginClassStorage (Indices& iList);
 
-void
-CompPrivateStorage::freePrivateIndex (CompPrivateStorage::Indices& iList,
-				      int                          idx)
-{
-    int size = iList.size ();
+    public:
+	std::vector<void *> pluginClasses;
 
-    if (idx < 0 || idx >= size)
-	return;
+    protected:
+	static int allocatePluginClassIndex (Indices& iList);
+	static void freePluginClassIndex (Indices& iList, int idx);
+};
 
-    if (idx < size - 1)
-    {
-	iList.at (idx) = false;
-	return;
-    }
-
-    iList.resize (size - 1);
-}
+#endif

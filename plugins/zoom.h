@@ -32,7 +32,7 @@
 #include <X11/cursorfont.h>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -61,7 +61,7 @@ class ZoomScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PrivateHandler<ZoomScreen,CompScreen>
+    public PluginClassHandler<ZoomScreen,CompScreen>
 {
     public:
 	
