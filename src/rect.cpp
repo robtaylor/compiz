@@ -83,20 +83,26 @@ CompRect::setGeometry (int x,
 void
 CompRect::setX (int x)
 {
+    int width = mRegion.extents.x2 - mRegion.extents.x1;
+
     mRegion.extents.x1 = x;
+    mRegion.extents.x2 = x + width;
 }
 
 void
 CompRect::setY (int y)
 {
+    int height = mRegion.extents.y2 - mRegion.extents.y1;
+
     mRegion.extents.y1 = y;
+    mRegion.extents.y2 = y + height;
 }
 
 void
 CompRect::setPos (const CompPoint& pos)
 {
-    mRegion.extents.x1 = pos.x ();
-    mRegion.extents.y1 = pos.y ();
+    setX (pos.x ());
+    setY (pos.y ());
 }
 
 void
