@@ -6,4 +6,4 @@ set (COMPIZ_FOUND "true")
 
 add_definitions ( -DHAVE_CONFIG_H)
 
-compiz_add_plugins_in_folder (.)
+compiz_add_plugins_in_folder (${CMAKE_CURRENT_SOURCE_DIR})

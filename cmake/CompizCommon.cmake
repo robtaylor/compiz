@@ -72,8 +72,8 @@ endfunction ()
 function (compiz_add_plugins_in_folder folder)
     file (
         GLOB _plugins_in
-        RELATIVE "${CMAKE_CURRENT_SOURCE_DIR}/${folder}"
-        "${CMAKE_CURRENT_SOURCE_DIR}/${folder}/*/CMakeLists.txt"
+        RELATIVE "${folder}"
+        "${folder}/*/CMakeLists.txt"
     )
 
     foreach (_plugin ${_plugins_in})
