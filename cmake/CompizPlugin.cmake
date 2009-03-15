@@ -70,7 +70,7 @@ macro (_prepare_directories)
 	set (PLUGIN_BUILDTYPE global)
 	set (PLUGIN_PREFIX    ${CMAKE_INSTALL_PREFIX})
 	set (PLUGIN_LIBDIR    ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/compiz)
-	set (PLUGIN_INCDIR    ${CMAKE_INSTALL_PREFIX}/include/compiz)
+	set (PLUGIN_INCDIR    ${CMAKE_INSTALL_PREFIX}/include)
 	set (PLUGIN_PKGDIR    ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${CMAKE_INSTALL_PREFIX}/share/compiz)
 	set (PLUGIN_IMAGEDIR  ${CMAKE_INSTALL_PREFIX}/share/compiz)
@@ -319,7 +319,7 @@ function (_build_compiz_plugin plugin)
 		)
 		install (
 		    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/${plugin}
-		    DESTINATION ${PLUGIN_INCDIR}/${plugin}
+		    DESTINATION ${PLUGIN_INCDIR}/compiz
 		)
 	    endif ()
 	endif ()
