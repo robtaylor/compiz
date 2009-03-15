@@ -34,17 +34,7 @@
 
 #include "privatefragment.h"
 #include "privatetexture.h"
-
-#define GL_OPTION_TEXTURE_FILTER      0
-#define GL_OPTION_LIGHTING            1
-#define GL_OPTION_SYNC_TO_VBLANK      2
-#define GL_OPTION_TEXTURE_COMPRESSION 3
-#define GL_OPTION_NUM                 4
-
-extern CompPlugin::VTable *openglVTable;
-
-extern const CompMetadata::OptionInfo
-    glOptionInfo[GL_OPTION_NUM];
+#include "opengl_options.h"
 
 extern CompOutput *targetOutput;
 
@@ -59,11 +49,14 @@ class GLIcon
 
 class PrivateGLScreen :
     public ScreenInterface,
-    public CompositeScreen::PaintHandler
+    public CompositeScreen::PaintHandler,
+    public OpenglOptions
 {
     public:
 	PrivateGLScreen (GLScreen *gs);
 	~PrivateGLScreen ();
+
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	void handleEvent (XEvent *event);
 
@@ -128,8 +121,6 @@ class PrivateGLScreen :
 	bool hasCompositing;
 
 	GLIcon defaultIcon;
-
-	CompOption::Vector opt;
 };
 
 class PrivateGLWindow :

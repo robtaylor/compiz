@@ -101,13 +101,6 @@ GLScreen::GLScreen (CompScreen *s) :
 	setenv ("LIBGL_ALWAYS_INDIRECT", "1", True);
     }
 
-    if (!openglVTable->getMetadata ()->initOptions (glOptionInfo, GL_OPTION_NUM,
-						    priv->opt))
-    {
-	setFailed ();
-	return;
-    }
-
     if (!XGetWindowAttributes (dpy, s->root (), &attr))
     {
 	setFailed ();
@@ -825,7 +818,7 @@ GLScreen::setLighting (bool lighting)
 {
     if (priv->lighting != lighting)
     {
-	if (!priv->opt[GL_OPTION_LIGHTING].value ().b ())
+	if (!priv->optionGetLighting ())
 	    lighting = false;
 
 	if (lighting)
@@ -968,7 +961,7 @@ PrivateGLScreen::waitForVideoSync ()
 {
     unsigned int sync;
 
-    if (!opt[GL_OPTION_SYNC_TO_VBLANK].value ().b ())
+    if (!optionGetSyncToVblank ())
 	return;
 
     if (GL::getVideoSync)
@@ -978,13 +971,6 @@ PrivateGLScreen::waitForVideoSync ()
 	(*GL::getVideoSync) (&sync);
 	(*GL::waitVideoSync) (2, (sync + 1) % 2, &sync);
     }
-}
-
-CompOption *
-GLScreen::getOption (const char *name)
-{
-    CompOption *o = CompOption::findOption (priv->opt, name);
-    return o;
 }
 
 void
@@ -1122,8 +1108,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 bool
 PrivateGLScreen::hasVSync ()
 {
-   return (GL::getVideoSync &&
-	   opt[GL_OPTION_SYNC_TO_VBLANK].value ().b ());
+   return (GL::getVideoSync && optionGetSyncToVblank ());
 }
 
 void

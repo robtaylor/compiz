@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="opengl">
+    <plugin name="opengl" useBcop="true">
 	<_short>OpenGL</_short>
 	<_long>OpenGL Plugin</_long>
 	<deps>

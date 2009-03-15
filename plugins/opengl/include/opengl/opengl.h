@@ -230,7 +230,8 @@ extern GLScreenPaintAttrib defaultScreenPaintAttrib;
 class GLScreen;
 
 class GLScreenInterface :
-    public WrapableInterface<GLScreen, GLScreenInterface>
+    public WrapableInterface<GLScreen, GLScreenInterface>,
+    public CompOption::Class
 {
     public:
 	virtual bool glPaintOutput (const GLScreenPaintAttrib &,
@@ -260,8 +261,7 @@ class GLScreen :
 	~GLScreen ();
 
 	CompOption::Vector & getOptions ();
-        bool setOption (const char *name, CompOption::Value &value);
-	CompOption * getOption (const char *name);
+        bool setOption (const CompString &name, CompOption::Value &value);
 
 	GLenum textureFilter ();
 	void setTextureFilter (GLenum);

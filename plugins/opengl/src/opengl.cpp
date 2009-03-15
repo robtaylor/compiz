@@ -29,51 +29,44 @@
 #include <core/pluginclasshandler.h>
 #include "privates.h"
 
-const CompMetadata::OptionInfo glOptionInfo[GL_OPTION_NUM] = {
-    { "texture_filter", "int", RESTOSTRING (0, 2), 0, 0 },
-    { "lighting", "bool", 0, 0, 0 },
-    { "sync_to_vblank", "bool", 0, 0, 0 },
-    { "texture_compression", "bool", 0, 0, 0 },
-};
-
 CompOption::Vector &
 GLScreen::getOptions ()
 {
-    return priv->opt;
+    return priv->getOptions ();
 }
 
 bool
-GLScreen::setOption (const char        *name,
+GLScreen::setOption (const CompString  &name,
 		     CompOption::Value &value)
 {
-    CompOption   *o;
+    return priv->setOption (name, value);
+}
+
+bool
+PrivateGLScreen::setOption (const CompString  &name,
+			    CompOption::Value &value)
+{
     unsigned int index;
 
-    o = CompOption::findOption (priv->opt, name, &index);
-    if (!o)
+    bool rv = OpenglOptions::setOption (name, value);
+
+    if (!rv || !CompOption::findOption (getOptions (), name, &index))
 	return false;
 
     switch (index) {
-	case GL_OPTION_TEXTURE_FILTER:
-	    if (o->set (value))
-	    {
-		priv->cScreen->damageScreen ();
+	case OpenglOptions::TextureFilter:
+	    cScreen->damageScreen ();
 
-		if (!o->value ().i ())
-		    priv->textureFilter = GL_NEAREST;
-		else
-		    priv->textureFilter = GL_LINEAR;
-
-		return true;
-	    }
+	    if (!optionGetTextureFilter ())
+		textureFilter = GL_NEAREST;
+	    else
+		textureFilter = GL_LINEAR;
 	    break;
 	default:
-	    if (CompOption::setOption (*o, value))
-		return true;
 	    break;
     }
 
-    return false;
+    return rv;
 }
 
 class OpenglPluginVTable :
@@ -83,11 +76,9 @@ class OpenglPluginVTable :
 
 	bool init ();
 	void fini ();
-
-	PLUGIN_OPTION_HELPER (GLScreen)
 };
 
-COMPIZ_PLUGIN_20081216 (opengl, OpenglPluginVTable)
+COMPIZ_PLUGIN_20090315 (opengl, OpenglPluginVTable)
 
 bool
 OpenglPluginVTable::init ()
@@ -99,9 +90,6 @@ OpenglPluginVTable::init ()
     CompPrivate p;
     p.uval = COMPIZ_OPENGL_ABI;
     screen->storeValue ("opengl_ABI", p);
-
-    getMetadata ()->addFromOptionInfo (glOptionInfo, GL_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }
