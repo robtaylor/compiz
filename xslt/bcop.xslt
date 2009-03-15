@@ -933,7 +933,7 @@ inline void
     <xsl:template name="printClass">
         <xsl:text>class </xsl:text>
         <xsl:value-of select="$Plugin"/>
-        <xsl:text>Options {
+        <xsl:text>Options : public CompOption::Class {
     public:
         </xsl:text>
         <xsl:call-template name="printOptionsEnum"/>
@@ -948,8 +948,8 @@ inline void
 	<xsl:value-of select="$Plugin"/>
         <xsl:text>Options ();
 
-        virtual CompOption::Vector &amp; getOptions ();
-        virtual bool setOption (const char *name, CompOption::Value &amp;value);
+        virtual CompOption::Vector &amp; getOptions () const;
+        virtual bool setOption (const CompString &amp;name, CompOption::Value &amp;value);
 
 </xsl:text>
         <xsl:for-each select="/compiz/plugin[@name=$pName]/descendant-or-self::option">
@@ -1068,7 +1068,7 @@ inline void
 CompOption::Vector &amp;
 </xsl:text>
         <xsl:value-of select="$Plugin"/>
-        <xsl:text>Options::getOptions ()
+        <xsl:text>Options::getOptions () const
 {
     return mOptions;
 }
@@ -1076,7 +1076,7 @@ CompOption::Vector &amp;
 bool
 </xsl:text>
         <xsl:value-of select="$Plugin"/>
-        <xsl:text>Options::setOption (const char *name, CompOption::Value &amp;value)
+        <xsl:text>Options::setOption (const CompString &amp;name, CompOption::Value &amp;value)
 {
 </xsl:text>
         <xsl:call-template name="setOptions"/>
