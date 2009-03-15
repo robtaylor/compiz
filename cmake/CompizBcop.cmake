@@ -18,30 +18,24 @@ endfunction ()
 # prepare bcop build
 function (compiz_add_bcop_targets _plugin _file _sources)
 
-#     add_custom_command (
-#         OUTPUT ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
-#         COMMAND ${XSLTPROC_EXECUTABLE}
-#                     --stringparam "header" "true" ${COMPIZ_BCOP_XSLT}
-#                     ${_file} > ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
-#         DEPENDS ${_file}
-#     )
-#     add_custom_command (
-#         OUTPUT ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp
-#         COMMAND ${XSLTPROC_EXECUTABLE}
-#                     --stringparam "source" "true" ${COMPIZ_BCOP_XSLT}
-#                     ${_file} > ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp
-#         DEPENDS ${_file}
-#                 ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
-#     )
-#     set (${_sources} "${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h;${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp" PARENT_SCOPE)
-
     add_custom_command (
         OUTPUT ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
         COMMAND ${XSLTPROC_EXECUTABLE}
-                    ${COMPIZ_BCOP_XSLT}
-                    ${_file} > ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
+                    -o ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
+                    --stringparam "file" "header" ${COMPIZ_BCOP_XSLT}
+                    ${_file}
         DEPENDS ${_file}
     )
-    set (${_sources} "${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h" PARENT_SCOPE)
+    add_custom_command (
+        OUTPUT ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp
+        COMMAND ${XSLTPROC_EXECUTABLE}
+                    -o ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp
+                    --stringparam "file" "source" ${COMPIZ_BCOP_XSLT}
+                    ${_file} > ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp
+        DEPENDS ${_file}
+                ${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h
+    )
+    set (${_sources} "${CMAKE_BINARY_DIR}/generated/${_plugin}_options.h;${CMAKE_BINARY_DIR}/generated/${_plugin}_options.cpp" PARENT_SCOPE)
+
 
 endfunction ()
