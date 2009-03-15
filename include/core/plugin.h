@@ -28,36 +28,18 @@
 
 #include <compiz.h>
 #include <core/option.h>
-#include <core/metadata.h>
+
+class CompScreen;
+extern CompScreen *screen;
 
 #include <map>
 
-class CompMetadata;
-
 #define HOME_PLUGINDIR ".compiz/plugins"
 
-#define PLUGIN_OPTION_HELPER(screenName)        \
-CompOption::Vector & getOptions ()              \
-{                                               \
-    screenName *ps = screenName::get (screen);  \
-    if (ps)                                     \
-	return ps->getOptions ();                  \
-    return noOptions;                           \
-}                                               \
-                                                \
-bool setOption (const char        *name,        \
-		CompOption::Value &value)       \
-{                                               \
-    screenName *ps = screenName::get (screen);  \
-    if (ps)                                     \
-	return ps->setOption (name, value);     \
-    return false;                               \
-}
-
-#define COMPIZ_PLUGIN_20081216(name, classname)                           \
+#define COMPIZ_PLUGIN_20090315(name, classname)                           \
     CompPlugin::VTable * name##VTable = NULL;                             \
     extern "C" {                                                          \
-        CompPlugin::VTable * getCompPluginVTable20081216_##name ()        \
+        CompPlugin::VTable * getCompPluginVTable20090315_##name ()        \
 	{                                                                 \
 	    if (!name##VTable)                                            \
 	    {                                                             \
@@ -103,46 +85,51 @@ class CompPlugin {
 		
 		const CompString name () const;
 
-		CompMetadata * getMetadata () const;
-
 		virtual bool init () = 0;
 
 		virtual void fini ();
 
-		virtual bool initScreen (CompScreen *screen);
+		virtual bool initScreen (CompScreen *s);
 
-		virtual void finiScreen (CompScreen *screen);
+		virtual void finiScreen (CompScreen *s);
 
-		virtual bool initWindow (CompWindow *window);
+		virtual bool initWindow (CompWindow *w);
 
-		virtual void finiWindow (CompWindow *window);
+		virtual void finiWindow (CompWindow *w);
  	
-		virtual CompOption::Vector & getOptions ();
+		virtual CompOption::Vector & getOptions () const;
 
-		virtual bool setOption (const char        *name,
+		virtual bool setOption (const CompString  &name,
 					CompOption::Value &value);
 	    private:
 		CompString   mName;
-		CompMetadata *mMetadata;
 		VTable       **mSelf;
         };
 
 	template <typename T, typename T2>
 	class VTableForScreenAndWindow : public VTable {
-	    bool initScreen (CompScreen *screen);
+	    bool initScreen (CompScreen *s);
 
-	    void finiScreen (CompScreen *screen);
+	    void finiScreen (CompScreen *s);
 
-	    bool initWindow (CompWindow *window);
+	    bool initWindow (CompWindow *w);
 
-	    void finiWindow (CompWindow *window);
+	    void finiWindow (CompWindow *w);
+
+	    CompOption::Vector & getOptions () const;
+
+	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
 
 	template <typename T>
 	class VTableForScreen : public VTable {
-	    bool initScreen (CompScreen *screen);
+	    bool initScreen (CompScreen *s);
 
-	    void finiScreen (CompScreen *screen);
+	    void finiScreen (CompScreen *s);
+
+	    CompOption::Vector & getOptions () const;
+
+	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
 
 	struct cmpStr
@@ -192,10 +179,11 @@ class CompPlugin {
 
 };
 
+
 template <typename T, typename T2>
-bool CompPlugin::VTableForScreenAndWindow<T,T2>::initScreen (CompScreen *screen)
+bool CompPlugin::VTableForScreenAndWindow<T,T2>::initScreen (CompScreen *s)
 {
-    T * ps = new T (screen);
+    T * ps = new T (s);
     if (ps->loadFailed ())
     {
 	delete ps;
@@ -205,16 +193,16 @@ bool CompPlugin::VTableForScreenAndWindow<T,T2>::initScreen (CompScreen *screen)
 }
 
 template <typename T, typename T2>
-void CompPlugin::VTableForScreenAndWindow<T,T2>::finiScreen (CompScreen *screen)
+void CompPlugin::VTableForScreenAndWindow<T,T2>::finiScreen (CompScreen *s)
 {
-    T * ps = T::get (screen);
+    T * ps = T::get (s);
     delete ps;
 }
 
 template <typename T, typename T2>
-bool CompPlugin::VTableForScreenAndWindow<T,T2>::initWindow (CompWindow *window)
+bool CompPlugin::VTableForScreenAndWindow<T,T2>::initWindow (CompWindow *w)
 {
-    T2 * pw = new T2 (window);
+    T2 * pw = new T2 (w);
     if (pw->loadFailed ())
     {
 	delete pw;
@@ -224,16 +212,35 @@ bool CompPlugin::VTableForScreenAndWindow<T,T2>::initWindow (CompWindow *window)
 }
 
 template <typename T, typename T2>
-void CompPlugin::VTableForScreenAndWindow<T,T2>::finiWindow (CompWindow *window)
+void CompPlugin::VTableForScreenAndWindow<T,T2>::finiWindow (CompWindow *w)
 {
-    T2 * pw = T2::get (window);
+    T2 * pw = T2::get (w);
     delete pw;
 }
 
-template <typename T>
-bool CompPlugin::VTableForScreen<T>::initScreen (CompScreen *screen)
+template <typename T, typename T2>
+CompOption::Vector & CompPlugin::VTableForScreenAndWindow<T,T2>::getOptions () const
 {
-    T * ps = new T (screen);
+    CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
+    if (!oc)
+	return noOptions;
+    return oc->getOptions ();
+}
+
+template <typename T, typename T2>
+bool CompPlugin::VTableForScreenAndWindow<T,T2>::setOption (const CompString  &name,
+							    CompOption::Value &value)
+{
+    CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
+    if (!oc)
+	return false;
+    return oc->setOption (name, value);
+}
+
+template <typename T>
+bool CompPlugin::VTableForScreen<T>::initScreen (CompScreen *s)
+{
+    T * ps = new T (s);
     if (ps->loadFailed ())
     {
 	delete ps;
@@ -243,10 +250,29 @@ bool CompPlugin::VTableForScreen<T>::initScreen (CompScreen *screen)
 }
 
 template <typename T>
-void CompPlugin::VTableForScreen<T>::finiScreen (CompScreen *screen)
+void CompPlugin::VTableForScreen<T>::finiScreen (CompScreen *s)
 {
-    T * ps = T::get (screen);
+    T * ps = T::get (s);
     delete ps;
+}
+
+template <typename T>
+CompOption::Vector & CompPlugin::VTableForScreen<T>::getOptions () const
+{
+    CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
+    if (!oc)
+	return noOptions;
+    return oc->getOptions ();
+}
+
+template <typename T>
+bool CompPlugin::VTableForScreen<T>::setOption (const CompString  &name,
+						CompOption::Value &value)
+{
+    CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
+    if (!oc)
+	return false;
+    return oc->setOption (name, value);
 }
 
 typedef CompPlugin::VTable *(*PluginGetInfoProc) (void);

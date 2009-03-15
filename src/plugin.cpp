@@ -54,13 +54,13 @@ class CorePluginVTable : public CompPlugin::VTable
 			CompOption::Value &value);
 };
 
-COMPIZ_PLUGIN_20081216 (core, CorePluginVTable)
+COMPIZ_PLUGIN_20090315 (core, CorePluginVTable)
 
 CompPlugin::VTable * getCoreVTable ()
 {
     if (!coreVTable)
     {
-	return getCompPluginVTable20081216_core ();
+	return getCompPluginVTable20090315_core ();
     }
 
     return coreVTable;
@@ -162,7 +162,7 @@ dlloaderLoadPlugin (CompPlugin *p,
 
 	dlerror ();
 
-	snprintf (sym, 1024, "getCompPluginVTable20081216_%s", name);
+	snprintf (sym, 1024, "getCompPluginVTable20090315_%s", name);
 	getInfo = (PluginGetInfoProc) dlsym (dlhand, sym);
 
 	error = dlerror ();
@@ -630,7 +630,6 @@ CompPlugin::checkPluginABI (const char *name,
 
 CompPlugin::VTable::VTable () :
     mName (""),
-    mMetadata (NULL),
     mSelf (NULL)
 {
 }
@@ -639,8 +638,6 @@ CompPlugin::VTable::~VTable ()
 {
     if (mSelf)
 	*mSelf = NULL;
-    if (mMetadata)
-	delete mMetadata;
 }
 
 void
@@ -653,14 +650,6 @@ CompPlugin::VTable::initVTable (CompString         name,
 	mSelf = self;
 	*mSelf = this;
     }
-    if (!mMetadata)
-	mMetadata = new CompMetadata (name);
-}
-
-CompMetadata *
-CompPlugin::VTable::getMetadata () const
-{
-    return mMetadata;
 }
 
 const CompString
@@ -697,13 +686,13 @@ CompPlugin::VTable::finiWindow (CompWindow *)
 }
 	
 CompOption::Vector &
-CompPlugin::VTable::getOptions ()
+CompPlugin::VTable::getOptions () const
 {
     return noOptions;
 }
 
 bool
-CompPlugin::VTable::setOption (const char        *name,
+CompPlugin::VTable::setOption (const CompString  &name,
 			       CompOption::Value &value)
 {
     return false;

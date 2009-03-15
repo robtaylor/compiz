@@ -263,7 +263,7 @@ main (int argc, char **argv)
 
     LIBXML_TEST_VERSION;
 
-    coreMetadata = getCoreVTable ()->getMetadata ();
+    coreMetadata = new CompMetadata;
 
     if (!coreMetadata->addFromIO (readCoreXmlCallback, NULL, &ctx))
 	return 1;
