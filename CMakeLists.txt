@@ -69,20 +69,13 @@ set (_compiz_package "Compiz")
 
 compiz_configure_file (${compiz_SOURCE_DIR}/config.h.core.in ${compiz_BINARY_DIR}/generated/config.h)
 
-set (_commonfile "${CMAKE_BINARY_DIR}/generated/compiz-common.h")
-
-file (WRITE  ${_commonfile} "#ifndef COMPIZ_COMMON_H\n")
-file (APPEND ${_commonfile} "#define COMPIZ_COMMON_H\n")
-file (APPEND ${_commonfile} "\n")
-file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MAJOR ${COMPIZ_VERSION_MAJOR}\n")
-file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MINOR ${COMPIZ_VERSION_MINOR}\n")
-file (APPEND ${_commonfile} "#define COMPIZ_VERSION_MICRO ${COMPIZ_VERSION_MICRO}\n")
-file (APPEND ${_commonfile} "\n")
-file (APPEND ${_commonfile} "#define COMPIZ_VERSION_STRING \"${VERSION}\"\n")
-file (APPEND ${_commonfile} "#endif\n")
+compiz_configure_file (
+    ${CMAKE_SOURCE_DIR}/include/compiz-common.h.in
+    ${CMAKE_BINARY_DIR}/generated/compiz-common.h
+)
 
 install (
-    FILES ${_commonfile}
+    FILES ${CMAKE_BINARY_DIR}/generated/compiz-common.h
     DESTINATION ${includedir}/compiz
 )
 
