@@ -1,10 +1,12 @@
 project (compiz)
 
-set (CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH_ORIG ${CMAKE_MODULE_PATH})
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+include (CompizCommon)
+include (CompizPackage)
 include (cmake/base.cmake)
-include (cmake/macros.cmake)
-include (cmake/summary.cmake)
 include (CheckFunctionExists)
+
 
 set (CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRe" CACHE INTERNAL "" FORCE)
 if (NOT CMAKE_BUILD_TYPE)
@@ -14,12 +16,10 @@ endif (NOT CMAKE_BUILD_TYPE)
 # compiz package version number
 # An odd micro number indicates in-progress development.
 # An even micro number indicates a released version.
-set (COMPIZ_VERSION_MAJOR 1)
-set (COMPIZ_VERSION_MINOR 91)
-set (COMPIZ_VERSION_MICRO 1)
+set (COMPIZ_VERSION_MAJOR 0)
+set (COMPIZ_VERSION_MINOR 9)
+set (COMPIZ_VERSION_MICRO 0)
 set (VERSION ${COMPIZ_VERSION_MAJOR}.${COMPIZ_VERSION_MINOR}.${COMPIZ_VERSION_MICRO})
-
-include (cmake/package.cmake)
 
 set (DECOR_INTERFACE_VERSION 20080901)
 
@@ -32,6 +32,7 @@ set (datadir ${CMAKE_INSTALL_PREFIX}/share)
 set (compiz_plugindir ${libdir}/compiz)
 set (compiz_imagedir ${datadir}/compiz)
 set (compiz_metadatadir ${datadir}/compiz)
+set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
 
 set (ALL_LINGUAS af ar bg bn bn_IN bs ca cs cy da de el en_GB en_US es eu et fi fr gl gu he hi hr hu id it ja ka km ko lo lt mk mr nb nl or pa pl pt pt_BR ro ru sk sl sr sv ta tr uk vi xh zh_CN zh_TW zu)
 set (GETTEXT_PACKAGE compiz)
@@ -56,17 +57,19 @@ set (COMPIZ_REQUIRES
 
 set (DECORATION_REQUIRES xrender)
 
-pkg_check_modules (COMPIZ REQUIRED ${COMPIZ_REQUIRES})
-pkg_check_modules (LIBDECORATION REQUIRED ${DECORATION_REQUIRES})
+compiz_pkg_check_modules (COMPIZ REQUIRED ${COMPIZ_REQUIRES})
+compiz_pkg_check_modules (LIBDECORATION REQUIRED ${DECORATION_REQUIRES})
+
+include (CompizDefaults)
 
 set (COMPIZ_CFLAGS "${COMPIZ_CFLAGS} -I${Boost_INCLUDE_DIR}")
 
 set (_compiz_package_string "Compiz ${VERSION}")
 set (_compiz_package "Compiz")
 
-configure_file (${compiz_SOURCE_DIR}/config.h.core.in ${compiz_BINARY_DIR}/config.h)
+compiz_configure_file (${compiz_SOURCE_DIR}/config.h.core.in ${compiz_BINARY_DIR}/generated/config.h)
 
-set (_commonfile "${CMAKE_BINARY_DIR}/compiz-common.h")
+set (_commonfile "${CMAKE_BINARY_DIR}/generated/compiz-common.h")
 
 file (WRITE  ${_commonfile} "#ifndef COMPIZ_COMMON_H\n")
 file (APPEND ${_commonfile} "#define COMPIZ_COMMON_H\n")
@@ -79,38 +82,23 @@ file (APPEND ${_commonfile} "#define COMPIZ_VERSION_STRING \"${VERSION}\"\n")
 file (APPEND ${_commonfile} "#endif\n")
 
 install (
-        FILES ${_commonfile}
-        DESTINATION ${includedir}/compiz
+    FILES ${_commonfile}
+    DESTINATION ${includedir}/compiz
 )
 
-
-generate_pkg_file (
+compiz_configure_file (
     ${CMAKE_SOURCE_DIR}/compiz.pc.in
     ${CMAKE_BINARY_DIR}/compiz.pc
     COMPIZ_REQUIRES
     COMPIZ_CFLAGS
 )
 
-generate_pkg_file (
-    ${CMAKE_SOURCE_DIR}/compiz-composite.pc.in
-    ${CMAKE_BINARY_DIR}/compiz-composite.pc
-    _composite_plugin_LDFLAGS
-    _composite_plugin_CFLAGS
-    COMPIZ_CFLAGS
+install (
+    FILES ${CMAKE_BINARY_DIR}/compiz.pc
+    DESTINATION ${libdir}/pkgconfig
 )
 
-generate_pkg_file (
-    ${CMAKE_SOURCE_DIR}/compiz-opengl.pc.in
-    ${CMAKE_BINARY_DIR}/compiz-opengl.pc
-    COMPIZ_CFLAGS
-)
-
-generate_pkg_file (
-    ${CMAKE_SOURCE_DIR}/compiz-scale.pc.in
-    ${CMAKE_BINARY_DIR}/compiz-scale.pc
-    COMPIZ_CFLAGS
-)
-
+add_subdirectory (cmake)
 add_subdirectory (src)
 add_subdirectory (include)
 add_subdirectory (images)
@@ -119,8 +107,14 @@ add_subdirectory (gtk)
 add_subdirectory (kde)
 add_subdirectory (po)
 add_subdirectory (metadata)
+add_subdirectory (xslt)
 add_subdirectory (plugins)
 
+compiz_package_generation ("Compiz")
+compiz_add_uninstall ()
+
 _print_configure_results ()
+
+_check_compiz_cmake_macro (${CMAKE_MODULE_PATH_ORIG})
 
 

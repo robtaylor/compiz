@@ -7,9 +7,7 @@
 		<_short>Active Plugins</_short>
 		<_long>List of currently active plugins</_long>
 		<type>string</type>
-		<default>
-		    <value>core</value>
-		</default>
+		<default_plugins/>
 	    </option>
 	    <option name="click_to_focus" type="bool">
 		<_short>Click To Focus</_short>

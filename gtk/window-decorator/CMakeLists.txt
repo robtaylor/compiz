@@ -23,11 +23,11 @@ if (USE_GTK)
 
     if (USE_GCONF)
         set (gwd_schema ${CMAKE_CURRENT_BINARY_DIR}/gwd.schemas)
-        translate_xml (
+        compiz_translate_xml (
 	    ${CMAKE_CURRENT_SOURCE_DIR}/gwd.schemas.in
 	    ${gwd_schema}
 	)
-	install_gconf_schema (${CMAKE_CURRENT_BINARY_DIR}/gwd.schemas)
+	compiz_install_gconf_schema (${CMAKE_CURRENT_BINARY_DIR}/gwd.schemas ${SCHEMADIR})
     endif (USE_GCONF)
 
     add_executable (gtk-window-decorator

@@ -1,73 +1,56 @@
-set (_plugin_files
-    core
-    annotate
-    blur
-    clone
-    commands
-    cube
-    dbus
-    decor
-    fade
-    fs
-    gconf
-    glib
-    gnomecompat
-    imgpng
-    imgsvg
-    ini
-    inotify
-    minimize
-    move
-    obs
-    place
-    regex
-    resize
-    rotate
-    scale
-    screenshot
-    switcher
-    video
-    water
-    wobbly
-    zoom
-    composite
-    opengl
-    copytex
+set (
+    COMPIZ_DEFAULT_PLUGINS ${COMPIZ_DEFAULT_PLUGINS} CACHE STRING
+    "Default plugins list that will be added to core metadata file"
 )
+
+find_program (XSLTPROC_EXECUTABLE xsltproc)
+mark_as_advanced (FORCE XSLTPROC_EXECUTABLE)
+
+if (XSLTPROC_EXECUTABLE)
+
+    if (NOT ${COMPIZ_DEFAULT_PLUGINS})
+      set (COMPIZ_DEFAULT_PLUGINS "core")
+    endif ()
+
+    add_custom_command (
+	OUTPUT ${CMAKE_BINARY_DIR}/generated/core.xml.in
+	COMMAND ${XSLTPROC_EXECUTABLE}
+		-o ${CMAKE_BINARY_DIR}/generated/core.xml.in
+		--param default_plugins "\"'${COMPIZ_DEFAULT_PLUGINS}'\""
+		${CMAKE_SOURCE_DIR}/xslt/default_plugins.xslt
+		${CMAKE_CURRENT_SOURCE_DIR}/core.xml.in
+	DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/core.xml.in
+    )
+    set (_core_file "${CMAKE_BINARY_DIR}/generated/core.xml.in")
+else ()
+    set (_core_file "${CMAKE_CURRENT_SOURCE_DIR}/core.xml.in")
+endif ()
+
 
 set (_xml_targets)
 set (_schema_targets)
 
-foreach (_plugin ${_plugin_files})
+compiz_translate_xml (
+    ${_core_file}
+    ${CMAKE_BINARY_DIR}/generated/core.xml
+)
 
-    translate_xml (
-	${CMAKE_CURRENT_SOURCE_DIR}/${_plugin}.xml.in
-	${CMAKE_CURRENT_BINARY_DIR}/${_plugin}.xml
-    )
+install (
+    FILES ${CMAKE_BINARY_DIR}/generated/core.xml
+    DESTINATION ${compiz_metadatadir}
+)
 
-    install (
-	FILES ${CMAKE_CURRENT_BINARY_DIR}/${_plugin}.xml
-	DESTINATION ${compiz_metadatadir}
-    )
-
-    if (USE_GCONF)
-	generate_gconf_schema (
-	    ${CMAKE_CURRENT_BINARY_DIR}/${_plugin}.xml
-	    ${CMAKE_CURRENT_BINARY_DIR}/compiz-${_plugin}.schemas
-	)
-	install_gconf_schema (${CMAKE_CURRENT_BINARY_DIR}/compiz-${_plugin}.schemas)
-	set (_schema_targets ${_schema_targets} ${CMAKE_CURRENT_BINARY_DIR}/compiz-${_plugin}.schemas)
-    endif (USE_GCONF)
-
-    set (_xml_targets ${_xml_targets} ${CMAKE_CURRENT_BINARY_DIR}/${_plugin}.xml)
-endforeach (_plugin)
-
-add_custom_target (xml-files ALL
-    DEPENDS ${_xml_targets}
+add_custom_target (core-xml-file ALL
+    DEPENDS ${CMAKE_BINARY_DIR}/generated/core.xml
 )
 
 if (USE_GCONF)
-    add_custom_target (gconf-schemas ALL
-	DEPENDS ${_schema_targets}
+    compiz_gconf_schema (
+	${CMAKE_BINARY_DIR}/generated/core.xml
+	${CMAKE_BINARY_DIR}/generated/compiz-core.schemas
+	${SCHEMADIR}
     )
-endif (USE_GCONF)
+    add_custom_target (core-gconf-schema ALL
+	DEPENDS ${CMAKE_BINARY_DIR}/generated/compiz-core.schemas
+    )
+endif ()

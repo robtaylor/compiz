@@ -1,38 +1,52 @@
-cmake_minimum_required (VERSION 2.4)
+set (USE_GCONF 1 CACHE BOOL "Install GConf schemas")
 
-if ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
-    message (SEND_ERROR "Building in the source directory is not supported.")
-    message (FATAL_ERROR "Please remove the created \"CMakeCache.txt\" file, the \"CMakeFiles\" directory and create a build directory and call \"${CMAKE_COMMAND} <path to the sources>\".")
-endif ("${CMAKE_BINARY_DIR}" STREQUAL "${CMAKE_SOURCE_DIR}")
+if (USE_GCONF)
+    pkg_check_modules (GCONF gconf-2.0)
 
-if (CMAKE_MAJOR_VERSION GREATER 2 OR CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
-cmake_policy (VERSION 2.4)
-cmake_policy (SET CMP0000 OLD)
-cmake_policy (SET CMP0003 NEW)
-cmake_policy (SET CMP0005 OLD)
-endif (CMAKE_MAJOR_VERSION GREATER 2 OR CMAKE_MAJOR_VERSION EQUAL 2 AND CMAKE_MINOR_VERSION GREATER 5)
+    find_program (GCONFTOOL_EXECUTABLE gconftool-2)
+    mark_as_advanced (FORCE GCONFTOOL_EXECUTABLE)
 
+    if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
+        set (SCHEMADIR "${CMAKE_INSTALL_PREFIX}/share/gconf/schemas")
+    else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
+        set (SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
+    endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 
-set (PKGCONFIG_REGEX "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig")
-string (REGEX REPLACE "([.+?\\])" "\\\\\\1" PKGCONFIG_REGEX ${PKGCONFIG_REGEX})
-set (PKGCONFIG_REGEX ".*${PKGCONFIG_REGEX}.*")
+    if (NOT GCONF_FOUND OR NOT GCONFTOOL_EXECUTABLE)
+	set (USE_GCONF 0)
+    else ()
+        include (CompizGconf)
+    endif ()
+endif ()
 
-# add install prefix to pkgconfig search path if needed
-if (NOT "$ENV{PKG_CONFIG_PATH}" MATCHES "${PKGCONFIG_REGEX}")
-    if ("" STREQUAL "$ENV{PKG_CONFIG_PATH}")
-        set (ENV{PKG_CONFIG_PATH} "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig")
-    else ("" STREQUAL "$ENV{PKG_CONFIG_PATH}")
-        set (ENV{PKG_CONFIG_PATH}
-             "${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig:$ENV{PKG_CONFIG_PATH}")
-    endif ("" STREQUAL "$ENV{PKG_CONFIG_PATH}")
-endif (NOT "$ENV{PKG_CONFIG_PATH}" MATCHES "${PKGCONFIG_REGEX}")
+function (_print_configure_results)
+    compiz_print_configure_header ("Compiz")
+    compiz_color_message ("\n${_escape}[4mOptional features:${_escape}[0m\n")
 
-include (FindPkgConfig)
+    compiz_print_result_message ("gtk window decorator" USE_GTK)
+    compiz_print_result_message ("metacity theme support" USE_METACITY)
+    compiz_print_result_message ("gconf schemas" USE_GCONF)
+    compiz_print_result_message ("gnome" USE_GNOME)
+    compiz_print_result_message ("kde4 window decorator" USE_KDE4)
 
-configure_file (
-  "${CMAKE_CURRENT_SOURCE_DIR}/cmake/uninstall.cmake.in"
-  "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-  IMMEDIATE @ONLY)
+    compiz_print_configure_footer ()
+    compiz_print_plugin_stats ("${CMAKE_SOURCE_DIR}/plugins")
+    compiz_print_configure_footer ()
+endfunction ()
 
-add_custom_target (uninstall
-  "${CMAKE_COMMAND}" -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake")
+function (_check_compiz_cmake_macro)
+    find_file (_find_compiz FindCompiz.cmake PATHS ${CMAKE_ROOT}/Modules ${ARGN})
+    if (NOT _find_compiz)
+        compiz_color_message ("${_escape}[1;31mWARNING:${_escape}[0m")
+        message ("\"FindCompiz.cmake\" file not found in cmake module directories.")
+        message ("It should be installed to allow building of external compiz packages.")
+        message ("Call \"sudo make findcompiz_install\" to install it.\n")
+        compiz_print_configure_footer ()
+
+        add_custom_target (
+            findcompiz_install
+	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${CMAKE_ROOT}/Modules
+	)
+    endif ()
+endfunction ()
+

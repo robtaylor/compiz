@@ -1,6 +1,7 @@
 include_directories (
     ${compiz_SOURCE_DIR}/include
     ${compiz_BINARY_DIR}
+    ${compiz_BINARY_DIR}/generated
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${COMPIZ_INCLUDE_DIRS}
 )
