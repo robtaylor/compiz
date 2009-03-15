@@ -3594,7 +3594,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
 
     level = s->getOption ("focus_prevention_level")->value ().i ();
 
-    if (level == FOCUS_PREVENTION_LEVEL_NONE)
+    if (level == CoreOptions::FocusPreventionLevelOff)
 	return true;
 
     if (timestamp)
@@ -3632,7 +3632,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     if (!match.evaluate (window))
 	return true;
 
-    if (level == FOCUS_PREVENTION_LEVEL_VERYHIGH)
+    if (level == CoreOptions::FocusPreventionLevelVeryHigh)
 	return false;
 
     active = s->findWindow (s->activeWindow ());
@@ -3645,7 +3645,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     if (window->clientLeader () == active->clientLeader ())
        return true;
 
-    if (level == FOCUS_PREVENTION_LEVEL_HIGH)
+    if (level == CoreOptions::FocusPreventionLevelHigh)
        return false;
 
     /* not in current viewport or desktop */
@@ -3660,7 +3660,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     {
 	/* unsure as we have nothing to compare - allow focus in low level,
 	   don't allow in normal level */
-	if (level == FOCUS_PREVENTION_LEVEL_NORMAL)
+	if (level == CoreOptions::FocusPreventionLevelNormal)
 	    return false;
 
 	return true;

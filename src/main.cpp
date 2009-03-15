@@ -57,8 +57,6 @@ bool useDesktopHints = false;
 bool debugOutput = false;
 bool useCow = true;
 
-CompMetadata *coreMetadata = NULL;
-
 unsigned int pluginClassHandlerIndex = 0;
 
 static void
@@ -101,60 +99,14 @@ signalHandler (int sig)
     }
 }
 
-typedef struct _CompIOCtx {
-    unsigned int offset;
-    char         *pluginData;
-} CompIOCtx;
-
-static int
-readCoreXmlCallback (void *context,
-		     char *buffer,
-		     int  length)
-{
-    CompIOCtx    *ctx = (CompIOCtx *) context;
-    unsigned int offset = ctx->offset;
-    unsigned int i, j;
-
-    i = CompMetadata::readXmlChunk ("<compiz><plugin name=\"core\"><options>",
-				    &offset, buffer, length);
-
-    for (j = 0; j < COMP_OPTION_NUM; j++)
-    {
-	CompMetadata::OptionInfo info = coreOptionInfo[j];
-
-	switch (j) {
-	case COMP_OPTION_ACTIVE_PLUGINS:
-	    if (ctx->pluginData)
-		info.data = ctx->pluginData;
-	    break;
-	default:
-	    break;
-	}
-
-	i += CompMetadata::readXmlChunkFromOptionInfo (&info, &offset,
-						       buffer + i, length - i);
-    }
-
-    i += CompMetadata::readXmlChunk ("</options></plugin></compiz>", &offset,
-				     buffer + i, length - 1);
-
-    if (!offset && length > (int)i)
-	buffer[i++] = '\0';
-
-    ctx->offset += i;
-
-    return i;
-}
-
 int
 main (int argc, char **argv)
 {
-    CompIOCtx ctx;
-    char      *displayName = 0;
-    char      *plugin[256];
-    int	      i, nPlugin = 0;
-    Bool      disableSm = FALSE;
-    char      *clientId = NULL;
+    char                    *displayName = 0;
+    std::vector<CompString> plugins;
+    int	                    i;
+    Bool                    disableSm = FALSE;
+    char                    *clientId = NULL;
 
     programName = argv[0];
     programArgc = argc;
@@ -164,8 +116,6 @@ main (int argc, char **argv)
     signal (SIGCHLD, signalHandler);
     signal (SIGINT, signalHandler);
     signal (SIGTERM, signalHandler);
-
-    memset (&ctx, 0, sizeof (ctx));
 
     for (i = 1; i < argc; i++)
     {
@@ -195,10 +145,6 @@ main (int argc, char **argv)
 	else if (!strcmp (argv[i], "--keep-desktop-hints"))
 	{
 	    useDesktopHints = true;
-	}
-	else if (!strcmp (argv[i], "--ignore-desktop-hints"))
-	{
-	    /* backward compatibility */
 	}
 	else if (!strcmp (argv[i], "--use-root-window"))
 	{
@@ -233,29 +179,7 @@ main (int argc, char **argv)
 	}
 	else
 	{
-	    if (nPlugin < 256)
-		plugin[nPlugin++] = argv[i];
-	}
-    }
-
-    if (nPlugin)
-    {
-	int size = 256;
-
-	for (i = 0; i < nPlugin; i++)
-	    size += strlen (plugin[i]) + 16;
-
-	ctx.pluginData = (char *) malloc (size);
-	if (ctx.pluginData)
-	{
-	    char *ptr = ctx.pluginData;
-
-	    ptr += sprintf (ptr, "<type>string</type><default>");
-
-	    for (i = 0; i < nPlugin; i++)
-		ptr += sprintf (ptr, "<value>%s</value>", plugin[i]);
-
-	    ptr += sprintf (ptr, "</default>");
+	    plugins.push_back(argv[i]);
 	}
     }
 
@@ -263,20 +187,28 @@ main (int argc, char **argv)
 
     LIBXML_TEST_VERSION;
 
-    coreMetadata = new CompMetadata;
-
-    if (!coreMetadata->addFromIO (readCoreXmlCallback, NULL, &ctx))
-	return 1;
-
-    if (ctx.pluginData)
-	free (ctx.pluginData);
-
-    coreMetadata->addFromFile ("core");
-
     screen = new CompScreen();
 
     if (!screen)
 	return 1;
+
+    if (!plugins.empty ())
+    {
+	CompOption::Value::Vector list;
+        CompOption::Value         value;
+	CompOption                *o = screen->getOption ("active_plugins");
+
+	foreach (CompString &str, plugins)
+	{
+	    value.set (str);
+	    list.push_back (value);
+	}
+
+	value.set (CompOption::TypeString, list);
+
+	if (o)
+	    o->set (value);
+    }
 
     if (!screen->init (displayName))
 	return 1;
@@ -290,7 +222,6 @@ main (int argc, char **argv)
 	CompSession::close ();
 
     delete screen;
-    delete coreMetadata;
 
     xmlCleanupParser ();
 

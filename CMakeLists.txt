@@ -99,7 +99,6 @@ install (
 )
 
 add_subdirectory (cmake)
-add_subdirectory (src)
 add_subdirectory (include)
 add_subdirectory (images)
 add_subdirectory (libdecoration)
@@ -107,6 +106,7 @@ add_subdirectory (gtk)
 add_subdirectory (kde)
 add_subdirectory (po)
 add_subdirectory (metadata)
+add_subdirectory (src)
 add_subdirectory (xslt)
 add_subdirectory (plugins)
 

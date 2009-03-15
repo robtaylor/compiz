@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="core">
+    <plugin name="core" useBcop="true">
 	<_short>General Options</_short>
 	<_long>General compiz options</_long>
 	<options>

@@ -1,3 +1,11 @@
+include (CompizBcop)
+
+compiz_add_bcop_targets (
+    core
+    ${compiz_BINARY_DIR}/generated/core.xml.in
+    _bcop_sources
+)
+
 include_directories (
     ${compiz_SOURCE_DIR}/include
     ${compiz_BINARY_DIR}
@@ -40,6 +48,7 @@ add_executable (compiz
     point.cpp
     windowgeometry.cpp
     icon.cpp
+    ${_bcop_sources}
 )
 
 target_link_libraries (

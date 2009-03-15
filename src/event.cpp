@@ -583,7 +583,7 @@ PrivateScreen::triggerEdgeEnter (unsigned int       edge,
 {
     int                     delay;
 
-    delay = opt[COMP_OPTION_EDGE_DELAY].value ().i ();
+    delay = optionGetEdgeDelay ();
 
     if (delay > 0)
     {
@@ -1102,7 +1102,7 @@ CompScreen::handleEvent (XEvent *event)
 		w = findTopLevelWindow (event->xbutton.window);
 		if (w)
 		{
-		    if (priv->opt[COMP_OPTION_RAISE_ON_CLICK].value ().b ())
+		    if (priv->optionGetRaiseOnClick ())
 			w->updateAttributes (
 					CompStackingUpdateModeAboveFullscreen);
 
@@ -1638,7 +1638,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    priv->below = w->id ();
 
-	    if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b () &&
+	    if (!priv->optionGetClickToFocus () &&
 		priv->grabs.empty ()                                 &&
 		event->xcrossing.mode   != NotifyGrab                &&
 		event->xcrossing.detail != NotifyInferior)
@@ -1646,8 +1646,8 @@ CompScreen::handleEvent (XEvent *event)
 		Bool raise;
 		int  delay;
 
-		raise = priv->opt[COMP_OPTION_AUTORAISE].value ().b ();
-		delay = priv->opt[COMP_OPTION_AUTORAISE_DELAY].value ().i ();
+		raise = priv->optionGetAutoraise ();
+		delay = priv->optionGetAutoraiseDelay ();
 
 		if (priv->autoRaiseTimer.active () &&
 		    priv->autoRaiseWindow != w->id ())

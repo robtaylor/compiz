@@ -506,56 +506,6 @@ ScreenInterface::sessionEvent (CompSession::Event event,
 			       CompOption::Vector &arguments)
     WRAPABLE_DEF (sessionEvent, event, arguments)
 
-const CompMetadata::OptionInfo coreOptionInfo[COMP_OPTION_NUM] = {
-    { "active_plugins", "list", "<type>string</type>", 0, 0 },
-    { "click_to_focus", "bool", 0, 0, 0 },
-    { "autoraise", "bool", 0, 0, 0 },
-    { "autoraise_delay", "int", 0, 0, 0 },
-    { "close_window_key", "key", 0, CompScreen::closeWin, 0 },
-    { "close_window_button", "button", 0, CompScreen::closeWin, 0 },
-    { "raise_window_key", "key", 0, CompScreen::raiseWin, 0 },
-    { "raise_window_button", "button", 0, CompScreen::raiseWin, 0 },
-    { "lower_window_key", "key", 0, CompScreen::lowerWin, 0 },
-    { "lower_window_button", "button", 0, CompScreen::lowerWin, 0 },
-    { "unmaximize_window_key", "key", 0, CompScreen::unmaximizeWin, 0 },
-    { "minimize_window_key", "key", 0, CompScreen::minimizeWin, 0 },
-    { "minimize_window_button", "button", 0, CompScreen::minimizeWin, 0 },
-    { "maximize_window_key", "key", 0, CompScreen::maximizeWin, 0 },
-    { "maximize_window_horizontally_key", "key", 0,
-      CompScreen::maximizeWinHorizontally, 0 },
-    { "maximize_window_vertically_key", "key", 0,
-      CompScreen::maximizeWinVertically, 0 },
-    { "window_menu_button", "button", 0, CompScreen::windowMenu, 0 },
-    { "window_menu_key", "key", 0, CompScreen::windowMenu, 0 },
-    { "show_desktop_key", "key", 0, CompScreen::showDesktop, 0 },
-    { "show_desktop_edge", "edge", 0, CompScreen::showDesktop, 0 },
-    { "raise_on_click", "bool", 0, 0, 0 },
-    { "audible_bell", "bool", 0, 0, 0 },
-    { "toggle_window_maximized_key", "key", 0,
-      CompScreen::toggleWinMaximized, 0 },
-    { "toggle_window_maximized_button", "button", 0,
-      CompScreen::toggleWinMaximized, 0 },
-    { "toggle_window_maximized_horizontally_key", "key", 0,
-      CompScreen::toggleWinMaximizedHorizontally, 0 },
-    { "toggle_window_maximized_vertically_key", "key", 0,
-      CompScreen::toggleWinMaximizedVertically, 0 },
-    { "hide_skip_taskbar_windows", "bool", 0, 0, 0 },
-    { "toggle_window_shaded_key", "key", 0, CompScreen::shadeWin, 0 },
-    { "ignore_hints_when_maximized", "bool", 0, 0, 0 },
-    { "ping_delay", "int", "<min>1000</min>", 0, 0 },
-    { "edge_delay", "int", "<min>0</min>", 0, 0 },
-    { "hsize", "int", "<min>1</min><max>32</max>", 0, 0 },
-    { "vsize", "int", "<min>1</min><max>32</max>", 0, 0 },
-    { "default_icon", "string", 0, 0, 0 },
-    { "number_of_desktops", "int", "<min>1</min>", 0, 0 },
-    { "detect_outputs", "bool", 0, 0, 0 },
-    { "outputs", "list", "<type>string</type>", 0, 0 },
-    { "overlapping_outputs", "int",
-      RESTOSTRING (0, OUTPUT_OVERLAP_MODE_LAST), 0, 0 },
-    { "focus_prevention_level", "int",
-      RESTOSTRING (0, FOCUS_PREVENTION_LEVEL_LAST), 0, 0 },
-    { "focus_prevention_match", "match", 0, 0, 0 }
-};
 
 static const int maskTable[] = {
     ShiftMask, LockMask, ControlMask, Mod1Mask,
@@ -739,117 +689,71 @@ PrivateScreen::handlePingTimeout ()
 CompOption::Vector &
 CompScreen::getOptions ()
 {
-    return priv->opt;
+    return priv->getOptions ();
 }
 
 bool
 CompScreen::setOption (const CompString  &name,
 		       CompOption::Value &value)
 {
-    CompOption   *o;
+    return priv->setOption (name, value);
+}
+
+bool
+PrivateScreen::setOption (const CompString  &name,
+			  CompOption::Value &value)
+{
     unsigned int index;
 
-    o = CompOption::findOption (priv->opt, name, &index);
-    if (!o)
+    bool rv = CoreOptions::setOption (name, value);
+
+    if (!rv)
 	return false;
 
+    if (!CompOption::findOption (getOptions (), name, &index))
+        return false;
+
     switch (index) {
-	case COMP_OPTION_ACTIVE_PLUGINS:
-	    if (o->set (value))
-	    {
-		priv->dirtyPluginList = true;
-		return true;
-	    }
+	case CoreOptions::ActivePlugins:
+	    dirtyPluginList = true;
 	    break;
-	case COMP_OPTION_PING_DELAY:
-	    if (o->set (value))
-	    {
-		priv->pingTimer.setTimes (o->value ().i (),
-					  o->value ().i () + 500);
-		return true;
-	    }
+	case CoreOptions::PingDelay:
+	    pingTimer.setTimes (optionGetPingDelay (),
+				optionGetPingDelay () + 500);
 	    break;
-	case COMP_OPTION_AUDIBLE_BELL:
-	    if (o->set (value))
-	    {
-		priv->setAudibleBell (o->value ().b ());
-		return true;
-	    }
+	case CoreOptions::AudibleBell:
+	    setAudibleBell (optionGetAudibleBell ());
 	    break;
-	case COMP_OPTION_DETECT_OUTPUTS:
-	    if (o->set (value))
-	    {
-		if (value.b ())
-		    priv->detectOutputDevices ();
-
-		return true;
-	    }
+	case CoreOptions::DetectOutputs:
+	    if (optionGetDetectOutputs ())
+		detectOutputDevices ();
 	    break;
-	case COMP_OPTION_HSIZE:
-	    if (o->set (value))
-	    {
-		CompOption *vsize;
+	case CoreOptions::Hsize:
+	case CoreOptions::Vsize:
 
-		vsize = CompOption::findOption (priv->opt, "vsize");
-
-		if (!vsize)
-		    return false;
-
-		if (o->value ().i () * width () > MAXSHORT)
-		    return false;
-
-		priv->setVirtualScreenSize (o->value ().i (),
-					    vsize->value ().i ());
-		return true;
-	    }
-	    break;
-	case COMP_OPTION_VSIZE:
-	    if (o->set (value))
-	    {
-		CompOption *hsize;
-
-		hsize = CompOption::findOption (priv->opt, "hsize");
-
-		if (!hsize)
-		    return false;
-
-		if (o->value ().i () * height () > MAXSHORT)
-		    return false;
-
-		priv->setVirtualScreenSize (hsize->value ().i (),
-					    o->value ().i ());
-		return true;
-	    }
-	    break;
-	case COMP_OPTION_NUMBER_OF_DESKTOPS:
-	    if (o->set (value))
-	    {
-		priv->setNumberOfDesktops (o->value ().i ());
-		return true;
-	    }
-	    break;
-	case COMP_OPTION_DEFAULT_ICON:
-	    if (o->set (value))
-		return updateDefaultIcon ();
-	    break;
-	case COMP_OPTION_OUTPUTS:
-	    if (!noDetection &&
-		priv->opt[COMP_OPTION_DETECT_OUTPUTS].value ().b ())
+	    if (optionGetHsize () * screen->width () > MAXSHORT)
+		return false;
+	    if (optionGetVsize () * screen->height () > MAXSHORT)
 		return false;
 
-	    if (o->set (value))
-	    {
-		priv->updateOutputDevices ();
-		return true;
-	    }
+	    setVirtualScreenSize (optionGetHsize (), optionGetHsize ());
+	    break;
+	case CoreOptions::NumberOfDesktops:
+	    setNumberOfDesktops (optionGetNumberOfDesktops ());
+	    break;
+	case CoreOptions::DefaultIcon:
+	    return screen->updateDefaultIcon ();
+	    break;
+	case CoreOptions::Outputs:
+	    if (!noDetection && optionGetDetectOutputs ())
+		return false;
+	    updateOutputDevices ();
 	    break;
 	default:
-	    if (CompOption::setOption (*o, value))
-		return true;
 	    break;
     }
 
-    return false;
+    return rv;
 }
 
 void
@@ -1045,33 +949,30 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompOption        *o;
-    CompOption::Value value;
     CompPlugin        *p;
     unsigned int      nPop, i, j;
     CompPlugin::List  pop;
     bool              failedPush;
-    
+
 
     dirtyPluginList = false;
 
-    o     = &opt[COMP_OPTION_ACTIVE_PLUGINS];
-    value = o->value ();
+    CompOption::Value::Vector &list = optionGetActivePlugins ();
 
     /* The old plugin list always begins with the core plugin. To make sure
        we don't unnecessarily unload plugins if the new plugin list does not
        contain the core plugin, we have to use an offset */
 
-    if (value.list ().size () > 0 && value.list ()[0]. s () != "core")
+    if (list.size () > 0 && list[0].s () != "core")
 	i = 0;
     else
 	i = 1;
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
     for (j = 1; j < plugin.list ().size () &&
-	 i < value.list ().size (); i++, j++)
+	 i < list.size (); i++, j++)
     {
-	if (plugin.list ()[j].s () != value.list ()[i].s ())
+	if (plugin.list ()[j].s () != list[i].s ())
 	    break;
     }
     
@@ -1083,13 +984,13 @@ PrivateScreen::updatePlugins ()
 	plugin.list ().pop_back ();
     }
 
-    for (; i < value.list ().size (); i++)
+    for (; i < list.size (); i++)
     {
 	p = NULL;
 	failedPush = false;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (value.list ()[i]. s () == pp->vTable->name ())
+	    if (list[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -1110,7 +1011,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0 && !failedPush)
 	{
-	    p = CompPlugin::load (value.list ()[i].s ().c_str ());
+	    p = CompPlugin::load (list[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
@@ -1129,7 +1030,7 @@ PrivateScreen::updatePlugins ()
 	CompPlugin::unload (pp);
 
     if (!priv->dirtyPluginList)
-	screen->setOptionForPlugin ("core", o->name ().c_str (), plugin);
+	screen->setOptionForPlugin ("core", "active_plugins", plugin);
 }
 
 /* from fvwm2, Copyright Matthias Clasen, Dominik Vogt */
@@ -1954,7 +1855,7 @@ PrivateScreen::setVirtualScreenSize (int newh, int newv)
 void
 PrivateScreen::updateOutputDevices ()
 {
-    CompOption::Value::Vector &list = opt[COMP_OPTION_OUTPUTS].value ().list ();
+    CompOption::Value::Vector &list = optionGetOutputs ();
     unsigned int              nOutput = 0;
     int		              x, y, bits;
     unsigned int              width, height;
@@ -2038,7 +1939,7 @@ PrivateScreen::updateOutputDevices ()
 void
 PrivateScreen::detectOutputDevices ()
 {
-    if (!noDetection && opt[COMP_OPTION_DETECT_OUTPUTS].value ().b ())
+    if (!noDetection && optionGetDetectOutputs ())
     {
 	CompString	  name;
 	CompOption::Value value;
@@ -2062,11 +1963,9 @@ PrivateScreen::detectOutputDevices ()
 	    value.set (CompOption::TypeString, l);
 	}
 
-	name = opt[COMP_OPTION_OUTPUTS].name ();
-
-	opt[COMP_OPTION_DETECT_OUTPUTS].value ().set (false);
-	screen->setOptionForPlugin ("core", name.c_str (), value);
-	opt[COMP_OPTION_DETECT_OUTPUTS].value ().set (true);
+	mOptions[CoreOptions::DetectOutputs].value ().set (false);
+	screen->setOptionForPlugin ("core", "detect_outputs", value);
+	mOptions[CoreOptions::DetectOutputs].value ().set (true);
 
     }
     else
@@ -2496,7 +2395,7 @@ CompScreen::enterShowDesktopMode ()
 
     unsigned long data = 1;
     int		  count = 0;
-    CompOption    &st = priv->opt[COMP_OPTION_HIDE_SKIP_TASKBAR_WINDOWS];
+    bool          st = priv->optionGetHideSkipTaskbarWindows ();
 
     priv->showingDesktopMask = ~(CompWindowTypeDesktopMask |
 				CompWindowTypeDockMask);
@@ -2504,8 +2403,7 @@ CompScreen::enterShowDesktopMode ()
     foreach (CompWindow *w, priv->windows)
     {
 	if ((priv->showingDesktopMask & w->wmType ()) &&
-	    (!(w->state () & CompWindowStateSkipTaskbarMask) ||
-	    (st.value ().b ())))
+	    (!(w->state () & CompWindowStateSkipTaskbarMask) || st))
 	{
 	    if (!w->inShowDesktopMode () && !w->grabbed () &&
 		w->managed () && w->focus ())
@@ -2590,7 +2488,7 @@ CompScreen::focusDefaultWindow ()
     CompWindow  *w;
     CompWindow  *focus = NULL;
 
-    if (!priv->opt[COMP_OPTION_CLICK_TO_FOCUS].value ().b ())
+    if (!priv->optionGetClickToFocus ())
     {
 	w = findTopLevelWindow (priv->below);
 
@@ -3138,7 +3036,7 @@ PrivateScreen::removePassiveButtonGrab (CompAction::ButtonBinding &button)
 void
 PrivateScreen::addScreenActions ()
 {
-    foreach (CompOption &o, opt)
+    foreach (CompOption &o, mOptions)
     {
 	if (!o.isAction ())
 	    continue;
@@ -3815,9 +3713,9 @@ CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
     if (priv->outputDevs.size () == 1)
 	return 0;
 
-    strategy = priv->opt[COMP_OPTION_OVERLAPPING_OUTPUTS].value ().i ();
+    strategy = priv->optionGetOverlappingOutputs ();
 
-    if (strategy == OUTPUT_OVERLAP_MODE_SMART)
+    if (strategy == CoreOptions::OverlappingOutputsSmartMode)
     {
 	int centerX, centerY;
 
@@ -3886,7 +3784,7 @@ CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
 	unsigned int currentSize, bestOutputSize;
 	Bool         searchLargest;
 	
-	searchLargest = (strategy != OUTPUT_OVERLAP_MODE_PREFER_SMALLER);
+	searchLargest = (strategy != CoreOptions::OverlappingOutputsPreferSmallerOutput);
 	if (searchLargest)
 	    bestOutputSize = 0;
 	else
@@ -3924,7 +3822,7 @@ CompScreen::defaultIcon () const
 bool
 CompScreen::updateDefaultIcon ()
 {
-    CompString file = priv->opt[COMP_OPTION_DEFAULT_ICON].value ().s ();
+    CompString file = priv->optionGetDefaultIcon ();
     void       *data;
     CompSize   size;
 
@@ -4269,10 +4167,6 @@ CompScreen::init (const char *name)
 
 //    priv->connection = XGetXCBConnection (priv->dpy);
 
-    if (!coreMetadata->initOptions (coreOptionInfo,
-				    COMP_OPTION_NUM, priv->opt))
-	return true;
-
     snprintf (priv->displayString, 255, "DISPLAY=%s",
 	      DisplayString (dpy));
 
@@ -4436,8 +4330,8 @@ CompScreen::init (const char *name)
 	return false;
     }
 
-    priv->vpSize.setWidth (priv->opt[COMP_OPTION_HSIZE].value ().i ());
-    priv->vpSize.setHeight (priv->opt[COMP_OPTION_VSIZE].value ().i ());
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -4580,7 +4474,7 @@ CompScreen::init (const char *name)
 
     XUngrabServer (dpy);
 
-    priv->setAudibleBell (priv->opt[COMP_OPTION_AUDIBLE_BELL].value ().b ());
+    priv->setAudibleBell (priv->optionGetAudibleBell ());
 
     XGetInputFocus (dpy, &focus, &revertTo);
 
@@ -4603,9 +4497,8 @@ CompScreen::init (const char *name)
 	    focusDefaultWindow ();
     }
 
-    priv->pingTimer.setTimes (
-	priv->opt[COMP_OPTION_PING_DELAY].value ().i (),
-	priv->opt[COMP_OPTION_PING_DELAY].value ().i () + 500);
+    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
+			      priv->optionGetPingDelay () + 500);
 
     priv->pingTimer.start ();
 
@@ -4714,8 +4607,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
-    initialized (false),
-    opt (COMP_OPTION_NUM)
+    initialized (false)
 {
     for (int i = 0; i < CompModNum; i++)
 	modMask[i] = CompNoMask;
@@ -4732,5 +4624,4 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
 
 PrivateScreen::~PrivateScreen ()
 {
-    opt.clear ();
 }

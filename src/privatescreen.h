@@ -35,6 +35,8 @@
 #include <core/timer.h>
 #include <core/plugin.h>
 
+#include "core_options.h"
+
 CompPlugin::VTable * getCoreVTable ();
 
 extern bool shutDown;
@@ -48,48 +50,6 @@ typedef struct _CompWatchFd {
 
 extern CompWindow *lastFoundWindow;
 extern bool	  useDesktopHints;
-
-#define COMP_OPTION_ACTIVE_PLUGINS                   0
-#define COMP_OPTION_CLICK_TO_FOCUS                   1
-#define COMP_OPTION_AUTORAISE                        2
-#define COMP_OPTION_AUTORAISE_DELAY                  3
-#define COMP_OPTION_CLOSE_WINDOW_KEY                 4
-#define COMP_OPTION_CLOSE_WINDOW_BUTTON              5
-#define COMP_OPTION_RAISE_WINDOW_KEY                 6
-#define COMP_OPTION_RAISE_WINDOW_BUTTON              7
-#define COMP_OPTION_LOWER_WINDOW_KEY                 8
-#define COMP_OPTION_LOWER_WINDOW_BUTTON              9
-#define COMP_OPTION_UNMAXIMIZE_WINDOW_KEY            10
-#define COMP_OPTION_MINIMIZE_WINDOW_KEY              11
-#define COMP_OPTION_MINIMIZE_WINDOW_BUTTON           12
-#define COMP_OPTION_MAXIMIZE_WINDOW_KEY              13
-#define COMP_OPTION_MAXIMIZE_WINDOW_HORZ_KEY         14
-#define COMP_OPTION_MAXIMIZE_WINDOW_VERT_KEY         15
-#define COMP_OPTION_WINDOW_MENU_BUTTON               16
-#define COMP_OPTION_WINDOW_MENU_KEY                  17
-#define COMP_OPTION_SHOW_DESKTOP_KEY                 18
-#define COMP_OPTION_SHOW_DESKTOP_EDGE                19
-#define COMP_OPTION_RAISE_ON_CLICK                   20
-#define COMP_OPTION_AUDIBLE_BELL                     21
-#define COMP_OPTION_TOGGLE_WINDOW_MAXIMIZED_KEY      22
-#define COMP_OPTION_TOGGLE_WINDOW_MAXIMIZED_BUTTON   23
-#define COMP_OPTION_TOGGLE_WINDOW_MAXIMIZED_HORZ_KEY 24
-#define COMP_OPTION_TOGGLE_WINDOW_MAXIMIZED_VERT_KEY 25
-#define COMP_OPTION_HIDE_SKIP_TASKBAR_WINDOWS        26
-#define COMP_OPTION_TOGGLE_WINDOW_SHADED_KEY         27
-#define COMP_OPTION_IGNORE_HINTS_WHEN_MAXIMIZED      28
-#define COMP_OPTION_PING_DELAY                       29
-#define COMP_OPTION_EDGE_DELAY                       30
-#define COMP_OPTION_HSIZE                            31
-#define COMP_OPTION_VSIZE                            32
-#define COMP_OPTION_DEFAULT_ICON                     33
-#define COMP_OPTION_NUMBER_OF_DESKTOPS               34
-#define COMP_OPTION_DETECT_OUTPUTS                   35
-#define COMP_OPTION_OUTPUTS                          36
-#define COMP_OPTION_OVERLAPPING_OUTPUTS              37
-#define COMP_OPTION_FOCUS_PREVENTION_LEVEL           38
-#define COMP_OPTION_FOCUS_PREVENTION_MATCH           39
-#define COMP_OPTION_NUM                              40
 
 extern bool inHandleEvent;
 
@@ -108,20 +68,6 @@ typedef struct _CompDelayedEdgeSettings
     CompOption::Vector options;
 } CompDelayedEdgeSettings;
 
-
-
-
-#define OUTPUT_OVERLAP_MODE_SMART          0
-#define OUTPUT_OVERLAP_MODE_PREFER_LARGER  1
-#define OUTPUT_OVERLAP_MODE_PREFER_SMALLER 2
-#define OUTPUT_OVERLAP_MODE_LAST           OUTPUT_OVERLAP_MODE_PREFER_SMALLER
-
-#define FOCUS_PREVENTION_LEVEL_NONE     0
-#define FOCUS_PREVENTION_LEVEL_LOW      1
-#define FOCUS_PREVENTION_LEVEL_NORMAL   2
-#define FOCUS_PREVENTION_LEVEL_HIGH     3
-#define FOCUS_PREVENTION_LEVEL_VERYHIGH 4
-#define FOCUS_PREVENTION_LEVEL_LAST     FOCUS_PREVENTION_LEVEL_VERYHIGH
 
 #define SCREEN_EDGE_LEFT	0
 #define SCREEN_EDGE_RIGHT	1
@@ -149,10 +95,7 @@ struct CompStartupSequence {
     unsigned int		viewportY;
 };
 
-extern const CompMetadata::OptionInfo
-coreOptionInfo[COMP_OPTION_NUM];
-
-class PrivateScreen {
+class PrivateScreen : public CoreOptions {
 
     public:
 	class KeyGrab {
@@ -181,6 +124,8 @@ class PrivateScreen {
     public:
 	PrivateScreen (CompScreen *screen);
 	~PrivateScreen ();
+
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	void processEvents ();
 
@@ -487,8 +432,6 @@ class PrivateScreen {
 	int           desktopHintSize;
 
         bool initialized;
-
-	CompOption::Vector opt;
 };
 
 #endif
