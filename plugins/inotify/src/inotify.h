@@ -29,11 +29,11 @@
 #include <sys/inotify.h>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 class InotifyScreen :
     public ScreenInterface,
-    public PrivateHandler<InotifyScreen, CompScreen>
+    public PluginClassHandler<InotifyScreen, CompScreen>
 {
     public:
 	InotifyScreen (CompScreen *screen);

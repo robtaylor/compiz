@@ -35,7 +35,7 @@
 
 #define COMPIZ_COMPOSITE_ABI 1
 
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 #include <core/timer.h>
 #include <core/core.h>
 
@@ -77,7 +77,7 @@ class CompositeScreenInterface :
 
 class CompositeScreen :
     public WrapableHandler<CompositeScreenInterface, 4>,
-    public PrivateHandler<CompositeScreen, CompScreen, COMPIZ_COMPOSITE_ABI>
+    public PluginClassHandler<CompositeScreen, CompScreen, COMPIZ_COMPOSITE_ABI>
 {
     public:
 
@@ -213,7 +213,7 @@ class CompositeWindowInterface :
 
 class CompositeWindow :
     public WrapableHandler<CompositeWindowInterface, 1>,
-    public PrivateHandler<CompositeWindow, CompWindow, COMPIZ_COMPOSITE_ABI>
+    public PluginClassHandler<CompositeWindow, CompWindow, COMPIZ_COMPOSITE_ABI>
 {
     public:
 

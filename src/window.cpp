@@ -46,28 +46,28 @@
 #include "privatewindow.h"
 #include "privatescreen.h"
 
-CompPrivateStorage::Indices windowPrivateIndices (0);
+PluginClassStorage::Indices windowPluginClassIndices (0);
 
 int
-CompWindow::allocPrivateIndex ()
+CompWindow::allocPluginClassIndex ()
 {
-    int i = CompPrivateStorage::allocatePrivateIndex (windowPrivateIndices);
+    int i = PluginClassStorage::allocatePluginClassIndex (windowPluginClassIndices);
 
     foreach (CompWindow *w, screen->windows ())
-	if (windowPrivateIndices.size () != w->privates.size ())
-	    w->privates.resize (windowPrivateIndices.size ());
+	if (windowPluginClassIndices.size () != w->pluginClasses.size ())
+	    w->pluginClasses.resize (windowPluginClassIndices.size ());
 
     return i;
 }
 
 void
-CompWindow::freePrivateIndex (int index)
+CompWindow::freePluginClassIndex (int index)
 {
-    CompPrivateStorage::freePrivateIndex (windowPrivateIndices, index);
+    PluginClassStorage::freePluginClassIndex (windowPluginClassIndices, index);
 
     foreach (CompWindow *w, ::screen->windows ())
-	if (windowPrivateIndices.size () != w->privates.size ())
-	    w->privates.resize (windowPrivateIndices.size ());
+	if (windowPluginClassIndices.size () != w->pluginClasses.size ())
+	    w->pluginClasses.resize (windowPluginClassIndices.size ());
 }
 
 bool
@@ -4637,7 +4637,7 @@ CompWindow::syncAlarm ()
 
 CompWindow::CompWindow (Window id,
 			Window aboveId) :
-   CompPrivateStorage (windowPrivateIndices)
+   PluginClassStorage (windowPluginClassIndices)
 {
     priv = new PrivateWindow (this);
     assert (priv);

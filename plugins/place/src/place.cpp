@@ -41,7 +41,7 @@ static const CompMetadata::OptionInfo placeOptionInfo[] = {
 };
 
 PlaceScreen::PlaceScreen (CompScreen *screen) :
-    PrivateHandler<PlaceScreen, CompScreen> (screen),
+    PluginClassHandler<PlaceScreen, CompScreen> (screen),
     opt (PLACE_OPTION_NUM)
 {
     if (!placeVTable->getMetadata ()->initOptions (placeOptionInfo,
@@ -218,7 +218,7 @@ compareNorthWestCorner (CompWindow *a,
 }
 
 PlaceWindow::PlaceWindow (CompWindow *w) :
-    PrivateHandler<PlaceWindow, CompWindow> (w),
+    PluginClassHandler<PlaceWindow, CompWindow> (w),
     window (w)
 {
     WindowInterface::setHandler (w);

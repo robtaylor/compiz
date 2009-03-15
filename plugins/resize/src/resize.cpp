@@ -1080,7 +1080,7 @@ static const CompMetadata::OptionInfo resizeOptionInfo[] = {
 };
 
 ResizeScreen::ResizeScreen (CompScreen *s) :
-    PrivateHandler<ResizeScreen,CompScreen> (s),
+    PluginClassHandler<ResizeScreen,CompScreen> (s),
     gScreen (GLScreen::get (s)),
     cScreen (CompositeScreen::get (s)),
     w (NULL),
@@ -1153,7 +1153,7 @@ ResizeScreen::~ResizeScreen ()
 }
 
 ResizeWindow::ResizeWindow (CompWindow *w) :
-    PrivateHandler<ResizeWindow,CompWindow> (w),
+    PluginClassHandler<ResizeWindow,CompWindow> (w),
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),

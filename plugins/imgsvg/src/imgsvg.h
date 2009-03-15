@@ -34,7 +34,7 @@
 #include <X11/extensions/shape.h>
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 #include <decoration.h>
@@ -50,7 +50,7 @@
 
 class SvgScreen :
     public ScreenInterface,
-    public PrivateHandler<SvgScreen, CompScreen>
+    public PluginClassHandler<SvgScreen, CompScreen>
 {
     public:
 	SvgScreen (CompScreen *screen);
@@ -75,7 +75,7 @@ class SvgScreen :
 class SvgWindow :
     public WindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<SvgWindow, CompWindow>
+    public PluginClassHandler<SvgWindow, CompWindow>
 {
     public:
 	SvgWindow (CompWindow *window);

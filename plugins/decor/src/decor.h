@@ -25,7 +25,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -114,7 +114,7 @@ class DecorWindow;
 
 class DecorScreen :
     public ScreenInterface,
-    public PrivateHandler<DecorScreen,CompScreen>
+    public PluginClassHandler<DecorScreen,CompScreen>
 {
     public:
 	DecorScreen (CompScreen *s);
@@ -167,7 +167,7 @@ class DecorWindow :
     public WindowInterface,
     public CompositeWindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<DecorWindow,CompWindow>
+    public PluginClassHandler<DecorWindow,CompWindow>
 {
     public:
 	DecorWindow (CompWindow *w);

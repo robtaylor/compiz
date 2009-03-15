@@ -9,8 +9,8 @@ set (_headers
     output.h
     plugin.h
     point.h
-    privatehandler.h
-    privates.h
+    pluginclasshandler.h
+    pluginclasses.h
     rect.h
     region.h
     screen.h

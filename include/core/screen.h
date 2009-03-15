@@ -34,7 +34,7 @@
 #include <core/metadata.h>
 #include <core/plugin.h>
 #include <core/match.h>
-#include <core/privates.h>
+#include <core/pluginclasses.h>
 #include <core/region.h>
 
 class CompScreen;
@@ -127,7 +127,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 class CompScreen :
     public CompSize,
     public WrapableHandler<ScreenInterface, 17>,
-    public CompPrivateStorage
+    public PluginClassStorage
 {
 
     public:
@@ -316,8 +316,8 @@ class CompScreen :
 
 	bool updateDefaultIcon ();
 
-	static int allocPrivateIndex ();
-	static void freePrivateIndex (int index);
+	static int allocPluginClassIndex ();
+	static void freePluginClassIndex (int index);
 
 	WRAPABLE_HND (0, ScreenInterface, void, fileWatchAdded, CompFileWatch *)
 	WRAPABLE_HND (1, ScreenInterface, void, fileWatchRemoved, CompFileWatch *)

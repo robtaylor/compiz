@@ -28,7 +28,7 @@
 COMPIZ_PLUGIN_20081216 (imgpng, PngPluginVTable)
 
 PngScreen::PngScreen (CompScreen *screen) :
-    PrivateHandler<PngScreen, CompScreen> (screen)
+    PluginClassHandler<PngScreen, CompScreen> (screen)
 {
     ScreenInterface::setHandler (screen, true);
 

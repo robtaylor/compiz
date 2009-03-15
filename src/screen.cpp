@@ -92,26 +92,26 @@ CompScreen *screen;
 
 #define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
 
-CompPrivateStorage::Indices screenPrivateIndices (0);
+PluginClassStorage::Indices screenPluginClassIndices (0);
 
 int
-CompScreen::allocPrivateIndex ()
+CompScreen::allocPluginClassIndex ()
 {
-    int i = CompPrivateStorage::allocatePrivateIndex (screenPrivateIndices);
+    int i = PluginClassStorage::allocatePluginClassIndex (screenPluginClassIndices);
 
-    if (screenPrivateIndices.size () != screen->privates.size ())
-	screen->privates.resize (screenPrivateIndices.size ());
+    if (screenPluginClassIndices.size () != screen->pluginClasses.size ())
+	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 
     return i;
 }
 
 void
-CompScreen::freePrivateIndex (int index)
+CompScreen::freePluginClassIndex (int index)
 {
-    CompPrivateStorage::freePrivateIndex (screenPrivateIndices, index);
+    PluginClassStorage::freePluginClassIndex (screenPluginClassIndices, index);
 
-    if (screenPrivateIndices.size () != screen->privates.size ())
-	screen->privates.resize (screenPrivateIndices.size ());
+    if (screenPluginClassIndices.size () != screen->pluginClasses.size ())
+	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
 #define TIMEVALDIFF(tv1, tv2)						   \
@@ -4210,7 +4210,7 @@ CompScreen::screenInfo ()
 }
 
 CompScreen::CompScreen ():
-    CompPrivateStorage (screenPrivateIndices)
+    PluginClassStorage (screenPluginClassIndices)
 {
     priv = new PrivateScreen (this);
     assert (priv);

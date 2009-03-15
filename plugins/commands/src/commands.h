@@ -24,7 +24,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #define COMMANDS_OPTION_COMMAND0              0
 #define COMMANDS_OPTION_COMMAND1              1
@@ -77,7 +77,7 @@
 #define COMMANDS_OPTION_NUM                  48
 
 class CommandsScreen :
-    public PrivateHandler<CommandsScreen, CompScreen>
+    public PluginClassHandler<CommandsScreen, CompScreen>
 {
     public:
 	CommandsScreen (CompScreen *s);

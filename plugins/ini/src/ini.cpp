@@ -565,7 +565,7 @@ IniScreen::initPluginForScreen (CompPlugin *p)
 }
 
 IniScreen::IniScreen (CompScreen *screen) :
-    PrivateHandler<IniScreen, CompScreen> (screen),
+    PluginClassHandler<IniScreen, CompScreen> (screen),
     directoryWatchHandle (0),
     blockWrites (false)
 {

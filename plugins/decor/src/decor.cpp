@@ -1633,7 +1633,7 @@ static const CompMetadata::OptionInfo decorOptionInfo[] = {
 };
 
 DecorScreen::DecorScreen (CompScreen *s) :
-    PrivateHandler<DecorScreen,CompScreen> (s),
+    PluginClassHandler<DecorScreen,CompScreen> (s),
     cScreen (CompositeScreen::get (s)),
     textures (),
     dmWin (None),
@@ -1707,7 +1707,7 @@ DecorScreen::~DecorScreen ()
 }
 
 DecorWindow::DecorWindow (CompWindow *w) :
-    PrivateHandler<DecorWindow,CompWindow> (w),
+    PluginClassHandler<DecorWindow,CompWindow> (w),
     window (w),
     gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),

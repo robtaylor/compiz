@@ -88,7 +88,7 @@ class BlurScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PrivateHandler<BlurScreen,CompScreen>
+    public PluginClassHandler<BlurScreen,CompScreen>
 {
     public:
 	
@@ -195,7 +195,7 @@ class BlurScreen :
 class BlurWindow :
     public WindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<BlurWindow,CompWindow>
+    public PluginClassHandler<BlurWindow,CompWindow>
 {
 
     public:

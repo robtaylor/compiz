@@ -243,7 +243,7 @@ static const CompMetadata::OptionInfo obsOptionInfo[] = {
 };
 
 ObsScreen::ObsScreen (CompScreen *s) :
-    PrivateHandler<ObsScreen, CompScreen> (s),
+    PluginClassHandler<ObsScreen, CompScreen> (s),
     opt (OBS_OPTION_NUM)
 {
     unsigned int mod;
@@ -321,7 +321,7 @@ ObsScreen::setOption (const char         *name,
 }
 
 ObsWindow::ObsWindow (CompWindow *w) :
-    PrivateHandler<ObsWindow, CompWindow> (w),
+    PluginClassHandler<ObsWindow, CompWindow> (w),
     window (w),
     cWindow (CompositeWindow::get (w)),
     gWindow (GLWindow::get (w)),

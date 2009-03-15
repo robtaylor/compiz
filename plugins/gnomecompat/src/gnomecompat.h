@@ -24,7 +24,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #define GNOME_OPTION_MAIN_MENU_KEY              0
 #define GNOME_OPTION_RUN_DIALOG_KEY             1
@@ -37,7 +37,7 @@
 #define GNOME_OPTION_NUM                        8
 
 class GnomeCompatScreen :
-    public PrivateHandler<GnomeCompatScreen, CompScreen>
+    public PluginClassHandler<GnomeCompatScreen, CompScreen>
 {
     public:
 	GnomeCompatScreen (CompScreen *s);

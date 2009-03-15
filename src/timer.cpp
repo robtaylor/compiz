@@ -72,6 +72,14 @@ void
 CompTimer::start ()
 {
     stop ();
+
+    if (mCallBack.empty ())
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"Attempted to start timer without callback.");
+	return;
+    }
+
     mActive = true;
     screen->priv->addTimer (this);
 }

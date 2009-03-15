@@ -23,7 +23,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -84,7 +84,7 @@ class CopyTexture : public GLTexture {
 
 class CopytexScreen :
     public ScreenInterface,
-    public PrivateHandler<CopytexScreen,CompScreen>
+    public PluginClassHandler<CopytexScreen,CompScreen>
 {
     public:
 	

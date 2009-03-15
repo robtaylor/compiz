@@ -37,7 +37,7 @@
 #include <X11/extensions/sync.h>
 
 #include <core/action.h>
-#include <core/privates.h>
+#include <core/pluginclasses.h>
 #include <core/size.h>
 #include <core/point.h>
 #include <core/region.h>
@@ -220,7 +220,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 
 class CompWindow :
     public WrapableHandler<WindowInterface, 13>,
-    public CompPrivateStorage
+    public PluginClassStorage
 {
 
     public:
@@ -453,8 +453,8 @@ class CompWindow :
 	static unsigned int constrainWindowState (unsigned int state,
 						  unsigned int actions);
 
-	static int allocPrivateIndex ();
-	static void freePrivateIndex (int index);
+	static int allocPluginClassIndex ();
+	static void freePluginClassIndex (int index);
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents&);

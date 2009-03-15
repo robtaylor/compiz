@@ -27,7 +27,7 @@
 #define _RESIZE_H
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -80,7 +80,7 @@ struct _ResizeKeys {
 #define MIN_KEY_HEIGHT_INC 24
 
 class ResizeScreen :
-    public PrivateHandler<ResizeScreen,CompScreen>,
+    public PluginClassHandler<ResizeScreen,CompScreen>,
     public GLScreenInterface,
     public ScreenInterface
 {
@@ -158,7 +158,7 @@ class ResizeWindow :
     public WindowInterface,
     public CompositeWindowInterface,
     public GLWindowInterface,
-    public PrivateHandler<ResizeWindow,CompWindow>
+    public PluginClassHandler<ResizeWindow,CompWindow>
 {
     public:
 	ResizeWindow (CompWindow *w);

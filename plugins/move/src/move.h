@@ -24,7 +24,7 @@
  */
 
 #include <core/core.h>
-#include <core/privatehandler.h>
+#include <core/pluginclasshandler.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -57,7 +57,7 @@ struct _MoveKeys {
 
 class MoveScreen :
     public ScreenInterface,
-    public PrivateHandler<MoveScreen,CompScreen>
+    public PluginClassHandler<MoveScreen,CompScreen>
 {
     public:
 	
@@ -98,11 +98,11 @@ class MoveScreen :
 
 class MoveWindow :
     public GLWindowInterface,
-    public PrivateHandler<MoveWindow,CompWindow>
+    public PluginClassHandler<MoveWindow,CompWindow>
 {
     public:
 	MoveWindow (CompWindow *window) :
-	    PrivateHandler<MoveWindow,CompWindow> (window),
+	    PluginClassHandler<MoveWindow,CompWindow> (window),
 	    window (window),
 	    gWindow (GLWindow::get (window)),
 	    cWindow (CompositeWindow::get (window))

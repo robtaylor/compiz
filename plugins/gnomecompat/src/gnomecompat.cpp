@@ -120,7 +120,7 @@ static const CompMetadata::OptionInfo gnomeOptionInfo[] = {
 };
 
 GnomeCompatScreen::GnomeCompatScreen (CompScreen *s) :
-    PrivateHandler<GnomeCompatScreen, CompScreen> (s)
+    PluginClassHandler<GnomeCompatScreen, CompScreen> (s)
 {
     if (!gnomecompatVTable->getMetadata ()->initOptions (gnomeOptionInfo,
 							 GNOME_OPTION_NUM,
