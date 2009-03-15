@@ -1289,8 +1289,7 @@ bool
                 </xsl:when>
                 <xsl:when test="@type='list'">
                     <xsl:if test="not (./default[1])">
-			<xsl:value-of select="$opt"/>
-			<xsl:text>.set (</xsl:text>
+                        <xsl:text>    value.set (</xsl:text>
 			<xsl:choose>
 			    <xsl:when test="./type/text() = 'bool'">
 				<xsl:text>CompOption::TypeBool</xsl:text>
@@ -1327,6 +1326,9 @@ bool
 			    </xsl:when>
 			</xsl:choose>
 			<xsl:text>, CompOption::Value::Vector (0));
+</xsl:text>
+		        <xsl:value-of select="$opt"/>
+			<xsl:text>.set (value);
 </xsl:text>
 		    </xsl:if>
                     <xsl:choose>
