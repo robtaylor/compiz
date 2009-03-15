@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="zoom">
+    <plugin name="zoom" useBcop="true">
 	<_short>Zoom Desktop</_short>
 	<_long>Zoom and pan desktop cube</_long>
 	<deps>

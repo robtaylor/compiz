@@ -41,38 +41,10 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/Xrender.h>
 
+#include "switcher_options.h"
+
 #define ZOOMED_WINDOW_MASK (1 << 0)
 #define NORMAL_WINDOW_MASK (1 << 1)
-
-#define SWITCH_OPTION_NEXT_BUTTON          0
-#define SWITCH_OPTION_NEXT_KEY	           1
-#define SWITCH_OPTION_PREV_BUTTON	   2
-#define SWITCH_OPTION_PREV_KEY	           3
-#define SWITCH_OPTION_NEXT_ALL_BUTTON	   4
-#define SWITCH_OPTION_NEXT_ALL_KEY	   5
-#define SWITCH_OPTION_PREV_ALL_BUTTON	   6
-#define SWITCH_OPTION_PREV_ALL_KEY	   7
-#define SWITCH_OPTION_NEXT_NO_POPUP_BUTTON 8
-#define SWITCH_OPTION_NEXT_NO_POPUP_KEY    9
-#define SWITCH_OPTION_PREV_NO_POPUP_BUTTON 10
-#define SWITCH_OPTION_PREV_NO_POPUP_KEY    11
-#define SWITCH_OPTION_NEXT_PANEL_BUTTON    12
-#define SWITCH_OPTION_NEXT_PANEL_KEY       13
-#define SWITCH_OPTION_PREV_PANEL_BUTTON    14
-#define SWITCH_OPTION_PREV_PANEL_KEY       15
-#define SWITCH_OPTION_SPEED                16
-#define SWITCH_OPTION_TIMESTEP             17
-#define SWITCH_OPTION_WINDOW_MATCH         18
-#define SWITCH_OPTION_MIPMAP               19
-#define SWITCH_OPTION_SATURATION           20
-#define SWITCH_OPTION_BRIGHTNESS           21
-#define SWITCH_OPTION_OPACITY              22
-#define SWITCH_OPTION_BRINGTOFRONT         23
-#define SWITCH_OPTION_ZOOM                 24
-#define SWITCH_OPTION_ICON                 25
-#define SWITCH_OPTION_MINIMIZED            26
-#define SWITCH_OPTION_AUTO_ROTATE          27
-#define SWITCH_OPTION_NUM                  28
 
 enum SwitchWindowSelection{
     CurrentViewport = 0,
@@ -84,15 +56,15 @@ class SwitchScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PluginClassHandler<SwitchScreen,CompScreen>
+    public PluginClassHandler<SwitchScreen,CompScreen>,
+    public SwitcherOptions
 {
     public:
 	
 	SwitchScreen (CompScreen *screen);
 	~SwitchScreen ();
 
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);	
+	void setZoom ();
 
 	void handleEvent (XEvent *);
 
@@ -118,8 +90,6 @@ class SwitchScreen :
 
 	CompositeScreen *cScreen;
 	GLScreen        *gScreen;
-	
-	CompOption::Vector opt;
 
 	Atom selectWinAtom;
 	Atom selectFgColorAtom;
@@ -230,9 +200,6 @@ class SwitchPluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (SwitchScreen);
-
 };
 
 

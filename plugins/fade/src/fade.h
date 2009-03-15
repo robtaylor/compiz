@@ -28,39 +28,24 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define FADE_OPTION_FADE_MODE		    0
-#define FADE_OPTION_FADE_SPEED		    1
-#define FADE_OPTION_FADE_TIME		    2
-#define FADE_OPTION_WINDOW_MATCH	    3
-#define FADE_OPTION_VISUAL_BELL		    4
-#define FADE_OPTION_FULLSCREEN_VISUAL_BELL  5
-#define FADE_OPTION_DIM_UNRESPONSIVE	    6
-#define FADE_OPTION_UNRESPONSIVE_BRIGHTNESS 7
-#define FADE_OPTION_UNRESPONSIVE_SATURATION 8
-#define FADE_OPTION_NUM			    9
-
-#define FADE_MODE_CONSTANTSPEED 0
-#define FADE_MODE_CONSTANTTIME  1
-#define FADE_MODE_MAX           FADE_MODE_CONSTANTTIME
+#include "fade_options.h"
 
 class FadeScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public PluginClassHandler<FadeScreen, CompScreen>
+    public PluginClassHandler<FadeScreen, CompScreen>,
+    public FadeOptions
 {
     public:
 	FadeScreen (CompScreen *s);
 
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *, CompOption::Value &);
+	bool setOption (const CompString &, CompOption::Value &);
 
 	void handleEvent (XEvent *);
 	void preparePaint (int);
 
 	int displayModals;
 	int fadeTime;
-
-	CompOption::Vector opt;
 
 	CompositeScreen *cScreen;
 };
@@ -114,6 +99,4 @@ class FadePluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (FadeScreen);
 };

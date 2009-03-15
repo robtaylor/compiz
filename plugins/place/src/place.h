@@ -28,49 +28,23 @@
 #include <core/atoms.h>
 #include <core/pluginclasshandler.h>
 
-#define PLACE_MODE_CASCADE  0
-#define PLACE_MODE_CENTERED 1
-#define PLACE_MODE_SMART    2
-#define PLACE_MODE_MAXIMIZE 3
-#define PLACE_MODE_RANDOM   4
-#define PLACE_MODE_LAST     PLACE_MODE_RANDOM
-
-#define PLACE_MOMODE_CURRENT    0
-#define PLACE_MOMODE_POINTER    1
-#define PLACE_MOMODE_ACTIVEWIN  2
-#define PLACE_MOMODE_FULLSCREEN 3
-#define PLACE_MOMODE_LAST       PLACE_MOMODE_FULLSCREEN
-
-#define PLACE_OPTION_WORKAROUND         0
-#define PLACE_OPTION_MODE               1
-#define PLACE_OPTION_MULTIOUTPUT_MODE   2
-#define PLACE_OPTION_FORCE_PLACEMENT    3
-#define PLACE_OPTION_POSITION_MATCHES   4
-#define PLACE_OPTION_POSITION_X_VALUES  5
-#define PLACE_OPTION_POSITION_Y_VALUES  6
-#define PLACE_OPTION_POSITION_CONSTRAIN 7
-#define PLACE_OPTION_VIEWPORT_MATCHES   8
-#define PLACE_OPTION_VIEWPORT_X_VALUES  9
-#define PLACE_OPTION_VIEWPORT_Y_VALUES  10
-#define PLACE_OPTION_NUM                11
+#include "place_options.h"
 
 #define PLACE_SCREEN(s) PlaceScreen *ps = PlaceScreen::get (s)
 
 class PlaceScreen :
     public PluginClassHandler<PlaceScreen, CompScreen>,
-    public ScreenInterface
+    public ScreenInterface,
+    public PlaceOptions
 {
     public:
 	PlaceScreen (CompScreen *screen);
 	~PlaceScreen ();
 
+	void updateMatches (unsigned int opt);
+
 	void handleEvent (XEvent *event);
 	void handleScreenSizeChange (int width, int height);
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);
-
-	CompOption::Vector opt;
 };
 
 class PlaceWindow :
@@ -134,8 +108,6 @@ class PlacePluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (PlaceScreen);
 };
 
 typedef enum {

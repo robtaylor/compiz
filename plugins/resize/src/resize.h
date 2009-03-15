@@ -32,20 +32,7 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define RESIZE_OPTION_INITIATE_NORMAL_KEY    0
-#define RESIZE_OPTION_INITIATE_OUTLINE_KEY   1
-#define RESIZE_OPTION_INITIATE_RECTANGLE_KEY 2
-#define RESIZE_OPTION_INITIATE_STRETCH_KEY   3
-#define RESIZE_OPTION_INITIATE_BUTTON	     4
-#define RESIZE_OPTION_INITIATE_KEY	     5
-#define RESIZE_OPTION_MODE	             6
-#define RESIZE_OPTION_BORDER_COLOR           7
-#define RESIZE_OPTION_FILL_COLOR             8
-#define RESIZE_OPTION_NORMAL_MATCH	     9
-#define RESIZE_OPTION_OUTLINE_MATCH	     10
-#define RESIZE_OPTION_RECTANGLE_MATCH	     11
-#define RESIZE_OPTION_STRETCH_MATCH	     12
-#define RESIZE_OPTION_NUM		     13
+#include "resize_options.h"
 
 #define RESIZE_SCREEN(s) ResizeScreen *rs = ResizeScreen::get(s)
 #define RESIZE_WINDOW(w) ResizeWindow *rw = ResizeWindow::get(w)
@@ -54,12 +41,6 @@
 #define ResizeDownMask  (1L << 1)
 #define ResizeLeftMask  (1L << 2)
 #define ResizeRightMask (1L << 3)
-
-#define RESIZE_MODE_NORMAL    0
-#define RESIZE_MODE_OUTLINE   1
-#define RESIZE_MODE_RECTANGLE 2
-#define RESIZE_MODE_STRETCH   3
-#define RESIZE_MODE_LAST      RESIZE_MODE_STRETCH
 
 struct _ResizeKeys {
     const char	 *name;
@@ -82,14 +63,12 @@ struct _ResizeKeys {
 class ResizeScreen :
     public PluginClassHandler<ResizeScreen,CompScreen>,
     public GLScreenInterface,
-    public ScreenInterface
+    public ScreenInterface,
+    public ResizeOptions
 {
     public:
 	ResizeScreen (CompScreen *s);
 	~ResizeScreen ();
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);
 
 	void handleEvent (XEvent *event);
 
@@ -150,8 +129,6 @@ class ResizeScreen :
 	Cursor downRightCursor;
 	Cursor middleCursor;
 	Cursor cursor[NUM_KEYS];
-
-	CompOption::Vector opt;
 };
 
 class ResizeWindow :
@@ -187,9 +164,6 @@ class ResizePluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (ResizeScreen)
-
 };
 
 #endif

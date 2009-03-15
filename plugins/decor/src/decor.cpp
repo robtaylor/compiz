@@ -40,7 +40,7 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/shape.h>
 
-COMPIZ_PLUGIN_20081216 (decor, DecorPluginVTable)
+COMPIZ_PLUGIN_20090315 (decor, DecorPluginVTable)
 
 bool
 DecorWindow::glDraw (const GLMatrix     &transform,
@@ -149,7 +149,7 @@ DecorTexture::DecorTexture (Pixmap pixmap) :
 	return;
     }
 
-    if (!DecorScreen::get (screen)->opt[DECOR_OPTION_MIPMAP].value ().b ())
+    if (!DecorScreen::get (screen)->optionGetMipmap ())
 	textures[0]->setMipmap (false);
 
     damage = XDamageCreate (screen->dpy (), pixmap,
@@ -656,7 +656,6 @@ DecorWindow::update (bool allowDecoration)
 {
     Decoration	     *old, *decoration = NULL;
     bool	     decorate = false;
-    CompMatch	     *match;
     int		     moveDx, moveDy;
     int		     oldShiftX = 0;
     int		     oldShiftY  = 0;
@@ -680,9 +679,7 @@ DecorWindow::update (bool allowDecoration)
 
     if (decorate)
     {
-	match =
-	    &dScreen->opt[DECOR_OPTION_DECOR_MATCH].value ().match ();
-	if (!match->evaluate (window))
+	if (!dScreen->optionGetDecorationMatch ().evaluate (window))
 	    decorate = false;
     }
 
@@ -711,8 +708,7 @@ DecorWindow::update (bool allowDecoration)
     }
     else
     {
-	match = &dScreen->opt[DECOR_OPTION_SHADOW_MATCH].value ().match ();
-	if (match->evaluate (window))
+	if (dScreen->optionGetShadowMatch ().evaluate (window))
 	{
 	    if (window->region ().numRects () == 1 && !window->alpha ())
 		decoration = dScreen->decor[DECOR_BARE];
@@ -1472,70 +1468,57 @@ DecorWindow::getOutputExtents (CompWindowExtents& output)
 	    output.bottom = e->bottom;
     }
 }
-
-CompOption::Vector &
-DecorScreen::getOptions ()
-{
-    return opt;
-}
  
 bool
-DecorScreen::setOption (const char        *name,
+DecorScreen::setOption (const CompString  &name,
 			CompOption::Value &value)
 {
     CompOption   *o;
     unsigned int index;
 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
+    bool rv = DecorOptions::setOption (name, value);
+
+    if (!rv || !CompOption::findOption (getOptions (), name, &index))
 	return false;
 
     switch (index) {
-    case DECOR_OPTION_COMMAND:
-	if (o->set(value))
-	{
-
+	case DecorOptions::Command:
 	    if (!dmWin)
-		screen->runCommand (o->value ().s ());
-	    return true;
-	}
-	break;
-    case DECOR_OPTION_SHADOW_MATCH:
-    	{
-	    CompString matchString;
-
-	    /*
-	       Make sure RGBA matching is always present and disable shadows
-	       for RGBA windows by default if the user didn't specify an
-	       RGBA match.
-	       Reasoning for that is that shadows are desired for some RGBA
-	       windows (e.g. rectangular windows that just happen to have an
-	       RGBA colormap), while it's absolutely undesired for others
-	       (especially shaped ones) ... by enforcing no shadows for RGBA
-	       windows by default, we are flexible to user desires while still
-	       making sure we don't show ugliness by default
-	     */
-
-	    matchString = value.match ().toString ();
-    	    if (matchString.find ("rgba=") == CompString::npos)
+		screen->runCommand (optionGetCommand ());
+	    break;
+	case DecorOptions::ShadowMatch:
 	    {
-		CompMatch rgbaMatch("rgba=0");
-		value.match () &= rgbaMatch;
+		CompString matchString;
+
+		/*
+		Make sure RGBA matching is always present and disable shadows
+		for RGBA windows by default if the user didn't specify an
+		RGBA match.
+		Reasoning for that is that shadows are desired for some RGBA
+		windows (e.g. rectangular windows that just happen to have an
+		RGBA colormap), while it's absolutely undesired for others
+		(especially shaped ones) ... by enforcing no shadows for RGBA
+		windows by default, we are flexible to user desires while still
+		making sure we don't show ugliness by default
+		*/
+
+		matchString = optionGetShadowMatch ().toString ();
+		if (matchString.find ("rgba=") == CompString::npos)
+		{
+		    CompMatch rgbaMatch("rgba=0");
+		    optionGetShadowMatch () &= rgbaMatch;
+		}
 	    }
-	}
-	/* fall-through intended */
-    case DECOR_OPTION_DECOR_MATCH:
-	if (o->set(value))
-	{
+	    /* fall-through intended */
+	case DecorOptions::DecorationMatch:
 	    foreach (CompWindow *w, screen->windows ())
 		DecorWindow::get (w)->update (true);
-	}
-	break;
-    default:
-	return CompOption::setOption (*o, value);
+	    break;
+	default:
+	    break;
     }
 
-    return false;
+    return rv;
 }
 
 void
@@ -1615,22 +1598,10 @@ bool
 DecorScreen::decoratorStartTimeout ()
 {
     if (!dmWin)
-	screen->runCommand (opt[DECOR_OPTION_COMMAND].value ().s ());
+	screen->runCommand (optionGetCommand ());
 
     return false;
 }
-
-static const CompMetadata::OptionInfo decorOptionInfo[] = {
-    { "shadow_radius", "float", "<min>0.0</min><max>48.0</max>", 0, 0 },
-    { "shadow_opacity", "float", "<min>0.0</min>", 0, 0 },
-    { "shadow_color", "color", 0, 0, 0 },
-    { "shadow_x_offset", "int", "<min>-16</min><max>16</max>", 0, 0 },
-    { "shadow_y_offset", "int", "<min>-16</min><max>16</max>", 0, 0 },
-    { "command", "string", 0, 0, 0 },
-    { "mipmap", "bool", 0, 0, 0 },
-    { "decoration_match", "match", 0, 0, 0 },
-    { "shadow_match", "match", 0, 0, 0 }
-};
 
 DecorScreen::DecorScreen (CompScreen *s) :
     PluginClassHandler<DecorScreen,CompScreen> (s),
@@ -1638,16 +1609,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
     textures (),
     dmWin (None),
     dmSupports (0),
-    cmActive (false),
-    opt (DECOR_OPTION_NUM)
+    cmActive (false)
 {
-    if (!decorVTable->getMetadata ()->initOptions (decorOptionInfo,
-						   DECOR_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
     supportingDmCheckAtom =
 	XInternAtom (s->dpy (), DECOR_SUPPORTING_DM_CHECK_ATOM_NAME, 0);
     winDecorAtom =
@@ -1755,9 +1718,6 @@ DecorPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (decorOptionInfo, DECOR_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

@@ -29,20 +29,14 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
+#include "move_options.h"
+
 #define NUM_KEYS (sizeof (mKeys) / sizeof (mKeys[0]))
 
 #define KEY_MOVE_INC 24
 
 #define SNAP_BACK 20
 #define SNAP_OFF  100
-
-#define MOVE_OPTION_INITIATE_BUTTON   0
-#define MOVE_OPTION_INITIATE_KEY      1
-#define MOVE_OPTION_OPACITY	      2
-#define MOVE_OPTION_CONSTRAIN_Y	      3
-#define MOVE_OPTION_SNAPOFF_MAXIMIZED 4
-#define MOVE_OPTION_LAZY_POSITIONING  5
-#define MOVE_OPTION_NUM		      6
 
 struct _MoveKeys {
     const char *name;
@@ -57,15 +51,15 @@ struct _MoveKeys {
 
 class MoveScreen :
     public ScreenInterface,
-    public PluginClassHandler<MoveScreen,CompScreen>
+    public PluginClassHandler<MoveScreen,CompScreen>,
+    public MoveOptions
 {
     public:
 	
 	MoveScreen (CompScreen *screen);
 	~MoveScreen ();
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);	
+	
+	void updateOpacity ();
 
 	void handleEvent (XEvent *);
 	
@@ -92,8 +86,6 @@ class MoveScreen :
 	int	snapBackY;
 
 	bool hasCompositing;
-
-	CompOption::Vector opt;
 };
 
 class MoveWindow :
@@ -132,8 +124,5 @@ class MovePluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (MoveScreen);
-
 };
 

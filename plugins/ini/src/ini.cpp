@@ -30,7 +30,7 @@
 #include <errno.h>
 #include <boost/lexical_cast.hpp>
 
-COMPIZ_PLUGIN_20081216 (ini, IniPluginVTable)
+COMPIZ_PLUGIN_20090315 (ini, IniPluginVTable)
 
 IniFile::IniFile (CompPlugin *p) :
     plugin (p)
@@ -597,8 +597,6 @@ IniPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

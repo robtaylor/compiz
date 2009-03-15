@@ -35,7 +35,7 @@
 #include <core/atoms.h>
 #include "resize.h"
 
-COMPIZ_PLUGIN_20081216 (resize, ResizePluginVTable)
+COMPIZ_PLUGIN_20090315 (resize, ResizePluginVTable)
 
 void
 ResizeScreen::getPaintRectangle (BoxPtr pBox)
@@ -283,28 +283,28 @@ resizeInitiate (CompAction         *action,
 	    /* if the window is fully maximized, showing the outline or
 	       rectangle would be visually distracting as the window can't
 	       be resized anyway; so we better don't use them in this case */
-	    rs->mode = RESIZE_MODE_NORMAL;
+	    rs->mode = ResizeOptions::ModeNormal;
 	}
 	else
 	{
-	    rs->mode = rs->opt[RESIZE_OPTION_MODE].value ().i ();
-	    for (i = 0; i <= RESIZE_MODE_LAST; i++)
+	    rs->mode = rs->optionGetMode ();
+	    for (i = 0; i <= ResizeOptions::ModeStretch; i++)
 	    {
-		if (action == &rs->opt[i].value ().action ())
+		if (action == &rs->getOptions ()[i].value ().action ())
 		{
 		    rs->mode = i;
 		    break;
 		}
 	    }
 
-	    if (i > RESIZE_MODE_LAST)
+	    if (i > ResizeOptions::ModeStretch)
 	    {
 		int index;
 
-		for (i = 0; i <= RESIZE_MODE_LAST; i++)
+		for (i = 0; i <= ResizeOptions::ModeStretch; i++)
 		{
-		    index = RESIZE_OPTION_NORMAL_MATCH + i;
-		    if (rs->opt[index].value ().match ().evaluate (w))
+		    index = ResizeOptions::NormalMatch + i;
+		    if (rs->getOptions ()[index].value ().match ().evaluate (w))
 		    {
 			rs->mode = i;
 			break;
@@ -314,15 +314,15 @@ resizeInitiate (CompAction         *action,
 
 	    if (!rs->gScreen || !rs->cScreen ||
 		rs->cScreen->compositingActive ())
-		rs->mode = RESIZE_MODE_NORMAL;
+		rs->mode = ResizeOptions::ModeNormal;
 	}
 
-	if (rs->mode != RESIZE_MODE_NORMAL)
+	if (rs->mode != ResizeOptions::ModeNormal)
 	{
 	    RESIZE_WINDOW (w);
-	    if (rw->gWindow && rs->mode == RESIZE_MODE_STRETCH)
+	    if (rw->gWindow && rs->mode == ResizeOptions::ModeStretch)
 		rw->gWindow->glPaintSetEnabled (rw, true);
-	    if (rw->cWindow && rs->mode == RESIZE_MODE_STRETCH)
+	    if (rw->cWindow && rs->mode == ResizeOptions::ModeStretch)
 		rw->cWindow->damageRectSetEnabled (rw, true);
 	    rs->gScreen->glPaintOutputSetEnabled (rs, true);
 	}
@@ -385,7 +385,7 @@ resizeTerminate (CompAction         *action,
 	XWindowChanges xwc;
 	unsigned int   mask = 0;
 
-	if (rs->mode == RESIZE_MODE_NORMAL)
+	if (rs->mode == ResizeOptions::ModeNormal)
 	{
 	    if (state & CompAction::StateCancel)
 	    {
@@ -410,7 +410,7 @@ resizeTerminate (CompAction         *action,
 	    {
 		BoxRec box;
 
-		if (rs->mode == RESIZE_MODE_STRETCH)
+		if (rs->mode == ResizeOptions::ModeStretch)
 		    rs->getStretchRectangle (&box);
 		else
 		    rs->getPaintRectangle (&box);
@@ -427,12 +427,12 @@ resizeTerminate (CompAction         *action,
 		mask = CWX | CWY | CWWidth | CWHeight;
 	    }
 
-	    if (rs->mode != RESIZE_MODE_NORMAL)
+	    if (rs->mode != ResizeOptions::ModeNormal)
 	    {
 		RESIZE_WINDOW (rs->w);
-		if (rw->gWindow && rs->mode == RESIZE_MODE_STRETCH)
+		if (rw->gWindow && rs->mode == ResizeOptions::ModeStretch)
 		    rw->gWindow->glPaintSetEnabled (rw, false);
-		if (rw->cWindow && rs->mode == RESIZE_MODE_STRETCH)
+		if (rw->cWindow && rs->mode == ResizeOptions::ModeStretch)
 		    rw->cWindow->damageRectSetEnabled (rw, false);
 		rs->gScreen->glPaintOutputSetEnabled (rs, false);
 	    }
@@ -606,9 +606,8 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		CompAction *action;
 		int        pointerAdjustX = 0;
 		int        pointerAdjustY = 0;
-		int	   option = RESIZE_OPTION_INITIATE_KEY;
 
-		action = &opt[option].value ().action ();
+		action = &optionGetInitiateKey ();
 		action->setState (action->state () |
 				  CompAction::StateTermButton);
 
@@ -658,9 +657,9 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 
 	w->constrainNewWindowSize (wi, he, &wi, &he);
 
-	if (mode != RESIZE_MODE_NORMAL)
+	if (mode != ResizeOptions::ModeNormal)
 	{
-	    if (mode == RESIZE_MODE_STRETCH)
+	    if (mode == ResizeOptions::ModeStretch)
 		getStretchRectangle (&box);
 	    else
 		getPaintRectangle (&box);
@@ -677,9 +676,9 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	geometry.width  = wi;
 	geometry.height = he;
 
-	if (mode != RESIZE_MODE_NORMAL)
+	if (mode != ResizeOptions::ModeNormal)
 	{
-	    if (mode == RESIZE_MODE_STRETCH)
+	    if (mode == ResizeOptions::ModeStretch)
 		getStretchRectangle (&box);
 	    else
 		getPaintRectangle (&box);
@@ -712,8 +711,7 @@ ResizeScreen::handleEvent (XEvent *event)
 		    if (releaseButton         == -1 ||
 			(int) event->xbutton.button == releaseButton)
 		    {
-			int        opt = RESIZE_OPTION_INITIATE_BUTTON;
-			CompAction *action = &this->opt[opt].value ().action ();
+			CompAction *action = &optionGetInitiateButton ();
 
 			resizeTerminate (action, CompAction::StateTermButton,
 					 noOptions);
@@ -745,7 +743,6 @@ ResizeScreen::handleEvent (XEvent *event)
 		    if (w)
 		    {
 			CompOption::Vector o (0);
-			int	       option;
 
 			o.push_back (CompOption ("window",
 				     CompOption::TypeInt));
@@ -753,9 +750,7 @@ ResizeScreen::handleEvent (XEvent *event)
 
 			if (event->xclient.data.l[2] == WmMoveResizeSizeKeyboard)
 			{
-			    option = RESIZE_OPTION_INITIATE_KEY;
-
-			    resizeInitiate (&opt[option].value ().action (),
+			    resizeInitiate (&optionGetInitiateKey (),
 					    CompAction::StateInitKey, o);
 			}
 			else
@@ -773,8 +768,6 @@ ResizeScreen::handleEvent (XEvent *event)
 			    unsigned int mods;
 			    Window	     root, child;
 			    int	     xRoot, yRoot, i;
-
-			    option = RESIZE_OPTION_INITIATE_BUTTON;
 
 			    XQueryPointer (screen->dpy (),
 					   screen->root (),
@@ -806,7 +799,7 @@ ResizeScreen::handleEvent (XEvent *event)
 				    ((int) (event->xclient.data.l[3] ?
 				     event->xclient.data.l[3] : -1));
 			
-				resizeInitiate (&opt[option].value ().action (),
+				resizeInitiate (&optionGetInitiateButton (),
 						CompAction::StateInitButton, o);
 
 				ResizeScreen::get (screen)->
@@ -819,13 +812,9 @@ ResizeScreen::handleEvent (XEvent *event)
 		{
 		    if (rs->w->id () == event->xclient.window)
 		    {
-			int option;
-
-			option = RESIZE_OPTION_INITIATE_BUTTON;
-			resizeTerminate (&opt[option].value ().action (),
+			resizeTerminate (&optionGetInitiateButton (),
 					 CompAction::StateCancel, noOptions);
-			option = RESIZE_OPTION_INITIATE_KEY;
-			resizeTerminate (&opt[option].value ().action (),
+			resizeTerminate (&optionGetInitiateKey (),
 					 CompAction::StateCancel, noOptions);
 		    }
 		}
@@ -834,23 +823,15 @@ ResizeScreen::handleEvent (XEvent *event)
 	case DestroyNotify:
 	    if (w && w->id () == event->xdestroywindow.window)
 	    {
-		int option;
-
-		option = RESIZE_OPTION_INITIATE_BUTTON;
-		resizeTerminate (&opt[option].value ().action (), 0, noOptions);
-		option = RESIZE_OPTION_INITIATE_KEY;
-		resizeTerminate (&opt[option].value ().action (), 0, noOptions);
+		resizeTerminate (&optionGetInitiateButton (), 0, noOptions);
+		resizeTerminate (&optionGetInitiateKey (), 0, noOptions);
 	    }
 	    break;
 	case UnmapNotify:
 	    if (w && w->id () == event->xunmap.window)
 	    {
-		int option;
-
-		option = RESIZE_OPTION_INITIATE_BUTTON;
-		resizeTerminate (&opt[option].value ().action (), 0, noOptions);
-		option = RESIZE_OPTION_INITIATE_KEY;
-		resizeTerminate (&opt[option].value ().action (), 0, noOptions);
+		resizeTerminate (&optionGetInitiateButton (), 0, noOptions);
+		resizeTerminate (&optionGetInitiateKey (), 0, noOptions);
 	    }
 	default:
 	    break;
@@ -937,7 +918,7 @@ ResizeScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
     if (w)
     {
-	if (mode == RESIZE_MODE_STRETCH)
+	if (mode == ResizeOptions::ModeStretch)
 	    mask |= PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK;
     }
 
@@ -947,14 +928,14 @@ ResizeScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
     {
 	unsigned short *border, *fill;
 
-	border = opt[RESIZE_OPTION_BORDER_COLOR].value ().c ();
-	fill   = opt[RESIZE_OPTION_FILL_COLOR].value ().c ();
+	border = optionGetBorderColor ();
+	fill   = optionGetFillColor ();
 
 	switch (mode) {
-	    case RESIZE_MODE_OUTLINE:
+	    case ResizeOptions::ModeOutline:
 		glPaintRectangle (sAttrib, transform, output, border, NULL);
 		break;
-	    case RESIZE_MODE_RECTANGLE:
+	    case ResizeOptions::ModeRectangle:
 		glPaintRectangle (sAttrib, transform, output, border, fill);
 	    default:
 		break;
@@ -972,7 +953,7 @@ ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 {
     bool       status;
 
-    if (window == rScreen->w && rScreen->mode == RESIZE_MODE_STRETCH)
+    if (window == rScreen->w && rScreen->mode == ResizeOptions::ModeStretch)
     {
 	GLMatrix       wTransform (transform);
 	BoxRec	       box;
@@ -1027,7 +1008,7 @@ ResizeWindow::damageRect (bool initial, const CompRect &rect)
 {
     bool status = false;
 
-    if (window == rScreen->w && rScreen->mode == RESIZE_MODE_STRETCH)
+    if (window == rScreen->w && rScreen->mode == ResizeOptions::ModeStretch)
     {
 	BoxRec box;
 
@@ -1042,60 +1023,15 @@ ResizeWindow::damageRect (bool initial, const CompRect &rect)
     return status;
 }
 
-CompOption::Vector &
-ResizeScreen::getOptions ()
-{
-    return opt;
-}
- 
-bool
-ResizeScreen::setOption (const char        *name,
-			 CompOption::Value &value)
-{
-    CompOption   *o;
-    unsigned int index;
-
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
-
-    return CompOption::setOption (*o, value);
-
-}
-
-static const CompMetadata::OptionInfo resizeOptionInfo[] = {
-    { "initiate_normal_key", "key", 0, resizeInitiate, resizeTerminate },
-    { "initiate_outline_key", "key", 0, resizeInitiate, resizeTerminate },
-    { "initiate_rectangle_key", "key", 0, resizeInitiate, resizeTerminate },
-    { "initiate_stretch_key", "key", 0, resizeInitiate, resizeTerminate },
-    { "initiate_button", "button", 0, resizeInitiate, resizeTerminate },
-    { "initiate_key", "key", 0, resizeInitiate, resizeTerminate },
-    { "mode", "int", RESTOSTRING (0, RESIZE_MODE_LAST), 0, 0 },
-    { "border_color", "color", 0, 0, 0 },
-    { "fill_color", "color", 0, 0, 0 },
-    { "normal_match", "match", 0, 0, 0 },
-    { "outline_match", "match", 0, 0, 0 },
-    { "rectangle_match", "match", 0, 0, 0 },
-    { "stretch_match", "match", 0, 0, 0 }
-};
-
 ResizeScreen::ResizeScreen (CompScreen *s) :
     PluginClassHandler<ResizeScreen,CompScreen> (s),
     gScreen (GLScreen::get (s)),
     cScreen (CompositeScreen::get (s)),
     w (NULL),
-    releaseButton (0),
-    opt (RESIZE_OPTION_NUM)
+    releaseButton (0)
 {
 
     Display *dpy = s->dpy ();
-
-    if (!resizeVTable->getMetadata ()->initOptions (resizeOptionInfo,
-						    RESIZE_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
 
     resizeNotifyAtom      = XInternAtom (s->dpy (),
 					 "_COMPIZ_RESIZE_NOTIFY", 0);
@@ -1121,6 +1057,19 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     cursor[1] = rightCursor;
     cursor[2] = upCursor;
     cursor[3] = downCursor;
+
+    optionSetInitiateNormalKeyInitiate (resizeInitiate);
+    optionSetInitiateNormalKeyTerminate (resizeTerminate);
+    optionSetInitiateOutlineKeyInitiate (resizeInitiate);
+    optionSetInitiateOutlineKeyTerminate (resizeTerminate);
+    optionSetInitiateRectangleKeyInitiate (resizeInitiate);
+    optionSetInitiateRectangleKeyTerminate (resizeTerminate);
+    optionSetInitiateStretchKeyInitiate (resizeInitiate);
+    optionSetInitiateStretchKeyTerminate (resizeTerminate);
+    optionSetInitiateKeyInitiate (resizeInitiate);
+    optionSetInitiateKeyTerminate (resizeTerminate);
+    optionSetInitiateButtonInitiate (resizeInitiate);
+    optionSetInitiateButtonTerminate (resizeTerminate);
 
     ScreenInterface::setHandler (s);
 
@@ -1179,9 +1128,6 @@ ResizePluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (resizeOptionInfo, RESIZE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

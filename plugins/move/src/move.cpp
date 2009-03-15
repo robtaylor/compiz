@@ -32,7 +32,7 @@
 #include <core/atoms.h>
 #include "move.h"
 
-COMPIZ_PLUGIN_20081216 (move, MovePluginVTable)
+COMPIZ_PLUGIN_20090315 (move, MovePluginVTable)
 
 static bool
 moveInitiate (CompAction      *action,
@@ -321,7 +321,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    workArea = s->getWorkareaForOutput (w->outputDevice ());
 
-	    if (ms->opt[MOVE_OPTION_CONSTRAIN_Y].value ().b ())
+	    if (ms->optionGetConstrainY ())
 	    {
 		if (!ms->region)
 		    ms->region = moveGetYConstrainRegion (s);
@@ -377,7 +377,7 @@ moveHandleMotionEvent (CompScreen *s,
 		}
 	    }
 
-	    if (ms->opt[MOVE_OPTION_SNAPOFF_MAXIMIZED].value ().b ())
+	    if (ms->optionGetSnapoffMaximized ())
 	    {
 		if (w->state () & CompWindowStateMaximizedVertMask)
 		{
@@ -466,7 +466,7 @@ moveHandleMotionEvent (CompScreen *s,
 	    w->move (wX + dx - w->geometry ().x (),
 		     wY + dy - w->geometry ().y (), false);
 
-	    if (ms->opt[MOVE_OPTION_LAZY_POSITIONING].value ().b () &&
+	    if (ms->optionGetLazyPositioning () &&
 	        MoveScreen::get (screen)->hasCompositing)
 	    {
 		/* FIXME: This form of lazy positioning is broken and should
@@ -499,10 +499,8 @@ MoveScreen::handleEvent (XEvent *event)
 		    if (releaseButton == -1 ||
 			releaseButton == (int) event->xbutton.button)
 		    {
-			CompAction *action;
-
-			action = &opt[MOVE_OPTION_INITIATE_BUTTON].value ().action ();
-			moveTerminate (action, CompAction::StateTermButton,
+			moveTerminate (&optionGetInitiateButton (),
+				       CompAction::StateTermButton,
 				       noOptions);
 		    }
 		}
@@ -554,16 +552,13 @@ MoveScreen::handleEvent (XEvent *event)
 		    {
 			CompOption::Vector o;
 			int	       xRoot, yRoot;
-			int	       option;
 
 			o.push_back (CompOption ("window", CompOption::TypeInt));
 			o[0].value ().set ((int) event->xclient.window);
 
 			if (event->xclient.data.l[2] == WmMoveResizeMoveKeyboard)
 			{
-			    option = MOVE_OPTION_INITIATE_KEY;
-
-			    moveInitiate (&opt[option].value ().action (),
+			    moveInitiate (&optionGetInitiateKey (),
 					  CompAction::StateInitKey, o);
 			}
 			else
@@ -571,8 +566,6 @@ MoveScreen::handleEvent (XEvent *event)
 			    unsigned int mods;
 			    Window	     root, child;
 			    int	     i;
-
-			    option = MOVE_OPTION_INITIATE_BUTTON;
 
 			    XQueryPointer (screen->dpy (), screen->root (),
 					   &root, &child, &xRoot, &yRoot,
@@ -594,7 +587,7 @@ MoveScreen::handleEvent (XEvent *event)
 				o[4].value ().set ((int) (event->xclient.data.l[3] ?
 					       event->xclient.data.l[3] : -1));
 
-				moveInitiate (&opt[option].value ().action (),
+				moveInitiate (&optionGetInitiateButton (),
 					      CompAction::StateInitButton, o);
 
 				moveHandleMotionEvent (screen, xRoot, yRoot);
@@ -606,13 +599,9 @@ MoveScreen::handleEvent (XEvent *event)
 		{
 		    if (ms->w->id () == event->xclient.window)
 		    {
-			int option;
-
-			option = MOVE_OPTION_INITIATE_BUTTON;
-			moveTerminate (&opt[option].value ().action (),
+			moveTerminate (&optionGetInitiateButton (),
 				       CompAction::StateCancel, noOptions);
-			option = MOVE_OPTION_INITIATE_KEY;
-			moveTerminate (&opt[option].value ().action (),
+			moveTerminate (&optionGetInitiateKey (),
 				       CompAction::StateCancel, noOptions);
 
 		    }
@@ -622,27 +611,15 @@ MoveScreen::handleEvent (XEvent *event)
 	case DestroyNotify:
 	    if (w && w->id () == event->xdestroywindow.window)
 	    {
-		int option;
-
-		option = MOVE_OPTION_INITIATE_BUTTON;
-		moveTerminate (&opt[option].value ().action (),
-			       0, noOptions);
-		option = MOVE_OPTION_INITIATE_KEY;
-		moveTerminate (&opt[option].value ().action (),
-			       0, noOptions);
+		moveTerminate (&optionGetInitiateButton (), 0, noOptions);
+		moveTerminate (&optionGetInitiateKey (), 0, noOptions);
 	    }
 	    break;
 	case UnmapNotify:
 	    if (w && w->id () == event->xunmap.window)
 	    {
-		int option;
-
-		option = MOVE_OPTION_INITIATE_BUTTON;
-		moveTerminate (&opt[option].value ().action (),
-			       0, noOptions);
-		option = MOVE_OPTION_INITIATE_KEY;
-		moveTerminate (&opt[option].value ().action (),
-			       0, noOptions);
+		moveTerminate (&optionGetInitiateButton (), 0, noOptions);
+		moveTerminate (&optionGetInitiateKey (), 0, noOptions);
 	    }
 	default:
 	    break;
@@ -676,46 +653,11 @@ MoveWindow::glPaint (const GLWindowPaintAttrib &attrib,
     return status;
 }
 
-CompOption::Vector &
-MoveScreen::getOptions ()
+void
+MoveScreen::updateOpacity ()
 {
-    return opt;
+    moveOpacity = (optionGetOpacity () * OPAQUE) / 100;
 }
- 
-bool
-MoveScreen::setOption (const char        *name,
-		       CompOption::Value &value)
-{
-    CompOption *o;
-    unsigned int index;
- 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
- 
-     switch (index) {
-     case MOVE_OPTION_OPACITY:
- 	if (o->set (value))
- 	{
-	    moveOpacity = (o->value ().i () * OPAQUE) / 100;
-	    return true;
- 	}
- 	break;
-     default:
-	return CompOption::setOption (*o, value);
-     }
- 
-    return false;
-}
-
-static const CompMetadata::OptionInfo moveOptionInfo[] = {
-    { "initiate_button", "button", 0, moveInitiate, moveTerminate },
-    { "initiate_key", "key", 0, moveInitiate, moveTerminate },
-    { "opacity", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "constrain_y", "bool", 0, 0, 0 },
-    { "snapoff_maximized", "bool", 0, 0, 0 },
-    { "lazy_positioning", "bool", 0, 0, 0 }
-};
 
 MoveScreen::MoveScreen (CompScreen *screen) :
     PluginClassHandler<MoveScreen,CompScreen> (screen),
@@ -724,17 +666,10 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     status (RectangleOut),
     releaseButton (0),
     grab(NULL),
-    hasCompositing (false),
-    opt(MOVE_OPTION_NUM)
+    hasCompositing (false)
 {
-    if (!moveVTable->getMetadata ()->initOptions (moveOptionInfo,
-						  MOVE_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
- 
-    moveOpacity = (opt[MOVE_OPTION_OPACITY].value ().i () * OPAQUE) / 100;
+
+    updateOpacity ();
  
     for (unsigned int i = 0; i < NUM_KEYS; i++)
 	key[i] = XKeysymToKeycode (screen->dpy (),
@@ -744,6 +679,14 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     if (CompositeScreen::get (screen))
 	hasCompositing =
 	    CompositeScreen::get (screen)->compositingActive ();
+
+    optionSetOpacityNotify (boost::bind (&MoveScreen::updateOpacity, this));
+
+    optionSetInitiateButtonInitiate (moveInitiate);
+    optionSetInitiateButtonTerminate (moveTerminate);
+
+    optionSetInitiateKeyInitiate (moveInitiate);
+    optionSetInitiateKeyTerminate (moveTerminate);
 
     ScreenInterface::setHandler (screen);
 }
@@ -759,9 +702,6 @@ MovePluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (moveOptionInfo, MOVE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

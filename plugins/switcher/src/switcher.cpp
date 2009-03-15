@@ -25,7 +25,7 @@
 
 #include "switcher.h"
 
-COMPIZ_PLUGIN_20081216 (switcher, SwitchPluginVTable)
+COMPIZ_PLUGIN_20090315 (switcher, SwitchPluginVTable)
 
 static float _boxVertices[] =
 {
@@ -64,7 +64,7 @@ SwitchWindow::isSwitchWin ()
 {
     if (!window->isViewable ())
     {
-	if (sScreen->opt[SWITCH_OPTION_MINIMIZED].value ().b ())
+	if (sScreen->optionGetMinimized ())
 	{
 	    if (!window->minimized () && !window->inShowDesktopMode () &&
 		!window->shaded ())
@@ -99,7 +99,7 @@ SwitchWindow::isSwitchWin ()
 	if (window->state () & CompWindowStateSkipTaskbarMask)
 	    return false;
 
-	match = &sScreen->opt[SWITCH_OPTION_WINDOW_MATCH].value ().match ();
+	match = &sScreen->optionGetWindowMatch ();
 	if (!match->evaluate (window))
 	    return false;
 
@@ -262,8 +262,7 @@ SwitchScreen::switchToWindow (bool toNext)
     {
 	Window old = selectedWindow;
 
-	if (selection == AllViewports &&
-	    opt[SWITCH_OPTION_AUTO_ROTATE].value ().b ())
+	if (selection == AllViewports && optionGetAutoRotate ())
 	{
 	    XEvent xev;
 	    CompPoint pnt = w->defaultViewport ();
@@ -636,57 +635,6 @@ switchInitiateCommon (CompAction            *action,
     return false;
 }
 
-#define SWITCHBIND(a,b,c) boost::bind (switchInitiateCommon, _1, _2, _3, a, b, c)
-
-static const CompMetadata::OptionInfo switchOptionInfo[] = {
-    { "next_button", "button", 0,
-      SWITCHBIND (CurrentViewport, true, true), switchTerminate },
-    { "next_key", "key", 0,
-      SWITCHBIND (CurrentViewport, true, true), switchTerminate },
-    { "prev_button", "button", 0,
-      SWITCHBIND (CurrentViewport, true, false), switchTerminate },
-    { "prev_key", "key", 0,
-      SWITCHBIND (CurrentViewport, true, false), switchTerminate },
-    { "next_all_button", "button", 0,
-      SWITCHBIND (AllViewports, true, true), switchTerminate },
-    { "next_all_key", "key", 0,
-      SWITCHBIND (AllViewports, true, true), switchTerminate },
-    { "prev_all_button", "button", 0,
-      SWITCHBIND (AllViewports, true, false), switchTerminate },
-    { "prev_all_key", "key", 0,
-      SWITCHBIND (AllViewports, true, false), switchTerminate },
-    { "next_no_popup_button", "button", 0,
-      SWITCHBIND (CurrentViewport, false, true), switchTerminate },
-    { "next_no_popup_key", "key", 0,
-      SWITCHBIND (CurrentViewport, false, true), switchTerminate },
-    { "prev_no_popup_button", "button", 0,
-      SWITCHBIND (CurrentViewport, false, false), switchTerminate },
-    { "prev_no_popup_key", "key", 0,
-      SWITCHBIND (CurrentViewport, false, false), switchTerminate },
-    { "next_panel_button", "button", 0,
-      SWITCHBIND (Panels, false, true), switchTerminate },
-    { "next_panel_key", "key", 0,
-      SWITCHBIND (Panels, false, true), switchTerminate },
-    { "prev_panel_button", "button", 0,
-      SWITCHBIND (Panels, false, false), switchTerminate },
-    { "prev_panel_key", "key", 0,
-      SWITCHBIND (Panels, false, false), switchTerminate },
-    { "speed", "float", "<min>0.1</min>", 0, 0 },
-    { "timestep", "float", "<min>0.1</min>", 0, 0 },
-    { "window_match", "match", 0, 0, 0 },
-    { "mipmap", "bool", 0, 0, 0 },
-    { "saturation", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "brightness", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "opacity", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "bring_to_front", "bool", 0, 0, 0 },
-    { "zoom", "float", "<min>0</min>", 0, 0 },
-    { "icon", "bool", 0, 0, 0 },
-    { "minimized", "bool", 0, 0, 0 },
-    { "auto_rotate", "bool", 0, 0, 0 }
-};
-
-#undef SWITCHBIND
-
 void
 SwitchScreen::windowRemove (Window id)
 {
@@ -955,10 +903,8 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
 	int   steps, m;
 	float amount, chunk;
 
-	amount = msSinceLastPaint * 0.05f *
-	    opt[SWITCH_OPTION_SPEED].value ().f ();
-	steps  = amount /
-	    (0.5f * opt[SWITCH_OPTION_TIMESTEP].value ().f ());
+	amount = msSinceLastPaint * 0.05f * optionGetSpeed ();
+	steps  = amount / (0.5f * optionGetTimestep ());
 	if (!steps) steps = 1;
 	chunk  = amount / (float) steps;
 
@@ -1053,7 +999,7 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	    zoomMask = NORMAL_WINDOW_MASK;
 	}
 
-	if (opt[SWITCH_OPTION_BRINGTOFRONT].value ().b ())
+	if (optionGetBringToFront ())
 	{
 	    zoomed = screen->findWindow (zoomedWindow);
 	    if (zoomed)
@@ -1258,7 +1204,7 @@ SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
 	glPopMatrix ();
 
-	if (sScreen->opt[SWITCH_OPTION_ICON].value ().b ())
+	if (sScreen->optionGetIcon ())
 	{
 	    icon = gWindow->getIcon (ICON_SIZE, ICON_SIZE);
 	    if (icon)
@@ -1387,7 +1333,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 
 	filter = gScreen->textureFilter ();
 
-	if (sScreen->opt[SWITCH_OPTION_MIPMAP].value ().b ())
+	if (sScreen->optionGetMipmap ())
 	    gScreen->setTextureFilter (GL_LINEAR_MIPMAP_LINEAR);
 
 	glPushAttrib (GL_SCISSOR_BIT);
@@ -1439,7 +1385,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
     }
     else if (window->id () == sScreen->selectedWindow)
     {
-	if (sScreen->opt[SWITCH_OPTION_BRINGTOFRONT].value ().b () &&
+	if (sScreen->optionGetBringToFront () &&
 	    sScreen->selectedWindow == sScreen->zoomedWindow)
 	    zoomType = ZOOMED_WINDOW_MASK;
 
@@ -1454,23 +1400,23 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	GLWindowPaintAttrib sAttrib (attrib);
 	GLuint              value;
 
-	value = sScreen->opt[SWITCH_OPTION_SATURATION].value ().i ();
+	value = sScreen->optionGetSaturation ();
 	if (value != 100)
 	    sAttrib.saturation = sAttrib.saturation * value / 100;
 
-	value = sScreen->opt[SWITCH_OPTION_BRIGHTNESS].value ().i ();
+	value = sScreen->optionGetBrightness ();
 	if (value != 100)
 	    sAttrib.brightness = sAttrib.brightness * value / 100;
 
 	if (window->wmType () & ~(CompWindowTypeDockMask |
 			          CompWindowTypeDesktopMask))
 	{
-	    value = sScreen->opt[SWITCH_OPTION_OPACITY].value ().i ();
+	    value = sScreen->optionGetOpacity ();
 	    if (value != 100)
 		sAttrib.opacity = sAttrib.opacity * value / 100;
 	}
 
-	if (sScreen->opt[SWITCH_OPTION_BRINGTOFRONT].value ().b () &&
+	if (sScreen->optionGetBringToFront () &&
 	    window->id () == sScreen->zoomedWindow)
 	    zoomType = ZOOMED_WINDOW_MASK;
 
@@ -1520,53 +1466,26 @@ SwitchWindow::damageRect (bool initial, const CompRect &rect)
     return status;
 }
 
-CompOption::Vector &
-SwitchScreen::getOptions ()
+void
+SwitchScreen::setZoom ()
 {
-    return opt;
-}
- 
-bool
-SwitchScreen::setOption (const char        *name,
-		       CompOption::Value &value)
-{
-    CompOption *o;
-    unsigned int index;
- 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
- 
-     switch (index) {
-	case SWITCH_OPTION_ZOOM:
-	    if (o->set (value))
-	    {
-		if (o->value ().f () < 0.05f)
-		{
-		    zooming = false;
-		    zoom    = 0.0f;
-		}
-		else
-		{
-		    zooming = true;
-		    zoom    = o->value ().f () / 30.0f;
-		}
+    if (optionGetZoom () < 0.05f)
+    {
+	zooming = false;
+	zoom    = 0.0f;
+    }
+    else
+    {
+	zooming = true;
+	zoom    = optionGetZoom () / 30.0f;
+    }
 
-		return true;
-	    }
-	    break;
-     default:
-	return CompOption::setOption (*o, value);
-     }
- 
-    return false;
 }
 
 SwitchScreen::SwitchScreen (CompScreen *screen) :
     PluginClassHandler<SwitchScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
-    opt(SWITCH_OPTION_NUM),
     popupWindow (None),
     selectedWindow (None),
     zoomedWindow (None),
@@ -1586,16 +1505,9 @@ SwitchScreen::SwitchScreen (CompScreen *screen) :
     selection (CurrentViewport),
     ignoreSwitcher (false)
 {
-    if (!switcherVTable->getMetadata ()->initOptions (switchOptionInfo,
-						      SWITCH_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
+    zoom = optionGetZoom () / 30.0f;
 
-    zoom = opt[SWITCH_OPTION_ZOOM].value ().f () / 30.0f;
-
-    zooming = (opt[SWITCH_OPTION_ZOOM].value ().f () > 0.05f);
+    zooming = (optionGetZoom () > 0.05f);
 
     fgColor[0] = 0;
     fgColor[1] = 0;
@@ -1607,6 +1519,47 @@ SwitchScreen::SwitchScreen (CompScreen *screen) :
     selectFgColorAtom =
 	XInternAtom (screen->dpy (), DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
 
+    optionSetZoomNotify (boost::bind (&SwitchScreen::setZoom, this));
+
+#define SWITCHBIND(a,b,c) boost::bind (switchInitiateCommon, _1, _2, _3, a, b, c)
+
+    optionSetNextButtonInitiate (SWITCHBIND (CurrentViewport, true, true));
+    optionSetNextButtonTerminate (switchTerminate);
+    optionSetNextKeyInitiate (SWITCHBIND (CurrentViewport, true, true));
+    optionSetNextKeyTerminate (switchTerminate);
+    optionSetPrevButtonInitiate (SWITCHBIND (CurrentViewport, true, false));
+    optionSetPrevButtonTerminate (switchTerminate);
+    optionSetPrevKeyInitiate (SWITCHBIND (CurrentViewport, true, false));
+    optionSetPrevKeyTerminate (switchTerminate);
+
+    optionSetNextAllButtonInitiate (SWITCHBIND (AllViewports, true, true));
+    optionSetNextAllButtonTerminate (switchTerminate);
+    optionSetNextAllKeyInitiate (SWITCHBIND (AllViewports, true, true));
+    optionSetNextAllKeyTerminate (switchTerminate);
+    optionSetPrevAllButtonInitiate (SWITCHBIND (AllViewports, true, false));
+    optionSetPrevAllButtonTerminate (switchTerminate);
+    optionSetPrevAllKeyInitiate (SWITCHBIND (AllViewports, true, false));
+    optionSetPrevAllKeyTerminate (switchTerminate);
+
+    optionSetNextNoPopupButtonInitiate (SWITCHBIND (CurrentViewport, false, true));
+    optionSetNextNoPopupButtonTerminate (switchTerminate);
+    optionSetNextNoPopupKeyInitiate (SWITCHBIND (CurrentViewport, false, true));
+    optionSetNextNoPopupKeyTerminate (switchTerminate);
+    optionSetPrevNoPopupButtonInitiate (SWITCHBIND (CurrentViewport, false, false));
+    optionSetPrevNoPopupButtonTerminate (switchTerminate);
+    optionSetPrevNoPopupKeyInitiate (SWITCHBIND (CurrentViewport, false, false));
+    optionSetPrevNoPopupKeyTerminate (switchTerminate);
+
+    optionSetNextPanelButtonInitiate (SWITCHBIND (Panels, false, true));
+    optionSetNextPanelButtonTerminate (switchTerminate);
+    optionSetNextPanelKeyInitiate (SWITCHBIND (Panels, false, true));
+    optionSetNextPanelKeyTerminate (switchTerminate);
+    optionSetPrevPanelButtonInitiate (SWITCHBIND (Panels, false, false));
+    optionSetPrevPanelButtonTerminate (switchTerminate);
+    optionSetPrevPanelKeyInitiate (SWITCHBIND (Panels, false, false));
+    optionSetPrevPanelKeyTerminate (switchTerminate);
+
+#undef SWITCHBIND
 
     ScreenInterface::setHandler (screen, false);
     CompositeScreenInterface::setHandler (cScreen, false);
@@ -1626,9 +1579,6 @@ SwitchPluginVTable::init ()
         !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (switchOptionInfo, SWITCH_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

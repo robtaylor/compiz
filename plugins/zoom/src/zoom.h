@@ -37,15 +37,7 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define ZOOM_OPTION_INITIATE_BUTTON 0
-#define ZOOM_OPTION_IN_BUTTON	    1
-#define ZOOM_OPTION_OUT_BUTTON	    2
-#define ZOOM_OPTION_PAN_BUTTON	    3
-#define ZOOM_OPTION_SPEED	    4
-#define ZOOM_OPTION_TIMESTEP	    5
-#define ZOOM_OPTION_ZOOM_FACTOR     6
-#define ZOOM_OPTION_FILTER_LINEAR   7
-#define ZOOM_OPTION_NUM		    8
+#include "zoom_options.h"
 
 #define ZOOM_SCREEN(s)						        \
     ZoomScreen *zs = ZoomScreen::get (s)
@@ -61,15 +53,13 @@ class ZoomScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PluginClassHandler<ZoomScreen,CompScreen>
+    public PluginClassHandler<ZoomScreen,CompScreen>,
+    public ZoomOptions
 {
     public:
 	
 	ZoomScreen (CompScreen *screen);
 	~ZoomScreen ();
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);	
 
 	void handleEvent (XEvent *);
 
@@ -89,8 +79,6 @@ class ZoomScreen :
 
 	CompositeScreen *cScreen;
 	GLScreen        *gScreen;
-	
-	CompOption::Vector opt;
 
 	float pointerSensitivity;
 
@@ -121,7 +109,4 @@ class ZoomPluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (ZoomScreen);
-
 };

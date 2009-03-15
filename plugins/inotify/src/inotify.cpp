@@ -25,7 +25,7 @@
 
 #include "inotify.h"
 
-COMPIZ_PLUGIN_20081216 (inotify, InotifyPluginVTable)
+COMPIZ_PLUGIN_20090315 (inotify, InotifyPluginVTable)
 
 InotifyScreen::InotifyScreen (CompScreen *screen) :
     PluginClassHandler<InotifyScreen, CompScreen> (screen)
@@ -163,8 +163,6 @@ InotifyPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

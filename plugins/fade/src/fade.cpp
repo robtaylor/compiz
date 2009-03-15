@@ -26,7 +26,7 @@
 #include "fade.h"
 #include <core/atoms.h>
 
-COMPIZ_PLUGIN_20081216 (fade, FadePluginVTable);
+COMPIZ_PLUGIN_20090315 (fade, FadePluginVTable);
 
 void
 FadeScreen::handleEvent (XEvent *event)
@@ -47,9 +47,9 @@ FadeScreen::handleEvent (XEvent *event)
 
 	    if (w)
 	    {
-		if (opt[FADE_OPTION_VISUAL_BELL].value ().b ())
+		if (optionGetVisualBell ())
 		{
-		    if (opt[FADE_OPTION_FULLSCREEN_VISUAL_BELL].value ().b ())
+		    if (optionGetFullscreenVisualBell ())
 		    {
 			foreach (CompWindow *w, screen->windows ())
 			{
@@ -93,7 +93,7 @@ void
 FadeScreen::preparePaint (int msSinceLastPaint)
 {
     int          steps = MAX (12, (msSinceLastPaint * OPAQUE) / fadeTime);
-    unsigned int mode = opt[FADE_OPTION_FADE_MODE].value ().i ();
+    unsigned int mode = optionGetFadeMode ();
 
     foreach (CompWindow *w, screen->windows ())
 	FadeWindow::get (w)->paintStep (mode, msSinceLastPaint, steps);
@@ -147,12 +147,12 @@ FadeWindow::paintStep (unsigned int mode,
 		       int          msSinceLastPaint,
 		       int          step)
 {
-    if (mode == FADE_MODE_CONSTANTSPEED)
+    if (mode == FadeOptions::FadeModeConstantSpeed)
     {
 	steps    = step;
 	fadeTime = 0;
     }
-    else if (mode == FADE_MODE_CONSTANTTIME)
+    else if (mode == FadeOptions::FadeModeConstantTime)
     {
 	if (fadeTime)
 	{
@@ -198,18 +198,18 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
     GLWindowPaintAttrib fAttrib (attrib);
     int                 mode;
 
-    mode = fScreen->opt[FADE_OPTION_FADE_MODE].value ().i ();
+    mode = fScreen->optionGetFadeMode ();
 
     if (!window->alive () &&
-	fScreen->opt[FADE_OPTION_DIM_UNRESPONSIVE].value ().b ())
+	fScreen->optionGetDimUnresponsive ())
     {
 	GLuint value;
 
-	value = fScreen->opt[FADE_OPTION_UNRESPONSIVE_BRIGHTNESS].value ().i ();
+	value = fScreen->optionGetUnresponsiveBrightness ();
 	if (value != 100)
 	    fAttrib.brightness = fAttrib.brightness * value / 100;
 
-	value = fScreen->opt[FADE_OPTION_UNRESPONSIVE_SATURATION].value ().i ();
+	value = fScreen->optionGetUnresponsiveSaturation ();
 	if (value != 100 && GL::canDoSlightlySaturated)
 	    fAttrib.saturation = fAttrib.saturation * value / 100;
     }
@@ -219,13 +219,13 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	fAttrib.saturation = 0;
     }
 
-    if (mode == FADE_MODE_CONSTANTTIME)
+    if (mode == FadeOptions::FadeModeConstantTime)
     {
 	if (fAttrib.opacity    != targetOpacity    ||
 	    fAttrib.brightness != targetBrightness ||
 	    fAttrib.saturation != targetSaturation)
 	{
-	    fadeTime = fScreen->opt[FADE_OPTION_FADE_TIME].value ().i ();
+	    fadeTime = fScreen->optionGetFadeTime ();
 	    steps    = 1;
 
 	    opacityDiff    = fAttrib.opacity - opacity;
@@ -244,7 +244,7 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 	GLint newBrightness = BRIGHT;
 	GLint newSaturation = COLOR;
 
-	if (mode == FADE_MODE_CONSTANTSPEED)
+	if (mode == FadeOptions::FadeModeConstantSpeed)
 	{
 	    newOpacity = opacity;
 	    if (fAttrib.opacity > opacity)
@@ -268,10 +268,9 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 		saturation = MAX (saturation - (steps / 6),
 				  fAttrib.saturation);
 	}
-	else if (mode == FADE_MODE_CONSTANTTIME)
+	else if (mode == FadeOptions::FadeModeConstantTime)
 	{
-	    int opt           = FADE_OPTION_FADE_TIME;
-	    int totalFadeTime = fScreen->opt[opt].value ().i ();
+	    int totalFadeTime = fScreen->optionGetFadeTime ();
 
 	    if (totalFadeTime == 0)
 		totalFadeTime = fadeTime;
@@ -312,83 +311,45 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
     return gWindow->glPaint (fAttrib, transform, region, mask);
 }
 
-static const CompMetadata::OptionInfo fadeOptionInfo[] = {
-    { "fade_mode", "int", RESTOSTRING (0, FADE_MODE_MAX), 0, 0 },
-    { "fade_speed", "float", "<min>0.1</min>", 0, 0 },
-    { "fade_time", "int", "<min>1</min>", 0, 0 },
-    { "window_match", "match", "<helper>true</helper>", 0, 0 },
-    { "visual_bell", "bool", 0, 0, 0 },
-    { "fullscreen_visual_bell", "bool", 0, 0, 0 },
-    { "minimize_open_close", "bool", 0, 0, 0 },
-    { "dim_unresponsive", "bool", 0, 0, 0 },
-    { "unresponsive_brightness", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "unresponsive_saturation", "int", "<min>0</min><max>100</max>", 0, 0 }
-};
-
 FadeScreen::FadeScreen (CompScreen *s) :
     PluginClassHandler<FadeScreen, CompScreen> (s),
     cScreen (CompositeScreen::get (s)),
     displayModals (0)
 {
-    if (!fadeVTable->getMetadata ()->initOptions (fadeOptionInfo,
-						  FADE_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
-    fadeTime = 1000.0f / opt[FADE_OPTION_FADE_SPEED].value ().f ();
+    fadeTime = 1000.0f / optionGetFadeSpeed ();
 
     ScreenInterface::setHandler (screen);
     CompositeScreenInterface::setHandler (cScreen);
 }
 
-CompOption::Vector&
-FadeScreen::getOptions ()
-{
-    return opt;
-}
-
 bool
-FadeScreen::setOption (const char         *name,
-		       CompOption::Value& value)
+FadeScreen::setOption (const CompString  &name,
+		       CompOption::Value &value)
 {
     CompOption   *o;
     unsigned int index;
 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
+    bool rv = FadeOptions::setOption (name, value);
+
+    if (!rv || !CompOption::findOption (getOptions (), name, &index))
 	return false;
 
     switch (index) {
-    case FADE_OPTION_FADE_SPEED:
-	if (o->set (value))
-	{
-	    fadeTime = 1000.0f / o->value ().f ();
-	    return true;
-	}
-	break;
-    case FADE_OPTION_WINDOW_MATCH:
-	if (o->set (value))
-	{
+	case FadeOptions::FadeSpeed:
+		fadeTime = 1000.0f / optionGetFadeSpeed ();
+	    break;
+	case FadeOptions::WindowMatch:
 	    cScreen->damageScreen ();
-	    return true;
-	}
-	break;
-    case FADE_OPTION_DIM_UNRESPONSIVE:
-	if (o->set (value))
-	{
+	    break;
+	case FadeOptions::DimUnresponsive:
 	    foreach (CompWindow *w, screen->windows ())
-		w->windowNotifySetEnabled (FadeWindow::get (w), value.b ());
-	    return true;
-	}
-	break;
-    default:
-	return CompOption::setOption (*o, value);
-	break;
+		w->windowNotifySetEnabled (FadeWindow::get (w), optionGetDimUnresponsive ());
+	    break;
+	default:
+	    break;
     }
 
-    return false;
+    return rv;
 }
 
 FadeWindow::FadeWindow (CompWindow *w) :
@@ -416,7 +377,7 @@ FadeWindow::FadeWindow (CompWindow *w) :
     WindowInterface::setHandler (window, false);
     GLWindowInterface::setHandler (gWindow);
 
-    if (fScreen->opt[FADE_OPTION_DIM_UNRESPONSIVE].value ().b ())
+    if (fScreen->optionGetDimUnresponsive ())
 	window->windowNotifySetEnabled (this, true);
 }
 
@@ -434,9 +395,5 @@ FadePluginVTable::init ()
     {
 	return false;
     }
-
-    getMetadata ()->addFromOptionInfo (fadeOptionInfo, FADE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
-
     return true;
 }

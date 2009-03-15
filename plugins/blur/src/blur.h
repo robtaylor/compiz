@@ -35,12 +35,9 @@
 #include <X11/Xatom.h>
 #include <GL/glu.h>
 
-#define BLUR_GAUSSIAN_RADIUS_MAX 15
+#include "blur_options.h"
 
-#define BLUR_FILTER_4X_BILINEAR 0
-#define BLUR_FILTER_GAUSSIAN    1
-#define BLUR_FILTER_MIPMAP      2
-#define BLUR_FILTER_LAST	BLUR_FILTER_MIPMAP
+#define BLUR_GAUSSIAN_RADIUS_MAX 15
 
 struct BlurFunction {
 
@@ -69,34 +66,19 @@ struct BlurState {
     bool                 clipped;
 };
 
-#define BLUR_OPTION_PULSE             0
-#define BLUR_OPTION_BLUR_SPEED        1
-#define BLUR_OPTION_FOCUS_BLUR_MATCH  2
-#define BLUR_OPTION_FOCUS_BLUR        3
-#define BLUR_OPTION_ALPHA_BLUR_MATCH  4
-#define BLUR_OPTION_ALPHA_BLUR        5
-#define BLUR_OPTION_FILTER            6
-#define BLUR_OPTION_GAUSSIAN_RADIUS   7
-#define BLUR_OPTION_GAUSSIAN_STRENGTH 8
-#define BLUR_OPTION_MIPMAP_LOD        9
-#define BLUR_OPTION_SATURATION        10
-#define BLUR_OPTION_BLUR_OCCLUSION    11
-#define BLUR_OPTION_INDEPENDENT_TEX   12
-#define BLUR_OPTION_NUM               13
-
 class BlurScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
-    public PluginClassHandler<BlurScreen,CompScreen>
+    public PluginClassHandler<BlurScreen,CompScreen>,
+    public BlurOptions
 {
     public:
 	
 	BlurScreen (CompScreen *screen);
 	~BlurScreen ();
 
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);	
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	void handleEvent (XEvent *);
 
@@ -143,8 +125,6 @@ class BlurScreen :
     public:
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
-
-	CompOption::Vector opt;
 
 	Atom blurAtom[BLUR_STATE_NUM];
 
@@ -259,7 +239,4 @@ class BlurPluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (BlurScreen);
-
 };

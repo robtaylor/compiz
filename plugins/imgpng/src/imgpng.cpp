@@ -25,7 +25,7 @@
 
 #include "imgpng.h"
 
-COMPIZ_PLUGIN_20081216 (imgpng, PngPluginVTable)
+COMPIZ_PLUGIN_20090315 (imgpng, PngPluginVTable)
 
 PngScreen::PngScreen (CompScreen *screen) :
     PluginClassHandler<PngScreen, CompScreen> (screen)
@@ -352,9 +352,6 @@ PngPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

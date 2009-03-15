@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="gnomecompat">
+    <plugin name="gnomecompat" useBcop="true">
 	<_short>Gnome Compatibility</_short>
 	<_long>Options that keep Compiz compatible to the Gnome desktop environment</_long>
 	<category>General</category>

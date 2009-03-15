@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="move">
+    <plugin name="move" useBcop="true">
 	<_short>Move Window</_short>
 	<_long>Move window</_long>
 	<deps>

@@ -25,7 +25,7 @@
 #include "copytex.h"
 #include <math.h>
 
-COMPIZ_PLUGIN_20081216 (copytex, CopytexPluginVTable)
+COMPIZ_PLUGIN_20090315 (copytex, CopytexPluginVTable)
 
 static GLTexture::Matrix _identity_matrix = {
     1.0f, 0.0f,
@@ -334,9 +334,6 @@ CopytexPluginVTable::init ()
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) ||
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
-
-
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

@@ -31,16 +31,7 @@
 #include <opengl/opengl.h>
 #include <core/atoms.h>
 
-#define DECOR_OPTION_SHADOW_RADIUS   0
-#define DECOR_OPTION_SHADOW_OPACITY  1
-#define DECOR_OPTION_SHADOW_COLOR    2
-#define DECOR_OPTION_SHADOW_OFFSET_X 3
-#define DECOR_OPTION_SHADOW_OFFSET_Y 4
-#define DECOR_OPTION_COMMAND         5
-#define DECOR_OPTION_MIPMAP          6
-#define DECOR_OPTION_DECOR_MATCH     7
-#define DECOR_OPTION_SHADOW_MATCH    8
-#define DECOR_OPTION_NUM             9
+#include "decor_options.h"
 
 #define DECOR_SCREEN(s) DecorScreen *ds = DecorScreen::get(s)
 #define DECOR_WINDOW(w) DecorWindow *dw = DecorWindow::get(w)
@@ -114,14 +105,14 @@ class DecorWindow;
 
 class DecorScreen :
     public ScreenInterface,
-    public PluginClassHandler<DecorScreen,CompScreen>
+    public PluginClassHandler<DecorScreen,CompScreen>,
+    public DecorOptions
 {
     public:
 	DecorScreen (CompScreen *s);
 	~DecorScreen ();
 
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	void handleEvent (XEvent *event);
 	void matchPropertyChanged (CompWindow *);
@@ -158,8 +149,6 @@ class DecorScreen :
 
 	std::map<Window, DecorWindow *> frames;
 
-	CompOption::Vector opt;
-	
 	CompTimer decoratorStart;
 };
 
@@ -240,7 +229,5 @@ class DecorPluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (DecorScreen);
 };
 

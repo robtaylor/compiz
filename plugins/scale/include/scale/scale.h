@@ -49,7 +49,8 @@ class ScaleScreenInterface :
 
 class ScaleScreen :
     public WrapableHandler<ScaleScreenInterface, 1>,
-    public PluginClassHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI>
+    public PluginClassHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI>,
+    public CompOption::Class
 {
     public:
 	typedef enum {
@@ -71,8 +72,7 @@ class ScaleScreen :
 	void relayoutSlots (const CompMatch& match);
 
 	CompOption::Vector & getOptions ();
-        bool setOption (const char *name, CompOption::Value &value);
-	CompOption * getOption (const char *name);
+        bool setOption (const CompString &name, CompOption::Value &value);
 
 	WRAPABLE_HND (0, ScaleScreenInterface, bool,
 		      layoutSlotsAndAssignWindows)

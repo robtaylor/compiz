@@ -25,7 +25,7 @@
 
 #include "zoom.h"
 
-COMPIZ_PLUGIN_20081216 (zoom, ZoomPluginVTable)
+COMPIZ_PLUGIN_20090315 (zoom, ZoomPluginVTable)
 
 static int
 adjustZoomVelocity (ZoomScreen *zs)
@@ -90,8 +90,8 @@ ZoomScreen::preparePaint (int ms)
 	int   steps;
 	float amount;
 
-	amount = ms * 0.35f * opt[ZOOM_OPTION_SPEED].value ().f ();
-	steps  = amount / (0.5f * opt[ZOOM_OPTION_TIMESTEP].value ().f ());
+	amount = ms * 0.35f * optionGetSpeed ();
+	steps  = amount / (0.5f * optionGetTimestep ());
 	if (!steps) steps = 1;
 
 	while (steps--)
@@ -187,7 +187,7 @@ ZoomScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	saveFilter = gScreen->filter (SCREEN_TRANS_FILTER);
 
 	if ((zoomOutput != output->id () || !adjust) && scale > 3.9f &&
-	    !opt[ZOOM_OPTION_FILTER_LINEAR].value ().b ())
+	    !optionGetFilterLinear ())
 	    gScreen->setFilter (SCREEN_TRANS_FILTER, GLTexture::Fast);
 
 	status = gScreen->glPaintOutput (sAttrib, zTransform, region, output,
@@ -366,10 +366,8 @@ zoomIn (CompAction         *action,
 	box.y2 = screen->outputDevs ()[output].y2 ();
     }
 
-    w = (box.x2 - box.x1) /
-	zs->opt[ZOOM_OPTION_ZOOM_FACTOR].value ().f ();
-    h = (box.y2 - box.y1) /
-	zs->opt[ZOOM_OPTION_ZOOM_FACTOR].value ().f ();
+    w = (box.x2 - box.x1) / zs->optionGetZoomFactor ();
+    h = (box.y2 - box.y1) / zs->optionGetZoomFactor ();
 
     x0 = (pointerX - screen->outputDevs ()[output].x1 ()) / (float)
 	screen->outputDevs ()[output].width ();
@@ -688,43 +686,10 @@ ZoomScreen::handleEvent (XEvent *event)
     screen->handleEvent (event);
 }
 
-
-CompOption::Vector &
-ZoomScreen::getOptions ()
-{
-    return opt;
-}
- 
-bool
-ZoomScreen::setOption (const char        *name,
-		       CompOption::Value &value)
-{
-    CompOption *o;
-    unsigned int index;
- 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
-
-    return CompOption::setOption (*o, value);
-}
-
-static const CompMetadata::OptionInfo zoomOptionInfo[] = {
-    { "initiate_button", "button", 0, zoomInitiate, zoomTerminate },
-    { "zoom_in_button", "button", 0, zoomIn, 0 },
-    { "zoom_out_button", "button", 0, zoomOut, 0 },
-    { "zoom_pan_button", "button", 0, zoomInitiatePan, zoomTerminatePan },
-    { "speed", "float", "<min>0.1</min>", 0, 0 },
-    { "timestep", "float", "<min>0.1</min>", 0, 0 },
-    { "zoom_factor", "float", "<min>1.01</min>", 0, 0 },
-    { "filter_linear", "bool", 0, 0, 0 }
-};
-
 ZoomScreen::ZoomScreen (CompScreen *screen) :
     PluginClassHandler<ZoomScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
-    opt(ZOOM_OPTION_NUM),
     grabIndex (0),
     grab (false),
     zoomed (0),
@@ -734,17 +699,19 @@ ZoomScreen::ZoomScreen (CompScreen *screen) :
     scale (0.0),
     zoomOutput (0)
 {
-    if (!zoomVTable->getMetadata ()->initOptions (zoomOptionInfo,
-						  ZOOM_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
     panCursor = XCreateFontCursor (screen->dpy (), XC_fleur);
 
     memset (&current, 0, sizeof (current));
     memset (&last, 0, sizeof (last));
+
+    optionSetInitiateButtonInitiate (zoomInitiate);
+    optionSetInitiateButtonTerminate (zoomTerminate);
+
+    optionSetZoomInButtonInitiate (zoomIn);
+    optionSetZoomOutButtonInitiate (zoomOut);
+
+    optionSetZoomPanButtonInitiate (zoomInitiatePan);
+    optionSetZoomPanButtonTerminate (zoomTerminatePan);
 
     ScreenInterface::setHandler (screen, false);
     CompositeScreenInterface::setHandler (cScreen, false);
@@ -765,9 +732,6 @@ ZoomPluginVTable::init ()
         !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (zoomOptionInfo, ZOOM_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

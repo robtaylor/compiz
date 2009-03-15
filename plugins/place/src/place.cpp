@@ -22,35 +22,13 @@
 
 #include "place.h"
 
-COMPIZ_PLUGIN_20081216 (place, PlacePluginVTable)
-
-static const CompMetadata::OptionInfo placeOptionInfo[] = {
-    { "workarounds", "bool", 0, 0, 0 },
-    { "mode", "int", RESTOSTRING (0, PLACE_MODE_LAST), 0, 0 },
-    { "multioutput_mode", "int", RESTOSTRING (0, PLACE_MOMODE_LAST), 0, 0 },
-    { "force_placement_match", "match", 0, 0, 0 },
-    { "position_matches", "list", "<type>match</type>", 0, 0 },
-    { "position_x_values", "list", "<type>int</type>", 0, 0 },
-    { "position_y_values", "list", "<type>int</type>", 0, 0 },
-    { "position_constrain_workarea", "list", "<type>bool</type>", 0, 0 },
-    { "viewport_matches", "list", "<type>match</type>", 0, 0 },
-    { "viewport_x_values", "list",
-	"<type>int</type><min>1</min><max>32</max>", 0, 0 },
-    { "viewport_y_values", "list",
-	"<type>int</type><min>1</min><max>32</max>", 0, 0 },
-};
+COMPIZ_PLUGIN_20090315 (place, PlacePluginVTable)
 
 PlaceScreen::PlaceScreen (CompScreen *screen) :
-    PluginClassHandler<PlaceScreen, CompScreen> (screen),
-    opt (PLACE_OPTION_NUM)
+    PluginClassHandler<PlaceScreen, CompScreen> (screen)
 {
-    if (!placeVTable->getMetadata ()->initOptions (placeOptionInfo,
-						   PLACE_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
+    optionSetPositionMatchesNotify (boost::bind (&PlaceScreen::updateMatches, this, PlaceOptions::PositionMatches));
+    optionSetViewportMatchesNotify (boost::bind (&PlaceScreen::updateMatches, this, PlaceOptions::ViewportMatches));
     ScreenInterface::setHandler (screen);
 }
 
@@ -140,34 +118,11 @@ PlaceScreen::handleEvent (XEvent *event)
     screen->handleEvent (event);
 }
 
-CompOption::Vector &
-PlaceScreen::getOptions ()
+void
+PlaceScreen::updateMatches (unsigned int opt)
 {
-    return opt;
-}
-
-bool
-PlaceScreen::setOption (const char        *name,
-			CompOption::Value &value)
-{
-    CompOption   *o;
-    unsigned int index;
-
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
-
-    if (!CompOption::setOption (*o, value))
-	return false;
-
-    if (index == PLACE_OPTION_POSITION_MATCHES ||
-	index == PLACE_OPTION_VIEWPORT_MATCHES)
-    {
-	foreach (CompOption::Value &ov, o->value ().list ())
-	    ov.match ().update ();
-    }
-
-    return true;
+    foreach (CompOption::Value &ov, mOptions[opt].value ().list ())
+	ov.match ().update ();
 }
 
 /* sort functions */
@@ -293,7 +248,7 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	   workarounds are disabled, reason see above */
 	PLACE_SCREEN (screen);
 
-	if (ps->opt[PLACE_OPTION_WORKAROUND].value ().b () ||
+	if (ps->optionGetWorkarounds () ||
 	    (window->type () & CompWindowTypeNormalMask))
 	{
 	    /* try to keep the window position intact for USPosition -
@@ -490,20 +445,20 @@ PlaceWindow::doPlacement (CompPoint &pos)
 
     if (strategy == PlaceOnly || strategy == PlaceAndConstrain)
     {
-	switch (ps->opt[PLACE_OPTION_MODE].value ().i ()) {
-	case PLACE_MODE_CASCADE:
+	switch (ps->optionGetMode ()) {
+	    case PlaceOptions::ModeCascade:
 	    placeCascade (workArea, pos);
 	    break;
-	case PLACE_MODE_CENTERED:
+	case PlaceOptions::ModeCentered:
 	    placeCentered (workArea, pos);
 	    break;
-	case PLACE_MODE_RANDOM:
+	case PlaceOptions::ModeRandom:
 	    placeRandom (workArea, pos);
 	    break;
-	case PLACE_MODE_MAXIMIZE:
+	case PlaceOptions::ModeMaximize:
 	    sendMaximizationRequest ();
 	    break;
-	case PLACE_MODE_SMART:
+	case PlaceOptions::ModeSmart:
 	    placeSmart (workArea, pos);
 	    break;
 	}
@@ -1055,8 +1010,6 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
 PlaceWindow::PlacementStrategy
 PlaceWindow::getStrategy ()
 {
-    int opt;
-
     PLACE_SCREEN (screen);
 
     if (window->type () & (CompWindowTypeDockMask       |
@@ -1082,11 +1035,10 @@ PlaceWindow::getStrategy ()
     if (!(window->actions () & CompWindowActionMoveMask))
 	return NoPlacement;
 
-    opt = PLACE_OPTION_FORCE_PLACEMENT;
-    if (!ps->opt[opt].value ().match ().evaluate (window))
+    if (!ps->optionGetForcePlacementMatch ().evaluate (window))
     {
 	if ((window->type () & CompWindowTypeNormalMask) ||
-	    ps->opt[PLACE_OPTION_WORKAROUND].value ().b ())
+	    ps->optionGetWorkarounds ())
 	{
 	    /* Only accept USPosition on non-normal windows if workarounds are
 	     * enabled because apps claiming the user set -geometry for a
@@ -1153,42 +1105,42 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
     if (output >= 0)
 	return screen->outputDevs ()[output];
 
-    switch (ps->opt[PLACE_OPTION_MULTIOUTPUT_MODE].value ().i ()) {
-    case PLACE_MOMODE_CURRENT:
-	return screen->currentOutputDev ();
-	break;
-    case PLACE_MOMODE_POINTER:
-	{
-	    Window       wDummy;
-	    int          iDummy, xPointer, yPointer;
-	    unsigned int uiDummy;
-
-	    /* this means a server roundtrip, which kind of sucks; thus
-	       this code should be replaced as soon as we have software
-	       cursor rendering and thus have a cached pointer coordinate */
-	    if (XQueryPointer (screen->dpy (), screen->root (),
-			       &wDummy, &wDummy, &xPointer, &yPointer,
-			       &iDummy, &iDummy, &uiDummy))
+    switch (ps->optionGetMultioutputMode ()) {
+	case PlaceOptions::MultioutputModeUseActiveOutputDevice:
+	    return screen->currentOutputDev ();
+	    break;
+	case PlaceOptions::MultioutputModeUseOutputDeviceWithPointer:
 	    {
-		output = screen->outputDeviceForPoint (xPointer, yPointer);
-	    }
-	}
-	break;
-    case PLACE_MOMODE_ACTIVEWIN:
-	{
-	    CompWindow *active;
+		Window       wDummy;
+		int          iDummy, xPointer, yPointer;
+		unsigned int uiDummy;
 
-	    active = screen->findWindow (screen->activeWindow ());
-	    if (active)
-		output = active->outputDevice ();
-	}
-	break;
-    case PLACE_MOMODE_FULLSCREEN:
-	/* only place on fullscreen output if not placing centered, as the
-	   constraining will move the window away from the center otherwise */
-	if (strategy != PlaceCenteredOnScreen)
-	    return screen->fullscreenOutput ();
-	break;
+		/* this means a server roundtrip, which kind of sucks; thus
+		this code should be replaced as soon as we have software
+		cursor rendering and thus have a cached pointer coordinate */
+		if (XQueryPointer (screen->dpy (), screen->root (),
+				&wDummy, &wDummy, &xPointer, &yPointer,
+				&iDummy, &iDummy, &uiDummy))
+		{
+		    output = screen->outputDeviceForPoint (xPointer, yPointer);
+		}
+	    }
+	    break;
+	case PlaceOptions::MultioutputModeUseOutputDeviceOfFocussedWindow:
+	    {
+		CompWindow *active;
+
+		active = screen->findWindow (screen->activeWindow ());
+		if (active)
+		    output = active->outputDevice ();
+	    }
+	    break;
+	case PlaceOptions::MultioutputModePlaceAcrossAllOutputs:
+	    /* only place on fullscreen output if not placing centered, as the
+	    constraining will move the window away from the center otherwise */
+	    if (strategy != PlaceCenteredOnScreen)
+		return screen->fullscreenOutput ();
+	    break;
     }
 
     if (output < 0)
@@ -1312,11 +1264,11 @@ PlaceWindow::matchPosition (CompPoint &pos,
     PLACE_SCREEN (screen);
 
     return matchXYValue (
-	ps->opt[PLACE_OPTION_POSITION_MATCHES].value ().list (),
-	ps->opt[PLACE_OPTION_POSITION_X_VALUES].value ().list (),
-	ps->opt[PLACE_OPTION_POSITION_Y_VALUES].value ().list (),
+	ps->optionGetPositionMatches (),
+	ps->optionGetPositionXValues (),
+	ps->optionGetPositionYValues (),
 	pos,
-	&ps->opt[PLACE_OPTION_POSITION_CONSTRAIN].value ().list (),
+	&ps->optionGetPositionConstrainWorkarea (),
 	&keepInWorkarea);
 }
 
@@ -1325,9 +1277,9 @@ PlaceWindow::matchViewport (CompPoint &pos)
 {
     PLACE_SCREEN (screen);
 
-    if (matchXYValue (ps->opt[PLACE_OPTION_VIEWPORT_MATCHES].value ().list (),
-		      ps->opt[PLACE_OPTION_VIEWPORT_X_VALUES].value ().list (),
-		      ps->opt[PLACE_OPTION_VIEWPORT_Y_VALUES].value ().list (),
+    if (matchXYValue (ps->optionGetViewportMatches (),
+		      ps->optionGetViewportXValues (),
+		      ps->optionGetViewportYValues (),
 		      pos))
     {
 	/* Viewport matches are given 1-based, so we need to adjust that */
@@ -1345,9 +1297,6 @@ PlacePluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromOptionInfo (placeOptionInfo, PLACE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

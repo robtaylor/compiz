@@ -25,13 +25,13 @@
 
 #include "gnomecompat.h"
 
-COMPIZ_PLUGIN_20081216 (gnomecompat, GnomeCompatPluginVTable);
+COMPIZ_PLUGIN_20090315 (gnomecompat, GnomeCompatPluginVTable);
 
 static bool
 runCommand (CompAction          *action,
 	    CompAction::State   state,
 	    CompOption::Vector& options,
-	    unsigned int        commandOption)
+	    CompOption          *commandOption)
 {
     Window xid;
 
@@ -41,7 +41,7 @@ runCommand (CompAction          *action,
     if (xid != screen->root ())
 	return false;
 
-    screen->runCommand (gs->opt[commandOption].value ().s ());
+    screen->runCommand (commandOption->value ().s ());
 
     return true;
 }
@@ -102,59 +102,25 @@ showRunDialog (CompAction          *action,
     return true;
 }
 
-#define COMMAND_BIND(opt) \
-    boost::bind (runCommand, _1, _2, _3, opt)
-
-static const CompMetadata::OptionInfo gnomeOptionInfo[] = {
-    { "main_menu_key", "key", 0, showMainMenu, 0 },
-    { "run_key", "key", 0, showRunDialog, 0 },
-    { "command_screenshot", "string", 0, 0, 0 },
-    { "run_command_screenshot_key", "key", 0,
-	COMMAND_BIND (GNOME_OPTION_SCREENSHOT_CMD), 0 },
-    { "command_window_screenshot", "string", 0, 0, 0 },
-    { "run_command_window_screenshot_key", "key", 0,
-	COMMAND_BIND (GNOME_OPTION_WINDOW_SCREENSHOT_CMD), 0 },
-    { "command_terminal", "string", 0, 0, 0 },
-    { "run_command_terminal_key", "key", 0,
-	COMMAND_BIND (GNOME_OPTION_TERMINAL_CMD), 0 }
-};
-
 GnomeCompatScreen::GnomeCompatScreen (CompScreen *s) :
     PluginClassHandler<GnomeCompatScreen, CompScreen> (s)
 {
-    if (!gnomecompatVTable->getMetadata ()->initOptions (gnomeOptionInfo,
-							 GNOME_OPTION_NUM,
-							 opt))
-    {
-	setFailed ();
-	return;
-    }
-
     panelActionAtom =
 	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION", FALSE);
     panelMainMenuAtom =
 	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_MAIN_MENU", FALSE);
     panelRunDialogAtom =
 	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_RUN_DIALOG", FALSE);
-}
 
-CompOption::Vector&
-GnomeCompatScreen::getOptions ()
-{
-    return opt;
-}
+#define COMMAND_BIND(opt) \
+    boost::bind (runCommand, _1, _2, _3, &mOptions[opt])
 
-bool
-GnomeCompatScreen::setOption (const char         *name,
-			      CompOption::Value& value)
-{
-    CompOption *o;
+    optionSetMainMenuKeyInitiate (showMainMenu);
+    optionSetRunKeyInitiate (showRunDialog);
+    optionSetRunCommandScreenshotKeyInitiate (COMMAND_BIND (GnomecompatOptions::CommandScreenshot));
+    optionSetRunCommandWindowScreenshotKeyInitiate (COMMAND_BIND (GnomecompatOptions::CommandWindowScreenshot));
+    optionSetRunCommandTerminalKeyInitiate (COMMAND_BIND (GnomecompatOptions::CommandTerminal));
 
-    o = CompOption::findOption (opt, name, NULL);
-    if (!o)
-	return false;
-
-    return CompOption::setOption (*o, value);
 }
 
 bool
@@ -162,9 +128,6 @@ GnomeCompatPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromOptionInfo (gnomeOptionInfo, GNOME_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

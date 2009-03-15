@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="place">
+    <plugin name="place" useBcop="true">
 	<_short>Place Windows</_short>
 	<_long>Place windows at appropriate positions when mapped</_long>
 	<options>

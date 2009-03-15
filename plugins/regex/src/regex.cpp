@@ -26,7 +26,7 @@
 #include "regexplugin.h"
 #include <limits.h>
 
-COMPIZ_PLUGIN_20081216 (regex, RegexPluginVTable);
+COMPIZ_PLUGIN_20090315 (regex, RegexPluginVTable);
 
 class RegexExp : public CompMatch::Expression
 {
@@ -305,8 +305,6 @@ RegexPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

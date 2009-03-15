@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="blur">
+    <plugin name="blur" useBcop="true">
 	<_short>Blur Windows</_short>
 	<_long>Blur windows</_long>
 	<feature>blur</feature>

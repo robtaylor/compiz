@@ -37,15 +37,7 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define WATER_OPTION_INITIATE_KEY     0
-#define WATER_OPTION_TOGGLE_RAIN_KEY  1
-#define WATER_OPTION_TOGGLE_WIPER_KEY 2
-#define WATER_OPTION_OFFSET_SCALE     3
-#define WATER_OPTION_RAIN_DELAY	      4
-#define WATER_OPTION_TITLE_WAVE       5
-#define WATER_OPTION_POINT            6
-#define WATER_OPTION_LINE             7
-#define WATER_OPTION_NUM              8
+#include "water_options.h"
 
 #define WATER_SCREEN(s) \
     WaterScreen *ws = WaterScreen::get (s)
@@ -77,15 +69,15 @@ struct WaterFunction {
 class WaterScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public PluginClassHandler<WaterScreen,CompScreen>
+    public PluginClassHandler<WaterScreen,CompScreen>,
+    public WaterOptions
 {
     public:
 	
 	WaterScreen (CompScreen *screen);
 	~WaterScreen ();
 
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);	
+	void optionChange (WaterOptions::Options num);
 
 	void handleEvent (XEvent *);
 
@@ -122,8 +114,6 @@ class WaterScreen :
 
 	CompositeScreen *cScreen;
 	GLScreen        *gScreen;
-	
-	CompOption::Vector opt;
 
 	float offsetScale;
 
@@ -187,7 +177,4 @@ class WaterPluginVTable :
     public:
 
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (WaterScreen);
-
 };

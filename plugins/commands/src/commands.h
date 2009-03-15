@@ -26,72 +26,19 @@
 #include <core/core.h>
 #include <core/pluginclasshandler.h>
 
-#define COMMANDS_OPTION_COMMAND0              0
-#define COMMANDS_OPTION_COMMAND1              1
-#define COMMANDS_OPTION_COMMAND2              2
-#define COMMANDS_OPTION_COMMAND3              3
-#define COMMANDS_OPTION_COMMAND4              4
-#define COMMANDS_OPTION_COMMAND5              5
-#define COMMANDS_OPTION_COMMAND6              6
-#define COMMANDS_OPTION_COMMAND7              7
-#define COMMANDS_OPTION_COMMAND8              8
-#define COMMANDS_OPTION_COMMAND9              9
-#define COMMANDS_OPTION_COMMAND10            10
-#define COMMANDS_OPTION_COMMAND11            11
-#define COMMANDS_OPTION_RUN_COMMAND0_KEY     12
-#define COMMANDS_OPTION_RUN_COMMAND1_KEY     13
-#define COMMANDS_OPTION_RUN_COMMAND2_KEY     14
-#define COMMANDS_OPTION_RUN_COMMAND3_KEY     15
-#define COMMANDS_OPTION_RUN_COMMAND4_KEY     16
-#define COMMANDS_OPTION_RUN_COMMAND5_KEY     17
-#define COMMANDS_OPTION_RUN_COMMAND6_KEY     18
-#define COMMANDS_OPTION_RUN_COMMAND7_KEY     19
-#define COMMANDS_OPTION_RUN_COMMAND8_KEY     20
-#define COMMANDS_OPTION_RUN_COMMAND9_KEY     21
-#define COMMANDS_OPTION_RUN_COMMAND10_KEY    22
-#define COMMANDS_OPTION_RUN_COMMAND11_KEY    23
-#define COMMANDS_OPTION_RUN_COMMAND0_BUTTON  24
-#define COMMANDS_OPTION_RUN_COMMAND1_BUTTON  25
-#define COMMANDS_OPTION_RUN_COMMAND2_BUTTON  26
-#define COMMANDS_OPTION_RUN_COMMAND3_BUTTON  27
-#define COMMANDS_OPTION_RUN_COMMAND4_BUTTON  28
-#define COMMANDS_OPTION_RUN_COMMAND5_BUTTON  29
-#define COMMANDS_OPTION_RUN_COMMAND6_BUTTON  30
-#define COMMANDS_OPTION_RUN_COMMAND7_BUTTON  31
-#define COMMANDS_OPTION_RUN_COMMAND8_BUTTON  32
-#define COMMANDS_OPTION_RUN_COMMAND9_BUTTON  33
-#define COMMANDS_OPTION_RUN_COMMAND10_BUTTON 34
-#define COMMANDS_OPTION_RUN_COMMAND11_BUTTON 35
-#define COMMANDS_OPTION_RUN_COMMAND0_EDGE    36
-#define COMMANDS_OPTION_RUN_COMMAND1_EDGE    37
-#define COMMANDS_OPTION_RUN_COMMAND2_EDGE    38
-#define COMMANDS_OPTION_RUN_COMMAND3_EDGE    39
-#define COMMANDS_OPTION_RUN_COMMAND4_EDGE    40
-#define COMMANDS_OPTION_RUN_COMMAND5_EDGE    41
-#define COMMANDS_OPTION_RUN_COMMAND6_EDGE    42
-#define COMMANDS_OPTION_RUN_COMMAND7_EDGE    43
-#define COMMANDS_OPTION_RUN_COMMAND8_EDGE    44
-#define COMMANDS_OPTION_RUN_COMMAND9_EDGE    45
-#define COMMANDS_OPTION_RUN_COMMAND10_EDGE   46
-#define COMMANDS_OPTION_RUN_COMMAND11_EDGE   47
-#define COMMANDS_OPTION_NUM                  48
+#include "commands_options.h"
 
 class CommandsScreen :
-    public PluginClassHandler<CommandsScreen, CompScreen>
+    public PluginClassHandler<CommandsScreen, CompScreen>,
+    public CommandsOptions
 {
     public:
 	CommandsScreen (CompScreen *s);
-
-	CompOption::Vector& getOptions ();
-	bool setOption (const char *name, CompOption::Value& value);
 
 	static bool runCommand (CompAction *action,
 				CompAction::State state,
 				CompOption::Vector& options,
 				int commandOption);
-
-    private:
-	CompOption::Vector opt;
 };
 
 class CommandsPluginVTable :
@@ -99,7 +46,5 @@ class CommandsPluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (CommandsScreen);
 };
 

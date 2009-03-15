@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="commands">
+    <plugin name="commands" useBcop="true">
 	<_short>Commands</_short>
 	<_long>Assigns bindings to arbitrary commands</_long>
 	<category>General</category>

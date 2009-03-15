@@ -50,11 +50,9 @@ class ScalePluginVTable :
 
 	bool init ();
 	void fini ();
-
-	PLUGIN_OPTION_HELPER (ScaleScreen)
 };
 
-COMPIZ_PLUGIN_20081216 (scale, ScalePluginVTable)
+COMPIZ_PLUGIN_20090315 (scale, ScalePluginVTable)
 
 bool
 PrivateScaleWindow::isNeverScaleWin () const
@@ -138,7 +136,7 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 {
     WRAPABLE_HND_FUNC(0, scalePaintDecoration, attrib, transform, region, mask)
 
-    if (priv->spScreen->opt[SCALE_OPTION_ICON].value ().i () != SCALE_ICON_NONE)
+    if (priv->spScreen->optionGetOverlayIcon () != ScaleOptions::OverlayIconNone)
     {
 	GLWindowPaintAttrib sAttrib (attrib);
 	GLTexture           *icon;
@@ -158,12 +156,12 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 	    scaledWinWidth  = priv->window->width () * priv->scale;
 	    scaledWinHeight = priv->window->height () * priv->scale;
 
-	    switch (priv->spScreen->opt[SCALE_OPTION_ICON].value ().i ()) {
-		case SCALE_ICON_NONE:
-		case SCALE_ICON_EMBLEM:
+	    switch (priv->spScreen->optionGetOverlayIcon ()) {
+		case ScaleOptions::OverlayIconNone:
+		case ScaleOptions::OverlayIconEmblem:
 		    scale = 1.0f;
 		    break;
-		case SCALE_ICON_BIG:
+		case ScaleOptions::OverlayIconBig:
 		default:
 		    sAttrib.opacity /= 3;
 		    scale = MIN (((float) scaledWinWidth / icon->width ()),
@@ -174,13 +172,13 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 	    width  = icon->width () * scale;
 	    height = icon->height () * scale;
 
-	    switch (priv->spScreen->opt[SCALE_OPTION_ICON].value ().i ()) {
-		case SCALE_ICON_NONE:
-		case SCALE_ICON_EMBLEM:
+	    switch (priv->spScreen->optionGetOverlayIcon ()) {
+		case ScaleOptions::OverlayIconNone:
+		case ScaleOptions::OverlayIconEmblem:
 		    x = priv->window->x () + scaledWinWidth - icon->width ();
 		    y = priv->window->y () + scaledWinHeight - icon->height ();
 		    break;
-		case SCALE_ICON_BIG:
+		case ScaleOptions::OverlayIconBig:
 		default:
 		    x = priv->window->x () + scaledWinWidth / 2 - width / 2;
 		    y = priv->window->y () + scaledWinHeight / 2 - height / 2;
@@ -281,7 +279,7 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
     }
     else if (priv->spScreen->state != ScaleScreen::In)
     {
-	if (priv->spScreen->opt[SCALE_OPTION_DARKEN_BACK].value ().b ())
+	if (priv->spScreen->optionGetDarkenBack ())
 	{
 	    /* modify brightness of the other windows */
 	    attrib.brightness = attrib.brightness / 2;
@@ -291,13 +289,12 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
 	   that are not in scale mode */
 	if (!priv->isNeverScaleWin ())
 	{
-	    int opt, moMode, output;
+	    int moMode, output;
 
-	    opt    = SCALE_OPTION_MULTIOUTPUT_MODE;
-	    moMode = priv->spScreen->opt[opt].value ().i ();
+	    moMode = priv->spScreen->optionGetMultioutputMode ();
 
 	    switch (moMode) {
-		case SCALE_MOMODE_CURRENT:
+		case ScaleOptions::MultioutputModeOnCurrentOutputDevice:
 		    output = screen->currentOutputDev ().id ();
 		    if (priv->window->outputDevice () == output)
 			attrib.opacity = 0;
@@ -387,7 +384,7 @@ PrivateScaleScreen::layoutSlotsForArea (const CompRect& workArea,
 	return;
 
     lines   = sqrt (nWindows + 1);
-    spacing = opt[SCALE_OPTION_SPACING].value ().i ();
+    spacing = optionGetSpacing ();
     nSlots  = 0;
 
     y      = workArea.y () + spacing;
@@ -491,18 +488,18 @@ PrivateScaleScreen::layoutSlots ()
     int i;
     int moMode;
 
-    moMode  = opt[SCALE_OPTION_MULTIOUTPUT_MODE].value ().i ();
+    moMode  = optionGetMultioutputMode ();
 
     /* if we have only one head, we don't need the 
        additional effort of the all outputs mode */
     if (screen->outputDevs ().size () == 1)
-	moMode = SCALE_MOMODE_CURRENT;
+	moMode = ScaleOptions::MultioutputModeOnCurrentOutputDevice;
 
     nSlots = 0;
 
     switch (moMode)
     {
-	case SCALE_MOMODE_ALL:
+	case ScaleOptions::MultioutputModeOnAllOutputDevices:
 	    {
 		SlotArea::vector slotAreas = getSlotAreas ();
 		if (slotAreas.size ())
@@ -510,7 +507,7 @@ PrivateScaleScreen::layoutSlots ()
 			layoutSlotsForArea (sa.workArea, sa.nWindows);
 	    }
 	    break;
-	case SCALE_MOMODE_CURRENT:
+	case ScaleOptions::MultioutputModeOnCurrentOutputDevice:
 	default:
 	    {
 		CompRect workArea (screen->currentOutputDev ().workArea ());
@@ -778,9 +775,8 @@ PrivateScaleScreen::preparePaint (int msSinceLastPaint)
 	int   steps;
 	float amount, chunk;
 
-	amount = msSinceLastPaint * 0.05f *
-		 opt[SCALE_OPTION_SPEED].value ().f ();
-	steps  = amount / (0.5f * opt[SCALE_OPTION_TIMESTEP].value ().f ());
+	amount = msSinceLastPaint * 0.05f * optionGetSpeed ();
+	steps  = amount / (0.5f * optionGetTimestep ());
 
 	if (!steps)
 	    steps = 1;
@@ -1047,7 +1043,7 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
     match = CompOption::getMatchOptionNamed (options, "match",
 					     CompMatch::emptyMatch);
     if (match.isEmpty ())
-	match = opt[SCALE_OPTION_WINDOW_MATCH].value ().match ();
+	match = optionGetWindowMatch ();
 
     /* TODO: match.update() ? */
     currentMatch = match;
@@ -1288,10 +1284,10 @@ PrivateScaleScreen::windowRemove (Window id)
 		o.push_back (CompOption ("root", CompOption::TypeInt));
 		o[0].value ().set ((int) screen->root ());
 
-		action = &opt[SCALE_OPTION_INITIATE_EDGE].value ().action ();
+		action = &optionGetInitiateEdge ();
 		scaleTerminate (action, CompAction::StateCancel, o);
 
-		action = &opt[SCALE_OPTION_INITIATE_KEY].value ().action ();
+		action = &optionGetInitiateKey ();
 		scaleTerminate (action, CompAction::StateCancel, o);
 		break;
 	    }
@@ -1306,7 +1302,6 @@ PrivateScaleScreen::hoverTimeout ()
     {
 	CompWindow         *w;
 	CompOption::Vector o (0);
-	int	           option;
 
 	w = screen->findWindow (selectedWindow);
 	if (w)
@@ -1320,10 +1315,8 @@ PrivateScaleScreen::hoverTimeout ()
 	o.push_back (CompOption ("root", CompOption::TypeInt));
 	o[0].value ().set ((int) screen->root ());
 	
-	option = SCALE_OPTION_INITIATE_EDGE;
-	scaleTerminate (&opt[option].value ().action (), 0, o);
-	option = SCALE_OPTION_INITIATE_KEY;
-	scaleTerminate (&opt[option].value ().action (), 0, o);
+	scaleTerminate (&optionGetInitiateEdge (), 0, o);
+	scaleTerminate (&optionGetInitiateKey (), 0, o);
     }
 
     return false;
@@ -1356,7 +1349,6 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		state != ScaleScreen::In)
 	    {
 		XButtonEvent       *button = &event->xbutton;
-		int                option;
 		CompOption::Vector o (0);
 
 		o.push_back (CompOption ("root", CompOption::TypeInt));
@@ -1364,22 +1356,18 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 
 		if (selectWindowAt (button->x_root, button->y_root, true))
 		{
-		    option = SCALE_OPTION_INITIATE_EDGE;
-		    scaleTerminate (&opt[option].value ().action (), 0, o);
-		    option = SCALE_OPTION_INITIATE_KEY;
-		    scaleTerminate (&opt[option].value ().action (), 0, o);
+		    scaleTerminate (&optionGetInitiateEdge (), 0, o);
+		    scaleTerminate (&optionGetInitiateKey (), 0, o);
 		}
-		else if (opt[SCALE_OPTION_SHOW_DESKTOP].value ().b ())
+		else if (optionGetShowDesktop ())
 		{
 		    CompPoint pointer (button->x_root, button->y_root);
 		    CompRect  workArea (screen->workArea ());
 
 		    if (workArea.contains (pointer))
 		    {
-			option = SCALE_OPTION_INITIATE_EDGE;
-			scaleTerminate (&opt[option].value ().action (), 0, o);
-			option = SCALE_OPTION_INITIATE_KEY;
-			scaleTerminate (&opt[option].value ().action (), 0, o);
+			scaleTerminate (&optionGetInitiateEdge (), 0, o);
+			scaleTerminate (&optionGetInitiateKey (), 0, o);
 			screen->enterShowDesktopMode ();
 		    }
 		}
@@ -1430,7 +1418,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 			{
 			    int time;
 
-			    time = opt[SCALE_OPTION_HOVER_TIME].value ().i ();
+			    time = optionGetHoverTime ();
 
 			    if (hover.active ())
 			    {
@@ -1457,8 +1445,6 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		CompWindow *w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
-		    int option;
-
 		    if (grab			 &&
 			state != ScaleScreen::In &&
 			w->id () == dndTarget)
@@ -1467,10 +1453,8 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 			o.push_back (CompOption ("root", CompOption::TypeInt));
 			o[0].value ().set ((int) screen->root ());
 
-			option = SCALE_OPTION_INITIATE_EDGE;
-			scaleTerminate (&opt[option].value ().action (), 0, o);
-			option = SCALE_OPTION_INITIATE_KEY;
-			scaleTerminate (&opt[option].value ().action (), 0, o);
+			scaleTerminate (&optionGetInitiateEdge (), 0, o);
+			scaleTerminate (&optionGetInitiateKey (), 0, o);
 		    }
 		}
 	    }
@@ -1522,48 +1506,6 @@ PrivateScaleWindow::damageRect (bool            initial,
     return status;
 }
 
-#define SCALEBIND(a)                                              \
-    boost::bind (PrivateScaleScreen::scaleInitiate, _1, _2, _3, a)
-
-static const CompMetadata::OptionInfo scaleOptionInfo[] = {
-    { "initiate_edge", "edge", 0,
-      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
-    { "initiate_button", "button", 0,
-      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
-    { "initiate_key", "key", 0,
-      SCALEBIND (ScaleTypeNormal), PrivateScaleScreen::scaleTerminate },
-    { "initiate_all_edge", "edge", 0,
-      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
-    { "initiate_all_button", "button", 0,
-      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
-    { "initiate_all_key", "key", 0,
-      SCALEBIND (ScaleTypeAll), PrivateScaleScreen::scaleTerminate },
-    { "initiate_group_edge", "edge", 0,
-      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
-    { "initiate_group_button", "button", 0,
-      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
-    { "initiate_group_key", "key", 0,
-      SCALEBIND (ScaleTypeGroup), PrivateScaleScreen::scaleTerminate },
-    { "initiate_output_edge", "edge", 0,
-      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
-    { "initiate_output_button", "button", 0,
-      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
-    { "initiate_output_key", "key", 0,
-      SCALEBIND (ScaleTypeOutput), PrivateScaleScreen::scaleTerminate },
-    { "show_desktop", "bool", 0, 0, 0 },
-    { "spacing", "int", "<min>0</min>", 0, 0 },
-    { "speed", "float", "<min>0.1</min>", 0, 0 },
-    { "timestep", "float", "<min>0.1</min>", 0, 0 },
-    { "window_match", "match", 0, 0, 0 },
-    { "darken_back", "bool", 0, 0, 0 },
-    { "opacity", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "overlay_icon", "int", RESTOSTRING (0, SCALE_ICON_LAST), 0, 0 },
-    { "hover_time", "int", "<min>50</min>", 0, 0 },
-    { "multioutput_mode", "int", RESTOSTRING (0, SCALE_MOMODE_LAST), 0, 0 }
-};
-
-#undef SCALEBIND
-
 ScaleScreen::ScaleScreen (CompScreen *s) :
     PluginClassHandler<ScaleScreen, CompScreen, COMPIZ_SCALE_ABI> (s),
     priv (new PrivateScaleScreen (s))
@@ -1604,13 +1546,6 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
     cursor (0),
     nSlots (0)
 {
-    if (!scaleVTable->getMetadata ()->initOptions (scaleOptionInfo,
-						   SCALE_OPTION_NUM, opt))
-    {
-	ScaleScreen::get (s)->setFailed ();
-	return;
-    }
-
     leftKeyCode  = XKeysymToKeycode (screen->dpy (), XStringToKeysym ("Left"));
     rightKeyCode = XKeysymToKeycode (screen->dpy (), XStringToKeysym ("Right"));
     upKeyCode    = XKeysymToKeycode (screen->dpy (), XStringToKeysym ("Up"));
@@ -1618,9 +1553,44 @@ PrivateScaleScreen::PrivateScaleScreen (CompScreen *s) :
 
     cursor = XCreateFontCursor (screen->dpy (), XC_left_ptr);
 
-    opacity = (OPAQUE * opt[SCALE_OPTION_OPACITY].value ().i ()) / 100;
+    opacity = (OPAQUE * optionGetOpacity ()) / 100;
 
     hover.setCallback (boost::bind (&PrivateScaleScreen::hoverTimeout, this));
+
+    optionSetOpacityNotify (boost::bind (&PrivateScaleScreen::updateOpacity, this));
+
+#define SCALEBIND(a)                                              \
+    boost::bind (PrivateScaleScreen::scaleInitiate, _1, _2, _3, a)
+
+    optionSetInitiateEdgeInitiate (SCALEBIND (ScaleTypeNormal));
+    optionSetInitiateEdgeTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateButtonInitiate (SCALEBIND (ScaleTypeNormal));
+    optionSetInitiateButtonTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateKeyInitiate (SCALEBIND (ScaleTypeNormal));
+    optionSetInitiateKeyTerminate (PrivateScaleScreen::scaleTerminate);
+
+    optionSetInitiateAllEdgeInitiate (SCALEBIND (ScaleTypeAll));
+    optionSetInitiateAllEdgeTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateAllButtonInitiate (SCALEBIND (ScaleTypeAll));
+    optionSetInitiateAllButtonTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateAllKeyInitiate (SCALEBIND (ScaleTypeAll));
+    optionSetInitiateAllKeyTerminate (PrivateScaleScreen::scaleTerminate);
+
+    optionSetInitiateGroupEdgeInitiate (SCALEBIND (ScaleTypeGroup));
+    optionSetInitiateGroupEdgeTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateGroupButtonInitiate (SCALEBIND (ScaleTypeGroup));
+    optionSetInitiateGroupButtonTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateGroupKeyInitiate (SCALEBIND (ScaleTypeGroup));
+    optionSetInitiateGroupKeyTerminate (PrivateScaleScreen::scaleTerminate);
+
+    optionSetInitiateOutputEdgeInitiate (SCALEBIND (ScaleTypeOutput));
+    optionSetInitiateOutputEdgeTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateOutputButtonInitiate (SCALEBIND (ScaleTypeOutput));
+    optionSetInitiateOutputButtonTerminate (PrivateScaleScreen::scaleTerminate);
+    optionSetInitiateOutputKeyInitiate (SCALEBIND (ScaleTypeOutput));
+    optionSetInitiateOutputKeyTerminate (PrivateScaleScreen::scaleTerminate);
+
+#undef SCALEBIND
 
     ScreenInterface::setHandler (s);
     CompositeScreenInterface::setHandler (cScreen, false);
@@ -1631,6 +1601,12 @@ PrivateScaleScreen::~PrivateScaleScreen ()
 {
     if (cursor)
 	XFreeCursor (screen->dpy (), cursor);
+}
+
+void
+PrivateScaleScreen::updateOpacity ()
+{
+    opacity = (OPAQUE * optionGetOpacity ()) / 100;
 }
 
 
@@ -1667,40 +1643,14 @@ PrivateScaleWindow::~PrivateScaleWindow ()
 CompOption::Vector &
 ScaleScreen::getOptions ()
 {
-    return priv->opt;
-}
-
-CompOption *
-ScaleScreen::getOption (const char *name)
-{
-    return CompOption::findOption (priv->opt, name);
+    return priv->getOptions ();
 }
 
 bool
-ScaleScreen::setOption (const char        *name,
+ScaleScreen::setOption (const CompString  &name,
 			CompOption::Value &value)
 {
-    CompOption   *o;
-    unsigned int index;
-
-    o = CompOption::findOption (priv->opt, name, &index);
-    if (!o)
-	return false;
-
-    switch (index) {
-	case SCALE_OPTION_OPACITY:
-	    if (o->set (value))
-	    {
-		priv->opacity = (OPAQUE * o->value ().i ()) / 100;
-		return true;
-	    }
-	default:
-	    if (CompOption::setOption (*o, value))
-		return true;
-	    break;
-    }
-
-    return false;
+    return priv->setOption (name, value);
 }
 
 bool
@@ -1714,9 +1664,6 @@ ScalePluginVTable::init ()
     CompPrivate p;
     p.uval = COMPIZ_SCALE_ABI;
     screen->storeValue ("scale_ABI", p);
-
-    getMetadata ()->addFromOptionInfo (scaleOptionInfo, SCALE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

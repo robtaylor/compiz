@@ -26,32 +26,20 @@
 #include <core/core.h>
 #include <core/pluginclasshandler.h>
 
-#define GNOME_OPTION_MAIN_MENU_KEY              0
-#define GNOME_OPTION_RUN_DIALOG_KEY             1
-#define GNOME_OPTION_SCREENSHOT_CMD             2
-#define GNOME_OPTION_RUN_SCREENSHOT_KEY         3
-#define GNOME_OPTION_WINDOW_SCREENSHOT_CMD      4
-#define GNOME_OPTION_RUN_WINDOW_SCREENSHOT_KEY  5
-#define GNOME_OPTION_TERMINAL_CMD               6
-#define GNOME_OPTION_RUN_TERMINAL_KEY           7
-#define GNOME_OPTION_NUM                        8
+#include "gnomecompat_options.h"
 
 class GnomeCompatScreen :
-    public PluginClassHandler<GnomeCompatScreen, CompScreen>
+    public PluginClassHandler<GnomeCompatScreen, CompScreen>,
+    public GnomecompatOptions
 {
     public:
 	GnomeCompatScreen (CompScreen *s);
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value& value);
 
 	void panelAction (CompOption::Vector& options, Atom action);
 
 	Atom panelActionAtom;
 	Atom panelMainMenuAtom;
 	Atom panelRunDialogAtom;
-
-	CompOption::Vector opt;
 };
 
 #define GNOME_SCREEN(s)                                \
@@ -62,6 +50,4 @@ class GnomeCompatPluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (GnomeCompatScreen);
 };

@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="water">
+    <plugin name="water" useBcop="true">
 	<_short>Water Effect</_short>
 	<_long>Adds water effects to different desktop actions</_long>
 	<deps>

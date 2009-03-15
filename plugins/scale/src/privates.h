@@ -27,40 +27,7 @@
 #define _SCALE_PRIVATES_H
 
 #include <scale/scale.h>
-
-#define SCALE_ICON_NONE   0
-#define SCALE_ICON_EMBLEM 1
-#define SCALE_ICON_BIG    2
-#define SCALE_ICON_LAST   SCALE_ICON_BIG
-
-#define SCALE_MOMODE_CURRENT 0
-#define SCALE_MOMODE_ALL     1
-#define SCALE_MOMODE_LAST    SCALE_MOMODE_ALL
-
-#define SCALE_OPTION_INITIATE_EDGE          0
-#define SCALE_OPTION_INITIATE_BUTTON        1
-#define SCALE_OPTION_INITIATE_KEY           2
-#define SCALE_OPTION_INITIATE_ALL_EDGE      3
-#define SCALE_OPTION_INITIATE_ALL_BUTTON    4
-#define SCALE_OPTION_INITIATE_ALL_KEY       5
-#define SCALE_OPTION_INITIATE_GROUP_EDGE    6
-#define SCALE_OPTION_INITIATE_GROUP_BUTTON  7
-#define SCALE_OPTION_INITIATE_GROUP_KEY     8
-#define SCALE_OPTION_INITIATE_OUTPUT_EDGE   9
-#define SCALE_OPTION_INITIATE_OUTPUT_BUTTON 10
-#define SCALE_OPTION_INITIATE_OUTPUT_KEY    11
-#define SCALE_OPTION_SHOW_DESKTOP           12
-#define SCALE_OPTION_SPACING                13
-#define SCALE_OPTION_SPEED                  14
-#define SCALE_OPTION_TIMESTEP               15
-#define SCALE_OPTION_WINDOW_MATCH           16
-#define SCALE_OPTION_DARKEN_BACK            17
-#define SCALE_OPTION_OPACITY                18
-#define SCALE_OPTION_ICON                   19
-#define SCALE_OPTION_HOVER_TIME             20
-#define SCALE_OPTION_MULTIOUTPUT_MODE       21
-#define SCALE_OPTION_NUM                    22
-
+#include "scale_options.h"
 
 class ScaleSlot {
     public:
@@ -88,7 +55,8 @@ enum ScaleType {
 class PrivateScaleScreen :
     public ScreenInterface,
     public CompositeScreenInterface,
-    public GLScreenInterface
+    public GLScreenInterface,
+    public ScaleOptions
 {
     public:
 	PrivateScaleScreen (CompScreen *);
@@ -139,6 +107,8 @@ class PrivateScaleScreen :
 
 	bool hoverTimeout ();
 
+	void updateOpacity ();
+
     public:
 
 	CompositeScreen *cScreen;
@@ -178,8 +148,6 @@ class PrivateScaleScreen :
 
 	CompMatch match;
 	CompMatch currentMatch;
-
-	CompOption::Vector opt;
 };
 
 class PrivateScaleWindow :

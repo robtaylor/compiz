@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="scale">
+    <plugin name="scale" useBcop="true">
 	<_short>Scale</_short>
 	<_long>Scale windows</_long>
 	<deps>

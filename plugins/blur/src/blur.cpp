@@ -25,7 +25,7 @@
 
 #include <blur.h>
 
-COMPIZ_PLUGIN_20081216 (blur, BlurPluginVTable)
+COMPIZ_PLUGIN_20090315 (blur, BlurPluginVTable)
 
 /* pascal triangle based kernel generator */
 static int
@@ -104,22 +104,21 @@ blurCreateGaussianLinearKernel (int   radius,
 void
 BlurScreen::updateFilterRadius ()
 {
-
-    switch (opt[BLUR_OPTION_FILTER].value ().i ()) {
-	case BLUR_FILTER_4X_BILINEAR:
+    switch (optionGetFilter ()) {
+	case BlurOptions::Filter4xbilinear:
 	    filterRadius = 2;
 	    break;
-	case BLUR_FILTER_GAUSSIAN: {
-	    int   radius   = opt[BLUR_OPTION_GAUSSIAN_RADIUS].value ().i ();
-	    float strength = opt[BLUR_OPTION_GAUSSIAN_STRENGTH].value ().f ();
+	case BlurOptions::FilterGaussian: {
+	    int   radius   = optionGetGaussianRadius ();
+	    float strength = optionGetGaussianStrength ();
 
 	    blurCreateGaussianLinearKernel (radius, strength, amp, pos,
 					    &numTexop);
 
 	    filterRadius = radius;
 	} break;
-	case BLUR_FILTER_MIPMAP: {
-	    float lod = opt[BLUR_OPTION_MIPMAP_LOD].value ().f ();
+	case BlurOptions::FilterMipmap: {
+	    float lod = optionGetMipmapLod ();
 
 	    filterRadius = powf (2.0f, ceilf (lod));
 	} break;
@@ -260,7 +259,7 @@ BlurWindow::updateAlphaMatch ()
     {
 	CompMatch *match;
 
-	match = &bScreen->opt[BLUR_OPTION_ALPHA_BLUR_MATCH].value ().match ();
+	match = &bScreen->optionGetAlphaBlurMatch ();
 	if (match->evaluate (window))
 	{
 	    if (!state[BLUR_STATE_CLIENT].threshold)
@@ -282,7 +281,7 @@ BlurWindow::updateMatch ()
 
     updateAlphaMatch ();
 
-    match = &bScreen->opt[BLUR_OPTION_FOCUS_BLUR_MATCH].value ().match ();
+    match = &bScreen->optionGetFocusBlurMatch ();
 
     focus = GL::fragmentProgram && match->evaluate (window);
     if (focus != focusBlur)
@@ -359,7 +358,7 @@ BlurScreen::preparePaint (int msSinceLastPaint)
     if (moreBlur)
     {
 	int	    steps;
-	bool        focus = opt[BLUR_OPTION_FOCUS_BLUR].value ().b ();
+	bool        focus = optionGetFocusBlur ();
 	bool        focusBlur;
 
 	steps = (msSinceLastPaint * 0xffff) / blurTime;
@@ -590,8 +589,8 @@ BlurScreen::getSrcBlurFragmentFunction (GLTexture *texture,
 	    param, param);
 
 
-	switch (opt[BLUR_OPTION_FILTER].value ().i ()) {
-	    case BLUR_FILTER_4X_BILINEAR:
+	switch (optionGetFilter ()) {
+	    case BlurOptions::Filter4xbilinear:
 	    default:
 		data.addFetchOp ("output", "offset0", target);
 		data.addDataOp ("MUL sum, output, 0.25;");
@@ -656,7 +655,7 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 	static const char *temp[] = { "fCoord", "mask", "sum", "dst" };
 	int               i, j;
 	char              str[1024];
-	int               saturation = opt[BLUR_OPTION_SATURATION].value ().i ();
+	int               saturation = optionGetSaturation ();
 	int               numIndirect;
 	int               numIndirectOp;
 	int               base, end, ITCbase;
@@ -667,8 +666,8 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 	if (saturation < 100)
 	    data.addTempHeaderOp ("sat");
 
-	switch (opt[BLUR_OPTION_FILTER].value ().i ()) {
-	    case BLUR_FILTER_4X_BILINEAR: {
+	switch (optionGetFilter ()) {
+	    case BlurOptions::Filter4xbilinear: {
 		static const char *filterTemp[] = {
 		    "t0", "t1", "t2", "t3",
 		    "s0", "s1", "s2", "s3"
@@ -712,7 +711,7 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		    param + 1);
 
 	    } break;
-	    case BLUR_FILTER_GAUSSIAN: {
+	    case BlurOptions::FilterGaussian: {
 
 		/* try to use only half of the available temporaries to keep
 		   other plugins working */
@@ -809,7 +808,7 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		}
 
 	    } break;
-	    case BLUR_FILTER_MIPMAP:
+	    case BlurOptions::FilterMipmap:
 		data.addFetchOp ("output", NULL, target);
 		data.addColorOp ("output", "output");
 
@@ -1112,8 +1111,7 @@ BlurScreen::fboUpdate (BoxPtr pBox,
     int  i, y, iTC = 0;
     Bool wasCulled = glIsEnabled (GL_CULL_FACE);
 
-    if (GL::maxTextureUnits &&
-	opt[BLUR_OPTION_INDEPENDENT_TEX].value ().b ())
+    if (GL::maxTextureUnits && optionGetIndependentTex ())
 	iTC = MIN ((GL::maxTextureUnits - 1) / 2, numTexop);
 
     if (!program)
@@ -1361,11 +1359,11 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
     int        y;
     int        filter;
 
-    filter = bScreen->opt[BLUR_OPTION_FILTER].value ().i ();
+    filter = bScreen->optionGetFilter ();
 
     bScreen->tmpRegion3 = CompRegion ();
 
-    if (filter == BLUR_FILTER_GAUSSIAN)
+    if (filter == BlurOptions::FilterGaussian)
     {
 
 	if (state[BLUR_STATE_DECOR].threshold)
@@ -1471,7 +1469,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    bScreen->ty = 1;
 	}
 
-	if (filter == BLUR_FILTER_GAUSSIAN)
+	if (filter == BlurOptions::FilterGaussian)
 	{
 	    if (GL::fbo && !bScreen->fbo)
 		(*GL::genFramebuffers) (1, &bScreen->fbo);
@@ -1508,7 +1506,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    glTexParameteri (bScreen->target, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	    glTexParameteri (bScreen->target, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-	    if (filter == BLUR_FILTER_MIPMAP)
+	    if (filter == BlurOptions::FilterMipmap)
 	    {
 		if (!GL::fbo)
 		{
@@ -1556,13 +1554,13 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
     }
 
     switch (filter) {
-	case BLUR_FILTER_GAUSSIAN:
+	case BlurOptions::FilterGaussian:
 	    return bScreen->fboUpdate (bScreen->tmpRegion.handle()->rects,
 				       bScreen->tmpRegion.numRects ());
-	case BLUR_FILTER_MIPMAP:
+	case BlurOptions::FilterMipmap:
 	    (*GL::generateMipmap) (bScreen->target);
 	    break;
-	case BLUR_FILTER_4X_BILINEAR:
+	case BlurOptions::Filter4xbilinear:
 	    break;
     }
 
@@ -1755,8 +1753,8 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 	    GLFragment::Attrib dstFa (fa);
 	    float	       threshold = (float) this->state[state].threshold;
 
-	    switch (bScreen->opt[BLUR_OPTION_FILTER].value ().i ()) {
-		case BLUR_FILTER_4X_BILINEAR:
+	    switch (bScreen->optionGetFilter ()) {
+		case BlurOptions::Filter4xbilinear:
 		    dx = bScreen->tx / 2.1f;
 		    dy = bScreen->ty / 2.1f;
 
@@ -1788,8 +1786,8 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 						      dx, dy, 0.0f, 0.0f);
 		    }
 		    break;
-		case BLUR_FILTER_GAUSSIAN:
-		    if (bScreen->opt[BLUR_OPTION_INDEPENDENT_TEX].value ().b ())
+		case BlurOptions::FilterGaussian:
+		    if (bScreen->optionGetIndependentTex ())
 		    {
 			/* leave one free texture unit for fragment position */
 			iTC = MAX (0, GL::maxTextureUnits -
@@ -1927,7 +1925,7 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 
 		    }
 		    break;
-		case BLUR_FILTER_MIPMAP:
+		case BlurOptions::FilterMipmap:
 		    param = dstFa.allocParameters (2);
 		    unit  = dstFa.allocTextureUnits (1);
 
@@ -1937,7 +1935,7 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 		    if (function)
 		    {
 			float lod =
-			    bScreen->opt[BLUR_OPTION_MIPMAP_LOD].value ().f ();
+			    bScreen->optionGetMipmapLod ();
 
 			dstFa.addFunction (function);
 
@@ -2030,7 +2028,7 @@ BlurScreen::handleEvent (XEvent *event)
 	w = screen->findWindow (activeWindow);
 	if (w)
 	{
-	    if (opt[BLUR_OPTION_FOCUS_BLUR].value ().b ())
+	    if (optionGetFocusBlur ())
 	    {
 		CompositeWindow::get (w)->addDamage ();
 		moreBlur = true;
@@ -2040,7 +2038,7 @@ BlurScreen::handleEvent (XEvent *event)
 	w = screen->findWindow (screen->activeWindow ());
 	if (w)
 	{
-	    if (opt[BLUR_OPTION_FOCUS_BLUR].value ().b ())
+	    if (optionGetFocusBlur ())
 	    {
 		CompositeWindow::get (w)->addDamage ();
 		moreBlur = true;
@@ -2139,146 +2137,80 @@ BlurScreen::matchPropertyChanged (CompWindow *w)
     screen->matchPropertyChanged (w);
 }
 
-static CompMetadata *blurMetadata;
-
-static const CompMetadata::OptionInfo blurOptionInfo[] = {
-    { "pulse", "bell", 0, blurPulse, 0 },
-    { "blur_speed", "float", "<min>0.1</min>", 0, 0 },
-    { "focus_blur_match", "match", 0, 0, 0 },
-    { "focus_blur", "bool", 0, 0, 0 },
-    { "alpha_blur_match", "match", 0, 0, 0 },
-    { "alpha_blur", "bool", 0, 0, 0 },
-    { "filter", "int", RESTOSTRING (0, BLUR_FILTER_LAST), 0, 0 },
-    { "gaussian_radius", "int", "<min>1</min><max>15</max>", 0, 0 },
-    { "gaussian_strength", "float", "<min>0.0</min><max>1.0</max>", 0, 0 },
-    { "mipmap_lod", "float", "<min>0.1</min><max>5.0</max>", 0, 0 },
-    { "saturation", "int", "<min>0</min><max>100</max>", 0, 0 },
-    { "occlusion", "bool", 0, 0, 0 },
-    { "independent_tex", "bool", 0, 0, 0 }
-};
-
-CompOption::Vector &
-BlurScreen::getOptions ()
-{
-    return opt;
-}
- 
 bool
-BlurScreen::setOption (const char        *name,
-		       CompOption::Value &value)
+BlurScreen::setOption (const CompString &name, CompOption::Value &value)
 {
-    CompOption   *o;
     unsigned int index;
 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
+    bool rv = BlurOptions::setOption (name, value);
+
+    if (!rv || !CompOption::findOption (getOptions (), name, &index))
 	return false;
 
     switch (index) {
-	case BLUR_OPTION_BLUR_SPEED:
-	    if (o->set (value))
-	    {
-		blurTime = 1000.0f / o->value ().f ();
-		return true;
-	    }
+	case BlurOptions::BlurSpeed:
+	    blurTime = 1000.0f / optionGetBlurSpeed ();
 	    break;
-	case BLUR_OPTION_FOCUS_BLUR_MATCH:
-	case BLUR_OPTION_ALPHA_BLUR_MATCH:
-	    if (o->set (value))
-	    {
-		foreach (CompWindow *w, screen->windows ())
-		    BlurWindow::get (w)->updateMatch ();
+	case BlurOptions::FocusBlurMatch:
+	case BlurOptions::AlphaBlurMatch:
+	    foreach (CompWindow *w, screen->windows ())
+		BlurWindow::get (w)->updateMatch ();
 
-		moreBlur = true;
-		cScreen->damageScreen ();
-
-		return true;
-	    }
+	    moreBlur = true;
+	    cScreen->damageScreen ();
 	    break;
-	case BLUR_OPTION_FOCUS_BLUR:
-	    if (o->set (value))
-	    {
-		moreBlur = true;
-		cScreen->damageScreen ();
-
-		return true;
-	    }
+	case BlurOptions::FocusBlur:
+	    moreBlur = true;
+	    cScreen->damageScreen ();
 	    break;
-	case BLUR_OPTION_ALPHA_BLUR:
-	    if (o->set (value))
-	    {
-		if (GL::fragmentProgram && o->value ().b ())
-		    alphaBlur = true;
-		else
-		    alphaBlur = false;
+	case BlurOptions::AlphaBlur:
+	    if (GL::fragmentProgram && optionGetAlphaBlur ())
+		alphaBlur = true;
+	    else
+		alphaBlur = false;
 
-		cScreen->damageScreen ();
-
-		return true;
-	    }
+	    cScreen->damageScreen ();
 	    break;
-	case BLUR_OPTION_FILTER:
-	    if (o->set (value))
+	case BlurOptions::Filter:
+	    blurReset ();
+	    cScreen->damageScreen ();
+	    break;
+	case BlurOptions::GaussianRadius:
+	case BlurOptions::GaussianStrength:
+	case BlurOptions::IndependentTex:
+	    if (optionGetFilter () == BlurOptions::FilterGaussian)
 	    {
 		blurReset ();
 		cScreen->damageScreen ();
-		return true;
 	    }
 	    break;
-	case BLUR_OPTION_GAUSSIAN_RADIUS:
-	case BLUR_OPTION_GAUSSIAN_STRENGTH:
-	case BLUR_OPTION_INDEPENDENT_TEX:
-	    if (o->set (value))
-	    {
-		if (opt[BLUR_OPTION_FILTER].value ().i () == BLUR_FILTER_GAUSSIAN)
-		{
-		    blurReset ();
-		    cScreen->damageScreen ();
-		}
-		return true;
-	    }
-	    break;
-	case BLUR_OPTION_MIPMAP_LOD:
-	    if (o->set (value))
-	    {
-		if (opt[BLUR_OPTION_FILTER].value ().i () == BLUR_FILTER_MIPMAP)
-		{
-		    blurReset ();
-		    cScreen->damageScreen ();
-		}
-		return true;
-	    }
-	    break;
-	case BLUR_OPTION_SATURATION:
-	    if (o->set (value))
+	case BlurOptions::MipmapLod:
+	    if (optionGetFilter () == BlurOptions::FilterMipmap)
 	    {
 		blurReset ();
 		cScreen->damageScreen ();
-		return true;
 	    }
 	    break;
-	case BLUR_OPTION_BLUR_OCCLUSION:
-	    if (o->set (value))
-	    {
-		blurOcclusion = o->value ().b ();
-		blurReset ();
-		cScreen->damageScreen ();
-		return true;
-	    }
+	case BlurOptions::Saturation:
+	    blurReset ();
+	    cScreen->damageScreen ();
+	    break;
+	case BlurOptions::Occlusion:
+	    blurOcclusion = optionGetOcclusion ();
+	    blurReset ();
+	    cScreen->damageScreen ();
 	    break;
 	default:
-	    return CompOption::setOption (*o, value);
 	    break;
     }
 
-    return false;
+    return rv;
 }
 
 BlurScreen::BlurScreen (CompScreen *screen) :
     PluginClassHandler<BlurScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
-    opt(BLUR_OPTION_NUM),
     moreBlur (false),
     filterRadius (0),
     srcBlurFunctions (0),
@@ -2290,20 +2222,14 @@ BlurScreen::BlurScreen (CompScreen *screen) :
     fbo (0),
     fboStatus (0)
 {
-    if (!blurVTable->getMetadata ()->initOptions (blurOptionInfo,
-						  BLUR_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
 
     blurAtom[BLUR_STATE_CLIENT] =
 	XInternAtom (screen->dpy (), "_COMPIZ_WM_WINDOW_BLUR", 0);
     blurAtom[BLUR_STATE_DECOR] =
 	XInternAtom (screen->dpy (), DECOR_BLUR_ATOM_NAME, 0);
 
-    blurTime = 1000.0f / opt[BLUR_OPTION_BLUR_SPEED].value ().f ();
-    blurOcclusion = opt[BLUR_OPTION_BLUR_OCCLUSION].value ().b ();
+    blurTime = 1000.0f / optionGetBlurSpeed ();
+    blurOcclusion = optionGetOcclusion ();
 
     for (int i = 0; i < 2; i++)
 	texture[i] = 0;
@@ -2315,7 +2241,7 @@ BlurScreen::BlurScreen (CompScreen *screen) :
 
     /* We need GL_ARB_fragment_program for blur */
     if (GL::fragmentProgram)
-	alphaBlur = opt[BLUR_OPTION_ALPHA_BLUR].value ().b ();
+	alphaBlur = optionGetAlphaBlur ();
     else
 	alphaBlur = false;
 
@@ -2329,6 +2255,8 @@ BlurScreen::BlurScreen (CompScreen *screen) :
     }
 
     updateFilterRadius ();
+
+    optionSetPulseInitiate (blurPulse);
 
     ScreenInterface::setHandler (screen, true);
     CompositeScreenInterface::setHandler (cScreen, true);
@@ -2394,9 +2322,6 @@ BlurPluginVTable::init ()
         !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (blurOptionInfo, BLUR_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

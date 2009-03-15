@@ -25,7 +25,7 @@
 
 #include "water.h"
 
-COMPIZ_PLUGIN_20081216 (water, WaterPluginVTable)
+COMPIZ_PLUGIN_20090315 (water, WaterPluginVTable)
 
 static int waterLastPointerX = 0;
 static int waterLastPointerY = 0;
@@ -1101,7 +1101,7 @@ waterToggleRain (CompAction         *action,
     {
 	int delay;
 
-	delay = ws->opt[WATER_OPTION_RAIN_DELAY].value ().i ();
+	delay = ws->optionGetRainDelay ();
 	ws->rainTimer.start (delay, (float) delay * 1.2);
     }
     else
@@ -1249,64 +1249,29 @@ WaterScreen::handleEvent (XEvent *event)
     screen->handleEvent (event);
 }
 
-CompOption::Vector &
-WaterScreen::getOptions ()
+void
+WaterScreen::optionChange (WaterOptions::Options num)
 {
-    return opt;
-}
- 
-bool
-WaterScreen::setOption (const char        *name,
-		        CompOption::Value &value)
-{
-    CompOption *o;
-    unsigned int index;
- 
-    o = CompOption::findOption (opt, name, &index);
-    if (!o)
-	return false;
-
-    switch (index) {
-	case WATER_OPTION_OFFSET_SCALE:
-	    if (o->set (value))
-	    {
-		offsetScale = o->value ().f () * 50.0f;
-		return true;
-	    }
+    switch (num) {
+	case WaterOptions::OffsetScale:
+	    offsetScale = optionGetOffsetScale () * 50.0f;
 	    break;
-	case WATER_OPTION_RAIN_DELAY:
-	    if (o->set (value))
+	case WaterOptions::RainDelay:
+	    if (rainTimer.active ())
 	    {
-		if (rainTimer.active ())
-		{
-		    rainTimer.setTimes (value.i (), (float)value.i () * 1.2);
-		}
-		return true;
+		rainTimer.setTimes (optionGetRainDelay (),
+				    (float)optionGetRainDelay () * 1.2);
 	    }
 	    break;
 	default:
-	    return CompOption::setOption (*o, value);
+	    break;
     }
-
-    return false;
 }
-
-static const CompMetadata::OptionInfo waterOptionInfo[] = {
-    { "initiate_key", "key", 0, waterInitiate, waterTerminate },
-    { "toggle_rain_key", "key", 0, waterToggleRain, 0 },
-    { "toggle_wiper_key", "key", 0, waterToggleWiper, 0 },
-    { "offset_scale", "float", "<min>0</min>", 0, 0 },
-    { "rain_delay", "int", "<min>1</min>", 0, 0 },
-    { "title_wave", "bell", 0, waterTitleWave, 0 },
-    { "point", "action", 0, waterPoint, 0 },
-    { "line", "action", 0, waterLine, 0 }
-};
 
 WaterScreen::WaterScreen (CompScreen *screen) :
     PluginClassHandler<WaterScreen,CompScreen> (screen),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
-    opt(WATER_OPTION_NUM),
     grabIndex (0),
     width (0),
     height (0),
@@ -1333,14 +1298,7 @@ WaterScreen::WaterScreen (CompScreen *screen) :
 
     bumpMapFunctions ()
 {
-    if (!waterVTable->getMetadata ()->initOptions (waterOptionInfo,
-						   WATER_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
-    offsetScale = opt[WATER_OPTION_OFFSET_SCALE].value ().f () * 50.0f;
+    offsetScale = optionGetOffsetScale () * 50.0f;
 
     memset (texture, 0, sizeof (GLuint) * TEXTURE_NUM);
 
@@ -1348,6 +1306,17 @@ WaterScreen::WaterScreen (CompScreen *screen) :
     rainTimer.setCallback (boost::bind (&WaterScreen::rainTimeout, this));
 
     waterReset ();
+
+    optionSetOffsetScaleNotify (boost::bind (&WaterScreen::optionChange, this, _2));
+    optionSetRainDelayNotify (boost::bind (&WaterScreen::optionChange, this, _2));
+
+    optionSetInitiateKeyInitiate (waterInitiate);
+    optionSetInitiateKeyTerminate (waterTerminate);
+    optionSetToggleRainKeyInitiate (waterToggleRain);
+    optionSetToggleWiperKeyInitiate (waterToggleWiper);
+    optionSetTitleWaveInitiate (waterTitleWave);
+    optionSetPointInitiate (waterPoint);
+    optionSetLineInitiate (waterLine);
 
     ScreenInterface::setHandler (screen, false);
     CompositeScreenInterface::setHandler (cScreen, false);
@@ -1383,9 +1352,6 @@ WaterPluginVTable::init ()
         !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) |
         !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
 	 return false;
-
-    getMetadata ()->addFromOptionInfo (waterOptionInfo, WATER_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

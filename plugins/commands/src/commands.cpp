@@ -25,7 +25,7 @@
 
 #include "commands.h"
 
-COMPIZ_PLUGIN_20081216 (commands, CommandsPluginVTable);
+COMPIZ_PLUGIN_20090315 (commands, CommandsPluginVTable);
 
 bool
 CommandsScreen::runCommand (CompAction          *action,
@@ -42,104 +42,56 @@ CommandsScreen::runCommand (CompAction          *action,
 
     cs = CommandsScreen::get (screen);
 
-    screen->runCommand (cs->opt[commandOption].value (). s());
+    screen->runCommand (cs->mOptions[commandOption].value (). s());
 
     return true;
 }
 
-#define DISPATCH(opt) boost::bind (CommandsScreen::runCommand, _1, _2, _3, opt)
-
-static const CompMetadata::OptionInfo commandsOptionInfo[] = {
-    { "command0", "string", 0, 0, 0 },
-    { "command1", "string", 0, 0, 0 },
-    { "command2", "string", 0, 0, 0 },
-    { "command3", "string", 0, 0, 0 },
-    { "command4", "string", 0, 0, 0 },
-    { "command5", "string", 0, 0, 0 },
-    { "command6", "string", 0, 0, 0 },
-    { "command7", "string", 0, 0, 0 },
-    { "command8", "string", 0, 0, 0 },
-    { "command9", "string", 0, 0, 0 },
-    { "command10", "string", 0, 0, 0 },
-    { "command11", "string", 0, 0, 0 },
-    { "run_command0_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND0), 0 },
-    { "run_command1_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND1), 0 },
-    { "run_command2_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND2), 0 },
-    { "run_command3_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND3), 0 },
-    { "run_command4_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND4), 0 },
-    { "run_command5_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND5), 0 },
-    { "run_command6_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND6), 0 },
-    { "run_command7_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND7), 0 },
-    { "run_command8_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND8), 0 },
-    { "run_command9_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND9), 0 },
-    { "run_command10_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND10), 0 },
-    { "run_command11_key", "key", 0, DISPATCH (COMMANDS_OPTION_COMMAND11), 0 },
-    { "run_command0_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND0), 0 },
-    { "run_command1_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND1), 0 },
-    { "run_command2_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND2), 0 },
-    { "run_command3_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND3), 0 },
-    { "run_command4_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND4), 0 },
-    { "run_command5_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND5), 0 },
-    { "run_command6_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND6), 0 },
-    { "run_command7_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND7), 0 },
-    { "run_command8_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND8), 0 },
-    { "run_command9_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND9), 0 },
-    { "run_command10_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND10), 0 },
-    { "run_command11_button", "button", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND11), 0 },
-    { "run_command0_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND0), 0 },
-    { "run_command1_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND1), 0 },
-    { "run_command2_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND2), 0 },
-    { "run_command3_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND3), 0 },
-    { "run_command4_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND4), 0 },
-    { "run_command5_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND5), 0 },
-    { "run_command6_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND6), 0 },
-    { "run_command7_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND7), 0 },
-    { "run_command8_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND8), 0 },
-    { "run_command9_edge", "edge", 0, DISPATCH (COMMANDS_OPTION_COMMAND9), 0 },
-    { "run_command10_edge", "edge", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND10), 0 },
-    { "run_command11_edge", "edge", 0,
-      DISPATCH (COMMANDS_OPTION_COMMAND11), 0 }
-};
 
 CommandsScreen::CommandsScreen (CompScreen *s) :
     PluginClassHandler<CommandsScreen, CompScreen> (s)
 {
-    if (!commandsVTable->getMetadata ()->initOptions (commandsOptionInfo,
-						      COMMANDS_OPTION_NUM,
-						      opt))
-	setFailed ();
-}
 
-CompOption::Vector&
-CommandsScreen::getOptions ()
-{
-    return opt;
-}
+#define DISPATCH(opt) boost::bind (CommandsScreen::runCommand, _1, _2, _3, opt)
 
-bool
-CommandsScreen::setOption (const char         *name,
-			   CompOption::Value& value)
-{
-    CompOption *o;
+    optionSetRunCommand0KeyInitiate (DISPATCH (CommandsOptions::Command0));
+    optionSetRunCommand1KeyInitiate (DISPATCH (CommandsOptions::Command1));
+    optionSetRunCommand2KeyInitiate (DISPATCH (CommandsOptions::Command2));
+    optionSetRunCommand3KeyInitiate (DISPATCH (CommandsOptions::Command3));
+    optionSetRunCommand4KeyInitiate (DISPATCH (CommandsOptions::Command4));
+    optionSetRunCommand5KeyInitiate (DISPATCH (CommandsOptions::Command5));
+    optionSetRunCommand6KeyInitiate (DISPATCH (CommandsOptions::Command6));
+    optionSetRunCommand7KeyInitiate (DISPATCH (CommandsOptions::Command7));
+    optionSetRunCommand8KeyInitiate (DISPATCH (CommandsOptions::Command8));
+    optionSetRunCommand9KeyInitiate (DISPATCH (CommandsOptions::Command9));
+    optionSetRunCommand10KeyInitiate (DISPATCH (CommandsOptions::Command10));
+    optionSetRunCommand11KeyInitiate (DISPATCH (CommandsOptions::Command11));
 
-    o = CompOption::findOption (opt, name, NULL);
-    if (!o)
-	return false;
+    optionSetRunCommand0ButtonInitiate (DISPATCH (CommandsOptions::Command0));
+    optionSetRunCommand1ButtonInitiate (DISPATCH (CommandsOptions::Command1));
+    optionSetRunCommand2ButtonInitiate (DISPATCH (CommandsOptions::Command2));
+    optionSetRunCommand3ButtonInitiate (DISPATCH (CommandsOptions::Command3));
+    optionSetRunCommand4ButtonInitiate (DISPATCH (CommandsOptions::Command4));
+    optionSetRunCommand5ButtonInitiate (DISPATCH (CommandsOptions::Command5));
+    optionSetRunCommand6ButtonInitiate (DISPATCH (CommandsOptions::Command6));
+    optionSetRunCommand7ButtonInitiate (DISPATCH (CommandsOptions::Command7));
+    optionSetRunCommand8ButtonInitiate (DISPATCH (CommandsOptions::Command8));
+    optionSetRunCommand9ButtonInitiate (DISPATCH (CommandsOptions::Command9));
+    optionSetRunCommand10ButtonInitiate (DISPATCH (CommandsOptions::Command10));
+    optionSetRunCommand11ButtonInitiate (DISPATCH (CommandsOptions::Command11));
 
-    return CompOption::setOption (*o, value);
+    optionSetRunCommand0EdgeInitiate (DISPATCH (CommandsOptions::Command0));
+    optionSetRunCommand1EdgeInitiate (DISPATCH (CommandsOptions::Command1));
+    optionSetRunCommand2EdgeInitiate (DISPATCH (CommandsOptions::Command2));
+    optionSetRunCommand3EdgeInitiate (DISPATCH (CommandsOptions::Command3));
+    optionSetRunCommand4EdgeInitiate (DISPATCH (CommandsOptions::Command4));
+    optionSetRunCommand5EdgeInitiate (DISPATCH (CommandsOptions::Command5));
+    optionSetRunCommand6EdgeInitiate (DISPATCH (CommandsOptions::Command6));
+    optionSetRunCommand7EdgeInitiate (DISPATCH (CommandsOptions::Command7));
+    optionSetRunCommand8EdgeInitiate (DISPATCH (CommandsOptions::Command8));
+    optionSetRunCommand9EdgeInitiate (DISPATCH (CommandsOptions::Command9));
+    optionSetRunCommand10EdgeInitiate (DISPATCH (CommandsOptions::Command10));
+    optionSetRunCommand11EdgeInitiate (DISPATCH (CommandsOptions::Command11));
 }
 
 bool
@@ -147,9 +99,6 @@ CommandsPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromOptionInfo (commandsOptionInfo, COMMANDS_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

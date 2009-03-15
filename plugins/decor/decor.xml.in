@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="decor">
+    <plugin name="decor" useBcop="true">
 	<_short>Window Decoration</_short>
 	<_long>Window decorations</_long>
 	<feature>decorations</feature>
