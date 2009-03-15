@@ -31,6 +31,9 @@
 #include <string>
 #include <list>
 
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY (x)
+
 #define RESTRICT_VALUE(value, min, max)				     \
     (((value) < (min)) ? (min): ((value) > (max)) ? (max) : (value))
 

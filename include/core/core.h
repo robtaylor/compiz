@@ -71,7 +71,6 @@ typedef XBool Bool;
 #include <core/window.h>
 #include <core/plugin.h>
 #include <core/option.h>
-#include <core/metadata.h>
 #include <core/action.h>
 #include <core/icon.h>
 #include <core/match.h>

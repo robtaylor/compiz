@@ -183,10 +183,6 @@ main (int argc, char **argv)
 	}
     }
 
-    xmlInitParser ();
-
-    LIBXML_TEST_VERSION;
-
     screen = new CompScreen();
 
     if (!screen)
@@ -222,8 +218,6 @@ main (int argc, char **argv)
 	CompSession::close ();
 
     delete screen;
-
-    xmlCleanupParser ();
 
     if (restartSignal)
     {

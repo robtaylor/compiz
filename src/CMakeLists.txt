@@ -33,7 +33,6 @@ add_executable (compiz
     actions.cpp
     screen.cpp
     window.cpp
-    metadata.cpp
     action.cpp
     option.cpp
     string.cpp

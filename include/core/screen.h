@@ -31,7 +31,6 @@
 #include <core/window.h>
 #include <core/output.h>
 #include <core/session.h>
-#include <core/metadata.h>
 #include <core/plugin.h>
 #include <core/match.h>
 #include <core/pluginclasses.h>
@@ -48,7 +47,6 @@ extern bool       noDetection;
 extern bool       debugOutput;
 
 extern CompScreen   *screen;
-extern CompMetadata *coreMetadata;
 
 extern int lastPointerX;
 extern int lastPointerY;

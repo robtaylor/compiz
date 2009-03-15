@@ -4,7 +4,6 @@ set (_headers
     core.h
     icon.h
     match.h
-    metadata.h
     option.h
     output.h
     plugin.h
