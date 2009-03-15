@@ -396,7 +396,7 @@ inline void
         <xsl:text>"));
 </xsl:text>
         <xsl:value-of select="$value"/>
-        <xsl:text>.update ();
+        <xsl:text>.match ().update ();
 </xsl:text>
     </xsl:template>
 
@@ -948,7 +948,7 @@ inline void
 	<xsl:value-of select="$Plugin"/>
         <xsl:text>Options ();
 
-        virtual CompOption::Vector &amp; getOptions () const;
+        virtual CompOption::Vector &amp; getOptions ();
         virtual bool setOption (const CompString &amp;name, CompOption::Value &amp;value);
 
 </xsl:text>
@@ -1068,7 +1068,7 @@ inline void
 CompOption::Vector &amp;
 </xsl:text>
         <xsl:value-of select="$Plugin"/>
-        <xsl:text>Options::getOptions () const
+        <xsl:text>Options::getOptions ()
 {
     return mOptions;
 }

@@ -163,7 +163,7 @@ class CompScreen :
 	
 	Display * dpy();
 
-	CompOption::Vector & getOptions () const;
+	CompOption::Vector & getOptions ();
 
 	bool setOption (const CompString &name, CompOption::Value &value);
 

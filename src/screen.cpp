@@ -737,7 +737,7 @@ PrivateScreen::handlePingTimeout ()
 }
 
 CompOption::Vector &
-CompScreen::getOptions () const
+CompScreen::getOptions ()
 {
     return priv->opt;
 }

@@ -97,7 +97,7 @@ class CompPlugin {
 
 		virtual void finiWindow (CompWindow *w);
  	
-		virtual CompOption::Vector & getOptions () const;
+		virtual CompOption::Vector & getOptions ();
 
 		virtual bool setOption (const CompString  &name,
 					CompOption::Value &value);
@@ -116,7 +116,7 @@ class CompPlugin {
 
 	    void finiWindow (CompWindow *w);
 
-	    CompOption::Vector & getOptions () const;
+	    CompOption::Vector & getOptions ();
 
 	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
@@ -127,7 +127,7 @@ class CompPlugin {
 
 	    void finiScreen (CompScreen *s);
 
-	    CompOption::Vector & getOptions () const;
+	    CompOption::Vector & getOptions ();
 
 	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
@@ -219,7 +219,7 @@ void CompPlugin::VTableForScreenAndWindow<T,T2>::finiWindow (CompWindow *w)
 }
 
 template <typename T, typename T2>
-CompOption::Vector & CompPlugin::VTableForScreenAndWindow<T,T2>::getOptions () const
+CompOption::Vector & CompPlugin::VTableForScreenAndWindow<T,T2>::getOptions ()
 {
     CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
     if (!oc)
@@ -257,7 +257,7 @@ void CompPlugin::VTableForScreen<T>::finiScreen (CompScreen *s)
 }
 
 template <typename T>
-CompOption::Vector & CompPlugin::VTableForScreen<T>::getOptions () const
+CompOption::Vector & CompPlugin::VTableForScreen<T>::getOptions ()
 {
     CompOption::Class *oc = dynamic_cast<CompOption::Class *>(T::get (screen));
     if (!oc)

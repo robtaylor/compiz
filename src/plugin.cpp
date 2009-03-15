@@ -50,7 +50,7 @@ class CorePluginVTable : public CompPlugin::VTable
 
 	CompOption::Vector & getOptions ();
 
-	bool setOption (const char        *name,
+	bool setOption (const CompString  &name,
 			CompOption::Value &value);
 };
 
@@ -79,7 +79,7 @@ CorePluginVTable::getOptions ()
 }
 
 bool
-CorePluginVTable::setOption (const char        *name,
+CorePluginVTable::setOption (const CompString  &name,
 			     CompOption::Value &value)
 {
     return screen->setOption (name, value);
@@ -686,7 +686,7 @@ CompPlugin::VTable::finiWindow (CompWindow *)
 }
 	
 CompOption::Vector &
-CompPlugin::VTable::getOptions () const
+CompPlugin::VTable::getOptions ()
 {
     return noOptions;
 }

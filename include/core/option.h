@@ -142,9 +142,9 @@ class CompOption {
 
 	class Class {
 	    public:
-		virtual Vector & getOptions () const = 0;
+		virtual Vector & getOptions () = 0;
 
-		virtual CompOption * getOption (const CompString &name) const;
+		virtual CompOption * getOption (const CompString &name);
 
 		virtual bool setOption (const CompString &name,
 					Value            &value) = 0;
