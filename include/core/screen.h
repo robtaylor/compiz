@@ -127,7 +127,8 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 class CompScreen :
     public CompSize,
     public WrapableHandler<ScreenInterface, 17>,
-    public PluginClassStorage
+    public PluginClassStorage,
+    public CompOption::Class
 {
 
     public:
@@ -162,12 +163,9 @@ class CompScreen :
 	
 	Display * dpy();
 
-	CompOption::Vector & getOptions ();
-	
-	CompOption * getOption (const char *);
+	CompOption::Vector & getOptions () const;
 
-	bool setOption (const char        *name,
-			CompOption::Value &value);
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	bool XRandr ();
 

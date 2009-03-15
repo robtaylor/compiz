@@ -140,6 +140,16 @@ class CompOption {
 
 	typedef std::vector<CompOption> Vector;
 
+	class Class {
+	    public:
+		virtual Vector & getOptions () const = 0;
+
+		virtual CompOption * getOption (const CompString &name) const;
+
+		virtual bool setOption (const CompString &name,
+					Value            &value) = 0;
+	};
+
     public:
 	CompOption ();
 	CompOption (const CompOption &);

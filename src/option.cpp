@@ -582,6 +582,13 @@ CompOption::Restriction::operator= (const CompOption::Restriction &rest)
 }
 
 CompOption *
+CompOption::Class::getOption (const CompString &name) const
+{
+    CompOption *o = CompOption::findOption (getOptions (), name);
+    return o;
+}
+
+CompOption *
 CompOption::findOption (CompOption::Vector &options,
 			CompString         name,
 			unsigned int       *index)

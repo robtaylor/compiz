@@ -625,13 +625,6 @@ CompScreen::dpy ()
     return priv->dpy;
 }
 
-CompOption *
-CompScreen::getOption (const char *name)
-{
-    CompOption *o = CompOption::findOption (priv->opt, name);
-    return o;
-}
-
 bool
 CompScreen::XRandr ()
 {
@@ -744,13 +737,13 @@ PrivateScreen::handlePingTimeout ()
 }
 
 CompOption::Vector &
-CompScreen::getOptions ()
+CompScreen::getOptions () const
 {
     return priv->opt;
 }
 
 bool
-CompScreen::setOption (const char        *name,
+CompScreen::setOption (const CompString  &name,
 		       CompOption::Value &value)
 {
     CompOption   *o;
