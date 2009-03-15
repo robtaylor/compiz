@@ -31,30 +31,26 @@
 #include <composite/composite.h>
 #include <core/atoms.h>
 
+#include "composite_options.h"
+
 #if COMPOSITE_MAJOR > 0 || COMPOSITE_MINOR > 2
 #define USE_COW
 extern bool       useCow;
 #endif
 
-#define COMPOSITE_OPTION_SLOW_ANIMATIONS_KEY 0
-#define COMPOSITE_OPTION_DETECT_REFRESH_RATE 1
-#define COMPOSITE_OPTION_REFRESH_RATE        2
-#define COMPOSITE_OPTION_UNREDIRECT_FS       3
-#define COMPOSITE_OPTION_FORCE_INDEPENDENT   4
-#define COMPOSITE_OPTION_NUM                 5
-
 extern CompPlugin::VTable *compositeVTable;
-
-extern const CompMetadata::OptionInfo
-   compositeOptionInfo[COMPOSITE_OPTION_NUM];
 
 extern CompWindow *lastDamagedWindow;
 
-class PrivateCompositeScreen : ScreenInterface
+class PrivateCompositeScreen :
+    ScreenInterface,
+    public CompositeOptions
 {
     public:
 	PrivateCompositeScreen (CompositeScreen *cs);
 	~PrivateCompositeScreen ();
+
+	bool setOption (const CompString &name, CompOption::Value &value);
 
 	void outputChangeNotify ();
 
@@ -65,6 +61,8 @@ class PrivateCompositeScreen : ScreenInterface
 	bool init ();
 
 	void handleExposeEvent (XExposeEvent *event);
+
+	void detectRefreshRate ();
 
     public:
 
@@ -109,8 +107,6 @@ class PrivateCompositeScreen : ScreenInterface
 
 	bool active;
 	CompositeScreen::PaintHandler *pHnd;
-
-	CompOption::Vector opt;
 };
 
 class PrivateCompositeWindow : WindowInterface

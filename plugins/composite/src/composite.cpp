@@ -37,74 +37,50 @@ class CompositePluginVTable :
 
 	bool init ();
 	void fini ();
-
-	PLUGIN_OPTION_HELPER (CompositeScreen)
 };
 
-COMPIZ_PLUGIN_20081216 (composite, CompositePluginVTable)
-
-const CompMetadata::OptionInfo
-    compositeOptionInfo[COMPOSITE_OPTION_NUM] = {
-    { "slow_animations_key", "key", 0,
-        CompositeScreen::toggleSlowAnimations, 0 },
-    { "detect_refresh_rate", "bool", 0, 0, 0 },
-    { "refresh_rate", "int", "<min>1</min>", 0, 0 },
-    { "unredirect_fullscreen_windows", "bool", 0, 0, 0 },
-    { "force_independent_output_painting", "bool", 0, 0, 0 }
-};
+COMPIZ_PLUGIN_20090315 (composite, CompositePluginVTable)
 
 CompOption::Vector &
 CompositeScreen::getOptions ()
 {
-    return priv->opt;
-}
-
-CompOption *
-CompositeScreen::getOption (const char *name)
-{
-    CompOption *o = CompOption::findOption (priv->opt, name);
-    return o;
+    return priv->getOptions ();
 }
 
 bool
-CompositeScreen::setOption (const char        *name,
+CompositeScreen::setOption (const CompString  &name,
 			    CompOption::Value &value)
 {
-    CompOption   *o;
+    return priv->setOption (name, value);
+}
+
+bool
+PrivateCompositeScreen::setOption (const CompString  &name,
+				   CompOption::Value &value)
+{
     unsigned int index;
 
-    o = CompOption::findOption (priv->opt, name, &index);
-    if (!o)
+    bool rv = CompositeOptions::setOption (name, value);
+
+    if (!rv || !CompOption::findOption (getOptions (), name, &index))
 	return false;
 
     switch (index) {
-	case COMPOSITE_OPTION_DETECT_REFRESH_RATE:
-	    if (o->set (value))
-	    {
-		if (value.b ())
-		    detectRefreshRate ();
-
-		return true;
-	    }
+	case CompositeOptions::DetectRefreshRate:
+	    if (optionGetDetectRefreshRate ())
+		detectRefreshRate ();
 	    break;
-	case COMPOSITE_OPTION_REFRESH_RATE:
-	    if (priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].
-		value ().b ())
+	case CompositeOptions::RefreshRate:
+	    if (optionGetDetectRefreshRate ())
 		return false;
-	    if (o->set (value))
-	    {
-		priv->redrawTime = 1000 / o->value ().i ();
-		priv->optimalRedrawTime = priv->redrawTime;
-		return true;
-	    }
+	    redrawTime = 1000 / optionGetRefreshRate ();
+	    optimalRedrawTime = redrawTime;
 	    break;
 	default:
-	    if (CompOption::setOption (*o, value))
-		return true;
-	break;
+	    break;
     }
 
-    return false;
+    return rv;
 }
 
 bool
@@ -116,10 +92,6 @@ CompositePluginVTable::init ()
     CompPrivate p;
     p.uval = COMPIZ_COMPOSITE_ABI;
     screen->storeValue ("composite_ABI", p);
-
-    getMetadata ()->addFromOptionInfo (compositeOptionInfo,
-				       COMPOSITE_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }

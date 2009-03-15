@@ -77,7 +77,8 @@ class CompositeScreenInterface :
 
 class CompositeScreen :
     public WrapableHandler<CompositeScreenInterface, 4>,
-    public PluginClassHandler<CompositeScreen, CompScreen, COMPIZ_COMPOSITE_ABI>
+    public PluginClassHandler<CompositeScreen, CompScreen, COMPIZ_COMPOSITE_ABI>,
+    public CompOption::Class
 {
     public:
 
@@ -99,8 +100,7 @@ class CompositeScreen :
 	~CompositeScreen ();
 
 	CompOption::Vector & getOptions ();
-        bool setOption (const char *name, CompOption::Value &value);
-	CompOption * getOption (const char *name);
+        bool setOption (const CompString &name, CompOption::Value &value);
 
 	bool registerPaintHandler (PaintHandler *pHnd);
         void unregisterPaintHandler ();
@@ -127,8 +127,6 @@ class CompositeScreen :
 	void setWindowPaintOffset (int x, int y);
 	CompPoint windowPaintOffset ();
 
-
-	void detectRefreshRate ();
 	int getTimeToNextRedraw (struct timeval *tv);
 
 	int redrawTime ();

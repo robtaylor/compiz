@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="composite">
+    <plugin name="composite" useBcop="true">
 	<_short>Composite</_short>
 	<_long>Composite plugin</_long>
 	<options>

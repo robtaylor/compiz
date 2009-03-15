@@ -182,7 +182,7 @@ PrivateCompositeScreen::handleEvent (XEvent *event)
 		rre = (XRRScreenChangeNotifyEvent *) event;
 
 		if (screen->root () == rre->root)
-		    cScreen->detectRefreshRate ();
+		    detectRefreshRate ();
 	    }
 	    break;
     }
@@ -200,14 +200,6 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
     priv (new PrivateCompositeScreen (this))
 {
     int	compositeMajor, compositeMinor;
-
-    if (!compositeVTable->getMetadata ()->initOptions (compositeOptionInfo,
-					               COMPOSITE_OPTION_NUM,
-						       priv->opt))
-    {
-	setFailed ();
-	return;
-    }
 
     if (!XQueryExtension (s->dpy (), COMPOSITE_NAME,
 			  &priv->compositeOpcode,
@@ -253,7 +245,7 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
 
     priv->makeOutputWindow ();
 
-    detectRefreshRate ();
+    priv->detectRefreshRate ();
 
     priv->slowAnimations = false;
 
@@ -295,8 +287,7 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
     timeLeft (0),
     slowAnimations (false),
     active (false),
-    pHnd (NULL),
-    opt (COMPOSITE_OPTION_NUM)
+    pHnd (NULL)
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
@@ -629,10 +620,10 @@ CompositeScreen::windowPaintOffset ()
 }
 
 void
-CompositeScreen::detectRefreshRate ()
+PrivateCompositeScreen::detectRefreshRate ()
 {
     if (!noDetection &&
-	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().b ())
+	optionGetDetectRefreshRate ())
     {
 	CompString        name;
 	CompOption::Value value;
@@ -653,17 +644,14 @@ CompositeScreen::detectRefreshRate ()
 	if (value.i () == 0)
 	    value.set ((int) 50);
 
-	name = priv->opt[COMPOSITE_OPTION_REFRESH_RATE].name ();
-
-	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (false);
-	screen->setOptionForPlugin ("composite", name.c_str (), value);
-	priv->opt[COMPOSITE_OPTION_DETECT_REFRESH_RATE].value ().set (true);
+	mOptions[CompositeOptions::DetectRefreshRate].value ().set (false);
+	screen->setOptionForPlugin ("composite", "detect_refresh_rate", value);
+	mOptions[CompositeOptions::DetectRefreshRate].value ().set (true);
     }
     else
     {
-	priv->redrawTime = 1000 /
-	    priv->opt[COMPOSITE_OPTION_REFRESH_RATE].value ().i ();
-	priv->optimalRedrawTime = priv->redrawTime;
+	redrawTime = 1000 / optionGetRefreshRate ();
+	optimalRedrawTime = redrawTime;
     }
 }
 
@@ -803,7 +791,7 @@ CompositeScreen::handlePaintTimeout ()
 
 	CompOutput::ptrList outputs (0);
 	
-	if (priv->opt[COMPOSITE_OPTION_FORCE_INDEPENDENT].value ().b ()
+	if (priv->optionGetForceIndependentOutputPainting ()
 	    || !screen->hasOverlappingOutputs ())
 	{
 	    foreach (CompOutput &o, screen->outputDevs ())
