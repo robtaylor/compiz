@@ -29,28 +29,7 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define OBS_OPTION_OPACITY_INCREASE_KEY	       0
-#define OBS_OPTION_OPACITY_INCREASE_BUTTON     1
-#define OBS_OPTION_OPACITY_DECREASE_KEY	       2
-#define OBS_OPTION_OPACITY_DECREASE_BUTTON     3
-#define OBS_OPTION_SATURATION_INCREASE_KEY     4
-#define OBS_OPTION_SATURATION_INCREASE_BUTTON  5
-#define OBS_OPTION_SATURATION_DECREASE_KEY     6
-#define OBS_OPTION_SATURATION_DECREASE_BUTTON  7
-#define OBS_OPTION_BRIGHTNESS_INCREASE_KEY     8
-#define OBS_OPTION_BRIGHTNESS_INCREASE_BUTTON  9
-#define OBS_OPTION_BRIGHTNESS_DECREASE_KEY     10
-#define OBS_OPTION_BRIGHTNESS_DECREASE_BUTTON  11
-#define OBS_OPTION_OPACITY_STEP                12
-#define OBS_OPTION_SATURATION_STEP             13
-#define OBS_OPTION_BRIGHTNESS_STEP             14
-#define OBS_OPTION_OPACITY_MATCHES             15
-#define OBS_OPTION_OPACITY_VALUES              16
-#define OBS_OPTION_SATURATION_MATCHES          17
-#define OBS_OPTION_SATURATION_VALUES           18
-#define OBS_OPTION_BRIGHTNESS_MATCHES          19
-#define OBS_OPTION_BRIGHTNESS_VALUES           20
-#define OBS_OPTION_NUM                         21
+#include "obs_options.h"
 
 #define MODIFIER_OPACITY    0
 #define MODIFIER_SATURATION 1
@@ -59,23 +38,20 @@
 
 class ObsScreen :
     public ScreenInterface,
-    public PluginClassHandler<ObsScreen, CompScreen>
+    public PluginClassHandler<ObsScreen, CompScreen>,
+    public ObsOptions
 {
     public:
 	ObsScreen (CompScreen *);
 
+	bool setOption (const CompString &name, CompOption::Value &value);
+
 	void matchPropertyChanged (CompWindow *);
 	void matchExpHandlerChanged ();
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *, CompOption::Value &);
 
 	CompOption *stepOptions[MODIFIER_COUNT];
 	CompOption *matchOptions[MODIFIER_COUNT];
 	CompOption *valueOptions[MODIFIER_COUNT];
-
-    private:
-	CompOption::Vector opt;
 };
 
 class ObsWindow :
@@ -109,6 +85,4 @@ class ObsPluginVTable :
 {
     public:
 	bool init ();
-
-	PLUGIN_OPTION_HELPER (ObsScreen);
 };

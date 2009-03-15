@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <compiz>
-    <plugin name="obs">
+    <plugin name="obs" useBcop="true">
 	<_short>Opacity, Brightness and Saturation</_short>
 	<_long>Opacity, Brightness and Saturation adjustments</_long>
 	<category>Accessibility</category>

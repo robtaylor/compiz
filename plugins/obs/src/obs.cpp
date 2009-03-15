@@ -25,7 +25,7 @@
 
 #include "obs.h"
 
-COMPIZ_PLUGIN_20081216 (obs, ObsPluginVTable);
+COMPIZ_PLUGIN_20090315 (obs, ObsPluginVTable);
 
 void
 ObsWindow::changePaintModifier (unsigned int modifier,
@@ -203,121 +203,76 @@ ObsScreen::matchPropertyChanged (CompWindow  *w)
 #define MODIFIERBIND(modifier, direction) \
     boost::bind (alterPaintModifier, _1, _2, _3, modifier, direction)
 
-static const CompMetadata::OptionInfo obsOptionInfo[] = {
-    { "opacity_increase_key", "key", 0,
-      MODIFIERBIND (MODIFIER_OPACITY, 1), 0 },
-    { "opacity_increase_button", "button", 0,
-      MODIFIERBIND (MODIFIER_OPACITY, 1), 0 },
-    { "opacity_decrease_key", "key", 0,
-      MODIFIERBIND (MODIFIER_OPACITY, -1), 0 },
-    { "opacity_decrease_button", "button", 0,
-      MODIFIERBIND (MODIFIER_OPACITY, -1), 0 },
-    { "saturation_increase_key", "key", 0,
-      MODIFIERBIND (MODIFIER_SATURATION, 1), 0 },
-    { "saturation_increase_button", "button", 0,
-       MODIFIERBIND (MODIFIER_SATURATION, 1), 0 },
-    { "saturation_decrease_key", "key", 0,
-      MODIFIERBIND (MODIFIER_SATURATION, -1), 0 },
-    { "saturation_decrease_button", "button", 0,
-      MODIFIERBIND (MODIFIER_SATURATION, -1), 0 },
-    { "brightness_increase_key", "key", 0,
-      MODIFIERBIND (MODIFIER_BRIGHTNESS, 1), 0 },
-    { "brightness_increase_button", "button", 0,
-      MODIFIERBIND (MODIFIER_BRIGHTNESS, 1), 0 },
-    { "brightness_decrease_key", "key", 0,
-      MODIFIERBIND (MODIFIER_BRIGHTNESS, -1), 0 },
-    { "brightness_decrease_button", "button", 0,
-      MODIFIERBIND (MODIFIER_BRIGHTNESS, -1), 0 },
-    { "opacity_step", "int", 0, 0, 0 },
-    { "saturation_step", "int", 0, 0, 0 },
-    { "brightness_step", "int", 0, 0, 0 },
-    { "opacity_matches", "list", "<type>match</type>", 0, 0 },
-    { "opacity_values", "list",
-      "<type>int</type><min>0</min><max>100</max>", 0, 0 },
-    { "saturation_matches", "list", "<type>match</type>", 0, 0 },
-    { "saturation_values", "list",
-      "<type>int</type><min>0</min><max>100</max>", 0, 0 },
-    { "brightness_matches", "list", "<type>match</type>", 0, 0 },
-    { "brightness_values", "list",
-      "<type>int</type><min>0</min><max>100</max>", 0, 0 }
-};
-
 ObsScreen::ObsScreen (CompScreen *s) :
-    PluginClassHandler<ObsScreen, CompScreen> (s),
-    opt (OBS_OPTION_NUM)
+    PluginClassHandler<ObsScreen, CompScreen> (s)
 {
     unsigned int mod;
-
-    if (!obsVTable->getMetadata ()->initOptions (obsOptionInfo,
-						 OBS_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
 
     ScreenInterface::setHandler (screen);
 
     mod = MODIFIER_OPACITY;
-    stepOptions[mod]  = &opt[OBS_OPTION_OPACITY_STEP];
-    matchOptions[mod] = &opt[OBS_OPTION_OPACITY_MATCHES];
-    valueOptions[mod] = &opt[OBS_OPTION_OPACITY_VALUES];
+    stepOptions[mod]  = &mOptions[ObsOptions::OpacityStep];
+    matchOptions[mod] = &mOptions[ObsOptions::OpacityMatches];
+    valueOptions[mod] = &mOptions[ObsOptions::OpacityValues];
 
     mod = MODIFIER_SATURATION;
-    stepOptions[mod]  = &opt[OBS_OPTION_SATURATION_STEP];
-    matchOptions[mod] = &opt[OBS_OPTION_SATURATION_MATCHES];
-    valueOptions[mod] = &opt[OBS_OPTION_SATURATION_VALUES];
+    stepOptions[mod]  = &mOptions[ObsOptions::SaturationStep];
+    matchOptions[mod] = &mOptions[ObsOptions::SaturationMatches];
+    valueOptions[mod] = &mOptions[ObsOptions::SaturationValues];
 
     mod = MODIFIER_BRIGHTNESS;
-    stepOptions[mod]  = &opt[OBS_OPTION_BRIGHTNESS_STEP];
-    matchOptions[mod] = &opt[OBS_OPTION_BRIGHTNESS_MATCHES];
-    valueOptions[mod] = &opt[OBS_OPTION_BRIGHTNESS_VALUES];
-}
+    stepOptions[mod]  = &mOptions[ObsOptions::BrightnessStep];
+    matchOptions[mod] = &mOptions[ObsOptions::BrightnessMatches];
+    valueOptions[mod] = &mOptions[ObsOptions::BrightnessValues];
 
-CompOption::Vector &
-ObsScreen::getOptions ()
-{
-    return opt;
+    optionSetOpacityIncreaseKeyInitiate (MODIFIERBIND (MODIFIER_OPACITY, 1));
+    optionSetOpacityIncreaseButtonInitiate (MODIFIERBIND (MODIFIER_OPACITY, 1));
+    optionSetOpacityDecreaseKeyInitiate (MODIFIERBIND (MODIFIER_OPACITY, -1));
+    optionSetOpacityDecreaseButtonInitiate (MODIFIERBIND (MODIFIER_OPACITY, -1));
+
+    optionSetSaturationIncreaseKeyInitiate (MODIFIERBIND (MODIFIER_SATURATION, 1));
+    optionSetSaturationIncreaseButtonInitiate (MODIFIERBIND (MODIFIER_SATURATION, 1));
+    optionSetSaturationDecreaseKeyInitiate (MODIFIERBIND (MODIFIER_SATURATION, -1));
+    optionSetSaturationDecreaseButtonInitiate (MODIFIERBIND (MODIFIER_SATURATION, -1));
+
+    optionSetBrightnessIncreaseKeyInitiate (MODIFIERBIND (MODIFIER_BRIGHTNESS, 1));
+    optionSetBrightnessIncreaseButtonInitiate (MODIFIERBIND (MODIFIER_BRIGHTNESS, 1));
+    optionSetBrightnessDecreaseKeyInitiate (MODIFIERBIND (MODIFIER_BRIGHTNESS, -1));
+    optionSetBrightnessDecreaseButtonInitiate (MODIFIERBIND (MODIFIER_BRIGHTNESS, -1));
 }
 
 bool
-ObsScreen::setOption (const char         *name,
-		      CompOption::Value& value)
+ObsScreen::setOption (const CompString  &name,
+		      CompOption::Value &value)
 {
-   CompOption   *o;
-  unsigned  int i;
+    CompOption   *o;
+    unsigned  int i;
 
-    o = CompOption::findOption (opt, name, NULL);
-    if (!o)
+    bool rv = ObsOptions::setOption (name, value);
+
+    o = CompOption::findOption (getOptions (), name, NULL);
+    if (!o || !rv)
         return false;
 
     for (i = 0; i < MODIFIER_COUNT; i++)
     {
 	if (o == matchOptions[i])
 	{
-	    if (o->set (value))
-	    {
-		foreach (CompOption::Value &item, o->value ().list ())
-		    item.match ().update ();
+	    foreach (CompOption::Value &item, o->value ().list ())
+		item.match ().update ();
 
-		foreach (CompWindow *w, screen->windows ())
-		    ObsWindow::get (w)->updatePaintModifier (i);
+	    foreach (CompWindow *w, screen->windows ())
+		ObsWindow::get (w)->updatePaintModifier (i);
 
-		return true;
-	    }
 	}
 	else if (o == valueOptions[i])
 	{
-	    if (o->set (value))
-	    {
-		foreach (CompWindow *w, screen->windows ())
-		    ObsWindow::get (w)->updatePaintModifier (i);
-
-		return true;
-	    }
+	    foreach (CompWindow *w, screen->windows ())
+		ObsWindow::get (w)->updatePaintModifier (i);
 	}
     }
 
-    return CompOption::setOption (*o, value);
+    return rv;
 }
 
 ObsWindow::ObsWindow (CompWindow *w) :
@@ -347,9 +302,6 @@ ObsPluginVTable::init ()
     {
 	 return false;
     }
-
-    getMetadata ()->addFromOptionInfo (obsOptionInfo, OBS_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     return true;
 }
