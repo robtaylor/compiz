@@ -230,8 +230,7 @@ extern GLScreenPaintAttrib defaultScreenPaintAttrib;
 class GLScreen;
 
 class GLScreenInterface :
-    public WrapableInterface<GLScreen, GLScreenInterface>,
-    public CompOption::Class
+    public WrapableInterface<GLScreen, GLScreenInterface>
 {
     public:
 	virtual bool glPaintOutput (const GLScreenPaintAttrib &,
@@ -254,7 +253,8 @@ class GLScreenInterface :
 
 class GLScreen :
     public WrapableHandler<GLScreenInterface, 5>,
-    public PluginClassHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>
+    public PluginClassHandler<GLScreen, CompScreen, COMPIZ_OPENGL_ABI>,
+    public CompOption::Class
 {
     public:
 	GLScreen (CompScreen *s);
