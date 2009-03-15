@@ -42,22 +42,19 @@
 #include <iostream>
 #include <fstream>
 
-#define SVG_OPTION_SET 0
-#define SVG_OPTION_NUM 1
+#include "imgsvg_options.h"
 
 #define SVG_SCREEN(s) SvgScreen *ss = SvgScreen::get (s)
 #define SVG_WINDOW(w) SvgWindow *sw = SvgWindow::get (w)
 
 class SvgScreen :
     public ScreenInterface,
-    public PluginClassHandler<SvgScreen, CompScreen>
+    public PluginClassHandler<SvgScreen, CompScreen>,
+    public ImgsvgOptions
 {
     public:
 	SvgScreen (CompScreen *screen);
 	~SvgScreen ();
-
-	CompOption::Vector & getOptions ();
-	bool setOption (const char *name, CompOption::Value &value);
 
 	bool fileToImage (CompString &path, CompSize &size,
 			  int &stride, void *&data);
@@ -67,8 +64,6 @@ class SvgScreen :
 	CompRect zoom;
 
     private:
-	CompOption::Vector opt;
-
 	bool readSvgToImage (const char *file, CompSize &size, void *& data);
 };
 
@@ -138,6 +133,4 @@ class SvgPluginVTable :
 
 	bool init ();
 	void fini ();
-
-	PLUGIN_OPTION_HELPER (SvgScreen);
 };

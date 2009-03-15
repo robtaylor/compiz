@@ -25,7 +25,7 @@
 
 #include "imgsvg.h"
 
-COMPIZ_PLUGIN_20081216 (imgsvg, SvgPluginVTable)
+COMPIZ_PLUGIN_20090315 (imgsvg, SvgPluginVTable)
 
 static bool
 svgSet (CompAction         *action,
@@ -66,45 +66,16 @@ svgSet (CompAction         *action,
     return false;
 }
 
-static const CompMetadata::OptionInfo svgOptionInfo[] = {
-    { "set", "action", 0, svgSet, NULL }
-};
 
 SvgScreen::SvgScreen (CompScreen *screen) :
-    PluginClassHandler<SvgScreen, CompScreen> (screen),
-    opt (SVG_OPTION_NUM)
+    PluginClassHandler<SvgScreen, CompScreen> (screen)
 {
-    if (!imgsvgVTable->getMetadata ()->initOptions (svgOptionInfo,
-						    SVG_OPTION_NUM, opt))
-    {
-	setFailed ();
-	return;
-    }
-
+    optionSetSetInitiate (svgSet);
     ScreenInterface::setHandler (screen, true);
 }
 
 SvgScreen::~SvgScreen ()
 {
-}
-
-CompOption::Vector &
-SvgScreen::getOptions ()
-{
-    return opt;
-}
-
-bool
-SvgScreen::setOption (const char        *name,
-		      CompOption::Value &value)
-{
-    CompOption *o;
-
-    o = CompOption::findOption (opt, name);
-    if (!o)
-	return false;
-
-    return CompOption::setOption (*o, value);
 }
 
 bool
@@ -654,9 +625,6 @@ SvgPluginVTable::init ()
 {
     if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
-
-    getMetadata ()->addFromOptionInfo (svgOptionInfo, SVG_OPTION_NUM);
-    getMetadata ()->addFromFile (name ());
 
     rsvg_init ();
 
