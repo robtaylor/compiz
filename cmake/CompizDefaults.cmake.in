@@ -1,6 +1,4 @@
 
-set (CMAKE_INSTALL_RPATH @compiz_plugindir@ @libdir@)
-
 set (COMPIZ_BCOP_XSLT @CMAKE_INSTALL_PREFIX@/share/compiz/xslt/bcop.xslt)
 
 set (COMPIZ_GCONF_SCHEMAS_SUPPORT @USE_GCONF@)
