@@ -169,16 +169,15 @@ class PrivateScaleWindow :
 	bool adjustScaleVelocity ();
 
 	static bool compareWindowsDistance (ScaleWindow *, ScaleWindow *);
-	
-    public:
 
+    public:
 	CompWindow         *window;
 	CompositeWindow    *cWindow;
 	GLWindow           *gWindow;
 	ScaleWindow        *sWindow;
 	ScaleScreen        *sScreen;
 	PrivateScaleScreen *spScreen;
-	
+
 	ScaleSlot *slot;
 
 	int sid;

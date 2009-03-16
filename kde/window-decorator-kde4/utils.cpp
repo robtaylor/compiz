@@ -78,7 +78,7 @@ KWD::trapXError (void)
 int
 KWD::popXError (void)
 {
-    XSync (QX11Info::display(), false);
+    XSync (QX11Info::display (), false);
     XSetErrorHandler (oldErrorHandler);
 
     return trappedErrorCode;
@@ -98,7 +98,7 @@ KWD::readXProperty (WId  window,
     int		  result;
 
     KWD::trapXError ();
-    result = XGetWindowProperty (QX11Info::display(), window, property, offset,
+    result = XGetWindowProperty (QX11Info::display (), window, property, offset,
 				 length, false, type,
 				 &actualType, &format, &nItems,
 				 &bytesRemaining, &data);
@@ -111,7 +111,7 @@ KWD::readXProperty (WId  window,
 	if (items)
 	    *items = nItems;
 
-	return reinterpret_cast <void *>(data);
+	return reinterpret_cast <void *> (data);
     }
 
     if (data)
@@ -133,7 +133,7 @@ KWD::readWindowProperty (long window,
     if (data)
     {
 	if (value)
-	    *value = *reinterpret_cast <int *>(data);
+	    *value = *reinterpret_cast <int *> (data);
 
 	XFree (data);
 
@@ -154,7 +154,7 @@ KWD::readPropertyShort (WId	       id,
     unsigned char *data;
 
     KWD::trapXError ();
-    result = XGetWindowProperty (QX11Info::display(), id, property,
+    result = XGetWindowProperty (QX11Info::display (), id, property,
 				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
     if (KWD::popXError ())
@@ -177,7 +177,7 @@ KWD::readPropertyShort (WId	       id,
 void
 KWD::Atoms::init (void)
 {
-    Display *xdisplay = QX11Info::display();
+    Display *xdisplay = QX11Info::display ();
 
     netInputFrameWindow =
 	XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, false);

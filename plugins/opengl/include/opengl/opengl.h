@@ -287,7 +287,7 @@ class GLScreen :
 
 	GLTexture::BindPixmapHandle registerBindPixmap (GLTexture::BindPixmapProc);
 	void unregisterBindPixmap (GLTexture::BindPixmapHandle);
-	
+
 	GLFBConfig * glxPixmapFBConfig (unsigned int depth);
 
 	GLTexture *defaultIcon ();
@@ -355,7 +355,7 @@ class GLWindow :
 		~Geometry ();
 
 		void reset ();
-		
+
 		bool moreVertices (int newSize);
 		bool moreIndices (int newSize);
 
@@ -370,7 +370,7 @@ class GLWindow :
 		int      texCoordSize;
 		int      indexCount;
 	};
-	
+
 	static GLWindowPaintAttrib defaultPaintAttrib;
     public:
 
@@ -410,7 +410,7 @@ class GLWindow :
 
 	friend class GLScreen;
 	friend class PrivateGLScreen;
-	
+
     private:
 	PrivateGLWindow *priv;
 };

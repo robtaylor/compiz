@@ -81,10 +81,10 @@ ResizeScreen::getStretchRectangle (BoxPtr pBox)
     getPaintRectangle (&box);
     ResizeWindow::get (w)->getStretchScale (&box, &xScale, &yScale);
 
-    pBox->x1 = (int)(box.x1 - (w->output ().left - w->input ().left) * xScale);
-    pBox->y1 = (int)(box.y1 - (w->output ().top - w->input ().top) * yScale);
-    pBox->x2 = (int)(box.x2 + w->output ().right * xScale);
-    pBox->y2 = (int)(box.y2 + w->output ().bottom * yScale);
+    pBox->x1 = (int) (box.x1 - (w->output ().left - w->input ().left) * xScale);
+    pBox->y1 = (int) (box.y1 - (w->output ().top - w->input ().top) * yScale);
+    pBox->x2 = (int) (box.x2 + w->output ().right * xScale);
+    pBox->y2 = (int) (box.y2 + w->output ().bottom * yScale);
 }
 
 void
@@ -170,7 +170,7 @@ ResizeScreen::updateWindowProperty ()
 
     XChangeProperty (screen->dpy (), w->id (), resizeInformationAtom,
 		     XA_CARDINAL, 32, PropModeReplace,
-        	     (unsigned char*) data, 4);
+		     (unsigned char*) data, 4);
 }
 
 void
@@ -204,7 +204,7 @@ resizeInitiate (CompAction         *action,
 	RESIZE_SCREEN (screen);
 
 	CompWindow::Geometry server = w->serverGeometry ();
-	
+
 	x = CompOption::getIntOptionNamed (options, "x", pointerX);
 	y = CompOption::getIntOptionNamed (options, "y", pointerY);
 
@@ -467,7 +467,7 @@ resizeTerminate (CompAction         *action,
     }
 
     action->setState (action->state () & ~(CompAction::StateTermKey |
-		      CompAction::StateTermButton));
+					   CompAction::StateTermButton));
 
     return false;
 }
@@ -787,7 +787,7 @@ ResizeScreen::handleEvent (XEvent *event)
 					     CompOption::TypeInt));
 				o.push_back (CompOption ("button",
 					     CompOption::TypeInt));
-				
+
 				o[1].value ().set ((int) mods);
 				o[2].value ().set
 				    ((int) event->xclient.data.l[0]);
@@ -798,7 +798,7 @@ ResizeScreen::handleEvent (XEvent *event)
 				o[5].value ().set
 				    ((int) (event->xclient.data.l[3] ?
 				     event->xclient.data.l[3] : -1));
-			
+
 				resizeInitiate (&optionGetInitiateButton (),
 						CompAction::StateInitButton, o);
 

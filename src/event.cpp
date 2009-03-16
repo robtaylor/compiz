@@ -594,7 +594,7 @@ PrivateScreen::triggerEdgeEnter (unsigned int       edge,
 
 	edgeDelayTimer.start  (
 	    boost::bind (delayedEdgeTimeout, &edgeDelaySettings),
-			 delay, (unsigned int)((float) delay * 1.2));
+			 delay, (unsigned int) ((float) delay * 1.2));
 
 	delayState = CompAction::StateNoEdgeDelay;
 	if (triggerAllEdgeEnterBindings (state, delayState, edge, arguments))
@@ -931,12 +931,12 @@ void
 CompScreen::handleCompizEvent (const char         *plugin,
 			       const char         *event,
 			       CompOption::Vector &options)
-    WRAPABLE_HND_FUNC(7, handleCompizEvent, plugin, event, options)
+    WRAPABLE_HND_FUNC (7, handleCompizEvent, plugin, event, options)
 
 void
 CompScreen::handleEvent (XEvent *event)
 {
-    WRAPABLE_HND_FUNC(6, handleEvent, event)
+    WRAPABLE_HND_FUNC (6, handleEvent, event)
 
     CompWindow *w;
 
@@ -1667,7 +1667,7 @@ CompScreen::handleEvent (XEvent *event)
 			    priv->autoRaiseWindow = w->id ();
 			    priv->autoRaiseTimer.start (
 				boost::bind (autoRaiseTimeout, this),
-				delay, (unsigned int)((float) delay * 1.2));
+				delay, (unsigned int) ((float) delay * 1.2));
 			}
 			else
 			{

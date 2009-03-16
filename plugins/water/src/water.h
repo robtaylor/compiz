@@ -73,7 +73,6 @@ class WaterScreen :
     public WaterOptions
 {
     public:
-	
 	WaterScreen (CompScreen *screen);
 	~WaterScreen ();
 
@@ -109,7 +108,7 @@ class WaterScreen :
 	bool wiperTimeout ();
 
 	void waterReset ();
-	
+
 	void handleMotionEvent ();
 
 	CompositeScreen *cScreen;

@@ -134,7 +134,7 @@ class CompAction {
 
 	KeyBinding & key ();
 	void setKey (const KeyBinding &key);
-	
+
 	ButtonBinding & button ();
 	void setButton (const ButtonBinding &button);
 

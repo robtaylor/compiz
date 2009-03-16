@@ -92,7 +92,7 @@ CopyPixmap::~CopyPixmap ()
 CopyTexture::CopyTexture (CopyPixmap *cp, CompRect dim) :
     cp (cp),
     dim (dim),
-    damage (0, 0, dim.width(), dim.height ())
+    damage (0, 0, dim.width (), dim.height ())
 {
     GLenum            target;
     GLTexture::Matrix matrix = _identity_matrix;
@@ -172,35 +172,36 @@ CopyTexture::update ()
 	tmpPix = XCreatePixmap (screen->dpy (), cp->pixmap, damage.width (),
 				damage.height (), cp->depth);
 
-    XCopyArea(screen->dpy (), cp->pixmap, tmpPix, gc, dim.x () + damage.x (),
-	      dim.y () + damage.y (), damage.width (), damage.height (), 0, 0);
-    XSync(screen->dpy (), FALSE);
+    XCopyArea (screen->dpy (), cp->pixmap, tmpPix, gc,
+	       dim.x () + damage.x (), dim.y () + damage.y (),
+	       damage.width (), damage.height (), 0, 0);
+    XSync (screen->dpy (), FALSE);
 
     if (cs->useShm)
 	addr = cs->shmInfo.shmaddr;
     else
     {
-	image = XGetImage(screen->dpy (), tmpPix, 0, 0, damage.width(),
-			  damage.height (), AllPlanes, ZPixmap);
+	image = XGetImage (screen->dpy (), tmpPix, 0, 0, damage.width (),
+			   damage.height (), AllPlanes, ZPixmap);
 	if (image)
 	    addr = image->data;
     }
 
     glBindTexture (target (), name ());
-    glTexSubImage2D(target (), 0, damage.x (), damage.y (), damage.width (),
-		    damage.height (), GL_BGRA,
+    glTexSubImage2D (target (), 0, damage.x (), damage.y (),
+		     damage.width (), damage.height (), GL_BGRA,
 #if IMAGE_BYTE_ORDER == MSBFirst
-		    GL_UNSIGNED_INT_8_8_8_8_REV,
+		     GL_UNSIGNED_INT_8_8_8_8_REV,
 #else
-                    GL_UNSIGNED_BYTE,
+		     GL_UNSIGNED_BYTE,
 #endif
-		    addr);
+		     addr);
 
     glBindTexture (target (), 0);
-    XFreePixmap(screen->dpy (), tmpPix);
-    XFreeGC(screen->dpy (), gc);
+    XFreePixmap (screen->dpy (), tmpPix);
+    XFreeGC (screen->dpy (), gc);
     if (image)
-	XDestroyImage(image);
+	XDestroyImage (image);
 
     damage.setGeometry (0, 0, 0, 0);
 }
@@ -249,7 +250,7 @@ CopytexScreen::handleEvent (XEvent *event)
 		    y1 = MIN (y1, t->damage.y1 ());
 		    y2 = MAX (y2, t->damage.y2 ());
 		}
-		
+
 		if (x1 < x2 && y1 < y2)
 		    t->damage.setGeometry (x1, y1, x2 - x1, y2 - y1);
 
@@ -271,7 +272,7 @@ CopytexScreen::CopytexScreen (CompScreen *screen) :
 	if (b)
 	    useShm = true;
     }
-	
+
     if (useShm)
     {
 	shmInfo.shmid = shmget (IPC_PRIVATE, SHM_SIZE, IPC_CREAT | 0600);
@@ -298,7 +299,7 @@ CopytexScreen::CopytexScreen (CompScreen *screen) :
     if (useShm)
     {
 	shmInfo.readOnly = FALSE;
-	if (!XShmAttach(screen->dpy (), &shmInfo))
+	if (!XShmAttach (screen->dpy (), &shmInfo))
 	{
 	    shmdt (shmInfo.shmaddr);
 	    shmctl (shmInfo.shmid, IPC_RMID, 0);
@@ -321,9 +322,9 @@ CopytexScreen::~CopytexScreen ()
 {
     if (useShm)
     {
-	XShmDetach(screen->dpy (), &shmInfo);
+	XShmDetach (screen->dpy (), &shmInfo);
 	shmdt (shmInfo.shmaddr);
-	shmctl (shmInfo.shmid, IPC_RMID, 0); 
+	shmctl (shmInfo.shmid, IPC_RMID, 0);
     }
     GLScreen::get (screen)->unregisterBindPixmap (hnd);
 }

@@ -120,7 +120,6 @@ class DecorScreen :
 	DecorTexture * getTexture (Pixmap);
 	void releaseTexture (DecorTexture *);
 
-	
 	void checkForDm (bool);
 	bool decoratorStartTimeout ();
 
@@ -199,7 +198,7 @@ class DecorWindow :
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;
 	DecorScreen     *dScreen;
-	
+
 	WindowDecoration *wd;
 	Decoration	 *decor;
 

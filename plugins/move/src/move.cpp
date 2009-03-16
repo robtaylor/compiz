@@ -185,7 +185,7 @@ moveTerminate (CompAction      *action,
     }
 
     action->setState (action->state () & ~(CompAction::StateTermKey |
-		      CompAction::StateTermButton));
+					   CompAction::StateTermButton));
 
     return false;
 }
@@ -221,7 +221,7 @@ moveGetYConstrainRegion (CompScreen *s)
 
     XUnionRegion (&r, region, region);
 
-    for (i = 0; i < s->outputDevs ().size(); i++)
+    for (i = 0; i < s->outputDevs ().size (); i++)
     {
 	XUnionRegion (s->outputDevs ()[i].region (), region, region);
 
@@ -296,7 +296,7 @@ moveHandleMotionEvent (CompScreen *s,
 	CompWindow   *w;
 
 	w = ms->w;
-	
+
 	wX      = w->serverGeometry ().x ();
 	wY      = w->serverGeometry ().y ();
 	wWidth  = w->serverGeometry ().width () +
@@ -665,12 +665,12 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     region (NULL),
     status (RectangleOut),
     releaseButton (0),
-    grab(NULL),
+    grab (NULL),
     hasCompositing (false)
 {
 
     updateOpacity ();
- 
+
     for (unsigned int i = 0; i < NUM_KEYS; i++)
 	key[i] = XKeysymToKeycode (screen->dpy (),
 				   XStringToKeysym (mKeys[i].name));

@@ -55,14 +55,13 @@ class MoveScreen :
     public MoveOptions
 {
     public:
-	
 	MoveScreen (CompScreen *screen);
 	~MoveScreen ();
-	
+
 	void updateOpacity ();
 
 	void handleEvent (XEvent *);
-	
+
 	CompWindow *w;
 	int        savedX;
 	int        savedY;
@@ -75,7 +74,7 @@ class MoveScreen :
 	int releaseButton;
 
 	GLushort moveOpacity;
-	
+
 	CompScreen::GrabHandle grab;
 
 	Cursor moveCursor;

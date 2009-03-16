@@ -465,7 +465,7 @@ IniScreen::fileChanged (const char *name)
 CompString
 IniScreen::getHomeDir ()
 {
-    char       *home = getenv("HOME");
+    char       *home = getenv ("HOME");
     CompString retval;
 
     if (home)

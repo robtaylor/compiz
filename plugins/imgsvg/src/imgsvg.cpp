@@ -213,7 +213,7 @@ SvgWindow::~SvgWindow ()
     if (context)
     {
 	finiTexture (context->texture[0]);
-	delete context; 
+	delete context;
     }
 }
 

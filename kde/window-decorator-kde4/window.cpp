@@ -158,25 +158,25 @@ KWD::Window::Window (WId  parentId,
 KWD::Window::~Window (void)
 {
     if (mShadow)
-	decor_shadow_destroy (QX11Info::display(), mShadow);
+	decor_shadow_destroy (QX11Info::display (), mShadow);
 
     if (mPicture)
-	XRenderFreePicture (QX11Info::display(), mPicture);
+	XRenderFreePicture (QX11Info::display (), mPicture);
 
     if (mPixmap)
-	XFreePixmap (QX11Info::display(), mPixmap);
+	XFreePixmap (QX11Info::display (), mPixmap);
 
     if (mTexturePicture)
-	XRenderFreePicture (QX11Info::display(), mTexturePicture);
+	XRenderFreePicture (QX11Info::display (), mTexturePicture);
 
     if (mDecorationPicture)
-	XRenderFreePicture (QX11Info::display(), mDecorationPicture);
+	XRenderFreePicture (QX11Info::display (), mDecorationPicture);
 
     if (mTexturePixmap)
-	XFreePixmap (QX11Info::display(), mTexturePixmap);
+	XFreePixmap (QX11Info::display (), mTexturePixmap);
 
     if (mTexturePixmapBuffer)
-	XFreePixmap (QX11Info::display(), mTexturePixmapBuffer);
+	XFreePixmap (QX11Info::display (), mTexturePixmapBuffer);
 
     if (mDecor)
 	delete mDecor;
@@ -379,7 +379,7 @@ KWD::Window::showWindowMenu (const QPoint &pos)
     {
 	QAction *action;
 	const int levels[] = { 100, 90, 75, 50, 25, 10 };
-	
+
 	mPopup = new QMenu ();
 	mPopup->setFont (KGlobalSettings::menuFont ());
 
@@ -427,7 +427,6 @@ KWD::Window::showWindowMenu (const QPoint &pos)
 
 	    connect (mOpacityMenu, SIGNAL (triggered (QAction*)),
 		    SLOT (handleOpacityPopupActivated (QAction*)));
-	    
 
 	    for (unsigned int i = 0;
 		 i < sizeof (levels) / sizeof (levels[0]); ++i)
@@ -458,7 +457,7 @@ KWD::Window::showWindowMenu (const QPoint &pos)
         mMoveOpAction->setData (KDecorationDefines::MoveOp);
 
         mResizeOpAction = mPopup->addAction (i18n ("Re&size"));
-        kaction = qobject_cast<KAction*> (mKeys.action("Window Resize"));
+        kaction = qobject_cast<KAction*> (mKeys.action ("Window Resize"));
         if (kaction != 0)
             mResizeOpAction->setShortcut (kaction->globalShortcut ().primary ());
         mResizeOpAction->setData (KDecorationDefines::ResizeOp);
@@ -485,9 +484,9 @@ KWD::Window::showWindowMenu (const QPoint &pos)
 
 	mPopup->addSeparator ();
 
-	mCloseOpAction = mPopup->addAction (i18n("&Close"));
+	mCloseOpAction = mPopup->addAction (i18n ("&Close"));
         mCloseOpAction->setIcon (KIcon ("window-close" ));
-        kaction = qobject_cast<KAction*> (mKeys.action("Window Close"));
+        kaction = qobject_cast<KAction*> (mKeys.action ("Window Close"));
         if (kaction != 0)
             mCloseOpAction->setShortcut (kaction->globalShortcut ().primary ());
         mCloseOpAction->setData (KDecorationDefines::CloseOp);
@@ -497,7 +496,7 @@ KWD::Window::showWindowMenu (const QPoint &pos)
 
     pnt += QPoint (mGeometry.x () - mBorder.left,
 		   mGeometry.y () - mBorder.top);
- 
+
     mPopup->exec (pnt);
 }
 
@@ -519,15 +518,15 @@ KWD::Window::processMousePressEvent (QMouseEvent *qme)
     switch (qme->button ()) {
     case Qt::LeftButton:
 	com = active ? Decorator::options ()->commandActiveTitlebar1 () :
-	Decorator::options()->commandInactiveTitlebar1 ();
+	Decorator::options ()->commandInactiveTitlebar1 ();
 	break;
     case Qt::MidButton:
 	com = active ? Decorator::options ()->commandActiveTitlebar2 () :
-	Decorator::options()->commandInactiveTitlebar2 ();
+	Decorator::options ()->commandInactiveTitlebar2 ();
 	break;
     case Qt::RightButton:
 	com = active ? Decorator::options ()->commandActiveTitlebar3 () :
-	Decorator::options()->commandInactiveTitlebar3 ();
+	Decorator::options ()->commandInactiveTitlebar3 ();
     default:
 	break;
     }
@@ -733,7 +732,7 @@ KWD::Window::titlebarMouseWheelOperation (int delta)
 {
     Options::MouseCommand com;
 
-    com = Decorator::options()->operationTitlebarMouseWheel (delta);
+    com = Decorator::options ()->operationTitlebarMouseWheel (delta);
     performMouseCommand (com, 0);
 }
 
@@ -783,7 +782,7 @@ KWD::Window::createDecoration (void)
     if (mFrame)
     {
 	KWD::trapXError ();
-	XSelectInput (QX11Info::display(), mFrame,
+	XSelectInput (QX11Info::display (), mFrame,
 		      StructureNotifyMask | PropertyChangeMask |
 		      ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
 		      EnterWindowMask | LeaveWindowMask);
@@ -792,7 +791,7 @@ KWD::Window::createDecoration (void)
     }
 
     KWD::trapXError ();
-    XSelectInput (QX11Info::display(), QWidget::winId(),
+    XSelectInput (QX11Info::display (), QWidget::winId (),
 		  StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
@@ -1010,7 +1009,7 @@ cornersFromQRegion (QRegion *region,
 void
 KWD::Window::updateShadow (void)
 {
-    Display	      *xdisplay = QX11Info::display();
+    Display	      *xdisplay = QX11Info::display ();
     Screen	      *xscreen;
     XRenderPictFormat *xformat;
     int		      leftCorner, rightCorner, topCorner, bottomCorner;
@@ -1022,7 +1021,7 @@ KWD::Window::updateShadow (void)
 
     if (mShadow)
     {
-	decor_shadow_destroy (QX11Info::display(), mShadow);
+	decor_shadow_destroy (QX11Info::display (), mShadow);
 	mShadow = NULL;
     }
 
@@ -1094,38 +1093,38 @@ KWD::Window::updateShadow (void)
 				  &mLayout);
 
     if (mDecorationPicture)
-	XRenderFreePicture (QX11Info::display(), mDecorationPicture);
+	XRenderFreePicture (QX11Info::display (), mDecorationPicture);
 
     if (mTexturePicture)
-	XRenderFreePicture (QX11Info::display(), mTexturePicture);
+	XRenderFreePicture (QX11Info::display (), mTexturePicture);
 
     if (mTexturePixmap)
-	XFreePixmap (QX11Info::display(), mTexturePixmap);
+	XFreePixmap (QX11Info::display (), mTexturePixmap);
 
     if (mTexturePixmapBuffer)
-	XFreePixmap (QX11Info::display(), mTexturePixmapBuffer);
+	XFreePixmap (QX11Info::display (), mTexturePixmapBuffer);
 
-    mTexturePixmap       = XCreatePixmap (QX11Info::display(),
+    mTexturePixmap       = XCreatePixmap (QX11Info::display (),
 					  QX11Info::appRootWindow (),
 					  mLayout.width, mLayout.height, 32);
-    mTexturePixmapBuffer = XCreatePixmap (QX11Info::display(),
+    mTexturePixmapBuffer = XCreatePixmap (QX11Info::display (),
 					  QX11Info::appRootWindow (),
 					  mLayout.width, mLayout.height, 32);
     mTexturePixmapSize = QSize (mLayout.width, mLayout.height);
 
-    xformat = XRenderFindStandardFormat (QX11Info::display(),
+    xformat = XRenderFindStandardFormat (QX11Info::display (),
 					 PictStandardARGB32);
 
     mDecorationPicture =
-	XRenderCreatePicture (QX11Info::display(),
+	XRenderCreatePicture (QX11Info::display (),
 			      mTexturePixmap,
 			      xformat, 0, NULL);
     mTexturePicture =
-	XRenderCreatePicture (QX11Info::display(),
+	XRenderCreatePicture (QX11Info::display (),
 			      mTexturePixmapBuffer,
 			      xformat, 0, NULL);
 
-    decor_fill_picture_extents_with_shadow (QX11Info::display(),
+    decor_fill_picture_extents_with_shadow (QX11Info::display (),
 					    mShadow,
 					    &mContext,
 					    mTexturePicture,
@@ -1157,7 +1156,7 @@ KWD::Window::setMask (const QRegion &reg, int)
 			   mGeometry.width (), mGeometry.height ());
 
 	KWD::trapXError ();
-	XShapeCombineRegion (QX11Info::display(),
+	XShapeCombineRegion (QX11Info::display (),
 			     mFrame,
 			     (mType == Normal2D) ? ShapeBounding : ShapeInput,
 			     0,
@@ -1213,7 +1212,7 @@ KWD::Window::resizeDecoration (bool force)
 
     if (mType != Normal && mType != Normal2D)
     {
-	Display		*xdisplay = QX11Info::display();
+	Display		*xdisplay = QX11Info::display ();
 	Screen		*xscreen;
 	decor_shadow_t  *tmpShadow;
 	decor_context_t c;
@@ -1257,17 +1256,17 @@ KWD::Window::resizeDecoration (bool force)
 
     if (mPixmap)
     {
-	XFreePixmap (QX11Info::display(), mPixmap);
+	XFreePixmap (QX11Info::display (), mPixmap);
 	mPixmap = None;
     }
 
     if (mPicture)
     {
-	XRenderFreePicture (QX11Info::display(), mPicture);
+	XRenderFreePicture (QX11Info::display (), mPicture);
 	mPicture = 0;
     }
 
-    if (w != width() || h != height())
+    if (w != width () || h != height ())
     {
 	mPendingConfigure = 1;
     }
@@ -1280,7 +1279,7 @@ KWD::Window::resizeDecoration (bool force)
 
     if (mType != Normal2D)
     {
-        XMoveResizeWindow (QX11Info::display(), winId(),
+        XMoveResizeWindow (QX11Info::display (), winId (),
 		       mGeometry.x () + ROOT_OFF_X - mBorder.left,
 		       mGeometry.y () + ROOT_OFF_Y - mBorder.top,
 		       w, h);
@@ -1289,7 +1288,7 @@ KWD::Window::resizeDecoration (bool force)
 	{
 	    mPendingMap = 1;
 
-	    XReparentWindow (QX11Info::display(), winId (), mParentId, 0, 0);
+	    XReparentWindow (QX11Info::display (), winId (), mParentId, 0, 0);
 
 	    show ();
 	    mMapped = true;
@@ -1297,7 +1296,7 @@ KWD::Window::resizeDecoration (bool force)
 	    if (mDamageId != winId ())
 	    {
 		mDamageId = winId ();
-		XDamageCreate (QX11Info::display(), mDamageId,
+		XDamageCreate (QX11Info::display (), mDamageId,
 			       XDamageReportRawRectangles);
 	    }
 	}
@@ -1306,7 +1305,7 @@ KWD::Window::resizeDecoration (bool force)
     {
 	if (!mMapped)
 	{
-            XReparentWindow (QX11Info::display(), mDecor->widget ()->winId (),
+            XReparentWindow (QX11Info::display (), mDecor->widget ()->winId (),
 			     mFrame, 0, 0);
 	    mMapped = true;
 	    updateProperty ();
@@ -1329,17 +1328,17 @@ KWD::Window::rebindPixmap (void)
 	return;
 
     if (mPicture)
-	XRenderFreePicture (QX11Info::display(), mPicture);
+	XRenderFreePicture (QX11Info::display (), mPicture);
 
     if (mPixmap)
-	XFreePixmap (QX11Info::display(), mPixmap);
+	XFreePixmap (QX11Info::display (), mPixmap);
 
-    mPixmap = XCompositeNameWindowPixmap (QX11Info::display(), winId ());
+    mPixmap = XCompositeNameWindowPixmap (QX11Info::display (), winId ());
 
-    xformat = XRenderFindVisualFormat (QX11Info::display(),
+    xformat = XRenderFindVisualFormat (QX11Info::display (),
 				       (Visual *) QX11Info::appVisual ());
 
-    mPicture = XRenderCreatePicture (QX11Info::display(), mPixmap,
+    mPicture = XRenderCreatePicture (QX11Info::display (), mPixmap,
 				     xformat, 0, NULL);
 
     updateShadow ();
@@ -1469,7 +1468,7 @@ KWD::Window::updateBlurProperty (int topOffset,
 				       rightRegion, rightOffset);
 
 	KWD::trapXError ();
-	XChangeProperty (QX11Info::display(), mClientId, atom,
+	XChangeProperty (QX11Info::display (), mClientId, atom,
 			 XA_INTEGER,
 			 32, PropModeReplace, (unsigned char *) data,
 			 2 + size * 6);
@@ -1478,7 +1477,7 @@ KWD::Window::updateBlurProperty (int topOffset,
     else
     {
 	KWD::trapXError ();
-	XDeleteProperty (QX11Info::display(), mClientId, atom);
+	XDeleteProperty (QX11Info::display (), mClientId, atom);
 	KWD::popXError ();
     }
 }
@@ -1517,12 +1516,12 @@ KWD::Window::updateProperty (void)
 	    lh = mLayout.left.x2 - mLayout.left.x1;
 	else
 	    lh = mLayout.left.y2 - mLayout.left.y1;
- 
+
 	if (mLayout.rotation)
 	    rh = mLayout.right.x2 - mLayout.right.x1;
 	else
 	    rh = mLayout.right.y2 - mLayout.right.y1;
- 
+
 	w = mLayout.top.x2 - mLayout.top.x1 - mContext.left_space -
 	    mContext.right_space;
 
@@ -1535,18 +1534,18 @@ KWD::Window::updateProperty (void)
 	    x = w - mContext.left_space - mContext.left_corner_space;
 	    if (x > topXOffset)
 		topXOffset = x;
- 
+
 	    if (widget)
 	    {
 		const QList<QObject*> children = widget->children ();
- 
+
 		foreach (QObject *obj, children)
 		{
 		    QWidget *child;
- 
+
 		    if (!obj->isWidgetType ())
 			continue;
- 
+
 		    child = static_cast <QWidget *> (obj);
 
 		    x = child->x () - mBorder.left - 2;
@@ -1561,9 +1560,9 @@ KWD::Window::updateProperty (void)
 						    rh / 2,
 						    topXOffset,
 						    w / 2);
- 
+
 	    updateBlurProperty (topXOffset, w / 2, lh / 2, rh / 2);
- 
+
 	    minWidth = mContext.left_corner_space + 1 + mContext.right_corner_space;
 	}
 	else
@@ -1582,9 +1581,9 @@ KWD::Window::updateProperty (void)
      {
 	decor_gen_window_property (data, &normExtents, &maxExtents, 1, 0);
      }
- 
+
     KWD::trapXError ();
-    XChangeProperty (QX11Info::display(), mClientId, atom,
+    XChangeProperty (QX11Info::display (), mClientId, atom,
 		     XA_INTEGER,
 		     32, PropModeReplace, (unsigned char *) data,
 		     BASE_PROP_SIZE + QUAD_PROP_SIZE * nQuad);
@@ -1605,12 +1604,12 @@ KWD::Window::updateFrame (WId frame)
 {
     if (mMapped && mType == Normal2D && mFrame != frame)
     {
-	XReparentWindow (QX11Info::display(), winId (), frame, 0, 0);
+	XReparentWindow (QX11Info::display (), winId (), frame, 0, 0);
     }
     mFrame = frame;
 
     KWD::trapXError ();
-    XSelectInput (QX11Info::display(), mFrame,
+    XSelectInput (QX11Info::display (), mFrame,
 		  StructureNotifyMask | PropertyChangeMask |
 		  ButtonPressMask | ButtonReleaseMask | PointerMotionMask |
 		  EnterWindowMask | LeaveWindowMask);
@@ -1665,7 +1664,7 @@ KWD::Window::reloadDecoration (void)
 
     if (mShadow)
     {
-	decor_shadow_destroy (QX11Info::display(), mShadow);
+	decor_shadow_destroy (QX11Info::display (), mShadow);
 	mShadow = NULL;
     }
 
@@ -1706,9 +1705,9 @@ KWD::Window::updateCursor (QPoint pos)
 {
     KWD::trapXError ();
     if (mType == Normal2D)
-        XDefineCursor (QX11Info::display(), winId (), positionToCursor (pos));
+        XDefineCursor (QX11Info::display (), winId (), positionToCursor (pos));
     else
-	XDefineCursor (QX11Info::display(), mFrame, positionToCursor (pos));
+	XDefineCursor (QX11Info::display (), mFrame, positionToCursor (pos));
     KWD::popXError ();
 }
 
@@ -1723,7 +1722,7 @@ KWD::Window::getWindowProtocols (void)
     mSupportContextHelp = false;
 
     KWD::trapXError ();
-    status = XGetWMProtocols (QX11Info::display(), mClientId, &p, &n);
+    status = XGetWMProtocols (QX11Info::display (), mClientId, &p, &n);
     if (KWD::popXError ())
 	return;
 
@@ -1747,20 +1746,21 @@ KWD::Window::getWindowProtocols (void)
 void
 KWD::Window::handlePopupActivated (QAction * action)
 {
-    WindowOperation op = static_cast <WindowOperation> (action->data().toInt());
+    WindowOperation op;
 
+    op = static_cast <WindowOperation> (action->data ().toInt ());
     performWindowOperation (op);
 }
 
 void
 KWD::Window::handleOpacityPopupActivated (QAction *action)
 {
-    int op = action->data().toInt();
+    int op = action->data ().toInt ();
 
     op = op * 0xffff / 100;
 
     if (op != mOpacity)
-	Decorator::sendClientMessage (QX11Info::appRootWindow(), mClientId,
+	Decorator::sendClientMessage (QX11Info::appRootWindow (), mClientId,
 				      Atoms::netWmWindowOpacity,
 				      (op << 16) | op);
 }
@@ -1769,9 +1769,8 @@ KWD::Window::handleOpacityPopupActivated (QAction *action)
 void
 KWD::Window::handleDesktopPopupActivated (QAction *action)
 {
-
-    if (action->data().toInt())
-	setDesktop (action->data().toInt());
+    if (action->data ().toInt ())
+	setDesktop (action->data ().toInt ());
     else
 	KWindowSystem::setOnAllDesktops (mClientId, true);
 }
@@ -1844,11 +1843,11 @@ KWD::Window::handlePopupAboutToShow (void)
     {
 	foreach (QAction* action, mOpacityMenu->actions ())
 	{
-	    if(action->data ().toInt () ==
-	    qRound ((float)mOpacity * 100.0 / 0xffff))
-		action->setChecked( true );
+	    if (action->data ().toInt () ==
+		qRound ((float) mOpacity * 100.0 / 0xffff))
+		action->setChecked (true);
 	    else
-		action->setChecked( false );
+		action->setChecked (false);
 	}
     }
 
@@ -1954,12 +1953,12 @@ KWD::Window::moveWindow (QMouseEvent *qme)
 
     direction = positionToDirection (mDecor->mousePosition (qme->pos ()));
 
-    XUngrabPointer (QX11Info::display(), CurrentTime);
-    XUngrabKeyboard (QX11Info::display(), CurrentTime);
+    XUngrabPointer (QX11Info::display (), CurrentTime);
+    XUngrabKeyboard (QX11Info::display (), CurrentTime);
 
     Decorator::rootInfo ()->restackRequest (mClientId, NET::FromApplication,
-			 		    None, Above,
-					    QX11Info::appTime());
+					    None, Above,
+					    QX11Info::appTime ());
     Decorator::rootInfo ()->moveResizeRequest (mClientId,
 					       qme->globalX (),
 					       qme->globalY (),
@@ -2034,7 +2033,7 @@ KWD::Window::performMouseCommand (Options::MouseCommand command,
 	    if (opacity > 0xffff)
 		opacity = 0xffff;
 
-	    Decorator::sendClientMessage (QX11Info::appRootWindow(),
+	    Decorator::sendClientMessage (QX11Info::appRootWindow (),
 					  mClientId,
 					  Atoms::netWmWindowOpacity,
 					  (opacity << 16) | opacity);
@@ -2050,7 +2049,7 @@ KWD::Window::performMouseCommand (Options::MouseCommand command,
 	    if (opacity < OPACITY_STEP)
 		opacity = OPACITY_STEP;
 
-	    Decorator::sendClientMessage (QX11Info::appRootWindow(),
+	    Decorator::sendClientMessage (QX11Info::appRootWindow (),
 					  mClientId,
 					  Atoms::netWmWindowOpacity,
 					  (opacity << 16) | opacity);
@@ -2110,7 +2109,7 @@ KWD::Window::processDamage (void)
     {
 	r2.translate (-xOff, -yOff);
 
-	decor_blend_border_picture (QX11Info::display(),
+	decor_blend_border_picture (QX11Info::display (),
 				    &mContext,
 				    mPicture,
 				    xOff, xOff,
@@ -2133,7 +2132,7 @@ KWD::Window::processDamage (void)
     {
 	r2.translate (-xOff, -yOff);
 
-	decor_blend_border_picture (QX11Info::display(),
+	decor_blend_border_picture (QX11Info::display (),
 				    &mContext,
 				    mPicture,
 				    xOff, yOff,
@@ -2156,7 +2155,7 @@ KWD::Window::processDamage (void)
     {
 	r2.translate (-xOff, -yOff);
 
-	decor_blend_border_picture (QX11Info::display(),
+	decor_blend_border_picture (QX11Info::display (),
 				    &mContext,
 				    mPicture,
 				    xOff, yOff,
@@ -2179,7 +2178,7 @@ KWD::Window::processDamage (void)
     {
 	r2.translate (-xOff, -yOff);
 
-	decor_blend_border_picture (QX11Info::display(),
+	decor_blend_border_picture (QX11Info::display (),
 				    &mContext,
 				    mPicture,
 				    xOff, yOff,
@@ -2194,7 +2193,7 @@ KWD::Window::processDamage (void)
 
     mDamage = QRegion ();
 
-    XRenderComposite (QX11Info::display(),
+    XRenderComposite (QX11Info::display (),
 		      PictOpSrc,
 		      mTexturePicture,
 		      None,
@@ -2215,8 +2214,9 @@ KWD::Window::showKillProcessDialog (Time timestamp)
     KWindowInfo kWinInfo =
 	KWindowSystem::windowInfo (mClientId, 0, NET::WM2WindowClass |
 				   NET::WM2ClientMachine);
-    NETWinInfo       wInfo = NETWinInfo (QX11Info::display(), mClientId,
-					 QX11Info::appRootWindow(), NET::WMPid);
+    NETWinInfo       wInfo = NETWinInfo (QX11Info::display (), mClientId,
+					 QX11Info::appRootWindow (),
+					 NET::WMPid);
     QByteArray	     clientMachine, resourceClass;
     pid_t	     pid;
     char	     buf[257];
@@ -2254,37 +2254,38 @@ KWD::Window::hideKillProcessDialog (void)
 }
 
 bool
-KWD::Window::eventFilter( QObject* o, QEvent* e )
+KWD::Window::eventFilter (QObject *o,
+			  QEvent  *e)
 {
-    if (mDecor == NULL || o != mDecor->widget())
+    if (!mDecor || o != mDecor->widget ())
         return false;
-    if (e->type() == QEvent::MouseMove)
+    if (e->type () == QEvent::MouseMove)
     {
-        QMouseEvent* ev = static_cast< QMouseEvent* >( e );
-        updateCursor (QPoint (ev->x(), ev->y()));
+        QMouseEvent* ev = static_cast<QMouseEvent *> (e);
+        updateCursor (QPoint (ev->x (), ev->y ()));
     }
     return false;
 }
 
 // unsable API part
 void
-KWD::Window::repaintShadow()
+KWD::Window::repaintShadow ()
 {
 }
 
 bool
-KWD::Window::compositingActive() const
+KWD::Window::compositingActive () const
 {
     return false;
 }
 
 bool
-KWD::Window::shadowsActive() const
+KWD::Window::shadowsActive () const
 {
     return false;
 }
 
-double KWD::Window::opacity() const
+double KWD::Window::opacity () const
 {
     return 1.0;
 }

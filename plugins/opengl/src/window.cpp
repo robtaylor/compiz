@@ -32,7 +32,7 @@ GLWindow::GLWindow (CompWindow *w) :
     priv (new PrivateGLWindow (w, this))
 {
     CompositeWindow *cw = CompositeWindow::get (w);
-	
+
     priv->paint.opacity    = cw->opacity ();
     priv->paint.brightness = cw->brightness ();
     priv->paint.saturation = cw->saturation ();
@@ -78,7 +78,7 @@ PrivateGLWindow::setWindowMatrix ()
 {
     if (textures.size () != matrices.size ())
 	matrices.resize (textures.size ());
-    
+
     for (unsigned int i = 0; i < textures.size (); i++)
     {
 	matrices[i] = textures[i]->matrix ();
@@ -206,7 +206,6 @@ PrivateGLWindow::windowNotify (CompWindowNotify n)
 	    break;
 	default:
 	    break;
-	
     }
 
     window->windowNotify (n);
@@ -321,7 +320,7 @@ GLWindow::getIcon (int width, int height)
     foreach (GLIcon &icon, priv->icons)
 	if (icon.icon == i)
 	    return icon.textures[0];
- 
+
     icon.icon = i;
     icon.textures = GLTexture::imageBufferToTexture ((char *) i->data (), *i);
 

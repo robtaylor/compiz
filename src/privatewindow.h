@@ -165,7 +165,7 @@ class PrivateWindow {
 	unsigned int adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						       unsigned int   xwcm,
 						       int            gravity);
-	
+
 	void updateSize ();
 
 	bool getUserTime (Time& time);

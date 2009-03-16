@@ -481,16 +481,12 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	    {
 		CompWindow *w;
 
-		
 		w = screen->findWindow (popupWindow);
 		if (w && (w->state () & CompWindowStateHiddenMask))
-		{
 		    w->unminimize ();
-		}
 		else
-		{
 		    XMapWindow (screen->dpy (), popupWindow);
-		}
+
 		setSelectedWindowHint ();
 	    }
 
@@ -669,7 +665,7 @@ SwitchScreen::windowRemove (Window id)
 		    it++;
 		    if (it == windows.end ())
 			selected = windows.front ()->id ();
-		    else 
+		    else
 			selected = (*it)->id ();
 		    it--;
 		}

@@ -32,10 +32,10 @@
 
 class PluginClassIndex {
     public:
-	PluginClassIndex () : index(-1), refCount (0),
+	PluginClassIndex () : index (-1), refCount (0),
 			      initiated (false), failed (false),
 			      pcFailed (false), pcIndex (0) {}
-			
+
 	int          index;
 	int          refCount;
 	bool         initiated;

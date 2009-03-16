@@ -117,8 +117,8 @@ class PrivateScreen : public CoreOptions {
 
 		friend class CompScreen;
 	    private:
-		Cursor                      cursor;
-	    	const char                  *name;
+		Cursor     cursor;
+		const char *name;
 	};
 
     public:
@@ -171,13 +171,13 @@ class PrivateScreen : public CoreOptions {
 	void setAudibleBell (bool audible);
 
 	bool handlePingTimeout ();
-	
+
 	bool handleActionEvent (XEvent *event);
 
 	void handleSelectionRequest (XEvent *event);
 
 	void handleSelectionClear (XEvent *event);
-	
+
 	bool desktopHintEqual (unsigned long *data,
 			       int           size,
 			       int           offset,
@@ -197,7 +197,7 @@ class PrivateScreen : public CoreOptions {
 
 	void reshape (int w, int h);
 
-	bool handleStartupSequenceTimeout();
+	bool handleStartupSequenceTimeout ();
 
 	void addSequence (SnStartupSequence *sequence);
 
@@ -266,7 +266,6 @@ class PrivateScreen : public CoreOptions {
 
 	void setCurrentOutput (unsigned int outputNum);
 
-	
 	void configure (XConfigureEvent *ce);
 
 	void eraseWindowFromMap (Window id);
@@ -361,7 +360,7 @@ class PrivateScreen : public CoreOptions {
 
 	CompOption::Value plugin;
 	bool	          dirtyPluginList;
-	
+
 	CompScreen  *screen;
 
 	CompWindowList windows;
@@ -417,13 +416,13 @@ class PrivateScreen : public CoreOptions {
 	CompWindow **clientList;
 	int        nClientList;
 
-	std::list<ButtonGrab> buttonGrabs;	
+	std::list<ButtonGrab> buttonGrabs;
 	std::list<KeyGrab>    keyGrabs;
 
 	std::list<Grab *> grabs;
 
 	unsigned int pendingDestroys;
-	
+
 	CompRect workArea;
 
 	unsigned int showingDesktopMask;

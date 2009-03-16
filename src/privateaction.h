@@ -32,7 +32,7 @@ class PrivateAction {
     public:
 	PrivateAction ();
 	PrivateAction (const PrivateAction&);
-	
+
 	CompAction::CallBack initiate;
 	CompAction::CallBack terminate;
 

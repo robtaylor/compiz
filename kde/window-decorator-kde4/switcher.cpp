@@ -49,15 +49,16 @@ KWD::Switcher::Switcher (WId, WId id):
     QColor   color;
     color = Plasma::Theme::defaultTheme ()->color (Plasma::Theme::TextColor);
 
-    mBackground = new Plasma::FrameSvg();
+    mBackground = new Plasma::FrameSvg ();
     mBackground->setImagePath ("dialogs/background");
-    mBackground->setEnabledBorders(Plasma::FrameSvg::AllBorders);
+    mBackground->setEnabledBorders (Plasma::FrameSvg::AllBorders);
 
-    mBorder.left   = mBackground->marginSize(Plasma::LeftMargin);
-    mBorder.right  = mBackground->marginSize(Plasma::RightMargin);
-    mBorder.top    = mBackground->marginSize(Plasma::TopMargin);
-    mBorder.bottom = mBackground->marginSize(Plasma::BottomMargin) +
-		     Plasma::Theme::defaultTheme ()->fontMetrics ().height () + 10;
+    mBorder.left   = mBackground->marginSize (Plasma::LeftMargin);
+    mBorder.right  = mBackground->marginSize (Plasma::RightMargin);
+    mBorder.top    = mBackground->marginSize (Plasma::TopMargin);
+    mBorder.bottom = mBackground->marginSize (Plasma::BottomMargin) +
+		     Plasma::Theme::defaultTheme ()->fontMetrics ().height () +
+		     10;
 
     mContext.extents.left   = mBorder.left;
     mContext.extents.right  = mBorder.right;
@@ -128,7 +129,7 @@ KWD::Switcher::updateGeometry ()
 
     mPixmap = QPixmap::fromX11Pixmap (mX11Pixmap, QPixmap::ExplicitlyShared);
     mBackgroundPixmap = QPixmap::fromX11Pixmap (mX11BackgroundPixmap,
-	    					QPixmap::ExplicitlyShared);
+						QPixmap::ExplicitlyShared);
 #else
     mPixmap = QPixmap (width + mBorder.left + mBorder.right,
 		       height + mBorder.top + mBorder.bottom);
@@ -205,7 +206,7 @@ KWD::Switcher::update ()
 			     fm.height ()));
 
     p.setFont (font);
-    p.setPen (Plasma::Theme::defaultTheme ()->color(Plasma::Theme::TextColor));
+    p.setPen (Plasma::Theme::defaultTheme ()->color (Plasma::Theme::TextColor));
 
     p.drawText ((mPixmap.width () - fm.width (name)) / 2,
                 mBorder.top + mGeometry.height () + 5 + fm.ascent (), name);
@@ -240,7 +241,7 @@ KWD::Switcher::updateWindowProperties ()
 			     quads, nQuad);
 #endif
     KWD::trapXError ();
-    XChangeProperty (QX11Info::display(), mId, Atoms::netWindowDecor,
+    XChangeProperty (QX11Info::display (), mId, Atoms::netWindowDecor,
 		     XA_INTEGER, 32, PropModeReplace, (unsigned char *) data,
 		     BASE_PROP_SIZE + QUAD_PROP_SIZE * nQuad);
     KWD::popXError ();
@@ -269,7 +270,7 @@ KWD::Switcher::updateBlurProperty (int topOffset,
     if (blurType != BLUR_TYPE_NONE)
     {
 	QRegion r;
-	
+
 	topQRegion    = QRegion (-mContext.extents.left, -mContext.extents.top,
 				 w, mContext.extents.top);
 	topRegion     = topQRegion.handle ();

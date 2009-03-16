@@ -2403,7 +2403,7 @@ _decor_blend_vert_border_picture (Display	  *xdisplay,
 	}
 	gop = PictOpInReverse;
     }
-    
+
     if (alpha != 0xffff)
     {
 	op = PictOpIn;

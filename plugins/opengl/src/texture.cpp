@@ -296,6 +296,7 @@ PrivateTexture::loadImageData (const char   *image,
     rv[0] = t;
 
     GLTexture::Matrix matrix = _identity_matrix;
+    CompOption        *opt;
     GLint             internalFormat;
     GLenum            target;
     bool              mipmap;
@@ -324,9 +325,11 @@ PrivateTexture::loadImageData (const char   *image,
 
     glBindTexture (target, t->name ());
 
-    internalFormat =
-	(GLScreen::get(screen)->getOption ("texture_compression")->value ().b ()
-	&& GL::textureCompression ? GL_COMPRESSED_RGBA_ARB : GL_RGBA);
+    opt = GLScreen::get (screen)->getOption ("texture_compression");
+    if (opt->value ().b () && GL::textureCompression)
+	internalFormat = GL_COMPRESSED_RGBA_ARB;
+    else
+	internalFormat =  GL_RGBA;
 
     glTexImage2D (target, 0, internalFormat, width, height, 0,
 		  format, type, image);
@@ -482,7 +485,7 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
     else if (config->textureTargets & GLX_TEXTURE_RECTANGLE_BIT_EXT)
 	target = GLX_TEXTURE_RECTANGLE_EXT;
 
-    /* Workaround for broken texture from pixmap implementations, 
+    /* Workaround for broken texture from pixmap implementations,
        that don't advertise any texture target in the fbconfig. */
     if (!target)
     {

@@ -60,7 +60,6 @@ class SwitchScreen :
     public SwitcherOptions
 {
     public:
-	
 	SwitchScreen (CompScreen *screen);
 	~SwitchScreen ();
 

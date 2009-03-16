@@ -99,7 +99,7 @@ PrivateCompositeScreen::handleEvent (XEvent *event)
 	    }
 	    break;
     }
-	
+
     screen->handleEvent (event);
 
     switch (event->type) {
@@ -222,7 +222,7 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
     }
 
     if (!XDamageQueryExtension (s->dpy (), &priv->damageEvent,
-	 			&priv->damageError))
+				&priv->damageError))
     {
 	compLogMessage ("core", CompLogLevelFatal,
 		        "No damage extension");
@@ -403,8 +403,9 @@ CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
     showOutputWindow ();
 
     priv->paintTimer.start
-	(boost::bind(&CompositeScreen::handlePaintTimeout, this),
+	(boost::bind (&CompositeScreen::handlePaintTimeout, this),
 	 priv->optimalRedrawTime, MAXSHORT);
+
     return true;
 }
 
@@ -545,7 +546,7 @@ CompositeScreen::updateOutputWindow ()
 	Display       *dpy = screen->dpy ();
 	XserverRegion region;
 	CompRegion    tmpRegion (screen->region ());
-	
+
 	for (CompWindowList::reverse_iterator rit =
 	     screen->windows ().rbegin ();
 	     rit != screen->windows ().rend (); rit++)
@@ -553,7 +554,7 @@ CompositeScreen::updateOutputWindow ()
 	    {
 		tmpRegion -= (*rit)->region ();
 	    }
-	
+
 	XShapeCombineRegion (dpy, priv->output, ShapeBounding,
 			     0, 0, tmpRegion.handle (), ShapeSet);
 
@@ -630,7 +631,7 @@ PrivateCompositeScreen::detectRefreshRate ()
 
 	value.set ((int) 0);
 
-	if (screen->XRandr())
+	if (screen->XRandr ())
 	{
 	    XRRScreenConfiguration *config;
 
@@ -777,7 +778,7 @@ CompositeScreen::handlePaintTimeout ()
 	}
 
 	priv->tmpRegion = priv->damage & screen->region ();
-	
+
 	if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_REGION_MASK)
 	{
 	    if (priv->tmpRegion == screen->region ())
@@ -790,7 +791,7 @@ CompositeScreen::handlePaintTimeout ()
 	priv->damageMask = 0;
 
 	CompOutput::ptrList outputs (0);
-	
+
 	if (priv->optionGetForceIndependentOutputPainting ()
 	    || !screen->hasOverlappingOutputs ())
 	{
@@ -801,7 +802,7 @@ CompositeScreen::handlePaintTimeout ()
 	    outputs.push_back (&screen->fullscreenOutput ());
 
 	paint (outputs, mask);
-	
+
 	priv->lastRedraw = tv;
 
 	donePaint ();
@@ -833,17 +834,17 @@ CompositeScreen::handlePaintTimeout ()
 
 void
 CompositeScreen::preparePaint (int msSinceLastPaint)
-    WRAPABLE_HND_FUNC(0, preparePaint, msSinceLastPaint)
+    WRAPABLE_HND_FUNC (0, preparePaint, msSinceLastPaint)
 
 void
 CompositeScreen::donePaint ()
-    WRAPABLE_HND_FUNC(1, donePaint)
+    WRAPABLE_HND_FUNC (1, donePaint)
 
 void
 CompositeScreen::paint (CompOutput::ptrList &outputs,
 		        unsigned int        mask)
 {
-    WRAPABLE_HND_FUNC(2, paint, outputs, mask)
+    WRAPABLE_HND_FUNC (2, paint, outputs, mask)
 
     if (priv->pHnd)
 	priv->pHnd->paintOutputs (outputs, mask, priv->tmpRegion);

@@ -61,7 +61,7 @@ class MatchExpOp : public MatchOp {
 
 	CompString	      value;
 
-    	boost::shared_ptr<CompMatch::Expression> e;
+	boost::shared_ptr<CompMatch::Expression> e;
 };
 
 class MatchGroupOp : public MatchOp {

@@ -179,12 +179,11 @@ main (int argc, char **argv)
 	}
 	else
 	{
-	    plugins.push_back(argv[i]);
+	    plugins.push_back (argv[i]);
 	}
     }
 
-    screen = new CompScreen();
-
+    screen = new CompScreen ();
     if (!screen)
 	return 1;
 

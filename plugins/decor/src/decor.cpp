@@ -244,7 +244,7 @@ computeQuadBox (decor_quad_t *q,
 
     if (q->stretch & STRETCH_X)
     {
-	sx = (float)q->max_width / ((float)(x2 - x1));
+	sx = (float) q->max_width / ((float) (x2 - x1));
     }
     else if (q->max_width < x2 - x1)
     {
@@ -256,7 +256,7 @@ computeQuadBox (decor_quad_t *q,
 
     if (q->stretch & STRETCH_Y)
     {
-	sy = (float)q->max_height / ((float)(y2 - y1));
+	sy = (float) q->max_height / ((float) (y2 - y1));
     }
     else if (q->max_height < y2 - y1)
     {
@@ -691,7 +691,7 @@ DecorWindow::update (bool allowDecoration)
 	}
 	else
 	{
-	    
+
 	    if (dScreen->dmSupports & WINDOW_DECORATION_TYPE_PIXMAP &&
 	        dScreen->cmActive &&
 		!(dScreen->dmSupports & WINDOW_DECORATION_TYPE_WINDOW &&
@@ -766,7 +766,7 @@ DecorWindow::update (bool allowDecoration)
 	wd = NULL;
 
 	updateFrame ();
-	
+
 	memset (&emptyExtents, 0, sizeof (CompWindowExtents));
 
 	window->setWindowFrameExtents (&emptyExtents);
@@ -1017,7 +1017,7 @@ DecorWindow::updateOutputFrame ()
 	XChangeProperty (screen->dpy (), window->id (),
 			 dScreen->outputFrameAtom, XA_WINDOW, 32,
 			 PropModeReplace, (unsigned char *) &outputFrame, 1);
-	
+
 	if (screen->XShape ())
 	    XShapeSelectInput (screen->dpy (), outputFrame,
 			       ShapeNotifyMask);
@@ -1133,7 +1133,7 @@ DecorScreen::checkForDm (bool updateWindows)
 
 		if (!dmSupports)
 		    dmWin = None;
-		
+
 		XFree (data);
 	    }
 	    else
@@ -1253,7 +1253,7 @@ DecorScreen::handleEvent (XEvent *event)
 
 		if (frames.find (de->drawable) != frames.end ())
 		    frames[de->drawable]->cWindow->damageOutputExtents ();
-		
+
 		foreach (DecorTexture *t, textures)
 		{
 		    if (t->pixmap == de->drawable)
@@ -1468,7 +1468,7 @@ DecorWindow::getOutputExtents (CompWindowExtents& output)
 	    output.bottom = e->bottom;
     }
 }
- 
+
 bool
 DecorScreen::setOption (const CompString  &name,
 			CompOption::Value &value)
@@ -1505,7 +1505,7 @@ DecorScreen::setOption (const CompString  &name,
 		matchString = optionGetShadowMatch ().toString ();
 		if (matchString.find ("rgba=") == CompString::npos)
 		{
-		    CompMatch rgbaMatch("rgba=0");
+		    CompMatch rgbaMatch ("rgba=0");
 		    optionGetShadowMatch () &= rgbaMatch;
 		}
 	    }

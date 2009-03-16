@@ -137,7 +137,7 @@ class CompScreen :
 	~CompScreen ();
 
 	bool init (const char *name);
-	
+
 	void eventLoop ();
 
 	CompFileWatchHandle addFileWatch (const char        *path,
@@ -145,21 +145,21 @@ class CompScreen :
 					  FileWatchCallBack callBack);
 
 	void removeFileWatch (CompFileWatchHandle handle);
-	
+
 	const CompFileWatchList& getFileWatches () const;
-	
+
 	CompWatchFdHandle addWatchFd (int             fd,
 				      short int       events,
 				      FdWatchCallBack callBack);
-	
+
 	void removeWatchFd (CompWatchFdHandle handle);
 
 	void storeValue (CompString key, CompPrivate value);
 	bool hasValue (CompString key);
 	CompPrivate getValue (CompString key);
 	void eraseValue (CompString key);
-	
-	Display * dpy();
+
+	Display * dpy ();
 
 	CompOption::Vector & getOptions ();
 
@@ -168,7 +168,7 @@ class CompScreen :
 	bool XRandr ();
 
 	int randrEvent ();
-	
+
 	bool XShape ();
 
 	int shapeEvent ();
@@ -176,9 +176,9 @@ class CompScreen :
 	int syncEvent ();
 
 	SnDisplay * snDisplay ();
-	
+
 	Window activeWindow ();
-	
+
 	Window autoRaiseWindow ();
 
 	const char * displayString ();
@@ -217,7 +217,6 @@ class CompScreen :
 			      Atom           property,
 			      unsigned short value);
 
-	
 	Window root ();
 
 	int xkbEvent ();
@@ -336,7 +335,7 @@ class CompScreen :
 		      CompSize &, int &, void *&);
 	WRAPABLE_HND (9, ScreenInterface, bool, imageToFile, CompString &,
 		      CompString &, CompSize &, int, void *);
-	
+
 	WRAPABLE_HND (10, ScreenInterface, CompMatch::Expression *,
 		      matchInitExp, const CompString&);
 	WRAPABLE_HND (11, ScreenInterface, void, matchExpHandlerChanged)
@@ -395,7 +394,7 @@ class CompScreen :
 	static bool raiseWin (CompAction         *action,
 			      CompAction::State  state,
 			      CompOption::Vector &options);
-	
+
 	static bool lowerWin (CompAction         *action,
 			      CompAction::State  state,
 			      CompOption::Vector &options);

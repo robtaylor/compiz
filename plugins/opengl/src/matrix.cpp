@@ -113,7 +113,7 @@ GLMatrix::reset ()
     memcpy (m, identity, sizeof (m));
 }
 
-const float * 
+const float *
 GLMatrix::getMatrix () const
 {
     return m;

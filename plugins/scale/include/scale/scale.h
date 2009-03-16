@@ -76,7 +76,7 @@ class ScaleScreen :
 
 	WRAPABLE_HND (0, ScaleScreenInterface, bool,
 		      layoutSlotsAndAssignWindows)
-	
+
 	friend class ScaleWindow;
 	friend class PrivateScaleScreen;
 	friend class PrivateScaleWindow;
@@ -112,11 +112,11 @@ class ScaleWindow :
 	WRAPABLE_HND (1, ScaleWindowInterface, bool, setScaledPaintAttributes,
 		      GLWindowPaintAttrib &)
 	WRAPABLE_HND (2, ScaleWindowInterface, void, scaleSelectWindow)
-	
+
 	friend class ScaleScreen;
 	friend class PrivateScaleScreen;
 	friend class PrivateScaleWindow;
-	
+
     private:
 	PrivateScaleWindow *priv;
 };

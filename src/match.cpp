@@ -52,7 +52,7 @@ class CoreExp : public CompMatch::Expression {
 	    TypeRGBA,
 	    TypeType
 	} Type;
-	
+
 	CoreExp (const CompString& str)
 	{
 	    if (str.compare (0, 4, "xid=") == 0)
@@ -116,7 +116,7 @@ class CoreExp : public CompMatch::Expression {
 CompMatch::Expression *
 CompScreen::matchInitExp (const CompString& str)
 {
-    WRAPABLE_HND_FUNC_RETURN(10, CompMatch::Expression *, matchInitExp, str)
+    WRAPABLE_HND_FUNC_RETURN (10, CompMatch::Expression *, matchInitExp, str)
 
     return new CoreExp (str);
 }
@@ -145,7 +145,7 @@ matchUpdateMatchOptions (CompOption::Vector& options)
 void
 CompScreen::matchExpHandlerChanged ()
 {
-    WRAPABLE_HND_FUNC(11, matchExpHandlerChanged)
+    WRAPABLE_HND_FUNC (11, matchExpHandlerChanged)
 
     foreach (CompPlugin *p, CompPlugin::getPlugins ())
     {
@@ -157,7 +157,7 @@ CompScreen::matchExpHandlerChanged ()
 void
 CompScreen::matchPropertyChanged (CompWindow *w)
 {
-    WRAPABLE_HND_FUNC(12, matchPropertyChanged, w)
+    WRAPABLE_HND_FUNC (12, matchPropertyChanged, w)
 }
 
 static void
@@ -359,7 +359,7 @@ matchAddFromString (MatchOp::List &list,
 	    if (j > i)
 	    {
 		MatchExpOp *exp = new MatchExpOp ();
-		exp->value = strndupValue (str.substr(i, j - i));
+		exp->value = strndupValue (str.substr (i, j - i));
 		exp->flags = flags;
 		list.push_back (exp);
 	    }
@@ -563,7 +563,7 @@ MatchGroupOp::operator= (const MatchGroupOp &gr)
                 op.push_back (eop);
 		break;
 	    default:
-		break; 
+		break;
 	}
     }
 }

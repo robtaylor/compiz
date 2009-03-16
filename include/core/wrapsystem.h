@@ -29,14 +29,14 @@
 #include <stdlib.h>
 #include <vector>
 
-#define WRAPABLE_DEF(func, ...) 		 \
-{ 						 \
+#define WRAPABLE_DEF(func, ...)			 \
+{						 \
     mHandler-> func ## SetEnabled (this, false); \
-    return mHandler-> func (__VA_ARGS__); 	 \
+    return mHandler-> func (__VA_ARGS__);	 \
 }
 
-#define WRAPABLE_HND(num,itype,rtype, func, ...) 	\
-   rtype func (__VA_ARGS__); 				\
+#define WRAPABLE_HND(num,itype,rtype, func, ...)	\
+   rtype func (__VA_ARGS__);				\
    void  func ## SetEnabled (itype *obj, bool enabled)	\
    {							\
        functionSetEnabled (obj, num, enabled);		\
@@ -50,41 +50,41 @@
        mCurrFunction[num] = index;			\
    }
 
-#define WRAPABLE_HND_FUNC(num, func, ...) 				\
-{ 									\
-    unsigned int curr = mCurrFunction[num]; 				\
-    while (mCurrFunction[num] < mInterface.size() && 			\
-           !mInterface[mCurrFunction[num]].enabled[num]) 		\
+#define WRAPABLE_HND_FUNC(num, func, ...)				\
+{									\
+    unsigned int curr = mCurrFunction[num];				\
+    while (mCurrFunction[num] < mInterface.size () &&			\
+           !mInterface[mCurrFunction[num]].enabled[num])		\
         mCurrFunction[num]++;						\
-    if (mCurrFunction[num] < mInterface.size()) 			\
-    { 									\
-	mInterface[mCurrFunction[num]++].obj-> func (__VA_ARGS__); 	\
-	mCurrFunction[num] = curr; 					\
-	return; 							\
-    } 									\
-    mCurrFunction[num] = curr; 						\
+    if (mCurrFunction[num] < mInterface.size ())			\
+    {									\
+	mInterface[mCurrFunction[num]++].obj-> func (__VA_ARGS__);	\
+	mCurrFunction[num] = curr;					\
+	return;								\
+    }									\
+    mCurrFunction[num] = curr;						\
 }
 
-#define WRAPABLE_HND_FUNC_RETURN(num, rtype, func, ...) 		\
-{ 									\
-    unsigned int curr = mCurrFunction[num]; 				\
-    rtype rv; 								\
-    while (mCurrFunction[num] < mInterface.size() && 			\
-           !mInterface[mCurrFunction[num]].enabled[num]) 		\
-        mCurrFunction[num]++; 						\
-    if (mCurrFunction[num] < mInterface.size()) 			\
-    { 									\
+#define WRAPABLE_HND_FUNC_RETURN(num, rtype, func, ...)			\
+{									\
+    unsigned int curr = mCurrFunction[num];				\
+    rtype rv;								\
+    while (mCurrFunction[num] < mInterface.size () &&			\
+           !mInterface[mCurrFunction[num]].enabled[num])		\
+        mCurrFunction[num]++;						\
+    if (mCurrFunction[num] < mInterface.size ())			\
+    {									\
 	rv = mInterface[mCurrFunction[num]++].obj-> func (__VA_ARGS__); \
-	mCurrFunction[num] = curr; 					\
-	return rv; 							\
-    } 									\
-    mCurrFunction[num] = curr; 						\
+	mCurrFunction[num] = curr;					\
+	return rv;							\
+    }									\
+    mCurrFunction[num] = curr;						\
 }
 
 template <typename T, typename T2>
 class WrapableInterface {
     protected:
-	WrapableInterface () : mHandler(0) {};
+	WrapableInterface () : mHandler (0) {};
 	virtual ~WrapableInterface ()
 	{
 	    if (mHandler)
@@ -103,17 +103,18 @@ class WrapableInterface {
 };
 
 template <typename T, unsigned int N>
-class WrapableHandler : public T {
-		
+class WrapableHandler : public T
+{
     public:
 	void registerWrap (T *, bool);
 	void unregisterWrap (T *);
 
- 	unsigned int numWrapClients () { return mInterface.size (); };
-	
+	unsigned int numWrapClients () { return mInterface.size (); };
+
     protected:
 
-	class Interface {
+	class Interface
+	{
 	    public:
 		T    *obj;
 		bool *enabled;
@@ -131,7 +132,7 @@ class WrapableHandler : public T {
 	~WrapableHandler ()
 	{
 	    typename std::vector<Interface>::iterator it;
-		for (it = mInterface.begin(); it != mInterface.end(); it++)
+		for (it = mInterface.begin (); it != mInterface.end (); it++)
 		    delete [] (*it).enabled;
 	    mInterface.clear ();
 	    delete [] mCurrFunction;
@@ -153,14 +154,14 @@ void WrapableHandler<T,N>::registerWrap (T *obj, bool enabled)
 	return;
     for (unsigned int i = 0; i < N; i++)
 	in.enabled[i] = enabled;
-    mInterface.insert (mInterface.begin(), in);
+    mInterface.insert (mInterface.begin (), in);
 };
 
 template <typename T, unsigned int N>
 void WrapableHandler<T,N>::unregisterWrap (T *obj)
 {
     typename std::vector<Interface>::iterator it;
-    for (it = mInterface.begin(); it != mInterface.end(); it++)
+    for (it = mInterface.begin (); it != mInterface.end (); it++)
 	if ((*it).obj == obj)
 	{
 	    delete [] (*it).enabled;
@@ -173,7 +174,7 @@ template <typename T, unsigned int N>
 void WrapableHandler<T,N>::functionSetEnabled (T *obj, unsigned int num,
 					       bool enabled)
 {
-    for (unsigned int i = 0; i < mInterface.size(); i++)
+    for (unsigned int i = 0; i < mInterface.size (); i++)
 	if (mInterface[i].obj == obj)
 	{
 	    mInterface[i].enabled[num] = enabled;

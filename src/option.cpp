@@ -268,8 +268,8 @@ CompOption::Value::action ()
     priv->checkType (priv->type);
 
     if (!checkIsAction (priv->type))
-	compLogMessage("core", CompLogLevelWarn,
-		       "CompOption::Value not an action");
+	compLogMessage ("core", CompLogLevelWarn,
+			"CompOption::Value not an action");
 
     return priv->action;
 }
@@ -602,7 +602,7 @@ CompOption::findOption (CompOption::Vector &options,
 
     for (i = 0; i < options.size (); i++)
     {
-	if (options[i].priv->name.compare(name) == 0)
+	if (options[i].priv->name == name)
 	{
 	    if (index)
 		*index = i;
@@ -691,7 +691,7 @@ CompOption::setName (CompString name, CompOption::Type type)
     priv->name = name;
     priv->type = type;
 }
-	
+
 CompString
 CompOption::name ()
 {
@@ -726,8 +726,9 @@ CompOption::set (CompOption::Value &val)
 	(!isAction () || !checkIsAction (val.type ())))
     {
 	compLogMessage ("core", CompLogLevelWarn,
-			"Can't set Value with type %d to option \"%s\" with type %d",
-			val.type (), priv->name.c_str(), priv->type);
+			"Can't set Value with type %d to "
+			"option \"%s\" with type %d",
+			val.type (), priv->name.c_str (), priv->type);
 	return false;
     }
 

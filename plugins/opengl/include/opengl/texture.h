@@ -81,7 +81,6 @@ class GLTexture : public CompRect {
 	typedef unsigned int BindPixmapHandle;
 
     public:
-	
 	GLuint name () const;
 	GLenum target () const;
 	GLenum filter () const;

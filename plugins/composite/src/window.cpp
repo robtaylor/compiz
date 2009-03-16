@@ -45,7 +45,7 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 
     priv->opacity = OPAQUE;
     if (!(w->type () & CompWindowTypeDesktopMask))
- 	priv->opacity = s->getWindowProp32 (w->id (),
+	priv->opacity = s->getWindowProp32 (w->id (),
 					    Atoms::winOpacity, OPAQUE);
 
     priv->brightness = s->getWindowProp32 (w->id (),
@@ -53,7 +53,7 @@ CompositeWindow::CompositeWindow (CompWindow *w) :
 
     priv->saturation = s->getWindowProp32 (w->id (),
 					   Atoms::winSaturation, COLOR);
-	
+
     if (w->isViewable ())
 	priv->damaged = true;
 }
@@ -478,9 +478,9 @@ CompositeWindow::saturation ()
 
 bool
 CompositeWindow::damageRect (bool           initial,
- 			     const CompRect &rect)
+			     const CompRect &rect)
 {
-    WRAPABLE_HND_FUNC_RETURN(0, bool, damageRect, initial, rect)
+    WRAPABLE_HND_FUNC_RETURN (0, bool, damageRect, initial, rect)
     return false;
 }
 
@@ -535,7 +535,6 @@ PrivateCompositeWindow::windowNotify (CompWindowNotify n)
 	}
 	default:
 	    break;
-	
     }
 
     window->windowNotify (n);

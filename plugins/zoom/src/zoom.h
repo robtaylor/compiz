@@ -57,7 +57,7 @@ class ZoomScreen :
     public ZoomOptions
 {
     public:
-	
+
 	ZoomScreen (CompScreen *screen);
 	~ZoomScreen ();
 

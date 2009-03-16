@@ -49,7 +49,7 @@ class CopyPixmap {
 
 	~CopyPixmap ();
 
-    	static GLTexture::List bindPixmapToTexture (Pixmap pixmap,
+	static GLTexture::List bindPixmapToTexture (Pixmap pixmap,
 						    int width,
 						    int height,
 						    int depth);
@@ -87,7 +87,6 @@ class CopytexScreen :
     public PluginClassHandler<CopytexScreen,CompScreen>
 {
     public:
-	
 	CopytexScreen (CompScreen *screen);
 	~CopytexScreen ();
 
@@ -110,7 +109,6 @@ class CopytexPluginVTable :
     public CompPlugin::VTableForScreen<CopytexScreen>
 {
     public:
-
 	bool init ();
 
 };

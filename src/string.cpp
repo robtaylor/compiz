@@ -34,7 +34,7 @@ CompString compPrintf (const char *format, ...)
     CompString rv;
 
     va_start (ap, format);
-    rv = compPrintf(format, ap);
+    rv = compPrintf (format, ap);
     va_end (ap);
 
     return rv;
@@ -74,13 +74,14 @@ CompString compPrintf (const char *format, va_list ap)
 
 	delete [] str;
 	str = new char[size];
-	
+
 	if (!str)
 	{
 	    return CompString ("");
 	}
     }
-    CompString rv(str);
+
+    CompString rv (str);
     delete [] str;
     return rv;
 }

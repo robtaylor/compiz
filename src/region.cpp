@@ -108,7 +108,7 @@ CompRegion::operator= (const CompRegion &c)
 bool
 CompRegion::operator== (const CompRegion &c) const
 {
-    return XEqualRegion(handle (), c.handle ());
+    return XEqualRegion (handle (), c.handle ());
 }
 
 bool
@@ -208,7 +208,7 @@ CompRegion::rects () const
     }
     return rv;
 }
-	
+
 CompRegion
 CompRegion::subtracted (const CompRegion &r) const
 {
@@ -311,7 +311,6 @@ CompRegion::xored (const CompRegion &r) const
     XXorRegion (handle (), r.handle (), rv.handle ());
     return rv;
 }
-	
 
 const CompRegion
 CompRegion::operator& (const CompRegion &r) const

@@ -49,7 +49,7 @@ GLScreen::glApplyTransform (const GLScreenPaintAttrib &sAttrib,
 			    CompOutput                *output,
 			    GLMatrix                  *transform)
 {
-    WRAPABLE_HND_FUNC(2, glApplyTransform, sAttrib, output, transform)
+    WRAPABLE_HND_FUNC (2, glApplyTransform, sAttrib, output, transform)
 
     transform->translate (sAttrib.xTranslate,
 			  sAttrib.yTranslate,
@@ -119,7 +119,7 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
 	}
 
 	glVertexPointer (2, GL_FLOAT, sizeof (GLfloat) * 2, data + 2);
-	
+
 	glColor4us (0, 0, 0, 0);
 	glDrawArrays (GL_QUADS, 0, nBox * 4);
 	glColor4usv (defaultColor);
@@ -213,9 +213,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
     CompWindowList::reverse_iterator rit;
 
     unredirectFS = CompositeScreen::get (screen)->
-	getOption("unredirect_fullscreen_windows")->value ().b ();
-
-
+	getOption ("unredirect_fullscreen_windows")->value ().b ();
 
     if (mask & PAINT_SCREEN_TRANSFORMED_MASK)
     {
@@ -233,7 +231,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
     if (!(mask & PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK))
     {
 	/* detect occlusions */
-	for (rit = pl.rbegin (); rit != pl.rend(); rit++)
+	for (rit = pl.rbegin (); rit != pl.rend (); rit++)
 	{
 	    w = (*rit);
 	    gw = GLWindow::get (w);
@@ -252,7 +250,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
 	    gw->priv->clip = tmpRegion;
 
 	    odMask = PAINT_WINDOW_OCCLUSION_DETECTION_MASK;
-		
+
 	    if ((cScreen->windowPaintOffset ().x () != 0 ||
 		 cScreen->windowPaintOffset ().x () != 0) &&
 		!w->onAllViewports ())
@@ -264,7 +262,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
 		vTransform = transform;
 		vTransform.translate (offXY.x (), offXY.y (), 0);
 
-		gw->priv->clip.translate (-offXY.x (), -offXY. y());
+		gw->priv->clip.translate (-offXY.x (), -offXY. y ());
 
 		odMask |= PAINT_WINDOW_WITH_OFFSET_MASK;
 		status = gw->glPaint (gw->paintAttrib (), vTransform,
@@ -358,7 +356,7 @@ GLScreen::glEnableOutputClipping (const GLMatrix   &transform,
 				  const CompRegion &region,
 				  CompOutput       *output)
 {
-    WRAPABLE_HND_FUNC(3, glEnableOutputClipping, transform, region, output)
+    WRAPABLE_HND_FUNC (3, glEnableOutputClipping, transform, region, output)
 
     GLdouble h = screen->height ();
 
@@ -397,7 +395,7 @@ GLScreen::glEnableOutputClipping (const GLMatrix   &transform,
 void
 GLScreen::glDisableOutputClipping ()
 {
-    WRAPABLE_HND_FUNC(4, glDisableOutputClipping)
+    WRAPABLE_HND_FUNC (4, glDisableOutputClipping)
 
     glDisable (GL_CLIP_PLANE0);
     glDisable (GL_CLIP_PLANE1);
@@ -415,8 +413,8 @@ GLScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 				    CompOutput                *output,
 				    unsigned int              mask)
 {
-    WRAPABLE_HND_FUNC(1, glPaintTransformedOutput, sAttrib, transform,
-		      region, output, mask)
+    WRAPABLE_HND_FUNC (1, glPaintTransformedOutput, sAttrib, transform,
+		       region, output, mask)
 
     GLMatrix sTransform = transform;
 
@@ -462,8 +460,8 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 			 CompOutput                *output,
 			 unsigned int              mask)
 {
-    WRAPABLE_HND_FUNC_RETURN(0, bool, glPaintOutput, sAttrib, transform,
-			     region, output, mask)
+    WRAPABLE_HND_FUNC_RETURN (0, bool, glPaintOutput, sAttrib, transform,
+			      region, output, mask)
 
     GLMatrix sTransform = transform;
 
@@ -579,7 +577,7 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 void
 GLWindow::glDrawGeometry ()
 {
-    WRAPABLE_HND_FUNC(4, glDrawGeometry)
+    WRAPABLE_HND_FUNC (4, glDrawGeometry)
 
     int     texUnit = priv->geometry.texUnits;
     int     currentTexUnit = 0;
@@ -624,7 +622,7 @@ GLWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
 			 const CompRegion            &region,
 			 const CompRegion            &clip)
 {
-    WRAPABLE_HND_FUNC(2, glAddGeometry, matrix, region, clip)
+    WRAPABLE_HND_FUNC (2, glAddGeometry, matrix, region, clip)
 
     BoxRec full;
     int    nMatrix = matrix.size ();
@@ -1064,7 +1062,7 @@ GLWindow::glDrawTexture (GLTexture          *texture,
 			 GLFragment::Attrib &attrib,
 			 unsigned int       mask)
 {
-    WRAPABLE_HND_FUNC(3, glDrawTexture, texture, attrib, mask)
+    WRAPABLE_HND_FUNC (3, glDrawTexture, texture, attrib, mask)
 
     GLTexture::Filter filter;
 
@@ -1090,7 +1088,8 @@ GLWindow::glDraw (const GLMatrix     &transform,
 		  const CompRegion   &region,
 		  unsigned int       mask)
 {
-    WRAPABLE_HND_FUNC_RETURN(1, bool, glDraw, transform, fragment, region, mask)
+    WRAPABLE_HND_FUNC_RETURN (1, bool, glDraw, transform,
+			      fragment, region, mask)
 
     const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
 	                   infiniteRegion : region;
@@ -1108,7 +1107,7 @@ GLWindow::glDraw (const GLMatrix     &transform,
 	mask |= PAINT_WINDOW_BLEND_MASK;
 
     GLTexture::MatrixList ml (1);
-    
+
     if (priv->textures.size () == 1)
     {
 	ml[0] = priv->matrices[0];
@@ -1140,7 +1139,7 @@ GLWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		   const CompRegion          &region,
 		   unsigned int              mask)
 {
-    WRAPABLE_HND_FUNC_RETURN(0, bool, glPaint, attrib, transform, region, mask)
+    WRAPABLE_HND_FUNC_RETURN (0, bool, glPaint, attrib, transform, region, mask)
 
     GLFragment::Attrib fragment (attrib);
     bool               status;

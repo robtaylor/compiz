@@ -75,7 +75,7 @@ class CompRegion {
 	CompRegion united (const CompRegion &) const;
 	CompRegion united (const CompRect &) const;
 	CompRegion xored (const CompRegion &) const;
-	
+
 	bool operator== (const CompRegion &) const;
 	bool operator!= (const CompRegion &) const;
 	const CompRegion operator& (const CompRegion &) const;
@@ -91,12 +91,12 @@ class CompRegion {
 	CompRegion & operator-= (const CompRegion &);
 	CompRegion & operator-= (const CompRect &);
 	CompRegion & operator= (const CompRegion &);
-	
+
 	const CompRegion operator^ (const CompRegion &) const;
 	CompRegion & operator^= (const CompRegion &);
 	const CompRegion operator| (const CompRegion &) const;
 	CompRegion & operator|= (const CompRegion &);
-	
+
     private:
 	PrivateRegion *priv;
 };

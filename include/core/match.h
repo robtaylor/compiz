@@ -42,7 +42,7 @@ class CompMatch {
 		virtual ~Expression () {};
 		virtual bool evaluate (CompWindow *window) = 0;
 	};
-	
+
     public:
 	CompMatch ();
 	CompMatch (const CompString);

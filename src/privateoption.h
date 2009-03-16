@@ -85,7 +85,7 @@ class PrivateOption
     public:
 	PrivateOption ();
 	PrivateOption (const PrivateOption &);
-	
+
 	CompString              name;
 	CompOption::Type        type;
 	CompOption::Value       value;

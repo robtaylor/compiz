@@ -37,7 +37,7 @@ class CompOutput : public CompRect {
 	CompOutput ();
 
 	CompString name () const;
-	
+
 	unsigned int id () const;
 
 	const CompRect& workArea () const;

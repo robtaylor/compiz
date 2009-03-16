@@ -108,7 +108,7 @@ class CompositeScreen :
 	bool compositingActive ();
 
 	int damageEvent ();
-	
+
 	void damageScreen ();
 	void damageRegion (const CompRegion &);
 	void damagePending ();
@@ -130,7 +130,7 @@ class CompositeScreen :
 	int getTimeToNextRedraw (struct timeval *tv);
 
 	int redrawTime ();
-	
+
 	bool handlePaintTimeout ();
 
 	WRAPABLE_HND (0, CompositeScreenInterface, void, preparePaint, int);
@@ -226,7 +226,7 @@ class CompositeWindow :
 	void unredirect ();
 	bool redirected ();
 	bool overlayWindow ();
-	
+
 	void damageTransformedRect (float          xScale,
 				    float          yScale,
 				    float          xTranslate,
@@ -254,7 +254,7 @@ class CompositeWindow :
 
 	friend class PrivateCompositeWindow;
 	friend class CompositeScreen;
-	
+
     private:
 	PrivateCompositeWindow *priv;
 };

@@ -38,11 +38,6 @@
 
 #define EDGE_STATE (CompAction::StateInitEdge)
 
-#define WIN_X(w) ((w)->attrib.x - (w)->input.left)
-#define WIN_Y(w) ((w)->attrib.y - (w)->input.top)
-#define WIN_W(w) ((w)->width + (w)->input.left + (w)->input.right)
-#define WIN_H(w) ((w)->height + (w)->input.top + (w)->input.bottom)
-
 class ScalePluginVTable :
     public CompPlugin::VTableForScreenAndWindow<ScaleScreen, ScaleWindow>
 {
@@ -134,7 +129,7 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 				   const CompRegion&          region,
 				   unsigned int               mask)
 {
-    WRAPABLE_HND_FUNC(0, scalePaintDecoration, attrib, transform, region, mask)
+    WRAPABLE_HND_FUNC (0, scalePaintDecoration, attrib, transform, region, mask)
 
     if (priv->spScreen->optionGetOverlayIcon () != ScaleOptions::OverlayIconNone)
     {
@@ -230,12 +225,12 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 	    GLTexture::MatrixList ml (1);
 
 	    ml[0] = icon->matrix ();
-	    priv->gWindow->geometry().reset ();
+	    priv->gWindow->geometry ().reset ();
 
 	    if (width && height)
 		priv->gWindow->glAddGeometry (ml, iconReg, iconReg);
 
-	    if (priv->gWindow->geometry().vCount)
+	    if (priv->gWindow->geometry ().vCount)
 	    {
 		GLFragment::Attrib fragment (sAttrib);
 		GLMatrix           wTransform (transform);
@@ -285,7 +280,7 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
 	    attrib.brightness = attrib.brightness / 2;
 	}
 
-     	/* hide windows on the outputs used for scaling 
+	/* hide windows on the outputs used for scaling
 	   that are not in scale mode */
 	if (!priv->isNeverScaleWin ())
 	{
@@ -490,7 +485,7 @@ PrivateScaleScreen::layoutSlots ()
 
     moMode  = optionGetMultioutputMode ();
 
-    /* if we have only one head, we don't need the 
+    /* if we have only one head, we don't need the
        additional effort of the all outputs mode */
     if (screen->outputDevs ().size () == 1)
 	moMode = ScaleOptions::MultioutputModeOnCurrentOutputDevice;
@@ -950,7 +945,7 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 	    if (::screen->activeWindow () != ss->priv->previousActiveWindow)
 	    {
 		CompWindow *w;
-		
+
 		w = ::screen->findWindow (ss->priv->previousActiveWindow);
 		if (w)
 		    w->moveInputFocusTo ();
@@ -1045,7 +1040,6 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
     if (match.isEmpty ())
 	match = optionGetWindowMatch ();
 
-    /* TODO: match.update() ? */
     currentMatch = match;
 
     if (!layoutThumbs ())
@@ -1110,7 +1104,7 @@ ScaleWindowInterface::scaleSelectWindow ()
 void
 ScaleWindow::scaleSelectWindow ()
 {
-    WRAPABLE_HND_FUNC(2, scaleSelectWindow)
+    WRAPABLE_HND_FUNC (2, scaleSelectWindow)
 
     if (priv->spScreen->selectedWindow != priv->window->id ())
     {
@@ -1249,7 +1243,7 @@ ScaleScreen::relayoutSlots (const CompMatch& match)
 	priv->state = ScaleScreen::Out;
 	priv->moveFocusWindow (0, 0);
     }
-	
+
     priv->cScreen->damageScreen ();
 }
 
@@ -1314,7 +1308,7 @@ PrivateScaleScreen::hoverTimeout ()
 
 	o.push_back (CompOption ("root", CompOption::TypeInt));
 	o[0].value ().set ((int) screen->root ());
-	
+
 	scaleTerminate (&optionGetInitiateEdge (), 0, o);
 	scaleTerminate (&optionGetInitiateKey (), 0, o);
     }

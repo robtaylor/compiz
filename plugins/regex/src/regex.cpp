@@ -51,7 +51,7 @@ class RegexExp : public CompMatch::Expression
 	    Type         type;
 	    unsigned int flags;
 	} Prefix;
-	
+
 	static const Prefix prefix[];
 
 	Type    mType;

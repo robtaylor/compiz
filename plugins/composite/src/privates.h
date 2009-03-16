@@ -82,7 +82,7 @@ class PrivateCompositeScreen :
 	unsigned long damageMask;
 
 	CompRegion    tmpRegion;
-	
+
 	Window	      overlay;
 	Window	      output;
 
@@ -126,7 +126,6 @@ class PrivateCompositeWindow : WindowInterface
 				      int             height);
 
     public:
-
 	CompWindow      *window;
 	CompositeWindow *cWindow;
 	CompositeScreen *cScreen;
@@ -143,7 +142,7 @@ class PrivateCompositeWindow : WindowInterface
 	unsigned short opacity;
 	unsigned short brightness;
 	unsigned short saturation;
-	
+
 	XRectangle *damageRects;
 	int        sizeDamage;
 	int        nDamage;

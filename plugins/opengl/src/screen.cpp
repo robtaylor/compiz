@@ -624,7 +624,7 @@ frustum (GLfloat *m,
     c = -(farval + nearval) / ( farval - nearval);
     d = -(2.0 * farval * nearval) / (farval - nearval);
 
-#define M(row,col)  m[col*4+row]
+#define M(row,col)  m[col * 4 + row]
     M(0,0) = x;     M(0,1) = 0.0f;  M(0,2) = a;      M(0,3) = 0.0f;
     M(1,0) = 0.0f;  M(1,1) = y;     M(1,2) = b;      M(1,3) = 0.0f;
     M(2,0) = 0.0f;  M(2,1) = 0.0f;  M(2,2) = c;      M(2,3) = d;
@@ -998,7 +998,7 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	r.height = output->height ();
 
 	if (lastViewport.x      != r.x     ||
- 	    lastViewport.y      != r.y     ||
+	    lastViewport.y      != r.y     ||
 	    lastViewport.width  != r.width ||
 	    lastViewport.height != r.height)
 	{
@@ -1154,7 +1154,7 @@ GLScreen::defaultIcon ()
 
     if (!i)
 	return NULL;
-    
+
     if (!i->width () || !i->height ())
 	return NULL;
 

@@ -310,7 +310,7 @@ WaterScreen::fboEpilogue ()
     glLoadIdentity ();
     glDepthRange (0, 1);
     glViewport (-1, -1, 2, 2);
-   
+
     gScreen->resetRasterPos ();
 
     gScreen->setDefaultViewport ();
@@ -868,7 +868,7 @@ WaterWindow::glDrawTexture (GLTexture          *texture,
 
 	    GL::programEnvParameter4f (GL_FRAGMENT_PROGRAM_ARB, param,
 				       texture->matrix ().yy *
- 				       wScreen->offsetScale,
+				       wScreen->offsetScale,
 				       -texture->matrix ().xx *
 				       wScreen->offsetScale,
 				       0.0f, 0.0f);

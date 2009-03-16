@@ -55,7 +55,7 @@ CompTimer::setTimes (unsigned int min, unsigned int max)
     if (wasActive)
 	start ();
 }
-	
+
 void
 CompTimer::setCallback (CompTimer::CallBack callback)
 {

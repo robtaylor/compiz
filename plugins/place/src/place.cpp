@@ -56,7 +56,7 @@ PlaceScreen::handleScreenSizeChange (int width,
     {
 	if (!w->managed ())
 	    continue;
-	
+
 	if (w->wmType () & (CompWindowTypeDockMask |
 			    CompWindowTypeDesktopMask))
 	    continue;
@@ -85,7 +85,7 @@ PlaceScreen::handleScreenSizeChange (int width,
 	    shiftX += width - x - extents.width ();
 	if (y + extents.height () > height)
 	    shiftY += height - y - extents.height ();
-	
+
 	if (shiftX)
 	{
 	    mask |= CWX;

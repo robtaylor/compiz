@@ -84,7 +84,7 @@ namespace GLFragment {
 
     class HeaderOp {
 	public:
-	    HeaderOp () : type(OpTypeHeaderTemp), name ("") {};
+	    HeaderOp () : type (OpTypeHeaderTemp), name ("") {};
 	public:
 	    OpType     type;
 	    CompString name;
@@ -93,7 +93,7 @@ namespace GLFragment {
     class BodyOp {
 	public:
 	    BodyOp () :
-		type(OpTypeData),
+		type (OpTypeData),
 		data (""),
 		dst (""),
 		src (""),
@@ -296,7 +296,7 @@ namespace GLFragment {
 					    offset, &colorDone, &blendDone,
 					    callBack);
 
-		    if (bodyOp.dst.compare("output"))
+		    if (bodyOp.dst.compare ("output"))
 		    {
 			dataOp.type = OpTypeDataStore;
 			dataOp.data =
@@ -486,7 +486,7 @@ namespace GLFragment {
     addFetchOffsetVariables (BodyOp     *op,
 			     int	index,
 			     bool       *indices,
-	    		     CompString *data)
+			     CompString *data)
     {
 	if (op->type == OpTypeDataOffset)
 	{
@@ -780,7 +780,7 @@ namespace GLFragment {
     FunctionData::addColorOp (const char *dst, const char *src)
     {
 	BodyOp b;
-	
+
 	b.type = OpTypeColor;
 	b.dst  = CompString (dst);
 	b.src  = CompString (src);
@@ -793,12 +793,12 @@ namespace GLFragment {
     {
 	BodyOp  b;
 	va_list ap;
-	
+
 	b.type = OpTypeData;
 	va_start (ap, str);
-	b.data = compPrintf(str, ap);
+	b.data = compPrintf (str, ap);
 	va_end (ap);
-	
+
 	priv->body.push_back (b);
     }
 
@@ -807,12 +807,12 @@ namespace GLFragment {
     {
 	BodyOp  b;
 	va_list ap;
-	
+
 	b.type = OpTypeDataBlend;
 	va_start (ap, str);
-	b.data = compPrintf(str, ap);
+	b.data = compPrintf (str, ap);
 	va_end (ap);
-	
+
 	priv->body.push_back (b);
     }
 
@@ -824,7 +824,6 @@ namespace GLFragment {
 	CompString   validName = name;
 	unsigned int i = 0;
 
-	
 	while (findFragmentFunctionWithName (s, validName))
 	{
 	    validName = compPrintf ("%s%d", name, i++);

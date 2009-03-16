@@ -92,8 +92,6 @@ typedef struct {
 
 CompScreen *screen;
 
-#define NUM_OPTIONS(s) (sizeof ((s)->priv->opt) / sizeof (CompOption))
-
 PluginClassStorage::Indices screenPluginClassIndices (0);
 
 int
@@ -140,18 +138,18 @@ CompScreen::eventLoop ()
 
 	priv->processEvents ();
 
-	if (!priv->timers.empty())
+	if (!priv->timers.empty ())
 	{
 	    gettimeofday (&tv, 0);
 	    priv->handleTimers (&tv);
 
-	    if (priv->timers.front()->mMinLeft > 0)
+	    if (priv->timers.front ()->mMinLeft > 0)
 	    {
-		std::list<CompTimer *>::iterator it = priv->timers.begin();
+		std::list<CompTimer *>::iterator it = priv->timers.begin ();
 
 		t = (*it);
 		time = t->mMaxLeft;
-		while (it != priv->timers.end())
+		while (it != priv->timers.end ())
 		{
 		    t = (*it);
 		    if (t->mMinLeft <= time)
@@ -184,7 +182,7 @@ CompScreen::addFileWatch (const char        *path,
 			  int               mask,
 			  FileWatchCallBack callBack)
 {
-    CompFileWatch *fileWatch = new CompFileWatch();
+    CompFileWatch *fileWatch = new CompFileWatch ();
     if (!fileWatch)
 	return 0;
 
@@ -196,7 +194,7 @@ CompScreen::addFileWatch (const char        *path,
     if (priv->lastFileWatchHandle == MAXSHORT)
 	priv->lastFileWatchHandle = 1;
 
-    priv->fileWatch.push_front(fileWatch);
+    priv->fileWatch.push_front (fileWatch);
 
     fileWatchAdded (fileWatch);
 
@@ -209,11 +207,11 @@ CompScreen::removeFileWatch (CompFileWatchHandle handle)
     std::list<CompFileWatch *>::iterator it;
     CompFileWatch                        *w;
 
-    for (it = priv->fileWatch.begin(); it != priv->fileWatch.end(); it++)
+    for (it = priv->fileWatch.begin (); it != priv->fileWatch.end (); it++)
 	if ((*it)->handle == handle)
 	    break;
 
-    if (it == priv->fileWatch.end())
+    if (it == priv->fileWatch.end ())
 	return;
 
     w = (*it);
@@ -240,7 +238,7 @@ PrivateScreen::addTimer (CompTimer *timer)
     if (it != timers.end ())
 	return;
 
-    for (it = timers.begin(); it != timers.end(); it++)
+    for (it = timers.begin (); it != timers.end (); it++)
     {
 	if ((int) timer->mMinTime < (*it)->mMinLeft)
 	    break;
@@ -270,7 +268,7 @@ CompScreen::addWatchFd (int             fd,
 			short int       events,
 			FdWatchCallBack callBack)
 {
-    CompWatchFd *watchFd = new CompWatchFd();
+    CompWatchFd *watchFd = new CompWatchFd ();
 
     if (!watchFd)
 	return 0;
@@ -303,13 +301,13 @@ CompScreen::removeWatchFd (CompWatchFdHandle handle)
     int                                i;
 
     for (it = priv->watchFds.begin(), i = priv->nWatchFds - 1;
-	 it != priv->watchFds.end(); it++, i--)
+	 it != priv->watchFds.end (); it++, i--)
     {
 	if ((*it)->handle == handle)
 	    break;
     }
 
-    if (it == priv->watchFds.end())
+    if (it == priv->watchFds.end ())
 	return;
 
     w = (*it);
@@ -384,7 +382,7 @@ PrivateScreen::watchFdEvents (CompWatchFdHandle handle)
     std::list<CompWatchFd *>::iterator it;
     int                                i;
 
-    for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
+    for (it = watchFds.begin (), i = nWatchFds - 1; it != watchFds.end ();
 	 it++, i--)
 	if ((*it)->handle == handle)
 	    return watchPollFds[i].revents;
@@ -403,7 +401,7 @@ PrivateScreen::doPoll (int timeout)
 	std::list<CompWatchFd *>::iterator it;
 	int                                i;
 
-	for (it = watchFds.begin(), i = nWatchFds - 1; it != watchFds.end();
+	for (it = watchFds.begin (), i = nWatchFds - 1; it != watchFds.end ();
 	    it++, i--)
 	{
 	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
@@ -427,18 +425,18 @@ PrivateScreen::handleTimers (struct timeval *tv)
     if (timeDiff < 0)
 	timeDiff = 0;
 
-    for (it = timers.begin(); it != timers.end(); it++)
+    for (it = timers.begin (); it != timers.end (); it++)
     {
 	t = (*it);
 	t->mMinLeft -= timeDiff;
 	t->mMaxLeft -= timeDiff;
     }
 
-    while (timers.begin() != timers.end() &&
-	   (*timers.begin())->mMinLeft <= 0)
+    while (timers.begin () != timers.end () &&
+	   timers.front ()->mMinLeft <= 0)
     {
-	t = (*timers.begin());
-	timers.pop_front();
+	t = timers.front ();
+	timers.pop_front ();
 
 	t->mActive = false;
 	if (t->mCallBack ())
@@ -454,12 +452,12 @@ PrivateScreen::handleTimers (struct timeval *tv)
 
 void
 CompScreen::fileWatchAdded (CompFileWatch *watch)
-    WRAPABLE_HND_FUNC(0, fileWatchAdded, watch)
+    WRAPABLE_HND_FUNC (0, fileWatchAdded, watch)
 
 void
 CompScreen::fileWatchRemoved (CompFileWatch *watch)
-    WRAPABLE_HND_FUNC(1, fileWatchRemoved, watch)
-	
+    WRAPABLE_HND_FUNC (1, fileWatchRemoved, watch)
+
 bool
 CompScreen::setOptionForPlugin (const char        *plugin,
 				const char        *name,
@@ -496,7 +494,6 @@ void
 ScreenInterface::finiPluginForScreen (CompPlugin *plugin)
     WRAPABLE_DEF (finiPluginForScreen, plugin)
 
-	
 bool
 ScreenInterface::setOptionForPlugin (const char        *plugin,
 				     const char	       *name,
@@ -638,7 +635,7 @@ PrivateScreen::updateScreenInfo ()
     {
 	int nInfo;
 	XineramaScreenInfo *info = XineramaQueryScreens (dpy, &nInfo);
-	
+
 	screenInfo = std::vector<XineramaScreenInfo> (info, info + nInfo);
 
 	if (info)
@@ -977,7 +974,7 @@ PrivateScreen::updatePlugins ()
 	if (plugin.list ()[j].s () != list[i].s ())
 	    break;
     }
-    
+
     nPop = plugin.list ().size () - j;
 
     for (j = 0; j < nPop; j++)
@@ -1296,7 +1293,7 @@ CompScreen::logMessage (const char   *componentName,
 			CompLogLevel level,
 			const char   *message)
 {
-    WRAPABLE_HND_FUNC(13, logMessage, componentName, level, message)
+    WRAPABLE_HND_FUNC (13, logMessage, componentName, level, message)
     ::logMessage (componentName, level, message);
 }
 
@@ -1960,7 +1957,7 @@ PrivateScreen::detectOutputDevices ()
 	else
 	{
 	    CompOption::Value::Vector l;
-	    l.push_back (compPrintf ("%dx%d+%d+%d", screen->width(),
+	    l.push_back (compPrintf ("%dx%d+%d+%d", screen->width (),
 				     screen->height (), 0, 0));
 	    value.set (CompOption::TypeString, l);
 	}
@@ -1989,7 +1986,7 @@ PrivateScreen::updateStartupFeedback ()
 #define STARTUP_TIMEOUT_DELAY 15000
 
 bool
-PrivateScreen::handleStartupSequenceTimeout()
+PrivateScreen::handleStartupSequenceTimeout ()
 {
     struct timeval	now, active;
     double		elapsed;
@@ -2133,7 +2130,7 @@ PrivateScreen::setCurrentOutput (unsigned int outputNum)
 void
 PrivateScreen::reshape (int w, int h)
 {
-    updateScreenInfo();
+    updateScreenInfo ();
 
     region = CompRegion (0, 0, w, h);
 
@@ -2392,15 +2389,14 @@ PrivateScreen::getDesktopHints ()
 void
 CompScreen::enterShowDesktopMode ()
 {
-    WRAPABLE_HND_FUNC(14, enterShowDesktopMode)
-
+    WRAPABLE_HND_FUNC (14, enterShowDesktopMode)
 
     unsigned long data = 1;
     int		  count = 0;
     bool          st = priv->optionGetHideSkipTaskbarWindows ();
 
     priv->showingDesktopMask = ~(CompWindowTypeDesktopMask |
-				CompWindowTypeDockMask);
+				 CompWindowTypeDockMask);
 
     foreach (CompWindow *w, priv->windows)
     {
@@ -2434,7 +2430,7 @@ CompScreen::enterShowDesktopMode ()
 void
 CompScreen::leaveShowDesktopMode (CompWindow *window)
 {
-    WRAPABLE_HND_FUNC(15, leaveShowDesktopMode, window)
+    WRAPABLE_HND_FUNC (15, leaveShowDesktopMode, window)
 
     unsigned long data = 0;
 
@@ -2708,7 +2704,7 @@ CompScreen::invisibleCursor ()
 CompScreen::GrabHandle
 CompScreen::pushGrab (Cursor cursor, const char *name)
 {
-    if (priv->grabs.empty())
+    if (priv->grabs.empty ())
     {
 	int status;
 
@@ -3381,7 +3377,7 @@ CompScreen::runCommand (CompString command)
 	CompString env (priv->displayString);
 
 	setsid ();
-	
+
 	pos = env.find (':');
 	if (pos != std::string::npos)
 	{
@@ -3397,7 +3393,7 @@ CompScreen::runCommand (CompString command)
 	}
 
 	env.append (compPrintf (".%d", priv->screenNum));
-	
+
 	putenv (const_cast<char *> (env.c_str ()));
 
 	exit (execl ("/bin/sh", "/bin/sh", "-c", command.c_str (), NULL));
@@ -3675,7 +3671,7 @@ CompScreen::getWorkareaForOutput (int output) const
 
 void
 CompScreen::outputChangeNotify ()
-    WRAPABLE_HND_FUNC(16, outputChangeNotify)
+    WRAPABLE_HND_FUNC (16, outputChangeNotify)
 
 
 
@@ -3749,7 +3745,7 @@ CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
 	x = (gm.x () + (gm.width () / 2) + gm.border ()) % width ();
 	if (x < 0)
 	    x += width ();
-	y = (gm.y () + (gm.height () / 2) + gm.border()) % height ();
+	y = (gm.y () + (gm.height () / 2) + gm.border ()) % height ();
 	if (y < 0)
 	    y += height ();
 
@@ -3785,8 +3781,10 @@ CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
 	   user preferred strategy for that */
 	unsigned int currentSize, bestOutputSize;
 	Bool         searchLargest;
-	
-	searchLargest = (strategy != CoreOptions::OverlappingOutputsPreferSmallerOutput);
+
+	searchLargest =
+	    (strategy != CoreOptions::OverlappingOutputsPreferSmallerOutput);
+
 	if (searchLargest)
 	    bestOutputSize = 0;
 	else
@@ -4224,7 +4222,7 @@ CompScreen::init (const char *name)
 						      &priv->xineramaEvent,
 						      &priv->xineramaError);
 
-    priv->updateScreenInfo();
+    priv->updateScreenInfo ();
 
     priv->escapeKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Escape"));
     priv->returnKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Return"));
@@ -4582,7 +4580,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     edgeDelayTimer (),
     plugin (),
     dirtyPluginList (true),
-    screen(screen),
+    screen (screen),
     windows (),
     vp (0, 0),
     vpSize (1, 1),
@@ -4619,7 +4617,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     gettimeofday (&lastTimeout, 0);
 
     pingTimer.setCallback (
-	boost::bind(&PrivateScreen::handlePingTimeout, this));
+	boost::bind (&PrivateScreen::handlePingTimeout, this));
 
     startupSequenceTimer.setCallback (
 	boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this));

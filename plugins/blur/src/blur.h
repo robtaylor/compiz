@@ -74,7 +74,6 @@ class BlurScreen :
     public BlurOptions
 {
     public:
-	
 	BlurScreen (CompScreen *screen);
 	~BlurScreen ();
 
@@ -84,7 +83,7 @@ class BlurScreen :
 
 	virtual void matchExpHandlerChanged ();
 	virtual void matchPropertyChanged (CompWindow *window);
-	
+
 	void preparePaint (int);
 	void donePaint ();
 

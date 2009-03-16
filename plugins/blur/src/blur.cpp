@@ -220,7 +220,7 @@ BlurWindow::updateRegion ()
 	    if (!q.isEmpty ())
 	    {
 		q &= r;
-		
+
 		if (q != r)
 		    state[BLUR_STATE_CLIENT].clipped = true;
 
@@ -428,7 +428,7 @@ BlurScreen::preparePaint (int msSinceLastPaint)
 	    foreach (CompWindow *w, screen->windows ())
 	    {
 		BLUR_WINDOW (w);
-		
+
 		if (!w->isViewable () || !CompositeWindow::get (w)->damaged ())
 		    continue;
 
@@ -579,7 +579,7 @@ BlurScreen::getSrcBlurFragmentFunction (GLTexture *texture,
     {
 	static const char *temp[] = { "offset0", "offset1", "sum" };
 	int	    i;
-	
+
 	for (i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
 	    data.addTempHeaderOp (temp[i]);
 
@@ -723,7 +723,7 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		}
 		else
 		{
-		    i = MAX(((maxTemp / 2) - 4) / 4, 1);
+		    i = MAX (((maxTemp / 2) - 4) / 4, 1);
 		    numIndirect = ceil ((float)numTexop / (float)i);
 		    numIndirectOp = ceil ((float)numTexop / (float)numIndirect);
 		}
@@ -744,7 +744,6 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		    data.addTempHeaderOp (str);
 		}
 
- 	
 		data.addFetchOp ("output", NULL, target);
 		data.addColorOp ("output", "output");
 
@@ -765,7 +764,7 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		{
 		    base = j * numIndirectOp;
 		    end  = MIN ((j + 1) * numIndirectOp, numTexop) - base;
-		    
+
 		    ITCbase = MAX (numITC - base, 0);
 
 		    for (i = ITCbase; i < end; i++)
@@ -988,7 +987,7 @@ BlurScreen::loadFilterProgram (int numITC)
     {
 	base = j * numIndirectOp;
 	end  = MIN ((j + 1) * numIndirectOp, numTexop) - base;
-	
+
 	ITCbase = MAX (numITC - base, 0);
 
 	for (i = ITCbase; i < end; i++)
@@ -1369,10 +1368,11 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	if (state[BLUR_STATE_DECOR].threshold)
 	{
 	    int  xx, yy, ww, hh;
- 	    // top
+	    // top
 	    xx = window->x () - window->output ().left;
 	    yy = window->y () - window->output ().top;
-	    ww = window->width () + window->output ().left + window->output ().right;
+	    ww = window->width () + window->output ().left +
+		 window->output ().right;
 	    hh = window->output ().top;
 
 	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
@@ -1384,7 +1384,8 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    // bottom
 	    xx = window->x () - window->output ().left;
 	    yy = window->y () + window->height ();
-            ww = window->width () + window->output ().left + window->output ().right;
+            ww = window->width () + window->output ().left +
+		 window->output ().right;
 	    hh = window->output ().bottom;
 
 	    bScreen->tmpRegion2 = bScreen->tmpRegion.intersected (
@@ -1555,7 +1556,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 
     switch (filter) {
 	case BlurOptions::FilterGaussian:
-	    return bScreen->fboUpdate (bScreen->tmpRegion.handle()->rects,
+	    return bScreen->fboUpdate (bScreen->tmpRegion.handle ()->rects,
 				       bScreen->tmpRegion.numRects ());
 	case BlurOptions::FilterMipmap:
 	    (*GL::generateMipmap) (bScreen->target);
@@ -1605,7 +1606,7 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 	    bScreen->tmpRegion = this->region.intersected (reg);
 	    if (!bScreen->blurOcclusion &&
 		!(mask & PAINT_WINDOW_TRANSFORMED_MASK))
-		bScreen->tmpRegion -= clip; 
+		bScreen->tmpRegion -= clip;
 
 	    if (updateDstTexture (transform, &box, clientThreshold))
 	    {
@@ -1663,7 +1664,7 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 		GLTexture::MatrixList ml;
 
 		gWindow->geometry ().reset ();
-		
+
 		gWindow->glAddGeometry (ml, bScreen->tmpRegion, reg);
 		if (gWindow->geometry ().vCount)
 		{
@@ -1800,7 +1801,9 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 		    unit  = dstFa.allocTextureUnits (2);
 
 		    function = bScreen->getDstBlurFragmentFunction (
-			texture, param, unit, iTC, gWindow->geometry().texUnits);
+			texture, param, unit, iTC,
+			gWindow->geometry ().texUnits);
+
 		    if (function)
 		    {
 			int           i;
@@ -1867,30 +1870,30 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 				q_gen[2] = rm[11];
 				q_gen[3] = rm[15];
 
-				glTexGenfv(GL_T, GL_OBJECT_PLANE, t_gen);
-				glTexGenfv(GL_S, GL_OBJECT_PLANE, s_gen);
-				glTexGenfv(GL_Q, GL_OBJECT_PLANE, q_gen);
+				glTexGenfv (GL_T, GL_OBJECT_PLANE, t_gen);
+				glTexGenfv (GL_S, GL_OBJECT_PLANE, s_gen);
+				glTexGenfv (GL_Q, GL_OBJECT_PLANE, q_gen);
 
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
-				glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
+				glTexGeni (GL_S, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
+				glTexGeni (GL_T, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
+				glTexGeni (GL_Q, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
 
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				glEnable(GL_TEXTURE_GEN_Q);
+				glEnable (GL_TEXTURE_GEN_S);
+				glEnable (GL_TEXTURE_GEN_T);
+				glEnable (GL_TEXTURE_GEN_Q);
 
 				(*GL::activeTexture) (GL_TEXTURE0_ARB +
 				    gWindow->geometry ().texUnits +
 				    1 + (i * 2));
 
 				rm.reset ();
-				
+
 				rm[13] = -bScreen->ty * bScreen->pos[i];
 				rm *= tm;
-				
+
 				s_gen[0] = rm[0];
 				s_gen[1] = rm[4];
 				s_gen[2] = rm[8];
@@ -1904,20 +1907,20 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 				q_gen[2] = rm[11];
 				q_gen[3] = rm[15];
 
-				glTexGenfv(GL_T, GL_OBJECT_PLANE, t_gen);
-				glTexGenfv(GL_S, GL_OBJECT_PLANE, s_gen);
-				glTexGenfv(GL_Q, GL_OBJECT_PLANE, q_gen);
+				glTexGenfv (GL_T, GL_OBJECT_PLANE, t_gen);
+				glTexGenfv (GL_S, GL_OBJECT_PLANE, s_gen);
+				glTexGenfv (GL_Q, GL_OBJECT_PLANE, q_gen);
 
-				glTexGeni(GL_S, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
-				glTexGeni(GL_T, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
-				glTexGeni(GL_Q, GL_TEXTURE_GEN_MODE,
-					  GL_OBJECT_LINEAR);
+				glTexGeni (GL_S, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
+				glTexGeni (GL_T, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
+				glTexGeni (GL_Q, GL_TEXTURE_GEN_MODE,
+					   GL_OBJECT_LINEAR);
 
-				glEnable(GL_TEXTURE_GEN_S);
-				glEnable(GL_TEXTURE_GEN_T);
-				glEnable(GL_TEXTURE_GEN_Q);
+				glEnable (GL_TEXTURE_GEN_S);
+				glEnable (GL_TEXTURE_GEN_T);
+				glEnable (GL_TEXTURE_GEN_Q);
 			    }
 
 			    (*GL::activeTexture) (GL_TEXTURE0_ARB);
@@ -1993,17 +1996,17 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 	    glBindTexture (bScreen->target, 0);
 	    (*GL::activeTexture) (GL_TEXTURE0_ARB);
 	}
-	
+
 	if (iTC)
 	{
 	    int i;
-	    for (i = gWindow->geometry().texUnits;
-		 i < gWindow->geometry().texUnits + (2 * iTC); i++)
+	    for (i = gWindow->geometry ().texUnits;
+		 i < gWindow->geometry ().texUnits + (2 * iTC); i++)
 	    {
 		(*GL::activeTexture) (GL_TEXTURE0_ARB + i);
-		glDisable(GL_TEXTURE_GEN_S);
-		glDisable(GL_TEXTURE_GEN_T);
-		glDisable(GL_TEXTURE_GEN_Q);
+		glDisable (GL_TEXTURE_GEN_S);
+		glDisable (GL_TEXTURE_GEN_T);
+		glDisable (GL_TEXTURE_GEN_Q);
 	    }
 	    (*GL::activeTexture) (GL_TEXTURE0_ARB);
 	}

@@ -2240,7 +2240,7 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
 	wc.y      -= input.top;
 	wc.width  += input.left + input.right;
 	wc.height += input.top + input.bottom;
-	
+
 	XConfigureWindow (screen->dpy (), frame, valueMask, &wc);
 	valueMask &= ~(CWSibling | CWStackMode);
 
@@ -2323,7 +2323,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 
 	    if (ancestor->priv->mapNum || ancestor->priv->pendingMaps)
 		ancestor->priv->reconfigureXWindow (CWSibling | CWStackMode,
-				    		    xwc);
+						    xwc);
 
 	    stackAncestors (ancestor, xwc);
 	}
@@ -2792,7 +2792,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
        safe to assume that the saved coordinates should be updated too, e.g.
        because the window was moved to another viewport by some client */
     if ((xwcm & CWX) && (priv->saveMask & CWX))
-    	priv->saveWc.x += (xwc->x - priv->serverGeometry.x ());
+	priv->saveWc.x += (xwc->x - priv->serverGeometry.x ());
 
     if ((xwcm & CWY) && (priv->saveMask & CWY))
 	priv->saveWc.y += (xwc->y - priv->serverGeometry.y ());
@@ -3144,7 +3144,7 @@ PrivateWindow::revealAncestors (CompWindow *w,
 void
 CompWindow::activate ()
 {
-    WRAPABLE_HND_FUNC(3, activate)
+    WRAPABLE_HND_FUNC (3, activate)
 
     screen->priv->setCurrentDesktop (priv->desktop);
 
@@ -3885,7 +3885,7 @@ CompWindow::getIcon (int width,
 	}
 
 	/* don't fetch property again */
-	if (priv->icons.size() == 0)
+	if (priv->icons.size () == 0)
 	    priv->noIcons = true;
     }
 
@@ -4116,7 +4116,6 @@ void
 WindowInterface::windowNotify (CompWindowNotify n)
     WRAPABLE_DEF (windowNotify, n)
 
-		
 void
 WindowInterface::grabNotify (int          x,
 			     int          y,
@@ -4147,19 +4146,19 @@ CompWindow::type ()
 {
     return priv->type;
 }
-	
+
 unsigned int &
 CompWindow::state ()
 {
     return priv->state;
 }
-	
+
 unsigned int
 CompWindow::actions ()
 {
     return priv->actions;
 }
-	
+
 unsigned int &
 CompWindow::protocols ()
 {
@@ -5096,7 +5095,7 @@ CompWindow::updateFrameRegion ()
 	r = priv->region.boundingRect ();
 	priv->frameRegion -= r;
 
-	r.setGeometry (r.x1 () - priv->input.left, 
+	r.setGeometry (r.x1 () - priv->input.left,
 		       r.y1 () - priv->input.top,
 		       r.width  () + priv->input.right + priv->input.left,
 		       r.height () + priv->input.bottom + priv->input.top);
@@ -5144,7 +5143,7 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 
 void
 CompWindow::updateFrameRegion (CompRegion& region)
-    WRAPABLE_HND_FUNC(12, updateFrameRegion, region)
+    WRAPABLE_HND_FUNC (12, updateFrameRegion, region)
 
 bool
 PrivateWindow::reparent ()
@@ -5178,14 +5177,14 @@ PrivateWindow::reparent ()
 			     SubstructureNotifyMask | EnterWindowMask |
 			     LeaveWindowMask;
 
-    frame = XCreateWindow(dpy, screen->root (), sg.x () - input.left,
+    frame = XCreateWindow (dpy, screen->root (), sg.x () - input.left,
 			  sg.y () - input.top,
 			  sg.width () + input.left + input.right,
 			  sg.height () + input.top + input.bottom,
 			  0, attrib.depth,
 			  InputOutput, attrib.visual, mask, &attr);
 
-    wrapper = XCreateWindow(dpy, frame, input.left, input.top,
+    wrapper = XCreateWindow (dpy, frame, input.left, input.top,
 			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, attrib.visual, mask, &attr);
 
@@ -5209,7 +5208,7 @@ PrivateWindow::reparent ()
     XChangeSaveSet (dpy, id, SetModeInsert);
     XFlush (dpy);
 
-    XChangeWindowAttributes(dpy, id, CWEventMask | CWDontPropagate, &attr);
+    XChangeWindowAttributes (dpy, id, CWEventMask | CWDontPropagate, &attr);
 
     if (mapNum || shaded)
     {
@@ -5259,7 +5258,7 @@ PrivateWindow::unreparent ()
         XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
         XUnmapWindow (dpy, frame);
 	XFlush (dpy);
-	
+
 	if (mapNum || shaded)
 	{
 	    if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||

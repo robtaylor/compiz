@@ -2924,7 +2924,7 @@ meta_button_present (MetaButtonLayout   *button_layout,
 		     MetaButtonFunction function)
 {
     int i;
-		     
+
     for (i = 0; i < MAX_BUTTONS_PER_CORNER; i++)
 	if (button_layout->left_buttons[i] == function)
 	    return TRUE;
@@ -3957,7 +3957,7 @@ window_actions_changed (WnckWindow *win)
 	if (!update_window_decoration_size (win))
 	    queue_decor_draw (d);
 
-    	update_event_windows (win);
+	update_event_windows (win);
     }
 }
 
@@ -5941,7 +5941,7 @@ meta_update_button_layout (const char *value)
 	{
 	    f = meta_button_function_from_string (buttons[b]);
 #ifdef HAVE_METACITY_2_23_2
-	    if (i > 0 && strcmp("spacer", buttons[b]) == 0)
+	    if (i > 0 && strcmp ("spacer", buttons[b]) == 0)
             {
 	       new_layout.left_buttons_has_spacer[i - 1] = TRUE;
 	       f = meta_button_opposite_function (f);
@@ -5988,7 +5988,7 @@ meta_update_button_layout (const char *value)
 	    {
 	       f = meta_button_function_from_string (buttons[b]);
 #ifdef HAVE_METACITY_2_23_2
-	       if (i > 0 && strcmp("spacer", buttons[b]) == 0)
+	       if (i > 0 && strcmp ("spacer", buttons[b]) == 0)
 	       {
 		  new_layout.right_buttons_has_spacer[i - 1] = TRUE;
 		  f = meta_button_opposite_function (f);
@@ -6018,7 +6018,7 @@ meta_update_button_layout (const char *value)
 	       b++;
 	    }
 	    new_layout.right_buttons[i] = META_BUTTON_FUNCTION_LAST;
-	    
+
 	    g_strfreev (buttons);
 	}
     }

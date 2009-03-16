@@ -159,7 +159,7 @@ class CompOption {
 	~CompOption ();
 
 	void setName (CompString name, Type type);
-	
+
 	CompString name ();
 
 	Type type ();

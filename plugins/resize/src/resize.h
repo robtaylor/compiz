@@ -116,7 +116,7 @@ class ResizeScreen :
 	int          pointerDx;
 	int          pointerDy;
 	KeyCode      key[NUM_KEYS];
-	
+
 	CompScreen::GrabHandle grabIndex;
 
 	Cursor leftCursor;
@@ -140,7 +140,7 @@ class ResizeWindow :
     public:
 	ResizeWindow (CompWindow *w);
 	~ResizeWindow ();
-	
+
 	void resizeNotify (int, int, int, int);
 
 	bool damageRect (bool, const CompRect &);
@@ -150,9 +150,7 @@ class ResizeWindow :
 
 	void getStretchScale (BoxPtr pBox, float *xScale, float *yScale);
 
-	
     public:
-
 	CompWindow      *window;
 	GLWindow        *gWindow;
 	CompositeWindow *cWindow;

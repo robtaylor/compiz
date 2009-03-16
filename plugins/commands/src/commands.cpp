@@ -42,7 +42,7 @@ CommandsScreen::runCommand (CompAction          *action,
 
     cs = CommandsScreen::get (screen);
 
-    screen->runCommand (cs->mOptions[commandOption].value (). s());
+    screen->runCommand (cs->mOptions[commandOption].value (). s ());
 
     return true;
 }

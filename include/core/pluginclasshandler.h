@@ -43,7 +43,7 @@ class PluginClassHandler {
 
 	void setFailed () { mFailed = true; };
 	bool loadFailed () { return mFailed; };
-	
+
 	Tb * get () { return mBase; };
 	static Tp * get (Tb *);
 

@@ -99,15 +99,15 @@ main (int argc, char **argv)
     }
 
     // Disable window less child widgets
-    QApplication::setAttribute(Qt::AA_NativeWindows, true);
+    QApplication::setAttribute (Qt::AA_NativeWindows, true);
 
 #ifdef QT_45
     app = new KWD::Decorator ();
 #else
-    dpy = XOpenDisplay(0); // open default display
+    dpy = XOpenDisplay (0); // open default display
     screen = DefaultScreen (dpy);
     if (!dpy) {
-        kError() << "Cannot connect to the X server" << endl;
+        kError () << "Cannot connect to the X server" << endl;
         return 0;
     }
 
@@ -136,23 +136,23 @@ main (int argc, char **argv)
 	}
     }
 
-    app = new KWD::Decorator (dpy, visual ? Qt::HANDLE(visual) : 0,
-			      colormap ? Qt::HANDLE(colormap) : 0);
+    app = new KWD::Decorator (dpy, visual ? Qt::HANDLE (visual) : 0,
+			      colormap ? Qt::HANDLE (colormap) : 0);
 #endif
 
     if (args->isSet ("sm-disable"))
 	app->disableSessionManagement ();
 
-    if (!XDamageQueryExtension (QX11Info::display(), &event, &error))
+    if (!XDamageQueryExtension (QX11Info::display (), &event, &error))
     {
 	fprintf (stderr,
 		 "%s: Damage extension is missing on display \"%s\"\n",
-		 argv[0], DisplayString (QX11Info::display()));
+		 argv[0], DisplayString (QX11Info::display ()));
 
 	return 1;
     }
 
-    status = decor_acquire_dm_session (QX11Info::display(),
+    status = decor_acquire_dm_session (QX11Info::display (),
 				       QX11Info::appScreen (),
 				       "kwd", args->isSet ("replace"),
 				       &timestamp);
@@ -164,7 +164,7 @@ main (int argc, char **argv)
 		     "%s: Could not acquire decoration manager "
 		     "selection on screen %d display \"%s\"\n",
 		     argv[0], QX11Info::appScreen (),
-		     DisplayString (QX11Info::display()));
+		     DisplayString (QX11Info::display ()));
 	}
 	else if (status == DECOR_ACQUIRE_STATUS_OTHER_DM_RUNNING)
 	{
@@ -174,13 +174,13 @@ main (int argc, char **argv)
 		     "--replace option to replace the current "
 		     "decoration manager.\n",
 		     argv[0], QX11Info::appScreen (),
-		     DisplayString (QX11Info::display()));
+		     DisplayString (QX11Info::display ()));
 	}
 
 	return 1;
     }
 
-    decor_set_dm_check_hint (QX11Info::display(), QX11Info::appScreen (),
+    decor_set_dm_check_hint (QX11Info::display (), QX11Info::appScreen (),
 			     WINDOW_DECORATION_TYPE_PIXMAP |
 			     WINDOW_DECORATION_TYPE_WINDOW);
 
@@ -188,7 +188,7 @@ main (int argc, char **argv)
     {
 	fprintf (stderr,
 		 "%s: Could not enable decorations on display \"%s\"\n",
-		 argv[0], DisplayString (QX11Info::display()));
+		 argv[0], DisplayString (QX11Info::display ()));
 
 	return 1;
     }
@@ -196,7 +196,7 @@ main (int argc, char **argv)
     if (QX11Info::appScreen () == 0)
         appname = "org.kde.kwin";
     else
-        appname.sprintf("org.kde.kwin-screen-%d", QX11Info::appScreen ());
+        appname.sprintf ("org.kde.kwin-screen-%d", QX11Info::appScreen ());
 
     QDBusConnection::sessionBus ().interface ()->registerService
 	(appname, QDBusConnectionInterface::DontQueueService);

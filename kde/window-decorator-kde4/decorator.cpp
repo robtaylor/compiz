@@ -86,8 +86,10 @@ struct _cursor cursors[3][3] = {
 KWD::PluginManager::PluginManager (KSharedConfigPtr config):
     KWD::KDecorationPlugins (config)
 {
-    defaultPlugin = (QPixmap::defaultDepth() > 8) ?
-            "kwin3_oxygen" : "kwin3_plastik";
+    if (QPixmap::defaultDepth () > 8)
+	defaultPlugin = "kwin3_oxygen";
+    else
+	defaultPlugin = "kwin3_plastik";
 }
 
 #ifdef QT_45
@@ -105,13 +107,14 @@ KWD::Decorator::Decorator (Display* display,
 {
     XSetWindowAttributes attr;
     int			 i, j;
-    QDBusConnection      dbus = QDBusConnection::sessionBus();
+    QDBusConnection      dbus = QDBusConnection::sessionBus ();
 
-    mRootInfo = new NETRootInfo (QX11Info::display(), 0);
+    mRootInfo = new NETRootInfo (QX11Info::display (), 0);
 
     mActiveId = 0;
 
-    KConfigGroup cfg (KSharedConfig::openConfig("plasmarc"), QString("Theme"));
+    KConfigGroup cfg (KSharedConfig::openConfig ("plasmarc"),
+						 QString ("Theme"));
     Plasma::Theme::defaultTheme ()->setThemeName (cfg.readEntry ("name"));
 
     Atoms::init ();
@@ -144,7 +147,7 @@ KWD::Decorator::Decorator (Display* display,
     mConfig = new KConfig ("kwinrc");
 
     mOptions = new KWD::Options (mConfig);
-    mPlugins = new PluginManager (KSharedConfig::openConfig("kwinrc"));
+    mPlugins = new PluginManager (KSharedConfig::openConfig ("kwinrc"));
 
     mShadowOptions.shadow_radius   = SHADOW_RADIUS;
     mShadowOptions.shadow_opacity  = SHADOW_OPACITY;
@@ -160,23 +163,25 @@ KWD::Decorator::Decorator (Display* display,
 	{
 	    if (cursors[i][j].shape != XC_left_ptr)
 		cursors[i][j].cursor =
-		    XCreateFontCursor (QX11Info::display(), cursors[i][j].shape);
+		    XCreateFontCursor (QX11Info::display (),
+				       cursors[i][j].shape);
 	}
     }
 
     attr.override_redirect = True;
 
-    mCompositeWindow = XCreateWindow (QX11Info::display(), QX11Info::appRootWindow(),
+    mCompositeWindow = XCreateWindow (QX11Info::display (),
+				      QX11Info::appRootWindow (),
 				      -ROOT_OFF_X, -ROOT_OFF_Y, 1, 1, 0,
 				      CopyFromParent,
 				      CopyFromParent,
 				      CopyFromParent,
 				      CWOverrideRedirect, &attr);
 
-    XCompositeRedirectSubwindows (QX11Info::display(), mCompositeWindow,
+    XCompositeRedirectSubwindows (QX11Info::display (), mCompositeWindow,
 				  CompositeRedirectManual);
 
-    XMapWindow (QX11Info::display(), mCompositeWindow);
+    XMapWindow (QX11Info::display (), mCompositeWindow);
 }
 
 KWD::Decorator::~Decorator (void)
@@ -195,7 +200,7 @@ KWD::Decorator::~Decorator (void)
     if (mSwitcher)
 	delete mSwitcher;
 
-    XDestroyWindow (QX11Info::display(), mCompositeWindow);
+    XDestroyWindow (QX11Info::display (), mCompositeWindow);
 
     delete mOptions;
     delete mPlugins;
@@ -223,9 +228,11 @@ KWD::Decorator::enableDecorations (Time timestamp,
 
     updateShadow ();
 
-    mDecorNormal = new KWD::Window (mCompositeWindow, QX11Info::appRootWindow(),
+    mDecorNormal = new KWD::Window (mCompositeWindow,
+				    QX11Info::appRootWindow (),
 				    0, Window::Default);
-    mDecorActive = new KWD::Window (mCompositeWindow, QX11Info::appRootWindow(),
+    mDecorActive = new KWD::Window (mCompositeWindow,
+				    QX11Info::appRootWindow (),
 				    0, Window::DefaultActive);
 
     mActiveId = KWindowSystem::activeWindow ();
@@ -249,7 +256,7 @@ KWD::Decorator::enableDecorations (Time timestamp,
 	     SLOT (plasmaThemeChanged ()));
 
     // select for client messages
-    XSelectInput (QX11Info::display(), QX11Info::appRootWindow(),
+    XSelectInput (QX11Info::display (), QX11Info::appRootWindow (),
 		  StructureNotifyMask | PropertyChangeMask);
 
     return true;
@@ -262,7 +269,7 @@ KWD::Decorator::updateDefaultShadow (KWD::Window *w)
 
     if (mDefaultShadow)
     {
-	decor_shadow_destroy (QX11Info::display(), mDefaultShadow);
+	decor_shadow_destroy (QX11Info::display (), mDefaultShadow);
 	mDefaultShadow = NULL;
     }
 
@@ -360,7 +367,7 @@ KWD::Decorator::changeShadowOptions (decor_shadow_options_t *opt)
 void
 KWD::Decorator::updateShadow (void)
 {
-    Display	    *xdisplay = QX11Info::display();
+    Display	    *xdisplay = QX11Info::display ();
     Screen	    *xscreen;
     decor_context_t context;
 
@@ -405,7 +412,7 @@ KWD::Decorator::updateShadow (void)
 				 0, 0, quads, nQuad);
 
 	KWD::trapXError ();
-	XChangeProperty (QX11Info::display(), QX11Info::appRootWindow(),
+	XChangeProperty (QX11Info::display (), QX11Info::appRootWindow (),
 			 Atoms::netWindowDecorBare,
 			 XA_INTEGER,
 			 32, PropModeReplace, (unsigned char *) data,
@@ -479,10 +486,11 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	}
     } break;
     case SelectionRequest:
-	decor_handle_selection_request (QX11Info::display(), xevent, mDmSnTimestamp);
+	decor_handle_selection_request (QX11Info::display (),
+					xevent, mDmSnTimestamp);
 	break;
     case SelectionClear:
-	status = decor_handle_selection_clear (QX11Info::display(),
+	status = decor_handle_selection_clear (QX11Info::display (),
 					       xevent, 0);
 	if (status == DECOR_SELECTION_GIVE_UP)
 	    KApplication::exit (0);
@@ -545,12 +553,12 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    if (client->activeChild ())
 		QApplication::sendEvent (client->activeChild (), &qe);
 
-	    XUndefineCursor (QX11Info::display(), client->frameId ());
+	    XUndefineCursor (QX11Info::display (), client->frameId ());
 	}
     } break;
     case MotionNotify:
     {
-	XMotionEvent *xme = reinterpret_cast < XMotionEvent * >(xevent);
+	XMotionEvent *xme = reinterpret_cast <XMotionEvent *> (xevent);
 	QWidget	     *child;
 
 	if (!mFrames.contains (xme->window))
@@ -591,9 +599,9 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
     case ButtonPress:
     case ButtonRelease:
     {
-	XButtonEvent *xbe = reinterpret_cast <XButtonEvent *>(xevent);
+	XButtonEvent *xbe = reinterpret_cast <XButtonEvent *> (xevent);
 	QWidget	     *child;
-	
+
 	if (!mFrames.contains (xbe->window))
 	    break;
 
@@ -672,7 +680,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	if (xevent->type == mDamageEvent + XDamageNotify)
 	{
 	    XDamageNotifyEvent *xde =
-		reinterpret_cast <XDamageNotifyEvent *>(xevent);
+		reinterpret_cast <XDamageNotifyEvent *> (xevent);
 
 	    if (mWindows.contains (xde->drawable))
 		client = mWindows[xde->drawable];
@@ -743,13 +751,13 @@ KWD::Decorator::handleWindowAdded (WId id)
     QWidgetList				     widgets;
 
     /* avoid adding any of our own top level windows */
-    foreach (QWidget *widget, QApplication::topLevelWidgets()) {
-        if (widget->winId() == id)
+    foreach (QWidget *widget, QApplication::topLevelWidgets ()) {
+        if (widget->winId () == id)
 	    return;
     }
 
     KWD::trapXError ();
-    XGetGeometry (QX11Info::display(), id, &root, &x, &y, &width, &height,
+    XGetGeometry (QX11Info::display (), id, &root, &x, &y, &width, &height,
 		  &border, &depth);
     if (KWD::popXError ())
 	return;
@@ -800,14 +808,15 @@ KWD::Decorator::handleWindowAdded (WId id)
     }
 
     KWD::trapXError ();
-    XSelectInput (QX11Info::display(), id, StructureNotifyMask | PropertyChangeMask);
+    XSelectInput (QX11Info::display (), id,
+		  StructureNotifyMask | PropertyChangeMask);
     KWD::popXError ();
 
     if (frame)
     {
 	XWindowAttributes attr;
 	KWD::trapXError ();
-	XGetWindowAttributes (QX11Info::display(), frame, &attr);
+	XGetWindowAttributes (QX11Info::display (), frame, &attr);
 	if (KWD::popXError ())
 	    frame = None;
     }
@@ -925,7 +934,6 @@ KWD::Decorator::handleWindowChanged (WId		 id,
 	client->updateIcons ();
     if (properties[0] & NET::WMGeometry)
 	client->updateWindowGeometry ();
-	
 }
 
 void
@@ -948,16 +956,16 @@ KWD::Decorator::sendClientMessage (WId  eventWid,
     ev.xclient.format       = 32;
 
     ev.xclient.data.l[0] = value;
-    ev.xclient.data.l[1] = QX11Info::appTime();
+    ev.xclient.data.l[1] = QX11Info::appTime ();
     ev.xclient.data.l[2] = data1;
     ev.xclient.data.l[3] = data2;
     ev.xclient.data.l[4] = data3;
 
-    if (eventWid == QX11Info::appRootWindow())
+    if (eventWid == QX11Info::appRootWindow ())
 	mask = SubstructureRedirectMask | SubstructureNotifyMask;
 
     KWD::trapXError ();
-    XSendEvent (QX11Info::display(), eventWid, false, mask, &ev);
+    XSendEvent (QX11Info::display (), eventWid, false, mask, &ev);
     KWD::popXError ();
 }
 
@@ -1008,7 +1016,7 @@ KWD::Decorator::shadowColorChanged (QString value)
 
     int c[4];
 
-    if (sscanf (value.toAscii().data(), "#%2x%2x%2x%2x",
+    if (sscanf (value.toAscii ().data (), "#%2x%2x%2x%2x",
 	        &c[0], &c[1], &c[2], &c[3]) == 4)
     {
 	opt.shadow_color[0] = c[0] << 8 | c[0];
@@ -1024,7 +1032,7 @@ KWD::Decorator::plasmaThemeChanged ()
 {
     if (mSwitcher)
     {
-	WId win = mSwitcher->xid();
+	WId win = mSwitcher->xid ();
 	delete mSwitcher;
 	mSwitcher = new Switcher (mCompositeWindow, win);
     }

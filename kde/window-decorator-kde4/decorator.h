@@ -139,7 +139,7 @@ class Decorator:public KApplication {
 
     public slots:
 	void reconfigure (void);
-	
+
     private:
 	WId fetchFrame (WId window);
 	void updateShadow (void);

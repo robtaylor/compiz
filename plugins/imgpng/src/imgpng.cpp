@@ -95,7 +95,7 @@ PngScreen::readPngData (png_struct *png,
 	png_set_gray_1_2_4_to_8 (png);
 
     /* transform transparency to alpha */
-    if (png_get_valid(png, info, PNG_INFO_tRNS))
+    if (png_get_valid (png, info, PNG_INFO_tRNS))
 	png_set_tRNS_to_alpha (png);
 
     if (depth == 16)

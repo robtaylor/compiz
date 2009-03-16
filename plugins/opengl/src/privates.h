@@ -42,7 +42,7 @@ class GLIcon
 {
     public:
 	GLIcon () : icon (NULL) {};
-	
+
 	CompIcon        *icon;
 	GLTexture::List textures;
 };
@@ -135,7 +135,7 @@ class PrivateGLWindow :
 	void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	void moveNotify (int dx, int dy, bool now);
 	void updateFrameRegion (CompRegion &region);
-	
+
 	void setWindowMatrix ();
 	void updateWindowRegions ();
 
@@ -148,9 +148,9 @@ class PrivateGLWindow :
 	GLTexture::MatrixList matrices;
 	CompRegion::Vector    regions;
 	bool                  updateReg;
-	
+
 	CompRegion    clip;
-	
+
 	bool	      bindFailed;
 	bool	      overlayWindow;
 

@@ -62,10 +62,10 @@ class Window:public QWidget, public KDecorationBridgeUnstable {
 	~Window (void);
 
 	// unsable API part
-        virtual void repaintShadow();
-        virtual bool compositingActive() const;
-        virtual bool shadowsActive() const;
-        virtual double opacity() const;
+        virtual void repaintShadow ();
+        virtual bool compositingActive () const;
+        virtual bool shadowsActive () const;
+        virtual double opacity () const;
 
         // stable API part;
 	virtual bool isActive (void) const;
@@ -212,9 +212,8 @@ class Window:public QWidget, public KDecorationBridgeUnstable {
 	    }
 	    return QWidget::childAt (x, y);
 	}
-	
 
-	virtual bool eventFilter( QObject* o, QEvent* e );
+	virtual bool eventFilter (QObject *o, QEvent *e);
 
     private:
 	bool resizeDecoration (bool force = false);

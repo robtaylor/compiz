@@ -61,7 +61,7 @@ class Switcher
 				 int bottomOffset,
 				 int leftOffset,
 				 int rightOffset);
- 	void redrawPixmap ();
+	void redrawPixmap ();
 
     private:
 

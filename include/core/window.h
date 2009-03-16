@@ -190,7 +190,8 @@ struct CompStruts {
     XRectangle bottom;
 };
 
-class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
+class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
+{
     public:
 	virtual void getOutputExtents (CompWindowExtents& output);
 
@@ -208,7 +209,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface> {
 	virtual void resizeNotify (int dx, int dy, int dwidth, int dheight);
 	virtual void moveNotify (int dx, int dy, bool immediate);
 	virtual void windowNotify (CompWindowNotify n);
-	
+
 	virtual void grabNotify (int x, int y,
 				 unsigned int state, unsigned int mask);
 	virtual void ungrabNotify ();
@@ -222,11 +223,10 @@ class CompWindow :
     public WrapableHandler<WindowInterface, 13>,
     public PluginClassStorage
 {
-
     public:
 
-	class Geometry : public CompRect {
-
+	class Geometry : public CompRect
+    {
 	    public:
 		Geometry ();
 		Geometry (int, int, unsigned int, unsigned int, unsigned int);
@@ -240,18 +240,14 @@ class CompWindow :
 		unsigned int mBorder;
 	};
 
-
-
 	typedef boost::function<void (CompWindow *)> ForEach;
-
 	typedef std::map<Window, CompWindow *> Map;
-	
+
     public:
 	CompWindow *next;
 	CompWindow *prev;
 
     public:
-
 	CompWindow (Window     id,
 	            Window     aboveId);
 	~CompWindow ();
@@ -266,7 +262,7 @@ class CompWindow :
 	unsigned int width () const;
 	unsigned int height () const;
 	CompSize size () const;
-	
+
 	Geometry & serverGeometry () const;
 
 	int serverX () const;
@@ -289,13 +285,13 @@ class CompWindow :
 	void setWindowFrameExtents (CompWindowExtents *input);
 
 	unsigned int & wmType ();
-	
+
 	unsigned int type ();
-	
+
 	unsigned int & state ();
-	
+
 	unsigned int actions ();
-	
+
 	unsigned int & protocols ();
 
 	void close (Time serverTime);
@@ -347,7 +343,7 @@ class CompWindow :
 	void unmap ();
 
 	bool resize (XWindowAttributes);
-	
+
 	bool resize (Geometry);
 
 	bool resize (int x, int y, unsigned int width, unsigned int height,
@@ -451,7 +447,7 @@ class CompWindow :
 				     int height,
 				     int *newWidth,
 				     int *newHeight);
-	
+
 	static unsigned int constrainWindowState (unsigned int state,
 						  unsigned int actions);
 
@@ -485,7 +481,7 @@ class CompWindow :
 	friend class PrivateWindow;
 	friend class CompScreen;
 	friend class PrivateScreen;
-	
+
     private:
 	PrivateWindow *priv;
 };

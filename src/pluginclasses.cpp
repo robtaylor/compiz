@@ -30,7 +30,7 @@
 PluginClassStorage::PluginClassStorage (PluginClassStorage::Indices& iList) :
     pluginClasses (0)
 {
-    if (iList.size() > 0)
+    if (iList.size () > 0)
 	pluginClasses.resize (iList.size ());
 }
 
