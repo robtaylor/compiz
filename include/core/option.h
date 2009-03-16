@@ -76,6 +76,8 @@ class CompOption {
 		Value (Type type, const Vector& l);
 		~Value ();
 
+		Type type () const;
+
 		void set (const bool b);
 		void set (const int i);
 		void set (const float f);

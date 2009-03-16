@@ -108,6 +108,11 @@ CompOption::Value::Value (CompOption::Type type, const Vector& l) :
     set (type, l);
 }
 
+CompOption::Type
+CompOption::Value::type () const
+{
+    return priv->type;
+}
 
 void
 CompOption::Value::set (const bool b)
@@ -716,6 +721,15 @@ CompOption::set (CompOption::Value &val)
 {
     if (isAction () && priv->type != CompOption::TypeAction)
 	val.action ().copyState (priv->value.action ());
+
+    if (priv->type != val.type () &&
+	(!isAction () || !checkIsAction (val.type ())))
+    {
+	compLogMessage ("core", CompLogLevelWarn,
+			"Can't set Value with type %d to option \"%s\" with type %d",
+			val.type (), priv->name.c_str(), priv->type);
+	return false;
+    }
 
     if (priv->value == val)
 	return false;
