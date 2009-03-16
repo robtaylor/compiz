@@ -37,10 +37,7 @@ set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
 set (ALL_LINGUAS af ar bg bn bn_IN bs ca cs cy da de el en_GB en_US es eu et fi fr gl gu he hi hr hu id it ja ka km ko lo lt mk mr nb nl or pa pl pt pt_BR ro ru sk sl sr sv ta tr uk vi xh zh_CN zh_TW zu)
 set (GETTEXT_PACKAGE compiz)
 
-find_package (Boost)
-if (NOT Boost_FOUND OR Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 34)
-    message (FATAL_ERROR "Boost version >= 1.34.0 needed")
-endif (NOT Boost_FOUND OR Boost_MAJOR_VERSION EQUAL 1 AND Boost_MINOR_VERSION LESS 34)
+find_package (Boost 1.34.0 REQUIRED)
 
 set (COMPIZ_REQUIRES
     xdamage
