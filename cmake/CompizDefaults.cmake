@@ -12,4 +12,4 @@ set (COMPIZ_GCONF_SCHEMAS_XSLT ${CMAKE_SOURCE_DIR}/xslt/compiz_gconf_schemas.xsl
 
 set (COMPIZ_PLUGIN_INSTALL_TYPE "package")
 
-set (COMPIZ_INTERNAL 1)
+set (_COMPIZ_INTERNAL 1)
