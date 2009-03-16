@@ -475,9 +475,9 @@ inline void
 </xsl:text>
         <xsl:text>    action.setState (state | CompAction::StateInitKey);
 </xsl:text>
-        <xsl:if test="./text() and ./text() != 'disabled'">
+        <xsl:if test="default/text() and default/text() != 'disabled'">
             <xsl:text>    action.keyFromString ("</xsl:text>
-            <xsl:value-of select="./text()"/>
+            <xsl:value-of select="default/text()"/>
             <xsl:text>");
 </xsl:text>
         </xsl:if>
@@ -493,9 +493,9 @@ inline void
 </xsl:text>
         <xsl:text>    action.setState (state | CompAction::StateInitButton);
 </xsl:text>
-        <xsl:if test="./text() and ./text() != 'disabled'">
+        <xsl:if test="default/text() and default/text() != 'disabled'">
             <xsl:text>    action.buttonFromString ("</xsl:text>
-            <xsl:value-of select="./text()"/>
+            <xsl:value-of select="default/text()"/>
             <xsl:text>");
 </xsl:text>
         </xsl:if>
@@ -514,7 +514,7 @@ inline void
         <xsl:text>    edge = 0;
 </xsl:text>
 
-        <xsl:for-each select="./edge">
+        <xsl:for-each select="default/edge">
             <xsl:choose>
                 <xsl:when test="@name = 'Left'">
                     <xsl:text>    edge |= 1;
@@ -565,7 +565,7 @@ inline void
 </xsl:text>
         <xsl:text>    action.setState (state | CompAction::StateInitButton);
 </xsl:text>
-        <xsl:if test="./text() and ./text() = 'true'">
+        <xsl:if test="default/text() and default/text() = 'true'">
             <xsl:text>    action.setBell (true);
 </xsl:text>
         </xsl:if>
@@ -577,9 +577,7 @@ inline void
 
      <xsl:template name="initListValue">
         <xsl:param name="value"/>
-	<xsl:value-of select="$value"/>
-        <xsl:text>.list ().clear ();
-    list.clear ();
+        <xsl:text>    list.clear ();
 </xsl:text>
         <xsl:for-each select="./value">
             <xsl:choose>
@@ -1141,6 +1139,50 @@ bool
 	    <xsl:call-template name="printOptionsEnumName"/>
 	    <xsl:text>]</xsl:text>
         </xsl:variable>
+        <xsl:value-of select="$opt"/>
+        <xsl:text>.setName ("</xsl:text>
+        <xsl:value-of select="@name"/>
+        <xsl:text>", </xsl:text>
+        <xsl:choose>
+	    <xsl:when test="@type = 'bool'">
+		<xsl:text>CompOption::TypeBool</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'int'">
+		<xsl:text>CompOption::TypeInt</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'float'">
+		<xsl:text>CompOption::TypeFloat</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'string'">
+		<xsl:text>CompOption::TypeString</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'color'">
+		<xsl:text>CompOption::TypeColor</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'action'">
+		<xsl:text>CompOption::TypeAction</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'key'">
+		<xsl:text>CompOption::TypeKey</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'button'">
+		<xsl:text>CompOption::TypeButton</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'edge'">
+		<xsl:text>CompOption::TypeEdge</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'bell'">
+		<xsl:text>CompOption::TypeBell</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'match'">
+		<xsl:text>CompOption::TypeMatch</xsl:text>
+	    </xsl:when>
+	    <xsl:when test="@type = 'list'">
+		<xsl:text>CompOption::TypeList</xsl:text>
+	    </xsl:when>
+	</xsl:choose>
+	<xsl:text>);
+</xsl:text>
             <xsl:choose>
                 <xsl:when test="@type='bool'">
                     <xsl:for-each select="./default[1]">
@@ -1214,17 +1256,21 @@ bool
                 </xsl:when>
                 <xsl:when test="@type='action'">
                     <xsl:call-template name="initActionState"/>
+                    <xsl:call-template name="initActionValue">
+                        <xsl:with-param name="value">
+                            <xsl:value-of select="$opt"/>
+                            <xsl:text>.value()</xsl:text>
+			</xsl:with-param>
+                    </xsl:call-template>
                 </xsl:when>
                 <xsl:when test="@type='key'">
 		    <xsl:call-template name="initActionState"/>
-		    <xsl:for-each select="./default[1]">
                     <xsl:call-template name="initKeyValue">
                         <xsl:with-param name="value">
                             <xsl:value-of select="$opt"/>
                             <xsl:text>.value()</xsl:text>
 			</xsl:with-param>
                     </xsl:call-template>
-                    </xsl:for-each>
                     <xsl:if test="not (./passive_grab/text() = 'false')">
                         <xsl:text>    screen->addAction (&amp;</xsl:text>
                         <xsl:text>mOptions[</xsl:text>
@@ -1235,14 +1281,12 @@ bool
                 </xsl:when>
                 <xsl:when test="@type='button'">
                     <xsl:call-template name="initActionState"/>
-                    <xsl:for-each select="./default[1]">
                     <xsl:call-template name="initButtonValue">
                         <xsl:with-param name="value">
                             <xsl:value-of select="$opt"/>
                             <xsl:text>.value()</xsl:text>
 			</xsl:with-param>
                     </xsl:call-template>
-                    </xsl:for-each>
                     <xsl:if test="not (./passive_grab/text() = 'false')">
                         <xsl:text>    screen->addAction (&amp;</xsl:text>
                         <xsl:text>mOptions[</xsl:text>
@@ -1253,14 +1297,12 @@ bool
                 </xsl:when>
                 <xsl:when test="@type='edge'">
                     <xsl:call-template name="initActionState"/>
-                    <xsl:for-each select="./default[1]">
                     <xsl:call-template name="initEdgeValue">
                         <xsl:with-param name="value">
                             <xsl:value-of select="$opt"/>
                             <xsl:text>.value()</xsl:text>
 			</xsl:with-param>
                     </xsl:call-template>
-                    </xsl:for-each>
                     <xsl:if test="not (./passive_grab/text() = 'false')">
                         <xsl:text>    screen->addAction (&amp;</xsl:text>
                         <xsl:text>mOptions[</xsl:text>
@@ -1271,14 +1313,12 @@ bool
                 </xsl:when>
                 <xsl:when test="@type='bell'">
                     <xsl:call-template name="initActionState"/>
-                    <xsl:for-each select="./default[1]">
                     <xsl:call-template name="initBellValue">
                         <xsl:with-param name="value">
                             <xsl:value-of select="$opt"/>
                             <xsl:text>.value()</xsl:text>
 			</xsl:with-param>
                     </xsl:call-template>
-                    </xsl:for-each>
                     <xsl:if test="not (./passive_grab/text() = 'false')">
                         <xsl:text>    screen->addAction (&amp;</xsl:text>
                         <xsl:text>mOptions[</xsl:text>
