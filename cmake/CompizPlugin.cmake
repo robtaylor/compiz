@@ -360,12 +360,14 @@ function (_build_compiz_plugin plugin)
             ${CMAKE_BINARY_DIR}/generated
             ${${_PLUGIN}_LOCAL_INCDIRS}
             ${${_PLUGIN}_PKG_INCDIRS}
+            ${${_PLUGIN}_INCDIRS}
             ${COMPIZ_INCLUDE_DIRS}
 	)
 
 	link_directories (
             ${COMPIZ_LINK_DIRS}
             ${${_PLUGIN}_PKG_LIBDIRS}
+            ${${_PLUGIN}_LIBDIRS}
 	)
 
 	add_library (
@@ -387,6 +389,7 @@ function (_build_compiz_plugin plugin)
 	    ${plugin} ${COMPIZ_LIBRARIES}
 		      ${${_PLUGIN}_LOCAL_LIBRARIES}
 		      ${${_PLUGIN}_PKG_LIBRARIES}
+		      ${${_PLUGIN}_LIBRARIES}
 	)
 
 	install (
