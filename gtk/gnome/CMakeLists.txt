@@ -29,9 +29,9 @@ if (USE_GNOME)
         ${CMAKE_CURRENT_SOURCE_DIR}/compiz-wm.desktop.in
         ${wmproperties_file}
     )
-    install (
-	FILES ${wmproperties_file}
-	DESTINATION ${windowsettingsdatadir}/gnome/wm-properties
+    compiz_opt_install_file (
+	${wmproperties_file}
+	${windowsettingsdatadir}/gnome/wm-properties/compiz-wm.desktop
     )
 
 
@@ -48,9 +48,13 @@ if (USE_GNOME)
 	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-desktop-key.xml
 	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-key.xml
 	)
-	install (
-	    FILES ${key_xml}
-	    DESTINATION ${keybindingsdir}
+	compiz_opt_install_file (
+	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-desktop-key.xml
+	    ${keybindingsdir}/50-compiz-desktop-key.xml
+	)
+	compiz_opt_install_file (
+	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-key.xml
+	    ${keybindingsdir}/50-compiz-key.xml
 	)
     endif (USE_GNOME_KEYBINDINGS)
 
@@ -62,8 +66,10 @@ if (USE_GNOME)
 	${wmproperties_file}
     )
 
+
     set_target_properties (gnome-compiz
 	PROPERTIES OUTPUT_NAME compiz
+	SKIP_BUILD_RPATH 1
     )
 
     target_link_libraries (
@@ -72,7 +78,11 @@ if (USE_GNOME)
 
     install (
 	TARGETS gnome-compiz
-	DESTINATION ${windowsettingslibdir}/window-manager-settings
+	DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
     )
 
+    compiz_opt_install_file (
+	${CMAKE_CURRENT_BINARY_DIR}/libcompiz.so
+	${windowsettingslibdir}/window-manager-settings/libcompiz.so
+    )
 endif (USE_GNOME)

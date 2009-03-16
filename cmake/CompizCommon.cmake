@@ -165,6 +165,23 @@ function (compiz_translate_desktop_file _src _dst)
     endif ()
 endfunction ()
 
+#### optional file install
+
+function (compiz_opt_install_file _src _dst)
+    install (CODE
+        "message (\"-- Installing: ${_dst}\")
+         execute_process (
+	    COMMAND ${CMAKE_COMMAND} -E copy_if_different \"${_src}\" \"${_dst}\"
+	    RESULT_VARIABLE _result
+	    OUTPUT_QUIET ERROR_QUIET
+	 )
+	 if (_result)
+	     message (\"-- Failed to install: ${_dst}\")
+	 endif ()
+        "
+    )
+endfunction ()
+
 #### uninstall
 
 macro (compiz_add_uninstall)
