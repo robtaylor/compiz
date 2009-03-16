@@ -1,4 +1,3 @@
-
 if (USE_GNOME)
 
     include_directories (
@@ -16,7 +15,7 @@ if (USE_GNOME)
     )
 
     set (desktop_file ${CMAKE_CURRENT_BINARY_DIR}/compiz.desktop)
-    translate_desktop_file (
+    compiz_translate_desktop_file (
         ${CMAKE_CURRENT_SOURCE_DIR}/compiz.desktop.in
         ${desktop_file}
     )
@@ -26,7 +25,7 @@ if (USE_GNOME)
     )
 
     set (wmproperties_file ${CMAKE_CURRENT_BINARY_DIR}/compiz-wm.desktop)
-    translate_desktop_file (
+    compiz_translate_desktop_file (
         ${CMAKE_CURRENT_SOURCE_DIR}/compiz-wm.desktop.in
         ${wmproperties_file}
     )
@@ -37,11 +36,11 @@ if (USE_GNOME)
 
 
     if (USE_GNOME_KEYBINDINGS)
-        translate_xml (
+        compiz_translate_xml (
 	    ${CMAKE_CURRENT_SOURCE_DIR}/50-compiz-desktop-key.xml.in
 	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-desktop-key.xml
 	)
-	translate_xml (
+	compiz_translate_xml (
 	    ${CMAKE_CURRENT_SOURCE_DIR}/50-compiz-key.xml.in
 	    ${CMAKE_CURRENT_BINARY_DIR}/50-compiz-key.xml
 	)

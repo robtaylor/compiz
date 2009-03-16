@@ -86,7 +86,7 @@ endfunction ()
 
 include (FindPkgConfig)
 
-set (PKGCONFIG_REGEX ".*${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:${CMAKE_INSTALL_PREFIX}/share/pkgconfig.*")
+set (PKGCONFIG_REGEX ".*\${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:\${CMAKE_INSTALL_PREFIX}/share/pkgconfig.*")
 
 # add install prefix to pkgconfig search path if needed
 if (NOT "$ENV{PKG_CONFIG_PATH}" MATCHES "${PKGCONFIG_REGEX}")
