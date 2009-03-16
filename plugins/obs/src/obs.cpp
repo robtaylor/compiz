@@ -246,33 +246,25 @@ ObsScreen::setOption (const CompString  &name,
 		      CompOption::Value &value)
 {
     CompOption   *o;
-    unsigned  int i;
+    unsigned int i;
 
-    bool rv = ObsOptions::setOption (name, value);
+    if (!ObsOptions::setOption (name, value))
+	return false;
 
     o = CompOption::findOption (getOptions (), name, NULL);
-    if (!o || !rv)
+    if (!o)
         return false;
 
     for (i = 0; i < MODIFIER_COUNT; i++)
     {
-	if (o == matchOptions[i])
-	{
-	    foreach (CompOption::Value &item, o->value ().list ())
-		item.match ().update ();
-
-	    foreach (CompWindow *w, screen->windows ())
-		ObsWindow::get (w)->updatePaintModifier (i);
-
-	}
-	else if (o == valueOptions[i])
+	if (o == matchOptions[i] || o == valueOptions[i])
 	{
 	    foreach (CompWindow *w, screen->windows ())
 		ObsWindow::get (w)->updatePaintModifier (i);
 	}
     }
 
-    return rv;
+    return true;
 }
 
 ObsWindow::ObsWindow (CompWindow *w) :

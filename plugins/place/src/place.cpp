@@ -27,8 +27,6 @@ COMPIZ_PLUGIN_20090315 (place, PlacePluginVTable)
 PlaceScreen::PlaceScreen (CompScreen *screen) :
     PluginClassHandler<PlaceScreen, CompScreen> (screen)
 {
-    optionSetPositionMatchesNotify (boost::bind (&PlaceScreen::updateMatches, this, PlaceOptions::PositionMatches));
-    optionSetViewportMatchesNotify (boost::bind (&PlaceScreen::updateMatches, this, PlaceOptions::ViewportMatches));
     ScreenInterface::setHandler (screen);
 }
 
@@ -116,13 +114,6 @@ PlaceScreen::handleEvent (XEvent *event)
     }
 
     screen->handleEvent (event);
-}
-
-void
-PlaceScreen::updateMatches (unsigned int opt)
-{
-    foreach (CompOption::Value &ov, mOptions[opt].value ().list ())
-	ov.match ().update ();
 }
 
 /* sort functions */

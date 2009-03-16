@@ -41,8 +41,6 @@ class PlaceScreen :
 	PlaceScreen (CompScreen *screen);
 	~PlaceScreen ();
 
-	void updateMatches (unsigned int opt);
-
 	void handleEvent (XEvent *event);
 	void handleScreenSizeChange (int width, int height);
 };

@@ -567,7 +567,6 @@ MatchGroupOp::operator= (const MatchGroupOp &gr)
 	}
     }
 }
-	
 
 PrivateMatch::PrivateMatch () :
     op ()
@@ -584,14 +583,15 @@ CompMatch::CompMatch (const CompString str) :
     priv (new PrivateMatch ())
 {
     matchAddFromString (priv->op.op, str);
+    update ();
 }
 
 CompMatch::CompMatch (const CompMatch &match) :
     priv (new PrivateMatch ())
 {
     priv->op = match.priv->op;
+    update ();
 }
-	
 
 CompMatch::~CompMatch ()
 {
@@ -627,6 +627,8 @@ CompMatch &
 CompMatch::operator= (const CompMatch &match)
 {
     priv->op = match.priv->op;
+    update ();
+
     return *this;
 }
 
@@ -641,6 +643,7 @@ CompMatch::operator&= (const CompMatch &match)
     priv->op = MatchGroupOp ();
     priv->op.op.push_back (g1);
     priv->op.op.push_back (g2);
+    update ();
 
     return *this;
 }
@@ -654,6 +657,7 @@ CompMatch::operator|= (const CompMatch &match)
     priv->op = MatchGroupOp ();
     priv->op.op.push_back (g1);
     priv->op.op.push_back (g2);
+    update ();
 
     return *this;
 }
@@ -678,6 +682,7 @@ CompMatch::operator! ()
     g->flags ^= MATCH_OP_NOT_MASK;
     priv->op = MatchGroupOp ();
     priv->op.op.push_back (g);
+    update ();
 
     return *this;
 }
@@ -687,6 +692,7 @@ CompMatch::operator= (const CompString &str)
 {
     priv->op = MatchGroupOp ();
     matchAddFromString (priv->op.op, str);
+    update ();
 
     return *this;
 }
