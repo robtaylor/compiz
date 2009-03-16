@@ -68,6 +68,8 @@ static unsigned int virtualModMask[] = {
 
 bool inHandleEvent = false;
 
+bool screenInitalized = false;
+
 CompScreen *targetScreen = NULL;
 CompOutput *targetOutput;
 
@@ -736,7 +738,7 @@ PrivateScreen::setOption (const CompString  &name,
 	    if (optionGetVsize () * screen->height () > MAXSHORT)
 		return false;
 
-	    setVirtualScreenSize (optionGetHsize (), optionGetHsize ());
+	    setVirtualScreenSize (optionGetHsize (), optionGetVsize ());
 	    break;
 	case CoreOptions::NumberOfDesktops:
 	    setNumberOfDesktops (optionGetNumberOfDesktops ());
@@ -1964,7 +1966,7 @@ PrivateScreen::detectOutputDevices ()
 	}
 
 	mOptions[CoreOptions::DetectOutputs].value ().set (false);
-	screen->setOptionForPlugin ("core", "detect_outputs", value);
+	screen->setOptionForPlugin ("core", "outputs", value);
 	mOptions[CoreOptions::DetectOutputs].value ().set (true);
 
     }
@@ -3049,7 +3051,7 @@ PrivateScreen::addScreenActions ()
 bool
 CompScreen::addAction (CompAction *action)
 {
-    if (!priv->initialized)
+    if (!screenInitalized || !priv->initialized)
 	return false;
 
     if (action->type () & CompAction::BindingTypeKey)
@@ -4101,10 +4103,12 @@ CompScreen::screenInfo ()
 }
 
 CompScreen::CompScreen ():
-    PluginClassStorage (screenPluginClassIndices)
+    PluginClassStorage (screenPluginClassIndices),
+    priv (NULL)
 {
     priv = new PrivateScreen (this);
     assert (priv);
+    screenInitalized = true;
 }
 
 bool
