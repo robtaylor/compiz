@@ -107,13 +107,3 @@ class PlacePluginVTable :
     public:
 	bool init ();
 };
-
-typedef enum {
-    NoPlacement = 0,
-    PlaceOnly,
-    ConstrainOnly,
-    PlaceAndConstrain,
-    PlaceOverParent,
-    PlaceCenteredOnScreen
-} PlacementStrategy;
-
