@@ -645,7 +645,7 @@ PrivateCompositeScreen::detectRefreshRate ()
 	    value.set ((int) 50);
 
 	mOptions[CompositeOptions::DetectRefreshRate].value ().set (false);
-	screen->setOptionForPlugin ("composite", "detect_refresh_rate", value);
+	screen->setOptionForPlugin ("composite", "refresh_rate", value);
 	mOptions[CompositeOptions::DetectRefreshRate].value ().set (true);
     }
     else
