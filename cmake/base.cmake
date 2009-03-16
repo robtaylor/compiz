@@ -42,12 +42,11 @@ function (_check_compiz_cmake_macro)
         message ("It should be installed to allow building of external compiz packages.")
         message ("Call \"sudo make findcompiz_install\" to install it.\n")
         compiz_print_configure_footer ()
-
-        add_custom_target (
-            findcompiz_install
-	    ${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${CMAKE_ROOT}/Modules
-	)
     endif ()
+    add_custom_target (
+        findcompiz_install
+	${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${CMAKE_ROOT}/Modules
+    )
 endfunction ()
 
 set (PKGCONFIG_REGEX ".*\${CMAKE_INSTALL_PREFIX}/lib/pkgconfig:\${CMAKE_INSTALL_PREFIX}/share/pkgconfig.*")
