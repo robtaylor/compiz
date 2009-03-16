@@ -3628,7 +3628,7 @@ PrivateScreen::setNumberOfDesktops (unsigned int nDesktop)
 	    continue;
 
 	if (w->desktop () >= nDesktop)
-	    w->priv->setDesktop (nDesktop - 1);
+	    w->setDesktop (nDesktop - 1);
     }
 
     priv->nDesktop = nDesktop;

@@ -1143,7 +1143,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		    if (type & (CompWindowTypeDockMask |
 				CompWindowTypeDesktopMask))
-			w->priv->setDesktop (0xffffffff);
+			w->setDesktop (0xffffffff);
 
 		    priv->updateClientList ();
 
@@ -1473,7 +1473,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (event->xclient.window);
 	    if (w)
-		w->priv->setDesktop (event->xclient.data.l[0]);
+		w->setDesktop (event->xclient.data.l[0]);
 	}
 	else if (event->xclient.message_type == Atoms::wmFullscreenMonitors)
 	{

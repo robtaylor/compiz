@@ -3954,7 +3954,7 @@ CompWindow::onCurrentDesktop ()
 }
 
 void
-PrivateWindow::setDesktop (unsigned int desktop)
+CompWindow::setDesktop (unsigned int desktop)
 {
     if (desktop != 0xffffffff)
     {
@@ -3971,9 +3971,9 @@ PrivateWindow::setDesktop (unsigned int desktop)
     priv->desktop = desktop;
 
     if (desktop == 0xffffffff || desktop == screen->currentDesktop ())
-	window->show ();
+	show ();
     else
-	window->hide ();
+	hide ();
 
     screen->setWindowProp (priv->id, Atoms::winDesktop, priv->desktop);
 }
@@ -4504,7 +4504,7 @@ PrivateWindow::applyStartupProperties (CompStartupSequence *s)
 
     workspace = sn_startup_sequence_get_workspace (s->sequence);
     if (workspace >= 0)
-	setDesktop (workspace);
+	window->setDesktop (workspace);
 
     priv->initialTimestamp    =
 	sn_startup_sequence_get_timestamp (s->sequence);
@@ -4758,7 +4758,7 @@ CompWindow::CompWindow (Window id,
 		if (priv->wmType & (CompWindowTypeDockMask |
 				 CompWindowTypeDesktopMask))
 		{
-		    priv->setDesktop (0xffffffff);
+		    setDesktop (0xffffffff);
 		}
 		else
 		{

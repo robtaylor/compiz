@@ -176,8 +176,6 @@ class PrivateWindow {
 
 	void freeIcons ();
 
-	void setDesktop (unsigned int desktop);
-
 	void updateMwmHints ();
 
 	void updateStartupId ();

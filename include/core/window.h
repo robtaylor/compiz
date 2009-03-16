@@ -399,6 +399,8 @@ class CompWindow :
 
 	int outputDevice ();
 
+	void setDesktop (unsigned int desktop);
+
 	bool onCurrentDesktop ();
 
 	bool onAllViewports ();
