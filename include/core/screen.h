@@ -58,7 +58,7 @@ extern int pointerY;
 #define NOTIFY_MOVE_MASK   (1 << 2)
 #define NOTIFY_MODIFY_MASK (1 << 3)
 
-typedef boost::function<void ()> FdWatchCallBack;
+typedef boost::function<void (short int)> FdWatchCallBack;
 typedef boost::function<void (const char *)> FileWatchCallBack;
 
 typedef int CompFileWatchHandle;

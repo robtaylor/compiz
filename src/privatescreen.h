@@ -133,8 +133,6 @@ class PrivateScreen : public CoreOptions {
 
 	void updatePassiveGrabs ();
 
-	short int watchFdEvents (CompWatchFdHandle handle);
-
 	int doPoll (int timeout);
 
 	void handleTimers (struct timeval *tv);

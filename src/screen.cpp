@@ -376,20 +376,6 @@ CompScreen::eraseValue (CompString key)
     }
 }
 
-short int
-PrivateScreen::watchFdEvents (CompWatchFdHandle handle)
-{
-    std::list<CompWatchFd *>::iterator it;
-    int                                i;
-
-    for (it = watchFds.begin (), i = nWatchFds - 1; it != watchFds.end ();
-	 it++, i--)
-	if ((*it)->handle == handle)
-	    return watchPollFds[i].revents;
-
-    return 0;
-}
-
 int
 PrivateScreen::doPoll (int timeout)
 {
@@ -405,7 +391,7 @@ PrivateScreen::doPoll (int timeout)
 	    it++, i--)
 	{
 	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
-		(*it)->callBack ();
+		(*it)->callBack (watchPollFds[i].revents);
 	}
     }
 
