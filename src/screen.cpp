@@ -152,7 +152,7 @@ CompScreen::eventLoop ()
 		while (it != priv->timers.end ())
 		{
 		    t = (*it);
-		    if (t->mMinLeft <= time)
+		    if (t->mMinLeft >= time)
 			break;
 		    if (t->mMaxLeft < time)
 			time = t->mMaxLeft;
