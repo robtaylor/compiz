@@ -385,7 +385,7 @@ function (_build_compiz_plugin plugin)
 	    ${plugin} PROPERTIES
 	    INSTALL_RPATH_USE_LINK_PATH 1
             BUILD_WITH_INSTALL_RPATH 1
-            CMAKE_SKIP_BUILD_RPATH 0
+            SKIP_BUILD_RPATH 0
 	    COMPILE_FLAGS "${${_PLUGIN}_CFLAGSADD}"
 	    LINK_FLAGS "${${_PLUGIN}_LDFLAGSADD}"
 	)
