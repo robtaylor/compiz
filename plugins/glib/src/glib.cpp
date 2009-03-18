@@ -27,7 +27,6 @@
 
 COMPIZ_PLUGIN_20090315 (glib, GlibPluginVTable);
 
-
 GlibScreen::GlibScreen (CompScreen *screen) :
     PluginClassHandler <GlibScreen, CompScreen> (screen),
     mFds (0),
@@ -94,18 +93,17 @@ GlibScreen::prepare (GMainContext *context)
 	    if (mWatch)
 		delete mWatch;
 
-	    mFds = new GPollFD [nFds]; malloc ((sizeof (GPollFD) + sizeof (GLibWatch)) * nFds);
+	    mFds = new GPollFD [nFds];
 	    if (!mFds)
 	    {
-		nFds = 0;
+		mFdsSize = 0;
 		break;
 	    }
 
-	    mWatch   = new GLibWatch [nFds];
-
+	    mWatch = new GLibWatch [nFds];
 	    if (!mWatch)
 	    {
-		nFds = 0;
+		mFdsSize = 0;
 		break;
 	    }
 
@@ -155,7 +153,8 @@ GlibScreen::wakeup ()
 }
 
 void
-GlibScreen::collectEvents (short int revents, GLibWatch   *w)
+GlibScreen::collectEvents (short int revents,
+			   GLibWatch *w)
 {
     mFds[w->index].revents |= revents;
 
