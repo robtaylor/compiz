@@ -274,6 +274,12 @@ class CompWindow :
 	unsigned int serverHeight () const;
 	const CompSize serverSize () const;
 
+	/* includes decorations */
+	CompRect inputRect () const;
+
+	/* includes decorations and shadows */
+	CompRect outputRect () const;
+
 	Window id ();
 	Window frame ();
 
