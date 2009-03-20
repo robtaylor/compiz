@@ -276,9 +276,11 @@ class CompWindow :
 
 	/* includes decorations */
 	CompRect inputRect () const;
+	CompRect serverInputRect () const;
 
 	/* includes decorations and shadows */
 	CompRect outputRect () const;
+	CompRect serverOutputRect () const;
 
 	Window id ();
 	Window frame ();

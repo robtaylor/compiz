@@ -173,6 +173,17 @@ CompWindow::inputRect () const
 }
 
 CompRect
+CompWindow::serverInputRect () const
+{
+    return CompRect (priv->serverGeometry.x () - priv->input.left,
+		     priv->serverGeometry.y () - priv->input.top,
+		     priv->serverGeometry.width () +
+		     priv->input.left + priv->input.right,
+		     priv->serverGeometry.height () +
+		     priv->input.top + priv->input.bottom);
+}
+
+CompRect
 CompWindow::outputRect () const
 {
     return CompRect (priv->geometry.x () - priv->output.left,
@@ -180,5 +191,16 @@ CompWindow::outputRect () const
 		     priv->geometry.width () +
 		     priv->output.left + priv->output.right,
 		     priv->geometry.height () +
+		     priv->output.top + priv->output.bottom);
+}
+
+CompRect
+CompWindow::serverOutputRect () const
+{
+    return CompRect (priv->serverGeometry.x () - priv->output.left,
+		     priv->serverGeometry.y () - priv->output.top,
+		     priv->serverGeometry.width () +
+		     priv->output.left + priv->output.right,
+		     priv->serverGeometry.height () +
 		     priv->output.top + priv->output.bottom);
 }
