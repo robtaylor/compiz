@@ -76,33 +76,30 @@ PrivateGLWindow::~PrivateGLWindow ()
 void
 PrivateGLWindow::setWindowMatrix ()
 {
+    CompRect input (window->inputRect ());
+
     if (textures.size () != matrices.size ())
 	matrices.resize (textures.size ());
 
     for (unsigned int i = 0; i < textures.size (); i++)
     {
 	matrices[i] = textures[i]->matrix ();
-	matrices[i].x0 -= ((window->geometry ().x () - window->input ().left) *
-			   matrices[i].xx);
-	matrices[i].y0 -= ((window->geometry ().y () - window->input ().top) *
-			   matrices[i].yy);
+	matrices[i].x0 -= (input.x () * matrices[i].xx);
+	matrices[i].y0 -= (input.y () * matrices[i].yy);
     }
 }
 
 bool
 GLWindow::bind ()
 {
-    CompWindowExtents i = priv->window->input ();
+    CompRect input (priv->window->inputRect ());
 
     if (!priv->cWindow->pixmap () && !priv->cWindow->bind ())
 	return false;
 
     priv->textures =
 	GLTexture::bindPixmapToTexture (priv->cWindow->pixmap (),
-				        priv->window->size ().width () +
-					i.left + i.right,
-					priv->window->size ().height () +
-					i.top + i.bottom,
+					input.width (), input.height (),
 					priv->window->depth ());
     if (priv->textures.empty ())
     {
@@ -342,13 +339,14 @@ PrivateGLWindow::updateFrameRegion (CompRegion &region)
 void
 PrivateGLWindow::updateWindowRegions ()
 {
+    CompRect input (window->inputRect ());
+
     if (regions.size () != textures.size ())
 	regions.resize (textures.size ());
     for (unsigned int i = 0; i < textures.size (); i++)
     {
 	regions[i] = CompRegion (*textures[i]);
-	regions[i].translate (window->geometry ().x () - window->input ().left,
-			      window->geometry ().y () - window->input ().top);
+	regions[i].translate (input.x (), input.y ());
 	regions[i] &= window->region ();
     }
     updateReg = false;

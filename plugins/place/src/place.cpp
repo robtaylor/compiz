@@ -34,15 +34,6 @@ PlaceScreen::~PlaceScreen ()
 {
 }
 
-static CompRect
-getWindowExtentsRect (CompWindow *w)
-{
-    return CompRect (w->serverX () - w->input ().left,
-		     w->serverY () - w->input ().top,
-		     w->serverWidth () + w->input ().left + w->input ().right,
-		     w->serverHeight () + w->input ().top + w->input ().bottom);
-}
-
 void
 PlaceScreen::handleScreenSizeChange (int width,
 				     int height)
@@ -62,7 +53,7 @@ PlaceScreen::handleScreenSizeChange (int width,
 	    continue;
 
 	mask = 0;
-	extents = getWindowExtentsRect (w);
+	extents = w->serverInputRect ();
 
 	vpX = extents.x () / screen->width ();
 	if (extents.x () < 0)
@@ -785,7 +776,7 @@ rectOverlapsWindow (const CompRect       &rect,
 	case CompWindowTypeUtilMask:
 	case CompWindowTypeToolbarMask:
 	case CompWindowTypeMenuMask:
-	    intersect = rect & getWindowExtentsRect (other);
+	    intersect = rect & other->serverInputRect ();
 	    if (!intersect.isEmpty ())
 		return true;
 	    break;
@@ -830,7 +821,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
     rightSorted.sort (compareTopmost);
     rightSorted.sort (compareLeftmost);
 
-    rect = getWindowExtentsRect (window);
+    rect = window->serverInputRect ();
     centerTileRectInArea (rect, workArea);
 
     if (workArea.contains (rect) && !rectOverlapsWindow (rect, windows))
@@ -850,7 +841,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (retval)
 		break;
 
-	    outerRect = getWindowExtentsRect (w);
+	    outerRect = w->serverInputRect ();
 
 	    rect.setX (outerRect.x ());
 	    rect.setY (outerRect.bottom ());
@@ -875,7 +866,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (retval)
 		break;
 
-	    outerRect = getWindowExtentsRect (w);
+	    outerRect = w->serverInputRect ();
 
 	    rect.setX (outerRect.right ());
 	    rect.setY (outerRect.y ());

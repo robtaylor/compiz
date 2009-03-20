@@ -1213,13 +1213,15 @@ DecorWindow::updateFrameRegion (CompRegion &region)
 void
 DecorWindow::updateWindowRegions ()
 {
+    CompRect input (window->inputRect ());
+
     if (regions.size () != gWindow->textures ().size ())
 	regions.resize (gWindow->textures ().size ());
+
     for (unsigned int i = 0; i < gWindow->textures ().size (); i++)
     {
 	regions[i] = CompRegion (*gWindow->textures ()[i]);
-	regions[i].translate (window->geometry ().x () - window->input ().left,
-			      window->geometry ().y () - window->input ().top);
+	regions[i].translate (input.x (), input.y ());
 	regions[i] &= window->frameRegion ();
     }
     updateReg = false;
