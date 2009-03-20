@@ -4608,6 +4608,40 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     startupSequenceTimer.setCallback (
 	boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this));
     startupSequenceTimer.setTimes (1000, 1500);
+
+    
+    optionSetCloseWindowKeyInitiate (CompScreen::closeWin);
+    optionSetCloseWindowButtonInitiate (CompScreen::closeWin);
+    optionSetRaiseWindowKeyInitiate (CompScreen::raiseWin);
+    optionSetRaiseWindowButtonInitiate (CompScreen::raiseWin);
+    optionSetLowerWindowKeyInitiate (CompScreen::lowerWin);
+    optionSetLowerWindowButtonInitiate (CompScreen::lowerWin);
+
+    optionSetUnmaximizeWindowKeyInitiate (CompScreen::unmaximizeWin);
+
+    optionSetMinimizeWindowKeyInitiate (CompScreen::minimizeWin);
+    optionSetMinimizeWindowButtonInitiate (CompScreen::minimizeWin);
+    optionSetMaximizeWindowKeyInitiate (CompScreen::maximizeWin);
+    optionSetMaximizeWindowHorizontallyKeyInitiate (
+	CompScreen::maximizeWinHorizontally);
+    optionSetMaximizeWindowVerticallyKeyInitiate (
+	CompScreen::maximizeWinVertically);
+
+    optionSetWindowMenuKeyInitiate (CompScreen::windowMenu);
+    optionSetWindowMenuButtonInitiate (CompScreen::windowMenu);
+
+    optionSetShowDesktopKeyInitiate (CompScreen::showDesktop);
+    optionSetShowDesktopEdgeInitiate (CompScreen::showDesktop);
+
+    optionSetToggleWindowMaximizedKeyInitiate (CompScreen::toggleWinMaximized);
+    optionSetToggleWindowMaximizedButtonInitiate (CompScreen::toggleWinMaximized);
+
+    optionSetToggleWindowMaximizedHorizontallyKeyInitiate (
+	CompScreen::toggleWinMaximizedHorizontally);
+    optionSetToggleWindowMaximizedVerticallyKeyInitiate (
+	CompScreen::toggleWinMaximizedVertically);
+
+    optionSetToggleWindowShadedKeyInitiate (CompScreen::shadeWin);
 }
 
 PrivateScreen::~PrivateScreen ()

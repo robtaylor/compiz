@@ -80,6 +80,8 @@ namespace GLFragment {
 	    Attrib (const Attrib&);
 	    ~Attrib ();
 
+	    Attrib &operator= (const Attrib &rhs);
+
 	    unsigned int allocTextureUnits (unsigned int nTexture);
 
 	    unsigned int allocParameters (unsigned int nParam);

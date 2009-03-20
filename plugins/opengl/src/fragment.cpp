@@ -151,7 +151,19 @@ namespace GLFragment {
 		nTexture (0),
 		nFunction (0),
 		nParam (0)
-	    {};
+	    {}
+
+	    PrivateAttrib (const PrivateAttrib &pa) :
+		opacity (pa.opacity),
+		brightness (pa.brightness),
+		saturation (pa.saturation),
+		nTexture (pa.nTexture),
+		nFunction (pa.nFunction),
+		nParam (pa.nParam)
+	    {
+		for (int i = 0; i < MAX_FRAGMENT_FUNCTIONS; i++)
+		    function[i] = pa.function[i];
+	    }
 
 	public:
 	    GLushort   opacity;
@@ -853,25 +865,28 @@ namespace GLFragment {
 
 	foreach (FunctionId &f, priv->function)
 	    f = 0;
-    };
+    }
 
     Attrib::Attrib (const Attrib &fa) :
-	priv (new PrivateAttrib ())
+	priv (new PrivateAttrib (*fa.priv))
     {
-	priv->opacity    = fa.priv->opacity;
-	priv->brightness = fa.priv->brightness;
-	priv->saturation = fa.priv->saturation;
-	priv->nTexture   = fa.priv->nTexture;
-	priv->nFunction  = fa.priv->nFunction;
-	priv->nParam     = fa.priv->nParam;
-
-	for (int i = 0; i < MAX_FRAGMENT_FUNCTIONS; i++)
-	    priv->function[i] = fa.priv->function[i];
     }
 
     Attrib::~Attrib ()
     {
 	delete priv;
+    }
+
+    Attrib &
+    Attrib::operator= (const Attrib &rhs)
+    {
+	if (this == &rhs) // Check for self-assignment
+	    return *this;
+
+	delete priv;
+	priv = new PrivateAttrib (*rhs.priv);
+
+	return *this;
     }
 
     unsigned int
