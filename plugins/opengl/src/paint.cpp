@@ -40,7 +40,7 @@ GLScreenPaintAttrib defaultScreenPaintAttrib = {
     0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, -DEFAULT_Z_CAMERA
 };
 
-GLWindowPaintAttrib defaultWindowPaintAttrib = {
+GLWindowPaintAttrib GLWindow::defaultPaintAttrib = {
     OPAQUE, BRIGHT, COLOR, 1.0f, 1.0f, 0.0f, 0.0f
 };
 
