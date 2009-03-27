@@ -1133,6 +1133,12 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
 }
 
 void
+CompWindow::incrementDestroyReference ()
+{
+    priv->destroyRefCnt++;
+}
+
+void
 CompWindow::destroy ()
 {
     screen->priv->eraseWindowFromMap (id ());
@@ -1259,6 +1265,12 @@ CompWindow::map ()
     }
 
     windowNotify (CompWindowNotifyMap);
+}
+
+void
+CompWindow::incrementUnmapReference ()
+{
+    priv->unmapRefCnt++;
 }
 
 void

@@ -350,6 +350,10 @@ class CompWindow :
 
 	void unmap ();
 
+	void incrementUnmapReference ();
+
+	void incrementDestroyReference ();
+
 	bool resize (XWindowAttributes);
 
 	bool resize (Geometry);
