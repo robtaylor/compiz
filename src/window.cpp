@@ -782,8 +782,16 @@ PrivateWindow::updateFrameWindow ()
 	    reparent ();
 
 	XMoveResizeWindow (screen->dpy (), frame, x, y, width, height);
-	XMoveResizeWindow (screen->dpy (), wrapper, input.left, input.top,
-			   serverGeometry.width (), serverGeometry.height ());
+	if (shaded)
+	{
+	    XUnmapWindow (screen->dpy (), wrapper);
+	}
+	else
+	{
+	    XMapWindow (screen->dpy (), wrapper);
+	    XMoveResizeWindow (screen->dpy (), wrapper, input.left, input.top,
+			       serverGeometry.width (), serverGeometry.height ());
+	}
         XMoveResizeWindow (screen->dpy (), id, 0, 0,
 			   serverGeometry.width (), serverGeometry.height ());
         window->sendConfigureNotify ();
@@ -5102,15 +5110,18 @@ CompWindow::updateFrameRegion ()
 
 	updateFrameRegion (priv->frameRegion);
 
-	r = priv->region.boundingRect ();
-	priv->frameRegion -= r;
+	if (!shaded ())
+	{
+	    r = priv->region.boundingRect ();
+	    priv->frameRegion -= r;
 
-	r.setGeometry (r.x1 () - priv->input.left,
-		       r.y1 () - priv->input.top,
-		       r.width  () + priv->input.right + priv->input.left,
-		       r.height () + priv->input.bottom + priv->input.top);
+	    r.setGeometry (r.x1 () - priv->input.left,
+			r.y1 () - priv->input.top,
+			r.width  () + priv->input.right + priv->input.left,
+			r.height () + priv->input.bottom + priv->input.top);
 
-	priv->frameRegion &= CompRegion (r);
+	    priv->frameRegion &= CompRegion (r);
+	}
 
 	x = priv->serverGeometry.x () - priv->input.left;
 	y = priv->serverGeometry.y () - priv->input.top;
