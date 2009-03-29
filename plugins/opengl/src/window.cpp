@@ -117,9 +117,10 @@ GLWindow::bind ()
 void
 GLWindow::release ()
 {
+    priv->textures.clear ();
+
     if (priv->cWindow->pixmap ())
     {
-	priv->textures.clear ();
 	priv->cWindow->release ();
     }
 }
