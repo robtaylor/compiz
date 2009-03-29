@@ -1388,6 +1388,7 @@ CompWindow::resize (CompWindow::Geometry gm)
 	resizeNotify (dx, dy, dwidth, dheight);
 
 	priv->invisible = WINDOW_INVISIBLE (priv);
+	priv->updateFrameWindow ();
     }
     else if (priv->attrib.x != gm.x () || priv->attrib.y != gm.y ())
     {
