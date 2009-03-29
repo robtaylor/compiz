@@ -1955,7 +1955,7 @@ PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 
     if (!w->priv->shaded && !w->priv->pendingMaps)
     {
-	if (!w->isViewable ())
+	if (!w->isViewable () || !w->isMapped ())
 	    return true;
     }
 
@@ -5039,9 +5039,6 @@ CompWindow::isMapped () const
 bool
 CompWindow::isViewable () const
 {
-    if (!priv->mapNum)
-	return false;
-
     if (priv->attrib.map_state != IsViewable)
 	return false;
 

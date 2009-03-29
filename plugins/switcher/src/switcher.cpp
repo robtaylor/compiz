@@ -62,7 +62,7 @@ SwitchScreen::setSelectedWindowHint ()
 bool
 SwitchWindow::isSwitchWin ()
 {
-    if (!window->isViewable ())
+    if (!window->isViewable () || !window->isMapped ())
     {
 	if (sScreen->optionGetMinimized ())
 	{
