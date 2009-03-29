@@ -1628,12 +1628,11 @@ void
 KWD::Window::updateWindowGeometry (void)
 {
     KWindowInfo wInfo = KWindowSystem::windowInfo (mClientId, NET::WMGeometry |
-						   NET::WMDesktop);
+						   NET::WMDesktop | NET::WMState);
     QRect	geometry = wInfo.geometry ();
-    int         w, h;
 
-    w = mGeometry.width () + mBorder.left + mBorder.right;
-    h = mGeometry.height () + mBorder.top + mBorder.bottom;
+    if (wInfo.state () & NET::Shaded && mType == Normal2D)
+	geometry.setHeight (0);
 
     if (mGeometry.width ()  != geometry.width () ||
 	mGeometry.height () != geometry.height ())
@@ -1878,7 +1877,10 @@ KWD::Window::updateState (void)
     if (stateChange & NET::KeepBelow && mState & NET::KeepBelow)
 	mDecor->emitKeepBelowChanged (mState & NET::KeepBelow);
     if (stateChange & NET::Shaded)
+    {
 	mDecor->shadeChange ();
+	updateWindowGeometry ();
+    }
     if (stateChange & NET::Sticky)
 	mDecor->desktopChange ();
 }
