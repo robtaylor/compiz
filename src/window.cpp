@@ -3374,10 +3374,10 @@ CompWindow::hide ()
 	    XUnmapWindow (screen->dpy (), priv->frame);
     }
 
-    windowNotify (CompWindowNotifyHide);
-
     if (!priv->pendingMaps && !isViewable ())
 	return;
+
+    windowNotify (CompWindowNotifyHide);
 
     priv->pendingUnmaps++;
 
