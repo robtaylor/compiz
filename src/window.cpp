@@ -1149,6 +1149,8 @@ CompWindow::incrementDestroyReference ()
 void
 CompWindow::destroy ()
 {
+    windowNotify (CompWindowNotifyBeforeDestroy);
+
     screen->priv->eraseWindowFromMap (id ());
 
     priv->id = 1;
