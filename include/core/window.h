@@ -313,6 +313,8 @@ class CompWindow :
 
 	bool grabbed ();
 
+	int pendingMaps ();
+
 	unsigned int activeNum ();
 
 	int mapNum () const;

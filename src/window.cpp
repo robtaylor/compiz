@@ -4393,6 +4393,12 @@ CompWindow::grabbed ()
     return priv->grabbed;
 }
 
+int
+CompWindow::pendingMaps ()
+{
+    return priv->pendingMaps;
+}
+
 unsigned int &
 CompWindow::wmType ()
 {
