@@ -165,6 +165,7 @@ enum CompStackingUpdateMode {
 
 enum CompWindowNotify {
    CompWindowNotifyMap,
+   CompWindowNotifyBeforeUnmap,
    CompWindowNotifyUnmap,
    CompWindowNotifyRestack,
    CompWindowNotifyHide,

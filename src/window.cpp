@@ -1284,6 +1284,8 @@ CompWindow::incrementUnmapReference ()
 void
 CompWindow::unmap ()
 {
+    windowNotify (CompWindowNotifyBeforeUnmap);
+
     if (priv->mapNum)
 	priv->mapNum = 0;
 
