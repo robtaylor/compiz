@@ -173,7 +173,8 @@ enum CompWindowNotify {
    CompWindowNotifySyncAlarm,
    CompWindowNotifyReparent,
    CompWindowNotifyUnreparent,
-   CompWindowNotifyFrameUpdate
+   CompWindowNotifyFrameUpdate,
+   CompWindowNotifyFocusChange
 };
 
 struct CompWindowExtents {
