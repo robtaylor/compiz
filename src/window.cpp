@@ -2257,6 +2257,14 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
     if (valueMask & CWBorderWidth)
 	serverGeometry.setBorder (xwc->border_width);
 
+    if (valueMask & (CWSibling | CWStackMode))
+    {
+	if (xwc->stack_mode == Above)
+	    restack (xwc->sibling);
+	else
+	    compLogMessage ("core", CompLogLevelWarn, "restack_mode not Above");
+    }
+
     if (frame)
     {
 	XWindowChanges wc = *xwc;
@@ -2283,7 +2291,8 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
 bool
 PrivateWindow::stackTransients (CompWindow	*w,
 				CompWindow	*avoid,
-				XWindowChanges *xwc)
+				XWindowChanges *xwc,
+				CompWindowList &updateList)
 {
     CompWindow *t;
     Window     clientLeader = w->priv->clientLeader;
@@ -2303,7 +2312,7 @@ PrivateWindow::stackTransients (CompWindow	*w,
 		if (!(t->priv->type & CompWindowTypeDockMask))
 		    return false;
 
-	    if (!stackTransients (t, avoid, xwc))
+	    if (!stackTransients (t, avoid, xwc, updateList))
 		return false;
 
 	    if (xwc->sibling == t->priv->id ||
@@ -2311,7 +2320,7 @@ PrivateWindow::stackTransients (CompWindow	*w,
 		return false;
 
 	    if (t->priv->mapNum || t->priv->pendingMaps)
-		t->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+		updateList.push_back (t);
 	}
     }
 
@@ -2320,7 +2329,8 @@ PrivateWindow::stackTransients (CompWindow	*w,
 
 void
 PrivateWindow::stackAncestors (CompWindow     *w,
-			       XWindowChanges *xwc)
+			       XWindowChanges *xwc,
+			       CompWindowList &updateList)
 {
     CompWindow *transient = NULL;
 
@@ -2336,7 +2346,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 	ancestor = screen->findWindow (w->priv->transientFor);
 	if (ancestor)
 	{
-	    if (!stackTransients (ancestor, w, xwc))
+	    if (!stackTransients (ancestor, w, xwc, updateList))
 		return;
 
 	    if (ancestor->priv->type & CompWindowTypeDesktopMask)
@@ -2347,10 +2357,9 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 		    return;
 
 	    if (ancestor->priv->mapNum || ancestor->priv->pendingMaps)
-		ancestor->priv->reconfigureXWindow (CWSibling | CWStackMode,
-						    xwc);
+		updateList.push_back (ancestor);
 
-	    stackAncestors (ancestor, xwc);
+	    stackAncestors (ancestor, xwc, updateList);
 	}
     }
     else if (w->priv->isGroupTransient (w->priv->clientLeader))
@@ -2367,7 +2376,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 		    (a->priv->frame && xwc->sibling == a->priv->frame))
 		    break;
 
-		if (!stackTransients (a, w, xwc))
+		if (!stackTransients (a, w, xwc, updateList))
 		    break;
 
 		if (a->priv->type & CompWindowTypeDesktopMask)
@@ -2378,7 +2387,7 @@ PrivateWindow::stackAncestors (CompWindow     *w,
 			break;
 
 		if (a->priv->mapNum || a->priv->pendingMaps)
-		    a->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+		    updateList.push_back (a);
 	    }
 	}
     }
@@ -2390,13 +2399,22 @@ CompWindow::configureXWindow (unsigned int valueMask,
 {
     if (priv->managed && (valueMask & (CWSibling | CWStackMode)))
     {
-	/* transient children above */
-	if (PrivateWindow::stackTransients (this, NULL, xwc))
-	{
-	    priv->reconfigureXWindow (valueMask, xwc);
+	CompWindowList transients;
+	CompWindowList ancestors;
 
+	/* transient children above */
+	if (PrivateWindow::stackTransients (this, NULL, xwc, transients))
+	{
 	    /* ancestors, siblings and sibling transients below */
-	    PrivateWindow::stackAncestors (this, xwc);
+	    PrivateWindow::stackAncestors (this, xwc, ancestors);
+
+	    foreach (CompWindow *w, transients)
+		w->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+
+	    this->priv->reconfigureXWindow (valueMask, xwc);
+
+	    foreach (CompWindow *w, ancestors)
+		w->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
 	}
     }
     else
@@ -2872,6 +2890,7 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 		XLowerWindow (screen->dpy (), id);
 		if (frame)
 		    XLowerWindow (screen->dpy (), frame);
+		restack (0);
 	    }
 	    else if (sibling->priv->id != window->prev->priv->id)
 	    {

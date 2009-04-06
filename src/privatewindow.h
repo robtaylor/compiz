@@ -84,9 +84,12 @@ class PrivateWindow {
 
 	static bool stackTransients (CompWindow     *w,
 				     CompWindow     *avoid,
-				     XWindowChanges *xwc);
+				     XWindowChanges *xwc,
+				     CompWindowList &updateList);
 
-	static void stackAncestors (CompWindow *w, XWindowChanges *xwc);
+	static void stackAncestors (CompWindow *w,
+				    XWindowChanges *xwc,
+				    CompWindowList &updateList);
 
 	static bool isAncestorTo (CompWindow *transient,
 				  CompWindow *ancestor);
