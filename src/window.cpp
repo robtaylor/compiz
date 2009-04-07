@@ -2408,13 +2408,22 @@ CompWindow::configureXWindow (unsigned int valueMask,
 	    /* ancestors, siblings and sibling transients below */
 	    PrivateWindow::stackAncestors (this, xwc, ancestors);
 
-	    foreach (CompWindow *w, transients)
-		w->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+	    for (CompWindowList::reverse_iterator w = ancestors.rbegin ();
+		 w != ancestors.rend (); w++)
+	    {
+		(*w)->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+		xwc->sibling = ROOTPARENT (*w);
+	    }
 
 	    this->priv->reconfigureXWindow (valueMask, xwc);
+	    xwc->sibling = ROOTPARENT (this);
 
-	    foreach (CompWindow *w, ancestors)
-		w->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+	    for (CompWindowList::reverse_iterator w = transients.rbegin ();
+		 w != transients.rend (); w++)
+	    {
+		(*w)->priv->reconfigureXWindow (CWSibling | CWStackMode, xwc);
+		xwc->sibling = ROOTPARENT (*w);
+	    }
 	}
     }
     else
