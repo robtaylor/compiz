@@ -1612,6 +1612,8 @@ CompScreen::handleEvent (XEvent *event)
 
 		if (w->id () != priv->activeWindow)
 		{
+		    w->windowNotify (CompWindowNotifyFocusChange);
+
 		    priv->activeWindow = w->id ();
 		    w->priv->activeNum = priv->activeNum++;
 
