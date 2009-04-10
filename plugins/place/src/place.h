@@ -30,8 +30,6 @@
 
 #include "place_options.h"
 
-#define PLACE_SCREEN(s) PlaceScreen *ps = PlaceScreen::get (s)
-
 class PlaceScreen :
     public PluginClassHandler<PlaceScreen, CompScreen>,
     public ScreenInterface,
@@ -73,6 +71,8 @@ class PlaceWindow :
 	PlacementStrategy getStrategy ();
 	const CompOutput & getPlacementOutput (PlacementStrategy strategy,
 					       CompPoint pos);
+	int getPlacementMode ();
+
 	void sendMaximizationRequest ();
 	void constrainToWorkarea (const CompRect& workArea, CompPoint& pos);
 
@@ -98,7 +98,8 @@ class PlaceWindow :
 			   CompOption::Value::Vector *constrainValues = NULL,
 			   bool *keepInWorkarea = NULL);
 
-	CompWindow *window;
+	CompWindow  *window;
+	PlaceScreen *ps;
 };
 
 class PlacePluginVTable :

@@ -156,7 +156,8 @@ compareNorthWestCorner (CompWindow *a,
 
 PlaceWindow::PlaceWindow (CompWindow *w) :
     PluginClassHandler<PlaceWindow, CompWindow> (w),
-    window (w)
+    window (w),
+    ps (PlaceScreen::get (screen))
 {
     WindowInterface::setHandler (w);
 }
@@ -228,8 +229,6 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
     {
 	/* only respect USPosition on normal windows if
 	   workarounds are disabled, reason see above */
-	PLACE_SCREEN (screen);
-
 	if (ps->optionGetWorkarounds () ||
 	    (window->type () & CompWindowTypeNormalMask))
 	{
@@ -355,8 +354,6 @@ PlaceWindow::doPlacement (CompPoint &pos)
     PlacementStrategy strategy;
     bool              keepInWorkarea;
 
-    PLACE_SCREEN (screen);
-
     if (matchPosition (pos, keepInWorkarea))
     {
 	strategy = keepInWorkarea ? ConstrainOnly : NoPlacement;
@@ -427,7 +424,7 @@ PlaceWindow::doPlacement (CompPoint &pos)
 
     if (strategy == PlaceOnly || strategy == PlaceAndConstrain)
     {
-	switch (ps->optionGetMode ()) {
+	switch (getPlacementMode ()) {
 	    case PlaceOptions::ModeCascade:
 	    placeCascade (workArea, pos);
 	    break;
@@ -992,8 +989,6 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
 PlaceWindow::PlacementStrategy
 PlaceWindow::getStrategy ()
 {
-    PLACE_SCREEN (screen);
-
     if (window->type () & (CompWindowTypeDockMask       |
 			   CompWindowTypeDesktopMask    |
 			   CompWindowTypeUtilMask       |
@@ -1059,8 +1054,6 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
 				 CompPoint         pos)
 {
     int output = -1;
-
-    PLACE_SCREEN (screen);
 
     switch (strategy) {
     case PlaceOverParent:
@@ -1129,6 +1122,22 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
 	return screen->currentOutputDev ();
 
     return screen->outputDevs ()[output];
+}
+
+int
+PlaceWindow::getPlacementMode ()
+{
+    CompOption::Value::Vector& matches = ps->optionGetModeMatches ();
+    CompOption::Value::Vector& modes   = ps->optionGetModeModes ();
+    int                        i, min;
+
+    min = MIN (matches.size (), modes.size ());
+
+    for (i = 0; i < min; i++)
+	if (matches[i].match ().evaluate (window))
+	    return modes[i].i ();
+
+    return ps->optionGetMode ();
 }
 
 void
@@ -1243,8 +1252,6 @@ bool
 PlaceWindow::matchPosition (CompPoint &pos,
 			    bool      &keepInWorkarea)
 {
-    PLACE_SCREEN (screen);
-
     return matchXYValue (
 	ps->optionGetPositionMatches (),
 	ps->optionGetPositionXValues (),
@@ -1257,8 +1264,6 @@ PlaceWindow::matchPosition (CompPoint &pos,
 bool
 PlaceWindow::matchViewport (CompPoint &pos)
 {
-    PLACE_SCREEN (screen);
-
     if (matchXYValue (ps->optionGetViewportMatches (),
 		      ps->optionGetViewportXValues (),
 		      ps->optionGetViewportYValues (),
