@@ -1052,6 +1052,8 @@ CompScreen::handleEvent (XEvent *event)
 
 		    priv->updateClientList ();
 		}
+		else /* Closing */
+		    w->windowNotify (CompWindowNotifyClose);
 
 		if (!w->overrideRedirect ())
 		    priv->setWmState (WithdrawnState, w->id ());

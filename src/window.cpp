@@ -3029,10 +3029,14 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 
     if (priv->state & CompWindowStateShadedMask)
     {
+	windowNotify (CompWindowNotifyShade);
+
 	hide ();
     }
     else if (priv->shaded)
     {
+	windowNotify (CompWindowNotifyUnshade);
+
 	show ();
     }
 
@@ -3471,6 +3475,8 @@ CompWindow::minimize ()
 
     if (!priv->minimized)
     {
+	windowNotify (CompWindowNotifyMinimize);
+
 	priv->minimized = true;
 
 	screen->forEachWindow (
@@ -3494,6 +3500,8 @@ CompWindow::unminimize ()
 {
     if (priv->minimized)
     {
+	windowNotify (CompWindowNotifyUnminimize);
+
 	priv->minimized = false;
 
 	show ();
