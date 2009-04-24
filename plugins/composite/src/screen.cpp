@@ -292,6 +292,8 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
     ScreenInterface::setHandler (screen);
+
+    optionSetSlowAnimationsKeyInitiate (CompositeScreen::toggleSlowAnimations);
 }
 
 PrivateCompositeScreen::~PrivateCompositeScreen ()
