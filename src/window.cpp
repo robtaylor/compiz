@@ -2257,6 +2257,11 @@ PrivateWindow::reconfigureXWindow (unsigned int   valueMask,
     if (valueMask & CWBorderWidth)
 	serverGeometry.setBorder (xwc->border_width);
 
+    /* Compiz's window list is immediately restacked on reconfigureXWindow
+       in order to ensure correct operation of the raise, lower and restacking
+       functions. This function should only recieve stack_mode == Above
+       but warn incase something else does get through, to make the cause
+       of any potential misbehaviour obvious. */
     if (valueMask & (CWSibling | CWStackMode))
     {
 	if (xwc->stack_mode == Above)
@@ -2401,6 +2406,13 @@ CompWindow::configureXWindow (unsigned int valueMask,
     {
 	CompWindowList transients;
 	CompWindowList ancestors;
+
+	/* Since the window list is being reordered in reconfigureXWindow
+	   the list of windows which need to be restacked must be stored
+	   first. The windows are stacked in the opposite order than they
+	   were previously stacked, in order that they are above xwc->sibling
+	   so that when compiz gets the ConfigureNotify event it doesn't
+	   have to restack all the windows again. */
 
 	/* transient children above */
 	if (PrivateWindow::stackTransients (this, NULL, xwc, transients))
@@ -2899,6 +2911,10 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 		XLowerWindow (screen->dpy (), id);
 		if (frame)
 		    XLowerWindow (screen->dpy (), frame);
+
+		/* Restacking of compiz's window list happens
+		   immediately and since this path doesn't call
+		   reconfigureXWindow, restack must be called here. */
 		restack (0);
 	    }
 	    else if (sibling->priv->id != window->prev->priv->id)
