@@ -39,6 +39,7 @@
 class CompScreen;
 class PrivateScreen;
 typedef std::list<CompWindow *> CompWindowList;
+typedef std::vector<CompWindow *> CompWindowVector;
 
 extern char       *backgroundImage;
 extern bool       replaceCurrentWm;
@@ -252,6 +253,8 @@ class CompScreen :
 	bool otherGrabExist (const char *, ...);
 
 	bool grabExist (const char *);
+
+	const CompWindowVector & clientList (bool stackingOrder = true);
 
 	bool addAction (CompAction *action);
 

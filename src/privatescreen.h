@@ -411,8 +411,11 @@ class PrivateScreen : public CoreOptions {
 	Cursor normalCursor;
 	Cursor busyCursor;
 
-	CompWindow **clientList;
-	int        nClientList;
+	CompWindowVector clientList;            /* clients in mapping order */
+	CompWindowVector clientListStacking;    /* clients in stacking order */
+
+	std::vector<Window> clientIdList;        /* client ids in mapping order */
+	std::vector<Window> clientIdListStacking;/* client ids in stacking order */
 
 	std::list<ButtonGrab> buttonGrabs;
 	std::list<KeyGrab>    keyGrabs;

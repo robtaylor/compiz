@@ -3217,33 +3217,30 @@ countClientListWindow (CompWindow *w,
     }
 }
 
-static int
-compareMappingOrder (const void *w1,
-		     const void *w2)
+static bool
+compareMappingOrder (const CompWindow *w1,
+		     const CompWindow *w2)
 {
-    return (*((CompWindow **) w1))->mapNum () -
-	   (*((CompWindow **) w2))->mapNum ();
+    return w1->mapNum () < w2->mapNum ();
 }
 
 void
 PrivateScreen::updateClientList ()
 {
-    Window *clientList;
-    Window *clientListStacking;
     Bool   updateClientList = true;
     Bool   updateClientListStacking = true;
-    int	   i, n = 0;
+    int	   n = 0;
 
     screen->forEachWindow (boost::bind (countClientListWindow, _1, &n));
 
     if (n == 0)
     {
-	if (n != priv->nClientList)
+	if (n != priv->clientList.size ())
 	{
-	    free (priv->clientList);
-
-	    priv->clientList  = NULL;
-	    priv->nClientList = 0;
+	    priv->clientList.clear ();
+	    priv->clientListStacking.clear ();
+	    priv->clientIdList.clear ();
+	    priv->clientIdListStacking.clear ();
 
 	    XChangeProperty (priv->dpy, priv->root,
 			     Atoms::clientList,
@@ -3258,70 +3255,67 @@ PrivateScreen::updateClientList ()
 	return;
     }
 
-    if (n != priv->nClientList)
+    if (n != priv->clientList.size ())
     {
-	CompWindow **list;
-
-	list = (CompWindow **)
-	    realloc (priv->clientList, (sizeof (CompWindow *) +
-		     sizeof (Window) * 2) * n);
-	if (!list)
-	    return;
-
-	priv->clientList  = list;
-	priv->nClientList = n;
+	priv->clientIdList.resize (n);
+	priv->clientIdListStacking.resize (n);
 
 	updateClientList = updateClientListStacking = true;
     }
 
-    clientList	       = (Window *) (priv->clientList + n);
-    clientListStacking = clientList + n;
+    priv->clientListStacking.clear ();
 
-    i = 0;
     foreach (CompWindow *w, priv->windows)
 	if (isClientListWindow (w))
-	{
-	    priv->clientList[i] = w;
-	    i++;
-	}
+	    priv->clientListStacking.push_back (w);
 
-    for (i = 0; i < n; i++)
+    /* clear clientList and copy clientListStacking into clientList */
+    priv->clientList = priv->clientListStacking;
+
+    /* sort clientList in mapping order */
+    sort (priv->clientList.begin (), priv->clientList.end (),
+	  compareMappingOrder);
+
+    /* make sure client id lists are up-to-date */
+    for (int i = 0; i < n; i++)
     {
-	if (!updateClientListStacking)
+	if (!updateClientList &&
+	    priv->clientIdList[i] != priv->clientList[i]->id ())
 	{
-	    if (clientListStacking[i] != priv->clientList[i]->id ())
-		updateClientListStacking = true;
+	    updateClientList = true;
 	}
 
-	clientListStacking[i] = priv->clientList[i]->id ();
+	priv->clientIdList[i] = priv->clientList[i]->id ();
     }
-
-    /* sort window list in mapping order */
-    qsort (priv->clientList, n, sizeof (CompWindow *), compareMappingOrder);
-
-    for (i = 0; i < n; i++)
+    for (int i = 0; i < n; i++)
     {
-	if (!updateClientList)
+	if (!updateClientListStacking &&
+	    priv->clientIdListStacking[i] != priv->clientListStacking[i]->id ())
 	{
-	    if (clientList[i] != priv->clientList[i]->id ())
-		updateClientList = true;
+	    updateClientListStacking = true;
 	}
 
-	clientList[i] = priv->clientList[i]->id ();
+	priv->clientIdListStacking[i] = priv->clientListStacking[i]->id ();
     }
 
     if (updateClientList)
 	XChangeProperty (priv->dpy, priv->root,
 			 Atoms::clientList,
 			 XA_WINDOW, 32, PropModeReplace,
-			 (unsigned char *) clientList, priv->nClientList);
+			 (unsigned char *) &priv->clientIdList.at (0), n);
 
     if (updateClientListStacking)
 	XChangeProperty (priv->dpy, priv->root,
 			 Atoms::clientListStacking,
 			 XA_WINDOW, 32, PropModeReplace,
-			 (unsigned char *) clientListStacking,
-			 priv->nClientList);
+			 (unsigned char *) &priv->clientIdListStacking.at (0),
+			 n);
+}
+
+const CompWindowVector &
+CompScreen::clientList (bool stackingOrder)
+{
+   return stackingOrder ? priv->clientListStacking : priv->clientList;
 }
 
 void
@@ -4520,9 +4514,6 @@ CompScreen::~CompScreen ()
 
     XFreeCursor (priv->dpy, priv->invisibleCursor);
 
-    if (priv->clientList)
-	free (priv->clientList);
-
     if (priv->desktopHintData)
 	free (priv->desktopHintData);
 
@@ -4586,8 +4577,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     startupSequenceTimer (),
     groups (0),
     defaultIcon (0),
-    clientList (0),
-    nClientList (0),
     buttonGrabs (0),
     keyGrabs (0),
     grabs (0),
