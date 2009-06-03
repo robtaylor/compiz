@@ -310,7 +310,7 @@ resizeInitiate (CompAction         *action,
 	    }
 
 	    if (!rs->gScreen || !rs->cScreen ||
-		rs->cScreen->compositingActive ())
+		!rs->cScreen->compositingActive ())
 		rs->mode = ResizeOptions::ModeNormal;
 	}
 
