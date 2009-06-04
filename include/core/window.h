@@ -227,10 +227,11 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual void updateFrameRegion (CompRegion &region);
 
 	virtual bool alpha ();
+	virtual bool isFocussable ();
 };
 
 class CompWindow :
-    public WrapableHandler<WindowInterface, 14>,
+    public WrapableHandler<WindowInterface, 15>,
     public PluginClassStorage
 {
     public:
@@ -456,8 +457,6 @@ class CompWindow :
 	bool isMapped () const;
 	bool isViewable () const;
 
-	bool isFocussable () const;
-
 	int windowClass ();
 
 	unsigned int depth ();
@@ -501,6 +500,7 @@ class CompWindow :
 		      CompRegion &);
 
 	WRAPABLE_HND (13, WindowInterface, bool, alpha);
+	WRAPABLE_HND (14, WindowInterface, bool, isFocussable);
 
 	friend class PrivateWindow;
 	friend class CompScreen;

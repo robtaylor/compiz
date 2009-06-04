@@ -4216,6 +4216,10 @@ bool
 WindowInterface::alpha ()
     WRAPABLE_DEF (alpha);
 
+bool
+WindowInterface::isFocussable ()
+    WRAPABLE_DEF (isFocussable);
+
 Window
 CompWindow::id ()
 {
@@ -5123,8 +5127,10 @@ CompWindow::isViewable () const
 }
 
 bool
-CompWindow::isFocussable () const
+CompWindow::isFocussable ()
 {
+    WRAPABLE_HND_FUNC_RETURN (14, bool, isFocussable);
+
     if (priv->inputHint)
 	return true;
 
