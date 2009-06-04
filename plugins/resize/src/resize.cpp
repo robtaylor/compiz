@@ -183,7 +183,8 @@ ResizeScreen::finishResizing ()
 static bool
 resizeInitiate (CompAction         *action,
 	        CompAction::State  state,
-	        CompOption::Vector &options)
+	        CompOption::Vector &options,
+	        unsigned int	   mode)
 {
     CompWindow *w;
     Window     xid;
@@ -282,36 +283,14 @@ resizeInitiate (CompAction         *action,
 	       be resized anyway; so we better don't use them in this case */
 	    rs->mode = ResizeOptions::ModeNormal;
 	}
+	else if (!rs->gScreen || !rs->cScreen ||
+		 !rs->cScreen->compositingActive ())
+	{
+	    rs->mode = ResizeOptions::ModeNormal;
+	}
 	else
 	{
-	    rs->mode = rs->optionGetMode ();
-	    for (i = 0; i <= ResizeOptions::ModeStretch; i++)
-	    {
-		if (action == &rs->getOptions ()[i].value ().action ())
-		{
-		    rs->mode = i;
-		    break;
-		}
-	    }
-
-	    if (i > ResizeOptions::ModeStretch)
-	    {
-		int index;
-
-		for (i = 0; i <= ResizeOptions::ModeStretch; i++)
-		{
-		    index = ResizeOptions::NormalMatch + i;
-		    if (rs->getOptions ()[index].value ().match ().evaluate (w))
-		    {
-			rs->mode = i;
-			break;
-		    }
-		}
-	    }
-
-	    if (!rs->gScreen || !rs->cScreen ||
-		!rs->cScreen->compositingActive ())
-		rs->mode = ResizeOptions::ModeNormal;
+	    rs->mode = mode;
 	}
 
 	if (rs->mode != ResizeOptions::ModeNormal)
@@ -367,6 +346,33 @@ resizeInitiate (CompAction         *action,
     }
 
     return false;
+}
+
+static bool
+resizeInitiateDefaultMode (CompAction	      *action,
+			   CompAction::State  state,
+			   CompOption::Vector &options)
+{
+    CompWindow *w = screen->findWindow (CompOption::getIntOptionNamed (options, "window"));
+    unsigned int mode;
+
+    RESIZE_SCREEN (screen);
+
+    mode = rs->optionGetMode ();
+
+    if (!w)
+	return false;
+
+    if (rs->optionGetNormalMatch ().evaluate (w))
+	mode = ResizeOptions::ModeNormal;
+    if (rs->optionGetOutlineMatch ().evaluate (w))
+	mode = ResizeOptions::ModeOutline;
+    if (rs->optionGetRectangleMatch ().evaluate (w))
+	mode = ResizeOptions::ModeRectangle;
+    if (rs->optionGetStretchMatch ().evaluate (w))
+	mode = ResizeOptions::ModeStretch;
+
+    return resizeInitiate (action, state, options, mode);
 }
 
 static bool
@@ -748,7 +754,8 @@ ResizeScreen::handleEvent (XEvent *event)
 			if (event->xclient.data.l[2] == WmMoveResizeSizeKeyboard)
 			{
 			    resizeInitiate (&optionGetInitiateKey (),
-					    CompAction::StateInitKey, o);
+					    CompAction::StateInitKey, o,
+					    optionGetMode ());
 			}
 			else
 			{
@@ -797,7 +804,8 @@ ResizeScreen::handleEvent (XEvent *event)
 				     event->xclient.data.l[3] : -1));
 
 				resizeInitiate (&optionGetInitiateButton (),
-						CompAction::StateInitButton, o);
+						CompAction::StateInitButton, o,
+						optionGetMode ());
 
 				ResizeScreen::get (screen)->
 				    handleMotionEvent (xRoot, yRoot);
@@ -1055,17 +1063,25 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     cursor[2] = upCursor;
     cursor[3] = downCursor;
 
-    optionSetInitiateNormalKeyInitiate (resizeInitiate);
+    optionSetInitiateNormalKeyInitiate (boost::bind
+					 (resizeInitiate, _1, _2, _3,
+						ResizeOptions::ModeNormal));
     optionSetInitiateNormalKeyTerminate (resizeTerminate);
-    optionSetInitiateOutlineKeyInitiate (resizeInitiate);
+    optionSetInitiateOutlineKeyInitiate (boost::bind
+					 (resizeInitiate, _1, _2, _3,
+						ResizeOptions::ModeOutline));
     optionSetInitiateOutlineKeyTerminate (resizeTerminate);
-    optionSetInitiateRectangleKeyInitiate (resizeInitiate);
+    optionSetInitiateRectangleKeyInitiate (boost::bind
+					   (resizeInitiate, _1, _2, _3,
+						ResizeOptions::ModeRectangle));
     optionSetInitiateRectangleKeyTerminate (resizeTerminate);
-    optionSetInitiateStretchKeyInitiate (resizeInitiate);
+    optionSetInitiateStretchKeyInitiate (boost::bind
+					 (resizeInitiate, _1, _2, _3,
+						ResizeOptions::ModeStretch));
     optionSetInitiateStretchKeyTerminate (resizeTerminate);
-    optionSetInitiateKeyInitiate (resizeInitiate);
+    optionSetInitiateKeyInitiate (resizeInitiateDefaultMode);
     optionSetInitiateKeyTerminate (resizeTerminate);
-    optionSetInitiateButtonInitiate (resizeInitiate);
+    optionSetInitiateButtonInitiate (resizeInitiateDefaultMode);
     optionSetInitiateButtonTerminate (resizeTerminate);
 
     ScreenInterface::setHandler (s);
