@@ -42,20 +42,14 @@ ResizeScreen::getPaintRectangle (BoxPtr pBox)
 {
     pBox->x1 = geometry.x - w->input ().left;
     pBox->y1 = geometry.y - w->input ().top;
-    pBox->x2 = geometry.x +
-	geometry.width + w->serverGeometry ().border () * 2 +
-	w->input ().right;
+    pBox->x2 = geometry.x + geometry.width +
+	       w->serverGeometry ().border () * 2 + w->input ().right;
 
     if (w->shaded ())
-    {
 	pBox->y2 = geometry.y + w->size ().height () + w->input ().bottom;
-    }
     else
-    {
-	pBox->y2 = geometry.y +
-	    geometry.height + w->serverGeometry ().border () * 2 +
-	    w->input ().bottom;
-    }
+	pBox->y2 = geometry.y + geometry.height +
+	           w->serverGeometry ().border () * 2 + w->input ().bottom;
 }
 
 void
@@ -95,7 +89,7 @@ ResizeScreen::damageRectangle (BoxPtr pBox)
     y2 = pBox->y2 + 1;
 
     if (cScreen)
-	cScreen->damageRegion (CompRegion (CompRect (x1, y1, x2 - x1, y2 - y1)));
+	cScreen->damageRegion (CompRect (x1, y1, x2 - x1, y2 - y1));
 }
 
 Cursor
@@ -151,7 +145,7 @@ ResizeScreen::sendResizeNotify ()
     xev.xclient.data.l[3] = geometry.height;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (screen->dpy (), screen->root (),	FALSE,
+    XSendEvent (screen->dpy (), screen->root (), FALSE,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 
@@ -308,13 +302,9 @@ resizeInitiate (CompAction         *action,
 	    Cursor cursor;
 
 	    if (state & CompAction::StateInitKey)
-	    {
 		cursor = rs->middleCursor;
-	    }
 	    else
-	    {
 		cursor = rs->cursorFromResizeMask (mask);
-	    }
 
 	    rs->grabIndex = screen->pushGrab (cursor, "resize");
 	}
@@ -353,15 +343,16 @@ resizeInitiateDefaultMode (CompAction	      *action,
 			   CompAction::State  state,
 			   CompOption::Vector &options)
 {
-    CompWindow *w = screen->findWindow (CompOption::getIntOptionNamed (options, "window"));
+    CompWindow   *w;
     unsigned int mode;
 
     RESIZE_SCREEN (screen);
 
-    mode = rs->optionGetMode ();
-
+    w = screen->findWindow (CompOption::getIntOptionNamed (options, "window"));
     if (!w)
 	return false;
+
+    mode = rs->optionGetMode ();
 
     if (rs->optionGetNormalMatch ().evaluate (w))
 	mode = ResizeOptions::ModeNormal;
@@ -753,9 +744,9 @@ ResizeScreen::handleEvent (XEvent *event)
 
 			if (event->xclient.data.l[2] == WmMoveResizeSizeKeyboard)
 			{
-			    resizeInitiate (&optionGetInitiateKey (),
-					    CompAction::StateInitKey, o,
-					    optionGetMode ());
+			    resizeInitiateDefaultMode (&optionGetInitiateKey (),
+						       CompAction::StateInitKey,
+						       o);
 			}
 			else
 			{
@@ -803,9 +794,9 @@ ResizeScreen::handleEvent (XEvent *event)
 				    ((int) (event->xclient.data.l[3] ?
 				     event->xclient.data.l[3] : -1));
 
-				resizeInitiate (&optionGetInitiateButton (),
-						CompAction::StateInitButton, o,
-						optionGetMode ());
+				resizeInitiateDefaultMode (
+				    &optionGetInitiateButton (),
+				    CompAction::StateInitButton, o);
 
 				ResizeScreen::get (screen)->
 				    handleMotionEvent (xRoot, yRoot);
@@ -1065,19 +1056,19 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
 
     optionSetInitiateNormalKeyInitiate (boost::bind
 					 (resizeInitiate, _1, _2, _3,
-						ResizeOptions::ModeNormal));
+					  ResizeOptions::ModeNormal));
     optionSetInitiateNormalKeyTerminate (resizeTerminate);
     optionSetInitiateOutlineKeyInitiate (boost::bind
 					 (resizeInitiate, _1, _2, _3,
-						ResizeOptions::ModeOutline));
+					  ResizeOptions::ModeOutline));
     optionSetInitiateOutlineKeyTerminate (resizeTerminate);
     optionSetInitiateRectangleKeyInitiate (boost::bind
 					   (resizeInitiate, _1, _2, _3,
-						ResizeOptions::ModeRectangle));
+					    ResizeOptions::ModeRectangle));
     optionSetInitiateRectangleKeyTerminate (resizeTerminate);
     optionSetInitiateStretchKeyInitiate (boost::bind
 					 (resizeInitiate, _1, _2, _3,
-						ResizeOptions::ModeStretch));
+					  ResizeOptions::ModeStretch));
     optionSetInitiateStretchKeyTerminate (resizeTerminate);
     optionSetInitiateKeyInitiate (resizeInitiateDefaultMode);
     optionSetInitiateKeyTerminate (resizeTerminate);
