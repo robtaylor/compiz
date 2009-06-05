@@ -4212,6 +4212,10 @@ void
 WindowInterface::updateFrameRegion (CompRegion &region)
     WRAPABLE_DEF (updateFrameRegion, region)
 
+bool
+WindowInterface::alpha ()
+    WRAPABLE_DEF (alpha);
+
 Window
 CompWindow::id ()
 {
@@ -5079,6 +5083,8 @@ CompWindow::syncWait ()
 bool
 CompWindow::alpha ()
 {
+    WRAPABLE_HND_FUNC_RETURN (13, bool, alpha);
+
     return priv->alpha;
 }
 

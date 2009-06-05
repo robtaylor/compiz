@@ -225,10 +225,12 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual void stateChangeNotify (unsigned int lastState);
 
 	virtual void updateFrameRegion (CompRegion &region);
+
+	virtual bool alpha ();
 };
 
 class CompWindow :
-    public WrapableHandler<WindowInterface, 13>,
+    public WrapableHandler<WindowInterface, 14>,
     public PluginClassStorage
 {
     public:
@@ -447,8 +449,6 @@ class CompWindow :
 
 	bool syncWait ();
 
-	bool alpha ();
-
 	bool alive ();
 
 	bool overrideRedirect ();
@@ -499,6 +499,8 @@ class CompWindow :
 
 	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion,
 		      CompRegion &);
+
+	WRAPABLE_HND (13, WindowInterface, bool, alpha);
 
 	friend class PrivateWindow;
 	friend class CompScreen;
