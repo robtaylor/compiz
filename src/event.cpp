@@ -146,7 +146,8 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 {
     CompAction::State state = CompAction::StateInitButton;
     CompAction        *action;
-    unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
+    unsigned int      ignored = modHandler->ignoredModMask ();
+    unsigned int      modMask = REAL_MOD_MASK & ~ignored;
     unsigned int      bindMods;
     unsigned int      edge = 0;
 
@@ -181,7 +182,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 	{
 	    if (action->button ().button () == (int) event->button)
 	    {
-		bindMods = virtualToRealModMask (
+		bindMods = modHandler->virtualToRealModMask (
 		    action->button ().modifiers ());
 
 		if ((bindMods & modMask) == (event->state & modMask))
@@ -198,7 +199,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 		if ((action->button ().button () == (int) event->button) &&
 		    (action->edgeMask () & edge))
 		{
-		    bindMods = virtualToRealModMask (
+		    bindMods = modHandler->virtualToRealModMask (
 			action->button ().modifiers ());
 
 		    if ((bindMods & modMask) == (event->state & modMask))
@@ -246,7 +247,7 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
 {
     CompAction::State state = 0;
     CompAction	      *action;
-    unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
+    unsigned int      modMask = REAL_MOD_MASK & ~modHandler->ignoredModMask ();
     unsigned int      bindMods;
 
     if (event->keycode == escapeKeyCode)
@@ -276,7 +277,7 @@ PrivateScreen::triggerKeyPressBindings (CompOption::Vector &options,
 	if (isInitiateBinding (option, CompAction::BindingTypeKey,
 			       state, &action))
 	{
-	    bindMods = virtualToRealModMask (
+	    bindMods = modHandler->virtualToRealModMask (
 		action->key ().modifiers ());
 
 	    if (action->key ().keycode () == (int) event->keycode)
@@ -304,11 +305,12 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 {
     CompAction::State state = CompAction::StateTermKey;
     CompAction        *action;
-    unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
+    unsigned int      ignored = modHandler->ignoredModMask ();
+    unsigned int      modMask = REAL_MOD_MASK & ~ignored;
     unsigned int      bindMods;
     unsigned int      mods;
 
-    mods = keycodeToModifiers (event->keycode);
+    mods = modHandler->keycodeToModifiers (event->keycode);
     if (!xkbEvent && !mods)
 	return false;
 
@@ -317,7 +319,7 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 	if (isTerminateBinding (option, CompAction::BindingTypeKey,
 				state, &action))
 	{
-	    bindMods = virtualToRealModMask (action->key ().modifiers ());
+	    bindMods = modHandler->virtualToRealModMask (action->key ().modifiers ());
 
 	    if ((bindMods & modMask) == 0)
 	    {
@@ -345,7 +347,8 @@ PrivateScreen::triggerStateNotifyBindings (CompOption::Vector  &options,
 {
     CompAction::State state;
     CompAction        *action;
-    unsigned int      modMask = REAL_MOD_MASK & ~ignoredModMask;
+    unsigned int      ignored = modHandler->ignoredModMask ();
+    unsigned int      modMask = REAL_MOD_MASK & ~ignored;
     unsigned int      bindMods;
 
     if (event->event_type == KeyPress)
@@ -360,7 +363,7 @@ PrivateScreen::triggerStateNotifyBindings (CompOption::Vector  &options,
 		if (action->key ().keycode () == 0)
 		{
 		    bindMods =
-			virtualToRealModMask (action->key ().modifiers ());
+			modHandler->virtualToRealModMask (action->key ().modifiers ());
 
 		    if ((event->mods & modMask & bindMods) == bindMods)
 		    {
@@ -380,7 +383,7 @@ PrivateScreen::triggerStateNotifyBindings (CompOption::Vector  &options,
 	    if (isTerminateBinding (option, CompAction::BindingTypeKey,
 				    state, &action))
 	    {
-		bindMods = virtualToRealModMask (action->key ().modifiers ());
+		bindMods = modHandler->virtualToRealModMask (action->key ().modifiers ());
 
 		if ((event->mods & modMask & bindMods) != bindMods)
 		{
@@ -1494,7 +1497,7 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case MappingNotify:
-	priv->updateModifierMappings ();
+	modHandler->updateModifierMappings ();
 	break;
     case MapRequest:
 	w = findWindow (event->xmaprequest.window);

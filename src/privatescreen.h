@@ -230,12 +230,6 @@ class PrivateScreen : public CoreOptions {
 
 	void updateScreenInfo ();
 
-	void updateModifierMappings ();
-
-	unsigned int virtualToRealModMask (unsigned int modMask);
-
-	unsigned int keycodeToModifiers (int keycode);
-
 	Window getActiveWindow (Window root);
 
 	int getWmState (Window id);
@@ -342,10 +336,6 @@ class PrivateScreen : public CoreOptions {
 
 	Window below;
 	char   displayString[256];
-
-	XModifierKeymap *modMap;
-	unsigned int    modMask[CompModNum];
-	unsigned int    ignoredModMask;
 
 	KeyCode escapeKeyCode;
 	KeyCode returnKeyCode;

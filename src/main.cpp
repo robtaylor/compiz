@@ -187,6 +187,11 @@ main (int argc, char **argv)
     if (!screen)
 	return 1;
 
+    modHandler = new ModifierHandler ();
+
+    if (!modHandler)
+	return 1;
+
     if (!plugins.empty ())
     {
 	CompOption::Value::Vector list;
@@ -208,6 +213,8 @@ main (int argc, char **argv)
     if (!screen->init (displayName))
 	return 1;
 
+    modHandler->updateModifierMappings ();
+
     if (!disableSm)
 	CompSession::init (clientId);
 
@@ -217,6 +224,7 @@ main (int argc, char **argv)
 	CompSession::close ();
 
     delete screen;
+    delete modHandler;
 
     if (restartSignal)
     {

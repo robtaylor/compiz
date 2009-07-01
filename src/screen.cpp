@@ -61,11 +61,6 @@
 #include "privatescreen.h"
 #include "privatewindow.h"
 
-static unsigned int virtualModMask[] = {
-    CompAltMask, CompMetaMask, CompSuperMask, CompHyperMask,
-    CompModeSwitchMask, CompNumLockMask, CompScrollLockMask
-};
-
 bool inHandleEvent = false;
 
 bool screenInitalized = false;
@@ -91,6 +86,7 @@ typedef struct {
 
 
 CompScreen *screen;
+ModifierHandler *modHandler;
 
 PluginClassStorage::Indices screenPluginClassIndices (0);
 
@@ -492,12 +488,6 @@ ScreenInterface::sessionEvent (CompSession::Event event,
     WRAPABLE_DEF (sessionEvent, event, arguments)
 
 
-static const int maskTable[] = {
-    ShiftMask, LockMask, ControlMask, Mod1Mask,
-    Mod2Mask, Mod3Mask, Mod4Mask, Mod5Mask
-};
-static const int maskTableSize = sizeof (maskTable) / sizeof (int);
-
 static int errors = 0;
 
 static int
@@ -739,140 +729,6 @@ PrivateScreen::setOption (const CompString  &name,
     }
 
     return rv;
-}
-
-void
-PrivateScreen::updateModifierMappings ()
-{
-    unsigned int    modMask[CompModNum];
-    int		    i, minKeycode, maxKeycode, keysymsPerKeycode = 0;
-    KeySym*         key;
-
-    for (i = 0; i < CompModNum; i++)
-	modMask[i] = 0;
-
-    XDisplayKeycodes (dpy, &minKeycode, &maxKeycode);
-    key = XGetKeyboardMapping (dpy, minKeycode, maxKeycode - minKeycode + 1,
-			       &keysymsPerKeycode);
-
-    if (modMap)
-	XFreeModifiermap (modMap);
-
-    modMap = XGetModifierMapping (dpy);
-    if (modMap && modMap->max_keypermod > 0)
-    {
-	KeySym keysym;
-	int    index, size, mask;
-
-	size = maskTableSize * modMap->max_keypermod;
-
-	for (i = 0; i < size; i++)
-	{
-	    if (!modMap->modifiermap[i])
-		continue;
-
-	    index = 0;
-	    do
-	    {
-		keysym = XKeycodeToKeysym (dpy, modMap->modifiermap[i],
-					   index++);
-	    } while (!keysym && index < keysymsPerKeycode);
-
-	    if (keysym)
-	    {
-		mask = maskTable[i / modMap->max_keypermod];
-
-		if (keysym == XK_Alt_L ||
-		    keysym == XK_Alt_R)
-		{
-		    modMask[CompModAlt] |= mask;
-		}
-		else if (keysym == XK_Meta_L ||
-			 keysym == XK_Meta_R)
-		{
-		    modMask[CompModMeta] |= mask;
-		}
-		else if (keysym == XK_Super_L ||
-			 keysym == XK_Super_R)
-		{
-		    modMask[CompModSuper] |= mask;
-		}
-		else if (keysym == XK_Hyper_L ||
-			 keysym == XK_Hyper_R)
-		{
-		    modMask[CompModHyper] |= mask;
-		}
-		else if (keysym == XK_Mode_switch)
-		{
-		    modMask[CompModModeSwitch] |= mask;
-		}
-		else if (keysym == XK_Scroll_Lock)
-		{
-		    modMask[CompModScrollLock] |= mask;
-		}
-		else if (keysym == XK_Num_Lock)
-		{
-		    modMask[CompModNumLock] |= mask;
-		}
-	    }
-	}
-
-	for (i = 0; i < CompModNum; i++)
-	{
-	    if (!modMask[i])
-		modMask[i] = CompNoMask;
-	}
-
-	if (memcmp (modMask, this->modMask, sizeof (modMask)))
-	{
-	    memcpy (this->modMask, modMask, sizeof (modMask));
-
-	    ignoredModMask = LockMask |
-		(modMask[CompModNumLock]    & ~CompNoMask) |
-		(modMask[CompModScrollLock] & ~CompNoMask);
-
-	    updatePassiveKeyGrabs ();
-	}
-    }
-
-    if (key)
-	XFree (key);
-}
-
-unsigned int
-PrivateScreen::virtualToRealModMask (unsigned int modMask)
-{
-    int i;
-
-    for (i = 0; i < CompModNum; i++)
-    {
-	if (modMask & virtualModMask[i])
-	{
-	    modMask &= ~virtualModMask[i];
-	    modMask |= this->modMask[i];
-	}
-    }
-
-    return modMask;
-}
-
-unsigned int
-PrivateScreen::keycodeToModifiers (int keycode)
-{
-    unsigned int mods = 0;
-    int mod, k;
-
-    for (mod = 0; mod < maskTableSize; mod++)
-    {
-	for (k = 0; k < modMap->max_keypermod; k++)
-	{
-	    if (modMap->modifiermap[mod *
-		modMap->max_keypermod + k] == keycode)
-		mods |= maskTable[mod];
-	}
-    }
-
-    return mods;
 }
 
 void
@@ -2855,9 +2711,9 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 
     CompScreen::checkForError (dpy);
 
-    for (ignore = 0; ignore <= ignoredModMask; ignore++)
+    for (ignore = 0; ignore <= modHandler->ignoredModMask (); ignore++)
     {
-	if (ignore & ~ignoredModMask)
+	if (ignore & ~modHandler->ignoredModMask ())
 	    continue;
 
 	if (keycode != 0)
@@ -2870,15 +2726,15 @@ PrivateScreen::grabUngrabKeys (unsigned int modifiers,
 	    {
 		if (modifiers & (1 << mod))
 		{
-		    for (k = mod * modMap->max_keypermod;
-			 k < (mod + 1) * modMap->max_keypermod;
+		    for (k = mod * modHandler->modMap ()->max_keypermod;
+			 k < (mod + 1) * modHandler->modMap ()->max_keypermod;
 			 k++)
 		    {
-			if (modMap->modifiermap[k])
+			if (modHandler->modMap ()->modifiermap[k])
 			{
 			    grabUngrabOneKey ((modifiers & ~(1 << mod)) |
 					      ignore,
-					      modMap->modifiermap[k],
+					      modHandler->modMap ()->modifiermap[k],
 					      grab);
 			}
 		    }
@@ -2900,7 +2756,7 @@ PrivateScreen::addPassiveKeyGrab (CompAction::KeyBinding &key)
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = virtualToRealModMask (key.modifiers ());
+    mask = modHandler->virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
@@ -2935,7 +2791,7 @@ PrivateScreen::removePassiveKeyGrab (CompAction::KeyBinding &key)
     unsigned int                 mask;
     std::list<KeyGrab>::iterator it;
 
-    mask = virtualToRealModMask (key.modifiers ());
+    mask = modHandler->virtualToRealModMask (key.modifiers ());
 
     for (it = keyGrabs.begin (); it != keyGrabs.end (); it++)
     {
@@ -4160,8 +4016,6 @@ CompScreen::init (const char *name)
 
     XSetErrorHandler (errorHandler);
 
-    priv->updateModifierMappings ();
-
     priv->snDisplay = sn_display_new (dpy, NULL, NULL);
     if (!priv->snDisplay)
 	return true;
@@ -4523,9 +4377,6 @@ CompScreen::~CompScreen ()
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
-    if (priv->modMap)
-	XFreeModifiermap (priv->modMap);
-
     if (priv->watchPollFds)
 	free (priv->watchPollFds);
 
@@ -4550,8 +4401,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     screenInfo (0),
     activeWindow (0),
     below (None),
-    modMap (0),
-    ignoredModMask (LockMask),
     autoRaiseTimer (),
     autoRaiseWindow (0),
     edgeDelayTimer (),
@@ -4586,8 +4435,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopHintSize (0),
     initialized (false)
 {
-    for (int i = 0; i < CompModNum; i++)
-	modMask[i] = CompNoMask;
     memset (history, 0, sizeof (history));
     gettimeofday (&lastTimeout, 0);
 

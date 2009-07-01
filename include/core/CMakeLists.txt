@@ -4,6 +4,7 @@ set (_headers
     core.h
     icon.h
     match.h
+    modifierhandler.h
     option.h
     output.h
     plugin.h

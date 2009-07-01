@@ -35,6 +35,7 @@
 #include <core/match.h>
 #include <core/pluginclasses.h>
 #include <core/region.h>
+#include <core/modifierhandler.h>
 
 class CompScreen;
 class PrivateScreen;
@@ -48,6 +49,7 @@ extern bool       noDetection;
 extern bool       debugOutput;
 
 extern CompScreen   *screen;
+extern ModifierHandler *modHandler;
 
 extern int lastPointerX;
 extern int lastPointerY;
@@ -356,6 +358,7 @@ class CompScreen :
 	friend class CompTimer;
 	friend class CompWindow;
 	friend class PrivateWindow;
+	friend class ModifierHandler;
 
     private:
 	PrivateScreen *priv;
