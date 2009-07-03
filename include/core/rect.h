@@ -69,6 +69,14 @@ class CompRect {
 	void setPos (const CompPoint&);
 	void setSize (const CompSize&);
 
+	/* Setting an edge past it's opposite edge will result in both edges
+	 * being set to the new value
+	 */
+	void setLeft    (int);
+	void setTop     (int);
+	void setRight   (int);
+	void setBottom  (int);
+
 	bool contains (const CompPoint &) const;
 	bool contains (const CompRect &) const;
 	bool intersects (const CompRect &) const;

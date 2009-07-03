@@ -124,6 +124,38 @@ CompRect::setSize (const CompSize& size)
     mRegion.extents.y2 = mRegion.extents.y1 + size.height ();
 }
 
+void
+CompRect::setLeft (int x1)
+{
+    mRegion.extents.x1 = x1;
+    if (mRegion.extents.x2 < x1)
+	mRegion.extents.x2 = x1;
+}
+
+void
+CompRect::setTop (int y1)
+{
+    mRegion.extents.y1 = y1;
+    if (mRegion.extents.y2 < y1)
+	mRegion.extents.y2 = y1;
+}
+
+void
+CompRect::setRight (int x2)
+{
+    mRegion.extents.x2 = x2;
+    if (mRegion.extents.x1 > x2)
+	mRegion.extents.x1 = x2;
+}
+
+void
+CompRect::setBottom (int y2)
+{
+    mRegion.extents.y2 = y2;
+    if (mRegion.extents.y1 > y2)
+	mRegion.extents.y1 = y2;
+}
+
 bool
 CompRect::contains (const CompPoint& point) const
 {
