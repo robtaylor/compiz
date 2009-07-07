@@ -109,6 +109,8 @@ class PrivateScaleScreen :
 
 	void updateOpacity ();
 
+	int getMultioutputMode ();
+
     public:
 
 	CompositeScreen *cScreen;

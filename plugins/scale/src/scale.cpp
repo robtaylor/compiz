@@ -286,7 +286,7 @@ ScaleWindow::setScaledPaintAttributes (GLWindowPaintAttrib& attrib)
 	{
 	    int moMode, output;
 
-	    moMode = priv->spScreen->optionGetMultioutputMode ();
+	    moMode = priv->spScreen->getMultioutputMode ();
 
 	    switch (moMode) {
 		case ScaleOptions::MultioutputModeOnCurrentOutputDevice:
@@ -483,7 +483,7 @@ PrivateScaleScreen::layoutSlots ()
     int i;
     int moMode;
 
-    moMode  = optionGetMultioutputMode ();
+    moMode  = getMultioutputMode ();
 
     /* if we have only one head, we don't need the
        additional effort of the all outputs mode */
@@ -1601,6 +1601,19 @@ void
 PrivateScaleScreen::updateOpacity ()
 {
     opacity = (OPAQUE * optionGetOpacity ()) / 100;
+}
+
+/* When we are only scaling windows on the current output, over-ride the
+ * multioutput mode so that windows will only be displayed on the current
+ * output, regardless of the setting.
+ */
+int
+PrivateScaleScreen::getMultioutputMode ()
+{
+    if (type == ScaleTypeOutput)
+	return MultioutputModeOnCurrentOutputDevice;
+
+    return optionGetMultioutputMode ();
 }
 
 
