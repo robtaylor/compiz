@@ -403,6 +403,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	Display		     *dpy = screen->dpy ();
 	XSizeHints	     xsh;
 	XWMHints	     xwmh;
+	XClassHint           xch;
 	Atom		     state[4];
 	int		     nState = 0;
 	XSetWindowAttributes attr;
@@ -427,6 +428,9 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	xwmh.flags = InputHint;
 	xwmh.input = 0;
 
+	xch.res_name  = (char *)"compiz";
+	xch.res_class = (char *)"switcher-window";
+
 	attr.background_pixel = 0;
 	attr.border_pixel     = 0;
 	attr.colormap	      = XCreateColormap (dpy, screen->root (), visual,
@@ -442,7 +446,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	XSetWMProperties (dpy, popupWindow, NULL, NULL,
 			  programArgv, programArgc,
-			  &xsh, &xwmh, NULL);
+			  &xsh, &xwmh, &xch);
 
 	state[nState++] = Atoms::winStateAbove;
 	state[nState++] = Atoms::winStateSticky;
