@@ -367,6 +367,8 @@ class CompWindow :
 
 	void incrementDestroyReference ();
 
+	bool hasUnmapReference ();
+
 	bool resize (XWindowAttributes);
 
 	bool resize (Geometry);

@@ -5249,6 +5249,12 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
     }
 }
 
+bool
+CompWindow::hasUnmapReference ()
+{
+    return (priv && priv->unmapRefCnt > 1);
+}
+
 void
 CompWindow::updateFrameRegion (CompRegion& region)
     WRAPABLE_HND_FUNC (12, updateFrameRegion, region)

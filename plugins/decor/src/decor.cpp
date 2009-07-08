@@ -748,7 +748,7 @@ DecorWindow::update (bool allowDecoration)
 
 	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
 	    window->setWindowFrameExtents (&wd->decor->maxInput);
-	else
+	else if (!window->hasUnmapReference ())
 	    window->setWindowFrameExtents (&wd->decor->input);
 
 	moveDx = shiftX () - oldShiftX;
@@ -1282,7 +1282,7 @@ DecorScreen::handleEvent (XEvent *event)
     if (screen->activeWindow () != activeWindow)
     {
 	w = screen->findWindow (activeWindow);
-	if (w)
+	if (w && !w->hasUnmapReference ())
 	    DecorWindow::get (w)->update (true);
 
 	w = screen->findWindow (screen->activeWindow ());
