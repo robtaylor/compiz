@@ -133,6 +133,10 @@ class PrivateWindow {
 	bool reparent ();
 	void unreparent ();
 
+	void hide ();
+
+	void show ();
+
 	bool handlePingTimeout (unsigned int lastPing);
 
 	void handlePing (int lastPing);

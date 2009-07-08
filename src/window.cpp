@@ -3075,13 +3075,13 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
     {
 	windowNotify (CompWindowNotifyShade);
 
-	hide ();
+	priv->hide ();
     }
     else if (priv->shaded)
     {
 	windowNotify (CompWindowNotifyUnshade);
 
-	show ();
+	priv->show ();
     }
 
     if (stackingMode != CompStackingUpdateModeNone)
@@ -3229,7 +3229,7 @@ CompWindow::activate ()
     {
 	priv->state &= ~CompWindowStateShadedMask;
 	if (priv->shaded)
-	    show ();
+	    priv->show ();
     }
 
     if (priv->state & CompWindowStateHiddenMask)
@@ -3401,17 +3401,31 @@ CompWindow::constrainNewWindowSize (int        width,
 void
 CompWindow::hide ()
 {
-    bool onDesktop = onCurrentDesktop ();
+    priv->hidden = true;
+    priv->hide ();
+}
 
-    if (!priv->managed)
+void
+CompWindow::show ()
+{
+    priv->hidden = false;
+    priv->show ();
+}
+
+void
+PrivateWindow::hide ()
+{
+    bool onDesktop = window->onCurrentDesktop ();
+
+    if (!managed)
 	return;
 
-    if (!priv->minimized && !priv->inShowDesktopMode &&
-	!priv->hidden && onDesktop)
+    if (!minimized && !inShowDesktopMode &&
+	!hidden && onDesktop)
     {
-	if (priv->state & CompWindowStateShadedMask)
+	if (state & CompWindowStateShadedMask)
 	{
-	    priv->shaded = true;
+	    shaded = true;
 	}
 	else
 	{
@@ -3420,84 +3434,83 @@ CompWindow::hide ()
     }
     else
     {
-	priv->shaded = false;
+	shaded = false;
 
-	if ((priv->state & CompWindowStateShadedMask) && priv->frame)
-	    XUnmapWindow (screen->dpy (), priv->frame);
+	if ((state & CompWindowStateShadedMask) && frame)
+	    XUnmapWindow (screen->dpy (), frame);
     }
 
-    if (!priv->pendingMaps && !isViewable ())
+    if (!pendingMaps && !window->isViewable ())
 	return;
 
-    windowNotify (CompWindowNotifyHide);
+    window->windowNotify (CompWindowNotifyHide);
 
-    priv->pendingUnmaps++;
+    pendingUnmaps++;
 
-    if (priv->frame && !priv->shaded)
-        XUnmapWindow (screen->dpy (), priv->frame);
+    if (frame && !shaded)
+        XUnmapWindow (screen->dpy (), frame);
 
-    XUnmapWindow (screen->dpy (), priv->id);
+    XUnmapWindow (screen->dpy (), id);
 
-    if (priv->minimized || priv->inShowDesktopMode ||
-	priv->hidden || priv->shaded)
-	changeState (priv->state | CompWindowStateHiddenMask);
+    if (minimized || inShowDesktopMode || hidden || shaded)
+	window->changeState (state | CompWindowStateHiddenMask);
 
-    if (priv->shaded && priv->id == screen->activeWindow ())
-	moveInputFocusTo ();
+    if (shaded && id == screen->activeWindow ())
+	window->moveInputFocusTo ();
 }
 
 void
-CompWindow::show ()
+PrivateWindow::show ()
 {
-    Bool onDesktop = onCurrentDesktop ();
+    Bool onDesktop = window->onCurrentDesktop ();
 
-    if (!priv->managed)
+    if (!managed)
 	return;
 
-    if (priv->minimized || priv->inShowDesktopMode ||
-	priv->hidden    || !onDesktop)
+    if (minimized || inShowDesktopMode ||
+	hidden    || !onDesktop)
     {
 	/* no longer hidden but not on current desktop */
-	if (!priv->minimized && !priv->inShowDesktopMode && !priv->hidden)
-	    changeState (priv->state & ~CompWindowStateHiddenMask);
+	if (!minimized && !inShowDesktopMode && !hidden)
+	    window->changeState (state & ~CompWindowStateHiddenMask);
 
 	return;
     }
 
     /* transition from minimized to shaded */
-    if (priv->state & CompWindowStateShadedMask)
+    if (state & CompWindowStateShadedMask)
     {
-	priv->shaded = true;
+	shaded = true;
 
-	if (priv->frame)
-	    XMapWindow (screen->dpy (), priv->frame);
+	if (frame)
+	    XMapWindow (screen->dpy (), frame);
 
-	if (priv->height)
-	    resize (priv->attrib.x, priv->attrib.y,
-		    priv->attrib.width, ++priv->attrib.height - 1,
-		    priv->attrib.border_width);
+	if (height)
+	    window->resize (attrib.x, attrib.y,
+			    attrib.width, ++attrib.height - 1,
+			    attrib.border_width);
 
 	return;
     }
     else
     {
-	priv->shaded = false;
+	shaded = false;
     }
 
-    windowNotify (CompWindowNotifyShow);
+    window->windowNotify (CompWindowNotifyShow);
 
-    priv->pendingMaps++;
+    pendingMaps++;
 
-    if (priv->frame)
+    if (frame)
     {
-	XMapWindow (screen->dpy (), priv->frame);
-	XMapWindow (screen->dpy (), priv->wrapper);
+	XMapWindow (screen->dpy (), frame);
+	XMapWindow (screen->dpy (), wrapper);
     }
 
-    XMapWindow (screen->dpy (), priv->id);
+    XMapWindow (screen->dpy (), id);
 
-    changeState (priv->state & ~CompWindowStateHiddenMask);
-    screen->priv->setWindowState (priv->state, priv->id);
+    window->changeState (state & ~CompWindowStateHiddenMask);
+    screen->priv->setWindowState (state, id);
 }
 
 void
@@ -3526,7 +3539,7 @@ CompWindow::minimize ()
 	screen->forEachWindow (
 	    boost::bind (PrivateWindow::minimizeTransients, _1, this));
 
-	hide ();
+	priv->hide ();
     }
 }
 
@@ -3548,7 +3561,7 @@ CompWindow::unminimize ()
 
 	priv->minimized = false;
 
-	show ();
+	priv->show ();
 
 	screen->forEachWindow (
 	    boost::bind (PrivateWindow::unminimizeTransients, _1, this));
@@ -4048,9 +4061,9 @@ CompWindow::setDesktop (unsigned int desktop)
     priv->desktop = desktop;
 
     if (desktop == 0xffffffff || desktop == screen->currentDesktop ())
-	show ();
+	priv->show ();
     else
-	hide ();
+	priv->hide ();
 
     screen->setWindowProp (priv->id, Atoms::winDesktop, priv->desktop);
 }
@@ -4412,7 +4425,7 @@ PrivateWindow::processMap ()
 	screen->priv->setCurrentDesktop (priv->desktop);
 
     if (!(priv->state & CompWindowStateHiddenMask))
-	window->show ();
+	show ();
 
     if (allowFocus)
 	window->moveInputFocusTo ();

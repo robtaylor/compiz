@@ -483,7 +483,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 		w = screen->findWindow (popupWindow);
 		if (w && (w->state () & CompWindowStateHiddenMask))
-		    w->unminimize ();
+		    w->show ();
 		else
 		    XMapWindow (screen->dpy (), popupWindow);
 
@@ -542,7 +542,7 @@ switchTerminate (CompAction         *action,
 	    w = screen->findWindow (ss->popupWindow);
 	    if (w && w->managed () && w->mapNum ())
 	    {
-		w->minimize ();
+		w->hide ();
 	    }
 	    else
 	    {

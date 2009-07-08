@@ -2249,7 +2249,7 @@ CompScreen::enterShowDesktopMode ()
 		w->managed () && w->focus ())
 	    {
 		w->setShowDesktopMode (true);
-		w->hide ();
+		w->priv->hide ();
 	    }
 	}
 
@@ -2282,7 +2282,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 	    return;
 
 	window->setShowDesktopMode (false);
-	window->show ();
+	window->priv->show ();
 
 	/* return if some other window is still in show desktop mode */
 	foreach (CompWindow *w, priv->windows)
@@ -2301,7 +2301,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 		continue;
 
 	    w->setShowDesktopMode (false);
-	    w->show ();
+	    w->priv->show ();
 	}
 
 	/* focus default window - most likely this will be the window
@@ -3487,9 +3487,9 @@ PrivateScreen::setCurrentDesktop (unsigned int desktop)
 	    continue;
 
 	if (w->desktop () == desktop)
-	    w->show ();
+	    w->priv->show ();
 	else
-	    w->hide ();
+	    w->priv->hide ();
     }
 
     data = desktop;
