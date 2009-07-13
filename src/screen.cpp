@@ -2249,6 +2249,7 @@ CompScreen::enterShowDesktopMode ()
 		w->managed () && w->focus ())
 	    {
 		w->setShowDesktopMode (true);
+		w->windowNotify (CompWindowNotifyEnterShowDesktopMode);
 		w->priv->hide ();
 	    }
 	}
@@ -2282,6 +2283,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 	    return;
 
 	window->setShowDesktopMode (false);
+	window->windowNotify (CompWindowNotifyLeaveShowDesktopMode);
 	window->priv->show ();
 
 	/* return if some other window is still in show desktop mode */
@@ -2301,6 +2303,7 @@ CompScreen::leaveShowDesktopMode (CompWindow *window)
 		continue;
 
 	    w->setShowDesktopMode (false);
+	    w->windowNotify (CompWindowNotifyLeaveShowDesktopMode);
 	    w->priv->show ();
 	}
 

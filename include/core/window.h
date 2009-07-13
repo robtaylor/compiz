@@ -181,7 +181,9 @@ enum CompWindowNotify {
    CompWindowNotifyMinimize,
    CompWindowNotifyUnminimize,
    CompWindowNotifyShade,
-   CompWindowNotifyUnshade
+   CompWindowNotifyUnshade,
+   CompWindowNotifyEnterShowDesktopMode,
+   CompWindowNotifyLeaveShowDesktopMode
 };
 
 struct CompWindowExtents {
