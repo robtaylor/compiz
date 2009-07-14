@@ -1475,7 +1475,6 @@ bool
 DecorScreen::setOption (const CompString  &name,
 			CompOption::Value &value)
 {
-    CompOption   *o;
     unsigned int index;
 
     bool rv = DecorOptions::setOption (name, value);

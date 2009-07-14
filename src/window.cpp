@@ -4378,7 +4378,6 @@ PrivateWindow::processMap ()
 
     if (!priv->placed)
     {
-	int            newX, newY;
 	int            gravity = priv->sizeHints.win_gravity;
 	XWindowChanges xwc;
 	unsigned int   xwcm;

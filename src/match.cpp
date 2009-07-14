@@ -566,6 +566,8 @@ MatchGroupOp::operator= (const MatchGroupOp &gr)
 		break;
 	}
     }
+
+    return *this;
 }
 
 PrivateMatch::PrivateMatch () :

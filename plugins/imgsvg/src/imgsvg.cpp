@@ -234,7 +234,6 @@ SvgWindow::glDraw (const GLMatrix     &transform,
     if (context && reg.numRects ())
     {
 	GLTexture::MatrixList matrix (1);
-	REGION	              r;
 	int                   i, j;
 	int		      x1, y1, x2, y2;
 	CompRect              rect = context->box.boundingRect ();
@@ -263,7 +262,6 @@ SvgWindow::glDraw (const GLMatrix     &transform,
 		float    xScale, yScale;
 		float    dx, dy;
 		int      width, height;
-		int      saveFilter;
 
 		rect.setGeometry (rect.x1 () - 1,
 				  rect.y1 () - 1,

@@ -173,7 +173,6 @@ RegexWindow::getStringProperty (Atom        nameAtom,
     unsigned long bytesAfter;
     unsigned char *str = NULL;
     int		  format, result;
-    char	  *retval;
 
     result = XGetWindowProperty (screen->dpy (), window->id (), nameAtom, 0,
 				 LONG_MAX, FALSE, typeAtom, &type, &format,

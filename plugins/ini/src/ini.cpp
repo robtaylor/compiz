@@ -196,6 +196,8 @@ IniFile::optionValueToString (CompOption::Value &value,
     case CompOption::TypeMatch:
 	retval = value.match ().toString ();
 	break;
+    default:
+    	break;
     }
 
     return retval;
@@ -366,6 +368,9 @@ IniFile::stringToOptionValue (CompString        &string,
 		    action.setBell (false);
 		else
 		    retval = false;
+	    	break;
+	    default:
+	    	break;
 	    }
 
 	    if (retval)
@@ -378,6 +383,8 @@ IniFile::stringToOptionValue (CompString        &string,
 	    value.set (match);
 	}
 	break;
+    default:
+    	break;
     }
 
     return retval;

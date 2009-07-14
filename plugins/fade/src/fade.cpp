@@ -326,7 +326,6 @@ bool
 FadeScreen::setOption (const CompString  &name,
 		       CompOption::Value &value)
 {
-    CompOption   *o;
     unsigned int index;
 
     bool rv = FadeOptions::setOption (name, value);

@@ -480,7 +480,6 @@ PrivateScaleScreen::getSlotAreas ()
 void
 PrivateScaleScreen::layoutSlots ()
 {
-    int i;
     int moMode;
 
     moMode  = getMultioutputMode ();
@@ -559,7 +558,7 @@ bool
 PrivateScaleScreen::fillInWindows ()
 {
     CompWindow *w;
-    int        i, width, height;
+    int        width, height;
     float      sx, sy, cx, cy;
 
     foreach (ScaleWindow *sw, windows)

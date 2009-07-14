@@ -804,7 +804,6 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
      * existing window in each of those cases.
      */
     bool           retval = FALSE;
-    unsigned int   i;
     CompWindowList belowSorted, rightSorted;
     CompRect       rect;
 
@@ -891,7 +890,7 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
     int                      cascadeX, cascadeY;
     int                      xThreshold, yThreshold;
     int                      winWidth, winHeight;
-    int                      i, cascadeStage;
+    int                      cascadeStage;
 
     sorted = windows;
     sorted.sort (compareNorthWestCorner);

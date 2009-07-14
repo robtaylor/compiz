@@ -167,7 +167,6 @@ WaterScreen::getBumpMapFragmentFunction (GLTexture *texture,
     }
 
     static const char *temp[] = { "normal", "temp", "total", "bump", "offset" };
-    char        str[1024];
 
     for (unsigned int i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
 	data.addTempHeaderOp (temp[i]);
@@ -1035,7 +1034,6 @@ waterInitiate (CompAction         *action,
 	       CompAction::State  state,
 	       CompOption::Vector &options)
 {
-    CompScreen   *s;
     unsigned int ui;
     Window	 root, child;
     int	         xRoot, yRoot, i;

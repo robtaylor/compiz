@@ -35,8 +35,6 @@ runCommand (CompAction          *action,
 {
     Window xid;
 
-    GNOME_SCREEN (screen);
-
     xid = CompOption::getIntOptionNamed (options, "root", 0);
     if (xid != screen->root ())
 	return false;

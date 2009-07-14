@@ -191,7 +191,6 @@ resizeInitiate (CompAction         *action,
 	unsigned int mask;
 	int          x, y;
 	int	     button;
-	int	     i;
 
 	RESIZE_SCREEN (screen);
 

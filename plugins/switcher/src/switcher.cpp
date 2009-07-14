@@ -522,7 +522,6 @@ switchTerminate (CompAction         *action,
 	         CompAction::State  state,
 	         CompOption::Vector &options)
 {
-    CompScreen *s;
     Window     xid;
 
     xid = CompOption::getIntOptionNamed (options, "root");
@@ -607,7 +606,6 @@ switchInitiateCommon (CompAction            *action,
 		      bool                  showPopup,
 		      bool                  nextWindow)
 {
-    CompScreen *s;
     Window     xid;
 
     xid = CompOption::getIntOptionNamed (options, "root");
@@ -644,7 +642,7 @@ SwitchScreen::windowRemove (Window id)
     if (w)
     {
 	bool   inList = false;
-	int    count, j, i = 0;
+	int    count;
 	Window selected, old;
 
 	SWITCH_WINDOW (w);
@@ -801,8 +799,6 @@ SwitchScreen::updateForegroundColor ()
 void
 SwitchScreen::handleEvent (XEvent *event)
 {
-    CompWindow *w;
-
     screen->handleEvent (event);
 
     switch (event->type) {
@@ -1446,7 +1442,6 @@ SwitchWindow::damageRect (bool initial, const CompRect &rect)
     if (sScreen->grabIndex)
     {
 	CompWindow *popup;
-	int	   i;
 
 	foreach (CompWindow *w, sScreen->windows)
 	{

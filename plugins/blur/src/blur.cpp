@@ -1593,7 +1593,6 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 	    bool       clipped = FALSE;
 	    CompRect   box (0, 0, 0, 0);
 	    CompRegion reg;
-	    int        i;
 
 	    bScreen->mvp = GLMatrix (bScreen->gScreen->projectionMatrix ());
 	    bScreen->mvp *= transform;

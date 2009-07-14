@@ -511,6 +511,8 @@ zoomTerminate (CompAction         *action,
     }
     action->setState (action->state () & ~(CompAction::StateTermKey |
 					   CompAction::StateTermButton));
+
+    return true;
 }
 
 static bool

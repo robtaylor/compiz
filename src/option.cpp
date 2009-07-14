@@ -930,6 +930,8 @@ CompOption::typeToString (CompOption::Type type)
 	    return "match";
 	case CompOption::TypeList:
 	    return "list";
+	default:
+	    break;
     }
 
     return "unknown";
