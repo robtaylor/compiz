@@ -83,7 +83,7 @@ InotifyScreen::processEvents ()
 	    event = (struct inotify_event *) &buf[i];
 
 	    for (iter = watches.begin (); iter != watches.end (); ++iter)
-		if ((*iter).wd = event->wd)
+		if ((*iter).wd == event->wd)
 		    break;
 
 	    if (iter != watches.end ())
