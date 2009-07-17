@@ -536,7 +536,7 @@ CompScreen::checkForError (Display *dpy)
 {
     int e;
 
-    XSync (dpy, FALSE);
+    XSync (dpy, false);
 
     e = errors;
     errors = 0;
@@ -911,7 +911,7 @@ convertProperty (Display *dpy,
     /* Be sure the PropertyNotify has arrived so we
      * can send SelectionNotify
      */
-    XSync (dpy, FALSE);
+    XSync (dpy, false);
 
     return true;
 }
@@ -946,7 +946,7 @@ PrivateScreen::handleSelectionRequest (XEvent *event)
 	    if (XGetWindowProperty (dpy,
 				    event->xselectionrequest.requestor,
 				    event->xselectionrequest.property,
-				    0, 256, FALSE,
+				    0, 256, false,
 				    Atoms::atomPair,
 				    &type, &format, &num, &rest,
 				    &data) != Success)
@@ -991,7 +991,7 @@ PrivateScreen::handleSelectionRequest (XEvent *event)
     }
 
     XSendEvent (dpy, event->xselectionrequest.requestor,
-		FALSE, 0L, (XEvent *) &reply);
+		false, 0L, (XEvent *) &reply);
 }
 
 void
@@ -1002,7 +1002,7 @@ PrivateScreen::handleSelectionClear (XEvent *event)
 	wmSnAtom != event->xselectionclear.selection)
 	return;
 
-    shutDown = TRUE;
+    shutDown = true;
 }
 
 #define HOME_IMAGEDIR ".compiz/images"
@@ -1060,7 +1060,7 @@ PrivateScreen::getActiveWindow (Window root)
     Window	  w = None;
 
     result = XGetWindowProperty (priv->dpy, root,
-				 Atoms::winActive, 0L, 1L, FALSE,
+				 Atoms::winActive, 0L, 1L, false,
 				 XA_WINDOW, &actual, &format,
 				 &n, &left, &data);
 
@@ -1170,7 +1170,7 @@ PrivateScreen::getWmState (Window id)
     unsigned long state = NormalState;
 
     result = XGetWindowProperty (priv->dpy, id,
-				 Atoms::wmState, 0L, 2L, FALSE,
+				 Atoms::wmState, 0L, 2L, false,
 				 Atoms::wmState, &actual, &format,
 				 &n, &left, &data);
 
@@ -1272,7 +1272,7 @@ PrivateScreen::getWindowState (Window id)
 
     result = XGetWindowProperty (priv->dpy, id,
 				 Atoms::winState,
-				 0L, 1024L, FALSE, XA_ATOM, &actual, &format,
+				 0L, 1024L, false, XA_ATOM, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && data)
@@ -1336,7 +1336,7 @@ PrivateScreen::getWindowType (Window id)
 
     result = XGetWindowProperty (priv->dpy , id,
 				 Atoms::winType,
-				 0L, 1L, FALSE, XA_ATOM, &actual, &format,
+				 0L, 1L, false, XA_ATOM, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && data)
@@ -1396,7 +1396,7 @@ PrivateScreen::getMwmHints (Window       id,
 
     result = XGetWindowProperty (priv->dpy, id,
 				 Atoms::mwmHints,
-				 0L, 20L, FALSE, Atoms::mwmHints,
+				 0L, 20L, false, Atoms::mwmHints,
 				 &actual, &format, &n, &left, &data);
 
     if (result == Success && data)
@@ -1457,7 +1457,7 @@ CompScreen::getWindowProp (Window       id,
     unsigned int  retval = defaultValue;
 
     result = XGetWindowProperty (priv->dpy, id, property,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
+				 0L, 1L, false, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && data)
@@ -1499,7 +1499,7 @@ PrivateScreen::readWindowProp32 (Window         id,
     bool          retval = false;
 
     result = XGetWindowProperty (priv->dpy, id, property,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
+				 0L, 1L, false, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && data)
@@ -2144,7 +2144,7 @@ PrivateScreen::getDesktopHints ()
     {
 	result = XGetWindowProperty (dpy, root,
 				     Atoms::numberOfDesktops,
-				     0L, 1L, FALSE, XA_CARDINAL, &actual,
+				     0L, 1L, false, XA_CARDINAL, &actual,
 				     &format, &n, &left, &propData);
 
 	if (result == Success && propData)
@@ -2161,7 +2161,7 @@ PrivateScreen::getDesktopHints ()
 
 	result = XGetWindowProperty (dpy, root,
 				     Atoms::desktopViewport, 0L, 2L,
-				     FALSE, XA_CARDINAL, &actual, &format,
+				     false, XA_CARDINAL, &actual, &format,
 				     &n, &left, &propData);
 
 	if (result == Success && propData)
@@ -2182,7 +2182,7 @@ PrivateScreen::getDesktopHints ()
 
 	result = XGetWindowProperty (dpy, root,
 				     Atoms::currentDesktop,
-				     0L, 1L, FALSE, XA_CARDINAL, &actual,
+				     0L, 1L, false, XA_CARDINAL, &actual,
 				     &format, &n, &left, &propData);
 
 	if (result == Success && propData)
@@ -2200,7 +2200,7 @@ PrivateScreen::getDesktopHints ()
 
     result = XGetWindowProperty (dpy, root,
 				 Atoms::showingDesktop,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
+				 0L, 1L, false, XA_CARDINAL, &actual, &format,
 				 &n, &left, &propData);
 
     if (result == Success && propData)
@@ -2221,7 +2221,7 @@ PrivateScreen::getDesktopHints ()
 		     XA_CARDINAL, 32, PropModeReplace,
 		     (unsigned char *) data, 1);
 
-    data[0] = showingDesktopMask ? TRUE : FALSE;
+    data[0] = showingDesktopMask ? true : false;
 
     XChangeProperty (dpy, root, Atoms::showingDesktop,
 		     XA_CARDINAL, 32, PropModeReplace,
@@ -2343,7 +2343,7 @@ CompScreen::focusDefaultWindow ()
 	}
 	else
 	{
-	    Bool         status;
+	    bool         status;
 	    Window       rootReturn, childReturn;
 	    int          dummyInt;
 	    unsigned int dummyUInt;
@@ -2553,7 +2553,7 @@ CompScreen::pushGrab (Cursor cursor, const char *name)
     {
 	int status;
 
-	status = XGrabPointer (priv->dpy, priv->grabWindow, TRUE,
+	status = XGrabPointer (priv->dpy, priv->grabWindow, true,
 			       POINTER_GRAB_MASK,
 			       GrabModeAsync, GrabModeAsync,
 			       priv->root, cursor,
@@ -2562,7 +2562,7 @@ CompScreen::pushGrab (Cursor cursor, const char *name)
 	if (status == GrabSuccess)
 	{
 	    status = XGrabKeyboard (priv->dpy,
-				    priv->grabWindow, TRUE,
+				    priv->grabWindow, true,
 				    GrabModeAsync, GrabModeAsync,
 				    CurrentTime);
 	    if (status != GrabSuccess)
@@ -2636,8 +2636,8 @@ CompScreen::removeGrab (CompScreen::GrabHandle handle,
 }
 
 /* otherScreenGrabExist takes a series of strings terminated by a NULL.
-   It returns TRUE if a grab exists but it is NOT held by one of the
-   plugins listed, returns FALSE otherwise. */
+   It returns true if a grab exists but it is NOT held by one of the
+   plugins listed, returns false otherwise. */
 
 bool
 CompScreen::otherGrabExist (const char *first, ...)
@@ -2691,7 +2691,7 @@ PrivateScreen::grabUngrabOneKey (unsigned int modifiers,
 		  keycode,
 		  modifiers,
 		  root,
-		  TRUE,
+		  true,
 		  GrabModeAsync,
 		  GrabModeAsync);
     }
@@ -3086,8 +3086,8 @@ compareMappingOrder (const CompWindow *w1,
 void
 PrivateScreen::updateClientList ()
 {
-    Bool   updateClientList = true;
-    Bool   updateClientListStacking = true;
+    bool   updateClientList = true;
+    bool   updateClientListStacking = true;
     int	   n = 0;
 
     screen->forEachWindow (boost::bind (countClientListWindow, _1, &n));
@@ -3200,7 +3200,7 @@ CompScreen::toolkitAction (Atom   toolkitAction,
     XUngrabPointer (priv->dpy, CurrentTime);
     XUngrabKeyboard (priv->dpy, CurrentTime);
 
-    XSendEvent (priv->dpy, priv->root, FALSE,
+    XSendEvent (priv->dpy, priv->root, false,
 		StructureNotifyMask, &ev);
 }
 
@@ -3397,7 +3397,7 @@ CompScreen::sendWindowActivationRequest (Window id)
     xev.xclient.data.l[3] = 0;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (priv->dpy, priv->root, FALSE,
+    XSendEvent (priv->dpy, priv->root, false,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 
@@ -3619,7 +3619,7 @@ CompScreen::outputDeviceForGeometry (const CompWindow::Geometry& gm)
 	/* it's not unique, select one output of the matching ones and use the
 	   user preferred strategy for that */
 	unsigned int currentSize, bestOutputSize;
-	Bool         searchLargest;
+	bool         searchLargest;
 
 	searchLargest =
 	    (strategy != CoreOptions::OverlappingOutputsPreferSmallerOutput);
@@ -3782,7 +3782,7 @@ CompScreen::warpPointer (int dx,
 		  0, 0, 0, 0,
 		  pointerX, pointerY);
 
-    XSync (priv->dpy, FALSE);
+    XSync (priv->dpy, false);
 
     while (XCheckMaskEvent (priv->dpy,
 			    LeaveWindowMask |
@@ -4012,7 +4012,7 @@ CompScreen::init (const char *name)
 	      DisplayString (dpy));
 
 #ifdef DEBUG
-    XSynchronize (priv->dpy, TRUE);
+    XSynchronize (priv->dpy, true);
 #endif
 
     Atoms::init (priv->dpy);
@@ -4086,7 +4086,7 @@ CompScreen::init (const char *name)
 	XSelectInput (dpy, currentWmSnOwner, StructureNotifyMask);
     }
 
-    attr.override_redirect = TRUE;
+    attr.override_redirect = true;
     attr.event_mask        = PropertyChangeMask;
 
     newWmSnOwner =
@@ -4130,7 +4130,7 @@ CompScreen::init (const char *name)
     event.xclient.data.l[3]    = 0;
     event.xclient.data.l[4]    = 0;
 
-    XSendEvent (dpy, XRootWindow (dpy, DefaultScreen (dpy)), FALSE,
+    XSendEvent (dpy, XRootWindow (dpy, DefaultScreen (dpy)), false,
 		StructureNotifyMask, &event);
 
     /* Wait for old window manager to go away */

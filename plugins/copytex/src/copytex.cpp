@@ -158,7 +158,7 @@ CopyTexture::update ()
     if (!damage.width () || !damage.height ())
 	return;
 
-    gcv.graphics_exposures = FALSE;
+    gcv.graphics_exposures = false;
     gcv.subwindow_mode = IncludeInferiors;
     gc = XCreateGC (screen->dpy (), cp->pixmap,
 		    GCGraphicsExposures | GCSubwindowMode, &gcv);
@@ -175,7 +175,7 @@ CopyTexture::update ()
     XCopyArea (screen->dpy (), cp->pixmap, tmpPix, gc,
 	       dim.x () + damage.x (), dim.y () + damage.y (),
 	       damage.width (), damage.height (), 0, 0);
-    XSync (screen->dpy (), FALSE);
+    XSync (screen->dpy (), false);
 
     if (cs->useShm)
 	addr = cs->shmInfo.shmaddr;
@@ -298,7 +298,7 @@ CopytexScreen::CopytexScreen (CompScreen *screen) :
 
     if (useShm)
     {
-	shmInfo.readOnly = FALSE;
+	shmInfo.readOnly = false;
 	if (!XShmAttach (screen->dpy (), &shmInfo))
 	{
 	    shmdt (shmInfo.shmaddr);

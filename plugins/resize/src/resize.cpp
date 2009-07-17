@@ -145,7 +145,7 @@ ResizeScreen::sendResizeNotify ()
     xev.xclient.data.l[3] = geometry.height;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (screen->dpy (), screen->root (), FALSE,
+    XSendEvent (screen->dpy (), screen->root (), false,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 

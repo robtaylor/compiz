@@ -432,7 +432,7 @@ CompPlugin::load (const char *name)
 {
     CompPlugin *p;
     char       *home, *plugindir;
-    Bool       status;
+    bool       status;
 
     p = new CompPlugin ();
     if (!p)

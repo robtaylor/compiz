@@ -381,7 +381,7 @@ zoomIn (CompAction         *action,
 
     zs->initiateForSelection (output);
 
-    return TRUE;
+    return true;
 }
 
 static bool

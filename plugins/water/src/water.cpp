@@ -578,7 +578,7 @@ WaterScreen::softwareLines (XPoint *p,
 			    float  v)
 {
     int	 x1, y1, x2, y2;
-    Bool steep;
+    bool steep;
     int  tmp;
     int  deltaX, deltaY;
     int  error = 0;

@@ -103,8 +103,8 @@ class SwitchScreen :
 
 	CompScreen::GrabHandle grabIndex;
 
-	Bool switching;
-	Bool zooming;
+	bool switching;
+	bool zooming;
 	int  zoomMask;
 
 	bool moreAdjust;

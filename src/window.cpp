@@ -956,7 +956,7 @@ PrivateWindow::updateStruts ()
 
     result = XGetWindowProperty (screen->dpy (), priv->id,
 				 Atoms::wmStrutPartial,
-				 0L, 12L, FALSE, XA_CARDINAL, &actual, &format,
+				 0L, 12L, false, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && data)
@@ -993,7 +993,7 @@ PrivateWindow::updateStruts ()
     {
 	result = XGetWindowProperty (screen->dpy (), priv->id,
 				     Atoms::wmStrut,
-				     0L, 4L, FALSE, XA_CARDINAL,
+				     0L, 4L, false, XA_CARDINAL,
 				     &actual, &format, &n, &left, &data);
 
 	if (result == Success && data)
@@ -1129,14 +1129,14 @@ setDefaultWindowAttributes (XWindowAttributes *wa)
     wa->backing_store	      = NotUseful;
     wa->backing_planes	      = 0;
     wa->backing_pixel	      = 0;
-    wa->save_under	      = FALSE;
+    wa->save_under	      = false;
     wa->colormap	      = None;
-    wa->map_installed	      = FALSE;
+    wa->map_installed	      = false;
     wa->map_state	      = IsUnviewable;
     wa->all_event_masks	      = 0;
     wa->your_event_mask	      = 0;
     wa->do_not_propagate_mask = 0;
-    wa->override_redirect     = TRUE;
+    wa->override_redirect     = true;
     wa->screen		      = NULL;
 }
 
@@ -1199,9 +1199,9 @@ CompWindow::sendConfigureNotify ()
 	    xev.border_width = attrib.border_width;
 
 	    xev.above		  = (prev) ? prev->priv->id : None;
-	    xev.override_redirect = TRUE;
+	    xev.override_redirect = true;
 
-	    XSendEvent (screen->dpy (), priv->id, FALSE,
+	    XSendEvent (screen->dpy (), priv->id, false,
 			StructureNotifyMask, (XEvent *) &xev);
 	}
 
@@ -1218,7 +1218,7 @@ CompWindow::sendConfigureNotify ()
 	xev.above	      = (prev) ? prev->priv->id : None;
 	xev.override_redirect = priv->attrib.override_redirect;
 
-	XSendEvent (screen->dpy (), priv->id, FALSE,
+	XSendEvent (screen->dpy (), priv->id, false,
 		    StructureNotifyMask, (XEvent *) &xev);
     }
 }
@@ -1442,7 +1442,7 @@ PrivateWindow::initializeSyncCounter ()
 
     result = XGetWindowProperty (screen->dpy (), id,
 				 Atoms::wmSyncRequestCounter,
-				 0L, 1L, FALSE, XA_CARDINAL, &actual, &format,
+				 0L, 1L, false, XA_CARDINAL, &actual, &format,
 				 &n, &left, &data);
 
     if (result == Success && n && data)
@@ -1460,7 +1460,7 @@ PrivateWindow::initializeSyncCounter ()
 
 	syncValueIncrement (&syncValue);
 
-	values.events = TRUE;
+	values.events = true;
 
 	values.trigger.counter    = syncCounter;
 	values.trigger.wait_value = syncValue;
@@ -1470,13 +1470,13 @@ PrivateWindow::initializeSyncCounter ()
 
 	XSyncIntToValue (&values.delta, 1);
 
-	values.events = TRUE;
+	values.events = true;
 
 	CompScreen::checkForError (screen->dpy ());
 
 	/* Note that by default, the alarm increments the trigger value
 	 * when it fires until the condition (counter.value < trigger.value)
-	 * is FALSE again.
+	 * is false again.
 	 */
 	syncAlarm = XSyncCreateAlarm (screen->dpy (),
 				      XSyncCACounter   |
@@ -1524,7 +1524,7 @@ CompWindow::sendSyncRequest ()
 
     syncValueIncrement (&priv->syncValue);
 
-    XSendEvent (screen->dpy (), priv->id, FALSE, 0, (XEvent *) &xev);
+    XSendEvent (screen->dpy (), priv->id, false, 0, (XEvent *) &xev);
 
     priv->syncWait     = true;
     priv->syncGeometry = priv->serverGeometry;
@@ -1842,7 +1842,7 @@ CompWindow::moveInputFocusTo ()
 	    ev.xclient.data.l[3]    = 0;
 	    ev.xclient.data.l[4]    = 0;
 
-	    XSendEvent (s->dpy (), priv->id, FALSE, NoEventMask, &ev);
+	    XSendEvent (s->dpy (), priv->id, false, NoEventMask, &ev);
 
 	    setFocus = true;
 	}
@@ -1974,7 +1974,7 @@ PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 
 /* goes through the stack, top-down until we find a window we should
    stack above, normal windows can be stacked above fullscreen windows
-   (and fullscreen windows over others in their layer) if aboveFs is TRUE. */
+   (and fullscreen windows over others in their layer) if aboveFs is true. */
 CompWindow *
 PrivateWindow::findSiblingBelow (CompWindow *w,
 				 bool       aboveFs)
@@ -2737,7 +2737,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 			int            gravity,
 			unsigned int   source)
 {
-    Bool placed = xwcm & (CWX | CWY);
+    bool placed = xwcm & (CWX | CWY);
 
     xwcm &= (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
 
@@ -3459,7 +3459,7 @@ PrivateWindow::hide ()
 void
 PrivateWindow::show ()
 {
-    Bool onDesktop = window->onCurrentDesktop ();
+    bool onDesktop = window->onCurrentDesktop ();
 
     if (!managed)
 	return;
@@ -3912,7 +3912,7 @@ CompWindow::getIcon (int width,
 	unsigned char *data;
 
 	result = XGetWindowProperty (screen->dpy (), priv->id, Atoms::wmIcon,
-				     0L, 65536L, FALSE, XA_CARDINAL,
+				     0L, 65536L, false, XA_CARDINAL,
 				     &actual, &format, &n, &left, &data);
 
 	if (result == Success && data)
@@ -4708,7 +4708,7 @@ PrivateWindow::updateStartupId ()
 
 	x = window->geometry ().x () + (svp.x () - vp.x ()) * size.width ();
 	y = window->geometry ().y () + (svp.y () - vp.y ()) * size.height ();
-	window->moveToViewportPosition (x, y, TRUE);
+	window->moveToViewportPosition (x, y, true);
 
 	if (allowWindowFocus (0, timestamp))
 	    window->activate ();
@@ -4776,7 +4776,7 @@ CompWindow::CompWindow (Window id,
 
     priv->id = id;
 
-    XGrabButton (screen->dpy (), AnyButton, AnyModifier, priv->id, TRUE,
+    XGrabButton (screen->dpy (), AnyButton, AnyModifier, priv->id, true,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
 
@@ -5268,7 +5268,7 @@ PrivateWindow::reparent ()
     if (frame)
 	return false;
 
-    XSync (dpy, FALSE);
+    XSync (dpy, false);
 
     if (XCheckTypedWindowEvent (dpy, id, DestroyNotify, &e))
     {
@@ -5282,7 +5282,7 @@ PrivateWindow::reparent ()
     attr.border_pixel      = 0;
     mask |= CWBorderPixel;
     attr.colormap          = attrib.colormap;
-    attr.override_redirect = FALSE;
+    attr.override_redirect = false;
     attr.event_mask        = SubstructureRedirectMask | StructureNotifyMask |
 			     SubstructureNotifyMask | EnterWindowMask |
 			     LeaveWindowMask;
@@ -5303,7 +5303,7 @@ PrivateWindow::reparent ()
     attr.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask |
 				 ButtonMotionMask;
 
-    XGrabButton (dpy, AnyButton, AnyModifier, frame, TRUE,
+    XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
 
@@ -5323,7 +5323,7 @@ PrivateWindow::reparent ()
     if (mapNum || shaded)
     {
 	XMapWindow (dpy, frame);
-	XSync (dpy, FALSE);
+	XSync (dpy, false);
 	if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
 	    screen->activeWindow () == id)
 	{
@@ -5349,7 +5349,7 @@ PrivateWindow::unreparent ()
     if (!frame)
 	return;
 
-    XSync (dpy, FALSE);
+    XSync (dpy, false);
 
     if (XCheckTypedWindowEvent (dpy, id, DestroyNotify, &e))
     {

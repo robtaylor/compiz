@@ -817,7 +817,7 @@ PrivateScaleScreen::donePaint ()
 	{
 	    if (state == ScaleScreen::In)
 	    {
-		/* The FALSE activate event is sent when scale state
+		/* The false activate event is sent when scale state
 		   goes back to normal, to avoid animation conflicts
 		   with other plugins. */
 		activateEvent (false);
@@ -893,7 +893,7 @@ PrivateScaleScreen::sendDndStatusMessage (Window source)
     xev.xclient.data.l[3] = 0;
     xev.xclient.data.l[4] = None;
 
-    XSendEvent (screen->dpy (), source, FALSE, 0, &xev);
+    XSendEvent (screen->dpy (), source, false, 0, &xev);
 }
 
 bool
@@ -974,7 +974,7 @@ PrivateScaleScreen::ensureDndRedirectWindow ()
 	XSetWindowAttributes attr;
 	long		     xdndVersion = 3;
 
-	attr.override_redirect = TRUE;
+	attr.override_redirect = true;
 
 	dndTarget = XCreateWindow (screen->dpy (), screen->root (),
 				   0, 0, 1, 1, 0, CopyFromParent,

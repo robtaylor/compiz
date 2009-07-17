@@ -51,7 +51,7 @@ PrivateWindow::handleSyncAlarm ()
 {
     if (priv->syncWait)
     {
-	priv->syncWait = FALSE;
+	priv->syncWait = false;
 
 	if (window->resize (priv->syncGeometry))
 	{
@@ -1650,7 +1650,7 @@ CompScreen::handleEvent (XEvent *event)
 		event->xcrossing.mode   != NotifyGrab                &&
 		event->xcrossing.detail != NotifyInferior)
 	    {
-		Bool raise;
+		bool raise;
 		int  delay;
 
 		raise = priv->optionGetAutoraise ();

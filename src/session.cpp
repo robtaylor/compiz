@@ -283,7 +283,7 @@ CompSession::init (char *prevClientId)
 			    errorBuffer);
 	else
 	{
-	    connected = TRUE;
+	    connected = true;
 	    if (prevClientId)
 		smPrevClientId = strdup (prevClientId);
 	}
@@ -298,7 +298,7 @@ CompSession::close ()
 	setRestartStyle (smcConnection, SmRestartIfRunning);
 
 	if (SmcCloseConnection (smcConnection, 0, NULL) != SmcConnectionInUse)
-	    connected = FALSE;
+	    connected = false;
 
 	if (smClientId)
 	{
@@ -378,7 +378,7 @@ iceNewConnection (IceConn    connection,
 	    POLLIN | POLLPRI | POLLHUP | POLLERR,
 	    boost::bind (iceProcessMessages, connection));
 
-	iceConnected = 1;
+	iceConnected = true;
     }
     else
     {
@@ -389,7 +389,7 @@ iceNewConnection (IceConn    connection,
 	    screen->removeWatchFd (iceWatchFdHandle);
 
 	    iceWatchFdHandle = 0;
-	    iceConnected = 0;
+	    iceConnected = false;
 	}
     }
 }
@@ -408,7 +408,7 @@ iceErrorHandler (IceConn connection)
 static void
 iceInit (void)
 {
-    static Bool iceInitialized = 0;
+    static bool iceInitialized = false;
 
     if (!iceInitialized)
     {
@@ -422,6 +422,6 @@ iceInit (void)
 
 	IceAddConnectionWatch (iceNewConnection, NULL);
 
-	iceInitialized = 1;
+	iceInitialized = true;
     }
 }

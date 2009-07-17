@@ -72,7 +72,7 @@ GnomeCompatScreen::panelAction (CompOption::Vector& options,
     event.xclient.data.l[3]    = 0;
     event.xclient.data.l[4]    = 0;
 
-    XSendEvent (screen->dpy (), screen->root (), FALSE,
+    XSendEvent (screen->dpy (), screen->root (), false,
 		StructureNotifyMask, &event);
 }
 
@@ -104,11 +104,11 @@ GnomeCompatScreen::GnomeCompatScreen (CompScreen *s) :
     PluginClassHandler<GnomeCompatScreen, CompScreen> (s)
 {
     panelActionAtom =
-	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION", FALSE);
+	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION", false);
     panelMainMenuAtom =
-	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_MAIN_MENU", FALSE);
+	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_MAIN_MENU", false);
     panelRunDialogAtom =
-	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_RUN_DIALOG", FALSE);
+	XInternAtom (screen->dpy (), "_GNOME_PANEL_ACTION_RUN_DIALOG", false);
 
 #define COMMAND_BIND(opt) \
     boost::bind (runCommand, _1, _2, _3, &mOptions[opt])

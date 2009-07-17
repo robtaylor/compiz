@@ -332,7 +332,7 @@ PrivateCompositeScreen::init ()
 	}
     }
 
-    attr.override_redirect = TRUE;
+    attr.override_redirect = true;
     attr.event_mask        = PropertyChangeMask;
 
     newCmSnOwner =

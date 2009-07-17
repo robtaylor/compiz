@@ -105,7 +105,7 @@ main (int argc, char **argv)
     char                    *displayName = 0;
     std::vector<CompString> plugins;
     int	                    i;
-    Bool                    disableSm = FALSE;
+    bool                    disableSm = false;
     char                    *clientId = NULL;
 
     programName = argv[0];

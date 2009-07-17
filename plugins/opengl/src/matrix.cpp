@@ -176,13 +176,13 @@ GLMatrix::rotate (const float angle,
     float x = xRot, y = yRot, z = zRot;
     float xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c, s, c;
     float matrix[16];
-    Bool  optimized;
+    bool  optimized;
 
     s = (float) sin (angle * DEG2RAD);
     c = (float) cos (angle * DEG2RAD);
 
     memcpy (matrix, identity, sizeof (matrix));
-    optimized = FALSE;
+    optimized = false;
 
 #define M(row, col)  matrix[col * 4 + row]
 
@@ -192,7 +192,7 @@ GLMatrix::rotate (const float angle,
 	{
 	    if (z != 0.0f)
 	    {
-		optimized = TRUE;
+		optimized = true;
 		/* rotate only around z-axis */
 		M(0,0) = c;
 		M(1,1) = c;
@@ -210,7 +210,7 @@ GLMatrix::rotate (const float angle,
 	}
 	else if (z == 0.0f)
 	{
-	    optimized = TRUE;
+	    optimized = true;
 	    /* rotate only around y-axis */
 	    M(0,0) = c;
 	    M(2,2) = c;
@@ -230,7 +230,7 @@ GLMatrix::rotate (const float angle,
     {
 	if (z == 0.0f)
 	{
-	    optimized = TRUE;
+	    optimized = true;
 	    /* rotate only around x-axis */
 	    M(1,1) = c;
 	    M(2,2) = c;

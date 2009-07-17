@@ -304,7 +304,7 @@ BlurWindow::update (int state)
     std::vector<BlurBox> boxes;
 
     result = XGetWindowProperty (screen->dpy (), window->id (),
-				 bScreen->blurAtom[state], 0L, 8192L, FALSE,
+				 bScreen->blurAtom[state], 0L, 8192L, false,
 				 XA_INTEGER, &actual, &format,
 				 &n, &left, &propData);
 
@@ -1108,7 +1108,7 @@ BlurScreen::fboUpdate (BoxPtr pBox,
 		       int    nBox)
 {
     int  i, y, iTC = 0;
-    Bool wasCulled = glIsEnabled (GL_CULL_FACE);
+    bool wasCulled = glIsEnabled (GL_CULL_FACE);
 
     if (GL::maxTextureUnits && optionGetIndependentTex ())
 	iTC = MIN ((GL::maxTextureUnits - 1) / 2, numTexop);
@@ -1482,7 +1482,7 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    textures = 2;
 	}
 
-	bScreen->fboStatus = FALSE;
+	bScreen->fboStatus = false;
 
 	for (i = 0; i < textures; i++)
 	{
@@ -1590,7 +1590,7 @@ BlurWindow::glDraw (const GLMatrix     &transform,
 
 	if (state[BLUR_STATE_DECOR].threshold || clientThreshold)
 	{
-	    bool       clipped = FALSE;
+	    bool       clipped = false;
 	    CompRect   box (0, 0, 0, 0);
 	    CompRegion reg;
 
@@ -2111,8 +2111,8 @@ blurPulse (CompAction         *action,
 	BLUR_SCREEN (screen);
 	BLUR_WINDOW (w);
 
-	bw->pulse    = TRUE;
-	bs->moreBlur = TRUE;
+	bw->pulse    = true;
+	bs->moreBlur = true;
 
 	bw->cWindow->addDamage ();
     }

@@ -280,7 +280,7 @@ SwitchScreen::switchToWindow (bool toNext)
 	    xev.xclient.data.l[3] = 0;
 	    xev.xclient.data.l[4] = 0;
 
-	    XSendEvent (screen->dpy (), screen->root (), FALSE,
+	    XSendEvent (screen->dpy (), screen->root (), false,
 			SubstructureRedirectMask | SubstructureNotifyMask,
 			&xev);
 	}
@@ -765,7 +765,7 @@ SwitchScreen::updateForegroundColor ()
 
 
     result = XGetWindowProperty (screen->dpy (), popupWindow,
-				 selectFgColorAtom, 0L, 4L, FALSE,
+				 selectFgColorAtom, 0L, 4L, false,
 				 XA_INTEGER, &actual, &format,
 				 &n, &left, &propData);
 

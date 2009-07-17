@@ -169,7 +169,7 @@ PlaceWindow::~PlaceWindow ()
 bool
 PlaceWindow::place (CompPoint &pos)
 {
-    Bool      status = window->place (pos);
+    bool      status = window->place (pos);
     CompPoint viewport;
 
     if (status)
@@ -576,7 +576,7 @@ PlaceWindow::placeSmart (const CompRect &workArea,
     /* temp holder */
     int basket;
     /* CT lame flag. Don't like it. What else would do? */
-    Bool firstPass = TRUE;
+    bool firstPass = true;
 
     /* get the maximum allowed windows space */
     int xTmp = workArea.x ();
@@ -644,7 +644,7 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 
 	if (firstPass)
 	{
-	    firstPass  = FALSE;
+	    firstPass  = false;
 	    minOverlap = overlap;
 	}
 	/* CT save the best position and the minimum overlap up to now */
@@ -803,7 +803,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
      * of each existing window, aligned with the left/top of the
      * existing window in each of those cases.
      */
-    bool           retval = FALSE;
+    bool           retval = false;
     CompWindowList belowSorted, rightSorted;
     CompRect       rect;
 
@@ -1205,7 +1205,7 @@ PlaceWindow::sendMaximizationRequest ()
     xev.xclient.data.l[3] = 0;
     xev.xclient.data.l[4] = 0;
 
-    XSendEvent (dpy, screen->root (), FALSE,
+    XSendEvent (dpy, screen->root (), false,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 

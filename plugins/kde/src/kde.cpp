@@ -61,7 +61,7 @@ KdeScreen::sendGlibNotify ()
 
     memset (xev.xclient.data.l, 0, sizeof (xev.xclient.data.l));
 
-    XSendEvent (dpy, screen->root (), FALSE,
+    XSendEvent (dpy, screen->root (), false,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 

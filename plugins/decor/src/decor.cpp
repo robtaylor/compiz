@@ -299,7 +299,7 @@ Decoration::create (Window id,
     int		    type;
 
     result = XGetWindowProperty (screen->dpy (), id,
-				 decorAtom, 0L, 1024L, FALSE,
+				 decorAtom, 0L, 1024L, false,
 				 XA_INTEGER, &actual, &format,
 				 &n, &nleft, &data);
 
@@ -886,7 +886,7 @@ DecorWindow::updateInputFrame ()
 	XSetWindowAttributes attr;
 
 	attr.event_mask	   = StructureNotifyMask;
-	attr.override_redirect = TRUE;
+	attr.override_redirect = true;
 
 	inputFrame = XCreateWindow (screen->dpy (), window->frame (),
 				    x, y, width, height, 0, CopyFromParent,
@@ -895,7 +895,7 @@ DecorWindow::updateInputFrame ()
 				    &attr);
 
 	XGrabButton (screen->dpy (), AnyButton, AnyModifier, inputFrame,
-		     TRUE, ButtonPressMask | ButtonReleaseMask |
+		     true, ButtonPressMask | ButtonReleaseMask |
 		     ButtonMotionMask, GrabModeSync, GrabModeSync, None,
 		     None);
 
@@ -999,7 +999,7 @@ DecorWindow::updateOutputFrame ()
 
 	attr.background_pixel  = 0x0;
 	attr.event_mask        = StructureNotifyMask;
-	attr.override_redirect = TRUE;
+	attr.override_redirect = true;
 
 	outputFrame = XCreateWindow (screen->dpy (), window->frame (),
 				     x, y, width, height, 0, CopyFromParent,
@@ -1008,7 +1008,7 @@ DecorWindow::updateOutputFrame ()
 				     &attr);
 
 	XGrabButton (screen->dpy (), AnyButton, AnyModifier, outputFrame,
-			TRUE, ButtonPressMask | ButtonReleaseMask |
+			true, ButtonPressMask | ButtonReleaseMask |
 			ButtonMotionMask, GrabModeSync, GrabModeSync, None,
 			None);
 
@@ -1096,7 +1096,7 @@ DecorScreen::checkForDm (bool updateWindows)
     Window	  dmWin = None;
 
     result = XGetWindowProperty (screen->dpy (), screen->root (),
-				 supportingDmCheckAtom, 0L, 1L, FALSE,
+				 supportingDmCheckAtom, 0L, 1L, false,
 				 XA_WINDOW, &actual, &format,
 				 &n, &left, &data);
 
@@ -1116,7 +1116,7 @@ DecorScreen::checkForDm (bool updateWindows)
 	else
 	{
 	    result = XGetWindowProperty (screen->dpy (), dmWin,
-					 decorTypeAtom, 0L, 2L, FALSE,
+					 decorTypeAtom, 0L, 2L, false,
 					 XA_ATOM, &actual, &format,
 					 &n, &left, &data);
 	    if (result == Success && n && data)
@@ -1556,7 +1556,7 @@ DecorWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 {
     /* FIXME: we should not need a timer for calling decorWindowUpdate,
        and only call updateWindowDecorationScale if decorWindowUpdate
-       returns FALSE. Unfortunately, decorWindowUpdate may call
+       returns false. Unfortunately, decorWindowUpdate may call
        updateWindowOutputExtents, which may call WindowResizeNotify. As
        we never should call a wrapped function that's currently
        processed, we need the timer for the moment. updateWindowOutputExtents

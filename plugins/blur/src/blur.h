@@ -162,7 +162,7 @@ class BlurScreen :
 	GLuint program;
 	int    maxTemp;
 	GLuint fbo;
-	Bool   fboStatus;
+	bool   fboStatus;
 
 	float amp[BLUR_GAUSSIAN_RADIUS_MAX];
 	float pos[BLUR_GAUSSIAN_RADIUS_MAX];

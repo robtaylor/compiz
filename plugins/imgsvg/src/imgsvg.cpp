@@ -149,7 +149,7 @@ SvgScreen::readSvgToImage (const char *file,
     svgFile.close ();
     svgHandle = rsvg_handle_new_from_file (file, &error);
     if (!svgHandle)
-	return FALSE;
+	return false;
 
     rsvg_handle_get_dimensions (svgHandle, &svgDimension);
 

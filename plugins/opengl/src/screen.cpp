@@ -728,13 +728,13 @@ PrivateGLScreen::updateScreenBackground ()
     unsigned char *prop;
     Pixmap	  pixmap = 0;
 
-    pixmapAtom = XInternAtom (dpy, "PIXMAP", FALSE);
+    pixmapAtom = XInternAtom (dpy, "PIXMAP", false);
 
     for (i = 0; pixmap == 0 && i < 2; i++)
     {
 	status = XGetWindowProperty (dpy, screen->root (),
 				     Atoms::xBackground[i],
-				     0, 4, FALSE, AnyPropertyType,
+				     0, 4, false, AnyPropertyType,
 				     &actualType, &actualFormat, &nItems,
 				     &bytesAfter, &prop);
 
