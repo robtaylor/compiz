@@ -22,6 +22,9 @@ set (
     COMPIZ_I18N_DIR ${COMPIZ_I18N_DIR} CACHE PATH "Translation file directory"
 )
 
+set (CMAKE_CXX_FLAGS "-Wall")
+set (CMAKE_C_FLAGS "-Wall")
+
 # unsets the given variable
 macro (compiz_unset var)
     set (${var} "" CACHE INTERNAL "")
@@ -31,6 +34,7 @@ endmacro ()
 macro (compiz_set var value)
     set (${var} ${value} CACHE INTERNAL "")
 endmacro ()
+
 
 macro (compiz_format_string str length return)
     string (LENGTH "${str}" _str_len)
