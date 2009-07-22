@@ -1,8 +1,14 @@
 <compiz>
-    <plugin name="screenshot">
+    <plugin name="screenshot" useBcop="true">
 	<_short>Screenshot</_short>
 	<_long>Screenshot plugin</_long>
-	<display>
+	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	</deps>
+	<category>Extras</category>
+	<options>
 	    <option name="initiate_button" type="button">
 		<_short>Initiate</_short>
 		<_long>Initiate rectangle screenshot</_long>
@@ -19,6 +25,6 @@
 		<_long>Automatically open screenshot in this application</_long>
 		<default></default>
 	    </option>
-	</display>
+	</options>
     </plugin>
 </compiz>
