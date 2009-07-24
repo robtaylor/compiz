@@ -3092,8 +3092,8 @@ compareMappingOrder (const CompWindow *w1,
 void
 PrivateScreen::updateClientList ()
 {
-    bool   updateClientList = true;
-    bool   updateClientListStacking = true;
+    bool   updateClientList = false;
+    bool   updateClientListStacking = false;
     int	   n = 0;
 
     screen->forEachWindow (boost::bind (countClientListWindow, _1, &n));
