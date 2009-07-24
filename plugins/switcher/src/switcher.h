@@ -30,29 +30,17 @@
 #include <sys/types.h>
 #include <unistd.h>
 
-#include <decoration.h>
-#include <core/core.h>
+#include <compiztoolbox/compiztoolbox.h>
+
 #include <core/pluginclasshandler.h>
-#include <core/atoms.h>
-
-#include <composite/composite.h>
-#include <opengl/opengl.h>
-
-#include <X11/Xatom.h>
-#include <X11/extensions/Xrender.h>
 
 #include "switcher_options.h"
 
 #define ZOOMED_WINDOW_MASK (1 << 0)
 #define NORMAL_WINDOW_MASK (1 << 1)
 
-enum SwitchWindowSelection{
-    CurrentViewport = 0,
-    AllViewports,
-    Panels
-};
-
 class SwitchScreen :
+    public BaseSwitchScreen,
     public ScreenInterface,
     public CompositeScreenInterface,
     public GLScreenInterface,
@@ -65,8 +53,6 @@ class SwitchScreen :
 
 	void setZoom ();
 
-	void handleEvent (XEvent *);
-
 	void preparePaint (int);
 	void donePaint ();
 
@@ -74,96 +60,81 @@ class SwitchScreen :
 			    const GLMatrix &, const CompRegion &,
 			    CompOutput *, unsigned int);
 
-	void setSelectedWindowHint ();
-	void activateEvent (bool activating);
 	void updateWindowList (int count);
 	void createWindowList (int count);
+	bool shouldShowIcon ();
+	void getMinimizedAndMatch (bool &minimizedOption,
+				   CompMatch *&match);
 	void switchToWindow (bool toNext);
+	void handleSelectionChange (bool toNext, int nextIdx);
 	int countWindows ();
+	void handleEvent (XEvent *event);
 	void initiate (SwitchWindowSelection selection,
 		       bool                  showPopup);
 	void windowRemove (Window id);
-	void updateForegroundColor ();
 
 	bool adjustVelocity ();
 
-	CompositeScreen *cScreen;
-	GLScreen        *gScreen;
-
-	Atom selectWinAtom;
-	Atom selectFgColorAtom;
-
-	Window popupWindow;
-
-	Window	 selectedWindow;
 	Window	 zoomedWindow;
-	unsigned int lastActiveNum;
 
 	float zoom;
-
-	CompScreen::GrabHandle grabIndex;
 
 	bool switching;
 	bool zooming;
 	int  zoomMask;
 
-	bool moreAdjust;
-
 	GLfloat mVelocity;
 	GLfloat tVelocity;
 	GLfloat sVelocity;
-
-	CompWindowList windows;
 
 	int pos;
 	int move;
 
 	float translate;
 	float sTranslate;
-
-	SwitchWindowSelection selection;
-
-	unsigned int fgColor[4];
-
-	bool ignoreSwitcher;
 };
 
 class SwitchWindow :
+    public BaseSwitchWindow,
     public CompositeWindowInterface,
     public GLWindowInterface,
     public PluginClassHandler<SwitchWindow,CompWindow>
 {
     public:
-	SwitchWindow (CompWindow *window) :
-	    PluginClassHandler<SwitchWindow,CompWindow> (window),
-	    window (window),
-	    gWindow (GLWindow::get (window)),
-	    cWindow (CompositeWindow::get (window)),
-	    sScreen (SwitchScreen::get (screen)),
-	    gScreen (GLScreen::get (screen))
-	{
-	    GLWindowInterface::setHandler (gWindow, false);
-	    CompositeWindowInterface::setHandler (cWindow, false);
+	SwitchWindow (CompWindow *window);
 
-	    if (sScreen->popupWindow && sScreen->popupWindow == window->id ())
-		gWindow->glPaintSetEnabled (this, true);
-	}
+	bool damageRect (bool initial, const CompRect &rect);
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
 		      const CompRegion &, unsigned int);
 
-	bool damageRect (bool, const CompRect &);
+	void paintThumb (const GLWindowPaintAttrib &attrib,
+			 const GLMatrix            &transform,
+			 unsigned int              mask,
+			 int                       x,
+			 int                       y);
+	void updateIconTexturedWindow (GLWindowPaintAttrib  &sAttrib,
+				       int                  &wx,
+				       int                  &wy,
+				       int                  x,
+				       int                  y,
+				       GLTexture            *icon);
+	void updateIconNontexturedWindow (GLWindowPaintAttrib  &sAttrib,
+					  int                  &wx,
+					  int                  &wy,
+					  float                &width,
+					  float                &height,
+					  int                  x,
+					  int                  y,
+					  GLTexture            *icon);
+	void updateIconPos (int   &wx,
+			    int   &wy,
+			    int   x,
+			    int   y,
+			    float width,
+			    float height);
 
-	bool isSwitchWin ();
-
-	void paintThumb (const GLWindowPaintAttrib &, const GLMatrix &,
-		         unsigned int, int, int, int, int);
-
-	CompWindow      *window;
-	GLWindow        *gWindow;
-	CompositeWindow *cWindow;
 	SwitchScreen    *sScreen;
-	GLScreen        *gScreen;
 };
 
 #define MwmHintsDecorations (1L << 1)

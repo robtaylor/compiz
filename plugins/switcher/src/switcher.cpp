@@ -52,111 +52,6 @@ static float _boxVertices[] =
 
 
 void
-SwitchScreen::setSelectedWindowHint ()
-{
-    XChangeProperty (screen->dpy (), popupWindow, selectWinAtom,
-		     XA_WINDOW, 32, PropModeReplace,
-		     (unsigned char *) &selectedWindow, 1);
-}
-
-bool
-SwitchWindow::isSwitchWin ()
-{
-    if (!window->isViewable () || !window->isMapped ())
-    {
-	if (sScreen->optionGetMinimized ())
-	{
-	    if (!window->minimized () && !window->inShowDesktopMode () &&
-		!window->shaded ())
-		return false;
-	}
-	else
-	{
-	    return false;
-	}
-    }
-
-    if (!window->isFocussable ())
-	return false;
-
-    if (window->overrideRedirect ())
-	return false;
-
-    if (sScreen->selection == Panels)
-    {
-	if (!(window->type () &
-	      (CompWindowTypeDockMask | CompWindowTypeDesktopMask)))
-	    return false;
-    }
-    else
-    {
-	CompMatch *match;
-
-	if (window->wmType () &
-	    (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
-	    return false;
-
-	if (window->state () & CompWindowStateSkipTaskbarMask)
-	    return false;
-
-	match = &sScreen->optionGetWindowMatch ();
-	if (!match->evaluate (window))
-	    return false;
-
-    }
-
-    if (sScreen->selection == CurrentViewport)
-    {
-	if (!window->mapNum () || !window->isViewable ())
-	{
-	    CompWindow::Geometry &sg = window->serverGeometry ();
-	    if (sg.x () + sg.width ()  <= 0    ||
-		sg.y () + sg.height () <= 0    ||
-		sg.x () >= screen->width () ||
-		sg.y () >= screen->height ())
-		return false;
-	}
-	else
-	{
-	    if (!window->focus ())
-		return false;
-	}
-    }
-
-    return true;
-}
-
-void
-SwitchScreen::activateEvent (bool activating)
-{
-    CompOption::Vector o (0);
-
-    o.push_back (CompOption ("root", CompOption::TypeInt));
-    o.push_back (CompOption ("active", CompOption::TypeBool));
-
-    o[0].value ().set ((int) screen->root ());
-    o[1].value ().set (activating);
-
-    screen->handleCompizEvent ("switcher", "activate", o);
-}
-
-
-static bool
-compareWindows (CompWindow *w1,
-		CompWindow *w2)
-{
-
-    if (w1->mapNum () && !w2->mapNum ())
-	return true;
-
-    if (w2->mapNum () && !w1->mapNum ())
-	return false;
-
-    return w2->activeNum () < w1->activeNum ();
-}
-
-
-void
 SwitchScreen::updateWindowList (int count)
 {
     int x, y;
@@ -199,7 +94,6 @@ SwitchScreen::updateWindowList (int count)
 void
 SwitchScreen::createWindowList (int count)
 {
-
     windows.clear ();
 
     foreach (CompWindow *w, screen->windows ())
@@ -213,7 +107,7 @@ SwitchScreen::createWindowList (int count)
 	}
     }
 
-    windows.sort (compareWindows);
+    windows.sort (BaseSwitchScreen::compareWindows);
 
     if (windows.size () == 2)
     {
@@ -224,103 +118,47 @@ SwitchScreen::createWindowList (int count)
     updateWindowList (count);
 }
 
+bool
+SwitchWindow::damageRect (bool initial, const CompRect &rect)
+{
+    return BaseSwitchWindow::damageRect (initial, rect);
+}
+
+bool
+SwitchScreen::shouldShowIcon ()
+{
+    return optionGetIcon ();
+}
+
+void
+SwitchScreen::getMinimizedAndMatch (bool &minimizedOption,
+				    CompMatch *&matchOption)
+{
+    minimizedOption = optionGetMinimized ();
+    matchOption = &optionGetWindowMatch ();
+}
+
 void
 SwitchScreen::switchToWindow (bool toNext)
 {
-    CompWindow               *w = NULL;
-    CompWindowList::iterator it;
-
-    if (!grabIndex)
-	return;
-
-    for (it = windows.begin (); it != windows.end (); it++)
-    {
-	if ((*it)->id () == selectedWindow)
-	    break;
-    }
-
-    if (it == windows.end ())
-	return;
-
-    if (toNext)
-    {
-	it++;
-	if (it == windows.end ())
-	    w = windows.front ();
-	else
-	    w = *it;
-    }
-    else
-    {
-	if (it == windows.begin ())
-	    w = windows.back ();
-	else
-	    w = *--it;
-    }
-
+    CompWindow *w =
+	BaseSwitchScreen::switchToWindow (toNext, optionGetAutoRotate ());
     if (w)
     {
-	Window old = selectedWindow;
-
-	if (selection == AllViewports && optionGetAutoRotate ())
-	{
-	    XEvent xev;
-	    CompPoint pnt = w->defaultViewport ();
-
-	    xev.xclient.type = ClientMessage;
-	    xev.xclient.display = screen->dpy ();
-	    xev.xclient.format = 32;
-
-	    xev.xclient.message_type = Atoms::desktopViewport;
-	    xev.xclient.window = screen->root ();
-
-	    xev.xclient.data.l[0] = pnt.x () * screen->width ();
-	    xev.xclient.data.l[1] = pnt.y () * screen->height ();
-	    xev.xclient.data.l[2] = 0;
-	    xev.xclient.data.l[3] = 0;
-	    xev.xclient.data.l[4] = 0;
-
-	    XSendEvent (screen->dpy (), screen->root (), false,
-			SubstructureRedirectMask | SubstructureNotifyMask,
-			&xev);
-	}
-
-	lastActiveNum  = w->activeNum ();
-	selectedWindow = w->id ();
-
 	if (!zoomedWindow)
 	    zoomedWindow = selectedWindow;
-
-	if (old != w->id ())
-	{
-	    if (toNext)
-		move -= WIDTH;
-	    else
-		move += WIDTH;
-
-	    moreAdjust = true;
-	}
-
-	if (popupWindow)
-	{
-	    CompWindow *popup;
-
-	    popup = screen->findWindow (popupWindow);
-	    if (popup)
-		CompositeWindow::get (popup)->addDamage ();
-
-	    setSelectedWindowHint ();
-	}
-
-	CompositeWindow::get (w)->addDamage ();
-
-	if (old)
-	{
-	    w = screen->findWindow (old);
-	    if (w)
-		CompositeWindow::get (w)->addDamage ();
-	}
     }
+}
+
+void
+SwitchScreen::handleSelectionChange (bool toNext, int nextIdx)
+{
+    if (toNext)
+	move -= WIDTH;
+    else
+	move += WIDTH;
+
+    moreAdjust = true;
 }
 
 int
@@ -342,45 +180,11 @@ SwitchScreen::countWindows ()
     return count;
 }
 
-static Visual *
-findArgbVisual (Display *dpy, int scr)
+void
+SwitchScreen::handleEvent (XEvent *event)
 {
-    XVisualInfo		*xvi;
-    XVisualInfo		temp;
-    int			nvi;
-    int			i;
-    XRenderPictFormat	*format;
-    Visual		*visual;
-
-    temp.screen  = scr;
-    temp.depth   = 32;
-    temp.c_class = TrueColor;
-
-    xvi = XGetVisualInfo (dpy,
-			  VisualScreenMask |
-			  VisualDepthMask  |
-			  VisualClassMask,
-			  &temp,
-			  &nvi);
-    if (!xvi)
-	return 0;
-
-    visual = 0;
-    for (i = 0; i < nvi; i++)
-    {
-	format = XRenderFindVisualFormat (dpy, xvi[i].visual);
-	if (format->type == PictTypeDirect && format->direct.alphaMask)
-	{
-	    visual = xvi[i].visual;
-	    break;
-	}
-    }
-
-    XFree (xvi);
-
-    return visual;
+    BaseSwitchScreen::handleEvent (event);
 }
-
 
 void
 SwitchScreen::initiate (SwitchWindowSelection selection,
@@ -724,7 +528,7 @@ SwitchScreen::windowRemove (Window id)
 		break;
 
 	    pos -= WIDTH;
-	    if (pos < -windows.size () * WIDTH)
+	    if (pos < -(int)windows.size () * WIDTH)
 		pos += windows.size () * WIDTH;
 	}
 
@@ -749,74 +553,6 @@ SwitchScreen::windowRemove (Window id)
 
 	    moreAdjust = true;
 	}
-    }
-}
-
-void
-SwitchScreen::updateForegroundColor ()
-{
-    Atom	  actual;
-    int		  result, format;
-    unsigned long n, left;
-    unsigned char *propData;
-
-    if (!popupWindow)
-	return;
-
-
-    result = XGetWindowProperty (screen->dpy (), popupWindow,
-				 selectFgColorAtom, 0L, 4L, false,
-				 XA_INTEGER, &actual, &format,
-				 &n, &left, &propData);
-
-    if (result == Success && n && propData)
-    {
-	if (n == 3 || n == 4)
-	{
-	    long *data = (long *) propData;
-
-	    fgColor[0] = MIN (0xffff, data[0]);
-	    fgColor[1] = MIN (0xffff, data[1]);
-	    fgColor[2] = MIN (0xffff, data[2]);
-
-	    if (n == 4)
-		fgColor[3] = MIN (0xffff, data[3]);
-	}
-
-	XFree (propData);
-    }
-    else
-    {
-	fgColor[0] = 0;
-	fgColor[1] = 0;
-	fgColor[2] = 0;
-	fgColor[3] = 0xffff;
-    }
-}
-
-
-
-void
-SwitchScreen::handleEvent (XEvent *event)
-{
-    screen->handleEvent (event);
-
-    switch (event->type) {
-	case UnmapNotify:
-	    windowRemove (event->xunmap.window);
-	    break;
-	case DestroyNotify:
-	    windowRemove (event->xdestroywindow.window);
-	    break;
-	case PropertyNotify:
-	    if (event->xproperty.atom == selectFgColorAtom)
-	    {
-		if (event->xproperty.window == popupWindow)
-		    updateForegroundColor ();
-	    }
-
-	default:
-	    break;
     }
 }
 
@@ -948,7 +684,7 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
 
 	    move -= m;
 	    pos  += m;
-	    if (pos < -windows.size () * WIDTH)
+	    if (pos < -(int)windows.size () * WIDTH)
 		pos += windows.size () * WIDTH;
 	    else if (pos > 0)
 		pos -= windows.size () * WIDTH;
@@ -1002,7 +738,8 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	    {
 		CompWindow *w;
 
-		for (w = zoomed->prev; w && w->id () <= 1; w = w->prev);
+		for (w = zoomed->prev; w && w->id () <= 1; w = w->prev)
+		    ;
 		zoomedAbove = (w) ? w->id () : None;
 
 		screen->unhookWindow (zoomed);
@@ -1112,187 +849,85 @@ SwitchScreen::donePaint ()
     cScreen->donePaint ();
 }
 
-
 void
 SwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 			  const GLMatrix            &transform,
 		          unsigned int              mask,
 			  int                       x,
-			  int                       y,
-			  int                       x1,
-			  int                       x2)
+			  int                       y)
 {
-    GLWindowPaintAttrib  sAttrib (attrib);
-    int                  wx, wy;
-    float                width, height;
-    GLTexture            *icon = NULL;
-    CompWindow::Geometry &g = window->geometry ();
+    BaseSwitchWindow::paintThumb (attrib,
+    				  transform,
+    				  mask,
+    				  x,
+    				  y,
+    				  WIDTH  - (SPACE << 1),
+    				  HEIGHT - (SPACE << 1),
+    				  WIDTH  - (WIDTH  >> 2),
+    				  HEIGHT - (HEIGHT >> 2));
+}
 
-    mask |= PAINT_WINDOW_TRANSFORMED_MASK;
+void
+SwitchWindow::updateIconTexturedWindow (GLWindowPaintAttrib  &sAttrib,
+					int                  &wx,
+					int                  &wy,
+					int                  x,
+					int                  y,
+					GLTexture            *icon)
+{
+    sAttrib.xScale = sAttrib.yScale = 1.0f;
 
-    if (window->mapNum ())
-    {
-	if (gWindow->textures ().empty ())
-	    gWindow->bind ();
-    }
+    wx = x + WIDTH  - icon->width ()  - SPACE;
+    wy = y + HEIGHT - icon->height () - SPACE;
+}
 
-    if (!gWindow->textures ().empty ())
-    {
-	GLMatrix wTransform (transform);
-	int      ww, wh;
-	int      addWindowGeometryIndex =
-	    gWindow->glAddGeometryGetCurrentIndex ();
+void
+SwitchWindow::updateIconNontexturedWindow (GLWindowPaintAttrib  &sAttrib,
+					   int                  &wx,
+					   int                  &wy,
+					   float                &width,
+					   float                &height,
+					   int                  x,
+					   int                  y,
+					   GLTexture            *icon)
+{
+    int iw, ih;
 
-	width  = WIDTH  - (SPACE << 1);
-	height = HEIGHT - (SPACE << 1);
+    iw = width  - SPACE;
+    ih = height - SPACE;
 
-	ww = g.width () + window->input ().left +
-	     window->input ().right;
-	wh = g.height () + window->input ().top +
-	     window->input ().bottom;
-
-	if (ww > width)
-	    sAttrib.xScale = width / ww;
-	else
-	    sAttrib.xScale = 1.0f;
-
-	if (wh > height)
-	    sAttrib.yScale = height / wh;
-	else
-	    sAttrib.yScale = 1.0f;
-
-	if (sAttrib.xScale < sAttrib.yScale)
-	    sAttrib.yScale = sAttrib.xScale;
-	else
-	    sAttrib.xScale = sAttrib.yScale;
-
-	width  = ww * sAttrib.xScale;
-	height = wh * sAttrib.yScale;
-
-	wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
-	wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
-
-	sAttrib.xTranslate = wx - g.x () +
-			     window->input ().left * sAttrib.xScale;
-	sAttrib.yTranslate = wy - g.y () +
-			     window->input ().top  * sAttrib.yScale;
-
-	GLFragment::Attrib fragment (sAttrib);
-
-	if (window->alpha () || fragment.getOpacity () != OPAQUE)
-	    mask |= PAINT_WINDOW_TRANSLUCENT_MASK;
-
-	wTransform.translate (g.x (), g.y (), 0.0f);
-	wTransform.scale (sAttrib.xScale, sAttrib.yScale, 1.0f);
-	wTransform.translate (sAttrib.xTranslate / sAttrib.xScale - g.x (),
-			      sAttrib.yTranslate / sAttrib.yScale - g.y (),
-			      0.0f);
-
-	glPushMatrix ();
-	glLoadMatrixf (wTransform.getMatrix ());
-
-	/* XXX: replacing the addWindowGeometry function like this is
-	   very ugly but necessary until the vertex stage has been made
-	   fully pluggable. */
-	gWindow->glAddGeometrySetCurrentIndex (MAXSHORT);
-	gWindow->glDraw (wTransform, fragment, infiniteRegion, mask);
-	gWindow->glAddGeometrySetCurrentIndex (addWindowGeometryIndex);
-
-	glPopMatrix ();
-
-	if (sScreen->optionGetIcon ())
-	{
-	    icon = gWindow->getIcon (ICON_SIZE, ICON_SIZE);
-	    if (icon)
-	    {
-		sAttrib.xScale = sAttrib.yScale = 1.0f;
-
-		wx = x + WIDTH  - icon->width ()  - SPACE;
-		wy = y + HEIGHT - icon->height () - SPACE;
-	    }
-	}
-    }
+    if ((int)icon->width () < (iw >> 1))
+	sAttrib.xScale = (iw / icon->width ());
     else
-    {
-	width  = WIDTH  - (WIDTH  >> 2);
-	height = HEIGHT - (HEIGHT >> 2);
+	sAttrib.xScale = 1.0f;
 
-	icon = gWindow->getIcon (ICON_SIZE, ICON_SIZE);
-	if (!icon)
-	    icon = gScreen->defaultIcon ();
+    if ((int)icon->height () < (ih >> 1))
+	sAttrib.yScale = (ih / icon->height ());
+    else
+	sAttrib.yScale = 1.0f;
 
-	if (icon)
-	{
-	    int iw, ih;
+    if (sAttrib.xScale < sAttrib.yScale)
+	sAttrib.yScale = sAttrib.xScale;
+    else
+	sAttrib.xScale = sAttrib.yScale;
 
-	    iw = width  - SPACE;
-	    ih = height - SPACE;
+    width  = icon->width ()  * sAttrib.xScale;
+    height = icon->height () * sAttrib.yScale;
 
-	    if (icon->width () < (iw >> 1))
-		sAttrib.xScale = (iw / icon->width ());
-	    else
-		sAttrib.xScale = 1.0f;
+    wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
+    wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
+}
 
-	    if (icon->height () < (ih >> 1))
-		sAttrib.yScale = (ih / icon->height ());
-	    else
-		sAttrib.yScale = 1.0f;
-
-	    if (sAttrib.xScale < sAttrib.yScale)
-		sAttrib.yScale = sAttrib.xScale;
-	    else
-		sAttrib.xScale = sAttrib.yScale;
-
-	    width  = icon->width ()  * sAttrib.xScale;
-	    height = icon->height () * sAttrib.yScale;
-
-	    wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
-	    wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
-	}
-    }
-
-    if (icon)
-    {
-	CompRegion        iconReg (g.x (), g.y (), icon->width (),
-				   icon->height ());
-	GLTexture::MatrixList matrix (1);
-	int               addWindowGeometryIndex =
-	    gWindow->glAddGeometryGetCurrentIndex ();
-
-	mask |= PAINT_WINDOW_BLEND_MASK;
-
-	matrix[0] = icon->matrix ();
-	matrix[0].x0 -= (g.x () * matrix[0].xx);
-	matrix[0].y0 -= (g.y () * matrix[0].yy);
-
-	sAttrib.xTranslate = wx - g.x ();
-	sAttrib.yTranslate = wy - g.y ();
-
-	gWindow->geometry ().reset ();
-
-	gWindow->glAddGeometrySetCurrentIndex (MAXSHORT);
-	gWindow->glAddGeometry (matrix, iconReg, infiniteRegion);
-	gWindow->glAddGeometrySetCurrentIndex (addWindowGeometryIndex);
-
-	if (gWindow->geometry ().vCount)
-	{
-	    GLFragment::Attrib fragment (sAttrib);
-	    GLMatrix           wTransform (transform);
-
-	    wTransform.translate (g.x (), g.y (), 0.0f);
-	    wTransform.scale (sAttrib.xScale, sAttrib.yScale, 1.0f);
-	    wTransform.translate (sAttrib.xTranslate / sAttrib.xScale - g.x (),
-				  sAttrib.yTranslate / sAttrib.yScale - g.y (),
-				  0.0f);
-
-	    glPushMatrix ();
-	    glLoadMatrixf (wTransform.getMatrix ());
-
-	    gWindow->glDrawTexture (icon, fragment, mask);
-
-	    glPopMatrix ();
-	}
-    }
+void
+SwitchWindow::updateIconPos (int   &wx,
+			     int   &wy,
+			     int   x,
+			     int   y,
+			     float width,
+			     float height)
+{
+    wx = x + SPACE + ((WIDTH  - (SPACE << 1)) - width)  / 2;
+    wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
 }
 
 bool
@@ -1342,7 +977,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	    if (x + WIDTH > x1)
 		SwitchWindow::get (w)->paintThumb (
 		    gWindow->lastPaintAttrib (), transform,
-		    mask, x, y, x1, x2);
+		    mask, x, y);
 	    x += WIDTH;
 	}
 
@@ -1353,7 +988,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 
             SwitchWindow::get (w)->paintThumb (
 		gWindow->lastPaintAttrib (), transform,
-		mask, x, y, x1, x2);
+		mask, x, y);
 	    x += WIDTH;
 	}
 
@@ -1434,33 +1069,6 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
     return status;
 }
 
-bool
-SwitchWindow::damageRect (bool initial, const CompRect &rect)
-{
-    bool status;
-
-    if (sScreen->grabIndex)
-    {
-	CompWindow *popup;
-
-	foreach (CompWindow *w, sScreen->windows)
-	{
-	    if (window == w)
-	    {
-		popup = screen->findWindow (sScreen->popupWindow);
-		if (popup)
-		    CompositeWindow::get (popup)->addDamage ();
-
-		break;
-	    }
-	}
-    }
-
-    cWindow->damageRect (initial, rect);
-
-    return status;
-}
-
 void
 SwitchScreen::setZoom ()
 {
@@ -1478,41 +1086,22 @@ SwitchScreen::setZoom ()
 }
 
 SwitchScreen::SwitchScreen (CompScreen *screen) :
+    BaseSwitchScreen (screen),
     PluginClassHandler<SwitchScreen,CompScreen> (screen),
-    cScreen (CompositeScreen::get (screen)),
-    gScreen (GLScreen::get (screen)),
-    popupWindow (None),
-    selectedWindow (None),
     zoomedWindow (None),
-    lastActiveNum (0),
-    grabIndex (NULL),
     switching (false),
     zoomMask (~0),
-    moreAdjust (false),
     mVelocity (0.0),
     tVelocity (0.0),
     sVelocity (0.0),
-    windows (),
     pos (0),
     move (0),
     translate (0.0),
-    sTranslate (0.0),
-    selection (CurrentViewport),
-    ignoreSwitcher (false)
+    sTranslate (0.0)
 {
     zoom = optionGetZoom () / 30.0f;
 
     zooming = (optionGetZoom () > 0.05f);
-
-    fgColor[0] = 0;
-    fgColor[1] = 0;
-    fgColor[2] = 0;
-    fgColor[3] = 0xffff;
-
-    selectWinAtom =
-	XInternAtom (screen->dpy (), DECOR_SWITCH_WINDOW_ATOM_NAME, 0);
-    selectFgColorAtom =
-	XInternAtom (screen->dpy (), DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
 
     optionSetZoomNotify (boost::bind (&SwitchScreen::setZoom, this));
 
@@ -1565,6 +1154,19 @@ SwitchScreen::~SwitchScreen ()
 {
     if (popupWindow)
 	XDestroyWindow (screen->dpy (), popupWindow);
+}
+
+SwitchWindow::SwitchWindow (CompWindow *window) :
+    BaseSwitchWindow (dynamic_cast<BaseSwitchScreen *>
+    		      (SwitchScreen::get (screen)), window),
+    PluginClassHandler<SwitchWindow,CompWindow> (window),
+    sScreen (SwitchScreen::get (screen))
+{
+    GLWindowInterface::setHandler (gWindow, false);
+    CompositeWindowInterface::setHandler (cWindow, false);
+
+    if (sScreen->popupWindow && sScreen->popupWindow == window->id ())
+	gWindow->glPaintSetEnabled (this, true);
 }
 
 bool
