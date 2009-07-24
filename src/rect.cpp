@@ -271,3 +271,15 @@ CompRect::operator&= (const CompRect &rect)
 
     return *this;
 }
+
+CompRect &
+CompRect::operator= (const CompRect &rect)
+{
+    mRegion.extents.x1 = rect.mRegion.extents.x1;
+    mRegion.extents.y1 = rect.mRegion.extents.y1;
+    mRegion.extents.x2 = rect.mRegion.extents.x2;
+    mRegion.extents.y2 = rect.mRegion.extents.y2;
+
+    return *this;
+}
+

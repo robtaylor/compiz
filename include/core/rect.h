@@ -87,6 +87,7 @@ class CompRect {
 
 	CompRect operator& (const CompRect &) const;
 	CompRect& operator&= (const CompRect &);
+	CompRect& operator= (const CompRect &);
 
 	typedef std::vector<CompRect> vector;
 	typedef std::vector<CompRect *> ptrVector;
