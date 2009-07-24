@@ -860,7 +860,7 @@ PrivateWindow::updateRegion ()
 					  ShapeBounding, &n, &order);
     }
 
-    if (n < 2)
+    if (n < 1)
     {
 	r.x      = -priv->attrib.border_width;
 	r.y      = -priv->attrib.border_width;
