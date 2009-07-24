@@ -368,8 +368,6 @@ class PrivateScreen : public CoreOptions {
 	XWindowAttributes attrib;
 	Window            grabWindow;
 
-	Cursor  invisibleCursor;
-
 	int          desktopWindowCount;
 	unsigned int mapNum;
 	unsigned int activeNum;
@@ -400,6 +398,7 @@ class PrivateScreen : public CoreOptions {
 
 	Cursor normalCursor;
 	Cursor busyCursor;
+	Cursor invisibleCursor;
 
 	CompWindowVector clientList;            /* clients in mapping order */
 	CompWindowVector clientListStacking;    /* clients in stacking order */

@@ -2538,6 +2538,12 @@ CompScreen::unhookWindow (CompWindow *w)
 }
 
 Cursor
+CompScreen::normalCursor ()
+{
+    return priv->normalCursor;
+}
+
+Cursor
 CompScreen::invisibleCursor ()
 {
     return priv->invisibleCursor;
