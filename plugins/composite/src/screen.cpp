@@ -287,7 +287,9 @@ PrivateCompositeScreen::PrivateCompositeScreen (CompositeScreen *cs) :
     timeLeft (0),
     slowAnimations (false),
     active (false),
-    pHnd (NULL)
+    pHnd (NULL),
+    FPSLimiterMode (CompositeFPSLimiterModeDefault),
+    frameTimeAccumulator (0)
 {
     gettimeofday (&lastRedraw, 0);
     // wrap outputChangeNotify
@@ -658,6 +660,18 @@ PrivateCompositeScreen::detectRefreshRate ()
     }
 }
 
+CompositeFPSLimiterMode
+CompositeScreen::FPSLimiterMode ()
+{
+    return priv->FPSLimiterMode;
+}
+
+void
+CompositeScreen::setFPSLimiterMode (CompositeFPSLimiterMode newMode)
+{
+    priv->FPSLimiterMode = newMode;
+}
+
 int
 CompositeScreen::getTimeToNextRedraw (struct timeval *tv)
 {
@@ -669,7 +683,11 @@ CompositeScreen::getTimeToNextRedraw (struct timeval *tv)
     if (diff < 0)
 	diff = 0;
 
-    if (priv->idle || (priv->pHnd && priv->pHnd->hasVSync ()))
+    bool hasVSyncBehavior =
+	(priv->FPSLimiterMode == CompositeFPSLimiterModeVSyncLike ||
+	 (priv->pHnd && priv->pHnd->hasVSync ()));
+
+    if (priv->idle || hasVSyncBehavior)
     {
 	if (priv->timeMult > 1)
 	{
@@ -719,6 +737,9 @@ CompositeScreen::getTimeToNextRedraw (struct timeval *tv)
     if (diff >= priv->redrawTime)
 	return 1;
 
+    if (hasVSyncBehavior)
+	return (priv->redrawTime - diff) * 0.7;
+
     return priv->redrawTime - diff;
 }
 
@@ -728,11 +749,18 @@ CompositeScreen::redrawTime ()
     return priv->redrawTime;
 }
 
+int
+CompositeScreen::optimalRedrawTime ()
+{
+    return priv->optimalRedrawTime;
+}
+
 bool
 CompositeScreen::handlePaintTimeout ()
 {
     int         timeDiff;
     struct      timeval tv;
+    int         timeToNextRedraw;
 
     gettimeofday (&tv, 0);
 
@@ -749,7 +777,15 @@ CompositeScreen::handlePaintTimeout ()
 
 	if (priv->slowAnimations)
 	{
-	    preparePaint (priv->idle ? 2 : (timeDiff * 2) / priv->redrawTime);
+	    int msSinceLastPaint;
+
+	    if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
+		msSinceLastPaint = 1;
+	    else
+		msSinceLastPaint =
+		    priv->idle ? 2 : (timeDiff * 2) / priv->redrawTime;
+
+	    preparePaint (msSinceLastPaint);
 	}
 	else
 	    preparePaint (priv->idle ? priv->redrawTime : timeDiff);
@@ -827,10 +863,29 @@ CompositeScreen::handlePaintTimeout ()
 
     gettimeofday (&tv, 0);
 
-    if (priv->idle)
-	priv->paintTimer.setTimes (getTimeToNextRedraw (&tv), MAXSHORT);
+    if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
+    {
+	if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
+	{
+	    const int msToReturn1After = 100;
+
+	    priv->frameTimeAccumulator += priv->redrawTime;
+	    if (priv->frameTimeAccumulator > msToReturn1After)
+	    {
+		priv->frameTimeAccumulator %= msToReturn1After;
+		timeToNextRedraw = 1;
+	    }
+	    else
+		timeToNextRedraw = 0;
+	}
+    }
     else
-	priv->paintTimer.setTimes (getTimeToNextRedraw (&tv));
+	timeToNextRedraw = getTimeToNextRedraw (&tv);
+
+    if (priv->idle)
+	priv->paintTimer.setTimes (timeToNextRedraw, MAXSHORT);
+    else
+	priv->paintTimer.setTimes (timeToNextRedraw);
     return true;
 }
 

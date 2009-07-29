@@ -56,6 +56,12 @@
 #define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
 
 
+typedef enum
+{
+    CompositeFPSLimiterModeDisabled = 0,
+    CompositeFPSLimiterModeDefault,
+    CompositeFPSLimiterModeVSyncLike
+} CompositeFPSLimiterMode;
 
 class PrivateCompositeScreen;
 class PrivateCompositeWindow;
@@ -127,9 +133,13 @@ class CompositeScreen :
 	void setWindowPaintOffset (int x, int y);
 	CompPoint windowPaintOffset ();
 
+	void setFPSLimiterMode (CompositeFPSLimiterMode newMode);
+	CompositeFPSLimiterMode FPSLimiterMode ();
+
 	int getTimeToNextRedraw (struct timeval *tv);
 
 	int redrawTime ();
+	int optimalRedrawTime ();
 
 	bool handlePaintTimeout ();
 

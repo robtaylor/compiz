@@ -107,6 +107,9 @@ class PrivateCompositeScreen :
 
 	bool active;
 	CompositeScreen::PaintHandler *pHnd;
+
+	CompositeFPSLimiterMode FPSLimiterMode;
+	int frameTimeAccumulator;
 };
 
 class PrivateCompositeWindow : WindowInterface
