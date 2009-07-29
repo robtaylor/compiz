@@ -64,6 +64,8 @@ class PrivateCompositeScreen :
 
 	void detectRefreshRate ();
 
+	int getTimeToNextRedraw (struct timeval *tv);
+
     public:
 
 	CompositeScreen *cScreen;

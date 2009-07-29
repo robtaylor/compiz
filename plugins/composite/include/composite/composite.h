@@ -136,8 +136,6 @@ class CompositeScreen :
 	void setFPSLimiterMode (CompositeFPSLimiterMode newMode);
 	CompositeFPSLimiterMode FPSLimiterMode ();
 
-	int getTimeToNextRedraw (struct timeval *tv);
-
 	int redrawTime ();
 	int optimalRedrawTime ();
 

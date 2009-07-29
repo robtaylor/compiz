@@ -673,74 +673,74 @@ CompositeScreen::setFPSLimiterMode (CompositeFPSLimiterMode newMode)
 }
 
 int
-CompositeScreen::getTimeToNextRedraw (struct timeval *tv)
+PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
 {
     int diff, next;
 
-    diff = TIMEVALDIFF (tv, &priv->lastRedraw);
+    diff = TIMEVALDIFF (tv, &lastRedraw);
 
     /* handle clock rollback */
     if (diff < 0)
 	diff = 0;
 
     bool hasVSyncBehavior =
-	(priv->FPSLimiterMode == CompositeFPSLimiterModeVSyncLike ||
-	 (priv->pHnd && priv->pHnd->hasVSync ()));
+	(FPSLimiterMode == CompositeFPSLimiterModeVSyncLike ||
+	 (pHnd && pHnd->hasVSync ()));
 
-    if (priv->idle || hasVSyncBehavior)
+    if (idle || hasVSyncBehavior)
     {
-	if (priv->timeMult > 1)
+	if (timeMult > 1)
 	{
-	    priv->frameStatus = -1;
-	    priv->redrawTime = priv->optimalRedrawTime;
-	    priv->timeMult--;
+	    frameStatus = -1;
+	    redrawTime = optimalRedrawTime;
+	    timeMult--;
 	}
     }
     else
     {
-	if (diff > priv->redrawTime)
+	if (diff > redrawTime)
 	{
-	    if (priv->frameStatus > 0)
-		priv->frameStatus = 0;
+	    if (frameStatus > 0)
+		frameStatus = 0;
 
-	    next = priv->optimalRedrawTime * (priv->timeMult + 1);
+	    next = optimalRedrawTime * (timeMult + 1);
 	    if (diff > next)
 	    {
-		priv->frameStatus--;
-		if (priv->frameStatus < -1)
+		frameStatus--;
+		if (frameStatus < -1)
 		{
-		    priv->timeMult++;
-		    priv->redrawTime = diff = next;
+		    timeMult++;
+		    redrawTime = diff = next;
 		}
 	    }
 	}
-	else if (diff < priv->redrawTime)
+	else if (diff < redrawTime)
 	{
-	    if (priv->frameStatus < 0)
-		priv->frameStatus = 0;
+	    if (frameStatus < 0)
+		frameStatus = 0;
 
-	    if (priv->timeMult > 1)
+	    if (timeMult > 1)
 	    {
-		next = priv->optimalRedrawTime * (priv->timeMult - 1);
+		next = optimalRedrawTime * (timeMult - 1);
 		if (diff < next)
 		{
-		    priv->frameStatus++;
-		    if (priv->frameStatus > 4)
+		    frameStatus++;
+		    if (frameStatus > 4)
 		    {
-			priv->timeMult--;
-			priv->redrawTime = next;
+			timeMult--;
+			redrawTime = next;
 		    }
 		}
 	    }
 	}
     }
-    if (diff >= priv->redrawTime)
+    if (diff >= redrawTime)
 	return 1;
 
     if (hasVSyncBehavior)
-	return (priv->redrawTime - diff) * 0.7;
+	return (redrawTime - diff) * 0.7;
 
-    return priv->redrawTime - diff;
+    return redrawTime - diff;
 }
 
 int
@@ -880,7 +880,7 @@ CompositeScreen::handlePaintTimeout ()
 	}
     }
     else
-	timeToNextRedraw = getTimeToNextRedraw (&tv);
+	timeToNextRedraw = priv->getTimeToNextRedraw (&tv);
 
     if (priv->idle)
 	priv->paintTimer.setTimes (timeToNextRedraw, MAXSHORT);
