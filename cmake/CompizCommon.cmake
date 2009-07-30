@@ -22,8 +22,8 @@ set (
     COMPIZ_I18N_DIR ${COMPIZ_I18N_DIR} CACHE PATH "Translation file directory"
 )
 
-set (CMAKE_CXX_FLAGS "-Wall")
-set (CMAKE_C_FLAGS "-Wall")
+set (CMAKE_CXX_FLAGS "-Wall -Wsign-conversion")
+set (CMAKE_C_FLAGS "-Wall -Wsign-conversion")
 
 # unsets the given variable
 macro (compiz_unset var)
