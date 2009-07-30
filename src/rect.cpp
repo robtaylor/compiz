@@ -36,7 +36,7 @@ CompRect::CompRect ()
     mRegion.extents.y2 = 0;
 }
 
-CompRect::CompRect (int x, int y, unsigned int width, unsigned int height)
+CompRect::CompRect (int x, int y, int width, int height)
 {
     mRegion.rects = &mRegion.extents;
     mRegion.numRects = 1;
@@ -71,8 +71,8 @@ CompRect::region () const
 void
 CompRect::setGeometry (int x,
 		       int y,
-		       unsigned int width,
-		       unsigned int height)
+		       int width,
+		       int height)
 {
     mRegion.extents.x1 = x;
     mRegion.extents.y1 = y;
@@ -106,13 +106,13 @@ CompRect::setPos (const CompPoint& pos)
 }
 
 void
-CompRect::setWidth (unsigned int width)
+CompRect::setWidth (int width)
 {
     mRegion.extents.x2 = mRegion.extents.x1 + width;
 }
 
 void
-CompRect::setHeight (unsigned int height)
+CompRect::setHeight (int height)
 {
     mRegion.extents.y2 = mRegion.extents.y1 + height;
 }
@@ -211,7 +211,7 @@ CompRect::isEmpty () const
     return true;
 }
 
-unsigned int
+int
 CompRect::area () const
 {
     if (mRegion.extents.x2 < mRegion.extents.x1)

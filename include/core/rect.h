@@ -30,15 +30,15 @@ class CompRect {
 
     public:
 	CompRect ();
-	CompRect (int x, int y, unsigned int width, unsigned int height);
+	CompRect (int x, int y, int width, int height);
 	CompRect (const CompRect&);
 	CompRect (const XRectangle);
 
 	int x () const;
 	int y () const;
 
-	unsigned int width () const;
-	unsigned int height () const;
+	int width () const;
+	int height () const;
 
 	int x1 () const;
 	int y1 () const;
@@ -54,17 +54,17 @@ class CompRect {
 	int centerY () const;
 	CompPoint center () const;
 
-	unsigned int area () const;
+	int area () const;
 
 	const Region region () const;
 
 	void setGeometry (int x, int y,
-			  unsigned int width, unsigned int height);
+			  int width, int height);
 
 	void setX      (int);
 	void setY      (int);
-	void setWidth  (unsigned int);
-	void setHeight (unsigned int);
+	void setWidth  (int);
+	void setHeight (int);
 
 	void setPos (const CompPoint&);
 	void setSize (const CompSize&);
@@ -110,13 +110,13 @@ CompRect::y () const
     return mRegion.extents.y1;
 }
 
-inline unsigned int
+inline int
 CompRect::width () const
 {
     return mRegion.extents.x2 - mRegion.extents.x1;
 }
 
-inline unsigned int
+inline int
 CompRect::height () const
 {
     return mRegion.extents.y2 - mRegion.extents.y1;

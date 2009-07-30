@@ -33,13 +33,13 @@ class CompSize {
 
     public:
 	CompSize ();
-	CompSize (unsigned int, unsigned int);
+	CompSize (int, int);
 
-	unsigned int width () const;
-	unsigned int height () const;
+	int width () const;
+	int height () const;
 
-	void setWidth (unsigned int);
-	void setHeight (unsigned int);
+	void setWidth (int);
+	void setHeight (int);
 
 	typedef std::vector<CompSize> vector;
 	typedef std::vector<CompSize *> ptrVector;
@@ -47,16 +47,16 @@ class CompSize {
 	typedef std::list<CompSize *> ptrList;
 
     private:
-	unsigned int mWidth, mHeight;
+	int mWidth, mHeight;
 };
 
-inline unsigned int
+inline int
 CompSize::width () const
 {
     return mWidth;
 }
 
-inline unsigned int
+inline int
 CompSize::height () const
 {
     return mHeight;

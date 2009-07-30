@@ -31,20 +31,20 @@ CompSize::CompSize () :
 {
 }
 
-CompSize::CompSize (unsigned int width, unsigned int height) :
+CompSize::CompSize (int width, int height) :
    mWidth (width),
    mHeight (height)
 {
 }
 
 void
-CompSize::setWidth (unsigned int width)
+CompSize::setWidth (int width)
 {
     mWidth = width;
 }
 
 void
-CompSize::setHeight (unsigned int height)
+CompSize::setHeight (int height)
 {
     mHeight = height;
 }
