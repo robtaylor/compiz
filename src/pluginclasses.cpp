@@ -34,7 +34,7 @@ PluginClassStorage::PluginClassStorage (PluginClassStorage::Indices& iList) :
 	pluginClasses.resize (iList.size ());
 }
 
-int
+unsigned int
 PluginClassStorage::allocatePluginClassIndex (PluginClassStorage::Indices& iList)
 {
     unsigned int i;
@@ -57,9 +57,9 @@ PluginClassStorage::allocatePluginClassIndex (PluginClassStorage::Indices& iList
 
 void
 PluginClassStorage::freePluginClassIndex (PluginClassStorage::Indices& iList,
-					  int                          idx)
+					  unsigned int                 idx)
 {
-    int size = iList.size ();
+    unsigned int size = iList.size ();
 
     if (idx < 0 || idx >= size)
 	return;

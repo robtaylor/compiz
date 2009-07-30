@@ -77,14 +77,14 @@ PluginClassHandler<Tp,Tb,ABI>::PluginClassHandler (Tb *base) :
 	if (!mIndex.initiated)
 	{
 	    mIndex.index = Tb::allocPluginClassIndex ();
-	    if (mIndex.index >= 0)
+	    if (mIndex.index != (unsigned)~0)
 	    {
 		mIndex.initiated = true;
 		mIndex.failed    = false;
 		mIndex.pcIndex = pluginClassHandlerIndex;
 
 		CompPrivate p;
-		p.val = mIndex.index;
+		p.uval = mIndex.index;
 
 		if (!screen->hasValue (keyName ()))
 		{
@@ -149,7 +149,7 @@ PluginClassHandler<Tp,Tb,ABI>::get (Tb *base)
 
     if (screen->hasValue (keyName ()))
     {
-	mIndex.index     = screen->getValue (keyName ()).val;
+	mIndex.index     = screen->getValue (keyName ()).uval;
 	mIndex.initiated = true;
 	mIndex.failed    = false;
 	mIndex.pcIndex = pluginClassHandlerIndex;

@@ -32,11 +32,11 @@
 
 class PluginClassIndex {
     public:
-	PluginClassIndex () : index (-1), refCount (0),
+	PluginClassIndex () : index ((unsigned)~0), refCount (0),
 			      initiated (false), failed (false),
 			      pcFailed (false), pcIndex (0) {}
 
-	int          index;
+	unsigned int index;
 	int          refCount;
 	bool         initiated;
 	bool         failed;
@@ -56,8 +56,8 @@ class PluginClassStorage {
 	std::vector<void *> pluginClasses;
 
     protected:
-	static int allocatePluginClassIndex (Indices& iList);
-	static void freePluginClassIndex (Indices& iList, int idx);
+	static unsigned int allocatePluginClassIndex (Indices& iList);
+	static void freePluginClassIndex (Indices& iList, unsigned int idx);
 };
 
 #endif

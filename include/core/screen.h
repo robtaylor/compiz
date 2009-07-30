@@ -318,8 +318,8 @@ class CompScreen :
 
 	bool updateDefaultIcon ();
 
-	static int allocPluginClassIndex ();
-	static void freePluginClassIndex (int index);
+	static unsigned int allocPluginClassIndex ();
+	static void freePluginClassIndex (unsigned int index);
 
 	WRAPABLE_HND (0, ScreenInterface, void, fileWatchAdded, CompFileWatch *)
 	WRAPABLE_HND (1, ScreenInterface, void, fileWatchRemoved, CompFileWatch *)

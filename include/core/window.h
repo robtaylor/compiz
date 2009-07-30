@@ -476,8 +476,8 @@ class CompWindow :
 	static unsigned int constrainWindowState (unsigned int state,
 						  unsigned int actions);
 
-	static int allocPluginClassIndex ();
-	static void freePluginClassIndex (int index);
+	static unsigned int allocPluginClassIndex ();
+	static void freePluginClassIndex (unsigned int index);
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents&);

@@ -90,10 +90,10 @@ ModifierHandler *modHandler;
 
 PluginClassStorage::Indices screenPluginClassIndices (0);
 
-int
+unsigned int
 CompScreen::allocPluginClassIndex ()
 {
-    int i = PluginClassStorage::allocatePluginClassIndex (screenPluginClassIndices);
+    unsigned int i = PluginClassStorage::allocatePluginClassIndex (screenPluginClassIndices);
 
     if (screenPluginClassIndices.size () != screen->pluginClasses.size ())
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
@@ -102,7 +102,7 @@ CompScreen::allocPluginClassIndex ()
 }
 
 void
-CompScreen::freePluginClassIndex (int index)
+CompScreen::freePluginClassIndex (unsigned int index)
 {
     PluginClassStorage::freePluginClassIndex (screenPluginClassIndices, index);
 

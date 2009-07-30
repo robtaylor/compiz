@@ -48,10 +48,10 @@
 
 PluginClassStorage::Indices windowPluginClassIndices (0);
 
-int
+unsigned int
 CompWindow::allocPluginClassIndex ()
 {
-    int i = PluginClassStorage::allocatePluginClassIndex (windowPluginClassIndices);
+    unsigned int i = PluginClassStorage::allocatePluginClassIndex (windowPluginClassIndices);
 
     foreach (CompWindow *w, screen->windows ())
 	if (windowPluginClassIndices.size () != w->pluginClasses.size ())
@@ -61,7 +61,7 @@ CompWindow::allocPluginClassIndex ()
 }
 
 void
-CompWindow::freePluginClassIndex (int index)
+CompWindow::freePluginClassIndex (unsigned int index)
 {
     PluginClassStorage::freePluginClassIndex (windowPluginClassIndices, index);
 
