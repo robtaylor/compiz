@@ -7,6 +7,6 @@ Name: compiz-compiztoolbox
 Description: Toolbox library plugin for compiz
 Version: @VERSION@
 
-Requires:
-Libs:
+Requires: compiz compiz-composite compiz-opengl
+Libs: -L${libdir} -lcompiztoolbox
 Cflags: @COMPIZ_CFLAGS@
