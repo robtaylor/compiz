@@ -1699,7 +1699,8 @@ PrivateScreen::updateOutputDevices ()
     CompOption::Value::Vector &list = optionGetOutputs ();
     unsigned int              nOutput = 0;
     int		              x, y, bits;
-    unsigned int              width, height;
+    unsigned int              uWidth, uHeight;
+    int                       width, height;
     int		              x1, y1, x2, y2;
     char                      str[10];
 
@@ -1707,10 +1708,12 @@ PrivateScreen::updateOutputDevices ()
     {
 	x      = 0;
 	y      = 0;
-	width  = screen->width ();
-	height = screen->height ();
+	uWidth  = (unsigned) screen->width ();
+	uHeight = (unsigned) screen->height ();
 
-	bits = XParseGeometry (value.s ().c_str (), &x, &y, &width, &height);
+	bits = XParseGeometry (value.s ().c_str (), &x, &y, &uWidth, &uHeight);
+	width  = (int) uWidth;
+	height = (int) uHeight;
 
 	if (bits & XNegative)
 	    x = screen->width () + x - width;
@@ -1727,9 +1730,9 @@ PrivateScreen::updateOutputDevices ()
 	    x1 = 0;
 	if (y1 < 0)
 	    y1 = 0;
-	if (x2 > (int) screen->width ())
+	if (x2 > screen->width ())
 	    x2 = screen->width ();
-	if (y2 > (int) screen->height ())
+	if (y2 > screen->height ())
 	    y2 = screen->height ();
 
 	if (x1 < x2 && y1 < y2)
@@ -3773,12 +3776,12 @@ CompScreen::warpPointer (int dx,
     pointerX += dx;
     pointerY += dy;
 
-    if (pointerX >= (int) width ())
+    if (pointerX >= width ())
 	pointerX = width () - 1;
     else if (pointerX < 0)
 	pointerX = 0;
 
-    if (pointerY >= (int) height ())
+    if (pointerY >= height ())
 	pointerY = height () - 1;
     else if (pointerY < 0)
 	pointerY = 0;

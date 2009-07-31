@@ -1353,9 +1353,9 @@ CompWindow::resize (XWindowAttributes attr)
 bool
 CompWindow::resize (int          x,
 		    int          y,
-		    unsigned int width,
-		    unsigned int height,
-		    unsigned int border)
+		    int          width,
+		    int          height,
+		    int          border)
 {
     return resize (Geometry (x, y, width, height, border));
 }
@@ -1363,12 +1363,12 @@ CompWindow::resize (int          x,
 bool
 CompWindow::resize (CompWindow::Geometry gm)
 {
-    if (priv->attrib.width        != (int) gm.width ()  ||
-	priv->attrib.height       != (int) gm.height () ||
-	priv->attrib.border_width != (int) gm.border ())
+    if (priv->attrib.width        != gm.width ()  ||
+	priv->attrib.height       != gm.height () ||
+	priv->attrib.border_width != gm.border ())
     {
-	unsigned int pw, ph;
-	int	     dx, dy, dwidth, dheight;
+	int pw, ph;
+	int dx, dy, dwidth, dheight;
 
 	pw = gm.width () + gm.border () * 2;
 	ph = gm.height () + gm.border () * 2;

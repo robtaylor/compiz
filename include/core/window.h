@@ -242,15 +242,15 @@ class CompWindow :
     {
 	    public:
 		Geometry ();
-		Geometry (int, int, unsigned int, unsigned int, unsigned int);
+		Geometry (int, int, int, int, int);
 
-		unsigned int border () const;
+		int border () const;
 
-		void set (int, int, unsigned int, unsigned int, unsigned int);
-		void setBorder (unsigned int);
+		void set (int, int, int, int, int);
+		void setBorder (int);
 
 	    private:
-		unsigned int mBorder;
+		int mBorder;
 	};
 
 	typedef boost::function<void (CompWindow *)> ForEach;
@@ -272,8 +272,8 @@ class CompWindow :
 	CompPoint pos () const;
 
 	/* With border */
-	unsigned int width () const;
-	unsigned int height () const;
+	int width () const;
+	int height () const;
 	CompSize size () const;
 
 	Geometry & serverGeometry () const;
@@ -283,8 +283,8 @@ class CompWindow :
 	CompPoint serverPos () const;
 
 	/* With border */
-	unsigned int serverWidth () const;
-	unsigned int serverHeight () const;
+	int serverWidth () const;
+	int serverHeight () const;
 	const CompSize serverSize () const;
 
 	/* includes decorations */
@@ -375,8 +375,8 @@ class CompWindow :
 
 	bool resize (Geometry);
 
-	bool resize (int x, int y, unsigned int width, unsigned int height,
-		     unsigned int border = 0);
+	bool resize (int x, int y, int width, int height,
+		     int border = 0);
 
 	void move (int dx, int dy, bool immediate = true);
 

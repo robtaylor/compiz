@@ -33,34 +33,34 @@ CompWindow::Geometry::Geometry () :
 {
 }
 
-CompWindow::Geometry::Geometry (int          x,
-				int          y,
-				unsigned int width,
-				unsigned int height,
-				unsigned int border) :
+CompWindow::Geometry::Geometry (int x,
+				int y,
+				int width,
+				int height,
+				int border) :
     CompRect (x, y, width, height),
     mBorder (border)
 {
 }
 
-unsigned int
+int
 CompWindow::Geometry::border () const
 {
     return mBorder;
 }
 
 void
-CompWindow::Geometry::setBorder (unsigned int border)
+CompWindow::Geometry::setBorder (int border)
 {
     mBorder = border;
 }
 
 void
-CompWindow::Geometry::set (int          x,
-			   int          y,
-			   unsigned int width,
-			   unsigned int height,
-			   unsigned int border)
+CompWindow::Geometry::set (int x,
+			   int y,
+			   int width,
+			   int height,
+			   int border)
 {
     setX (x);
     setY (y);
@@ -100,13 +100,13 @@ CompWindow::pos () const
 }
 
 /* With border */
-unsigned int
+int
 CompWindow::width () const
 {
     return priv->width;
 }
 
-unsigned int
+int
 CompWindow::height () const
 {
     return priv->height;
@@ -138,14 +138,14 @@ CompWindow::serverPos () const
 }
 
 /* With border */
-unsigned int
+int
 CompWindow::serverWidth () const
 {
     return priv->serverGeometry.width () +
 	   2 * priv->serverGeometry.border ();
 }
 
-unsigned int
+int
 CompWindow::serverHeight () const
 {
     return priv->serverGeometry.height () +
