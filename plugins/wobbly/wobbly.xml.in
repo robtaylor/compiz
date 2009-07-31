@@ -1,19 +1,30 @@
 <compiz>
-    <plugin name="wobbly">
+    <plugin name="wobbly" useBcop="true">
 	<_short>Wobbly Windows</_short>
 	<_long>Use spring model for wobbly window effect</_long>
+	<category>Effects</category>
+	<feature>edgeresistance</feature>
 	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	    <relation type="after">
+		<plugin>decor</plugin>
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
 	    <relation type="before">
 		<plugin>fade</plugin>
 		<plugin>cube</plugin>
 		<plugin>scale</plugin>
 	    </relation>
 	</deps>
-	<display>
+	<options>
 	    <option name="snap_key" type="key">
 		<_short>Snap windows</_short>
 		<_long>Toggle window snapping</_long>
 		<default>&lt;Shift&gt;</default>
+		<passive_grab>false</passive_grab>
 	    </option>
 	    <option name="snap_inverted" type="bool">
 		<_short>Snap Inverted</_short>
@@ -25,8 +36,6 @@
 		<_long>Make window shiver</_long>
 		<default>false</default>
 	    </option>
-	</display>
-	<screen>
 	    <option name="friction" type="float">
 		<_short>Friction</_short>
 		<_long>Spring Friction</_long>
@@ -112,6 +121,6 @@
 		<_long>Wobble effect when maximizing and unmaximizing windows</_long>
 		<default>true</default>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>
