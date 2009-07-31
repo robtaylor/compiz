@@ -63,7 +63,7 @@ SwitchScreen::updateWindowList (int count)
 	    count = 3;
     }
 
-    pos  = ((count >> 1) - windows.size ()) * WIDTH;
+    pos  = ((count >> 1) - (int)windows.size ()) * WIDTH;
     move = 0;
 
     selectedWindow = windows.front ()->id ();
@@ -86,8 +86,8 @@ SwitchScreen::updateWindowList (int count)
 	    XMoveResizeWindow (screen->dpy (), popupWindow,
 			       x - WINDOW_WIDTH (count) / 2,
 			       y - WINDOW_HEIGHT / 2,
-			       WINDOW_WIDTH (count),
-			       WINDOW_HEIGHT);
+			       (unsigned) WINDOW_WIDTH (count),
+			       (unsigned) WINDOW_HEIGHT);
     }
 }
 
@@ -244,7 +244,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	    XCreateWindow (dpy, screen->root (),
 			   screen->width () / 2 - xsh.width / 2,
 			   screen->height () / 2 - xsh.height / 2,
-			   xsh.width, xsh.height, 0,
+			   (unsigned) xsh.width, (unsigned) xsh.height, 0,
 			   32, InputOutput, visual,
 			   CWBackPixel | CWBorderPixel | CWColormap, &attr);
 
@@ -328,11 +328,12 @@ switchTerminate (CompAction         *action,
 {
     Window     xid;
 
-    xid = CompOption::getIntOptionNamed (options, "root");
+    xid = (Window) CompOption::getIntOptionNamed (options, "root");
 
     if (action)
-	action->setState (action->state () & ~(CompAction::StateTermKey |
-					       CompAction::StateTermButton));
+	action->setState (action->state () &
+			  (unsigned)~(CompAction::StateTermKey |
+			  	      CompAction::StateTermButton));
 
     if (xid && xid != screen->root ())
 	return false;
@@ -412,7 +413,7 @@ switchInitiateCommon (CompAction            *action,
 {
     Window     xid;
 
-    xid = CompOption::getIntOptionNamed (options, "root");
+    xid = (Window) CompOption::getIntOptionNamed (options, "root");
 
     if (xid != screen->root ())
 	return false;
@@ -529,7 +530,7 @@ SwitchScreen::windowRemove (Window id)
 
 	    pos -= WIDTH;
 	    if (pos < -(int)windows.size () * WIDTH)
-		pos += windows.size () * WIDTH;
+		pos += (int)windows.size () * WIDTH;
 	}
 
 	if (popupWindow)
@@ -685,9 +686,9 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
 	    move -= m;
 	    pos  += m;
 	    if (pos < -(int)windows.size () * WIDTH)
-		pos += windows.size () * WIDTH;
+		pos += (int)windows.size () * WIDTH;
 	    else if (pos > 0)
-		pos -= windows.size () * WIDTH;
+		pos -= (int)windows.size () * WIDTH;
 
 	    translate  += tVelocity * chunk;
 	    sTranslate += sVelocity * chunk;
@@ -723,7 +724,7 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
 	if (zooming)
 	{
-	    mask &= ~PAINT_SCREEN_REGION_MASK;
+	    mask &= (unsigned)~PAINT_SCREEN_REGION_MASK;
 	    mask |= PAINT_SCREEN_TRANSFORMED_MASK | PAINT_SCREEN_CLEAR_MASK;
 
 	    sTransform.translate (0.0f, 0.0f, -translate);
@@ -761,7 +762,7 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	{
 	    float zTranslate;
 
-	    mask &= ~PAINT_SCREEN_CLEAR_MASK;
+	    mask &= (unsigned)~PAINT_SCREEN_CLEAR_MASK;
 	    mask |= PAINT_SCREEN_NO_BACKGROUND_MASK;
 
 	    zoomMask = ZOOMED_WINDOW_MASK;
@@ -1031,18 +1032,18 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	GLWindowPaintAttrib sAttrib (attrib);
 	GLuint              value;
 
-	value = sScreen->optionGetSaturation ();
+	value = (GLuint) sScreen->optionGetSaturation ();
 	if (value != 100)
 	    sAttrib.saturation = sAttrib.saturation * value / 100;
 
-	value = sScreen->optionGetBrightness ();
+	value = (GLuint) sScreen->optionGetBrightness ();
 	if (value != 100)
 	    sAttrib.brightness = sAttrib.brightness * value / 100;
 
-	if (window->wmType () & ~(CompWindowTypeDockMask |
-			          CompWindowTypeDesktopMask))
+	if (window->wmType () & (unsigned)~(CompWindowTypeDockMask |
+					    CompWindowTypeDesktopMask))
 	{
-	    value = sScreen->optionGetOpacity ();
+	    value = (GLuint) sScreen->optionGetOpacity ();
 	    if (value != 100)
 		sAttrib.opacity = sAttrib.opacity * value / 100;
 	}
