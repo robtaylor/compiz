@@ -52,6 +52,13 @@
 
 #define DEG2RAD (M_PI / 180.0f)
 
+#if defined(HAVE_SCANDIR_POSIX)
+  // POSIX (2008) defines the comparison function like this:
+  #define scandir(a,b,c,d) scandir((a), (b), (c), (int(*)(const dirent **, const dirent **))(d));
+#else
+  #define scandir(a,b,c,d) scandir((a), (b), (c), (int(*)(const void*,const void*))(d));
+#endif
+
 typedef std::string CompString;
 typedef std::list<CompString> CompStringList;
 
