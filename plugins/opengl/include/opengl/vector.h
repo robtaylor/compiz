@@ -52,6 +52,7 @@ class GLVector {
 
 	float norm ();
 	GLVector& normalize ();
+	GLVector& homogenize ();
 
     private:
 	friend GLVector operator+ (const GLVector& lhs,

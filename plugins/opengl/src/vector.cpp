@@ -240,3 +240,35 @@ operator^ (const GLVector& lhs,
 
     return result;
 }
+
+float
+GLVector::norm ()
+{
+    if (v[3] != 0.0)
+	return 1.0;
+    return sqrt ((v[0] * v[0]) + (v[1] * v[1]) + (v[2] * v[2]));
+}
+
+GLVector &
+GLVector::normalize ()
+{
+    float normal = norm ();
+
+    /* Vector is not homogenous */
+    if (normal == 1.0)
+	return *this;
+
+    for (unsigned int i = 0; i < 3; i++)
+	v[i] /= normal;
+    return *this;
+}
+
+GLVector &
+GLVector::homogenize ()
+{
+    if (v[3] ==0)
+	return *this;
+
+    for (unsigned int i = 0; i < 4; i++)
+	v[i] /= v[3];
+}
