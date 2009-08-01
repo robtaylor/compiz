@@ -30,6 +30,7 @@
 
 #include <string>
 #include <list>
+#include <cstdarg>
 
 #define STRINGIFY(x) #x
 #define TOSTRING(x) STRINGIFY (x)

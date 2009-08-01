@@ -26,7 +26,8 @@
 #include <compiz.h>
 
 #include <string.h>
-#include <stdarg.h>
+#include <cstdarg>
+#include <cstdio>
 
 CompString compPrintf (const char *format, ...)
 {
