@@ -2191,6 +2191,16 @@ WobblyScreen::snapKeyChanged (CompOption *opt)
     opt->value ().action ().setKey (newKeyBinding);
 }
 
+void
+WobblyScreen::snapInvertedChanged (CompOption *opt)
+{
+    // ignore the key
+    if (opt->value ().b ())
+	enableSnapping ();
+    else
+	disableSnapping ();
+}
+
 WobblyScreen::WobblyScreen (CompScreen *s) :
     PluginClassHandler<WobblyScreen, CompScreen> (s),
     cScreen (CompositeScreen::get (s)),
@@ -2208,6 +2218,9 @@ WobblyScreen::WobblyScreen (CompScreen *s) :
     optionSetShiverInitiate (boost::bind (&WobblyScreen::shiver, this, _3));
 
     optionSetSnapKeyNotify (boost::bind (&WobblyScreen::snapKeyChanged, _1));
+    optionSetSnapInvertedNotify (boost::bind
+				 (&WobblyScreen::snapInvertedChanged,
+				  this, _1));
 
     ScreenInterface::setHandler (::screen);
     CompositeScreenInterface::setHandler (cScreen, false);
