@@ -4,7 +4,7 @@ set (USE_KDE4 1 CACHE BOOL "Build KDE 4 window decorator")
 
 if (USE_KDE4)
 
-    find_package(KDE4 4.1.80)
+    find_package(KDE4 4.3.0)
 
     if (KDE4_FOUND)
         include(KDE4Defaults)
@@ -38,6 +38,7 @@ if (USE_KDE4)
 	    options.cpp
 	    kdecoration_plugins.cpp
 	    switcher.cpp
+	    paintredirector.cpp
 	    ${kwd4_SRCS}
 	)
 

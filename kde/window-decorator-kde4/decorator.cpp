@@ -61,16 +61,9 @@
 #define DBUS_METHOD_GET     "get"
 #define DBUS_SIGNAL_CHANGED "changed"
 
-double decorationOpacity = 0.75;
-bool   decorationOpacityShade = false;
-double activeDecorationOpacity = 1.0;
-bool   activeDecorationOpacityShade = false;
 int    blurType = BLUR_TYPE_NONE;
 
-decor_context_t KWD::Decorator::mDefaultContext;
-decor_extents_t KWD::Decorator::mDefaultBorder;
 decor_shadow_t *KWD::Decorator::mNoBorderShadow = 0;
-decor_shadow_t *KWD::Decorator::mDefaultShadow  = 0;
 KWD::PluginManager *KWD::Decorator::mPlugins = 0;
 KWD::Options *KWD::Decorator::mOptions = 0;
 NETRootInfo *KWD::Decorator::mRootInfo;
@@ -92,15 +85,9 @@ KWD::PluginManager::PluginManager (KSharedConfigPtr config):
 	defaultPlugin = "kwin3_plastik";
 }
 
-#ifdef QT_45
+
 KWD::Decorator::Decorator () :
     KApplication (),
-#else
-KWD::Decorator::Decorator (Display* display,
-			   Qt::HANDLE visual,
-			   Qt::HANDLE colormap) :
-    KApplication (display, visual, colormap),
-#endif
     mConfig (0),
     mCompositeWindow (0),
     mSwitcher (0)
@@ -209,13 +196,11 @@ KWD::Decorator::~Decorator (void)
 }
 
 bool
-KWD::Decorator::enableDecorations (Time timestamp,
-				   int  damageEvent)
+KWD::Decorator::enableDecorations (Time timestamp)
 {
     QList <WId>::ConstIterator it;
 
     mDmSnTimestamp = timestamp;
-    mDamageEvent   = damageEvent;
 
     if (!pluginManager ()->loadPlugin (""))
 	return false;
@@ -250,8 +235,6 @@ KWD::Decorator::enableDecorations (Time timestamp,
     foreach (WId id, KWindowSystem::windows ())
 	handleWindowAdded (id);
 
-    connect (&mIdleTimer, SIGNAL (timeout ()), SLOT (processDamage ()));
-
     connect (Plasma::Theme::defaultTheme (), SIGNAL (themeChanged ()),
 	     SLOT (plasmaThemeChanged ()));
 
@@ -260,31 +243,6 @@ KWD::Decorator::enableDecorations (Time timestamp,
 		  StructureNotifyMask | PropertyChangeMask);
 
     return true;
-}
-
-void
-KWD::Decorator::updateDefaultShadow (KWD::Window *w)
-{
-    bool uniqueHorzShape, uniqueVertShape;
-
-    if (mDefaultShadow)
-    {
-	decor_shadow_destroy (QX11Info::display (), mDefaultShadow);
-	mDefaultShadow = NULL;
-    }
-
-    w->getShapeInfo (&uniqueHorzShape, &uniqueVertShape);
-
-    /* only return shadow if decoration doesn't use a unique shape */
-    if (uniqueHorzShape || uniqueVertShape)
-	return;
-
-    mDefaultContext = *w->context ();
-    mDefaultBorder  = *w->border ();
-    mDefaultShadow  = w->shadow ();
-
-    if (mDefaultShadow)
-	decor_shadow_reference (mDefaultShadow);
 }
 
 void
@@ -356,12 +314,6 @@ KWD::Decorator::changeShadowOptions (decor_shadow_options_t *opt)
     mShadowOptions = *opt;
 
     updateShadow ();
-
-    mDecorNormal->reloadDecoration ();
-    mDecorActive->reloadDecoration ();
-
-    for (it = mClients.constBegin (); it != mClients.constEnd (); it++)
-	it.value ()->reloadDecoration ();
 }
 
 void
@@ -372,12 +324,6 @@ KWD::Decorator::updateShadow (void)
     decor_context_t context;
 
     xscreen = ScreenOfDisplay (xdisplay, QX11Info::appScreen ());
-
-    if (mDefaultShadow)
-    {
-	decor_shadow_destroy (xdisplay, mDefaultShadow);
-	mDefaultShadow = NULL;
-    }
 
     if (mNoBorderShadow)
 	decor_shadow_destroy (xdisplay, mNoBorderShadow);
@@ -421,18 +367,6 @@ KWD::Decorator::updateShadow (void)
     }
 }
 
-void
-KWD::Decorator::processDamage (void)
-{
-    QMap <WId, KWD::Window *>::ConstIterator it;
-
-    mDecorNormal->processDamage ();
-    mDecorActive->processDamage ();
-
-    for (it = mClients.constBegin (); it != mClients.constEnd (); it++)
-	it.value ()->processDamage ();
-}
-
 bool
 KWD::Decorator::x11EventFilter (XEvent *xevent)
 {
@@ -440,50 +374,12 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
     int		status;
 
     switch (xevent->type) {
-    case MapNotify: {
-	XMapEvent *xme = reinterpret_cast <XMapEvent *> (xevent);
-
-	if (mWindows.contains (xme->window))
-	    client = mWindows[xme->window];
-	else if (mDecorNormal->winId () == xme->window)
-	    client = mDecorNormal;
-	else if (mDecorActive->winId () == xme->window)
-	    client = mDecorActive;
-	else
-	    break;
-
-	if (client->handleMap ())
-	{
-	    if (!mIdleTimer.isActive ())
-	    {
-		mIdleTimer.setSingleShot (true);
-		mIdleTimer.start (0);
-	    }
-	}
-    } break;
     case ConfigureNotify: {
 	XConfigureEvent *xce = reinterpret_cast <XConfigureEvent *> (xevent);
 
 	if (mFrames.contains (xce->window))
 	    mFrames[xce->window]->updateFrame (xce->window);
 
-	if (mWindows.contains (xce->window))
-	    client = mWindows[xce->window];
-	else if (mDecorNormal->winId () == xce->window)
-	    client = mDecorNormal;
-	else if (mDecorActive->winId () == xce->window)
-	    client = mDecorActive;
-	else
-	    break;
-
-	if (client->handleConfigure (QSize (xce->width, xce->height)))
-	{
-	    if (!mIdleTimer.isActive ())
-	    {
-		mIdleTimer.setSingleShot (true);
-		mIdleTimer.start (0);
-	    }
-	}
     } break;
     case SelectionRequest:
 	decor_handle_selection_request (QX11Info::display (),
@@ -528,6 +424,9 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xce->window];
+	
+	if (!client->decorWidget ())
+	    break;
 
 	child = client->childAt (xce->x, xce->y);
 	if (child)
@@ -565,6 +464,9 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xme->window];
+	
+	if (!client->decorWidget ())
+	    break;
 
 	child = client->childAt (xme->x, xme->y);
 
@@ -585,8 +487,8 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 		client->setActiveChild (child);
 	    }
 
-	    if (client != child)
-		qp -= QPoint (child->pos ().x (), child->pos ().y ());
+	    if (client->decorWidget () != child)
+		qp = child->mapFrom (client->decorWidget (), qp);
 
 	    QMouseEvent qme (QEvent::MouseMove, qp, Qt::NoButton,
 			     Qt::NoButton, Qt::NoModifier);
@@ -606,6 +508,9 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xbe->window];
+	
+	if (!client->decorWidget ())
+	    break;
 
 	child = client->childAt (xbe->x, xbe->y);
 
@@ -613,11 +518,11 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	{
 	    XButtonEvent xbe2 = *xbe;
 	    xbe2.window = child->winId ();
-	    if (client != child)
-	    {
-		xbe2.x = xbe->x - child->pos ().x ();
-		xbe2.y = xbe->y - child->pos ().y ();
-	    }
+	    QPoint p;
+		
+	    p = client->mapToChildAt (QPoint (xbe->x, xbe->y));
+	    xbe2.x = p.x ();
+	    xbe2.y = p.y ();
 
 	    client->setFakeRelease (false);
 	    QApplication::x11ProcessEvent ((XEvent *) &xbe2);
@@ -677,36 +582,6 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	}
 	break;
     default:
-	if (xevent->type == mDamageEvent + XDamageNotify)
-	{
-	    XDamageNotifyEvent *xde =
-		reinterpret_cast <XDamageNotifyEvent *> (xevent);
-
-	    if (mWindows.contains (xde->drawable))
-		client = mWindows[xde->drawable];
-	    else if (mDecorNormal->winId () == xde->drawable)
-		client = mDecorNormal;
-	    else if (mDecorActive->winId () == xde->drawable)
-		client = mDecorActive;
-	    else
-		break;
-
-	    client->addDamageRect (xde->area.x,
-				   xde->area.y,
-				   xde->area.width,
-				   xde->area.height);
-
-	    if (client->pixmapId ())
-	    {
-		if (!mIdleTimer.isActive ())
-		{
-		    mIdleTimer.setSingleShot (true);
-		    mIdleTimer.start (0);
-		}
-	    }
-
-	    return true;
-	}
 	break;
     }
 
@@ -830,7 +705,6 @@ KWD::Decorator::handleWindowAdded (WId id)
 				      height + border * 2);
 
 	    mClients.insert (id, client);
-	    mWindows.insert (client->winId (), client);
 	    mFrames.insert (frame, client);
 	}
 	else
@@ -850,7 +724,6 @@ KWD::Decorator::handleWindowAdded (WId id)
 	if (client)
 	{
 	    mClients.remove (client->windowId ());
-	    mWindows.remove (client->winId ());
 	    mFrames.remove (client->frameId ());
 
 	    delete client;
@@ -871,7 +744,6 @@ KWD::Decorator::handleWindowRemoved (WId id)
     if (window)
     {
 	mClients.remove (window->windowId ());
-	mWindows.remove (window->winId ());
 	mFrames.remove (window->frameId ());
 	delete window;
     }
