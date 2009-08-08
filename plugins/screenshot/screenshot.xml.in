@@ -16,9 +16,9 @@
 	    </option>
 	    <option name="directory" type="string">
 		<_short>Directory</_short>
-		<_long>Put screenshot images in this directory</_long>
+		<_long>Put screenshot images in this directory. If empty, the desktop directory will be used.</_long>
 		<hints>directory;</hints>
-		<default>Desktop</default>
+		<default></default>
 	    </option>
 	    <option name="launch_app" type="string">
 		<_short>Launch Application</_short>
