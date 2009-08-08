@@ -254,8 +254,6 @@ CompositeScreen::CompositeScreen (CompScreen *s) :
         setFailed ();
     }
 
-    fprintf (stderr, "created this\n");
-
 }
 
 CompositeScreen::~CompositeScreen ()
