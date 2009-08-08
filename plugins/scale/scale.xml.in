@@ -2,6 +2,7 @@
     <plugin name="scale" useBcop="true">
 	<_short>Scale</_short>
 	<_long>Scale windows</_long>
+	<category>Window Management</category>
 	<deps>
 	    <requirement>
 		<plugin>opengl</plugin>

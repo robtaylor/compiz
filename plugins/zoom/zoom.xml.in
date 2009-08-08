@@ -2,6 +2,7 @@
     <plugin name="zoom" useBcop="true">
 	<_short>Zoom Desktop</_short>
 	<_long>Zoom and pan desktop cube</_long>
+	<category>Accessibility</category>
 	<deps>
 	    <requirement>
 		<plugin>opengl</plugin>

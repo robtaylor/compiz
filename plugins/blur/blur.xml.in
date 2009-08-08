@@ -2,13 +2,14 @@
     <plugin name="blur" useBcop="true">
 	<_short>Blur Windows</_short>
 	<_long>Blur windows</_long>
+	<category>Effects</category>
 	<feature>blur</feature>
 	<deps>
 	    <relation type="before">
 		<plugin>video</plugin>
 	    </relation>
 	    <relation type="after">
-		<plugin>decoration</plugin>
+		<plugin>decor</plugin>
 	    </relation>
 	    <requirement>
 		<plugin>opengl</plugin>

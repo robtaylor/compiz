@@ -2,6 +2,7 @@
     <plugin name="opengl" useBcop="true">
 	<_short>OpenGL</_short>
 	<_long>OpenGL Plugin</_long>
+	<category>General</category>
 	<deps>
 	    <requirement>
 		<plugin>composite</plugin>
