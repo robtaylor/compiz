@@ -27,6 +27,77 @@
 
 #include <compiztoolbox/compiztoolbox.h>
 
+CompString
+getXDGUserDir (XDGUserDir userDir)
+{
+    std::ifstream userDirsFile;
+    CompString userDirsFilePath;
+    const char *userDirsPathSuffix = "/user-dirs.dirs";
+    const char *varNames[8] =
+    {
+	"XDG_DESKTOP_DIR",
+	"XDG_DOWNLOAD_DIR",
+	"XDG_TEMPLATES_DIR",
+	"XDG_PUBLICSHARE_DIR",
+	"XDG_DOCUMENTS_DIR",
+	"XDG_MUSIC_DIR",
+	"XDG_PICTURES_DIR",
+	"XDG_VIDEOS_DIR"
+    };
+    const char *varName = varNames[userDir];
+    size_t varLength = strlen (varName);
+
+    char *home = getenv ("HOME");
+    if (!(home && strlen (home)))
+	return "";
+
+    char *configHome = getenv ("XDG_CONFIG_HOME");
+    if (configHome && strlen (configHome))
+    {
+	userDirsFilePath = configHome;
+	userDirsFilePath += userDirsPathSuffix;
+    }
+    else
+    {
+	userDirsFilePath = home;
+	userDirsFilePath =
+	    userDirsFilePath + "/.config" + userDirsPathSuffix;
+    }
+    userDirsFile.open (userDirsFilePath.c_str (), std::ifstream::in);
+    if (!userDirsFile.is_open ())
+	return "";
+
+    // The user-dirs file has lines like:
+    // XDG_DESKTOP_DIR="$HOME/Desktop"
+    // Read it line by line until the desired directory is found.
+    while (!userDirsFile.eof())
+    {
+	CompString line;
+	getline (userDirsFile, line);
+
+	size_t varPos = line.find (varName);
+	if (varPos != CompString::npos) // if found
+	{
+	    userDirsFile.close ();
+
+	    // Skip the =" part
+	    size_t valueStartPos = varPos + varLength + 2;
+
+	    // Ignore the " at the end
+	    CompString value = line.substr (valueStartPos,
+					    line.length () - valueStartPos - 1);
+
+	    if (value.substr (0, 5) == "$HOME")
+		return CompString (home) + value.substr (5);
+	    else if (value.substr (0, 7) == "${HOME}")
+		return CompString (home) + value.substr (7);
+	    else
+		return value;
+	}
+    }
+    return "";
+}
+
 
 void
 BaseSwitchScreen::setSelectedWindowHint ()

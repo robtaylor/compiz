@@ -154,6 +154,12 @@ ShotScreen::paint (CompOutput::ptrList &outputs,
 		GLubyte *buffer;
 		CompString dir (optionGetDirectory ());
 
+		if (dir.length () == 0)
+		{
+		    // If dir is empty, use user's desktop directory instead
+		    dir = getXDGUserDir (XDGUserDirDesktop);
+		}
+
 		buffer = (GLubyte *)malloc (sizeof (GLubyte) * w * h * 4);
 		if (buffer)
 		{

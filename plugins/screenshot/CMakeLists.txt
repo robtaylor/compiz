@@ -2,4 +2,4 @@ find_package (Compiz REQUIRED)
 
 include (CompizPlugin)
 
-compiz_plugin(screenshot PLUGINDEPS composite opengl)
+compiz_plugin(screenshot PLUGINDEPS composite opengl compiztoolbox)

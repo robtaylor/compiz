@@ -36,8 +36,25 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/Xrender.h>
 
+#include <fstream>
 
-typedef enum {
+typedef enum
+{
+    XDGUserDirDesktop = 0,
+    XDGUserDirDownload,
+    XDGUserDirTemplates,
+    XDGUserDirPublicshare,
+    XDGUserDirDocuments,
+    XDGUserDirMusic,
+    XDGUserDirPictures,
+    XDGUserDirVideos
+} XDGUserDir;
+
+CompString getXDGUserDir (XDGUserDir userDir);
+
+
+typedef enum
+{
     CurrentViewport = 0,
     AllViewports,
     Panels,

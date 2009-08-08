@@ -209,3 +209,23 @@ macro (compiz_add_uninstall)
     endif ()
 endmacro ()
 
+#posix 2008 scandir check
+include (CheckCXXSourceCompiles)
+CHECK_CXX_SOURCE_COMPILES (
+  "# include <dirent.h>
+   int func (const char *d, dirent ***list, void *sort)
+   {
+     int n = scandir(d, list, 0, (int(*)(const dirent **, const dirent **))sort);
+     return n;
+   }
+
+   int main (int, char **)
+   {
+     return 0;
+   }
+  "
+  HAVE_SCANDIR_POSIX)
+
+if (HAVE_SCANDIR_POSIX)
+  add_definitions (-DHAVE_SCANDIR_POSIX)
+endif ()

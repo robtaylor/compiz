@@ -225,6 +225,7 @@ public:
 			unsigned int);
 
     static void snapKeyChanged (CompOption *opt);
+    void snapInvertedChanged (CompOption *opt);
 
     CompositeScreen *cScreen;
     GLScreen *gScreen;
