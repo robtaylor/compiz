@@ -1410,6 +1410,11 @@ WobblyScreen::preparePaint (int msSinceLastPaint)
 						     bottomRight.y - topLeft.y));
 		    }
 		}
+		if (!ww->wobblingMask)
+		{
+		    // Wobbling just finished for this window
+		    ww->enableWobbling (false);
+		}
 
 		wobblingWindowsMask |= ww->wobblingMask;
 	    }
@@ -1431,12 +1436,6 @@ WobblyScreen::donePaint ()
 	cScreen->preparePaintSetEnabled (this, false);
 	cScreen->donePaintSetEnabled (this, false);
 	gScreen->glPaintOutputSetEnabled (this, false);
-
-	foreach (CompWindow *w, ::screen->windows ())
-	{
-	    WobblyWindow *ww = WobblyWindow::get (w);
-	    ww->enableWobbling (false);
-	}
     }
 
     cScreen->donePaint ();
