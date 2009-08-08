@@ -25,7 +25,7 @@
 
 #include <compiz.h>
 
-#include <cstring>
+#include <string.h>
 #include <cstdarg>
 #include <cstdio>
 
