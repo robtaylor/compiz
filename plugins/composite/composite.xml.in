@@ -2,6 +2,7 @@
     <plugin name="composite" useBcop="true">
 	<_short>Composite</_short>
 	<_long>Composite plugin</_long>
+	<category>General</category>
 	<options>
 	    <option name="slow_animations_key" type="key">
 		<_short>Slow Animations</_short>

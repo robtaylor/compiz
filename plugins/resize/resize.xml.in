@@ -2,6 +2,7 @@
     <plugin name="resize" useBcop="true">
 	<_short>Resize Window</_short>
 	<_long>Resize window</_long>
+	<category>Window Management</category>
 	<deps>
 	    <relation type="after">
 		<plugin>composite</plugin>

@@ -2,6 +2,7 @@
     <plugin name="move" useBcop="true">
 	<_short>Move Window</_short>
 	<_long>Move window</_long>
+	<category>Window Management</category>
 	<deps>
 	    <relation type="after">
 		<plugin>composite</plugin>

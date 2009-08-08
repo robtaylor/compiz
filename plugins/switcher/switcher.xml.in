@@ -2,6 +2,7 @@
     <plugin name="switcher" useBcop="true">
 	<_short>Application Switcher</_short>
 	<_long>Application Switcher</_long>
+	<category>Window Management</category>
 	<deps>
 	    <requirement>
 		<plugin>opengl</plugin>

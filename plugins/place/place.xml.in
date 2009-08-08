@@ -2,6 +2,7 @@
     <plugin name="place" useBcop="true">
 	<_short>Place Windows</_short>
 	<_long>Place windows at appropriate positions when mapped</_long>
+	<category>Window Management</category>
 	<options>
 	    <option name="workarounds" type="bool">
 		<_short>Workarounds</_short>
