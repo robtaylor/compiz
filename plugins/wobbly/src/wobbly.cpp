@@ -1419,13 +1419,6 @@ WobblyScreen::preparePaint (int msSinceLastPaint)
 		wobblingWindowsMask |= ww->wobblingMask;
 	    }
 	}
-	if (!wobblingWindowsMask)
-	{
-	    // Wobbling has finished for all windows
-	    cScreen->preparePaintSetEnabled (this, false);
-	    cScreen->donePaintSetEnabled (this, false);
-	    gScreen->glPaintOutputSetEnabled (this, false);
-	}
     }
 
     cScreen->preparePaint (msSinceLastPaint);
@@ -1436,6 +1429,14 @@ WobblyScreen::donePaint ()
 {
     if (wobblingWindowsMask & (WobblyVelocityMask | WobblyInitialMask))
 	cScreen->damagePending ();
+
+    if (!wobblingWindowsMask)
+    {
+	// Wobbling has finished for all windows
+	cScreen->preparePaintSetEnabled (this, false);
+	cScreen->donePaintSetEnabled (this, false);
+	gScreen->glPaintOutputSetEnabled (this, false);
+    }
 
     cScreen->donePaint ();
 }

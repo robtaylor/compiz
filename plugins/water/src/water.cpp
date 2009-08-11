@@ -1002,7 +1002,7 @@ WaterScreen::donePaint ()
 	foreach (CompWindow *w, screen->windows ())
 	{
 	    ww = WaterWindow::get (w);
-	    ww->gWindow->glDrawTextureSetEnabled (ww, true);
+	    ww->gWindow->glDrawTextureSetEnabled (ww, false);
 	}
     }
 

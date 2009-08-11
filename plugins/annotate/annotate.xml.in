@@ -3,6 +3,11 @@
 	<_short>Annotate</_short>
 	<_long>Annotate plugin</_long>
 	<category>Extras</category>
+	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
+	</deps>
 	<options>
 	    <option name="initiate_button" type="button">
 		<_short>Initiate</_short>
