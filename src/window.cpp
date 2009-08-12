@@ -1556,8 +1556,9 @@ PrivateWindow::configure (XConfigureEvent *ce)
 
 	window->resize (ce->x, ce->y, ce->width, ce->height, ce->border_width);
     }
+
     if (ce->event == screen->root ())
-    	priv->restack (ce->above);
+	priv->restack (ce->above);
 }
 
 void
@@ -1586,6 +1587,8 @@ PrivateWindow::configureFrame (XConfigureEvent *ce)
 
 	window->resize (x, y, width, height, ce->border_width);
     }
+
+    priv->restack (ce->above);
 }
 
 void
