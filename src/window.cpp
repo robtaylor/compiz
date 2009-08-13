@@ -2951,9 +2951,15 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 		if (dw == sibling)
 		    break;
 
+	    /* Collect all dock windows first */
+	    CompWindowList dockWindows;
 	    for (; dw; dw = dw->prev)
 		if (dw->priv->type & CompWindowTypeDockMask)
-		    dw->configureXWindow (mask, xwc);
+		    dockWindows.push_back (dw);
+
+	    /* Then update the dock windows */
+	    foreach (CompWindow *dw, dockWindows)
+		dw->configureXWindow (mask, xwc);
 	}
     }
 
