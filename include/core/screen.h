@@ -281,7 +281,7 @@ class CompScreen :
 
 	CompRect getCurrentOutputExtents ();
 
-	const CompRect & getWorkareaForOutput (int output) const;
+	const CompRect & getWorkareaForOutput (unsigned int outputNum) const;
 
 	void viewportForGeometry (const CompWindow::Geometry &gm,
 				  CompPoint                   &viewport);

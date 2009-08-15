@@ -3512,9 +3512,9 @@ PrivateScreen::setCurrentDesktop (unsigned int desktop)
 }
 
 const CompRect&
-CompScreen::getWorkareaForOutput (int output) const
+CompScreen::getWorkareaForOutput (unsigned int outputNum) const
 {
-    return priv->outputDevs[output].workArea ();
+    return priv->outputDevs[outputNum].workArea ();
 }
 
 void

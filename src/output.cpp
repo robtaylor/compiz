@@ -71,10 +71,10 @@ CompOutput::setWorkArea (const CompRect& workarea)
 }
 
 void
-CompOutput::setGeometry (int          x,
-			 int          y,
-			 unsigned int width,
-			 unsigned int height)
+CompOutput::setGeometry (int x,
+			 int y,
+			 int width,
+			 int height)
 {
     CompRect::setGeometry (x, y, width, height);
 
