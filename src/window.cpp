@@ -3868,7 +3868,7 @@ PrivateWindow::readIconHint ()
     icon = new CompIcon (screen, width, height);
     if (!icon)
     {
-	free (colors);
+	delete [] colors;
 	return;
     }
 
@@ -3895,7 +3895,7 @@ PrivateWindow::readIconHint ()
 	}
     }
 
-    free (colors);
+    delete [] colors;
     if (maskImage)
 	XDestroyImage (maskImage);
 

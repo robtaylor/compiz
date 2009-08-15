@@ -182,7 +182,7 @@ PrivateGLScreen::paintBackground (const CompRegion &region,
 	}
     }
 
-    delete data;
+    delete [] data;
 }
 
 
