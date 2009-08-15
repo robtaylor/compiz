@@ -95,6 +95,7 @@ getXDGUserDir (XDGUserDir userDir)
 		return value;
 	}
     }
+    userDirsFile.close ();
     return "";
 }
 
