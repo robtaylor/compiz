@@ -1900,6 +1900,8 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     startupSequences.erase (it);
 
+    delete s;
+
     if (startupSequences.empty () && startupSequenceTimer.active ())
 	startupSequenceTimer.stop ();
 
