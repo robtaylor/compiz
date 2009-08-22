@@ -1907,6 +1907,23 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 }
 
 void
+PrivateScreen::removeAllSequences ()
+{
+    foreach (CompStartupSequence *s, startupSequences)
+    {
+	sn_startup_sequence_unref (s->sequence);
+	delete s;
+    }
+
+    startupSequences.clear ();
+
+    if (startupSequenceTimer.active ())
+	startupSequenceTimer.stop ();
+
+    updateStartupFeedback ();
+}
+
+void
 CompScreen::compScreenSnEvent (SnMonitorEvent *event,
 			       void           *userData)
 {
@@ -4359,6 +4376,8 @@ CompScreen::init (const char *name)
 CompScreen::~CompScreen ()
 {
     CompPlugin  *p;
+
+    priv->removeAllSequences ();
 
     while (!priv->windows.empty ())
 	delete priv->windows.front ();
