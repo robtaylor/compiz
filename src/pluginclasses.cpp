@@ -61,7 +61,7 @@ PluginClassStorage::freePluginClassIndex (PluginClassStorage::Indices& iList,
 {
     unsigned int size = iList.size ();
 
-    if (idx < 0 || idx >= size)
+    if (idx >= size)
 	return;
 
     if (idx < size - 1)

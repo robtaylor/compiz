@@ -58,9 +58,9 @@ GLTexture::List::List (unsigned int size) :
 	at (i) = NULL;
 }
 
-GLTexture::List::List (const GLTexture::List &c)
+GLTexture::List::List (const GLTexture::List &c) :
+    std::vector<GLTexture *> (c.size ())
 {
-    resize (c.size ());
     for (unsigned int i = 0; i < c.size (); i++)
     {
 	at (i) = c[i];
