@@ -3100,12 +3100,15 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 	{
 	    /* put active or soon-to-be-active fullscreen windows over
 	       all others in their layer */
-	    if (priv->id == screen->activeWindow () ||
-		stackingMode == CompStackingUpdateModeInitialMap)
+	    if (priv->id == screen->activeWindow ())
 	    {
 		aboveFs = true;
 	    }
 	}
+
+	/* put windows that are just mapped, over fullscreen windows */
+	if (stackingMode == CompStackingUpdateModeInitialMap)
+	    aboveFs = true;
 
 	sibling = PrivateWindow::findSiblingBelow (this, aboveFs);
 
