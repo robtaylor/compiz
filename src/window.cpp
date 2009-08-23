@@ -1556,8 +1556,9 @@ PrivateWindow::configure (XConfigureEvent *ce)
 
 	window->resize (ce->x, ce->y, ce->width, ce->height, ce->border_width);
     }
+
     if (ce->event == screen->root ())
-    	priv->restack (ce->above);
+	priv->restack (ce->above);
 }
 
 void
@@ -1586,6 +1587,8 @@ PrivateWindow::configureFrame (XConfigureEvent *ce)
 
 	window->resize (x, y, width, height, ce->border_width);
     }
+
+    priv->restack (ce->above);
 }
 
 void
@@ -2948,9 +2951,15 @@ PrivateWindow::addWindowStackChanges (XWindowChanges *xwc,
 		if (dw == sibling)
 		    break;
 
+	    /* Collect all dock windows first */
+	    CompWindowList dockWindows;
 	    for (; dw; dw = dw->prev)
 		if (dw->priv->type & CompWindowTypeDockMask)
-		    dw->configureXWindow (mask, xwc);
+		    dockWindows.push_back (dw);
+
+	    /* Then update the dock windows */
+	    foreach (CompWindow *dw, dockWindows)
+		dw->configureXWindow (mask, xwc);
 	}
     }
 
@@ -3859,7 +3868,7 @@ PrivateWindow::readIconHint ()
     icon = new CompIcon (screen, width, height);
     if (!icon)
     {
-	free (colors);
+	delete [] colors;
 	return;
     }
 
@@ -3886,7 +3895,7 @@ PrivateWindow::readIconHint ()
 	}
     }
 
-    free (colors);
+    delete [] colors;
     if (maskImage)
 	XDestroyImage (maskImage);
 

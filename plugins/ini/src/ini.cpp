@@ -96,7 +96,7 @@ IniFile::load ()
     {
 	CompString   line, optionValue;
 	CompOption   *option;
-	unsigned int pos;
+	size_t       pos;
 
 	while (std::getline (optionFile, line))
 	{
@@ -408,7 +408,7 @@ IniFile::stringToOption (CompOption *option,
 	if (validListItemType (type))
 	{
 	    CompString                listItem;
-	    unsigned int              delim, pos = 0;
+	    size_t                    delim, pos = 0;
 	    CompOption::Value         item;
 	    CompOption::Value::Vector list;
 

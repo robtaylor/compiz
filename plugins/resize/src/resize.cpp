@@ -214,10 +214,10 @@ resizeInitiate (CompAction         *action,
 	}
 	else if (!mask)
 	{
-	    unsigned int sectorSizeX = server.width () / 3;
-	    unsigned int sectorSizeY = server.height () / 3;
-	    unsigned int posX        = x - server.x ();
-	    unsigned int posY        = y - server.y ();
+	    int sectorSizeX = server.width () / 3;
+	    int sectorSizeY = server.height () / 3;
+	    int posX        = x - server.x ();
+	    int posY        = y - server.y ();
 
 	    if (posX < sectorSizeX)
 		mask |= ResizeLeftMask;

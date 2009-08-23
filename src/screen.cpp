@@ -1900,7 +1900,26 @@ PrivateScreen::removeSequence (SnStartupSequence *sequence)
 
     startupSequences.erase (it);
 
+    delete s;
+
     if (startupSequences.empty () && startupSequenceTimer.active ())
+	startupSequenceTimer.stop ();
+
+    updateStartupFeedback ();
+}
+
+void
+PrivateScreen::removeAllSequences ()
+{
+    foreach (CompStartupSequence *s, startupSequences)
+    {
+	sn_startup_sequence_unref (s->sequence);
+	delete s;
+    }
+
+    startupSequences.clear ();
+
+    if (startupSequenceTimer.active ())
 	startupSequenceTimer.stop ();
 
     updateStartupFeedback ();
@@ -3512,9 +3531,9 @@ PrivateScreen::setCurrentDesktop (unsigned int desktop)
 }
 
 const CompRect&
-CompScreen::getWorkareaForOutput (int output) const
+CompScreen::getWorkareaForOutput (unsigned int outputNum) const
 {
-    return priv->outputDevs[output].workArea ();
+    return priv->outputDevs[outputNum].workArea ();
 }
 
 void
@@ -4359,6 +4378,8 @@ CompScreen::init (const char *name)
 CompScreen::~CompScreen ()
 {
     CompPlugin  *p;
+
+    priv->removeAllSequences ();
 
     while (!priv->windows.empty ())
 	delete priv->windows.front ();

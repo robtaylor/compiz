@@ -106,6 +106,7 @@ cloaderLoadPlugin (CompPlugin *p,
 static void
 cloaderUnloadPlugin (CompPlugin *p)
 {
+    delete p->vTable;
 }
 
 static CompStringList

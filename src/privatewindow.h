@@ -286,7 +286,6 @@ class PrivateWindow {
 	XSyncCounter  syncCounter;
 	XSyncValue    syncValue;
 	XSyncAlarm    syncAlarm;
-	unsigned long syncAlarmConnection;
 	CompTimer     syncWaitTimer;
 
 	bool                 syncWait;

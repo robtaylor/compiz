@@ -50,6 +50,7 @@ CopyPixmap::bindPixmapToTexture (Pixmap pixmap,
 	GLTexture::List tl (cp->textures.size ());
 	for (unsigned int i = 0; i < cp->textures.size (); i++)
 	    tl[i] = cp->textures[i];
+	delete cp;
         return tl;
     }
     return GLTexture::List ();

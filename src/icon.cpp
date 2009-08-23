@@ -36,7 +36,7 @@ CompIcon::CompIcon (CompScreen *screen, unsigned int width,
 
 CompIcon::~CompIcon ()
 {
-    delete mData;
+    delete [] mData;
 }
 
 unsigned char*

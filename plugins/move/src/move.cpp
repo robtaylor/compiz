@@ -292,7 +292,7 @@ moveHandleMotionEvent (CompScreen *s,
     {
 	int	     dx, dy;
 	int	     wX, wY;
-	unsigned int wWidth, wHeight;
+	int          wWidth, wHeight;
 	CompWindow   *w;
 
 	w = ms->w;
@@ -339,7 +339,9 @@ moveHandleMotionEvent (CompScreen *s,
 		    width  = wWidth + w->input ().left + w->input ().right;
 		    height = w->input ().top ? w->input ().top : 1;
 
-		    status = XRectInRegion (ms->region, x, y, width, height);
+		    status = XRectInRegion (ms->region, x, y,
+					    (unsigned int) width,
+					    (unsigned int) height);
 
 		    /* only constrain movement if previous position was valid */
 		    if (ms->status == RectangleIn)
@@ -350,7 +352,8 @@ moveHandleMotionEvent (CompScreen *s,
 			{
 			    xStatus = XRectInRegion (ms->region,
 						     x, y - dy,
-						     width, height);
+						     (unsigned int) width,
+						     (unsigned int) height);
 
 			    if (xStatus != RectangleIn)
 				dx += (dx < 0) ? 1 : -1;
@@ -362,7 +365,8 @@ moveHandleMotionEvent (CompScreen *s,
 			{
 			    status = XRectInRegion (ms->region,
 						    x, y,
-						    width, height);
+						    (unsigned int) width,
+						    (unsigned int) height);
 
 			    if (status != RectangleIn)
 				dy += (dy < 0) ? 1 : -1;
@@ -540,7 +544,7 @@ MoveScreen::handleEvent (XEvent *event)
 	    if (event->xclient.message_type == Atoms::wmMoveResize)
 	    {
 		CompWindow *w;
-		unsigned   long type = event->xclient.data.l[2];
+		unsigned   long type = (unsigned long) event->xclient.data.l[2];
 
 		MOVE_SCREEN (screen);
 

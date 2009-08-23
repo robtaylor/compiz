@@ -201,6 +201,8 @@ class PrivateScreen : public CoreOptions {
 
 	void removeSequence (SnStartupSequence *sequence);
 
+	void removeAllSequences ();
+
 	void setSupportingWmCheck ();
 
 	void setSupported ();

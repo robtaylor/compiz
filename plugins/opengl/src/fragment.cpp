@@ -660,7 +660,8 @@ namespace GLFragment {
     PrivateFunctionData::PrivateFunctionData (const PrivateFunctionData& src,
 					      CompString dstPrefix) :
 	header (src.header),
-	body (0)
+	body (0),
+	status (src.status)
     {
 
 	foreach (BodyOp b, src.body)

@@ -48,9 +48,9 @@ GlibScreen::~GlibScreen ()
     dispatch (g_main_context_default ());
 
     if (mFds)
-	delete mFds;
+	delete[] mFds;
     if (mWatch)
-	delete mWatch;
+	delete[] mWatch;
 }
 
 bool
@@ -89,13 +89,14 @@ GlibScreen::prepare (GMainContext *context)
 	if (nFds > mFdsSize)
 	{
 	    if (mFds)
-		delete mFds;
+		delete[] mFds;
 	    if (mWatch)
-		delete mWatch;
+		delete[] mWatch;
 
 	    mFds = new GPollFD [nFds];
 	    if (!mFds)
 	    {
+		mWatch = NULL;
 		mFdsSize = 0;
 		break;
 	    }
@@ -103,6 +104,8 @@ GlibScreen::prepare (GMainContext *context)
 	    mWatch = new GLibWatch [nFds];
 	    if (!mWatch)
 	    {
+		delete[] mFds;
+		mFds = NULL;
 		mFdsSize = 0;
 		break;
 	    }
