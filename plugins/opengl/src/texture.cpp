@@ -416,7 +416,8 @@ GLTexture::bindPixmapToTexture (Pixmap pixmap,
 TfpTexture::TfpTexture () :
     pixmap (0),
     damaged (true),
-    damage (None)
+    damage (None),
+    updateMipMap (true)
 {
 }
 
@@ -599,13 +600,14 @@ TfpTexture::enable (GLTexture::Filter filter)
     }
 
     GLTexture::enable (filter);
+    
+    if (damaged)
+	updateMipMap = true;
 
-    if (this->filter () == GL_LINEAR_MIPMAP_LINEAR)
+    if (this->filter () == GL_LINEAR_MIPMAP_LINEAR && updateMipMap)
     {
-	if (damaged)
-	{
-	    (*GL::generateMipmap) (target ());
-	}
+	(*GL::generateMipmap) (target ());
+	updateMipMap = false;
     }
     damaged = false;
 }

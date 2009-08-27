@@ -77,6 +77,7 @@ class TfpTexture : public GLTexture {
 	GLXPixmap pixmap;
 	bool      damaged;
 	Damage    damage;
+	bool      updateMipMap;
 };
 
 extern std::map<Damage, TfpTexture*> boundPixmapTex;
