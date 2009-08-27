@@ -1399,6 +1399,13 @@ WobblyScreen::preparePaint (int msSinceLastPaint)
 			int wy = w->geometry ().y ();
 			int borderWidth = w->geometry ().border ();
 
+			// Damage a box that's 1-pixel larger on each side
+			// to prevent artifacts
+			topLeft.x -= 1;
+			topLeft.y -= 1;
+			bottomRight.x += 1;
+			bottomRight.y += 1;
+
 			topLeft.x -= wx + borderWidth;
 			topLeft.y -= wy + borderWidth;
 			bottomRight.x += 0.5f - (wx + borderWidth);
