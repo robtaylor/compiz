@@ -3100,12 +3100,15 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 	{
 	    /* put active or soon-to-be-active fullscreen windows over
 	       all others in their layer */
-	    if (priv->id == screen->activeWindow () ||
-		stackingMode == CompStackingUpdateModeInitialMap)
+	    if (priv->id == screen->activeWindow ())
 	    {
 		aboveFs = true;
 	    }
 	}
+
+	/* put windows that are just mapped, over fullscreen windows */
+	if (stackingMode == CompStackingUpdateModeInitialMap)
+	    aboveFs = true;
 
 	sibling = PrivateWindow::findSiblingBelow (this, aboveFs);
 
@@ -4958,7 +4961,8 @@ CompWindow::~CompWindow ()
 	if (screen->XShape ())
 	    XShapeSelectInput (screen->dpy (), priv->id, NoEventMask);
 
-	XSelectInput (screen->dpy (), priv->id, NoEventMask);
+	if (priv->id != screen->priv->grabWindow)
+	    XSelectInput (screen->dpy (), priv->id, NoEventMask);
 
 	XUngrabButton (screen->dpy (), AnyButton, AnyModifier, priv->id);
     }
