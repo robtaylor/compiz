@@ -3,6 +3,7 @@ if (USE_GNOME)
     include_directories (
 	${CMAKE_BINARY_DIR}/gtk
 	${GNOME_WINDOW_SETTINGS_INCLUDE_DIRS}
+	${GCONF_INCLUDE_DIRS}
     )
 
     add_definitions (
