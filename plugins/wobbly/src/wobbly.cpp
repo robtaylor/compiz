@@ -39,6 +39,7 @@ WobblyWindow::findNextWestEdge (Object *object)
     int e, end;
     int x;
     int output;
+    int workAreaEdge;
 
     start = -65535.0f;
     end   =  65535.0f;
@@ -49,10 +50,13 @@ WobblyWindow::findNextWestEdge (Object *object)
     x = object->position.x + window->output ().left - window->input ().left;
 
     output = ::screen->outputDeviceForPoint (x, object->position.y);
+    const CompRect &workArea =
+	::screen->outputDevs ()[(unsigned) output].workArea ();
+    workAreaEdge = workArea.x1 ();
 
-    if (x >= ::screen->outputDevs ()[(unsigned) output].region ()->extents.x1)
+    if (x >= workAreaEdge)
     {
-	v1 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.x1;
+	v1 = workAreaEdge;
 
 	foreach (CompWindow *p, ::screen->windows ())
 	{
@@ -116,7 +120,7 @@ WobblyWindow::findNextWestEdge (Object *object)
     }
     else
     {
-	v2 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.x1;
+	v2 = workAreaEdge;
     }
 
     v1 = v1 - window->output ().left + window->input ().left;
@@ -143,6 +147,7 @@ WobblyWindow::findNextEastEdge (Object *object)
     int e, end;
     int x;
     int output;
+    int workAreaEdge;
 
     start = -65535.0f;
     end   =  65535.0f;
@@ -153,10 +158,13 @@ WobblyWindow::findNextEastEdge (Object *object)
     x = object->position.x - window->output ().right + window->input ().right;
 
     output = ::screen->outputDeviceForPoint (x, object->position.y);
+    const CompRect &workArea =
+	::screen->outputDevs ()[(unsigned) output].workArea ();
+    workAreaEdge = workArea.x2 ();
 
-    if (x <= ::screen->outputDevs ()[(unsigned) output].region ()->extents.x2)
+    if (x <= workAreaEdge)
     {
-	v1 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.x2;
+	v1 = workAreaEdge;
 
 	foreach (CompWindow *p, ::screen->windows ())
 	{
@@ -219,7 +227,7 @@ WobblyWindow::findNextEastEdge (Object *object)
     }
     else
     {
-	v2 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.x2;
+	v2 = workAreaEdge;
     }
 
     v1 = v1 + window->output ().right - window->input ().right;
@@ -246,6 +254,7 @@ WobblyWindow::findNextNorthEdge (Object *object)
     int e, end;
     int y;
     int output;
+    int workAreaEdge;
 
     start = -65535.0f;
     end   =  65535.0f;
@@ -256,10 +265,13 @@ WobblyWindow::findNextNorthEdge (Object *object)
     y = object->position.y + window->output ().top - window->input ().top;
 
     output = ::screen->outputDeviceForPoint (object->position.x, y);
+    const CompRect &workArea =
+	::screen->outputDevs ()[(unsigned) output].workArea ();
+    workAreaEdge = workArea.y1 ();
 
-    if (y >= ::screen->outputDevs ()[(unsigned) output].region ()->extents.y1)
+    if (y >= workAreaEdge)
     {
-	v1 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.y1;
+	v1 = workAreaEdge;
 
 	foreach (CompWindow *p, ::screen->windows ())
 	{
@@ -322,7 +334,7 @@ WobblyWindow::findNextNorthEdge (Object *object)
     }
     else
     {
-	v2 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.y1;
+	v2 = workAreaEdge;
     }
 
     v1 = v1 - window->output ().top + window->input ().top;
@@ -349,6 +361,7 @@ WobblyWindow::findNextSouthEdge (Object *object)
     int e, end;
     int y;
     int output;
+    int workAreaEdge;
 
     start = -65535.0f;
     end   =  65535.0f;
@@ -359,10 +372,13 @@ WobblyWindow::findNextSouthEdge (Object *object)
     y = object->position.y - window->output ().bottom + window->input ().bottom;
 
     output = ::screen->outputDeviceForPoint (object->position.x, y);
+    const CompRect &workArea =
+	::screen->outputDevs ()[(unsigned) output].workArea ();
+    workAreaEdge = workArea.y2 ();
 
-    if (y <= ::screen->outputDevs ()[(unsigned) output].region ()->extents.y2)
+    if (y <= workAreaEdge)
     {
-	v1 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.y2;
+	v1 = workAreaEdge;
 
 	foreach (CompWindow *p, ::screen->windows ())
 	{
@@ -425,7 +441,7 @@ WobblyWindow::findNextSouthEdge (Object *object)
     }
     else
     {
-	v2 = ::screen->outputDevs ()[(unsigned) output].region ()->extents.y2;
+	v2 = workAreaEdge;
     }
 
     v1 = v1 + window->output ().bottom - window->input ().bottom;
