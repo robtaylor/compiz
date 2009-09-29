@@ -768,8 +768,7 @@ KWD::Window::createDecoration (void)
 
     mDecor = decor;
     
-    if (mType == Normal2D)
-	decor->widget ()->installEventFilter (this);
+    mDecor->widget ()->installEventFilter (this);
 
     if (mType != Normal2D)
     {
@@ -1811,6 +1810,32 @@ KWD::Window::eventFilter (QObject *o,
     {
         QMouseEvent* ev = static_cast<QMouseEvent *> (e);
         updateCursor (QPoint (ev->x () - mPadding.left, ev->y () - mPadding.top));
+    }
+    if (e->type() == QEvent::Resize)
+    {
+	QResizeEvent* ev = static_cast<QResizeEvent*> (e);
+	// Filter out resize events that inform about size different than frame size.
+	// This will ensure that mDecor->width() etc. and mDecor->widget()->width() will be in sync.
+	// These events only seem to be delayed events from initial resizing before show() was called
+	// on the decoration widget.
+	if (ev->size () != (mGeometry.size () + QSize (mExtents.left + mExtents.right, 
+						       mExtents.top + mExtents.bottom)))
+	{
+	    int w = mGeometry.width () + mExtents.left + mExtents.right;
+	    int h = mGeometry.height () + mExtents.top + mExtents.bottom;
+    
+	    mDecor->resize (QSize (w, h));
+	    return true;
+	}
+	// HACK: Avoid decoration redraw delays. On resize Qt sets WA_WStateConfigPending
+	// which delays all painting until a matching ConfigureNotify event comes.
+	// But this process itself is the window manager, so it's not needed
+	// to wait for that event, the geometry is known.
+	// Note that if Qt in the future changes how this flag is handled and what it
+	// triggers then this may potentionally break things. See mainly QETWidget::translateConfigEvent().
+	mDecor->widget()->setAttribute( Qt::WA_WState_ConfigPending, false );
+	mDecor->widget()->update();
+	return false;
     }
     return false;
 }
