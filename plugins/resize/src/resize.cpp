@@ -612,7 +612,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 					 xRoot;
 
 		if (mask & ResizeDownMask)
-			pointerAdjustY = server.x () + server.height () +
+			pointerAdjustY = server.y () + server.height () +
 					 w->input ().bottom - yRoot;
 		else if (mask & ResizeUpMask)
 			pointerAdjustY = server.y () - w->input ().top - yRoot;
