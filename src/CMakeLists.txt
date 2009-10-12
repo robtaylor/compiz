@@ -52,7 +52,7 @@ add_executable (compiz
 )
 
 target_link_libraries (
-    compiz ${COMPIZ_LIBRARIES} m
+    compiz ${COMPIZ_LIBRARIES} m pthread
 )
 
 install (

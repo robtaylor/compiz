@@ -1559,7 +1559,8 @@ BlurWindow::updateDstTexture (const GLMatrix &transform,
 	    return bScreen->fboUpdate (bScreen->tmpRegion.handle ()->rects,
 				       bScreen->tmpRegion.numRects ());
 	case BlurOptions::FilterMipmap:
-	    (*GL::generateMipmap) (bScreen->target);
+	    if (GL::generateMipmap)
+		(*GL::generateMipmap) (bScreen->target);
 	    break;
 	case BlurOptions::Filter4xbilinear:
 	    break;

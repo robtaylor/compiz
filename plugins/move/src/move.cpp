@@ -697,6 +697,9 @@ MoveScreen::MoveScreen (CompScreen *screen) :
 
 MoveScreen::~MoveScreen ()
 {
+    if (region)
+	XDestroyRegion (region);
+
     if (moveCursor)
 	XFreeCursor (screen->dpy (), moveCursor);
 }
