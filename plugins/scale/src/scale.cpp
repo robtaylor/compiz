@@ -185,8 +185,8 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 
 	    if (priv->slot)
 	    {
-		priv->delta = fabs (priv->slot->x1 - priv->window->x ()) +
-			      fabs (priv->slot->y1 - priv->window->y ()) +
+		priv->delta = fabs (priv->slot->x1 () - priv->window->x ()) +
+			      fabs (priv->slot->y1 () - priv->window->y ()) +
 			      fabs (1.0f - priv->slot->scale) * 500.0f;
 	    }
 
@@ -394,10 +394,7 @@ PrivateScaleScreen::layoutSlotsForArea (const CompRect& workArea,
 
 	for (j = 0; j < n; j++)
 	{
-	    slots[this->nSlots].x1 = x;
-	    slots[this->nSlots].y1 = y;
-	    slots[this->nSlots].x2 = x + width;
-	    slots[this->nSlots].y2 = y + height;
+	    slots[this->nSlots].setGeometry (x, y, width, height);
 
 	    slots[this->nSlots].filled = false;
 
@@ -532,8 +529,8 @@ PrivateScaleScreen::findBestSlots ()
 	{
 	    if (!slots[i].filled)
 	    {
-		sx = (slots[i].x2 + slots[i].x1) / 2;
-		sy = (slots[i].y2 + slots[i].y1) / 2;
+		sx = (slots[i].x2 () + slots[i].x1 ()) / 2;
+		sy = (slots[i].y2 () + slots[i].y1 ()) / 2;
 
 		cx = w->serverX () + w->width () / 2;
 		cy = w->serverY () + w->height () / 2;
@@ -575,23 +572,22 @@ PrivateScaleScreen::fillInWindows ()
 	    width  = w->width ()  + w->input ().left + w->input ().right;
 	    height = w->height () + w->input ().top  + w->input ().bottom;
 
-	    sx = (float) (sw->priv->slot->x2 - sw->priv->slot->x1) / width;
-	    sy = (float) (sw->priv->slot->y2 - sw->priv->slot->y1) / height;
+	    sx = (float) (sw->priv->slot->x2 () - sw->priv->slot->x1 ()) / width;
+	    sy = (float) (sw->priv->slot->y2 () - sw->priv->slot->y1 ()) / height;
 
 	    sw->priv->slot->scale = MIN (MIN (sx, sy), 1.0f);
 
 	    sx = width  * sw->priv->slot->scale;
 	    sy = height * sw->priv->slot->scale;
-	    cx = (sw->priv->slot->x1 + sw->priv->slot->x2) / 2;
-	    cy = (sw->priv->slot->y1 + sw->priv->slot->y2) / 2;
+	    cx = (sw->priv->slot->x1 () + sw->priv->slot->x2 ()) / 2;
+	    cy = (sw->priv->slot->y1 () + sw->priv->slot->y2 ()) / 2;
 
 	    cx += w->input ().left * sw->priv->slot->scale;
 	    cy += w->input ().top  * sw->priv->slot->scale;
 
-	    sw->priv->slot->x1 = cx - sx / 2;
-	    sw->priv->slot->y1 = cy - sy / 2;
-	    sw->priv->slot->x2 = cx + sx / 2;
-	    sw->priv->slot->y2 = cy + sy / 2;
+	    sw->priv->slot->setGeometry (cx - sx / 2, cy - sy / 2,
+					 (cx - sx / 2) + (cx + sx / 2),
+					 (cy - sy / 2) + (cy + sy / 2));
 
 	    sw->priv->slot->filled = true;
 
@@ -638,6 +634,12 @@ ScaleScreen::State
 ScaleScreen::getState () const
 {
     return priv->state;
+}
+
+ScaleType
+ScaleScreen::getType () const
+{
+    return priv->type;
 }
 
 const CompMatch&
@@ -689,8 +691,8 @@ PrivateScaleWindow::adjustScaleVelocity ()
 
     if (slot)
     {
-	x1 = slot->x1;
-	y1 = slot->y1;
+	x1 = slot->x1 ();
+	y1 = slot->y1 ();
 	scale = slot->scale;
     }
     else
@@ -1128,6 +1130,79 @@ ScaleWindow::hasSlot () const
     return priv->slot != NULL;
 }
 
+ScaleSlot
+ScaleWindow::getSlot () const
+{
+    if (!priv->slot)
+    {
+	ScaleSlot empty;
+	return empty;
+    }
+
+    return *priv->slot;
+}
+
+void
+ScaleWindow::setSlot (const ScaleSlot &newSlot)
+{
+    SCALE_SCREEN (screen);
+
+    priv->adjust = true;
+
+    if (!priv->slot)
+	return;
+    *priv->slot = newSlot;
+
+    /* Trigger the animation to this point */
+
+    if (ss->priv->state == ScaleScreen::Wait)
+	ss->priv->state = ScaleScreen::Out;
+    else if (ss->priv->state == ScaleScreen::Idle)
+	ss->priv->state = ScaleScreen::In;
+
+    priv->cWindow->addDamage ();
+}
+
+ScalePosition
+ScaleWindow::getCurrentPosition () const
+{
+    ScalePosition pos;
+
+    pos.setX (priv->tx);
+    pos.setY (priv->ty);
+
+    pos.scale = priv->scale;
+
+    return pos;
+}
+
+void
+ScaleWindow::setCurrentPosition (const ScalePosition &newPos)
+{
+    SCALE_SCREEN (screen);
+
+    priv->tx = newPos.x ();
+    priv->ty = newPos.y ();
+    priv->scale = newPos.scale;
+
+    /* Trigger the animation to this point */
+
+    if (ss->priv->state == ScaleScreen::Wait)
+	ss->priv->state = ScaleScreen::Out;
+    else if (ss->priv->state == ScaleScreen::Idle)
+	ss->priv->state = ScaleScreen::In;
+
+    priv->cWindow->addDamage ();
+
+    priv->adjust = true;
+}
+
+const Window &
+ScaleScreen::getHoveredWindow ()
+{
+    return priv->hoveredWindow;
+}
+
 bool
 PrivateScaleScreen::selectWindowAt (int  x,
 				    int  y,
@@ -1173,8 +1248,8 @@ PrivateScaleScreen::moveFocusWindow (int dx,
 	    ScaleSlot  *slot;
 	    int	       x, y, cx, cy, d, min = MAXSHORT;
 
-	    cx = (sw->priv->slot->x1 + sw->priv->slot->x2) / 2;
-	    cy = (sw->priv->slot->y1 + sw->priv->slot->y2) / 2;
+	    cx = (sw->priv->slot->x1 () + sw->priv->slot->x2 ()) / 2;
+	    cy = (sw->priv->slot->y1 () + sw->priv->slot->y2 ()) / 2;
 
 	    foreach (CompWindow *w, screen->windows ())
 	    {
@@ -1182,16 +1257,16 @@ PrivateScaleScreen::moveFocusWindow (int dx,
 		if (!slot)
 		    continue;
 
-		x = (slot->x1 + slot->x2) / 2;
-		y = (slot->y1 + slot->y2) / 2;
+		x = (slot->x1 () + slot->x2 ()) / 2;
+		y = (slot->y1 () + slot->y2 ()) / 2;
 
 		d = abs (x - cx) + abs (y - cy);
 		if (d < min)
 		{
-		    if ((dx > 0 && slot->x1 < sw->priv->slot->x2) ||
-			(dx < 0 && slot->x2 > sw->priv->slot->x1) ||
-			(dy > 0 && slot->y1 < sw->priv->slot->y2) ||
-			(dy < 0 && slot->y2 > sw->priv->slot->y1))
+		    if ((dx > 0 && slot->x1 () < sw->priv->slot->x2 ()) ||
+			(dx < 0 && slot->x2 () > sw->priv->slot->x1 ()) ||
+			(dy > 0 && slot->y1 () < sw->priv->slot->y2 ()) ||
+			(dy < 0 && slot->y2 () > sw->priv->slot->y1 ()))
 			continue;
 
 		    min   = d;

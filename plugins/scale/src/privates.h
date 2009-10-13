@@ -29,27 +29,12 @@
 #include <scale/scale.h>
 #include "scale_options.h"
 
-class ScaleSlot {
-    public:
-	int   x1, y1, x2, y2;
-	bool  filled;
-	float scale;
-};
-
 class SlotArea {
     public:
 	int      nWindows;
 	CompRect workArea;
 
 	typedef std::vector<SlotArea> vector;
-};
-
-
-enum ScaleType {
-    ScaleTypeNormal = 0,
-    ScaleTypeOutput,
-    ScaleTypeGroup,
-    ScaleTypeAll
 };
 
 class PrivateScaleScreen :

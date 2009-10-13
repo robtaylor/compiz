@@ -32,12 +32,34 @@
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 
-#define COMPIZ_SCALE_ABI 1
+#define COMPIZ_SCALE_ABI 2
 
 class ScaleScreen;
 class PrivateScaleScreen;
 class ScaleWindow;
 class PrivateScaleWindow;
+
+class ScaleSlot :
+    public CompRect
+{
+    public:
+	bool  filled;
+	float scale;
+};
+
+class ScalePosition :
+    public CompPoint
+{
+    public:
+	float scale;
+};
+
+enum ScaleType {
+    ScaleTypeNormal = 0,
+    ScaleTypeOutput,
+    ScaleTypeGroup,
+    ScaleTypeAll
+};
 
 class ScaleScreenInterface :
     public WrapableInterface<ScaleScreen, ScaleScreenInterface>
@@ -66,6 +88,10 @@ class ScaleScreen :
 
 	bool hasGrab () const;
 	State getState () const;
+	ScaleType getType () const;
+
+	const Window & getHoveredWindow ();
+
 	const CompMatch & getCustomMatch () const;
 	const WindowList& getWindows () const;
 
@@ -105,6 +131,16 @@ class ScaleWindow :
 	~ScaleWindow ();
 
 	bool hasSlot () const;
+
+	/* Scaled window target position (slot) */
+
+	ScaleSlot getSlot () const;
+	void setSlot (const ScaleSlot &);
+
+	/* Scaled window current position (animation) */
+
+	ScalePosition getCurrentPosition () const;
+	void setCurrentPosition (const ScalePosition &);
 
 	WRAPABLE_HND (0, ScaleWindowInterface, void, scalePaintDecoration,
 		      const GLWindowPaintAttrib &, const GLMatrix &,
