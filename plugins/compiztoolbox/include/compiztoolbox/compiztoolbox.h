@@ -78,7 +78,7 @@ class BaseSwitchScreen
 	static Visual *findArgbVisual (Display *dpy, int scr);
 
 	virtual bool shouldShowIcon () { return false; }
-	virtual void windowRemove (Window id) {}
+	virtual void windowRemove (CompWindow *w) {}
 	virtual void doWindowDamage (CompWindow *w);
 	virtual void handleSelectionChange (bool toNext, int nextIdx) {}
 	virtual void getMinimizedAndMatch (bool &minimizedOption,
@@ -93,7 +93,7 @@ class BaseSwitchScreen
 	CompWindowList windows;
 
 	Window       popupWindow;
-	Window	     selectedWindow;
+	CompWindow   *selectedWindow;
 	unsigned int lastActiveNum;
 
 	CompScreen::GrabHandle grabIndex;
@@ -142,7 +142,7 @@ class BaseSwitchWindow
 				    float width,
 				    float height) {}
 	bool damageRect (bool, const CompRect &);
-	bool isSwitchWin ();
+	bool isSwitchWin (bool removing = false);
 
 	BaseSwitchScreen *baseScreen;
 	GLWindow         *gWindow;
