@@ -68,15 +68,32 @@ class PrivateCompositeWindow;
 class CompositeScreen;
 class CompositeWindow;
 
+///
+/// Interface for painting to composite output.
+///
 class CompositeScreenInterface :
     public WrapableInterface<CompositeScreen, CompositeScreenInterface>
 {
     public:
-
+    
+    ///
+    /// Pre-paint hook
+    ///
 	virtual void preparePaint (int);
+	
+	///
+	/// Post-paint hook
+	///
 	virtual void donePaint ();
+	
+	///
+	/// Paint to composite (multiple) outputs
+	///
 	virtual void paint (CompOutput::ptrList &outputs, unsigned int);
-
+	
+	///
+	/// Gets a list of windows that need to evaluated for repainting
+	///
 	virtual CompWindowList getWindowPaintList ();
 };
 
@@ -217,6 +234,9 @@ class CompositeWindowInterface :
 	virtual bool damageRect (bool, const CompRect &);
 };
 
+///
+/// A Window that has compositing effects
+///
 class CompositeWindow :
     public WrapableHandler<CompositeWindowInterface, 1>,
     public PluginClassHandler<CompositeWindow, CompWindow, COMPIZ_COMPOSITE_ABI>
@@ -227,7 +247,15 @@ class CompositeWindow :
 	~CompositeWindow ();
 
 	bool bind ();
+	
+	///
+	/// Releases the pixmap data for this window with XFreePixmap.
+	///
 	void release ();
+	
+	///
+	/// Gets the X server pixel map for this
+	///
 	Pixmap pixmap ();
 
 	void redirect ();
