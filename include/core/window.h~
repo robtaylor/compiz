@@ -233,7 +233,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 };
 
 ///
-/// An Window object that wraps an X window. This handles snychronization of
+/// An Window object that wraps the X server functions. This handles snychronization of
 /// window state, geometry, etc. between Compiz and the X server.
 ///
 class CompWindow :

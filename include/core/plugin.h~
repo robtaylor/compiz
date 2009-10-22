@@ -167,7 +167,7 @@ class CompPlugin {
 	static void windowFiniPlugins (CompWindow *w);
 	
 	///
-	/// Finds a plugin by name. (TODO Does it have to be loaded?)
+	/// Finds a plugin by name. (Does it have to be loaded?)
 	///
 	static CompPlugin *find (const char *name);
 	

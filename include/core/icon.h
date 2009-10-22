@@ -32,11 +32,17 @@
 
 class CompScreen;
 
+///
+/// Wraps an application icon pixel map and it's meta information (such as dimensions)
+///
 class CompIcon : public CompSize {
     public:
 	CompIcon (CompScreen *screen, unsigned width, unsigned int height);
 	~CompIcon ();
-
+	
+	///
+	/// Gets a pointer to the pixel data for this icon.
+	///
 	unsigned char* data ();
 
     private:

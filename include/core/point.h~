@@ -1,6 +1,5 @@
 /*
  * Copyright © 2008 Dennis Kasprzyk
- * Copyright © 2007 Novell, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
@@ -22,43 +21,50 @@
  * WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  *
  * Authors: Dennis Kasprzyk <onestone@compiz-fusion.org>
- *          David Reveman <davidr@novell.com>
  */
 
-#ifndef _COMPOUTPUT_H
-#define _COMPOUTPUT_H
+#ifndef _COMPPOINT_H
+#define _COMPPOINT_H
 
-#include <core/core.h>
-#include <core/rect.h>
+#include <vector>
+#include <list>
 
-///
-/// Output to a device from Compiz
-///
-class CompOutput : public CompRect {
+class CompPoint {
 
     public:
-	CompOutput ();
+	CompPoint ();
+	CompPoint (int, int);
 
-	CompString name () const;
+	int x () const;
+	int y () const;
 
-	unsigned int id () const;
+	void set (int, int);
+	void setX (int);
+	void setY (int);
 
-	const CompRect& workArea () const;
+	bool operator== (const CompPoint &) const;
+	bool operator!= (const CompPoint &) const;
 
-	void setWorkArea (const CompRect&);
-	void setGeometry (int x, int y, int width, int height);
-	void setId (CompString, unsigned int);
-
-	typedef std::vector<CompOutput> vector;
-	typedef std::vector<CompOutput *> ptrVector;
-	typedef std::list<CompOutput *> ptrList;
+	typedef std::vector<CompPoint> vector;
+	typedef std::vector<CompPoint *> ptrVector;
+	typedef std::list<CompPoint> list;
+	typedef std::list<CompPoint *> ptrList;
 
     private:
-
-	CompString   mName;
-	unsigned int mId;
-
-	CompRect     mWorkArea;
+	int mX, mY;
 };
+
+inline int
+CompPoint::x () const
+{
+    return mX;
+}
+
+inline int
+CompPoint::y () const
+{
+    return mY;
+}
+
 
 #endif

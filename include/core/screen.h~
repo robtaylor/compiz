@@ -124,10 +124,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 	virtual void outputChangeNotify ();
 };
 
-///
-/// A wrapping of the X display screen. This takes care of communication to the
-/// X server.
-///
+
 class CompScreen :
     public CompSize,
     public WrapableHandler<ScreenInterface, 17>,

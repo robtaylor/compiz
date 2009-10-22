@@ -44,9 +44,6 @@ class CompScreen;
 /// Edge, Bell, or List.
 ///
 class CompOption {
-	///
-	/// Option data types
-	///
     public:
 	typedef enum {
 	    TypeBool,
@@ -64,10 +61,7 @@ class CompOption {
 	    /* internal use only */
 	    TypeUnset
 	} Type;
-	
-	///
-	/// A value of an Option
-	///
+
 	class Value {
 	    public:
 		typedef std::vector<Value> Vector;

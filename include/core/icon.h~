@@ -25,40 +25,23 @@
  *          David Reveman <davidr@novell.com>
  */
 
-#ifndef _COMPOUTPUT_H
-#define _COMPOUTPUT_H
+#ifndef _COMPICON_H
+#define _COMPICON_H
 
-#include <core/core.h>
-#include <core/rect.h>
+#include <core/size.h>
 
-///
-/// Output to a device from Compiz
-///
-class CompOutput : public CompRect {
+class CompScreen;
 
+class CompIcon : public CompSize {
     public:
-	CompOutput ();
+	CompIcon (CompScreen *screen, unsigned width, unsigned int height);
+	~CompIcon ();
 
-	CompString name () const;
-
-	unsigned int id () const;
-
-	const CompRect& workArea () const;
-
-	void setWorkArea (const CompRect&);
-	void setGeometry (int x, int y, int width, int height);
-	void setId (CompString, unsigned int);
-
-	typedef std::vector<CompOutput> vector;
-	typedef std::vector<CompOutput *> ptrVector;
-	typedef std::list<CompOutput *> ptrList;
+	unsigned char* data ();
 
     private:
-
-	CompString   mName;
-	unsigned int mId;
-
-	CompRect     mWorkArea;
+	CompSize      mSize;
+	unsigned char *mData;
 };
 
 #endif
