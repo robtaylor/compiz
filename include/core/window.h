@@ -246,16 +246,19 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual bool isFocussable ();
 };
 
-///
-/// An Window object that wraps an X window. This handles snychronization of
-/// window state, geometry, etc. between Compiz and the X server.
-///
+/**
+ * An Window object that wraps an X window. This handles snychronization of
+ * window state, geometry, etc. between Compiz and the X server. 
+ */
 class CompWindow :
     public WrapableHandler<WindowInterface, 15>,
     public PluginClassStorage
 {
     public:
-
+    
+    /**
+     * A mutable object about the dimensions and location of a CompWindow.
+     */
 	class Geometry : public CompRect
     {
 	    public:

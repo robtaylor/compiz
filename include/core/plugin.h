@@ -73,11 +73,11 @@ union CompPrivate {
     void	  *(*fptr) (void);
 };
 
-///
-/// Base plug-in interface for Compiz. All plugins must implement this
-/// interface, which provides basics for loading, unloading, options,
-/// and linking together the plugin and Screen(s).
-///
+/**
+ * Base plug-in interface for Compiz. All plugins must implement this
+ * interface, which provides basics for loading, unloading, options,
+ * and linking together the plugin and Screen(s).
+ */
 class CompPlugin {
     public:
 	class VTable {
