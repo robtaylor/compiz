@@ -154,7 +154,9 @@ struct CompStartupSequence;
 #define CompWindowGrabMoveMask   (1 << 2)
 #define CompWindowGrabResizeMask (1 << 3)
 
-
+/**
+ * TODO
+ */
 enum CompStackingUpdateMode {
     CompStackingUpdateModeNone = 0,
     CompStackingUpdateModeNormal,
@@ -163,6 +165,9 @@ enum CompStackingUpdateMode {
     CompStackingUpdateModeInitialMapDeniedFocus
 };
 
+/**
+ * TODO
+ */
 enum CompWindowNotify {
    CompWindowNotifyMap,
    CompWindowNotifyUnmap,
@@ -186,6 +191,9 @@ enum CompWindowNotify {
    CompWindowNotifyLeaveShowDesktopMode
 };
 
+/**
+ * TODO
+ */
 struct CompWindowExtents {
     int left;
     int right;
@@ -193,6 +201,9 @@ struct CompWindowExtents {
     int bottom;
 };
 
+/**
+ * TODO
+ */
 struct CompStruts {
     XRectangle left;
     XRectangle right;
@@ -200,6 +211,9 @@ struct CompStruts {
     XRectangle bottom;
 };
 
+/**
+ * TODO
+ */
 class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 {
     public:
