@@ -34,9 +34,16 @@ class PrivateMatch;
 class CompWindow;
 class CompDisplay;
 
+/**
+ * Matches windows based on properties similar to regular expressions.
+ * TODO how do you get the list of windows that match it?
+ */
 class CompMatch {
     public:
-
+    
+    /**
+     * TODO
+     */
 	class Expression {
 	    public:
 		virtual ~Expression () {};
