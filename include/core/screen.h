@@ -81,6 +81,9 @@ typedef std::list<CompFileWatch *> CompFileWatchList;
 #define ACTIVE_WINDOW_HISTORY_SIZE 64
 #define ACTIVE_WINDOW_HISTORY_NUM  32
 
+/**
+ * Information about the last activity with a window.
+ */
 struct CompActiveWindowHistory {
     Window id[ACTIVE_WINDOW_HISTORY_SIZE];
     int    x;
