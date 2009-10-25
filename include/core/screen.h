@@ -67,6 +67,9 @@ typedef boost::function<void (const char *)> FileWatchCallBack;
 typedef int CompFileWatchHandle;
 typedef int CompWatchFdHandle;
 
+/**
+ * Information needed to invoke a CallBack when a file changes.
+ */
 struct CompFileWatch {
     CompString		path;
     int			mask;
@@ -85,6 +88,9 @@ struct CompActiveWindowHistory {
     int    activeNum;
 };
 
+/**
+ * Interface to an abstract screen.
+ */
 class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
     public:
 	virtual void fileWatchAdded (CompFileWatch *fw);
@@ -124,10 +130,10 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 	virtual void outputChangeNotify ();
 };
 
-///
-/// A wrapping of the X display screen. This takes care of communication to the
-/// X server.
-///
+/**
+ * A wrapping of the X display screen. This takes care of communication to the
+ * X server.
+ */
 class CompScreen :
     public CompSize,
     public WrapableHandler<ScreenInterface, 17>,
