@@ -1,5 +1,5 @@
 <compiz>
-    <plugin name="rotate">
+    <plugin name="rotate" useBcop="true">
 	<_short>Rotate Cube</_short>
 	<_long>Rotate desktop cube</_long>
 	<deps>
@@ -10,7 +10,7 @@
 		<plugin>cube</plugin>
 	    </relation>
 	</deps>
-	<display>
+	<options>
 	    <option name="initiate_button" type="button">
 		<_short>Initiate</_short>
 		<_long>Start Rotation</_long>
@@ -201,8 +201,6 @@
 		<_long>Raise window when rotating</_long>
 		<default>false</default>
 	    </option>
-	</display>
-	<screen>
 	    <option name="invert_y" type="bool">
 		<_short>Pointer Invert Y</_short>
 		<_long>Invert Y axis for pointer movement</_long>
@@ -258,6 +256,6 @@
 		<max>2.0</max>
 		<precision>0.1</precision>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>
