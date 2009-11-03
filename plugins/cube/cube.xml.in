@@ -1,17 +1,18 @@
 <compiz>
-    <plugin name="cube">
+    <plugin name="cube" useBcop="true">
 	<_short>Desktop Cube</_short>
 	<_long>Place windows on cube</_long>
 	<feature>largedesktop</feature>
 	<deps>
+	    <requirement>
+		<plugin>opengl</plugin>
+	    </requirement>
 	    <relation type="before">
 		<plugin>switcher</plugin>
 		<plugin>scale</plugin>
 	    </relation>
 	</deps>
-	<display>
-	    <option name="abi" type="int" read_only="true"/>
-	    <option name="index" type="int" read_only="true"/>
+	<options>
 	    <option name="unfold_key" type="key">
 		<_short>Unfold</_short>
 		<_long>Unfold cube</_long>
@@ -21,14 +22,14 @@
 		<_short>Next Slide</_short>
 		<_long>Advance to next slide</_long>
 		<default>space</default>
+		<passive_grab>false</passive_grab>
 	    </option>
 	    <option name="prev_slide_key" type="key">
 		<_short>Prev Slide</_short>
 		<_long>Go back to previous slide</_long>
 		<default>Backspace</default>
+		<passive_grab>false</passive_grab>
 	    </option>
-	</display>
-	<screen>
 	    <option name="color" type="color">
 		<_short>Cube Color</_short>
 		<_long>Color of top and bottom sides of the cube</_long>
@@ -162,6 +163,6 @@
 		    <_name>One big cube</_name>
 		</desc>
 	    </option>
-	</screen>
+	</options>
     </plugin>
 </compiz>
