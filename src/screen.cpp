@@ -1775,9 +1775,9 @@ PrivateScreen::updateOutputDevices ()
 	if (w->priv->fullscreenMonitorsSet)
 	    w->priv->setFullscreenMonitors (NULL);
 	
-    for (unsigned int i = 0; i < nOutput; i++)
+    for (unsigned int i = 0; i < nOutput - 1; i++)
 	for (unsigned int j = i + 1; j < nOutput; j++)
-	    if (outputDevs[i].contains (outputDevs[j]))
+	    if (outputDevs[i].intersects (outputDevs[j]))
 		hasOverlappingOutputs = true;
 
     updateWorkarea ();
