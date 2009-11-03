@@ -1775,7 +1775,6 @@ PrivateScreen::updateOutputDevices ()
 	if (w->priv->fullscreenMonitorsSet)
 	    w->priv->setFullscreenMonitors (NULL);
 	
-    CompRegion region;
     for (unsigned int i = 0; i < nOutput; i++)
 	for (unsigned int j = i + 1; j < nOutput; j++)
 	    if (outputDevs[i].contains (outputDevs[j]))
