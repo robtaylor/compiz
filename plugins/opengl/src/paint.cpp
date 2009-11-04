@@ -252,7 +252,7 @@ PrivateGLScreen::paintOutputRegion (const GLMatrix   &transform,
 	    odMask = PAINT_WINDOW_OCCLUSION_DETECTION_MASK;
 
 	    if ((cScreen->windowPaintOffset ().x () != 0 ||
-		 cScreen->windowPaintOffset ().x () != 0) &&
+		 cScreen->windowPaintOffset ().y () != 0) &&
 		!w->onAllViewports ())
 	    {
 		withOffset = true;
