@@ -71,11 +71,11 @@ class SwitchScreen :
 	void handleEvent (XEvent *event);
 	void initiate (SwitchWindowSelection selection,
 		       bool                  showPopup);
-	void windowRemove (Window id);
+	void windowRemove (CompWindow *w);
 
 	bool adjustVelocity ();
 
-	Window	 zoomedWindow;
+	CompWindow *zoomedWindow;
 
 	float zoom;
 

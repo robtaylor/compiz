@@ -103,9 +103,14 @@ getXDGUserDir (XDGUserDir userDir)
 void
 BaseSwitchScreen::setSelectedWindowHint ()
 {
+    Window selectedWindowId = None;
+
+    if (selectedWindow && !selectedWindow->destroyed ())
+	selectedWindowId = selectedWindow->id ();
+
     XChangeProperty (::screen->dpy (), popupWindow, selectWinAtom,
 		     XA_WINDOW, 32, PropModeReplace,
-		     (unsigned char *) &selectedWindow, 1);
+		     (unsigned char *) &selectedWindowId, 1);
 }
 
 void
@@ -117,13 +122,16 @@ BaseSwitchScreen::getMinimizedAndMatch (bool &minimizedOption,
 }
 
 bool
-BaseSwitchWindow::isSwitchWin ()
+BaseSwitchWindow::isSwitchWin (bool removing)
 {
     bool minimizedOption;
     CompMatch *matchOption;
     baseScreen->getMinimizedAndMatch (minimizedOption, matchOption);
 
-    if (!window->isViewable () || !window->isMapped ())
+    if (!removing && window->destroyed ())
+	return false;
+
+    if (!removing && (!window->isViewable () || !window->isMapped ()))
     {
 	if (minimizedOption)
 	{
@@ -160,10 +168,9 @@ BaseSwitchWindow::isSwitchWin ()
 
 	if (matchOption && !matchOption->evaluate (window))
 	    return false;
-
     }
 
-    if (baseScreen->selection == CurrentViewport)
+    if (!removing && baseScreen->selection == CurrentViewport)
     {
 	if (!window->mapNum () || !window->isViewable ())
 	{
@@ -226,7 +233,7 @@ BaseSwitchScreen::switchToWindow (bool toNext,
 
     for (it = windows.begin (); it != windows.end (); it++, cur++)
     {
-	if ((*it)->id () == selectedWindow)
+	if (*it == selectedWindow)
 	    break;
     }
 
@@ -253,7 +260,7 @@ BaseSwitchScreen::switchToWindow (bool toNext,
 
     if (w)
     {
-	Window old = selectedWindow;
+	CompWindow *old = selectedWindow;
 
 	if (selection == AllViewports && autoChangeVPOption)
 	{
@@ -279,9 +286,9 @@ BaseSwitchScreen::switchToWindow (bool toNext,
 	}
 
 	lastActiveNum  = w->activeNum ();
-	selectedWindow = w->id ();
+	selectedWindow = w;
 
-	if (old != w->id ())
+	if (old != w)
 	    handleSelectionChange (toNext, nextIdx);
 
 	if (popupWindow)
@@ -297,12 +304,8 @@ BaseSwitchScreen::switchToWindow (bool toNext,
 
 	doWindowDamage (w);
 
-	if (old)
-	{
-	    w = ::screen->findWindow (old);
-	    if (w)
-		doWindowDamage (w);
-	}
+	if (old && !old->destroyed ())
+	    doWindowDamage (old);
     }
 
     return w;
@@ -574,14 +577,29 @@ BaseSwitchScreen::updateForegroundColor ()
 void
 BaseSwitchScreen::handleEvent (XEvent *event)
 {
+    CompWindow *w = NULL;
+
+    switch (event->type) {
+	case DestroyNotify:
+	    /* We need to get the CompWindow * for event->xdestroywindow.window
+	       here because in the ::screen->handleEvent call below, that
+	       CompWindow's id will become 1, so findWindowAtDisplay won't be
+	       able to find the CompWindow after that. */
+	       w = ::screen->findWindow (event->xdestroywindow.window);
+	    break;
+	default:
+	    break;
+    }
+
     ::screen->handleEvent (event);
 
     switch (event->type) {
 	case UnmapNotify:
-	    windowRemove (event->xunmap.window);
+	    w = ::screen->findWindow (event->xunmap.window);
+	    windowRemove (w);
 	    break;
 	case DestroyNotify:
-	    windowRemove (event->xdestroywindow.window);
+	    windowRemove (w);
 	    break;
 	case PropertyNotify:
 	    if (event->xproperty.atom == selectFgColorAtom)
@@ -600,7 +618,7 @@ BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
     gScreen (GLScreen::get (screen)),
     windows (),
     popupWindow (None),
-    selectedWindow (None),
+    selectedWindow (NULL),
     lastActiveNum (0),
     grabIndex (NULL),
     moreAdjust (false),

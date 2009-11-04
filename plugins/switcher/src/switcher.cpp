@@ -66,7 +66,7 @@ SwitchScreen::updateWindowList (int count)
     pos  = ((count >> 1) - (int)windows.size ()) * WIDTH;
     move = 0;
 
-    selectedWindow = windows.front ()->id ();
+    selectedWindow = windows.front ();
 
     x = screen->currentOutputDev ().x1 () +
 	screen->currentOutputDev ().width () / 2;
@@ -196,7 +196,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	return;
 
     this->selection      = selection;
-    selectedWindow = None;
+    selectedWindow       = NULL;
 
     count = countWindows ();
     if (count < 1)
@@ -362,16 +362,12 @@ switchTerminate (CompAction         *action,
 
 	if (state & CompAction::StateCancel)
 	{
-	    ss->selectedWindow = None;
-	    ss->zoomedWindow   = None;
+	    ss->selectedWindow = NULL;
+	    ss->zoomedWindow   = NULL;
 	}
 
-	if (state && ss->selectedWindow)
-	{
-	    w = screen->findWindow (ss->selectedWindow);
-	    if (w)
-		screen->sendWindowActivationRequest (w->id ());
-	}
+	if (state && ss->selectedWindow && !ss->selectedWindow->destroyed ())
+	    screen->sendWindowActivationRequest (ss->selectedWindow->id ());
 
 	screen->removeGrab (ss->grabIndex, 0);
 	ss->grabIndex = NULL;
@@ -381,8 +377,8 @@ switchTerminate (CompAction         *action,
 
 	if (!ss->zooming)
 	{
-	    ss->selectedWindow = None;
-	    ss->zoomedWindow   = None;
+	    ss->selectedWindow = NULL;
+	    ss->zoomedWindow   = NULL;
 
 	    ss->activateEvent (false);
 	}
@@ -391,7 +387,7 @@ switchTerminate (CompAction         *action,
 	    ss->moreAdjust = true;
 	}
 
-	ss->selectedWindow = None;
+	ss->selectedWindow = NULL;
 	ss->setSelectedWindowHint ();
 
 	ss->lastActiveNum = 0;
@@ -439,20 +435,19 @@ switchInitiateCommon (CompAction            *action,
 }
 
 void
-SwitchScreen::windowRemove (Window id)
+SwitchScreen::windowRemove (CompWindow *w)
 {
-    CompWindow *w;
-
-    w = screen->findWindow (id);
     if (w)
     {
 	bool   inList = false;
 	int    count;
-	Window selected, old;
+
+	CompWindow *selected;
+	CompWindow *old;
 
 	SWITCH_WINDOW (w);
 
-	if (!sw->isSwitchWin ())
+	if (!sw->isSwitchWin (true))
 	    return;
 
 	sw->cWindow->damageRectSetEnabled (sw, false);
@@ -467,13 +462,13 @@ SwitchScreen::windowRemove (Window id)
 	    {
 		inList = true;
 
-		if (w->id () == selected)
+		if (w == selected)
 		{
 		    it++;
 		    if (it == windows.end ())
-			selected = windows.front ()->id ();
+			selected = windows.front ();
 		    else
-			selected = (*it)->id ();
+			selected = *it;
 		    it--;
 		}
 
@@ -523,7 +518,7 @@ SwitchScreen::windowRemove (Window id)
 
 	foreach (CompWindow *w, windows)
 	{
-	    selectedWindow = w->id ();
+	    selectedWindow = w;
 
 	    if (selectedWindow == selected)
 		break;
@@ -546,13 +541,13 @@ SwitchScreen::windowRemove (Window id)
 
 	if (old != selectedWindow)
 	{
+	    zoomedWindow = selectedWindow;
+
+	    CompositeWindow::get (selectedWindow)->addDamage ();
 	    CompositeWindow::get (w)->addDamage ();
 
-	    w = screen->findWindow (old);
-	    if (w)
-		CompositeWindow::get (w)->addDamage ();
-
-	    moreAdjust = true;
+	    if (old && !old->destroyed ())
+		CompositeWindow::get (old)->addDamage ();
 	}
     }
 }
@@ -661,8 +656,8 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
 			translate  = 0.0f;
 			sTranslate = zoom;
 
-			selectedWindow = None;
-			zoomedWindow   = None;
+			selectedWindow = NULL;
+			zoomedWindow   = NULL;
 
 			if (grabIndex)
 			{
@@ -734,8 +729,8 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
 	if (optionGetBringToFront ())
 	{
-	    zoomed = screen->findWindow (zoomedWindow);
-	    if (zoomed)
+	    zoomed = zoomedWindow;
+	    if (zoomed && !zoomed->destroyed ())
 	    {
 		CompWindow *w;
 
@@ -1015,7 +1010,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	glDisable (GL_BLEND);
 	glEnableClientState (GL_TEXTURE_COORD_ARRAY);
     }
-    else if (window->id () == sScreen->selectedWindow)
+    else if (window == sScreen->selectedWindow)
     {
 	if (sScreen->optionGetBringToFront () &&
 	    sScreen->selectedWindow == sScreen->zoomedWindow)
@@ -1049,7 +1044,7 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	}
 
 	if (sScreen->optionGetBringToFront () &&
-	    window->id () == sScreen->zoomedWindow)
+	    window == sScreen->zoomedWindow)
 	    zoomType = ZOOMED_WINDOW_MASK;
 
 	if (!(sScreen->zoomMask & zoomType))
@@ -1089,7 +1084,7 @@ SwitchScreen::setZoom ()
 SwitchScreen::SwitchScreen (CompScreen *screen) :
     BaseSwitchScreen (screen),
     PluginClassHandler<SwitchScreen,CompScreen> (screen),
-    zoomedWindow (None),
+    zoomedWindow (NULL),
     switching (false),
     zoomMask (~0),
     mVelocity (0.0),
