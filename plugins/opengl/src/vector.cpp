@@ -271,4 +271,6 @@ GLVector::homogenize ()
 
     for (unsigned int i = 0; i < 4; i++)
 	v[i] /= v[3];
+
+    return *this;
 }
