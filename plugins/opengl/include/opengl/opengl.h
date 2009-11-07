@@ -337,7 +337,9 @@ class GLWindowInterface :
 	virtual bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 			     const CompRegion &, unsigned int);
 	virtual void glAddGeometry (const GLTexture::MatrixList &,
-				    const CompRegion &,const CompRegion &);
+				    const CompRegion &,const CompRegion &,
+				    unsigned int = MAXSHORT,
+				    unsigned int = MAXSHORT);
 	virtual void glDrawTexture (GLTexture *texture, GLFragment::Attrib &,
 				    unsigned int);
 	virtual void glDrawGeometry ();
@@ -403,7 +405,8 @@ class GLWindow :
 		      GLFragment::Attrib &, const CompRegion &, unsigned int);
 	WRAPABLE_HND (2, GLWindowInterface, void, glAddGeometry,
 		      const GLTexture::MatrixList &, const CompRegion &,
-		      const CompRegion &);
+		      const CompRegion &,
+		      unsigned int = MAXSHORT, unsigned int = MAXSHORT);
 	WRAPABLE_HND (3, GLWindowInterface, void, glDrawTexture,
 		      GLTexture *texture, GLFragment::Attrib &, unsigned int);
 	WRAPABLE_HND (4, GLWindowInterface, void, glDrawGeometry);

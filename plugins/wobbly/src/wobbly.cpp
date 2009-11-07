@@ -1510,7 +1510,9 @@ WobblyWindow::glDrawGeometry ()
 void
 WobblyWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
 			     const CompRegion            &region,
-			     const CompRegion            &clip)
+			     const CompRegion            &clip,
+			     unsigned int                maxGridWidth,
+			     unsigned int                maxGridHeight)
 {
     GLWindow::Geometry &geom = gWindow->geometry ();
 
@@ -1550,6 +1552,12 @@ WobblyWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
     gridH = height / wScreen->optionGetGridResolution ();
     if (gridH < wScreen->optionGetMinGridSize ())
 	gridH = wScreen->optionGetMinGridSize ();
+
+    if (gridW > (int) maxGridWidth)
+	gridW = (int) maxGridWidth;
+
+    if (gridH > (int) maxGridHeight)
+	gridH = (int) maxGridHeight;
 
     geom.texUnits = (int) nMatrix;
 

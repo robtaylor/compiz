@@ -617,10 +617,90 @@ GLWindow::glDrawGeometry ()
     }
 }
 
+static inline void
+addSingleQuad (GLfloat      *&d,
+	       const        GLTexture::MatrixList &matrix,
+	       unsigned int nMatrix,
+	       int          x1,
+	       int          y1,
+	       int          x2,
+	       int          y2,
+	       int          &n,
+	       bool         rect)
+{
+    unsigned int it;
+
+    if (rect)
+    {
+	ADD_RECT (d, matrix, nMatrix, x1, y1, x2, y2);
+    }
+    else
+    {
+	ADD_QUAD (d, matrix, nMatrix, x1, y1, x2, y2);
+    }
+    n++;
+}
+
+static inline void
+addQuads (GLfloat      *&d,
+	  const        GLTexture::MatrixList &matrix,
+	  unsigned int nMatrix,
+	  int          x1,
+	  int          y1,
+	  int          x2,
+	  int          y2,
+	  int          &n,
+	  int          vSize,
+	  bool         rect,
+	  GLWindow::Geometry &geometry,
+	  unsigned int maxGridWidth,
+	  unsigned int maxGridHeight)
+{
+    int nQuadsX = (maxGridWidth == MAXSHORT) ? 1 :
+	1 + (x2 - x1 - 1) / (int) maxGridWidth;  // ceil. division
+    int nQuadsY = (maxGridHeight == MAXSHORT) ? 1 :
+	1 + (y2 - y1 - 1) / (int) maxGridHeight;
+    int newVertexSize = (n + nQuadsX * nQuadsY) * vSize * 4;
+
+    // Make sure enough vertices are allocated for nQuadsX * nQuadsY more quads
+    if (newVertexSize > geometry.vertexSize)
+    {
+	if (!geometry.moreVertices (newVertexSize))
+	    return;
+
+	d = geometry.vertices + (n * vSize * 4);
+    }
+
+    if (nQuadsX == 1 && nQuadsY == 1)
+    {
+	addSingleQuad (d, matrix, nMatrix, x1, y1, x2, y2, n, rect);
+    }
+    else
+    {
+	int quadWidth  = 1 + (x2 - x1 - 1) / nQuadsX;  // ceil. division
+	int quadHeight = 1 + (y2 - y1 - 1) / nQuadsY;
+	int nx1, ny1, nx2, ny2;
+
+	for (ny1 = y1; ny1 < y2; ny1 = ny2)
+	{
+	    ny2 = MIN (ny1 + (int) quadHeight, y2);
+
+	    for (nx1 = x1; nx1 < x2; nx1 = nx2)
+	    {
+		nx2 = MIN (nx1 + (int) quadWidth, x2);
+
+		addSingleQuad (d, matrix, nMatrix, nx1, ny1, nx2, ny2, n, rect);
+	    }
+	}
+    }
+}
+
 void
 GLWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
 			 const CompRegion            &region,
-			 const CompRegion            &clip)
+			 const CompRegion            &clip,
+			 unsigned int                maxGridWidth,
+			 unsigned int                maxGridHeight)
 {
     WRAPABLE_HND_FUNC (2, glAddGeometry, matrix, region, clip)
 
@@ -699,16 +779,10 @@ GLWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
 
 		if (nClip == 1)
 		{
-		    if (rect)
-		    {
-			ADD_RECT (d, matrix, nMatrix, x1, y1, x2, y2);
-		    }
-		    else
-		    {
-			ADD_QUAD (d, matrix, nMatrix, x1, y1, x2, y2);
-		    }
-
-		    n++;
+		    addQuads (d, matrix, nMatrix,
+			      x1, y1, x2, y2,
+			      n, vSize, rect, priv->geometry,
+			      maxGridWidth, maxGridHeight);
 		}
 		else
 		{
@@ -740,18 +814,10 @@ GLWindow::glAddGeometry (const GLTexture::MatrixList &matrix,
 
 			if (cbox.x1 < cbox.x2 && cbox.y1 < cbox.y2)
 			{
-			    if (rect)
-			    {
-				ADD_RECT (d, matrix, nMatrix,
-					  cbox.x1, cbox.y1, cbox.x2, cbox.y2);
-			    }
-			    else
-			    {
-				ADD_QUAD (d, matrix, nMatrix,
-					  cbox.x1, cbox.y1, cbox.x2, cbox.y2);
-			    }
-
-			    n++;
+			    addQuads (d, matrix, nMatrix,
+				      cbox.x1, cbox.y1, cbox.x2, cbox.y2,
+				      n, vSize, rect, priv->geometry,
+				      maxGridWidth, maxGridHeight);
 			}
 		    }
 		}
