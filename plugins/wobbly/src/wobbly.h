@@ -283,7 +283,8 @@ public:
     bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
 		  const CompRegion &, unsigned int);
     void glAddGeometry (const GLTexture::MatrixList &,
-			const CompRegion &, const CompRegion &);
+			const CompRegion &, const CompRegion &,
+			unsigned int = MAXSHORT, unsigned int = MAXSHORT);
     void glDrawGeometry ();
 
     WobblyScreen     *wScreen;

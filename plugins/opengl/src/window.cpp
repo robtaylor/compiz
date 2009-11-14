@@ -142,8 +142,11 @@ GLWindowInterface::glDraw (const GLMatrix     &transform,
 void
 GLWindowInterface::glAddGeometry (const GLTexture::MatrixList &matrix,
 				  const CompRegion            &region,
-				  const CompRegion            &clip)
-    WRAPABLE_DEF (glAddGeometry, matrix, region, clip)
+				  const CompRegion            &clip,
+				  unsigned int                maxGridWidth,
+				  unsigned int                maxGridHeight)
+    WRAPABLE_DEF (glAddGeometry, matrix, region, clip,
+		  maxGridWidth, maxGridHeight)
 
 void
 GLWindowInterface::glDrawTexture (GLTexture          *texture,

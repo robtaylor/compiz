@@ -1328,7 +1328,7 @@ PrivateScaleScreen::windowRemove (Window id)
     if (!w)
 	return;
 
-    if (state != ScaleScreen::Idle && state != ScaleScreen::In)
+    if (state == ScaleScreen::Idle || state == ScaleScreen::In)
 	return;
 
     foreach (ScaleWindow *lw, windows)

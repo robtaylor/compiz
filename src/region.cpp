@@ -399,7 +399,7 @@ CompRegion::operator^= (const CompRegion &r)
 const CompRegion
 CompRegion::operator| (const CompRegion &r) const
 {
-    united (r);
+    return united (r);
 }
 
 CompRegion &
