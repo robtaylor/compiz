@@ -1020,6 +1020,8 @@ PrivateGLScreen::paintOutputs (CompOutput::ptrList &outputs,
 	{
 	    GLMatrix identity;
 
+	    identity.reset ();
+
 	    outputRegion = tmpRegion & CompRegion (*output);
 
 	    if (!gScreen->glPaintOutput (defaultScreenPaintAttrib,
