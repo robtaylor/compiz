@@ -600,8 +600,11 @@ RotateScreen::rotateFlip (int direction)
     if (screen->otherGrabExist ("rotate", "move", "group-drag", 0))
 	return false;
 
-    warpX = pointerX + screen->width ();
-    screen->warpPointer (screen->width () - 10, 0);
+    warpX = pointerX - (screen->width () * direction);
+    if (direction == -1)
+	screen->warpPointer (screen->width () - 10, 0);
+    else
+	screen->warpPointer (10 - screen->width (), 0);
     lastPointerX = warpX;
 
     o.push_back (CompOption ("root", CompOption::TypeInt));
@@ -614,8 +617,8 @@ RotateScreen::rotateFlip (int direction)
 
     rotate (NULL, 0, o, direction);
 
-    XWarpPointer (screen->dpy (), None, None, 0, 0, 0, 0, -1, 0);
-    mSavedPointer.setX (lastPointerX - 9);
+    XWarpPointer (screen->dpy (), None, None, 0, 0, 0, 0, direction, 0);
+    mSavedPointer.setX (lastPointerX + (9 * direction));
 
     return false;
 }
@@ -713,7 +716,7 @@ RotateScreen::rotateEdgeFlip (CompAction         *action,
 	}
 
 	mMoving  = true;
-	mMoveTo  = 360.0f / screen->vpSize ().width () * direction;
+	mMoveTo  += 360.0f / screen->vpSize ().width () * direction;
 	mSlow    = true;
 
 	if (state & CompAction::StateInitEdge)
