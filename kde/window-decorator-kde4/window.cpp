@@ -66,10 +66,7 @@ KWD::Window::Window (WId  parentId,
 		     WId  clientId,
 		     WId  frame,
 		     Type type,
-		     int  x,
-		     int  y,
-		     int  w,
-		     int  h) :
+		     QRect geometry) :
     mType (type),
     mParentId (parentId),
     mFrame (0),
@@ -140,7 +137,7 @@ KWD::Window::Window (WId  parentId,
 
 	updateFrame (frame);
 
-	mGeometry = QRect (x, y, w, h);
+	mGeometry = geometry;
 
 	getWindowProtocols ();
     }
@@ -1523,7 +1520,7 @@ KWD::Window::moveWindow (QMouseEvent *qme)
     Decorator::rootInfo ()->restackRequest (mClientId, NET::FromApplication,
 			 		    None, Above,
 					    QX11Info::appTime());
-					    
+
     Decorator::rootInfo ()->moveResizeRequest (mClientId,
 					       p.x (),
 					       p.y (),

@@ -624,9 +624,6 @@ KWD::Decorator::handleWindowAdded (WId id)
     WId					     select, frame = 0;
     WId					     oframe = 0, iframe = 0;
     KWD::Window::Type			     type = KWD::Window::Normal;
-    unsigned int			     width, height, border, depth;
-    int					     x, y;
-    XID					     root;
     QWidgetList				     widgets;
 
     /* avoid adding any of our own top level windows */
@@ -636,10 +633,14 @@ KWD::Decorator::handleWindowAdded (WId id)
     }
 
     KWD::trapXError ();
-    XGetGeometry (QX11Info::display (), id, &root, &x, &y, &width, &height,
-		  &border, &depth);
+    KWindowInfo wInfo = KWindowSystem::windowInfo (id, NET::WMGeometry);
     if (KWD::popXError ())
 	return;
+
+    if (!wInfo.valid ())
+	return;
+
+    QRect geometry = wInfo.geometry ();
 
     KWD::readWindowProperty (id, Atoms::netInputFrameWindow, (long *) &iframe);
     KWD::readWindowProperty (id, Atoms::netOutputFrameWindow, (long *) &oframe);
@@ -704,9 +705,7 @@ KWD::Decorator::handleWindowAdded (WId id)
 	if (!mClients.contains (id))
 	{
 	    client = new KWD::Window (mCompositeWindow, id, frame, type,
-				      x, y,
-				      width + border * 2,
-				      height + border * 2);
+				      geometry);
 
 	    mClients.insert (id, client);
 	    mFrames.insert (frame, client);
