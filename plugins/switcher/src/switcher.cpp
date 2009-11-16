@@ -740,7 +740,7 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
 		screen->unhookWindow (zoomed);
 		screen->insertWindow (zoomed,
-				      screen->windows ().back ()->id ());
+				      screen->clientList ().back ()->id ());
 	    }
 	}
 	else
