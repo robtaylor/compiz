@@ -770,12 +770,14 @@ CompOption::set (CompOption::Value &val)
 	    return false;
 
 	case CompOption::TypeKey:
-	    if (!(val.action ().type () & CompAction::BindingTypeKey))
+	    if (val.action ().type () == value().action ().type () && 
+		!(val.action ().type () & CompAction::BindingTypeKey))
 		return false;
 	    break;
 
 	case CompOption::TypeButton:
-	    if (!(val.action ().type () & (CompAction::BindingTypeButton |
+	    if (val.action ().type () == value().action ().type () && 
+		!(val.action ().type () & (CompAction::BindingTypeButton |
 					   CompAction::BindingTypeEdgeButton)))
 		return false;
 	    break;
