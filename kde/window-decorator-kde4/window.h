@@ -194,6 +194,7 @@ class Window: public QObject, public KDecorationBridgeUnstable {
 	Cursor positionToCursor (QPoint pos);
 
     private slots:
+	void resizeDecorationTimeout ();
 	void handlePopupActivated (QAction *action);
 	void handleOpacityPopupActivated (QAction *action);
 	void handleDesktopPopupActivated (QAction *action);

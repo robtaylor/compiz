@@ -767,7 +767,6 @@ KWD::Window::createDecoration (void)
     decor->init ();
 
     mDecor = decor;
-    
     mDecor->widget ()->installEventFilter (this);
 
     if (mType != Normal2D)
@@ -801,6 +800,12 @@ KWD::Window::createDecoration (void)
 	    return;
     }
 
+    QTimer::singleShot (0, this, SLOT(resizeDecorationTimeout ()));
+}
+
+void
+KWD::Window::resizeDecorationTimeout ()
+{
     resizeDecoration (true);
 }
 
@@ -868,16 +873,15 @@ KWD::Window::resizeDecoration (bool force)
 
     w = mGeometry.width () + mExtents.left + mExtents.right;
     h = mGeometry.height () + mExtents.top + mExtents.bottom;
-    
+
     if (!force)
     {
-      if (w == decorWidget ()->width () && h == decorWidget ()->height ())
-        return;
+	if (w == decorWidget ()->width () && h == decorWidget ()->height ())
+	    return;
     }
-    
+
     /* reset shape */
     setMask (QRegion (), 0);
-    
 
     if (mPixmap)
     {
@@ -900,9 +904,9 @@ KWD::Window::resizeDecoration (bool force)
     mPixmapQt.fill (Qt::transparent);
 
     if (mPaintRedirector)
-      mUpdateProperty = true;
+	mUpdateProperty = true;
     else
-      updateProperty ();
+	updateProperty ();
 }
 
 void
