@@ -118,6 +118,42 @@ CubeScreen::rotationState (CubeScreen::RotationState state)
     priv->mRotationState = state;
 }
 
+int 
+CubeScreen::xRotations () const
+{
+    return priv->mXRotations;
+}
+
+int 
+CubeScreen::nOutput () const
+{
+    return priv->mNOutput;
+}
+
+float
+CubeScreen::outputXScale () const
+{
+    return priv->mOutputXScale;
+}
+
+float
+CubeScreen::outputYScale () const
+{
+    return priv->mOutputYScale;
+}
+
+float
+CubeScreen::outputXOffset () const
+{
+    return priv->mOutputXOffset;
+}
+
+float
+CubeScreen::outputYOffset () const
+{
+    return priv->mOutputYOffset;
+}
+
 void
 PrivateCubeScreen::loadImg (int n)
 {

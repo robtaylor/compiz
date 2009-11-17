@@ -127,6 +127,16 @@ class CubeScreen :
 	RotationState rotationState () const;
 	void rotationState (RotationState state);
 
+	int xRotations () const;
+
+	int nOutput () const;
+
+	float outputXScale () const;
+	float outputYScale () const;
+	float outputXOffset () const;
+	float outputYOffset () const;
+
+
 	friend class PrivateCubeWindow;
 	friend class PrivateCubeScreen;
 
