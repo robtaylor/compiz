@@ -77,7 +77,7 @@ class CompositeScreenInterface :
 	virtual void donePaint ();
 	virtual void paint (CompOutput::ptrList &outputs, unsigned int);
 
-	virtual CompWindowList getWindowPaintList ();
+	virtual const CompWindowList & getWindowPaintList ();
 };
 
 
@@ -146,7 +146,7 @@ class CompositeScreen :
 	WRAPABLE_HND (2, CompositeScreenInterface, void, paint,
 		      CompOutput::ptrList &outputs, unsigned int);
 
-	WRAPABLE_HND (3, CompositeScreenInterface, CompWindowList,
+	WRAPABLE_HND (3, CompositeScreenInterface, const CompWindowList &,
 		      getWindowPaintList);
 
 	friend class PrivateCompositeDisplay;

@@ -1355,6 +1355,9 @@ PrivateCubeScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 
     output = (outputPtr->id () != ~0) ? outputPtr->id () : 0;
 
+    mReversedWindowList = cScreen->getWindowPaintList ();
+    mReversedWindowList.reverse ();
+
     if (((outputPtr->id () != ~0) && mRecalcOutput) ||
 	((outputPtr->id () == ~0) && !mRecalcOutput && mNOutput > 1))
     {
@@ -1578,15 +1581,13 @@ PrivateCubeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 
 }
 
-CompWindowList 
+const CompWindowList &
 PrivateCubeScreen::getWindowPaintList ()
 {
-    CompWindowList cList = cScreen->getWindowPaintList ();
-
     if (mPaintOrder == FTB)
-	cList.reverse ();
-
-    return cList;
+	return mReversedWindowList;
+    else
+        return cScreen->getWindowPaintList ();
 }
 
 void 

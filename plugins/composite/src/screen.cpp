@@ -907,10 +907,10 @@ CompositeScreen::paint (CompOutput::ptrList &outputs,
 	priv->pHnd->paintOutputs (outputs, mask, priv->tmpRegion);
 }
 
-CompWindowList
+const CompWindowList &
 CompositeScreen::getWindowPaintList ()
 {
-    WRAPABLE_HND_FUNC_RETURN (3, CompWindowList, getWindowPaintList)
+    WRAPABLE_HND_FUNC_RETURN (3, const CompWindowList &, getWindowPaintList)
 
     return screen->windows ();
 }
@@ -975,7 +975,7 @@ CompositeScreenInterface::paint (CompOutput::ptrList &outputs,
 				 unsigned int        mask)
     WRAPABLE_DEF (paint, outputs, mask)
 
-CompWindowList
+const CompWindowList &
 CompositeScreenInterface::getWindowPaintList ()
     WRAPABLE_DEF (getWindowPaintList)
 

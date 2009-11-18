@@ -615,7 +615,8 @@ PrivateScreen::triggerEdgeEnter (unsigned int       edge,
 bool
 PrivateScreen::handleActionEvent (XEvent *event)
 {
-    CompOption::Vector o (0);
+    CompOption::Vector o;
+    o.reserve (8);
 
     o.push_back (CompOption ("event_window", CompOption::TypeInt));
     o.push_back (CompOption ("window", CompOption::TypeInt));
