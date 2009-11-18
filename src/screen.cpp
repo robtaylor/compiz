@@ -1025,6 +1025,7 @@ CompScreen::readImageFromFile (CompString &name,
 	    path =  home;
 	    path += "/";
 	    path += HOME_IMAGEDIR;
+	    path += "/";
 	    path += name;
 
 	    status = fileToImage (path, size, stride, data);
@@ -1033,7 +1034,9 @@ CompScreen::readImageFromFile (CompString &name,
 		return true;
 	}
 
-	path = IMAGEDIR + name;
+	path = IMAGEDIR;
+	path += "/";
+	path += name;
 	status = fileToImage (path, size, stride, data);
     }
 

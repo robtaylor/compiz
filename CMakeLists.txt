@@ -30,7 +30,7 @@ set (includedir ${CMAKE_INSTALL_PREFIX}/include)
 set (datadir ${CMAKE_INSTALL_PREFIX}/share)
 
 set (compiz_plugindir ${libdir}/compiz)
-set (compiz_imagedir ${datadir}/compiz)
+set (compiz_imagedir ${datadir}/compiz/images)
 set (compiz_metadatadir ${datadir}/compiz)
 set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
 
