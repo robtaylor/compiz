@@ -154,6 +154,64 @@ CubeScreen::outputYOffset () const
     return priv->mOutputYOffset;
 }
 
+float
+CubeScreen::distance () const
+{
+    return priv->mDistance;
+}
+
+float
+CubeScreen::desktopOpacity () const
+{
+    return priv->mDesktopOpacity;
+}
+
+CubeScreen::MultioutputMode 
+CubeScreen::multioutputMode () const
+{
+    switch (priv->optionGetMultioutputMode ())
+    {
+	case CubeOptions::MultioutputModeOneBigCube:
+	    return OneBigCube;
+	case CubeOptions::MultioutputModeMultipleCubes:
+	    return MultipleCubes;
+	default:
+	    break;
+    }
+
+    return Automatic;
+}
+
+int 
+CubeScreen::sourceOutput () const
+{
+    return priv->mSrcOutput;
+}
+
+PaintOrder 
+CubeScreen::paintOrder () const
+{
+    return priv->mPaintOrder;
+}
+
+bool 
+CubeScreen::paintAllViewports () const
+{
+    return priv->mPaintAllViewports;
+}
+
+void 
+CubeScreen::paintAllViewports (bool value)
+{
+    priv->mPaintAllViewports = value;
+}
+
+void
+CubeScreen::repaintCaps ()
+{
+    memset (priv->mCapsPainted, 0, sizeof (Bool) * screen->outputDevs ().size ());
+}
+
 void
 PrivateCubeScreen::loadImg (int n)
 {
@@ -830,7 +888,7 @@ CubeScreen::cubeCheckOrientation (const GLScreenPaintAttrib &sAttrib,
 				  CompOutput                *output,
 				  std::vector<GLVector>     &points)
 {
-    WRAPABLE_HND_FUNC_RETURN (6, bool, cubeCheckOrientation, sAttrib, transform, output, points)
+    WRAPABLE_HND_FUNC_RETURN (5, bool, cubeCheckOrientation, sAttrib, transform, output, points)
     GLMatrix sTransform = transform;
     GLMatrix mvp, pm (priv->gScreen->projectionMatrix ());
     GLVector pntA, pntB, pntC;

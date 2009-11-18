@@ -90,6 +90,13 @@ class CubeScreen :
 	    RotationChange,
 	    RotationManual
 	} RotationState;
+	
+	typedef enum {
+	    Automatic = 0,
+	    MultipleCubes,
+	    OneBigCube
+	} MultioutputMode;
+	
 
 	CubeScreen (CompScreen *s);
 	~CubeScreen ();
@@ -135,6 +142,20 @@ class CubeScreen :
 	float outputYScale () const;
 	float outputXOffset () const;
 	float outputYOffset () const;
+
+	float distance () const;
+	float desktopOpacity () const;
+	
+	MultioutputMode multioutputMode () const;
+
+	int sourceOutput () const;
+	
+	PaintOrder paintOrder () const;
+	
+	bool paintAllViewports () const;
+	void paintAllViewports (bool value);
+	
+	void repaintCaps ();
 
 
 	friend class PrivateCubeWindow;
