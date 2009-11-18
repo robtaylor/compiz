@@ -65,7 +65,7 @@ endif ()
 
 # determinate installation directories
 macro (_prepare_directories)
-
+    set (CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRe" CACHE INTERNAL "" FORCE)
     if ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "package")
 	set (PLUGIN_BUILDTYPE global)
 	set (PLUGIN_PREFIX    ${CMAKE_INSTALL_PREFIX})
@@ -98,7 +98,7 @@ macro (_prepare_directories)
 	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 	
 	if (NOT "${CMAKE_BUILD_TYPE}")
-	    compiz_set (CMAKE_BUILD_TYPE debug)
+	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
 	endif (NOT "${CMAKE_BUILD_TYPE}")	
     else ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "compiz" OR
 	  "$ENV{BUILD_GLOBAL}" STREQUAL "true")
@@ -116,7 +116,7 @@ macro (_prepare_directories)
 	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 	
 	if (NOT "${CMAKE_BUILD_TYPE}")
-	    compiz_set (CMAKE_BUILD_TYPE debug)
+	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
 	endif (NOT "${CMAKE_BUILD_TYPE}")
     endif ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "package")
 endmacro (_prepare_directories)
