@@ -615,15 +615,15 @@ PrivateScreen::triggerEdgeEnter (unsigned int       edge,
 bool
 PrivateScreen::handleActionEvent (XEvent *event)
 {
-    CompOption::Vector o;
-    o.reserve (8);
+    static CompOption::Vector o (8);
+    o.resize (8);
 
-    o.push_back (CompOption ("event_window", CompOption::TypeInt));
-    o.push_back (CompOption ("window", CompOption::TypeInt));
-    o.push_back (CompOption ("modifiers", CompOption::TypeInt));
-    o.push_back (CompOption ("x", CompOption::TypeInt));
-    o.push_back (CompOption ("y", CompOption::TypeInt));
-    o.push_back (CompOption ("root", CompOption::TypeInt));
+    o[0].setName ("event_window", CompOption::TypeInt);
+    o[1].setName ("window", CompOption::TypeInt);
+    o[2].setName ("modifiers", CompOption::TypeInt);
+    o[3].setName ("x", CompOption::TypeInt);
+    o[4].setName ("y", CompOption::TypeInt);
+    o[5].setName ("root", CompOption::TypeInt);
 
     switch (event->type) {
     case ButtonPress:
@@ -634,8 +634,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	o[4].value ().set ((int) event->xbutton.y_root);
 	o[5].value ().set ((int) event->xbutton.root);
 
-	o.push_back (CompOption ("button", CompOption::TypeInt));
-	o.push_back (CompOption ("time", CompOption::TypeInt));
+	o[6].setName ("button", CompOption::TypeInt);
+	o[7].setName ("time", CompOption::TypeInt);
 
 	o[6].value ().set ((int) event->xbutton.button);
 	o[7].value ().set ((int) event->xbutton.time);
@@ -655,8 +655,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	o[4].value ().set ((int) event->xbutton.y_root);
 	o[5].value ().set ((int) event->xbutton.root);
 
-	o.push_back (CompOption ("button", CompOption::TypeInt));
-	o.push_back (CompOption ("time", CompOption::TypeInt));
+	o[6].setName ("button", CompOption::TypeInt);
+	o[7].setName ("time", CompOption::TypeInt);
 
 	o[6].value ().set ((int) event->xbutton.button);
 	o[7].value ().set ((int) event->xbutton.time);
@@ -676,8 +676,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	o[4].value ().set ((int) event->xkey.y_root);
 	o[5].value ().set ((int) event->xkey.root);
 
-	o.push_back (CompOption ("keycode", CompOption::TypeInt));
-	o.push_back (CompOption ("time", CompOption::TypeInt));
+	o[6].setName ("keycode", CompOption::TypeInt);
+	o[7].setName ("time", CompOption::TypeInt);
 
 	o[6].value ().set ((int) event->xkey.keycode);
 	o[7].value ().set ((int) event->xkey.time);
@@ -697,8 +697,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	o[4].value ().set ((int) event->xkey.y_root);
 	o[5].value ().set ((int) event->xkey.root);
 
-	o.push_back (CompOption ("keycode", CompOption::TypeInt));
-	o.push_back (CompOption ("time", CompOption::TypeInt));
+	o[6].setName ("keycode", CompOption::TypeInt);
+	o[7].setName ("time", CompOption::TypeInt);
 
 	o[6].value ().set ((int) event->xkey.keycode);
 	o[7].value ().set ((int) event->xkey.time);
@@ -747,8 +747,10 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[4].value ().set ((int) event->xcrossing.y_root);
 		o[5].value ().set ((int) event->xcrossing.root);
 
-		o.push_back (CompOption ("time", CompOption::TypeInt));
+		o[6].setName ("time", CompOption::TypeInt);
 		o[6].value ().set ((int) event->xcrossing.time);
+		
+		o.resize (7);
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -782,8 +784,10 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[4].value ().set ((int) event->xcrossing.y_root);
 		o[5].value ().set ((int) event->xcrossing.root);
 
-		o.push_back (CompOption ("time", CompOption::TypeInt));
+		o[6].setName ("time", CompOption::TypeInt);
 		o[6].value ().set ((int) event->xcrossing.time);
+		
+		o.resize (7);
 
 		if (triggerEdgeEnter (edge, state, o))
 		    return true;
@@ -830,6 +834,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[3].value ().set ((int) 0); /* fixme */
 		o[4].value ().set ((int) 0); /* fixme */
 		o[5].value ().set ((int) root);
+		
+		o.resize (6);
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -874,6 +880,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[3].value ().set ((int) event->xclient.data.l[2] >> 16);
 		o[4].value ().set ((int) event->xclient.data.l[2] & 0xffff);
 		o[5].value ().set ((int) root);
+		
+		o.resize (6);
 
 		if (triggerEdgeEnter (edge, state, o))
 		    return true;
