@@ -509,32 +509,36 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 #define ADD_RECT(data, m, n, x1, y1, x2, y2)	   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (m[it], x1);  \
-	*(data)++ = COMP_TEX_COORD_Y (m[it], y1);  \
+        const GLTexture::Matrix &mat = m[it];	   \
+	*(data)++ = COMP_TEX_COORD_X (mat, x1);    \
+	*(data)++ = COMP_TEX_COORD_Y (mat, y1);    \
     }						   \
     *(data)++ = (x1);				   \
     *(data)++ = (y1);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (m[it], x1);  \
-	*(data)++ = COMP_TEX_COORD_Y (m[it], y2);  \
+        const GLTexture::Matrix &mat = m[it];	   \
+	*(data)++ = COMP_TEX_COORD_X (mat, x1);    \
+	*(data)++ = COMP_TEX_COORD_Y (mat, y2);    \
     }						   \
     *(data)++ = (x1);				   \
     *(data)++ = (y2);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (m[it], x2);  \
-	*(data)++ = COMP_TEX_COORD_Y (m[it], y2);  \
+        const GLTexture::Matrix &mat = m[it];	   \
+	*(data)++ = COMP_TEX_COORD_X (mat, x2);    \
+	*(data)++ = COMP_TEX_COORD_Y (mat, y2);    \
     }						   \
     *(data)++ = (x2);				   \
     *(data)++ = (y2);				   \
     *(data)++ = 0.0;				   \
     for (it = 0; it < n; it++)			   \
     {						   \
-	*(data)++ = COMP_TEX_COORD_X (m[it], x2);  \
-	*(data)++ = COMP_TEX_COORD_Y (m[it], y1);  \
+        const GLTexture::Matrix &mat = m[it];	   \
+	*(data)++ = COMP_TEX_COORD_X (mat, x2);    \
+	*(data)++ = COMP_TEX_COORD_Y (mat, y1);    \
     }						   \
     *(data)++ = (x2);				   \
     *(data)++ = (y1);				   \
@@ -543,32 +547,36 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 #define ADD_QUAD(data, m, n, x1, y1, x2, y2)		\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (m[it], x1, y1);	\
-	*(data)++ = COMP_TEX_COORD_YX (m[it], x1, y1);	\
+        const GLTexture::Matrix &mat = m[it];		\
+	*(data)++ = COMP_TEX_COORD_XY (mat, x1, y1);	\
+	*(data)++ = COMP_TEX_COORD_YX (mat, x1, y1);	\
     }							\
     *(data)++ = (x1);					\
     *(data)++ = (y1);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (m[it], x1, y2);	\
-	*(data)++ = COMP_TEX_COORD_YX (m[it], x1, y2);	\
+        const GLTexture::Matrix &mat = m[it];		\
+	*(data)++ = COMP_TEX_COORD_XY (mat, x1, y2);	\
+	*(data)++ = COMP_TEX_COORD_YX (mat, x1, y2);	\
     }							\
     *(data)++ = (x1);					\
     *(data)++ = (y2);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (m[it], x2, y2);	\
-	*(data)++ = COMP_TEX_COORD_YX (m[it], x2, y2);	\
+        const GLTexture::Matrix &mat = m[it];	        \
+	*(data)++ = COMP_TEX_COORD_XY (mat, x2, y2);	\
+	*(data)++ = COMP_TEX_COORD_YX (mat, x2, y2);	\
     }							\
     *(data)++ = (x2);					\
     *(data)++ = (y2);					\
     *(data)++ = 0.0;					\
     for (it = 0; it < n; it++)				\
     {							\
-	*(data)++ = COMP_TEX_COORD_XY (m[it], x2, y1);	\
-	*(data)++ = COMP_TEX_COORD_YX (m[it], x2, y1);	\
+        const GLTexture::Matrix &mat = m[it];	        \
+	*(data)++ = COMP_TEX_COORD_XY (mat, x2, y1);	\
+	*(data)++ = COMP_TEX_COORD_YX (mat, x2, y1);	\
     }							\
     *(data)++ = (x2);					\
     *(data)++ = (y1);					\
