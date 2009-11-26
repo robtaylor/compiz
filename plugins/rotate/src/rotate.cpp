@@ -420,7 +420,7 @@ RotateScreen::initiate (CompAction         *action,
 	    int x, y;
 
 	    x = CompOption::getIntOptionNamed (options, "x");
-	    y = CompOption::getIntOptionNamed (options, "x");
+	    y = CompOption::getIntOptionNamed (options, "y");
 
 	    mSavedPointer.set (x, y);
 	}
