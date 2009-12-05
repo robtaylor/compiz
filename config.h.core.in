@@ -1,5 +1,5 @@
-#define PACKAGE_STRING "${_compiz_package_string}"
+#define PACKAGE_STRING "@_compiz_package_string@"
 
-#define PACKAGE "${_compiz_package}"
+#define PACKAGE "@_compiz_package@"
 
-#define GETTEXT_PACKAGE "${GETTEXT_PACKAGE}"
+#define GETTEXT_PACKAGE "@GETTEXT_PACKAGE@"
