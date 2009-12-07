@@ -367,7 +367,11 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 			      int                       width2,
 			      int                       height2)
 {
+    
+
     GLWindowPaintAttrib  sAttrib (attrib);
+    bool		 onlyIcon = (gWindow->textures ().empty () ||
+				     baseScreen->showIconOnly ());
     int                  wx, wy;
     float                width, height;
     GLTexture            *icon = NULL;
@@ -381,7 +385,7 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	    gWindow->bind ();
     }
 
-    if (!gWindow->textures ().empty ())
+    if (!onlyIcon)
     {
 	GLMatrix wTransform (transform);
 	int      ww, wh;

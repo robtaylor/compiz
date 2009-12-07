@@ -78,6 +78,7 @@ class BaseSwitchScreen
 	static Visual *findArgbVisual (Display *dpy, int scr);
 
 	virtual bool shouldShowIcon () { return false; }
+	virtual bool showIconOnly () { return false; }
 	virtual void windowRemove (CompWindow *w) {}
 	virtual void doWindowDamage (CompWindow *w);
 	virtual void handleSelectionChange (bool toNext, int nextIdx) {}

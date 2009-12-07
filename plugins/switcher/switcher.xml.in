@@ -142,6 +142,11 @@
 		<_long>Show icon next to thumbnail</_long>
 		<default>true</default>
 	    </option>
+	    <option name="icon_only" type="bool">
+		<_short>Only show icon</_short>
+		<_long>Only show the window icon and do not display a thumbnail at all</_long>
+		<default>false</default>
+	    </option>
 	    <option name="minimized" type="bool">
 		<_short>Minimized</_short>
 		<_long>Show minimized windows</_long>

@@ -63,6 +63,7 @@ class SwitchScreen :
 	void updateWindowList (int count);
 	void createWindowList (int count);
 	bool shouldShowIcon ();
+	bool showIconOnly ();
 	void getMinimizedAndMatch (bool &minimizedOption,
 				   CompMatch *&match);
 	void switchToWindow (bool toNext);
