@@ -77,8 +77,6 @@ class BaseSwitchScreen
 	static bool compareWindows (CompWindow *w1, CompWindow *w2);
 	static Visual *findArgbVisual (Display *dpy, int scr);
 
-	virtual bool shouldShowIcon () { return false; }
-	virtual bool showIconOnly () { return false; }
 	virtual void windowRemove (CompWindow *w) {}
 	virtual void doWindowDamage (CompWindow *w);
 	virtual void handleSelectionChange (bool toNext, int nextIdx) {}
@@ -111,6 +109,12 @@ class BaseSwitchScreen
 class BaseSwitchWindow
 {
     public:
+	enum IconMode {
+	    HideIcon,	    /* show thumbnail, but hide icon */
+	    ShowIcon,	    /* show thumbnail and icon */
+	    ShowIconOnly    /* show only icon */
+	};
+
 	BaseSwitchWindow (BaseSwitchScreen *, CompWindow *);
 
 	void paintThumb (const GLWindowPaintAttrib &attrib,
@@ -136,6 +140,7 @@ class BaseSwitchWindow
 						  int                  x,
 						  int                  y,
 						  GLTexture            *icon) {}
+	virtual IconMode getIconMode () { return HideIcon; }
 	virtual void updateIconPos (int   &wx,
 				    int   &wy,
 				    int   x,

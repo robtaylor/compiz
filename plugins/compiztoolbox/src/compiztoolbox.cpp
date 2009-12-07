@@ -370,8 +370,7 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
     
 
     GLWindowPaintAttrib  sAttrib (attrib);
-    bool		 onlyIcon = (gWindow->textures ().empty () ||
-				     baseScreen->showIconOnly ());
+    IconMode             iconMode;
     int                  wx, wy;
     float                width, height;
     GLTexture            *icon = NULL;
@@ -379,13 +378,18 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
     mask |= PAINT_WINDOW_TRANSFORMED_MASK;
 
+    if (gWindow->textures ().empty ())
+	iconMode = ShowIconOnly;
+    else
+	iconMode = getIconMode ();
+
     if (window->mapNum ())
     {
 	if (gWindow->textures ().empty ())
 	    gWindow->bind ();
     }
 
-    if (!onlyIcon)
+    if (iconMode != ShowIconOnly)
     {
 	GLMatrix wTransform (transform);
 	int      ww, wh;
@@ -446,7 +450,7 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
 	glPopMatrix ();
 
-	if (baseScreen->shouldShowIcon ())
+	if (iconMode != HideIcon)
 	{
 	    icon = gWindow->getIcon (MAX_ICON_SIZE, MAX_ICON_SIZE);
 	    if (icon)
