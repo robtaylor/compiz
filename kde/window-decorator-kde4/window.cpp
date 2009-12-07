@@ -66,10 +66,7 @@ KWD::Window::Window (WId  parentId,
 		     WId  clientId,
 		     WId  frame,
 		     Type type,
-		     int  x,
-		     int  y,
-		     int  w,
-		     int  h) :
+		     QRect geometry) :
     mType (type),
     mParentId (parentId),
     mFrame (0),
@@ -140,7 +137,7 @@ KWD::Window::Window (WId  parentId,
 
 	updateFrame (frame);
 
-	mGeometry = QRect (x, y, w, h);
+	mGeometry = geometry;
 
 	getWindowProtocols ();
     }
@@ -767,7 +764,6 @@ KWD::Window::createDecoration (void)
     decor->init ();
 
     mDecor = decor;
-    
     mDecor->widget ()->installEventFilter (this);
 
     if (mType != Normal2D)
@@ -801,6 +797,12 @@ KWD::Window::createDecoration (void)
 	    return;
     }
 
+    QTimer::singleShot (0, this, SLOT(resizeDecorationTimeout ()));
+}
+
+void
+KWD::Window::resizeDecorationTimeout ()
+{
     resizeDecoration (true);
 }
 
@@ -868,16 +870,15 @@ KWD::Window::resizeDecoration (bool force)
 
     w = mGeometry.width () + mExtents.left + mExtents.right;
     h = mGeometry.height () + mExtents.top + mExtents.bottom;
-    
+
     if (!force)
     {
-      if (w == decorWidget ()->width () && h == decorWidget ()->height ())
-        return;
+	if (w == decorWidget ()->width () && h == decorWidget ()->height ())
+	    return;
     }
-    
+
     /* reset shape */
     setMask (QRegion (), 0);
-    
 
     if (mPixmap)
     {
@@ -900,9 +901,9 @@ KWD::Window::resizeDecoration (bool force)
     mPixmapQt.fill (Qt::transparent);
 
     if (mPaintRedirector)
-      mUpdateProperty = true;
+	mUpdateProperty = true;
     else
-      updateProperty ();
+	updateProperty ();
 }
 
 void
@@ -1519,7 +1520,7 @@ KWD::Window::moveWindow (QMouseEvent *qme)
     Decorator::rootInfo ()->restackRequest (mClientId, NET::FromApplication,
 			 		    None, Above,
 					    QX11Info::appTime());
-					    
+
     Decorator::rootInfo ()->moveResizeRequest (mClientId,
 					       p.x (),
 					       p.y (),

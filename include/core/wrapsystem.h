@@ -68,13 +68,12 @@
 #define WRAPABLE_HND_FUNC_RETURN(num, rtype, func, ...)			\
 {									\
     unsigned int curr = mCurrFunction[num];				\
-    rtype rv;								\
     while (mCurrFunction[num] < mInterface.size () &&			\
            !mInterface[mCurrFunction[num]].enabled[num])		\
         mCurrFunction[num]++;						\
     if (mCurrFunction[num] < mInterface.size ())			\
     {									\
-	rv = mInterface[mCurrFunction[num]++].obj-> func (__VA_ARGS__); \
+	rtype rv = mInterface[mCurrFunction[num]++].obj-> func (__VA_ARGS__); \
 	mCurrFunction[num] = curr;					\
 	return rv;							\
     }									\

@@ -63,7 +63,7 @@ class Window: public QObject, public KDecorationBridgeUnstable {
 
     public:
 	Window (WId parentId, WId clientId, WId frame, Type type,
-		int x = 0, int y = 0, int w = 1, int h = 1);
+		QRect geometry = QRect ());
 	~Window (void);
 
 	virtual bool isActive (void) const;
@@ -194,6 +194,7 @@ class Window: public QObject, public KDecorationBridgeUnstable {
 	Cursor positionToCursor (QPoint pos);
 
     private slots:
+	void resizeDecorationTimeout ();
 	void handlePopupActivated (QAction *action);
 	void handleOpacityPopupActivated (QAction *action);
 	void handleDesktopPopupActivated (QAction *action);

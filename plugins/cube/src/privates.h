@@ -70,7 +70,7 @@ class PrivateCubeScreen :
 
 	void outputChangeNotify ();
 
-	CompWindowList getWindowPaintList ();
+	const CompWindowList & getWindowPaintList ();
 
 
 
@@ -170,6 +170,8 @@ class PrivateCubeScreen :
 	int   mLastOpacityIndex;
 
 	bool mRecalcOutput;
+	
+	CompWindowList mReversedWindowList;
 };
 
 class PrivateCubeWindow :
