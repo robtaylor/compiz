@@ -734,8 +734,10 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
 	if (optionGetBringToFront ())
 	{
+	    CompWindow *frontWindow = ::screen->clientList ().back ();
+
 	    zoomed = zoomedWindow;
-	    if (zoomed && !zoomed->destroyed ())
+	    if (zoomed && !zoomed->destroyed () && zoomed != frontWindow)
 	    {
 		CompWindow *w;
 
@@ -744,8 +746,11 @@ SwitchScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 		zoomedAbove = (w) ? w->id () : None;
 
 		screen->unhookWindow (zoomed);
-		screen->insertWindow (zoomed,
-				      screen->clientList ().back ()->id ());
+		screen->insertWindow (zoomed, frontWindow->id ());
+	    }
+	    else
+	    {
+		zoomed = NULL;
 	    }
 	}
 	else
