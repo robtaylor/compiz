@@ -2,6 +2,7 @@ set (_headers
     action.h
     atoms.h
     core.h
+    countedlist.h
     icon.h
     match.h
     modifierhandler.h

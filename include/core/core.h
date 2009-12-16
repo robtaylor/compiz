@@ -80,5 +80,6 @@ typedef XBool Bool;
 #include <core/session.h>
 #include <core/size.h>
 #include <core/region.h>
+#include <core/countedlist.h>
 
 #endif
