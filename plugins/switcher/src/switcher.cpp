@@ -98,9 +98,10 @@ SwitchScreen::createWindowList (int count)
 
     foreach (CompWindow *w, screen->windows ())
     {
-	if (SwitchWindow::get (w)->isSwitchWin ())
+	SWITCH_WINDOW (w);
+
+	if (sw->isSwitchWin ())
 	{
-	    SWITCH_WINDOW (w);
 	    windows.push_back (w);
 
 	    sw->cWindow->damageRectSetEnabled (sw, true);
@@ -450,6 +451,8 @@ SwitchScreen::windowRemove (CompWindow *w)
 	CompWindow *selected;
 	CompWindow *old;
 
+	int allWindowsWidth;
+
 	SWITCH_WINDOW (w);
 
 	if (!sw->isSwitchWin (true))
@@ -490,7 +493,7 @@ SwitchScreen::windowRemove (CompWindow *w)
 
 	count = windows.size ();
 
-	if (windows.size () == 2)
+	if (count == 2)
 	{
 	    if (windows.front () == windows.back ())
 	    {
@@ -500,11 +503,10 @@ SwitchScreen::windowRemove (CompWindow *w)
 	    else
 	    {
 		windows.push_back (windows.front ());
-		windows.push_back ((*++windows.begin ()));
+		windows.push_back (*++windows.begin ());
 	    }
 	}
-
-	if (windows.size () == 0)
+	else if (count == 0)
 	{
 	    CompOption::Vector o (0);
 
@@ -521,6 +523,8 @@ SwitchScreen::windowRemove (CompWindow *w)
 
 	updateWindowList (count);
 
+	allWindowsWidth = windows.size () * WIDTH;
+
 	foreach (CompWindow *w, windows)
 	{
 	    selectedWindow = w;
@@ -529,8 +533,8 @@ SwitchScreen::windowRemove (CompWindow *w)
 		break;
 
 	    pos -= WIDTH;
-	    if (pos < -(int)windows.size () * WIDTH)
-		pos += (int)windows.size () * WIDTH;
+	    if (pos < -allWindowsWidth)
+		pos += allWindowsWidth;
 	}
 
 	if (popupWindow)
@@ -635,6 +639,9 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
     {
 	int   steps, m;
 	float amount, chunk;
+	int   allWindowsWidth;
+
+	allWindowsWidth = windows.size () * WIDTH;
 
 	amount = msSinceLastPaint * 0.05f * optionGetSpeed ();
 	steps  = amount / (0.5f * optionGetTimestep ());
@@ -685,10 +692,10 @@ SwitchScreen::preparePaint (int msSinceLastPaint)
 
 	    move -= m;
 	    pos  += m;
-	    if (pos < -(int)windows.size () * WIDTH)
-		pos += (int)windows.size () * WIDTH;
+	    if (pos < -allWindowsWidth)
+		pos += allWindowsWidth;
 	    else if (pos > 0)
-		pos -= (int)windows.size () * WIDTH;
+		pos -= allWindowsWidth;
 
 	    translate  += tVelocity * chunk;
 	    sTranslate += sVelocity * chunk;

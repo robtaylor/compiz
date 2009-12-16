@@ -624,7 +624,6 @@ BaseSwitchScreen::handleEvent (XEvent *event)
 BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
-    windows (),
     popupWindow (None),
     selectedWindow (NULL),
     lastActiveNum (0),
