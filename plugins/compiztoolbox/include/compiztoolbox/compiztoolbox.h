@@ -29,6 +29,7 @@
 #include <decoration.h>
 #include <core/core.h>
 #include <core/atoms.h>
+#include <core/countedlist.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -89,7 +90,7 @@ class BaseSwitchScreen
 	Atom selectWinAtom;
 	Atom selectFgColorAtom;
 
-	CompWindowList windows;
+	CountedList<CompWindow*> windows;
 
 	Window       popupWindow;
 	CompWindow   *selectedWindow;
