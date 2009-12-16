@@ -1226,6 +1226,8 @@ CompWindow::sendConfigureNotify ()
 void
 CompWindow::map ()
 {
+    windowNotify (CompWindowNotifyBeforeMap);
+
     if (isViewable ())
 	return;
 
