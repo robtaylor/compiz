@@ -140,6 +140,16 @@ CompRegion::contains (const CompRect &r) const
     return result == RectangleIn;
 }
 
+bool
+CompRegion::contains (int x, int y, int width, int height) const
+{
+    int result;
+
+    result = XRectInRegion (handle (), x, y, width, height);
+
+    return result == RectangleIn;
+}
+
 CompRegion
 CompRegion::intersected (const CompRegion &r) const
 {
