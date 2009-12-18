@@ -129,6 +129,12 @@ class ResizeScreen :
 	Cursor downRightCursor;
 	Cursor middleCursor;
 	Cursor cursor[NUM_KEYS];
+
+	bool       isConstrained;
+	CompRegion constraintRegion;
+	bool       inRegionStatus;
+	int        lastGoodHotSpotY;
+	CompSize   lastGoodSize;
 };
 
 class ResizeWindow :

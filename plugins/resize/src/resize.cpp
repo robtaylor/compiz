@@ -311,11 +311,17 @@ resizeInitiate (CompAction         *action,
 	if (rs->grabIndex)
 	{
 	    BoxRec box;
+	    unsigned int grabMask = CompWindowGrabResizeMask |
+				    CompWindowGrabButtonMask;
+	    bool sourceExternalApp =
+		CompOption::getBoolOptionNamed (options, "external", false);
+
+	    if (sourceExternalApp)
+		grabMask |= CompWindowGrabExternalAppMask;
 
 	    rs->releaseButton = button;
 
-	    w->grabNotify (x, y, state, CompWindowGrabResizeMask |
-			   CompWindowGrabButtonMask);
+	    w->grabNotify (x, y, state, grabMask);
 
 	    /* using the paint rectangle is enough here
 	       as we don't have any stretch yet */
@@ -330,6 +336,24 @@ resizeInitiate (CompAction         *action,
 		yRoot = server.y () + (server.height () / 2);
 
 		screen->warpPointer (xRoot - pointerX, yRoot - pointerY);
+	    }
+
+	    rs->isConstrained = sourceExternalApp;
+
+	    if (sourceExternalApp)
+	    {
+		/* Prevent resizing beyond work area edges when resize is
+		   initiated externally (e.g. with window frame or menu)
+		   and not with a key (e.g. alt+button) */
+
+		rs->inRegionStatus   = false;
+		rs->lastGoodHotSpotY = -1;
+		rs->lastGoodSize     = w->serverSize ();
+
+		/* Combine the work areas of all outputs */
+		rs->constraintRegion = emptyRegion;
+		foreach (CompOutput &output, ::screen->outputDevs ())
+		    rs->constraintRegion += output.workArea ();
 	    }
 	}
     }
@@ -546,7 +570,9 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
     if (grabIndex)
     {
 	BoxRec box;
-	int    wi, he;
+	int    wi, he;                  /* size of window contents */
+	int    wX, wY, wWidth, wHeight; /* rect. for window contents+borders */
+	int    workAreaSnapDistance = 15;
 
 	wi = savedGeometry.width;
 	he = savedGeometry.height;
@@ -650,6 +676,233 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 
 	w->constrainNewWindowSize (wi, he, &wi, &he);
 
+	/* compute rect. for window + borders */
+	wWidth  = wi + w->input ().left + w->input ().right;
+	wHeight = he + w->input ().top + w->input ().bottom;
+
+	if (mask & ResizeLeftMask)
+	    wX = savedGeometry.x + savedGeometry.width -
+		 (wi + w->input ().left);
+	else
+	    wX = savedGeometry.x - w->input ().left;
+
+	if (mask & ResizeUpMask)
+	    wY = savedGeometry.y + savedGeometry.height -
+		 (he + w->input ().top);
+	else
+	    wY = savedGeometry.y - w->input ().top;
+
+	/* Check if resized edge(s) are near output work-area boundaries */
+	foreach (CompOutput &output, ::screen->outputDevs ())
+	{
+	    const CompRect &workArea = output.workArea ();
+
+	    /* if window and work-area intersect in x axis */
+	    if (wX + wWidth > workArea.x () &&
+		wX < workArea.x2 ())
+	    {
+		if (mask & ResizeLeftMask)
+		{
+		    int dw = workArea.x () - wX;
+
+		    if (0 < dw && dw < workAreaSnapDistance)
+		    {
+			wi     -= dw;
+			wWidth -= dw;
+			wX     += dw;
+		    }
+		}
+		else if (mask & ResizeRightMask)
+		{
+		    int dw = wX + wWidth - workArea.x2 ();
+
+		    if (0 < dw && dw < workAreaSnapDistance)
+		    {
+			wi     -= dw;
+			wWidth -= dw;
+		    }
+		}
+	    }
+
+	    /* if window and work-area intersect in y axis */
+	    if (wY + wHeight > workArea.y () &&
+		wY < workArea.y2 ())
+	    {
+		if (mask & ResizeUpMask)
+		{
+		    int dh = workArea.y () - wY;
+
+		    if (0 < dh && dh < workAreaSnapDistance)
+		    {
+			he      -= dh;
+			wHeight -= dh;
+			wY      += dh;
+		    }
+		}
+		else if (mask & ResizeDownMask)
+		{
+		    int dh = wY + wHeight - workArea.y2 ();
+
+		    if (0 < dh && dh < workAreaSnapDistance)
+		    {
+			he      -= dh;
+			wHeight -= dh;
+		    }
+		}
+	    }
+	}
+
+	if (isConstrained)
+	{
+	    int minWidth  = 50;
+	    int minHeight = 50;
+
+	    /* rect. for a minimal height window + borders
+	       (used for the constraining in X axis) */
+	    int minimalInputHeight = minHeight +
+				     w->input ().top + w->input ().bottom;
+
+	    /* small hot-spot square (on window's corner or edge) that is to be
+	       constrained to the combined output work-area region */
+	    int x, y;
+	    int width = w->input ().top; /* square size = title bar height */
+	    int height = width;
+	    bool status; /* whether or not hot-spot is in the region */
+
+	    /* compute x & y for constrained hot-spot rect */
+	    if (mask & ResizeLeftMask)
+		x = wX;
+	    else if (mask & ResizeRightMask)
+		x = wX + wWidth - width;
+	    else
+		x = MIN (MAX (xRoot, wX), wX + wWidth - width);
+
+	    if (mask & ResizeUpMask)
+		y = wY;
+	    else if (mask & ResizeDownMask)
+		y = wY + wHeight - height;
+	    else
+		y = MIN (MAX (yRoot, wY), wY + wHeight - height);
+
+	    status = constraintRegion.contains (x, y, width, height);
+
+	    /* only constrain movement if previous position was valid */
+	    if (inRegionStatus)
+	    {
+		bool xStatus;
+		int yForXResize;
+		int nx = x;
+		int nw = wi;
+		int nh = he;
+
+		if (mask & (ResizeLeftMask | ResizeRightMask))
+		{
+		    xStatus = status;
+
+		    if (mask & ResizeUpMask)
+			yForXResize = wY + wHeight - minimalInputHeight;
+		    else if (mask & ResizeDownMask)
+			yForXResize = wY + minimalInputHeight - height;
+		    else
+			yForXResize = y;
+
+		    if (!constraintRegion.contains (x, yForXResize,
+						    width, height))
+		    {
+			if (lastGoodHotSpotY >= 0)
+			    yForXResize = lastGoodHotSpotY;
+			else
+			    yForXResize = y;
+		    }
+		}
+		if (mask & ResizeLeftMask)
+		{
+		    while ((nw > minWidth) && !xStatus)
+		    {
+			xStatus = constraintRegion.contains (nx, yForXResize,
+							     width, height);
+			if (!xStatus)
+			{
+			    nw--;
+			    nx++;
+			}
+		    }
+		    if (nw > minWidth)
+		    {
+			x = nx;
+			wi = nw;
+		    }
+		}
+		else if (mask & ResizeRightMask)
+		{
+		    while ((nw > minWidth) && !xStatus)
+		    {
+			xStatus = constraintRegion.contains (nx, yForXResize,
+							     width, height);
+			if (!xStatus)
+			{
+			    nw--;
+			    nx--;
+			}
+		    }
+		    if (nw > minWidth)
+		    {
+			x = nx;
+			wi = nw;
+		    }
+		}
+
+		if (mask & ResizeUpMask)
+		{
+		    while ((nh > minHeight) && !status)
+		    {
+			status = constraintRegion.contains (x, y,
+							    width, height);
+			if (!status)
+			{
+			    nh--;
+			    y++;
+			}
+		    }
+		    if (nh > minHeight)
+			he = nh;
+		}
+		else if (mask & ResizeDownMask)
+		{
+		    while ((nh > minHeight) && !status)
+		    {
+			status = constraintRegion.contains (x, y,
+							    width, height);
+			if (!status)
+			{
+			    nh--;
+			    y--;
+			}
+		    }
+		    if (nh > minHeight)
+			he = nh;
+		}
+
+		if (((mask & (ResizeLeftMask | ResizeRightMask)) && xStatus) ||
+		    ((mask & (ResizeUpMask | ResizeDownMask)) && status))
+		{
+		    /* hot-spot inside work-area region, store good values */
+		    lastGoodHotSpotY = y;
+		    lastGoodSize     = CompSize (wi, he);
+		}
+		else
+		{
+		    /* failed to find a good hot-spot position, restore size */
+		    wi = lastGoodSize.width ();
+		    he = lastGoodSize.height ();
+		}
+	    }
+	    else
+	    {
+		inRegionStatus = status;
+	    }
+	}
+
 	if (mode != ResizeOptions::ModeNormal)
 	{
 	    if (mode == ResizeOptions::ModeStretch)
@@ -741,6 +994,10 @@ ResizeScreen::handleEvent (XEvent *event)
 				     CompOption::TypeInt));
 			o[0].value ().set ((int) event->xclient.window);
 
+			o.push_back (CompOption ("external",
+				     CompOption::TypeBool));
+			o[1].value ().set (true);
+
 			if (event->xclient.data.l[2] == WmMoveResizeSizeKeyboard)
 			{
 			    resizeInitiateDefaultMode (&optionGetInitiateKey (),
@@ -782,14 +1039,14 @@ ResizeScreen::handleEvent (XEvent *event)
 				o.push_back (CompOption ("button",
 					     CompOption::TypeInt));
 
-				o[1].value ().set ((int) mods);
-				o[2].value ().set
-				    ((int) event->xclient.data.l[0]);
+				o[2].value ().set ((int) mods);
 				o[3].value ().set
-				    ((int) event->xclient.data.l[1]);
+				    ((int) event->xclient.data.l[0]);
 				o[4].value ().set
-				    ((int) mask[event->xclient.data.l[2]]);
+				    ((int) event->xclient.data.l[1]);
 				o[5].value ().set
+				    ((int) mask[event->xclient.data.l[2]]);
+				o[6].value ().set
 				    ((int) (event->xclient.data.l[3] ?
 				     event->xclient.data.l[3] : -1));
 
@@ -1023,7 +1280,8 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     gScreen (GLScreen::get (s)),
     cScreen (CompositeScreen::get (s)),
     w (NULL),
-    releaseButton (0)
+    releaseButton (0),
+    isConstrained (false)
 {
 
     Display *dpy = s->dpy ();
