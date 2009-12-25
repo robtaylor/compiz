@@ -85,6 +85,8 @@ class MoveScreen :
 	int	snapBackY;
 
 	bool hasCompositing;
+
+	bool yConstrained;
 };
 
 class MoveWindow :

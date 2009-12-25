@@ -52,6 +52,7 @@ moveInitiate (CompAction      *action,
 	CompRect     workArea;
 	unsigned int mods;
 	int          x, y, button;
+	bool         sourceExternalApp;
 
 	CompScreen *s = screen;
 
@@ -98,6 +99,10 @@ moveInitiate (CompAction      *action,
 	lastPointerX = x;
 	lastPointerY = y;
 
+	sourceExternalApp =
+	    CompOption::getBoolOptionNamed (options, "external", false);
+	ms->yConstrained = sourceExternalApp && ms->optionGetConstrainY ();
+
 	ms->origState = w->state ();
 
 	workArea = s->getWorkareaForOutput (w->outputDevice ());
@@ -110,12 +115,17 @@ moveInitiate (CompAction      *action,
 
 	if (ms->grab)
 	{
+	    unsigned int grabMask = CompWindowGrabMoveMask |
+				    CompWindowGrabButtonMask;
+
+	    if (sourceExternalApp)
+		grabMask |= CompWindowGrabExternalAppMask;
+
 	    ms->w = w;
 
 	    ms->releaseButton = button;
 
-	    w->grabNotify (x, y, mods,CompWindowGrabMoveMask |
-			   CompWindowGrabButtonMask);
+	    w->grabNotify (x, y, mods, grabMask);
 
 	    if (state & CompAction::StateInitKey)
 	    {
@@ -321,7 +331,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    workArea = s->getWorkareaForOutput (w->outputDevice ());
 
-	    if (ms->optionGetConstrainY ())
+	    if (ms->yConstrained)
 	    {
 		if (!ms->region)
 		    ms->region = moveGetYConstrainRegion (s);
@@ -560,6 +570,10 @@ MoveScreen::handleEvent (XEvent *event)
 			o.push_back (CompOption ("window", CompOption::TypeInt));
 			o[0].value ().set ((int) event->xclient.window);
 
+			o.push_back (CompOption ("external",
+				     CompOption::TypeBool));
+			o[1].value ().set (true);
+
 			if (event->xclient.data.l[2] == WmMoveResizeMoveKeyboard)
 			{
 			    moveInitiate (&optionGetInitiateKey (),
@@ -579,16 +593,16 @@ MoveScreen::handleEvent (XEvent *event)
 			    if (mods & Button1Mask)
 			    {
 				o.push_back (CompOption ("modifiers", CompOption::TypeInt));
-				o[1].value ().set ((int) mods);
+				o[2].value ().set ((int) mods);
 
 				o.push_back (CompOption ("x", CompOption::TypeInt));
-				o[2].value ().set ((int) event->xclient.data.l[0]);
+				o[3].value ().set ((int) event->xclient.data.l[0]);
 
 				o.push_back (CompOption ("y", CompOption::TypeInt));
-				o[3].value ().set ((int) event->xclient.data.l[1]);
+				o[4].value ().set ((int) event->xclient.data.l[1]);
 
 				o.push_back (CompOption ("button", CompOption::TypeInt));
-				o[4].value ().set ((int) (event->xclient.data.l[3] ?
+				o[5].value ().set ((int) (event->xclient.data.l[3] ?
 					       event->xclient.data.l[3] : -1));
 
 				moveInitiate (&optionGetInitiateButton (),
@@ -670,7 +684,8 @@ MoveScreen::MoveScreen (CompScreen *screen) :
     status (RectangleOut),
     releaseButton (0),
     grab (NULL),
-    hasCompositing (false)
+    hasCompositing (false),
+    yConstrained (false)
 {
 
     updateOpacity ();
