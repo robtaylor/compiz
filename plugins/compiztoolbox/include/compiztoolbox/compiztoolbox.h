@@ -83,6 +83,7 @@ class BaseSwitchScreen
 	virtual void handleSelectionChange (bool toNext, int nextIdx) {}
 	virtual void getMinimizedAndMatch (bool &minimizedOption,
 					   CompMatch *&matchOption);
+	virtual bool getMipmap () { return false; }
 
 	CompositeScreen *cScreen;
 	GLScreen        *gScreen;

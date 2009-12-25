@@ -65,6 +65,7 @@ class SwitchScreen :
 
 	void getMinimizedAndMatch (bool &minimizedOption,
 				   CompMatch *&match);
+	bool getMipmap ();
 	void switchToWindow (bool toNext);
 	void handleSelectionChange (bool toNext, int nextIdx);
 	int countWindows ();

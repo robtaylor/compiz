@@ -144,6 +144,12 @@ SwitchScreen::getMinimizedAndMatch (bool &minimizedOption,
     matchOption = &optionGetWindowMatch ();
 }
 
+bool
+SwitchScreen::getMipmap ()
+{
+    return optionGetMipmap ();
+}
+
 void
 SwitchScreen::switchToWindow (bool toNext)
 {
@@ -954,7 +960,6 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 
     if (window->id () == sScreen->popupWindow)
     {
-	GLenum         filter;
 	int            x, y, x1, x2, cx, i;
 	unsigned short color[4];
 
@@ -974,11 +979,6 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 
 	x = x1 + sScreen->pos;
 	y = g.y () + SPACE;
-
-	filter = gScreen->textureFilter ();
-
-	if (sScreen->optionGetMipmap ())
-	    gScreen->setTextureFilter (GL_LINEAR_MIPMAP_LINEAR);
 
 	glPushAttrib (GL_SCISSOR_BIT);
 
@@ -1006,8 +1006,6 @@ SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	}
 
 	glPopAttrib ();
-
-	gScreen->setTextureFilter (filter);
 
 	cx = g.x () + (g.width () >> 1);
 

@@ -391,6 +391,7 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 
     if (iconMode != ShowIconOnly)
     {
+	GLenum   filter;
 	GLMatrix wTransform (transform);
 	int      ww, wh;
 	int      addWindowGeometryIndex =
@@ -441,12 +442,19 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	glPushMatrix ();
 	glLoadMatrixf (wTransform.getMatrix ());
 
+	filter = gScreen->textureFilter ();
+
+	if (baseScreen->getMipmap ())
+	    gScreen->setTextureFilter (GL_LINEAR_MIPMAP_LINEAR);
+
 	/* XXX: replacing the addWindowGeometry function like this is
 	   very ugly but necessary until the vertex stage has been made
 	   fully pluggable. */
 	gWindow->glAddGeometrySetCurrentIndex (MAXSHORT);
 	gWindow->glDraw (wTransform, fragment, infiniteRegion, mask);
 	gWindow->glAddGeometrySetCurrentIndex (addWindowGeometryIndex);
+
+	gScreen->setTextureFilter (filter);
 
 	glPopMatrix ();
 
