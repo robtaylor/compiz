@@ -1368,6 +1368,43 @@ WobblyScreen::preparePaint (int msSinceLastPaint)
 			    ww->model->reduceEdgeEscapeVelocity ();
 			    ww->wobblingMask |= WobblyInitialMask;
 			}
+
+			if (!ww->grabbed && constraintBox)
+			{
+			    float topmostYPos    = MAXSHORT;
+			    float bottommostYPos = MINSHORT;
+			    int   decorTop;
+			    int   decorTitleBottom;
+
+			    for (int i = 0; i < GRID_WIDTH; i++)
+			    {
+				int modelY = model->objects[i].position.y;
+
+				/* find the bottommost top-row object */
+				bottommostYPos = MAX (modelY, bottommostYPos);
+
+				/* find the topmost top-row object */
+				topmostYPos = MIN (modelY, topmostYPos);
+			    }
+
+			    decorTop = bottommostYPos +
+				       w->output ().top - w->input ().top;
+			    decorTitleBottom = topmostYPos + w->output ().top;
+
+			    if (constraintBox->y () > decorTop)
+			    {
+				/* constrain to work area box top edge */
+				model->move (0, constraintBox->y () - decorTop);
+				model->calcBounds ();
+			    }
+			    else if (constraintBox->y2 () < decorTitleBottom)
+			    {
+				/* constrain to work area box bottom edge */
+				model->move (0, constraintBox->y2 () -
+						decorTitleBottom);
+				model->calcBounds ();
+			    }
+			}
 		    }
 		    else
 		    {
@@ -1459,6 +1496,8 @@ WobblyScreen::donePaint ()
 	cScreen->preparePaintSetEnabled (this, false);
 	cScreen->donePaintSetEnabled (this, false);
 	gScreen->glPaintOutputSetEnabled (this, false);
+
+	constraintBox = NULL;
     }
 
     cScreen->donePaint ();
@@ -2132,6 +2171,32 @@ WobblyWindow::grabNotify (int          x,
 
 	    grabbed = true;
 
+	    /* Update isConstrained and work area box at grab time */
+	    wScreen->yConstrained = false;
+	    if (mask & CompWindowGrabExternalAppMask)
+	    {
+		CompPlugin *pMove;
+
+		pMove = CompPlugin::find ("move");
+		if (pMove)
+		{
+		    CompOption::Vector &moveOptions =
+			pMove->vTable->getOptions ();
+
+		    wScreen->yConstrained =
+			CompOption::getBoolOptionNamed (moveOptions,
+							"constrain_y", true);
+		}
+	    }
+
+	    if (wScreen->yConstrained)
+	    {
+		int output =
+		    ::screen->outputDeviceForGeometry (window->geometry ());
+		wScreen->constraintBox =
+		    &::screen->outputDevs ()[output].workArea ();
+	    }
+
 	    if (mask & CompWindowGrabMoveMask)
 	    {
 		model->disableSnapping ();
@@ -2241,7 +2306,9 @@ WobblyScreen::WobblyScreen (CompScreen *s) :
     grabMask (0),
     grabWindow (NULL),
     moveWindow (false),
-    snapping (false)
+    snapping (false),
+    yConstrained (false),
+    constraintBox (NULL)
 {
     optionSetSnapKeyInitiate (boost::bind
 			      (&WobblyScreen::enableSnapping, this));

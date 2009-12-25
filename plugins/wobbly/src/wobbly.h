@@ -237,6 +237,9 @@ public:
     bool         moveWindow;
 
     bool snapping;
+
+    bool           yConstrained;
+    const CompRect *constraintBox;
 };
 
 class WobblyWindow :
