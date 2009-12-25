@@ -159,7 +159,7 @@ class BaseSwitchWindow
 	CompWindow       *window;
 };
 
-#define ICON_SIZE 64
+#define ICON_SIZE 48
 #define MAX_ICON_SIZE 256
 
 #endif

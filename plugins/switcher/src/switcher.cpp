@@ -894,10 +894,15 @@ SwitchWindow::updateIconTexturedWindow (GLWindowPaintAttrib  &sAttrib,
 					int                  y,
 					GLTexture            *icon)
 {
-    sAttrib.xScale = sAttrib.yScale = 1.0f;
+    sAttrib.xScale = (float) ICON_SIZE / icon->width ();
+    sAttrib.yScale = (float) ICON_SIZE / icon->height ();
+    if (sAttrib.xScale < sAttrib.yScale)
+	sAttrib.yScale = sAttrib.xScale;
+    else
+	sAttrib.xScale = sAttrib.yScale;
 
-    wx = x + WIDTH  - icon->width ()  - SPACE;
-    wy = y + HEIGHT - icon->height () - SPACE;
+    wx = x + WIDTH  - icon->width ()  * sAttrib.xScale - SPACE;
+    wy = y + HEIGHT - icon->height () * sAttrib.yScale - SPACE;
 }
 
 void
@@ -910,20 +915,13 @@ SwitchWindow::updateIconNontexturedWindow (GLWindowPaintAttrib  &sAttrib,
 					   int                  y,
 					   GLTexture            *icon)
 {
-    int iw, ih;
+    float iw, ih;
 
     iw = width  - SPACE;
     ih = height - SPACE;
 
-    if ((int)icon->width () < (iw >> 1))
-	sAttrib.xScale = (iw / icon->width ());
-    else
-	sAttrib.xScale = 1.0f;
-
-    if ((int)icon->height () < (ih >> 1))
-	sAttrib.yScale = (ih / icon->height ());
-    else
-	sAttrib.yScale = 1.0f;
+    sAttrib.xScale = iw / icon->width ();
+    sAttrib.yScale = ih / icon->height ();
 
     if (sAttrib.xScale < sAttrib.yScale)
 	sAttrib.yScale = sAttrib.xScale;
