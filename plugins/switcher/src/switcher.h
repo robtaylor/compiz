@@ -152,11 +152,7 @@ typedef struct {
 #define HEIGHT 192
 #define SPACE  10
 
-#define SWITCH_ZOOM 0.1f
-
 #define BOX_WIDTH 3
-
-#define ICON_SIZE 64
 
 #define WINDOW_WIDTH(count) (WIDTH * (count) + (SPACE << 1))
 #define WINDOW_HEIGHT (HEIGHT + (SPACE << 1))
