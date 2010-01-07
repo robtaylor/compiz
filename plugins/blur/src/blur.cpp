@@ -1040,8 +1040,8 @@ BlurScreen::fboPrologue ()
 				     target, texture[1],
 				     0);
 
-	fboStatus = (*GL::checkFramebufferStatus) (GL_FRAMEBUFFER_EXT);
-	if (fboStatus != GL_FRAMEBUFFER_COMPLETE_EXT)
+	int currStatus = (*GL::checkFramebufferStatus) (GL_FRAMEBUFFER_EXT);
+	if (currStatus != GL_FRAMEBUFFER_COMPLETE_EXT)
 	{
 	    compLogMessage ("blur", CompLogLevelError,
 			    "Framebuffer incomplete");
@@ -1053,6 +1053,8 @@ BlurScreen::fboPrologue ()
 
 	    return false;
 	}
+	else
+	    fboStatus = true;
     }
 
     glPushAttrib (GL_VIEWPORT_BIT | GL_ENABLE_BIT);
