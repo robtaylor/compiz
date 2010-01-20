@@ -266,6 +266,9 @@ class CompWindow :
 	            Window     aboveId);
 	~CompWindow ();
 
+	/* this is the geometry retrieved from the 
+	 * last ConfigureNotify event received
+	 */
 	Geometry & geometry () const;
 
 	int x () const;
@@ -277,6 +280,9 @@ class CompWindow :
 	int height () const;
 	CompSize size () const;
 
+	/* this is the 
+         * geometry last sent to the server
+         */
 	Geometry & serverGeometry () const;
 
 	int serverX () const;
@@ -387,6 +393,7 @@ class CompWindow :
 
 	void moveInputFocusToOtherWindow ();
 
+	/* wraps XConfigureWindow and updates serverGeometry */
 	void configureXWindow (unsigned int valueMask,
 			       XWindowChanges *xwc);
 
