@@ -1,5 +1,5 @@
 /*
- * Copyright © 2008 Dennis Kasprzyk
+ * Copyright Â© 2008 Dennis Kasprzyk
  *
  * Permission to use, copy, modify, distribute, and sell this software
  * and its documentation for any purpose is hereby granted without
@@ -67,3 +67,34 @@ CompPoint::operator!= (const CompPoint &point) const
 {
     return !(*this == point);
 }
+
+CompPoint &
+CompPoint::operator+= (const CompPoint &point)
+{
+    mX += point.mX;
+    mY += point.mY;
+
+    return *this;
+}
+
+CompPoint
+CompPoint::operator+ (const CompPoint &rhs) const
+{
+    return CompPoint (mX + rhs.mX, mY + rhs.mY);
+}
+
+CompPoint &
+CompPoint::operator-= (const CompPoint &point)
+{
+    mX -= point.mX;
+    mY -= point.mY;
+
+    return *this;
+}
+
+CompPoint
+CompPoint::operator- (const CompPoint &rhs) const
+{
+    return CompPoint (mX - rhs.mX, mY - rhs.mY);
+}
+

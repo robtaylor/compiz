@@ -44,6 +44,12 @@ class CompPoint {
 
 	bool operator== (const CompPoint &) const;
 	bool operator!= (const CompPoint &) const;
+	
+	CompPoint & operator-= (const CompPoint &);
+	CompPoint & operator+= (const CompPoint &);
+	
+	CompPoint operator+ (const CompPoint &) const;
+	CompPoint operator- (const CompPoint &) const;
 
 	typedef std::vector<CompPoint> vector;
 	typedef std::vector<CompPoint *> ptrVector;
