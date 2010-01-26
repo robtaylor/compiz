@@ -453,7 +453,9 @@ AnnoScreen::eraseInitiate (CompAction         *action,
 
     eraseMode = true;
 
-    return true;
+    screen->handleEventSetEnabled (this, true);
+
+    return false;
 }
 
 bool
@@ -616,6 +618,10 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
 						  _1, _2, _3));
     optionSetInitiateButtonTerminate (boost::bind (&AnnoScreen::terminate, this,
 						   _1, _2, _3));
+    optionSetEraseButtonInitiate (boost::bind (&AnnoScreen::eraseInitiate, this,
+						  _1, _2, _3));
+    optionSetEraseButtonTerminate (boost::bind (&AnnoScreen::terminate, this,
+						  _1, _2, _3));
     optionSetClearKeyInitiate (boost::bind (&AnnoScreen::clear, this,
 					    _1, _2, _3));
     optionSetDrawInitiate (boost::bind (&AnnoScreen::draw, this,
