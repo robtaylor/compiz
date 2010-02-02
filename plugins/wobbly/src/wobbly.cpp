@@ -2237,6 +2237,7 @@ WobblyWindow::ungrabNotify ()
     {
 	wScreen->grabMask   = 0;
 	wScreen->grabWindow = NULL;
+	wScreen->constraintBox = NULL;
     }
 
     if (grabbed)
