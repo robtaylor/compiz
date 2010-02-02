@@ -67,7 +67,7 @@
 	    <group>
 		<_short>Fixed Window Placement</_short>
 		<subgroup>
-		    <_short>Windows with fixed positions></_short>
+		    <_short>Windows with fixed positions</_short>
 		    <option name="position_matches" type="list">
 			<_short>Positioned windows</_short>
 			<_long>Windows that should be positioned by default</_long>

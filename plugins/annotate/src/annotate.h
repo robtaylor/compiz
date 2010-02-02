@@ -35,6 +35,23 @@
 static int annoLastPointerX = 0;
 static int annoLastPointerY = 0;
 
+typedef struct _Circle
+{
+    int centerX;
+    int centerY;
+    double radius;
+} Circle;
+
+enum DrawMode
+{
+    NoMode = 0,
+    EraseMode,
+    LineMode,
+    RectangleMode,
+    CircleMode,
+    TextMode
+};
+
 class AnnoScreen :
     public PluginClassHandler <AnnoScreen, CompScreen>,
     public ScreenInterface,
@@ -55,7 +72,11 @@ class AnnoScreen :
 	cairo_surface_t *surface;
 	cairo_t		*cairo;
 	bool		content;
-	bool		eraseMode;
+	int		initialPointerX, initialPointerY;
+	CompRect	rectangle, lastRect;
+	DrawMode	drawMode;
+
+	Circle circle;
 
 	void handleEvent (XEvent *);
 
@@ -115,27 +136,37 @@ class AnnoScreen :
 	bool
 	draw (CompAction         *action,
 	      CompAction::State  state,
-	      CompOption::Vector options);
+	      CompOption::Vector& options);
 
 	bool
 	initiate (CompAction         *action,
 		  CompAction::State  state,
-		  CompOption::Vector options);
+		  CompOption::Vector& options);
 
 	bool
 	terminate (CompAction         *action,
 		   CompAction::State  state,
-		   CompOption::Vector options);
+		   CompOption::Vector& options);
 
 	bool
 	eraseInitiate (CompAction         *action,
 		       CompAction::State  state,
-		       CompOption::Vector options);
+		       CompOption::Vector& options);
+
+	bool
+	rectangleInitiate (CompAction         *action,
+			   CompAction::State  state,
+			   CompOption::Vector& options);
+
+	bool
+	circleInitiate (CompAction         *action,
+		        CompAction::State  state,
+			CompOption::Vector& options);
 
 	bool
 	clear (CompAction         *action,
 	       CompAction::State  state,
-	       CompOption::Vector options);
+	       CompOption::Vector& options);
 
 	void
 	handleMotionEvent (int	  xRoot,

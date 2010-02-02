@@ -14,6 +14,16 @@
 		<_long>Initiate annotate drawing</_long>
 		<default>&lt;Super&gt;&lt;Alt&gt;Button1</default>
 	    </option>
+	    <option name="initiate_rectangle_button" type="button">
+		<_short>Initiate Rectangle</_short>
+		<_long>Initiate rectangle drawing</_long>
+		<default>&lt;Super&gt;&lt;Alt&gt;Button2</default>
+	    </option>
+	    <option name="initiate_circle_button" type="button">
+		<_short>Initiate Circle</_short>
+		<_long>Initiate circle drawing</_long>
+		<default>&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;Button1</default>
+	    </option>
 	    <option name="draw" type="action">
 		<_short>Draw</_short>
 		<_long>Draw using tool</_long>
