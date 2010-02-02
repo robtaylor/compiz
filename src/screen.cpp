@@ -1690,6 +1690,72 @@ PrivateScreen::setDesktopHints ()
 void
 PrivateScreen::setVirtualScreenSize (int newh, int newv)
 {
+    /* if newh or newv is being reduced */
+    if (newh < screen->vpSize ().width () ||
+	newv < screen->vpSize ().height ())
+    {
+	CompWindow *w;
+	int        tx = 0;
+	int        ty = 0;
+
+	if (screen->vp ().x () >= newh)
+	    tx = screen->vp ().x () - (newh - 1);
+	if (screen->vp ().y () >= newv)
+	    ty = screen->vp ().y () - (newv - 1);
+
+	if (tx != 0 || ty != 0)
+	    screen->moveViewport (tx, ty, TRUE);
+
+	/* Move windows that were in one of the deleted viewports into the
+	   closest viewport */
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    int moveX = 0;
+	    int moveY = 0;
+
+	    if (w->onAllViewports ())
+		continue;
+
+	    /* Find which viewport the (inner) window's top-left corner falls
+	       in, and check if it's outside the new viewport horizontal and
+	       vertical index range */
+	    if (newh < screen->vpSize ().width ())
+	    {
+		int vpX;   /* x index of a window's vp */
+
+		vpX = w->serverX () / screen->width ();
+		if (w->serverX () < 0)
+		    vpX -= 1;
+
+		vpX += screen->vp ().x (); /* Convert relative to absolute vp index */
+
+		/* Move windows too far right to left */
+		if (vpX >= newh)
+		    moveX = ((newh - 1) - vpX) * screen->width ();
+	    }
+	    if (newv < screen->vpSize ().height ())
+	    {
+		int vpY;   /* y index of a window's vp */
+
+		vpY = w->serverY () / screen->height ();
+		if (w->serverY () < 0)
+		    vpY -= 1;
+
+		vpY += screen->vp ().y (); /* Convert relative to absolute vp index */
+
+		/* Move windows too far right to left */
+		if (vpY >= newv)
+		    moveY = ((newv - 1) - vpY) * screen->height ();
+	    }
+
+	    if (moveX != 0 || moveY != 0)
+	    {
+		w->move (moveX, moveY, true);
+		w->syncPosition ();
+	    }
+	}
+    }
+
     vpSize.setWidth (newh);
     vpSize.setHeight (newv);
 
