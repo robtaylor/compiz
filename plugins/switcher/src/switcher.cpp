@@ -305,13 +305,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 		if (w && (w->state () & CompWindowStateHiddenMask))
 		    w->show ();
 		else
-		{
 		    XMapWindow (screen->dpy (), popupWindow);
-		    /* we don't get a MapRequest for internal window
-		       creations, so we need to set the managed state
-		       ourselves */
-		    w->managed = TRUE;
-		}
 
 		setSelectedWindowHint ();
 	    }
