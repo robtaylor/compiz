@@ -864,8 +864,8 @@ PrivateWindow::updateRegion ()
     {
 	r.x      = -priv->attrib.border_width;
 	r.y      = -priv->attrib.border_width;
-	r.width  = priv->width;
-	r.height = priv->height;
+	r.width  = priv->width + priv->attrib.border_width;
+	r.height = priv->height + priv->attrib.border_width;
 
 	rects = &r;
 	n = 1;
