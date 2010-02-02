@@ -1,6 +1,8 @@
 project (kde4-window-decorator)
 
-set (USE_KDE4 1 CACHE BOOL "Build KDE 4 window decorator")
+option (BUILD_KDE4 "Build KDE 4 window decorator" 1)
+
+compiz_set (USE_KDE4 ${BUILD_KDE4})
 
 if (USE_KDE4)
 
@@ -63,7 +65,7 @@ if (USE_KDE4)
 	)
 
     else (KDE4_FOUND)
-	set (USE_KDE4 0)
+	compiz_set (USE_KDE4 0)
     endif (KDE4_FOUND)
 
 endif (USE_KDE4)

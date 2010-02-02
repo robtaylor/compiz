@@ -1,7 +1,12 @@
-set (USE_GTK 1 CACHE BOOL "Build gtk-window-decorator")
-set (USE_METACITY 1 CACHE BOOL "Gtk-window-decorator metacity theme support")
-set (USE_GNOME 1 CACHE BOOL "Gnome settings module")
-set (USE_GNOME_KEYBINDINGS 1 CACHE BOOL "Gnome keybindings")
+option (BUILD_GTK "Build gtk-window-decorator and Gnome related toold" 1)
+option (BUILD_METACITY "Gtk-window-decorator metacity theme support" 1)
+option (BUILD_GNOME "Gnome settings module" 1)
+option (BUILD_GNOME_KEYBINDINGS "Gnome keybindings" 1)
+
+compiz_set (USE_GTK ${BUILD_GTK})
+compiz_set (USE_METACITY ${BUILD_METACITY})
+compiz_set (USE_GNOME ${BUILD_GNOME})
+compiz_set (USE_GNOME_KEYBINDINGS ${BUILD_GNOME_KEYBINDINGS})
 
 if (USE_GTK)
     pkg_check_modules (GTK_WINDOW_DECORATOR
@@ -27,7 +32,7 @@ if (USE_GTK)
 		compiz_pkg_check_modules (HAVE_METACITY_2_17_0 libmetacity-private>=2.17.0)
 		compiz_pkg_check_modules (HAVE_METACITY_2_23_2 libmetacity-private>=2.23.2)
             else (METACITY_FOUND)
-		set (USE_METACITY 0)
+		compiz_set (USE_METACITY 0)
             endif (METACITY_FOUND)
         endif (USE_METACITY)
 
@@ -48,7 +53,7 @@ if (USE_GTK)
 		  OUTPUT_VARIABLE windowsettingslibdir
 		)
 	    else (GNOME_WINDOW_SETTINGS_FOUND)
-		set (USE_GNOME 0)
+		compiz_set (USE_GNOME 0)
 	    endif (GNOME_WINDOW_SETTINGS_FOUND)
 	endif (USE_GNOME)
 
@@ -60,19 +65,19 @@ if (USE_GTK)
 		  OUTPUT_VARIABLE keybindingsdir
 		)
 	    else (GNOME_KEY_BINDINGS_FOUND)
-		set (USE_GNOME_KEYBINDINGS 0)
+		compiz_set (USE_GNOME_KEYBINDINGS 0)
 	    endif (GNOME_KEY_BINDINGS_FOUND)
         endif (USE_GNOME_KEYBINDINGS)
     else (GTK_WINDOW_DECORATOR_FOUND)
-	set (USE_GTK 0)
+	compiz_set (USE_GTK 0)
     endif (GTK_WINDOW_DECORATOR_FOUND)
 endif (USE_GTK)
 
-if (!USE_GTK)
-    set (USE_METACITY 0)
-    set (USE_GNOME 0)
-    set (USE_GNOME_KEYBINDINGS 0)
-endif (!USE_GTK)
+if (NOT USE_GTK)
+    compiz_set (USE_METACITY 0)
+    compiz_set (USE_GNOME 0)
+    compiz_set (USE_GNOME_KEYBINDINGS 0)
+endif (NOT USE_GTK)
 
 configure_file (
     ${CMAKE_CURRENT_SOURCE_DIR}/config.h.gtk.in
