@@ -250,9 +250,13 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	y += screen->height ();
 
     left   = x - window->input ().left;
-    right  = x + xwc->width + window->input ().right;
+    right  = left + xwc->width +  (window->input ().left +
+    				   window->input ().right +
+				   2 * window->serverGeometry ().border ());;
     top    = y - window->input ().top;
-    bottom = y + xwc->height + window->input ().bottom;
+    bottom = top + xwc->height + (window->input ().top +
+    				  window->input ().bottom +
+				  2 * window->serverGeometry ().border ());;
 
     geom.set (xwc->x, xwc->y, xwc->width, xwc->height,
 	      window->serverGeometry ().border ());
@@ -312,9 +316,9 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 
     /* bring left/right/top/bottom to actual window coordinates */
     left   += window->input ().left;
-    right  -= window->input ().right;
+    right  -= window->input ().right + 2 * window->serverGeometry ().border ();
     top    += window->input ().top;
-    bottom -= window->input ().bottom;
+    bottom -= window->input ().bottom + 2 * window->serverGeometry ().border ();
 
     if ((right - left) != xwc->width)
     {
@@ -1148,8 +1152,12 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
 
     extents.left   = pos.x ()- window->input ().left;
     extents.top    = pos.y () - window->input ().top;
-    extents.right  = extents.left + window->serverWidth ();
-    extents.bottom = extents.top + window->serverHeight ();
+    extents.right  = window->serverWidth () + (window->input ().left +
+    					       window->input ().right +
+					       2 * window->serverGeometry ().border ());
+    extents.bottom = window->serverHeight () + (window->input ().left +
+    					        window->input ().right +
+					        2 * window->serverGeometry ().border ());;
 
     delta = workArea.right () - extents.right;
     if (delta < 0)
