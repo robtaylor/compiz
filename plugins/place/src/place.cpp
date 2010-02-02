@@ -225,6 +225,16 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 			     CompWindowTypeDesktopMask))
 	return;
 
+    /* do nothing if the window was already (at least partially) offscreen */
+    if (window->serverX () < 0                         ||
+	window->serverX () + window->serverWidth () > screen->width () ||
+	window->serverY () < 0                         ||
+	window->serverY () + window->serverHeight () > screen->height ())
+    {
+	return;
+    }
+
+
     if (window->sizeHints ().flags & USPosition)
     {
 	/* only respect USPosition on normal windows if
