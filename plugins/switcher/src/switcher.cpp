@@ -310,7 +310,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 		    /* we don't get a MapRequest for internal window
 		       creations, so we need to set the managed state
 		       ourselves */
-		    //w->managed = TRUE;
+		    w->managed = TRUE;
 		}
 
 		setSelectedWindowHint ();
