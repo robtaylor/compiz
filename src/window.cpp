@@ -1722,7 +1722,29 @@ CompWindow::ungrabNotify ()
 
 void
 CompWindow::stateChangeNotify (unsigned int lastState)
+{
     WRAPABLE_HND_FUNC (11, stateChangeNotify, lastState);
+
+    /* if being made sticky */
+    if (!(lastState & CompWindowStateStickyMask) &&
+	(priv->state & CompWindowStateStickyMask))
+    {
+	CompPoint vp;   /* index of the window's vp */
+
+	/* Find which viewport the window falls in,
+	   and check if it's the current viewport */
+	vp = defaultViewport ();
+	if (screen->vp () != vp)
+	{
+	    int moveX = (screen->vp ().x () - vp.x ()) * screen->width ();
+	    int moveY = (screen->vp ().y () - vp.y ()) * screen->height ();
+
+	    move (moveX, moveY, TRUE);
+	    syncPosition ();
+	}
+    }
+}
+
 
 bool
 PrivateWindow::isGroupTransient (Window clientLeader)
