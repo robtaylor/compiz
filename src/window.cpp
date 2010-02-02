@@ -2815,16 +2815,23 @@ CompWindow::moveResize (XWindowChanges *xwc,
 
 	    min = screen->workArea ().y () + priv->input.top;
 	    max = screen->workArea ().bottom ();
-
-	    min -= screen->vp ().y () * screen->height ();
-	    max += (screen->vpSize ().height () -
-		   screen->vp ().y () - 1) *
-		   screen->height ();
-
-	    if (xwc->y < min)
-		xwc->y = min;
-	    else if (xwc->y > max)
-		xwc->y = max;
+	    
+	    if (priv->state & CompWindowStateStickyMask &&
+	    	 (xwc->y < min || xwc->y > max))
+	    {
+		xwc->y = priv->serverGeometry.y ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().y () * screen->height ();
+		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
+			screen->height ();
+			
+		if (xwc->y < min)
+		    xwc->y = min;
+		else if (xwc->y > max)
+		    xwc->y = max;
+	    }
 	}
 
 	if (xwcm & CWX)
@@ -2833,16 +2840,23 @@ CompWindow::moveResize (XWindowChanges *xwc,
 
 	    min = screen->workArea ().x () + priv->input.left;
 	    max = screen->workArea ().right ();
+	    
+	    if (priv->state & CompWindowStateStickyMask &&
+		(xwc->x < min || xwc->x > max))
+	    {
+		xwc->x = priv->serverGeometry.x ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().x () * screen->width ();
+		max += (screen->vpSize ().height () - screen->vp ().x () - 2) *
+			screen->width ();
 
-	    min -= screen->vp ().x () * screen->width ();
-	    max += (screen->vpSize ().width () -
-		   screen->vp ().x () - 1) *
-		   screen->width ();
-
-	    if (xwc->x < min)
-		xwc->x = min;
-	    else if (xwc->x > max)
-		xwc->x = max;
+		if (xwc->x < min)
+		    xwc->x = min;
+		else if (xwc->x > max)
+		    xwc->x = max;
+	    }
 	}
     }
 
