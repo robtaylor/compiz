@@ -60,6 +60,7 @@ class ObsWindow :
 {
     public:
 	ObsWindow (CompWindow *);
+	~ObsWindow ();
 
 	bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
 		      const CompRegion &, unsigned int);
@@ -69,6 +70,7 @@ class ObsWindow :
 	void changePaintModifier (unsigned int, int);
 	void updatePaintModifier (unsigned int);
 	void modifierChanged (unsigned int);
+	bool updateTimeout ();
 
     private:
 	CompWindow      *window;
@@ -78,6 +80,8 @@ class ObsWindow :
 
 	int customFactor[MODIFIER_COUNT];
 	int matchFactor[MODIFIER_COUNT];
+	
+	CompTimer	updateHandle;
 };
 
 class ObsPluginVTable :

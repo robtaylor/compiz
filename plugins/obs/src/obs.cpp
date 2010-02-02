@@ -242,6 +242,17 @@ ObsScreen::ObsScreen (CompScreen *s) :
 }
 
 bool
+ObsWindow::updateTimeout ()
+{
+    int i;
+    
+    for (i = 0; i < MODIFIER_COUNT; i++)
+	updatePaintModifier (i);
+
+    return false;
+}
+
+bool
 ObsScreen::setOption (const CompString  &name,
 		      CompOption::Value &value)
 {
@@ -281,8 +292,17 @@ ObsWindow::ObsWindow (CompWindow *w) :
 	customFactor[i] = 100;
 	matchFactor[i]  = 100;
 
-	updatePaintModifier (i);
+	/* defer initializing the factors from window matches as match evalution
+	 * means wrapped function calls */
+	updateHandle.setTimes (0, 0);
+	updateHandle.setCallback (boost::bind (&ObsWindow::updateTimeout, this));
+	updateHandle.start ();
     }
+}
+
+ObsWindow::~ObsWindow ()
+{
+    updateHandle.stop ();
 }
 
 bool
