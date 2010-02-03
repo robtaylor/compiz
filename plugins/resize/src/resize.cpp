@@ -236,7 +236,7 @@ resizeInitiate (CompAction         *action,
 		return true;
 	}
 
-	if (screen->otherGrabExist ("resize", 0))
+	if (screen->otherGrabExist ("resize", NULL))
 	    return false;
 
 	if (rs->w)

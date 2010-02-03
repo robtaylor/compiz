@@ -39,7 +39,7 @@ ShotScreen::initiate (CompAction            *action,
     if (xid != ::screen->root ())
 	return false;
 
-    if (::screen->otherGrabExist ("screenshot", 0))
+    if (::screen->otherGrabExist ("screenshot", NULL))
 	return false;
 
     if (!mGrabIndex)

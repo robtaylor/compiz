@@ -351,7 +351,7 @@ CloneScreen::initiate (CompAction         *action,
 		       CompOption::Vector options)
 {
     std::list <Clone *>::iterator it = clones.begin ();
-    if (grab || screen->otherGrabExist ("clone", 0))
+    if (grab || screen->otherGrabExist ("clone", NULL))
         return false;
 
     if (!grabHandle)

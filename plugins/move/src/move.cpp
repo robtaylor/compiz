@@ -65,7 +65,7 @@ moveInitiate (CompAction      *action,
 
 	button = CompOption::getIntOptionNamed (options, "button", -1);
 
-	if (s->otherGrabExist ("move", 0))
+	if (s->otherGrabExist ("move", NULL))
 	    return false;
 
 	if (ms->w)
@@ -397,7 +397,7 @@ moveHandleMotionEvent (CompScreen *s,
 		{
 		    if (abs (yRoot - workArea.y () - ms->snapOffY) >= SNAP_OFF)
 		    {
-			if (!s->otherGrabExist ("move", 0))
+			if (!s->otherGrabExist ("move", NULL))
 			{
 			    int width = w->serverGeometry ().width ();
 
@@ -423,7 +423,7 @@ moveHandleMotionEvent (CompScreen *s,
 		{
 		    if (abs (yRoot - workArea.y () - ms->snapBackY) < SNAP_BACK)
 		    {
-			if (!s->otherGrabExist ("move", 0))
+			if (!s->otherGrabExist ("move", NULL))
 			{
 			    int wy;
 

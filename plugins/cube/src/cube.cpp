@@ -1620,7 +1620,7 @@ PrivateCubeScreen::unfold (CompAction         *action,
 	if (screen->vpSize ().width () * cs->priv->mNOutput < 4)
 	    return false;
 
-	if (screen->otherGrabExist ("rotate", "switcher", "cube", 0))
+	if (screen->otherGrabExist ("rotate", "switcher", "cube", NULL))
 	    return false;
 
 	if (!cs->priv->mGrabIndex)

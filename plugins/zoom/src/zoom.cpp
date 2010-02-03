@@ -394,7 +394,7 @@ zoomInitiate (CompAction         *action,
 
     ZOOM_SCREEN (screen);
 
-    if (screen->otherGrabExist ("zoom", 0))
+    if (screen->otherGrabExist ("zoom", NULL))
 	return false;
 
     if (!zs->grabIndex)
@@ -529,7 +529,7 @@ zoomInitiatePan (CompAction         *action,
     if (!(zs->zoomed & (1 << output)))
 	return false;
 
-    if (screen->otherGrabExist ("zoom", 0))
+    if (screen->otherGrabExist ("zoom", NULL))
 	return false;
 
     if (state & CompAction::StateInitButton)

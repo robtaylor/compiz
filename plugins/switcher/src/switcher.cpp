@@ -204,7 +204,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 {
     int count;
 
-    if (screen->otherGrabExist ("switcher", "scale", "cube", 0))
+    if (screen->otherGrabExist ("switcher", "scale", "cube", NULL))
 	return;
 
     this->selection      = selection;

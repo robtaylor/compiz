@@ -392,12 +392,12 @@ RotateScreen::initiate (CompAction         *action,
 
     if (mRotateTimer.active () && mGrabWindow)
     {
-	if (screen->otherGrabExist ("rotate", "move", 0))
+	if (screen->otherGrabExist ("rotate", "move", NULL))
 	    return false;
     }
     else
     {
-	if (screen->otherGrabExist ("rotate", "switcher", "cube", 0))
+	if (screen->otherGrabExist ("rotate", "switcher", "cube", NULL))
 	    return false;
     }
 
@@ -483,7 +483,7 @@ RotateScreen::rotate (CompAction         *action,
 	return false;
 
     if (screen->otherGrabExist ("rotate", "move", "switcher",
-				"group-drag", "cube", 0))
+				"group-drag", "cube", NULL))
 	return false;
 
     if (!direction)
@@ -597,7 +597,7 @@ RotateScreen::rotateFlip (int direction)
     mMoveTo = 0.0f;
     mSlow = false;
 
-    if (screen->otherGrabExist ("rotate", "move", "group-drag", 0))
+    if (screen->otherGrabExist ("rotate", "move", "group-drag", NULL))
 	return false;
 
     warpX = pointerX - (screen->width () * direction);
@@ -636,7 +636,7 @@ RotateScreen::rotateEdgeFlip (CompAction         *action,
     if (screen->vpSize ().width () < 2)
 	return false;
 
-    if (screen->otherGrabExist ("rotate", "move", "group-drag", 0))
+    if (screen->otherGrabExist ("rotate", "move", "group-drag", NULL))
 	return false;
 
     if (state & CompAction::StateInitEdgeDnd)
@@ -644,10 +644,10 @@ RotateScreen::rotateEdgeFlip (CompAction         *action,
 	if (!optionGetEdgeFlipDnd ())
 	    return false;
 
-	if (screen->otherGrabExist ("rotate", 0))
+	if (screen->otherGrabExist ("rotate", NULL))
 	    return false;
     }
-    else if (screen->otherGrabExist ("rotate", "group-drag", 0))
+    else if (screen->otherGrabExist ("rotate", "group-drag", NULL))
     {
 	if (!optionGetEdgeFlipWindow ())
 	    return false;
@@ -662,7 +662,7 @@ RotateScreen::rotateEdgeFlip (CompAction         *action,
 				     CompWindowStateStickyMask))
 	    return false;
     }
-    else if (screen->otherGrabExist ("rotate", 0))
+    else if (screen->otherGrabExist ("rotate", NULL))
     {
 	/* in that case, 'group-drag' must be the active screen grab */
 	if (!optionGetEdgeFlipWindow ())
@@ -865,7 +865,7 @@ RotateScreen::handleEvent (XEvent *event)
 		{
 		    int dx;
 
-		    if (screen->otherGrabExist ("rotate", "switcher", "cube", 0))
+		    if (screen->otherGrabExist ("rotate", "switcher", "cube", NULL))
 			break;
 
 		    /* reset movement */
@@ -910,7 +910,7 @@ void
 RotateWindow::activate ()
 {
     if (window->placed () &&
-	!screen->otherGrabExist ("rotate", "switcher", "cube", 0))
+	!screen->otherGrabExist ("rotate", "switcher", "cube", NULL))
     {
 	int dx;
 

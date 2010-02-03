@@ -1033,7 +1033,7 @@ PrivateScaleScreen::scaleInitiateCommon (CompAction         *action,
 					 CompAction::State  state,
 					 CompOption::Vector &options)
 {
-    if (screen->otherGrabExist ("scale", 0))
+    if (screen->otherGrabExist ("scale", NULL))
 	return false;
 
     match = CompOption::getMatchOptionNamed (options, "match",

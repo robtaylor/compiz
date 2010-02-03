@@ -1040,7 +1040,7 @@ waterInitiate (CompAction         *action,
 
     WATER_SCREEN (screen);
 
-    if (!screen->otherGrabExist ("water", 0))
+    if (!screen->otherGrabExist ("water", NULL))
     {
 	if (!ws->grabIndex)
 	{
