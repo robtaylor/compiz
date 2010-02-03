@@ -291,6 +291,9 @@ class PrivateScreen : public CoreOptions {
 	void disableEdge (int edge);
 
 	void addScreenActions ();
+	
+	CompWindow *
+	focusTopMostWindow ();
 
     public:
 

@@ -3030,11 +3030,62 @@ CompWindow::raise ()
 	configureXWindow (mask, &xwc);
 }
 
+CompWindow *
+PrivateScreen::focusTopMostWindow ()
+{
+    CompWindow  *focus = NULL;
+    CompWindowList::reverse_iterator it = windows.rbegin ();
+
+    for (; it != windows.rend (); it++)
+    {
+	CompWindow *w = *it;
+    
+	if (w->type () & CompWindowTypeDockMask)
+	    continue;
+
+	if (w->focus ())
+	{
+	    focus = w;
+	    break;
+	}
+    }
+
+    if (focus)
+    {
+	if (focus->id () != activeWindow)
+	    focus->moveInputFocusTo ();
+    }
+    else
+	XSetInputFocus (dpy, root, RevertToPointerRoot,
+			CurrentTime);
+    return focus;
+}
+
+
 void
 CompWindow::lower ()
 {
     XWindowChanges xwc;
     int		   mask;
+    
+    /* when lowering a window, focus the topmost window if
+       the click-to-focus option is on */
+    if ((screen->getOption ("click_to_focus")->value ().b ()))
+    {
+	Window aboveId = next ? next->id () : None;
+	screen->unhookWindow (this);
+	CompWindow *focusedWindow = screen->priv->focusTopMostWindow ();
+	screen->insertWindow (this , aboveId);
+
+	/* if the newly focused window is a desktop window,
+	   give the focus back to w */
+	if (focusedWindow &&
+	    focusedWindow->type () & CompWindowTypeDesktopMask)
+	{
+	    moveInputFocusTo ();
+	}
+    }
+
 
     mask = priv->addWindowStackChanges (&xwc,
 	PrivateWindow::findLowestSiblingBelow (this));
