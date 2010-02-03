@@ -319,6 +319,8 @@ class CompScreen :
 
 	bool updateDefaultIcon ();
 
+	void updateSupportedWmHints ();
+
 	static unsigned int allocPluginClassIndex ();
 	static void freePluginClassIndex (unsigned int index);
 

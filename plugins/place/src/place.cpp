@@ -29,16 +29,15 @@ PlaceScreen::PlaceScreen (CompScreen *screen) :
     fullPlacementAtom (XInternAtom (screen->dpy (),
     				    "_NET_WM_FULL_PLACEMENT", 0))
 {
-    std::vector<Atom> atoms;
     ScreenInterface::setHandler (screen);
-    screen->addSupportedAtoms (atoms);
+
+    screen->updateSupportedWmHints ();
 }
 
 PlaceScreen::~PlaceScreen ()
 {
-    std::vector<Atom> atoms;
     screen->addSupportedAtomsSetEnabled (this, false);
-    screen->addSupportedAtoms (atoms);
+    screen->updateSupportedWmHints ();
 }
 
 void
