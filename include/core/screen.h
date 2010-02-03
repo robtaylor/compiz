@@ -128,7 +128,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 class CompScreen :
     public CompSize,
-    public WrapableHandler<ScreenInterface, 17>,
+    public WrapableHandler<ScreenInterface, 18>,
     public PluginClassStorage,
     public CompOption::Class
 {
