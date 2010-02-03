@@ -25,13 +25,20 @@
 COMPIZ_PLUGIN_20090315 (place, PlacePluginVTable)
 
 PlaceScreen::PlaceScreen (CompScreen *screen) :
-    PluginClassHandler<PlaceScreen, CompScreen> (screen)
+    PluginClassHandler<PlaceScreen, CompScreen> (screen),
+    fullPlacementAtom (XInternAtom (screen->dpy (),
+    				    "_NET_WM_FULL_PLACEMENT", 0))
 {
+    std::vector<Atom> atoms;
     ScreenInterface::setHandler (screen);
+    screen->addSupportedAtoms (atoms);
 }
 
 PlaceScreen::~PlaceScreen ()
 {
+    std::vector<Atom> atoms;
+    screen->addSupportedAtomsSetEnabled (this, false);
+    screen->addSupportedAtoms (atoms);
 }
 
 void
@@ -358,6 +365,14 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	    mask   |= CWY;
 	}
     }
+}
+
+void
+PlaceScreen::addSupportedAtoms (std::vector<Atom> &atoms)
+{
+    atoms.push_back (fullPlacementAtom);
+
+    screen->addSupportedAtoms (atoms);
 }
 
 void
