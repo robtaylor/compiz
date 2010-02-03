@@ -3076,8 +3076,6 @@ CompWindow::lower ()
 	screen->unhookWindow (this);
 	CompWindow *focusedWindow = screen->priv->focusTopMostWindow ();
 	screen->insertWindow (this , aboveId);
-	
-	screen->priv->updateClientList ();
 
 	/* if the newly focused window is a desktop window,
 	   give the focus back to w */
