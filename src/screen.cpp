@@ -1694,7 +1694,6 @@ PrivateScreen::setVirtualScreenSize (int newh, int newv)
     if (newh < screen->vpSize ().width () ||
 	newv < screen->vpSize ().height ())
     {
-	CompWindow *w;
 	int        tx = 0;
 	int        ty = 0;
 
@@ -2124,107 +2123,107 @@ PrivateScreen::setSupportingWmCheck ()
 }
 
 void
-PrivateScreen::setSupported ()
+CompScreen::addSupportedAtoms (std::vector<Atom> &atoms)
 {
-    Atom	data[256];
-    int		i = 0;
+    WRAPABLE_HND_FUNC (17, addSupportedAtoms, atoms);
 
-    data[i++] = Atoms::supported;
-    data[i++] = Atoms::supportingWmCheck;
+    atoms.push_back (Atoms::supported);
+    atoms.push_back (Atoms::supportingWmCheck);
 
-    data[i++] = Atoms::utf8String;
+    atoms.push_back (Atoms::utf8String);
 
-    data[i++] = Atoms::clientList;
-    data[i++] = Atoms::clientListStacking;
+    atoms.push_back (Atoms::clientList);
+    atoms.push_back (Atoms::clientListStacking);
 
-    data[i++] = Atoms::winActive;
+    atoms.push_back (Atoms::winActive);
 
-    data[i++] = Atoms::desktopViewport;
-    data[i++] = Atoms::desktopGeometry;
-    data[i++] = Atoms::currentDesktop;
-    data[i++] = Atoms::numberOfDesktops;
-    data[i++] = Atoms::showingDesktop;
+    atoms.push_back (Atoms::desktopViewport);
+    atoms.push_back (Atoms::desktopGeometry);
+    atoms.push_back (Atoms::currentDesktop);
+    atoms.push_back (Atoms::numberOfDesktops);
+    atoms.push_back (Atoms::showingDesktop);
 
-    data[i++] = Atoms::workarea;
+    atoms.push_back (Atoms::workarea);
 
-    data[i++] = Atoms::wmName;
+    atoms.push_back (Atoms::wmName);
 /*
-    data[i++] = Atoms::wmVisibleName;
+    atoms.push_back (Atoms::wmVisibleName);
 */
 
-    data[i++] = Atoms::wmStrut;
-    data[i++] = Atoms::wmStrutPartial;
+    atoms.push_back (Atoms::wmStrut);
+    atoms.push_back (Atoms::wmStrutPartial);
 
 /*
-    data[i++] = Atoms::wmPid;
+    atoms.push_back (Atoms::wmPid);
 */
 
-    data[i++] = Atoms::wmUserTime;
-    data[i++] = Atoms::frameExtents;
-    data[i++] = Atoms::frameWindow;
+    atoms.push_back (Atoms::wmUserTime);
+    atoms.push_back (Atoms::frameExtents);
+    atoms.push_back (Atoms::frameWindow);
 
-    data[i++] = Atoms::winState;
-    data[i++] = Atoms::winStateModal;
-    data[i++] = Atoms::winStateSticky;
-    data[i++] = Atoms::winStateMaximizedVert;
-    data[i++] = Atoms::winStateMaximizedHorz;
-    data[i++] = Atoms::winStateShaded;
-    data[i++] = Atoms::winStateSkipTaskbar;
-    data[i++] = Atoms::winStateSkipPager;
-    data[i++] = Atoms::winStateHidden;
-    data[i++] = Atoms::winStateFullscreen;
-    data[i++] = Atoms::winStateAbove;
-    data[i++] = Atoms::winStateBelow;
-    data[i++] = Atoms::winStateDemandsAttention;
+    atoms.push_back (Atoms::winState);
+    atoms.push_back (Atoms::winStateModal);
+    atoms.push_back (Atoms::winStateSticky);
+    atoms.push_back (Atoms::winStateMaximizedVert);
+    atoms.push_back (Atoms::winStateMaximizedHorz);
+    atoms.push_back (Atoms::winStateShaded);
+    atoms.push_back (Atoms::winStateSkipTaskbar);
+    atoms.push_back (Atoms::winStateSkipPager);
+    atoms.push_back (Atoms::winStateHidden);
+    atoms.push_back (Atoms::winStateFullscreen);
+    atoms.push_back (Atoms::winStateAbove);
+    atoms.push_back (Atoms::winStateBelow);
+    atoms.push_back (Atoms::winStateDemandsAttention);
 
-    data[i++] = Atoms::winOpacity;
-    data[i++] = Atoms::winBrightness;
+    atoms.push_back (Atoms::winOpacity);
+    atoms.push_back (Atoms::winBrightness);
 
 #warning fixme
 #if 0
     if (canDoSaturated)
     {
-	data[i++] = Atoms::winSaturation;
-	data[i++] = Atoms::winStateDisplayModal;
+	atoms.push_back (Atoms::winSaturation);
+	atoms.push_back (Atoms::winStateDisplayModal);
     }
 #endif
 
-    data[i++] = Atoms::wmAllowedActions;
+    atoms.push_back (Atoms::wmAllowedActions);
 
-    data[i++] = Atoms::winActionMove;
-    data[i++] = Atoms::winActionResize;
-    data[i++] = Atoms::winActionStick;
-    data[i++] = Atoms::winActionMinimize;
-    data[i++] = Atoms::winActionMaximizeHorz;
-    data[i++] = Atoms::winActionMaximizeVert;
-    data[i++] = Atoms::winActionFullscreen;
-    data[i++] = Atoms::winActionClose;
-    data[i++] = Atoms::winActionShade;
-    data[i++] = Atoms::winActionChangeDesktop;
-    data[i++] = Atoms::winActionAbove;
-    data[i++] = Atoms::winActionBelow;
+    atoms.push_back (Atoms::winActionMove);
+    atoms.push_back (Atoms::winActionResize);
+    atoms.push_back (Atoms::winActionStick);
+    atoms.push_back (Atoms::winActionMinimize);
+    atoms.push_back (Atoms::winActionMaximizeHorz);
+    atoms.push_back (Atoms::winActionMaximizeVert);
+    atoms.push_back (Atoms::winActionFullscreen);
+    atoms.push_back (Atoms::winActionClose);
+    atoms.push_back (Atoms::winActionShade);
+    atoms.push_back (Atoms::winActionChangeDesktop);
+    atoms.push_back (Atoms::winActionAbove);
+    atoms.push_back (Atoms::winActionBelow);
 
-    data[i++] = Atoms::winType;
-    data[i++] = Atoms::winTypeDesktop;
-    data[i++] = Atoms::winTypeDock;
-    data[i++] = Atoms::winTypeToolbar;
-    data[i++] = Atoms::winTypeMenu;
-    data[i++] = Atoms::winTypeSplash;
-    data[i++] = Atoms::winTypeDialog;
-    data[i++] = Atoms::winTypeUtil;
-    data[i++] = Atoms::winTypeNormal;
+    atoms.push_back (Atoms::winType);
+    atoms.push_back (Atoms::winTypeDesktop);
+    atoms.push_back (Atoms::winTypeDock);
+    atoms.push_back (Atoms::winTypeToolbar);
+    atoms.push_back (Atoms::winTypeMenu);
+    atoms.push_back (Atoms::winTypeSplash);
+    atoms.push_back (Atoms::winTypeDialog);
+    atoms.push_back (Atoms::winTypeUtil);
+    atoms.push_back (Atoms::winTypeNormal);
 
-    data[i++] = Atoms::wmDeleteWindow;
-    data[i++] = Atoms::wmPing;
+    atoms.push_back (Atoms::wmDeleteWindow);
+    atoms.push_back (Atoms::wmPing);
 
-    data[i++] = Atoms::wmMoveResize;
-    data[i++] = Atoms::moveResizeWindow;
-    data[i++] = Atoms::restackWindow;
+    atoms.push_back (Atoms::wmMoveResize);
+    atoms.push_back (Atoms::moveResizeWindow);
+    atoms.push_back (Atoms::restackWindow);
 
-    data[i++] = Atoms::wmFullscreenMonitors;
+    atoms.push_back (Atoms::wmFullscreenMonitors);
 
-    XChangeProperty (dpy, root, Atoms::supported,
-		     XA_ATOM, 32, PropModeReplace, (unsigned char *) data, i);
+    XChangeProperty (dpy (), root (), Atoms::supported,
+		     XA_ATOM, 32, PropModeReplace,
+		     (const unsigned char *) &atoms.at (0), atoms.size ());
 }
 
 void
@@ -3846,6 +3845,10 @@ ScreenInterface::leaveShowDesktopMode (CompWindow *window)
 void
 ScreenInterface::outputChangeNotify ()
     WRAPABLE_DEF (outputChangeNotify)
+    
+void
+ScreenInterface::addSupportedAtoms (std::vector<Atom>& atoms)
+    WRAPABLE_DEF (addSupportedAtoms, atoms)
 
 
 Window
@@ -4074,6 +4077,7 @@ CompScreen::init (const char *name)
     unsigned int         nchildren;
     int                  defaultDepth, nvisinfo;
     XSetWindowAttributes attrib;
+    std::vector<Atom>    atomList;
 
     CompOption::Value::Vector vList;
 
@@ -4406,7 +4410,7 @@ CompScreen::init (const char *name)
 
     priv->setDesktopHints ();
     priv->setSupportingWmCheck ();
-    priv->setSupported ();
+    addSupportedAtoms (atomList);
 
     priv->normalCursor = XCreateFontCursor (dpy, XC_left_ptr);
     priv->busyCursor   = XCreateFontCursor (dpy, XC_watch);

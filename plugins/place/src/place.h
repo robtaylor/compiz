@@ -42,6 +42,8 @@ class PlaceScreen :
 	void handleEvent (XEvent *event);
 	void handleScreenSizeChange (int width, int height);
 	bool getPointerPosition (CompPoint &p);
+	
+	Atom fullPlacementAtom;
 };
 
 class PlaceWindow :

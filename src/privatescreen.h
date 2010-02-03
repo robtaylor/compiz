@@ -205,8 +205,6 @@ class PrivateScreen : public CoreOptions {
 
 	void setSupportingWmCheck ();
 
-	void setSupported ();
-
 	void getDesktopHints ();
 
 	void grabUngrabOneKey (unsigned int modifiers,

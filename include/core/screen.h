@@ -122,6 +122,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 	virtual void leaveShowDesktopMode (CompWindow *window);
 
 	virtual void outputChangeNotify ();
+	virtual void addSupportedAtoms (std::vector<Atom>& atoms);
 };
 
 
@@ -356,6 +357,8 @@ class CompScreen :
 		      CompWindow *);
 
 	WRAPABLE_HND (16, ScreenInterface, void, outputChangeNotify);
+	WRAPABLE_HND (17, ScreenInterface, void, addSupportedAtoms,
+		      std::vector<Atom>& atoms);
 
 	friend class CompTimer;
 	friend class CompWindow;
