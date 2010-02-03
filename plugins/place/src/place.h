@@ -41,6 +41,7 @@ class PlaceScreen :
 
 	void handleEvent (XEvent *event);
 	void handleScreenSizeChange (int width, int height);
+	bool getPointerPosition (CompPoint &p);
 };
 
 class PlaceWindow :
@@ -69,7 +70,8 @@ class PlaceWindow :
 	void doPlacement (CompPoint &pos);
 	bool windowIsPlaceRelevant (CompWindow *w);
 	PlacementStrategy getStrategy ();
-	const CompOutput & getPlacementOutput (PlacementStrategy strategy,
+	const CompOutput & getPlacementOutput (int		 mode,
+					       PlacementStrategy strategy,
 					       CompPoint pos);
 	int getPlacementMode ();
 
@@ -79,6 +81,7 @@ class PlaceWindow :
 	void placeCascade (const CompRect& workArea, CompPoint& pos);
 	void placeCentered (const CompRect& workArea, CompPoint& pos);
 	void placeRandom (const CompRect& workArea, CompPoint& pos);
+	void placePointer (const CompRect& workArea, CompPoint& pos);
 	void placeSmart (const CompRect& workArea, CompPoint& pos);
 
 	bool cascadeFindFirstFit (const CompWindowList& windows,

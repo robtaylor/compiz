@@ -367,6 +367,7 @@ PlaceWindow::doPlacement (CompPoint &pos)
     CompPoint         targetVp;
     PlacementStrategy strategy;
     bool              keepInWorkarea;
+    int		      mode;
 
     if (matchPosition (pos, keepInWorkarea))
     {
@@ -379,7 +380,8 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	    return;
     }
 
-    const CompOutput &output = getPlacementOutput (strategy, pos);
+    mode = getPlacementMode ();
+    const CompOutput &output = getPlacementOutput (mode, strategy, pos);
     workArea = output.workArea ();
 
     targetVp = window->initialViewport ();
@@ -438,7 +440,7 @@ PlaceWindow::doPlacement (CompPoint &pos)
 
     if (strategy == PlaceOnly || strategy == PlaceAndConstrain)
     {
-	switch (getPlacementMode ()) {
+	switch (mode) {
 	    case PlaceOptions::ModeCascade:
 	    placeCascade (workArea, pos);
 	    break;
@@ -448,6 +450,8 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	case PlaceOptions::ModeRandom:
 	    placeRandom (workArea, pos);
 	    break;
+	case PlaceOptions::ModePointer:
+	    placePointer (workArea, pos);
 	case PlaceOptions::ModeMaximize:
 	    sendMaximizationRequest ();
 	    break;
@@ -560,6 +564,20 @@ PlaceWindow::placeRandom (const CompRect &workArea,
     if (remainY > 0)
 	pos.setY (pos.y () + (rand () % remainY));
 }
+
+void
+PlaceWindow::placePointer (const CompRect &workArea,
+			   CompPoint	  &pos)
+{
+    if (PlaceScreen::get (screen)->getPointerPosition (pos))
+    {
+	pos -= CompPoint (window->serverGeometry ().height () / 2,
+			  window->serverGeometry ().width () / 2);
+    }
+    else
+	placeCentered (workArea, pos);
+}
+
 
 /* overlap types */
 #define NONE    0
@@ -1063,10 +1081,12 @@ PlaceWindow::getStrategy ()
 }
 
 const CompOutput &
-PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
+PlaceWindow::getPlacementOutput (int		   mode,
+				 PlacementStrategy strategy,
 				 CompPoint         pos)
 {
     int output = -1;
+    int multiMode;
 
     switch (strategy) {
     case PlaceOverParent:
@@ -1092,25 +1112,22 @@ PlaceWindow::getPlacementOutput (PlacementStrategy strategy,
 
     if (output >= 0)
 	return screen->outputDevs ()[output];
+	
+    multiMode = ps->optionGetMultioutputMode ();
+    /* force 'output with pointer' for placement under pointer */
+    if (mode == PlaceOptions::ModePointer)
+	multiMode = PlaceOptions::MultioutputModeUseOutputDeviceWithPointer;
 
-    switch (ps->optionGetMultioutputMode ()) {
+    switch (multiMode) {
 	case PlaceOptions::MultioutputModeUseActiveOutputDevice:
 	    return screen->currentOutputDev ();
 	    break;
 	case PlaceOptions::MultioutputModeUseOutputDeviceWithPointer:
 	    {
-		Window       wDummy;
-		int          iDummy, xPointer, yPointer;
-		unsigned int uiDummy;
-
-		/* this means a server roundtrip, which kind of sucks; thus
-		this code should be replaced as soon as we have software
-		cursor rendering and thus have a cached pointer coordinate */
-		if (XQueryPointer (screen->dpy (), screen->root (),
-				&wDummy, &wDummy, &xPointer, &yPointer,
-				&iDummy, &iDummy, &uiDummy))
+		CompPoint p;
+		if (PlaceScreen::get (screen)->getPointerPosition (p))
 		{
-		    output = screen->outputDeviceForPoint (xPointer, yPointer);
+		    output = screen->outputDeviceForPoint (p.x (), p.y ());
 		}
 	    }
 	    break;
@@ -1225,6 +1242,24 @@ PlaceWindow::sendMaximizationRequest ()
 
     XSendEvent (dpy, screen->root (), false,
 		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
+}
+
+bool
+PlaceScreen::getPointerPosition (CompPoint &p)
+{
+    Window wDummy;
+    int	   iDummy;
+    unsigned int uiDummy;
+    int x, y;
+    
+    /* this means a server roundtrip, which kind of sucks; this
+     * this code should be removed as soon as we have software cursor
+     * rendering and thus a cache pointer co-ordinate */
+    
+    return XQueryPointer (screen->dpy (), screen->root (), &wDummy, &wDummy,
+    			  &x, &y, &iDummy, &iDummy, &uiDummy);
+    
+    p.set (x, y);
 }
 
 bool
