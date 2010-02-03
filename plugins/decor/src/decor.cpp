@@ -1247,6 +1247,13 @@ DecorScreen::handleEvent (XEvent *event)
 	    if (w)
 		DecorWindow::get (w)->update (true);
 	    break;
+	case ClientMessage:
+	    if (event->xclient.message_type == requestFrameExtentsAtom)
+	    {
+		w = screen->findWindow (event->xclient.window);
+		if (w)
+		    DecorWindow::get (w)->update (true);
+	    }
 	default:
 	    if (cmActive &&
 		event->type == cScreen->damageEvent () + XDamageNotify)
@@ -1632,6 +1639,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
 	XInternAtom (s->dpy (), DECOR_TYPE_PIXMAP_ATOM_NAME, 0);
     decorTypeWindowAtom =
 	XInternAtom (s->dpy (), DECOR_TYPE_WINDOW_ATOM_NAME, 0);
+    requestFrameExtentsAtom =
+        XInternAtom (s->dpy (), "_NET_REQUEST_FRAME_EXTENTS", 0);
 
     windowDefault.texture   = NULL;
     windowDefault.minWidth  = 0;

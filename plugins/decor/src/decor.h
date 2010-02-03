@@ -137,6 +137,7 @@ class DecorScreen :
 	Atom decorTypeAtom;
 	Atom decorTypePixmapAtom;
 	Atom decorTypeWindowAtom;
+	Atom requestFrameExtentsAtom;
 
 	Window dmWin;
 	int    dmSupports;
