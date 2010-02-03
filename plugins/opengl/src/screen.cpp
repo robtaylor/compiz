@@ -40,6 +40,7 @@ namespace GL {
     GLXGetFBConfigsProc      getFBConfigs = NULL;
     GLXGetFBConfigAttribProc getFBConfigAttrib = NULL;
     GLXCreatePixmapProc      createPixmap = NULL;
+    GLXDestroyPixmapProc     destroyPixmap = NULL;
 
     GLActiveTextureProc       activeTexture = NULL;
     GLClientActiveTextureProc clientActiveTexture = NULL;
@@ -176,6 +177,8 @@ GLScreen::GLScreen (CompScreen *s) :
 	getProcAddress ("glXGetFBConfigAttrib");
     GL::createPixmap = (GL::GLXCreatePixmapProc)
 	getProcAddress ("glXCreatePixmap");
+    GL::destroyPixmap = (GL::GLXDestroyPixmapProc)
+    	getProcAddress ("glXDestoryPixmap");
 
 
     if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap") ||
@@ -191,7 +194,8 @@ GLScreen::GLScreen (CompScreen *s) :
     if (!GL::queryDrawable     ||
 	!GL::getFBConfigs      ||
 	!GL::getFBConfigAttrib ||
-	!GL::createPixmap)
+	!GL::createPixmap      ||
+	!GL::destroyPixmap)
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"fbconfig functions missing");

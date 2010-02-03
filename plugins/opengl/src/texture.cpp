@@ -434,7 +434,7 @@ TfpTexture::~TfpTexture ()
 	glBindTexture (target (), 0);
 	glDisable (target ());
 
-	glXDestroyGLXPixmap (screen->dpy (), pixmap);
+	GL::destroyPixmap (screen->dpy (), pixmap);
 
 	boundPixmapTex.erase (damage);
 	XDamageDestroy (screen->dpy (), damage);
@@ -557,7 +557,7 @@ TfpTexture::bindPixmapToTexture (Pixmap pixmap,
 			    "pixmap 0x%x can't be bound to texture",
 			    (int) pixmap);
 
-	    glXDestroyGLXPixmap (screen->dpy (), glxPixmap);
+	    GL::destroyPixmap (screen->dpy (), glxPixmap);
 	    glxPixmap = None;
 
 	    return GLTexture::List ();

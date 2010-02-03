@@ -35,7 +35,7 @@
 #include <opengl/texture.h>
 #include <opengl/fragment.h>
 
-#define COMPIZ_OPENGL_ABI 1
+#define COMPIZ_OPENGL_ABI 2
 
 #include <core/pluginclasshandler.h>
 
@@ -116,6 +116,8 @@ namespace GL {
 					      GLXFBConfig config,
 					      Pixmap      pixmap,
 					      const int   *attribList);
+    typedef void      (*GLXDestroyPixmapProc) (Display *display,
+    					       GLXPixmap pixmap);
 
     typedef void (*GLActiveTextureProc) (GLenum texture);
     typedef void (*GLClientActiveTextureProc) (GLenum texture);
@@ -164,6 +166,7 @@ namespace GL {
     extern GLXGetFBConfigsProc      getFBConfigs;
     extern GLXGetFBConfigAttribProc getFBConfigAttrib;
     extern GLXCreatePixmapProc      createPixmap;
+    extern GLXDestroyPixmapProc     destroyPixmap;
 
     extern GLActiveTextureProc       activeTexture;
     extern GLClientActiveTextureProc clientActiveTexture;
