@@ -1087,6 +1087,11 @@ PlaceWindow::getPlacementOutput (int		   mode,
 {
     int output = -1;
     int multiMode;
+    
+    /* short cut: it makes no sense to determine a placement
+       output if there is only one output */
+    if (screen->outputDevs ().size () == 1)
+	return screen->outputDevs ().at (0);
 
     switch (strategy) {
     case PlaceOverParent:
