@@ -31,34 +31,34 @@
 #include <math.h>
 
 namespace GL {
-    GLXBindTexImageProc      bindTexImage = 0;
-    GLXReleaseTexImageProc   releaseTexImage = 0;
-    GLXQueryDrawableProc     queryDrawable = 0;
-    GLXCopySubBufferProc     copySubBuffer = 0;
-    GLXGetVideoSyncProc      getVideoSync = 0;
-    GLXWaitVideoSyncProc     waitVideoSync = 0;
-    GLXGetFBConfigsProc      getFBConfigs = 0;
-    GLXGetFBConfigAttribProc getFBConfigAttrib = 0;
-    GLXCreatePixmapProc      createPixmap = 0;
+    GLXBindTexImageProc      bindTexImage = NULL;
+    GLXReleaseTexImageProc   releaseTexImage = NULL;
+    GLXQueryDrawableProc     queryDrawable = NULL;
+    GLXCopySubBufferProc     copySubBuffer = NULL;
+    GLXGetVideoSyncProc      getVideoSync = NULL;
+    GLXWaitVideoSyncProc     waitVideoSync = NULL;
+    GLXGetFBConfigsProc      getFBConfigs = NULL;
+    GLXGetFBConfigAttribProc getFBConfigAttrib = NULL;
+    GLXCreatePixmapProc      createPixmap = NULL;
 
-    GLActiveTextureProc       activeTexture = 0;
-    GLClientActiveTextureProc clientActiveTexture = 0;
-    GLMultiTexCoord2fProc     multiTexCoord2f = 0;
+    GLActiveTextureProc       activeTexture = NULL;
+    GLClientActiveTextureProc clientActiveTexture = NULL;
+    GLMultiTexCoord2fProc     multiTexCoord2f = NULL;
 
-    GLGenProgramsProc	     genPrograms = 0;
-    GLDeleteProgramsProc     deletePrograms = 0;
-    GLBindProgramProc	     bindProgram = 0;
-    GLProgramStringProc	     programString = 0;
-    GLProgramParameter4fProc programEnvParameter4f = 0;
-    GLProgramParameter4fProc programLocalParameter4f = 0;
-    GLGetProgramivProc       getProgramiv = 0;
+    GLGenProgramsProc	     genPrograms = NULL;
+    GLDeleteProgramsProc     deletePrograms = NULL;
+    GLBindProgramProc	     bindProgram = NULL;
+    GLProgramStringProc	     programString = NULL;
+    GLProgramParameter4fProc programEnvParameter4f = NULL;
+    GLProgramParameter4fProc programLocalParameter4f = NULL;
+    GLGetProgramivProc       getProgramiv = NULL;
 
-    GLGenFramebuffersProc        genFramebuffers = 0;
-    GLDeleteFramebuffersProc     deleteFramebuffers = 0;
-    GLBindFramebufferProc        bindFramebuffer = 0;
-    GLCheckFramebufferStatusProc checkFramebufferStatus = 0;
-    GLFramebufferTexture2DProc   framebufferTexture2D = 0;
-    GLGenerateMipmapProc         generateMipmap = 0;
+    GLGenFramebuffersProc        genFramebuffers = NULL;
+    GLDeleteFramebuffersProc     deleteFramebuffers = NULL;
+    GLBindFramebufferProc        bindFramebuffer = NULL;
+    GLCheckFramebufferStatusProc checkFramebufferStatus = NULL;
+    GLFramebufferTexture2DProc   framebufferTexture2D = NULL;
+    GLGenerateMipmapProc         generateMipmap = NULL;
 
     bool  textureFromPixmap = true;
     bool  textureRectangle = false;
