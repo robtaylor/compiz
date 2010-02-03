@@ -3068,6 +3068,11 @@ CompWindow::lower ()
     XWindowChanges xwc;
     int		   mask;
     
+    mask = priv->addWindowStackChanges (&xwc,
+	PrivateWindow::findLowestSiblingBelow (this));
+    if (mask)
+	configureXWindow (mask, &xwc);
+    
     /* when lowering a window, focus the topmost window if
        the click-to-focus option is on */
     if ((screen->getOption ("click_to_focus")->value ().b ()))
@@ -3085,12 +3090,6 @@ CompWindow::lower ()
 	    moveInputFocusTo ();
 	}
     }
-
-
-    mask = priv->addWindowStackChanges (&xwc,
-	PrivateWindow::findLowestSiblingBelow (this));
-    if (mask)
-	configureXWindow (mask, &xwc);
 }
 
 void
