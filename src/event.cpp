@@ -1032,7 +1032,11 @@ CompScreen::handleEvent (XEvent *event)
 	if (w)
 	{
 	    if (w->priv->pendingMaps)
+	    {
+		if (!w->priv->frame)
+		    w->priv->reparent ();
 		w->priv->managed = true;
+	    }
 
 	    /* been shaded */
 	    if (w->priv->height == 0)
@@ -1073,6 +1077,10 @@ CompScreen::handleEvent (XEvent *event)
 
 		w->priv->placed = false;
 		w->priv->managed = false;
+		if (w->priv->frame)
+		{
+		    w->priv->unreparent ();
+		}
 	    }
 
 	    w->unmap ();

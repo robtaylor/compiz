@@ -765,6 +765,9 @@ CompWindow::recalcType ()
 void
 PrivateWindow::updateFrameWindow ()
 {
+    if (!frame)
+	return;
+
     if (input.left || input.right || input.top || input.bottom)
     {
 	int	   x, y, width, height;
@@ -777,9 +780,6 @@ PrivateWindow::updateFrameWindow ()
 
 	if (shaded)
 	    height = input.top + input.bottom;
-
-	if (!frame)
-	    reparent ();
 
 	XMoveResizeWindow (screen->dpy (), frame, x, y, width, height);
 	if (shaded)
@@ -801,12 +801,33 @@ PrivateWindow::updateFrameWindow ()
     }
     else
     {
-	if (frame)
+	int	   x, y, width, height;
+	int	   bw = serverGeometry.border () * 2;
+	
+	x      = serverGeometry.x ();
+	y      = serverGeometry.y ();
+	width  = serverGeometry.width () + bw;
+	height = serverGeometry.height () + bw;
+
+	if (shaded)
+	    height = 0;
+
+	XMoveResizeWindow (screen->dpy (), frame, x, y, width, height);
+	if (shaded)
 	{
-	    unreparent ();
-	    frame = None;
-	    frameRegion = CompRegion ();
+	    XUnmapWindow (screen->dpy (), wrapper);
 	}
+	else
+	{
+	    XMapWindow (screen->dpy (), wrapper);
+	    XMoveResizeWindow (screen->dpy (), wrapper, 0, 0,
+			       serverGeometry.width (), serverGeometry.height ());
+	}
+        XMoveResizeWindow (screen->dpy (), id, 0, 0,
+			   serverGeometry.width (), serverGeometry.height ());
+        window->sendConfigureNotify ();
+	frameRegion = CompRegion ();
+	window->windowNotify (CompWindowNotifyFrameUpdate);
     }
 
     window->recalcActions ();
@@ -1160,14 +1181,16 @@ CompWindow::destroy ()
     if (priv->destroyRefCnt)
 	return;
 
-    if (priv->frame)
-	priv->unreparent ();
 
     if (!priv->destroyed)
     {
 	priv->destroyed = true;
 	screen->priv->pendingDestroys++;
     }
+
+    if (priv->frame)
+	priv->unreparent ();
+
 }
 
 void
@@ -4480,6 +4503,8 @@ PrivateWindow::processMap ()
 
     screen->priv->applyStartupProperties (window);
 
+    if (!frame)
+	reparent ();
     priv->managed = true;
 
     if (!priv->placed)
@@ -4952,6 +4977,8 @@ CompWindow::CompWindow (Window id,
 
 	if (!overrideRedirect ())
 	{
+	    if (!priv->frame)
+		priv->reparent ();
 	    priv->managed = true;
 
 	    if (screen->priv->getWmState (priv->id) == IconicState)
@@ -5002,6 +5029,8 @@ CompWindow::CompWindow (Window id,
     {
 	if (screen->priv->getWmState (priv->id) == IconicState)
 	{
+	    if (!priv->frame)
+		priv->reparent ();
 	    priv->managed = true;
 	    priv->placed  = true;
 
@@ -5039,7 +5068,9 @@ CompWindow::~CompWindow ()
     if (!priv->destroyed)
     {
 	if (priv->frame)
+	{
 	    priv->unreparent ();
+	}
 
 	/* restore saved geometry and map if hidden */
 	if (!priv->attrib.override_redirect)
@@ -5370,13 +5401,13 @@ bool
 PrivateWindow::reparent ()
 {
     XSetWindowAttributes attr;
-    XWindowChanges	 xwc;
+    XWindowAttributes    wa;
     int                  mask;
     XEvent               e;
     CompWindow::Geometry sg = serverGeometry;
     Display              *dpy = screen->dpy ();
 
-    if (frame)
+    if (frame || attrib.override_redirect)
 	return false;
 
     XSync (dpy, false);
@@ -5387,62 +5418,69 @@ PrivateWindow::reparent ()
         return false;
     }
 
-    mask = CWOverrideRedirect | CWEventMask | CWColormap | CWBackPixmap;
+    XGrabServer (dpy);
+    XChangeSaveSet (dpy, id, SetModeInsert);
+    XSelectInput (dpy, id, NoEventMask);
+    XSelectInput (dpy, screen->root (), NoEventMask);
+
+    XGetWindowAttributes (dpy, id, &wa);
+
+    xwc.border_width = 0;
+    XConfigureWindow (dpy, id, CWBorderWidth, &xwc);
+
+    mask = CWBorderPixel | CWColormap | CWBackPixmap;
 
     attr.background_pixmap = None;
     attr.border_pixel      = 0;
-    mask |= CWBorderPixel;
     attr.colormap          = attrib.colormap;
-    attr.override_redirect = false;
-    attr.event_mask        = SubstructureRedirectMask | StructureNotifyMask |
-			     SubstructureNotifyMask | EnterWindowMask |
-			     LeaveWindowMask;
 
-    frame = XCreateWindow (dpy, screen->root (), sg.x () - input.left,
-			  sg.y () - input.top,
-			  sg.width () + input.left + input.right,
-			  sg.height () + input.top + input.bottom,
-			  0, attrib.depth,
+    frame = XCreateWindow (dpy, screen->root (), sg.x (), sg.y (),
+			  sg.width (), sg.height (), 0, attrib.depth,
 			  InputOutput, attrib.visual, mask, &attr);
 
-    wrapper = XCreateWindow (dpy, frame, input.left, input.top,
+    wrapper = XCreateWindow (dpy, frame, 0, 0,
 			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, attrib.visual, mask, &attr);
+
+    XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
+		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
+		 GrabModeSync, GrabModeSync, None, None);
+
+    XMapWindow (dpy, wrapper);
+    XReparentWindow (dpy, id, wrapper, 0, 0);
 
     attr.event_mask = PropertyChangeMask | FocusChangeMask |
 		      EnterWindowMask | LeaveWindowMask;
     attr.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask |
 				 ButtonMotionMask;
 
-    XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
-		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-		 GrabModeSync, GrabModeSync, None, None);
-
-    xwc.stack_mode = Below;
-    xwc.sibling    = id;
-
-    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
-
-    XMapWindow (dpy, wrapper);
-
-    XReparentWindow (dpy, id, wrapper, 0, 0);
-    XChangeSaveSet (dpy, id, SetModeInsert);
-    XFlush (dpy);
-
     XChangeWindowAttributes (dpy, id, CWEventMask | CWDontPropagate, &attr);
 
-    if (mapNum || shaded)
-    {
+    if (wa.map_state == IsViewable || shaded)
 	XMapWindow (dpy, frame);
-	XSync (dpy, false);
-	if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
-	    screen->activeWindow () == id)
-	{
-	    window->moveInputFocusTo ();
-	}
-	pendingUnmaps++;
-	pendingMaps++;
-    }
+
+    attr.event_mask = SubstructureRedirectMask | StructureNotifyMask |
+		      SubstructureNotifyMask | EnterWindowMask |
+		      LeaveWindowMask;
+
+    XChangeWindowAttributes (dpy, frame, CWEventMask, &attr);
+    XChangeWindowAttributes (dpy, wrapper, CWEventMask, &attr);
+
+    XSelectInput (dpy, screen->root (),
+		  SubstructureRedirectMask |
+		  SubstructureNotifyMask   |
+		  StructureNotifyMask      |
+		  PropertyChangeMask       |
+		  LeaveWindowMask          |
+		  EnterWindowMask          |
+		  KeyPressMask             |
+		  KeyReleaseMask           |
+		  ButtonPressMask          |
+		  ButtonReleaseMask        |
+		  FocusChangeMask          |
+		  ExposureMask);
+
+    XUngrabServer (dpy);
 
     window->windowNotify (CompWindowNotifyReparent);
 
@@ -5470,28 +5508,39 @@ PrivateWindow::unreparent ()
 
     if ((!destroyed) && alive)
     {
+	XGrabServer (dpy);
+
         XChangeSaveSet (dpy, id, SetModeDelete);
         XSelectInput (dpy, frame, NoEventMask);
+	XSelectInput (dpy, id, NoEventMask);
+	XSelectInput (dpy, screen->root (), NoEventMask);
         XReparentWindow (dpy, id, screen->root (), serverGeometry.x (),
 			 serverGeometry.y ());
-	xwc.stack_mode = Above;
-        xwc.sibling    = frame;
-        XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
-        XUnmapWindow (dpy, frame);
-	XFlush (dpy);
 
-	if (mapNum || shaded)
-	{
-	    if (XCheckTypedWindowEvent (dpy, id, FocusIn, &e) ||
-		screen->activeWindow () == id)
-		window->moveInputFocusTo ();
-	    pendingUnmaps++;
-	    pendingMaps++;
-	}
+        XUnmapWindow (dpy, frame);
+	
+	XSelectInput (dpy, id, PropertyChangeMask | EnterWindowMask |
+		      FocusChangeMask);
+
+	XSelectInput (dpy, screen->root (),
+		  SubstructureRedirectMask |
+		  SubstructureNotifyMask   |
+		  StructureNotifyMask      |
+		  PropertyChangeMask       |
+		  LeaveWindowMask          |
+		  EnterWindowMask          |
+		  KeyPressMask             |
+		  KeyReleaseMask           |
+		  ButtonPressMask          |
+		  ButtonReleaseMask        |
+		  FocusChangeMask          |
+		  ExposureMask);
+	
+	XUngrabServer (dpy);
     }
 
-    XDestroyWindow (dpy, frame);
     XDestroyWindow (dpy, wrapper);
+    XDestroyWindow (dpy, frame);
     wrapper = None;
     frame = None;
 
