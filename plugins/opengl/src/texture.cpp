@@ -71,7 +71,8 @@ GLTexture::List::List (const GLTexture::List &c) :
 GLTexture::List::~List ()
 {
     foreach (GLTexture *t, *this)
-	GLTexture::decRef (t);
+	if (t)
+	    GLTexture::decRef (t);
 }
 
 GLTexture::List &
@@ -91,7 +92,8 @@ void
 GLTexture::List::clear ()
 {
     foreach (GLTexture *t, *this)
-	GLTexture::decRef (t);
+	if (t)
+	    GLTexture::decRef (t);
     std::vector <GLTexture *>::clear ();
 }
 
