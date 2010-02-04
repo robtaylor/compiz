@@ -178,8 +178,7 @@ GLScreen::GLScreen (CompScreen *s) :
     GL::createPixmap = (GL::GLXCreatePixmapProc)
 	getProcAddress ("glXCreatePixmap");
     GL::destroyPixmap = (GL::GLXDestroyPixmapProc)
-    	getProcAddress ("glXDestoryPixmap");
-
+    	getProcAddress ("glXDestroyPixmap");
 
     if (!strstr (glxExtensions, "GLX_EXT_texture_from_pixmap") ||
         !GL::bindTexImage || !GL::releaseTexImage)
