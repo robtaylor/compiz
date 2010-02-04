@@ -90,7 +90,8 @@ PrivateScaleWindow::isScaleWin () const
 		return false;
 	    break;
 	case ScaleTypeOutput:
-	    if (window->outputDevice () != screen->currentOutputDev ().id ())
+	    if ((unsigned int) window->outputDevice () != 
+	    		       (unsigned int) screen->currentOutputDev ().id ())
 		return false;
 	default:
 	    break;
@@ -411,7 +412,7 @@ PrivateScaleScreen::layoutSlotsForArea (const CompRect& workArea,
 SlotArea::vector
 PrivateScaleScreen::getSlotAreas ()
 {
-    int                i = 0;
+    unsigned int       i = 0;
     CompRect           workArea;
     std::vector<float> size;
     float              sizePerWindow, sum = 0.0f;
@@ -494,8 +495,10 @@ PrivateScaleScreen::layoutSlots ()
 	    {
 		SlotArea::vector slotAreas = getSlotAreas ();
 		if (slotAreas.size ())
+		{
 		    foreach (SlotArea &sa, slotAreas)
 			layoutSlotsForArea (sa.workArea, sa.nWindows);
+		}
 	    }
 	    break;
 	case ScaleOptions::MultioutputModeOnCurrentOutputDevice:

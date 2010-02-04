@@ -313,8 +313,8 @@ FadeWindow::glPaint (const GLWindowPaintAttrib& attrib,
 
 FadeScreen::FadeScreen (CompScreen *s) :
     PluginClassHandler<FadeScreen, CompScreen> (s),
-    cScreen (CompositeScreen::get (s)),
-    displayModals (0)
+    displayModals (0),
+    cScreen (CompositeScreen::get (s))
 {
     fadeTime = 1000.0f / optionGetFadeSpeed ();
 

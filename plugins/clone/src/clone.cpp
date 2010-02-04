@@ -200,7 +200,9 @@ CloneScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
     unsigned int  dstForThisOutput, outputId = 0;
     CompRegion sRegion = region;
 
-    dstForThisOutput = outputId = (output->id () != ~0) ? output->id () : 0;
+    dstForThisOutput = outputId =
+    			 ((unsigned int) output->id () != (unsigned int) ~0) ?
+    							      output->id () : 0;
 
     if (!grab || (unsigned int) grabbedOutput != outputId)
     {
@@ -224,7 +226,7 @@ CloneScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	}
     }
 
-    if (output->id () != ~0)
+    if (output->id () != (unsigned int) ~0)
 	status = gScreen->glPaintOutput (attrib, transform, sRegion,
 				&screen->outputDevs ()[dstForThisOutput], mask);
     else
@@ -533,8 +535,8 @@ CloneScreen::outputChangeNotify ()
 
     for (it = clones.begin (); it != clones.end (); it++)
     {
-	if ((*it)->dst >= screen->outputDevs ().size () ||
-	    (*it)->src >= screen->outputDevs ().size ())
+	if ((unsigned int) (*it)->dst >= screen->outputDevs ().size () ||
+	    (unsigned int) (*it)->src >= screen->outputDevs ().size ())
 	{
 	    clones.erase (it);
 	    it = clones.begin ();

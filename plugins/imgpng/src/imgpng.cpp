@@ -72,8 +72,8 @@ PngScreen::readPngData (png_struct *png,
 			CompSize   &size)
 {
     png_uint_32	 pngWidth, pngHeight;
-    int		 depth, colorType, interlace, i;
-    unsigned int pixelSize;
+    int		 depth, colorType, interlace;
+    unsigned int pixelSize, i;
     png_byte	 **rowPointers;
     char	 *d;
 

@@ -156,7 +156,8 @@ ZoomScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
     GLMatrix zTransform (transform);
     bool     status;
 
-    if (output->id () != ~0 && (zoomed & (1 << output->id ())))
+    if ((unsigned int) output->id () != (unsigned int) ~0 &&
+    	(zoomed & (1 << (unsigned int) output->id ())))
     {
 	GLTexture::Filter saveFilter;
 	ZoomBox           box;
@@ -186,7 +187,8 @@ ZoomScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 
 	saveFilter = gScreen->filter (SCREEN_TRANS_FILTER);
 
-	if ((zoomOutput != output->id () || !adjust) && scale > 3.9f &&
+	if (((unsigned int) zoomOutput != (unsigned int) output->id () || !adjust) &&
+	     scale > 3.9f &&
 	    !optionGetFilterLinear ())
 	    gScreen->setFilter (SCREEN_TRANS_FILTER, GLTexture::Fast);
 

@@ -354,7 +354,8 @@ void
 PrivateCubeScreen::updateOutputs ()
 {
     CompOutput *pBox0, *pBox1;
-    int    i, j, k, x;
+    unsigned int i, j;
+    int    k, x;
 
     k = 0;
 
@@ -405,7 +406,7 @@ PrivateCubeScreen::updateOutputs ()
 	return;
     }
 
-    if (k != screen->outputDevs ().size ())
+    if ((unsigned int) k != screen->outputDevs ().size ())
     {
 	mFullscreenOutput = false;
 	mNOutput = 1;
@@ -866,7 +867,8 @@ PrivateCubeScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	mask |= PAINT_SCREEN_TRANSFORMED_MASK;
     }
 
-    mSrcOutput = (output->id () != ~0) ? output->id () : 0;
+    mSrcOutput = ((unsigned int) output->id () != (unsigned int) ~0) ?
+    							      output->id () : 0;
     /* Always use BTF painting on non-transformed screen */
     mPaintOrder = BTF;
 
@@ -965,7 +967,8 @@ PrivateCubeScreen::moveViewportAndPaint (const GLScreenPaintAttrib &sAttrib,
 					      paintOrder))
 	return;
 
-    output = (outputPtr->id () != ~0) ? outputPtr->id () : 0;
+    output = ((unsigned int) outputPtr->id () != (unsigned int) ~0)
+    							 ? outputPtr->id () : 0;
 
     mPaintOrder = paintOrder;
 
@@ -1353,15 +1356,17 @@ PrivateCubeScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
     int                 cullNorm, cullInv;
     int                 output = 0;
 
-    output = (outputPtr->id () != ~0) ? outputPtr->id () : 0;
+    output = ((unsigned int) outputPtr->id () != (unsigned int) ~0) ?
+    							   outputPtr->id () : 0;
 
     mReversedWindowList = cScreen->getWindowPaintList ();
     mReversedWindowList.reverse ();
 
-    if (((outputPtr->id () != ~0) && mRecalcOutput) ||
-	((outputPtr->id () == ~0) && !mRecalcOutput && mNOutput > 1))
+    if ((((unsigned int) outputPtr->id () != (unsigned int) ~0) && mRecalcOutput) ||
+	(((unsigned int) outputPtr->id () == (unsigned int) ~0) && !mRecalcOutput &&
+	 mNOutput > 1))
     {
-	mRecalcOutput = (outputPtr->id () == ~0);
+	mRecalcOutput = ((unsigned int) outputPtr->id () == (unsigned int) ~0);
 	mNOutput      = 1;
 	updateGeometry (screen->vpSize ().width (), mInvert);
     }

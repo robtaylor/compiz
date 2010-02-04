@@ -72,7 +72,7 @@ const RegexExp::Prefix RegexExp::prefix[] = {
 RegexExp::RegexExp (const CompString& str, int item) :
     mRegex (NULL)
 {
-    if (item < sizeof (prefix) / sizeof (prefix[0]))
+    if ((unsigned int) item < sizeof (prefix) / sizeof (prefix[0]))
     {
 	int        status;
 	CompString value;
@@ -143,11 +143,11 @@ RegexExp::evaluate (CompWindow *w)
 int
 RegexExp::matches (const CompString& str)
 {
-    int i;
+    unsigned int i;
 
     for (i = 0; i < sizeof (prefix) / sizeof (prefix[0]); i++)
 	if (str.compare (0, prefix[i].length, prefix[i].name) == 0)
-	    return i;
+	    return (int) i;
 
     return -1;
 }

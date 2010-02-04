@@ -595,42 +595,44 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	glEnable (GL_BLEND);
 
 	if (content && !region.isEmpty ())
-	foreach (GLTexture *tex, texture)
 	{
-	    CompRect::vector rect = region.rects ();
-	    numRect = region.rects ().size ();
-
-	    tex->enable (GLTexture::Fast);
-
-	    glBegin (GL_QUADS);
-
-	    while (numRect--)
+	    foreach (GLTexture *tex, texture)
 	    {
-	        glTexCoord2f (
-		    COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x1 ()),
-		    COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y2 ()));
-	        glVertex2i (rect.at (pos).x1 (), rect.at (pos).y2 ());
+	        CompRect::vector rect = region.rects ();
+	        numRect = region.rects ().size ();
 
-	        glTexCoord2f (
-		    COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x2 ()),
-		    COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y2 ()));
-	        glVertex2i (rect.at (pos).x2 (), rect.at (pos).y2 ());
+	        tex->enable (GLTexture::Fast);
 
-	        glTexCoord2f (
-		    COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x2 ()),
-		    COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y1 ()));
-	        glVertex2i (rect.at (pos).x2 (), rect.at (pos).y1 ());
+	        glBegin (GL_QUADS);
 
-	        glTexCoord2f (
-		    COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x1 ()),
-		    COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y1 ()));
-	        glVertex2i (rect.at (pos).x1 (), rect.at (pos).y1 ());
+	        while (numRect--)
+	        {
+	            glTexCoord2f (
+		        COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x1 ()),
+		        COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y2 ()));
+	            glVertex2i (rect.at (pos).x1 (), rect.at (pos).y2 ());
 
-	        pos++;
+	            glTexCoord2f (
+		        COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x2 ()),
+		        COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y2 ()));
+	            glVertex2i (rect.at (pos).x2 (), rect.at (pos).y2 ());
+
+	            glTexCoord2f (
+		        COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x2 ()),
+		        COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y1 ()));
+	            glVertex2i (rect.at (pos).x2 (), rect.at (pos).y1 ());
+
+	            glTexCoord2f (
+		        COMP_TEX_COORD_X (tex->matrix (), rect.at (pos).x1 ()),
+		        COMP_TEX_COORD_Y (tex->matrix (), rect.at (pos).y1 ()));
+	            glVertex2i (rect.at (pos).x1 (), rect.at (pos).y1 ());
+
+	            pos++;
+	        }
+
+	        glEnd ();
+	        tex->disable ();
 	    }
-
-	    glEnd ();
-	    tex->disable ();
 	}
 
 	if (drawMode == RectangleMode)
@@ -755,6 +757,8 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 	    damageRect = CompRect (circle.centerX - circle.radius,
 				   circle.centerY - circle.radius,
 				   circle.radius * 2, circle.radius * 2);
+	    break;
+	default:
 	    break;
 	}
 

@@ -321,7 +321,7 @@ BlurWindow::update (int state)
 
 	    if ((n - 2) / 6)
 	    {
-		int i;
+		unsigned int i;
 
 		data += 2;
 
@@ -578,7 +578,7 @@ BlurScreen::getSrcBlurFragmentFunction (GLTexture *texture,
     if (data.status ())
     {
 	static const char *temp[] = { "offset0", "offset1", "sum" };
-	int	    i;
+	unsigned int      i;
 
 	for (i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
 	    data.addTempHeaderOp (temp[i]);
@@ -653,14 +653,14 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
     if (data.status ())
     {
 	static const char *temp[] = { "fCoord", "mask", "sum", "dst" };
-	int               i, j;
+	int	          i, j;
 	char              str[1024];
 	int               saturation = optionGetSaturation ();
 	int               numIndirect;
 	int               numIndirectOp;
 	int               base, end, ITCbase;
 
-	for (i = 0; i < sizeof (temp) / sizeof (temp[0]); i++)
+	for (i = 0; (unsigned int) i < sizeof (temp) / sizeof (temp[0]); i++)
 	    data.addTempHeaderOp (temp[i]);
 
 	if (saturation < 100)
@@ -673,7 +673,9 @@ BlurScreen::getDstBlurFragmentFunction (GLTexture *texture,
 		    "s0", "s1", "s2", "s3"
 		};
 
-		for (i = 0; i < sizeof (filterTemp) / sizeof (filterTemp[0]); i++)
+		for (i = 0;
+		     (unsigned int) i < sizeof (filterTemp) / sizeof (filterTemp[0]);
+		     i++)
 		    data.addTempHeaderOp (filterTemp[i]);
 
 		data.addFetchOp ("output", NULL, target);
@@ -2214,8 +2216,8 @@ BlurScreen::setOption (const CompString &name, CompOption::Value &value)
 
 BlurScreen::BlurScreen (CompScreen *screen) :
     PluginClassHandler<BlurScreen,CompScreen> (screen),
-    cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
+    cScreen (CompositeScreen::get (screen)),
     moreBlur (false),
     filterRadius (0),
     srcBlurFunctions (0),
@@ -2290,8 +2292,8 @@ BlurScreen::~BlurScreen ()
 BlurWindow::BlurWindow (CompWindow *w) :
     PluginClassHandler<BlurWindow,CompWindow> (w),
     window (w),
-    gWindow (GLWindow::get (w)),
     cWindow (CompositeWindow::get (w)),
+    gWindow (GLWindow::get (w)),
     bScreen (BlurScreen::get (screen)),
     blur (0),
     pulse (false),

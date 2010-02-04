@@ -786,7 +786,7 @@ PlaceWindow::doPlacement (CompPoint &pos)
 
 	/* When placing to the fullscreen output, constrain to one
 	   output nevertheless */
-	if (output.id () == ~0)
+	if ((unsigned int) output.id () == (unsigned int) ~0)
 	{
 	    int                  id;
 	    CompWindow::Geometry geom (window->serverGeometry ());
@@ -1599,7 +1599,7 @@ PlaceWindow::matchXYValue (CompOption::Value::Vector &matches,
 			   CompOption::Value::Vector *constrainValues,
 			   bool                      *keepInWorkarea)
 {
-    int i, min;
+    unsigned int i, min;
 
     if (window->type () & CompWindowTypeDesktopMask)
 	return false;

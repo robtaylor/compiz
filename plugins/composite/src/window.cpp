@@ -575,8 +575,8 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	result = XGetGeometry (screen->dpy (), pixmap, &root, &i, &i,
 			       &actualWidth, &actualHeight, &ui, &ui);
 
-	if (!result || actualWidth != window->size ().width () ||
-	    actualHeight != window->size ().height ())
+	if (!result || actualWidth != (unsigned int) window->size ().width () ||
+	    actualHeight != (unsigned int) window->size ().height ())
 	{
 	    XFreePixmap (screen->dpy (), pixmap);
 	    return;

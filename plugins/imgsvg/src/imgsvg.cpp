@@ -191,12 +191,12 @@ SvgScreen::readSvgToImage (const char *file,
 
 SvgWindow::SvgWindow (CompWindow *window) :
     PluginClassHandler<SvgWindow, CompWindow> (window),
+    source (NULL),
+    context (NULL),
     sScreen (SvgScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     window (window),
-    gWindow (GLWindow::get (window)),
-    source (NULL),
-    context (NULL)
+    gWindow (GLWindow::get (window))
 {
     if (gWindow)
 	GLWindowInterface::setHandler (gWindow, false);
@@ -234,7 +234,7 @@ SvgWindow::glDraw (const GLMatrix     &transform,
     if (context && reg.numRects ())
     {
 	GLTexture::MatrixList matrix (1);
-	int                   i, j;
+	unsigned int          i, j;
 	int		      x1, y1, x2, y2;
 	CompRect              rect = context->box.boundingRect ();
 
@@ -374,7 +374,7 @@ SvgWindow::updateSvgMatrix ()
 {
     SvgTexture        *texture;
     GLTexture::Matrix *m;
-    int	              i;
+    unsigned int      i;
     CompRect          rect;
 
     rect = context->box.boundingRect ();
