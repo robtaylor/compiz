@@ -818,14 +818,16 @@ KWD::Window::setMask (const QRegion &region, int)
 
 	  r -= QRegion (mBorder.left, mBorder.top,
 			mGeometry.width (), mGeometry.height ());
-	  r = QRegion ();
+
 	  KWD::trapXError ();
-	  XShapeCombineRegion (QX11Info::display(), mFrame, 
-			       (mType == Normal2D)? ShapeBounding : ShapeInput,
-			       0, 0, r.handle (), ShapeSet);
+	  
+	  XShapeCombineMask (QX11Info::display(), mFrame, 
+			     (mType == Normal2D)? ShapeBounding : ShapeInput,
+			     0, 0, None, ShapeSet);
+	
 	  KWD::popXError ();
       }
-      
+
       mShapeSet = false;
       return;
     }
@@ -857,7 +859,7 @@ KWD::Window::resizeDecoration (bool force)
     int w, h;
 
     mDecor->borders (mBorder.left, mBorder.right, mBorder.top, mBorder.bottom);
-    
+
     mExtents.left   = mBorder.left + mPadding.left;
     mExtents.right  = mBorder.right + mPadding.right;
     mExtents.top    = mBorder.top + mPadding.top;
@@ -878,7 +880,8 @@ KWD::Window::resizeDecoration (bool force)
     }
 
     /* reset shape */
-    setMask (QRegion (), 0);
+    if (!force || w != decorWidget ()->width () || h != decorWidget ()->height ())
+	setMask (QRegion (), 0);
 
     if (mPixmap)
     {
