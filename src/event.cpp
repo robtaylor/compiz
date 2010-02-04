@@ -1227,8 +1227,8 @@ CompScreen::handleEvent (XEvent *event)
 	    w = findWindow (event->xproperty.window);
 	    if (w)
 	    {
-		if (w->priv->updateStruts ())
-		    priv->updateWorkarea ();
+		if (w->updateStruts ())
+		    updateWorkarea ();
 	    }
 	}
 	else if (event->xproperty.atom == Atoms::mwmHints)

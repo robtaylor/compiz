@@ -1848,7 +1848,7 @@ PrivateScreen::updateOutputDevices ()
 	    if (outputDevs[i].intersects (outputDevs[j]))
 		hasOverlappingOutputs = true;
 
-    updateWorkarea ();
+    screen->updateWorkarea ();
 
     screen->outputChangeNotify ();
 }
@@ -3107,7 +3107,7 @@ PrivateScreen::computeWorkareaForBox (const CompRect& box)
 }
 
 void
-PrivateScreen::updateWorkarea ()
+CompScreen::updateWorkarea ()
 {
     CompRect workArea;
     bool     workAreaChanged = false;

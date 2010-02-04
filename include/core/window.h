@@ -486,6 +486,8 @@ class CompWindow :
 
 	static unsigned int allocPluginClassIndex ();
 	static void freePluginClassIndex (unsigned int index);
+	
+	bool updateStruts ();
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents&);

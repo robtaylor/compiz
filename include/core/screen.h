@@ -264,6 +264,8 @@ class CompScreen :
 	bool addAction (CompAction *action);
 
 	void removeAction (CompAction *action);
+	
+	void updateWorkarea ();
 
 	void toolkitAction (Atom   toolkitAction,
 			    Time   eventTime,

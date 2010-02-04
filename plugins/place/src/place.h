@@ -26,6 +26,7 @@
 
 #include <core/core.h>
 #include <core/atoms.h>
+#include <core/timer.h>
 #include <core/pluginclasshandler.h>
 
 #include "place_options.h"
@@ -36,16 +37,25 @@ class PlaceScreen :
     public PlaceOptions
 {
     public:
-	PlaceScreen (CompScreen *screen);
+	PlaceScreen (CompScreen *);
 	~PlaceScreen ();
 
 	void handleEvent (XEvent *event);
+	void doHandleScreenSizeChange (bool);
+	bool handleScreenSizeChangeFallback ();
 	void handleScreenSizeChange (int width, int height);
 	bool getPointerPosition (CompPoint &p);
 	void addSupportedAtoms (std::vector<Atom>&);
 	
+	CompSize mPrevSize;
+	int	 mStrutWindowCount;
+	CompTimer mResChangeFallbackHandle;
+	
 	Atom fullPlacementAtom;
 };
+
+#define PLACE_SCREEN(s)						       \
+    PlaceScreen *ps = PlaceScreen::get (s)
 
 class PlaceWindow :
     public PluginClassHandler<PlaceWindow, CompWindow>,
@@ -56,9 +66,20 @@ class PlaceWindow :
 	~PlaceWindow ();
 
 	bool place (CompPoint &pos);
+	
+	CompRect
+	doValidateResizeRequest (unsigned int &,
+				      XWindowChanges *,
+				      unsigned int,
+				      bool);
 	void validateResizeRequest (unsigned int   &mask,
 				    XWindowChanges *xwc,
 				    unsigned int   source);
+	void grabNotify (int, int, unsigned int, unsigned int);    
+	bool mSavedOriginal;
+	CompRect mOrigVpRelRect;
+	CompPoint mPrevServer;
+	
 
     private:
 	typedef enum {
@@ -107,6 +128,9 @@ class PlaceWindow :
 	CompWindow  *window;
 	PlaceScreen *ps;
 };
+
+#define PLACE_WINDOW(w)							       \
+    PlaceWindow *pw = PlaceWindow::get (w)
 
 class PlacePluginVTable :
     public CompPlugin::VTableForScreenAndWindow<PlaceScreen, PlaceWindow>

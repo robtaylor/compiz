@@ -909,7 +909,7 @@ PrivateWindow::updateRegion ()
 }
 
 bool
-PrivateWindow::updateStruts ()
+CompWindow::updateStruts ()
 {
     Atom	  actual;
     int		  result, format;
@@ -1237,7 +1237,7 @@ CompWindow::map ()
     priv->mapNum = screen->priv->mapNum++;
 
     if (priv->struts)
-	screen->priv->updateWorkarea ();
+	screen->updateWorkarea ();
 
     if (windowClass () == InputOnly)
 	return;
@@ -1298,7 +1298,7 @@ CompWindow::unmap ()
 	return;
 
     if (priv->struts)
-	screen->priv->updateWorkarea ();
+	screen->updateWorkarea ();
 
     if (priv->attrib.map_state != IsViewable)
 	return;
@@ -4917,7 +4917,7 @@ CompWindow::CompWindow (Window id,
     if (!overrideRedirect ())
     {
 	priv->updateNormalHints ();
-	priv->updateStruts ();
+	updateStruts ();
 	priv->updateWmHints ();
 	priv->updateTransientHint ();
 
@@ -5069,7 +5069,7 @@ CompWindow::~CompWindow ()
 	    screen->priv->desktopWindowCount--;
 
 	if (priv->destroyed && priv->struts)
-	    screen->priv->updateWorkarea ();
+	    screen->updateWorkarea ();
     }
 
     if (priv->destroyed)

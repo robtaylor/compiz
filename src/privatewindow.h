@@ -159,8 +159,6 @@ class PrivateWindow {
 
 	void updateRegion ();
 
-	bool updateStruts ();
-
 	bool handleSyncAlarm ();
 
 	void configure (XConfigureEvent *ce);

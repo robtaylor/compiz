@@ -262,8 +262,6 @@ class PrivateScreen : public CoreOptions {
 
 	void eraseWindowFromMap (Window id);
 
-	void updateWorkarea ();
-
 	void updateClientList ();
 
 	CompGroup * addGroup (Window id);
