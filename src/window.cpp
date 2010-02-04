@@ -448,10 +448,10 @@ PrivateWindow::setFullscreenMonitors (CompFullscreenMonitorSet *monitors)
     fullscreenMonitorsSet = false;
 
     if (monitors                   &&
-	monitors->left   < outputs &&
-	monitors->right  < outputs &&
-	monitors->top    < outputs &&
-	monitors->bottom < outputs)
+	(unsigned int) monitors->left   < outputs &&
+	(unsigned int) monitors->right  < outputs &&
+	(unsigned int) monitors->top    < outputs &&
+	(unsigned int) monitors->bottom < outputs)
     {
 	CompRect fsRect (screen->outputDevs ()[monitors->left].x1 (),
 			 screen->outputDevs ()[monitors->top].y1 (),
@@ -3952,8 +3952,8 @@ PrivateWindow::readIconHint ()
     }
 
     k = 0;
-    for (j = 0; j < height; j++)
-	for (i = 0; i < width; i++)
+    for ((unsigned int) j = 0; j < height; j++)
+	for ((unsigned int) i = 0; i < width; i++)
 	    colors[k++].pixel = XGetPixel (image, i, j);
 
     for (i = 0; i < k; i += 256)
@@ -3976,9 +3976,9 @@ PrivateWindow::readIconHint ()
     k = 0;
     p = (CARD32 *) icon->data ();
 
-    for (j = 0; j < height; j++)
+    for ((unsigned int) j = 0; j < height; j++)
     {
-	for (i = 0; i < width; i++)
+	for ((unsigned int) i = 0; i < width; i++)
 	{
 	    if (maskImage && !XGetPixel (maskImage, i, j))
 		*p++ = 0;
