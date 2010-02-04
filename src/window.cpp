@@ -5402,6 +5402,7 @@ PrivateWindow::reparent ()
 {
     XSetWindowAttributes attr;
     XWindowAttributes    wa;
+    XWindowChanges       xwc;
     int                  mask;
     XEvent               e;
     CompWindow::Geometry sg = serverGeometry;
@@ -5492,7 +5493,6 @@ PrivateWindow::unreparent ()
 {
     Display        *dpy = screen->dpy ();
     XEvent         e;
-    XWindowChanges xwc;
     bool           alive = true;
 
     if (!frame)
