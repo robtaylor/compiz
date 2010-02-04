@@ -323,7 +323,8 @@ PrivateScreen::triggerKeyReleaseBindings (CompOption::Vector &options,
 
 	    if ((bindMods & modMask) == 0)
 	    {
-		if (action->key ().keycode () == (unsigned int) event->keycode)
+		if ((unsigned int) action->key ().keycode () ==
+						  (unsigned int) event->keycode)
 		{
 		    if (action->terminate () (action, state, arguments))
 			return true;

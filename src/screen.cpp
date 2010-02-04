@@ -2273,10 +2273,12 @@ PrivateScreen::getDesktopHints ()
 	    {
 		memcpy (data, propData, sizeof (unsigned long) * 2);
 
-		if (data[0] / screen->width () < vpSize.width () - 1)
+		if (data[0] / (unsigned int) screen->width () <
+					     (unsigned int) vpSize.width () - 1)
 		    vp.setX (data[0] / screen->width ());
 
-		if (data[1] / screen->height () < vpSize.height () - 1)
+		if (data[1] / (unsigned int) screen->height () <
+					    (unsigned int) vpSize.height () - 1)
 		    vp.setY (data[1] / screen->height ());
 	    }
 
@@ -3203,7 +3205,7 @@ PrivateScreen::updateClientList ()
 
     if (n == 0)
     {
-	if (n != priv->clientList.size ())
+	if ((unsigned int) n != priv->clientList.size ())
 	{
 	    priv->clientList.clear ();
 	    priv->clientListStacking.clear ();
@@ -3223,7 +3225,7 @@ PrivateScreen::updateClientList ()
 	return;
     }
 
-    if (n != priv->clientList.size ())
+    if ((unsigned int) n != priv->clientList.size ())
     {
 	priv->clientIdList.resize (n);
 	priv->clientIdListStacking.resize (n);

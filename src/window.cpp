@@ -3929,7 +3929,8 @@ PrivateWindow::readIconHint ()
     XImage       *image, *maskImage = NULL;
     Display      *dpy = screen->dpy ();
     unsigned int width, height, dummy;
-    int          i, j, k, iDummy;
+    unsigned int i, j, k;
+    int		 iDummy;
     Window       wDummy;
     CompIcon     *icon;
     XColor       *colors;
@@ -3952,8 +3953,8 @@ PrivateWindow::readIconHint ()
     }
 
     k = 0;
-    for ((unsigned int) j = 0; j < height; j++)
-	for ((unsigned int) i = 0; i < width; i++)
+    for (j = 0; j < height; j++)
+	for (i = 0; i < width; i++)
 	    colors[k++].pixel = XGetPixel (image, i, j);
 
     for (i = 0; i < k; i += 256)
@@ -3976,9 +3977,9 @@ PrivateWindow::readIconHint ()
     k = 0;
     p = (CARD32 *) icon->data ();
 
-    for ((unsigned int) j = 0; j < height; j++)
+    for (j = 0; j < height; j++)
     {
-	for ((unsigned int) i = 0; i < width; i++)
+	for (i = 0; i < width; i++)
 	{
 	    if (maskImage && !XGetPixel (maskImage, i, j))
 		*p++ = 0;
