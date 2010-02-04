@@ -31,23 +31,21 @@ PlaceScreen::PlaceScreen (CompScreen *screen) :
     fullPlacementAtom (XInternAtom (screen->dpy (),
     				    "_NET_WM_FULL_PLACEMENT", 0))
 {
-    std::vector<Atom> atoms;
-    ScreenInterface::setHandler (screen);
-    screen->addSupportedAtoms (atoms);
-    
+    ScreenInterface::setHandler (screen);    
     mResChangeFallbackHandle.setCallback (boost::bind (
     				   &PlaceScreen::handleScreenSizeChangeFallback,
     					  this));
     mResChangeFallbackHandle.setTimes (4000, 4500); /* 4 Seconds */
+
+    screen->updateSupportedWmHints ();
 }
 
 PlaceScreen::~PlaceScreen ()
 {
-    std::vector<Atom> atoms;
     screen->addSupportedAtomsSetEnabled (this, false);
-    screen->addSupportedAtoms (atoms);
     
     mResChangeFallbackHandle.stop ();
+    screen->updateSupportedWmHints ();
 }
 
 void

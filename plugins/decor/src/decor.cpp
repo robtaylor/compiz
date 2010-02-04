@@ -1602,6 +1602,14 @@ DecorScreen::matchPropertyChanged (CompWindow *w)
     screen->matchPropertyChanged (w);
 }
 
+void
+DecorScreen::addSupportedAtoms (std::vector<Atom> &atoms)
+{
+    screen->addSupportedAtoms (atoms);
+
+    atoms.push_back (requestFrameExtentsAtom);
+}
+
 bool
 DecorScreen::decoratorStartTimeout ()
 {
@@ -1670,6 +1678,7 @@ DecorScreen::DecorScreen (CompScreen *s) :
 			  0);
 
     ScreenInterface::setHandler (s);
+    screen->updateSupportedWmHints ();
 }
 
 DecorScreen::~DecorScreen ()
@@ -1677,6 +1686,9 @@ DecorScreen::~DecorScreen ()
     for (unsigned int i = 0; i < DECOR_NUM; i++)
 	if (decor[i])
 	    Decoration::release (decor[i]);
+
+    screen->addSupportedAtomsSetEnabled (this, false);
+    screen->updateSupportedWmHints ();
 }
 
 DecorWindow::DecorWindow (CompWindow *w) :

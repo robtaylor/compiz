@@ -2123,6 +2123,18 @@ PrivateScreen::setSupportingWmCheck ()
 }
 
 void
+CompScreen::updateSupportedWmHints ()
+{
+    std::vector<Atom> atoms;
+
+    addSupportedAtoms (atoms);
+
+    XChangeProperty (dpy (), root (), Atoms::supported,
+		     XA_ATOM, 32, PropModeReplace,
+		     (const unsigned char *) &atoms.at (0), atoms.size ());
+}
+
+void
 CompScreen::addSupportedAtoms (std::vector<Atom> &atoms)
 {
     WRAPABLE_HND_FUNC (17, addSupportedAtoms, atoms);
@@ -2220,10 +2232,6 @@ CompScreen::addSupportedAtoms (std::vector<Atom> &atoms)
     atoms.push_back (Atoms::restackWindow);
 
     atoms.push_back (Atoms::wmFullscreenMonitors);
-
-    XChangeProperty (dpy (), root (), Atoms::supported,
-		     XA_ATOM, 32, PropModeReplace,
-		     (const unsigned char *) &atoms.at (0), atoms.size ());
 }
 
 void
@@ -4077,7 +4085,6 @@ CompScreen::init (const char *name)
     unsigned int         nchildren;
     int                  defaultDepth, nvisinfo;
     XSetWindowAttributes attrib;
-    std::vector<Atom>    atomList;
 
     CompOption::Value::Vector vList;
 
@@ -4410,7 +4417,7 @@ CompScreen::init (const char *name)
 
     priv->setDesktopHints ();
     priv->setSupportingWmCheck ();
-    addSupportedAtoms (atomList);
+    updateSupportedWmHints ();
 
     priv->normalCursor = XCreateFontCursor (dpy, XC_left_ptr);
     priv->busyCursor   = XCreateFontCursor (dpy, XC_watch);

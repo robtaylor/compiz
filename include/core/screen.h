@@ -128,7 +128,7 @@ class ScreenInterface : public WrapableInterface<CompScreen, ScreenInterface> {
 
 class CompScreen :
     public CompSize,
-    public WrapableHandler<ScreenInterface, 17>,
+    public WrapableHandler<ScreenInterface, 18>,
     public PluginClassStorage,
     public CompOption::Class
 {
@@ -320,6 +320,8 @@ class CompScreen :
 	CompIcon *defaultIcon () const;
 
 	bool updateDefaultIcon ();
+
+	void updateSupportedWmHints ();
 
 	static unsigned int allocPluginClassIndex ();
 	static void freePluginClassIndex (unsigned int index);

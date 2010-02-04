@@ -116,6 +116,7 @@ class DecorScreen :
 
 	void handleEvent (XEvent *event);
 	void matchPropertyChanged (CompWindow *);
+	void addSupportedAtoms (std::vector<Atom>&);
 
 	DecorTexture * getTexture (Pixmap);
 	void releaseTexture (DecorTexture *);
