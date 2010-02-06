@@ -65,6 +65,8 @@ class PrivateCompositeScreen :
 	void detectRefreshRate ();
 
 	int getTimeToNextRedraw (struct timeval *tv);
+	
+	bool aquireSelection (int, const char *, Atom, Window, Time);
 
     public:
 

@@ -288,6 +288,8 @@ class PrivateScreen : public CoreOptions {
 
 	void addScreenActions ();
 	
+	bool aquireSelection (int scr, const char *name, Atom, Window, Time);
+	
 	CompWindow *
 	focusTopMostWindow ();
 

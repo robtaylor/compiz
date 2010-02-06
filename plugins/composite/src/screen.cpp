@@ -303,6 +303,45 @@ PrivateCompositeScreen::~PrivateCompositeScreen ()
 }
 
 bool
+PrivateCompositeScreen::aquireSelection (int scr,
+					 const char *name,
+					 Atom selection,
+					 Window owner,
+					 Time timestamp)
+{
+    Display *dpy = screen->dpy ();
+    Window  root = XRootWindow (dpy, scr);
+    XEvent  event;
+
+    XSetSelectionOwner (dpy, selection, owner, timestamp);
+
+    if (XGetSelectionOwner (dpy, selection) != owner)
+    {
+	compLogMessage ("core", CompLogLevelError,
+			"Could not acquire %s manager "
+			"selection on screen %d display \"%s\"",
+			name, scr, DisplayString (dpy));
+
+	return true;
+    }
+
+    /* Send client message indicating that we are now the manager */
+    event.xclient.type         = ClientMessage;
+    event.xclient.window       = root;
+    event.xclient.message_type = Atoms::manager;
+    event.xclient.format       = 32;
+    event.xclient.data.l[0]    = timestamp;
+    event.xclient.data.l[1]    = selection;
+    event.xclient.data.l[2]    = 0;
+    event.xclient.data.l[3]    = 0;
+    event.xclient.data.l[4]    = 0;
+
+    XSendEvent (dpy, root, FALSE, StructureNotifyMask, &event);
+
+    return true;
+}
+
+bool
 PrivateCompositeScreen::init ()
 {
     Display              *dpy = screen->dpy ();
@@ -356,7 +395,8 @@ PrivateCompositeScreen::init ()
 
     XSetSelectionOwner (dpy, cmSnAtom, newCmSnOwner, cmSnTimestamp);
 
-    if (XGetSelectionOwner (dpy, cmSnAtom) != newCmSnOwner)
+    if (!aquireSelection (screen->screenNum (), "compositing", cmSnAtom,
+    			  newCmSnOwner, cmSnTimestamp))
     {
 	compLogMessage ("composite", CompLogLevelError,
 			"Could not acquire compositing manager "
