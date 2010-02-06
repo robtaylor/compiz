@@ -4064,50 +4064,13 @@ CompScreen::CompScreen ():
 }
 
 bool
-PrivateScreen::aquireSelection (int scr,
-				const char *name,
-				Atom selection,
-				Window owner,
-				Time timestamp)
-{
-    Window  root = XRootWindow (dpy, scr);
-    XEvent  event;
-
-    XSetSelectionOwner (dpy, selection, owner, timestamp);
-
-    if (XGetSelectionOwner (dpy, selection) != owner)
-    {
-	compLogMessage ("core", CompLogLevelError,
-			"Could not acquire %s manager "
-			"selection on screen %d display \"%s\"",
-			name, scr, DisplayString (dpy));
-
-	return true;
-    }
-
-    /* Send client message indicating that we are now the manager */
-    event.xclient.type         = ClientMessage;
-    event.xclient.window       = root;
-    event.xclient.message_type = Atoms::manager;
-    event.xclient.format       = 32;
-    event.xclient.data.l[0]    = timestamp;
-    event.xclient.data.l[1]    = selection;
-    event.xclient.data.l[2]    = 0;
-    event.xclient.data.l[3]    = 0;
-    event.xclient.data.l[4]    = 0;
-
-    XSendEvent (dpy, root, FALSE, StructureNotifyMask, &event);
-
-    return true;
-}
-
-bool
 CompScreen::init (const char *name)
 {
     Window               focus;
     int                  revertTo, i;
     int                  xkbOpcode;
     Display              *dpy;
+    Window               root;
     Window               newWmSnOwner = None;
     Atom                 wmSnAtom = 0;
     Time                 wmSnTimestamp = 0;
@@ -4216,7 +4179,6 @@ CompScreen::init (const char *name)
 
     priv->escapeKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Escape"));
     priv->returnKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Return"));
-    priv->screenNum = DefaultScreen (dpy);
 
     sprintf (buf, "WM_S%d", DefaultScreen (dpy));
     wmSnAtom = XInternAtom (dpy, buf, 0);
@@ -4240,12 +4202,13 @@ CompScreen::init (const char *name)
 	XSelectInput (dpy, currentWmSnOwner, StructureNotifyMask);
     }
 
+    root = XRootWindow (dpy, DefaultScreen (dpy));
+
     attr.override_redirect = true;
     attr.event_mask        = PropertyChangeMask;
 
     newWmSnOwner =
-	XCreateWindow (dpy, XRootWindow (dpy, DefaultScreen (dpy)),
-		       -100, -100, 1, 1, 0,
+	XCreateWindow (dpy, root, -100, -100, 1, 1, 0,
 		       CopyFromParent, CopyFromParent,
 		       CopyFromParent,
 		       CWOverrideRedirect | CWEventMask,
@@ -4261,18 +4224,30 @@ CompScreen::init (const char *name)
 
     XSetSelectionOwner (dpy, wmSnAtom, newWmSnOwner, wmSnTimestamp);
 
-    if (!priv->aquireSelection (priv->screenNum, "window", wmSnAtom,
-    			  	newWmSnOwner, wmSnTimestamp))
+    if (XGetSelectionOwner (dpy, wmSnAtom) != newWmSnOwner)
     {
 	compLogMessage ("core", CompLogLevelError,
-		        "Could not acquire window manager "
-		        "selection on screen %d display \"%s\"",
-		        DefaultScreen (dpy), DisplayString (dpy));
+			"Could not acquire window manager "
+			"selection on screen %d display \"%s\"",
+			DefaultScreen (dpy), DisplayString (dpy));
 
 	XDestroyWindow (dpy, newWmSnOwner);
 
 	return false;
     }
+
+    /* Send client message indicating that we are now the window manager */
+    event.xclient.type         = ClientMessage;
+    event.xclient.window       = root;
+    event.xclient.message_type = Atoms::manager;
+    event.xclient.format       = 32;
+    event.xclient.data.l[0]    = wmSnTimestamp;
+    event.xclient.data.l[1]    = wmSnAtom;
+    event.xclient.data.l[2]    = 0;
+    event.xclient.data.l[3]    = 0;
+    event.xclient.data.l[4]    = 0;
+
+    XSendEvent (dpy, root, FALSE, StructureNotifyMask, &event);
 
     /* Wait for old window manager to go away */
     if (currentWmSnOwner != None)
@@ -4286,7 +4261,7 @@ CompScreen::init (const char *name)
 
     XGrabServer (dpy);
 
-    XSelectInput (dpy, XRootWindow (dpy, DefaultScreen (dpy)),
+    XSelectInput (dpy, root,
 		  SubstructureRedirectMask |
 		  SubstructureNotifyMask   |
 		  StructureNotifyMask      |
@@ -4319,8 +4294,9 @@ CompScreen::init (const char *name)
 	priv->screenEdge[i].count = 0;
     }
 
+    priv->screenNum = DefaultScreen (dpy);
     priv->colormap  = DefaultColormap (dpy, priv->screenNum);
-    priv->root	    = XRootWindow (dpy, priv->screenNum);
+    priv->root	    = root;
 
     priv->snContext = sn_monitor_context_new (priv->snDisplay, priv->screenNum,
 					      compScreenSnEvent, this, NULL);

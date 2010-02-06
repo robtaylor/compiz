@@ -303,45 +303,6 @@ PrivateCompositeScreen::~PrivateCompositeScreen ()
 }
 
 bool
-PrivateCompositeScreen::aquireSelection (int scr,
-					 const char *name,
-					 Atom selection,
-					 Window owner,
-					 Time timestamp)
-{
-    Display *dpy = screen->dpy ();
-    Window  root = XRootWindow (dpy, scr);
-    XEvent  event;
-
-    XSetSelectionOwner (dpy, selection, owner, timestamp);
-
-    if (XGetSelectionOwner (dpy, selection) != owner)
-    {
-	compLogMessage ("core", CompLogLevelError,
-			"Could not acquire %s manager "
-			"selection on screen %d display \"%s\"",
-			name, scr, DisplayString (dpy));
-
-	return true;
-    }
-
-    /* Send client message indicating that we are now the manager */
-    event.xclient.type         = ClientMessage;
-    event.xclient.window       = root;
-    event.xclient.message_type = Atoms::manager;
-    event.xclient.format       = 32;
-    event.xclient.data.l[0]    = timestamp;
-    event.xclient.data.l[1]    = selection;
-    event.xclient.data.l[2]    = 0;
-    event.xclient.data.l[3]    = 0;
-    event.xclient.data.l[4]    = 0;
-
-    XSendEvent (dpy, root, FALSE, StructureNotifyMask, &event);
-
-    return true;
-}
-
-bool
 PrivateCompositeScreen::init ()
 {
     Display              *dpy = screen->dpy ();
@@ -377,7 +338,7 @@ PrivateCompositeScreen::init ()
     attr.event_mask        = PropertyChangeMask;
 
     newCmSnOwner =
-	XCreateWindow (dpy, XRootWindow (dpy, screen->screenNum ()),
+	XCreateWindow (dpy, screen->root (),
 		       -100, -100, 1, 1, 0,
 		       CopyFromParent, CopyFromParent,
 		       CopyFromParent,
@@ -392,19 +353,30 @@ PrivateCompositeScreen::init ()
 
     cmSnTimestamp = event.xproperty.time;
 
-
     XSetSelectionOwner (dpy, cmSnAtom, newCmSnOwner, cmSnTimestamp);
 
-    if (!aquireSelection (screen->screenNum (), "compositing", cmSnAtom,
-    			  newCmSnOwner, cmSnTimestamp))
+    if (XGetSelectionOwner (dpy, cmSnAtom) != newCmSnOwner)
     {
-	compLogMessage ("composite", CompLogLevelError,
+	compLogMessage ("core", CompLogLevelError,
 			"Could not acquire compositing manager "
 			"selection on screen %d display \"%s\"",
 			screen->screenNum (), DisplayString (dpy));
 
 	return false;
     }
+
+    /* Send client message indicating that we are now the compositing manager */
+    event.xclient.type         = ClientMessage;
+    event.xclient.window       = screen->root ();
+    event.xclient.message_type = Atoms::manager;
+    event.xclient.format       = 32;
+    event.xclient.data.l[0]    = cmSnTimestamp;
+    event.xclient.data.l[1]    = cmSnAtom;
+    event.xclient.data.l[2]    = 0;
+    event.xclient.data.l[3]    = 0;
+    event.xclient.data.l[4]    = 0;
+
+    XSendEvent (dpy, screen->root (), FALSE, StructureNotifyMask, &event);
 
     return true;
 }
