@@ -4216,6 +4216,7 @@ CompScreen::init (const char *name)
 
     priv->escapeKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Escape"));
     priv->returnKeyCode = XKeysymToKeycode (dpy, XStringToKeysym ("Return"));
+    priv->screenNum = DefaultScreen (dpy);
 
     sprintf (buf, "WM_S%d", DefaultScreen (dpy));
     wmSnAtom = XInternAtom (dpy, buf, 0);
@@ -4318,7 +4319,6 @@ CompScreen::init (const char *name)
 	priv->screenEdge[i].count = 0;
     }
 
-    priv->screenNum = DefaultScreen (dpy);
     priv->colormap  = DefaultColormap (dpy, priv->screenNum);
     priv->root	    = XRootWindow (dpy, priv->screenNum);
 
