@@ -451,8 +451,7 @@ SwitchScreen::windowRemove (CompWindow *w)
 {
     if (w)
     {
-	bool   inList = false;
-	int    count;
+	int count;
 
 	CompWindow *selected;
 	CompWindow *old;
@@ -469,34 +468,26 @@ SwitchScreen::windowRemove (CompWindow *w)
 
 	old = selected = selectedWindow;
 
-	CompWindowList::iterator it = windows.begin ();
-	while (it != windows.end ())
-	{
-	    if (*it == w)
-	    {
-		inList = true;
+	CompWindowList::iterator it = std::find (windows.begin (),
+						 windows.end (),
+						 w);
 
-		if (w == selected)
-		{
-		    it++;
-		    if (it == windows.end ())
-			selected = windows.front ();
-		    else
-			selected = *it;
-		    it--;
-		}
-
-		CompWindowList::iterator del = it;
-		it++;
-		windows.erase (del);
-	    }
-	    else
-		it++;
-	}
-
-	if (!inList)
+	if (it == windows.end ())
 	    return;
 
+	if (w == selected)
+	{
+	    CompWindowList::iterator newSelected = it;
+
+	    if (w == windows.back ())
+		newSelected = windows.begin ();
+	    else
+		newSelected++;
+
+	    selected = *newSelected;
+	}
+
+	windows.erase (it);
 	count = windows.size ();
 
 	if (count == 2)
