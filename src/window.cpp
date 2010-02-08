@@ -5326,9 +5326,7 @@ CompWindow::updateFrameRegion ()
     CompRect   r;
     int        x, y;
 
-    if ((priv->input.left || priv->input.right ||
-	 priv->input.top || priv->input.bottom) && priv->frame &&
-	 priv->serverGeometry == priv->geometry)
+    if (priv->frame && priv->serverGeometry == priv->geometry)
     {
 
 	priv->frameRegion = CompRegion ();
