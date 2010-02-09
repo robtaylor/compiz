@@ -4814,12 +4814,20 @@ PrivateWindow::updateMwmHints ()
 void
 PrivateWindow::updateStartupId ()
 {
-    if (startupId)
-	free (startupId);
+    char *oldId = startupId;
+    bool newId = true;
 
     startupId = getStartupId ();
 
-    if (managed && startupId)
+    if (oldId)
+    {
+	if (strcmp (startupId, oldId) == 0)
+	    newId = false;
+	
+	free (oldId);
+    }
+
+    if (managed && startupId && newId)
     {
 	Time       timestamp = 0;
 	CompPoint  vp, svp;
@@ -4948,8 +4956,7 @@ CompWindow::CompWindow (Window id,
 	priv->updateTransientHint ();
 
 	priv->clientLeader = priv->getClientLeader ();
-	if (!priv->clientLeader)
-	    priv->startupId = priv->getStartupId ();
+	priv->startupId = priv->getStartupId ();
 
 	recalcType ();
 
