@@ -26,7 +26,7 @@ COMPIZ_PLUGIN_20090315 (place, PlacePluginVTable)
 
 PlaceScreen::PlaceScreen (CompScreen *screen) :
     PluginClassHandler<PlaceScreen, CompScreen> (screen),
-    mPrevSize (0, 0),
+    mPrevSize (screen->width (), screen->height ()),
     mStrutWindowCount (0),
     fullPlacementAtom (XInternAtom (screen->dpy (),
     				    "_NET_WM_FULL_PLACEMENT", 0))
@@ -336,6 +336,8 @@ PlaceScreen::handleScreenSizeChange (int width,
     if (screen->width () == width && screen->height () == height)
 	return;
     
+    mPrevSize.set (screen->width (), screen->height ());    
+
     if (mResChangeFallbackHandle.active ())
 	mResChangeFallbackHandle.stop ();
 
