@@ -336,7 +336,8 @@ PlaceScreen::handleScreenSizeChange (int width,
     if (screen->width () == width && screen->height () == height)
 	return;
     
-    mPrevSize.set (screen->width (), screen->height ());    
+    mPrevSize.setWidth (screen->width ());
+    mPrevSize.setHeight (screen->height ());    
 
     if (mResChangeFallbackHandle.active ())
 	mResChangeFallbackHandle.stop ();
