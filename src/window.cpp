@@ -5333,7 +5333,8 @@ CompWindow::updateFrameRegion ()
     CompRect   r;
     int        x, y;
 
-    if (priv->frame && priv->serverGeometry == priv->geometry)
+     if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
+	 priv->serverGeometry.height () == priv->geometry.height ())
     {
 
 	priv->frameRegion = CompRegion ();
@@ -5353,8 +5354,8 @@ CompWindow::updateFrameRegion ()
 	    priv->frameRegion &= CompRegion (r);
 	}
 
-	x = priv->serverGeometry.x () - priv->input.left;
-	y = priv->serverGeometry.y () - priv->input.top;
+	x = priv->geometry.x () - priv->input.left;
+	y = priv->geometry.y () - priv->input.top;
 
 
 	XShapeCombineRegion (screen->dpy (), priv->frame,
