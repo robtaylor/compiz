@@ -4,10 +4,5 @@
 	<_short>KDE/Qt Event Loop</_short>
 	<_long>Integrates the KDE/Qt event loop into Compiz</_long>
 	<category>General</category>
-	<deps>
-	    <requirement>
-		<plugin>glib</plugin>
-	    </requirement>
-	</deps>
     </plugin>
 </compiz>

@@ -22,47 +22,40 @@
 
 #include <KDE/KCmdLineArgs>
 
-#include <QFileDialog>
-
-
 COMPIZ_PLUGIN_20090315 (kde, KdePluginVTable);
 
+typedef int (*X11ErrorHandlerProc)(Display *, XErrorEvent *);
 
 KdeScreen::KdeScreen (CompScreen *screen) :
     PluginClassHandler <KdeScreen, CompScreen> (screen)
 {
+    mEventDispatcher = new EventDispatcherCompiz ();
     argv[0] = strdup ("compiz");
     argc = 1;
     KCmdLineArgs::init (argc, argv, "compiz", "compiz",
                         ki18n ("Compiz KDE event loop plugin"), "0.0.1");
 
+    // Save the compiz error handler
+    X11ErrorHandlerProc er = XSetErrorHandler(NULL);
+
     mApp = new KApplication ();
-    sendGlibNotify ();
+
+    // Restore our error handler
+    XSetErrorHandler(er);
 }
 
 KdeScreen::~KdeScreen ()
 {
+    // Save the compiz error handler
+    X11ErrorHandlerProc er = XSetErrorHandler(NULL);
+
     delete mApp;
+    delete mEventDispatcher;
+
+    // Restore our error handler
+    XSetErrorHandler(er);
+
     free (argv[0]);
-}
-
-void
-KdeScreen::sendGlibNotify ()
-{
-    Display *dpy = screen->dpy ();
-    XEvent  xev;
-
-    xev.xclient.type    = ClientMessage;
-    xev.xclient.display = dpy;
-    xev.xclient.format  = 32;
-
-    xev.xclient.message_type = XInternAtom (dpy, "_COMPIZ_GLIB_NOTIFY", 0);
-    xev.xclient.window	     = screen->root ();
-
-    memset (xev.xclient.data.l, 0, sizeof (xev.xclient.data.l));
-
-    XSendEvent (dpy, screen->root (), false,
-		SubstructureRedirectMask | SubstructureNotifyMask, &xev);
 }
 
 bool

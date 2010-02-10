@@ -18,8 +18,14 @@
  *
  */
 
+#ifndef KDE_H_
+#define KDE_H_
+
 #include <core/core.h>
+#include <core/timer.h>
 #include <core/pluginclasshandler.h>
+
+#include "dispatcher.h"
 
 #include <fixx11h.h>
 
@@ -36,7 +42,8 @@ class KdeScreen :
 	void sendGlibNotify ();
 
     private:
-	KApplication *mApp;
+	KApplication          *mApp;
+	EventDispatcherCompiz *mEventDispatcher;
 
 	char        *argv[1];
 	int         argc;
@@ -49,3 +56,5 @@ class KdePluginVTable :
 
 	bool init ();
 };
+
+#endif
