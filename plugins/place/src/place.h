@@ -41,8 +41,8 @@ class PlaceScreen :
 	~PlaceScreen ();
 
 	void handleEvent (XEvent *event);
-	void doHandleScreenSizeChange (bool);
-	bool handleScreenSizeChangeFallback ();
+	void doHandleScreenSizeChange (bool, int, int);
+	bool handleScreenSizeChangeFallback (int width, int height);
 	void handleScreenSizeChange (int width, int height);
 	bool getPointerPosition (CompPoint &p);
 	void addSupportedAtoms (std::vector<Atom>&);
