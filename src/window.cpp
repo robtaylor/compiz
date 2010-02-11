@@ -2793,9 +2793,13 @@ CompWindow::moveResize (XWindowChanges *xwc,
 			int            gravity,
 			unsigned int   source)
 {
-    bool placed = xwcm & (CWX | CWY);
+    bool placed = false;
 
     xwcm &= (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
+    
+    if (xwcm & (CWX | CWY))
+	if (priv->sizeHints.flags & (USPosition | PPosition))
+	    placed = true;
 
     if (gravity == 0)
 	gravity = priv->sizeHints.win_gravity;
