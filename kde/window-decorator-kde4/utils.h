@@ -54,6 +54,7 @@ namespace KWD
 	extern Atom toolkitActionWindowMenuAtom;
 	extern Atom toolkitActionForceQuitDialogAtom;
 	extern Atom compizWindowBlurDecor;
+	extern Atom enlightmentDesktop;
 
 	void init (void);
     }
