@@ -5031,6 +5031,9 @@ CompWindow::CompWindow (Window id,
 
 	    priv->pendingUnmaps++;
 
+	    if (priv->frame && !priv->shaded)
+		XUnmapWindow (screen->dpy (), priv->frame);
+
 	    XUnmapWindow (screen->dpy (), priv->id);
 
 	    screen->priv->setWindowState (priv->state, priv->id);
