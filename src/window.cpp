@@ -5448,9 +5448,9 @@ PrivateWindow::reparent ()
     attr.border_pixel      = 0;
     attr.colormap          = attrib.colormap;
 
-    frame = XCreateWindow (dpy, screen->root (), sg.x (), sg.y (),
-			  sg.width (), sg.height (), 0, attrib.depth,
-			  InputOutput, attrib.visual, mask, &attr);
+    frame = XCreateWindow (dpy, screen->root (), 0, 0,
+			   1, 1, 0, attrib.depth,
+			   InputOutput, attrib.visual, mask, &attr);
 
     wrapper = XCreateWindow (dpy, frame, 0, 0,
 			    sg.width (), sg.height (), 0, attrib.depth,
@@ -5459,6 +5459,10 @@ PrivateWindow::reparent ()
     XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
+
+    xwc.stack_mode = Below;
+    xwc.sibling    = id;
+    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
 
     XMapWindow (dpy, wrapper);
     XReparentWindow (dpy, id, wrapper, 0, 0);
@@ -5495,6 +5499,8 @@ PrivateWindow::reparent ()
 		  ExposureMask);
 
     XUngrabServer (dpy);
+    
+    XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
     window->windowNotify (CompWindowNotifyReparent);
 
@@ -5507,6 +5513,7 @@ PrivateWindow::unreparent ()
     Display        *dpy = screen->dpy ();
     XEvent         e;
     bool           alive = true;
+    XWindowChanges xwc;
 
     if (!frame)
 	return;
@@ -5527,8 +5534,11 @@ PrivateWindow::unreparent ()
         XSelectInput (dpy, frame, NoEventMask);
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
-        XReparentWindow (dpy, id, screen->root (), serverGeometry.x (),
-			 serverGeometry.y ());
+        XReparentWindow (dpy, id, screen->root (), 0, 0);
+	
+	xwc.stack_mode = Below;
+	xwc.sibling    = frame;
+	XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
 
         XUnmapWindow (dpy, frame);
 	
@@ -5550,6 +5560,8 @@ PrivateWindow::unreparent ()
 		  ExposureMask);
 	
 	XUngrabServer (dpy);
+	
+	XMoveWindow (dpy, id, serverGeometry.x (), serverGeometry.y ());
     }
 
     XDestroyWindow (dpy, wrapper);
