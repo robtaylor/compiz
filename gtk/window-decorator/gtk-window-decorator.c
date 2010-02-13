@@ -304,7 +304,8 @@ static decor_shadow_t *switcher_shadow = NULL;
 static GdkPixmap *decor_normal_pixmap = NULL;
 static GdkPixmap *decor_active_pixmap = NULL;
 
-static Atom frame_window_atom;
+static Atom frame_input_window_atom;
+static Atom frame_output_window_atom;
 static Atom win_decor_atom;
 static Atom win_blur_decor_atom;
 static Atom wm_move_resize_atom;
@@ -383,6 +384,7 @@ typedef struct _decor {
     guint	      button_states[BUTTON_NUM];
     GdkPixmap	      *pixmap;
     GdkPixmap	      *buffer_pixmap;
+    GdkWindow	      *frame_window;
     GdkGC	      *gc;
     decor_layout_t    border_layout;
     decor_context_t   *context;
@@ -634,6 +636,13 @@ gdk_cairo_set_source_color_alpha (cairo_t  *cr,
 			   color->green / 65535.0,
 			   color->blue  / 65535.0,
 			   alpha);
+}
+
+static inline GdkWindow *
+create_gdk_window (Window xframe)
+{
+    GdkWindow *window = gdk_window_foreign_new (xframe);
+    return window;
 }
 
 static GdkPixmap *
@@ -2117,6 +2126,17 @@ meta_draw_window_decoration (decor_t *d)
 			    d->width,
 			    d->height);
 
+    if (d->frame_window)
+	gdk_draw_drawable (d->frame_window,
+			   d->gc,
+			   d->pixmap,
+			   0,
+			   0,
+			   0,
+			   0,
+			   d->width,
+			   d->height);
+
     if (d->prop_xid)
     {
 	/* translate from frame to client window space */
@@ -3481,11 +3501,12 @@ update_window_decoration_size (WnckWindow *win)
     Picture   picture;
     gint      width, height;
     gint      w, h, name_width;
+    gint      x, y;
     Display   *xdisplay;
 
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
-    wnck_window_get_client_window_geometry (win, NULL, NULL, &w, &h);
+    wnck_window_get_client_window_geometry (win, &x, &y, &w, &h);
 
     name_width = max_window_name_width (win);
 
@@ -3532,6 +3553,11 @@ update_window_decoration_size (WnckWindow *win)
 
     d->prop_xid = wnck_window_get_xid (win);
 
+    if (d->frame_window && width != 0 && height != 0)
+    {
+	gdk_window_show (d->frame_window);
+    }
+
     update_window_decoration_name (win);
 
     queue_decor_draw (d);
@@ -3541,7 +3567,8 @@ update_window_decoration_size (WnckWindow *win)
 
 static void
 add_frame_window (WnckWindow *win,
-		  Window     frame)
+		  Window     frame,
+		  Bool	     mode)
 {
     Display		 *xdisplay;
     XSetWindowAttributes attr;
@@ -3588,6 +3615,17 @@ add_frame_window (WnckWindow *win,
 
 	d->button_states[i] = 0;
     }
+
+    /* 2D Mode is on */
+
+    fprintf (stderr, "2D Mode?\n");
+
+    if (mode == TRUE)
+    {
+	d->frame_window = create_gdk_window (frame);
+    }
+    else
+	d->frame_window = NULL;
 
     gdk_display_sync (gdk_display_get_default ());
     if (!gdk_error_trap_pop ())
@@ -3869,6 +3907,13 @@ remove_frame_window (WnckWindow *win)
 	d->force_quit_dialog = NULL;
 	gtk_widget_destroy (dialog);
     }
+    
+    if (d->frame_window)
+    {
+	g_object_unref (G_OBJECT (d->frame_window));
+	gdk_window_destroy (d->frame_window);
+	d->frame_window = NULL;
+    }
 
     d->width  = 0;
     d->height = 0;
@@ -4033,15 +4078,21 @@ window_opened (WnckScreen *screen,
     connect_window (win);
 
     xid = wnck_window_get_xid (win);
+    
+    fprintf (stderr, "add_frame_window called\n");
 
     if (get_window_prop (xid, select_window_atom, &window))
     {
 	d->prop_xid = wnck_window_get_xid (win);
 	update_switcher_window (win, window);
     }
-    else if (get_window_prop (xid, frame_window_atom, &window))
+    else if (get_window_prop (xid, frame_input_window_atom, &window))
     {
-	add_frame_window (win, window);
+	add_frame_window (win, window, FALSE);
+    }
+    else if (get_window_prop (xid, frame_output_window_atom, &window))
+    {
+	add_frame_window (win, window, TRUE);
     }
 }
 
@@ -5157,7 +5208,7 @@ event_filter_func (GdkXEvent *gdkxevent,
 				 GINT_TO_POINTER (xevent->xmotion.window));
 	break;
     case PropertyNotify:
-	if (xevent->xproperty.atom == frame_window_atom)
+	if (xevent->xproperty.atom == frame_input_window_atom)
 	{
 	    WnckWindow *win;
 
@@ -5170,8 +5221,28 @@ event_filter_func (GdkXEvent *gdkxevent,
 
 		if (!get_window_prop (xid, select_window_atom, &window))
 		{
-		    if (get_window_prop (xid, frame_window_atom, &frame))
-			add_frame_window (win, frame);
+		    if (get_window_prop (xid, frame_input_window_atom, &frame))
+			add_frame_window (win, frame, FALSE);
+		    else
+			remove_frame_window (win);
+		}
+	    }
+	}
+	if (xevent->xproperty.atom == frame_output_window_atom)
+	{
+	    WnckWindow *win;
+
+	    xid = xevent->xproperty.window;
+
+	    win = wnck_window_get (xid);
+	    if (win)
+	    {
+		Window frame, window;
+
+		if (!get_window_prop (xid, select_window_atom, &window))
+		{
+		    if (get_window_prop (xid, frame_output_window_atom, &frame))
+			add_frame_window (win, frame, TRUE);
 		    else
 			remove_frame_window (win);
 		}
@@ -7007,11 +7078,14 @@ main (int argc, char *argv[])
     }
 #endif
 
+    fprintf (stderr, "starting decor\n");
+
     gdkdisplay = gdk_display_get_default ();
     xdisplay   = gdk_x11_display_get_xdisplay (gdkdisplay);
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
 
-    frame_window_atom	= XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, FALSE);
+    frame_input_window_atom	= XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, FALSE);
+    frame_output_window_atom	= XInternAtom (xdisplay, DECOR_OUTPUT_FRAME_ATOM_NAME, FALSE);
     win_decor_atom	= XInternAtom (xdisplay, DECOR_WINDOW_ATOM_NAME, FALSE);
     win_blur_decor_atom	= XInternAtom (xdisplay, DECOR_BLUR_ATOM_NAME, FALSE);
     wm_move_resize_atom = XInternAtom (xdisplay, "_NET_WM_MOVERESIZE", FALSE);
@@ -7101,7 +7175,8 @@ main (int argc, char *argv[])
     }
 
     decor_set_dm_check_hint (xdisplay, gdk_screen_get_number (gdkscreen),
-			     WINDOW_DECORATION_TYPE_PIXMAP);
+			     WINDOW_DECORATION_TYPE_PIXMAP |
+			     WINDOW_DECORATION_TYPE_WINDOW);
 
     update_default_decorations (gdkscreen);
 
