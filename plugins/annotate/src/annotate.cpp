@@ -70,6 +70,9 @@ AnnoScreen::cairoContext ()
 	    return NULL;
 	}
 
+	damage = XDamageCreate (screen->dpy (), pixmap,
+				XDamageReportRawRectangles);
+
 	surface =
 	    cairo_xlib_surface_create_with_xrender_format (screen->dpy (),
 							   pixmap, xScreen,
@@ -117,12 +120,7 @@ AnnoScreen::drawCircle (double	       xc,
 	setSourceColor (cr, strokeColor);
 	cairo_stroke (cr);
 
-	CompRegion reg (xc - radius - strokeWidth, yc - radius - strokeWidth,
-		       (radius * 2) + (strokeWidth * 2),
-		       (radius * 2) + (strokeWidth * 2));
-
 	content = true;
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -150,12 +148,7 @@ AnnoScreen::drawRectangle (double	  x,
 	setSourceColor (cr, strokeColor);
 	cairo_stroke (cr);
 
-	CompRegion reg (x - strokeWidth, y - strokeWidth,
-		        w + (strokeWidth * 2), h + (strokeWidth * 2));
-
 	content = true;
-
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -182,13 +175,7 @@ AnnoScreen::drawLine (double	     x1,
 	setSourceColor (cr, color);
 	cairo_stroke (cr);
 
-	CompRegion reg (ex1 - width, ey1 - width,
-		       (ex2 - ex1) + (width * 2),
-		       (ey2 - ey1) + (width * 2));
-
 	content = true;
-
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -233,13 +220,7 @@ AnnoScreen::drawText (double	     		     x,
 	reg.extents.x2 = x + extents.width + 20.0;
 	reg.extents.y2 = y + extents.height;
 
-	CompRegion region (reg.extents.x1, reg.extents.y1,
-			   reg.extents.x2 - reg.extents.x1,
-			   reg.extents.y2 - reg.extents.y1);
-
 	content = true;
-
-	cScreen->damageRegion (region);
     }
 }
 
@@ -453,10 +434,6 @@ AnnoScreen::terminate (CompAction         *action,
 
     drawMode = NoMode;
 
-    /* No need to handle motion events for now */
-
-    screen->handleEventSetEnabled (this, false);
-
     return false;
 }
 
@@ -560,7 +537,8 @@ AnnoScreen::clear (CompAction         *action,
 
         cScreen->damageScreen ();
 
-	/* We don't need to refresh the screen anymore */
+	/* We don't need to refresh the screen or handle events anymore */
+	screen->handleEventSetEnabled (this, false);
 	gScreen->glPaintOutputSetEnabled (this, false);
     }
 
@@ -795,6 +773,12 @@ AnnoScreen::handleEvent (XEvent      *event)
     case LeaveNotify:
 	handleMotionEvent (pointerX, pointerY);
     default:
+	if (event->type == cScreen->damageEvent () + XDamageNotify)
+	{
+	    XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
+	    if (pixmap == de->drawable)
+		cScreen->damageRegion (CompRegion (CompRect (de->area)));
+	}
 	break;
     }
 
@@ -844,6 +828,8 @@ AnnoScreen::~AnnoScreen ()
 	cairo_surface_destroy (surface);
     if (pixmap)
 	XFreePixmap (screen->dpy (), pixmap);
+    if (damage)
+	XDamageDestroy (screen->dpy (), damage);
 }
 
 bool
