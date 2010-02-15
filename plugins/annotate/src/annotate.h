@@ -72,8 +72,6 @@ class AnnoScreen :
 	cairo_surface_t *surface;
 	cairo_t		*cairo;
 	bool		content;
-	Damage		damage;
-
 	int		initialPointerX, initialPointerY;
 	CompRect	rectangle, lastRect;
 	DrawMode	drawMode;
