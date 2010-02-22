@@ -836,12 +836,14 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 			drawMode == EllipseMode))
 	{
 	    /* Add border width to the damage region */
-	    damageRect.setGeometry (damageRect.x () - optionGetStrokeWidth (),
-				    damageRect.y () - optionGetStrokeWidth (),
+	    damageRect.setGeometry (damageRect.x () -
+				    (optionGetStrokeWidth () / 2),
+				    damageRect.y () -
+				    (optionGetStrokeWidth () / 2),
 				    damageRect.width () +
-				    (optionGetStrokeWidth () * 2),
+				    optionGetStrokeWidth () + 1,
 				    damageRect.height () +
-				    (optionGetStrokeWidth () * 2));
+				    optionGetStrokeWidth () + 1);
 
 	    cScreen->damageRegion (damageRect);
 	    cScreen->damageRegion (lastRect);
