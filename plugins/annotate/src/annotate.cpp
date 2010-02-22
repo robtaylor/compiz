@@ -281,9 +281,9 @@ AnnoScreen::draw (CompAction         *action,
     cr = cairoContext ();
     if (cr)
     {
-        const char	   *tool;
-        unsigned short *fillColor, *strokeColor;
-        double	   lineWidth, strokeWidth;
+        const char	*tool;
+        unsigned short	*fillColor, *strokeColor;
+        double		strokeWidth;
 
         tool =
 	 CompOption::getStringOptionNamed (options, "tool", "line").c_str ();
@@ -302,10 +302,6 @@ AnnoScreen::draw (CompAction         *action,
         strokeWidth = optionGetStrokeWidth ();
         strokeWidth = CompOption::getFloatOptionNamed (options, "stroke_width",
 				           strokeWidth);
-
-        lineWidth = optionGetLineWidth ();
-        lineWidth = CompOption::getFloatOptionNamed (options, "line_width",
-				         lineWidth);
 
         if (strcasecmp (tool, "rectangle") == 0)
         {
@@ -340,7 +336,7 @@ AnnoScreen::draw (CompAction         *action,
 	    x2 = CompOption::getFloatOptionNamed (options, "x2", 100);
 	    y2 = CompOption::getFloatOptionNamed (options, "y2", 100);
 
-	    drawLine (x1, y1, x2, y2, lineWidth, fillColor);
+	    drawLine (x1, y1, x2, y2, strokeWidth, fillColor);
         }
         else if (strcasecmp (tool, "text") == 0)
         {
@@ -401,7 +397,7 @@ AnnoScreen::terminate (CompAction         *action,
     case LineMode:
 	drawLine (initialPointerX, initialPointerY,
 		  lineVector.x (), lineVector.y (),
-		  optionGetLineWidth (),
+		  optionGetStrokeWidth (),
 		  optionGetStrokeColor ());
 	break;
 
@@ -671,7 +667,7 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	{
 	case LineMode:
 	    glColor4usv (optionGetStrokeColor ());
-	    glLineWidth (optionGetLineWidth ());
+	    glLineWidth (optionGetStrokeWidth ());
 	    glBegin (GL_LINES);
 	    glVertex2i (initialPointerX, initialPointerY);
 	    glVertex2i (lineVector.x (), lineVector.y ());
@@ -771,7 +767,7 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 	case FreeDrawMode:
 	    drawLine (annoLastPointerX, annoLastPointerY,
 		      xRoot, yRoot,
-		      optionGetLineWidth (),
+		      optionGetStrokeWidth (),
 		      optionGetStrokeColor ());
 	    break;
 
