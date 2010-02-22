@@ -100,13 +100,12 @@ class AnnoScreen :
 			unsigned short *color);
 
 	void
-	drawEllipse (double		xc,
-		     double		yc,
-		     double		radiusX,
-		     double		radiusY,
-		     unsigned short	*fillColor,
-		     unsigned short	*strokeColor,
-		     double		strokeWidth);
+	drawLine (double	     x1,
+		  double	     y1,
+		  double	     x2,
+		  double	     y2,
+		  double	     width,
+		  unsigned short *color);
 
 	void
 	drawRectangle (double	  x,
@@ -118,12 +117,13 @@ class AnnoScreen :
 		       double	  strokeWidth);
 
 	void
-	drawLine (double	     x1,
-		  double	     y1,
-		  double	     x2,
-		  double	     y2,
-		  double	     width,
-		  unsigned short *color);
+	drawEllipse (double		xc,
+		     double		yc,
+		     double		radiusX,
+		     double		radiusY,
+		     unsigned short	*fillColor,
+		     unsigned short	*strokeColor,
+		     double		strokeWidth);
 
 	void
 	drawText (double	     		     x,
@@ -150,7 +150,7 @@ class AnnoScreen :
 		   CompOption::Vector& options);
 
 	bool
-	eraseInitiate (CompAction         *action,
+	initiateErase (CompAction         *action,
 		       CompAction::State  state,
 		       CompOption::Vector& options);
 
@@ -165,12 +165,12 @@ class AnnoScreen :
 		      CompOption::Vector& options);
 
 	bool
-	rectangleInitiate (CompAction         *action,
+	initiateRectangle (CompAction         *action,
 			   CompAction::State  state,
 			   CompOption::Vector& options);
 
 	bool
-	ellipseInitiate (CompAction         *action,
+	initiateEllipse (CompAction         *action,
 			 CompAction::State  state,
 			 CompOption::Vector& options);
 

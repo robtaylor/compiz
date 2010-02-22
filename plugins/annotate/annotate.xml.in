@@ -35,7 +35,7 @@
 		<allowed/>
 	    </option>
 	    <option name="erase_button" type="button">
-		<_short>Initiate erase</_short>
+		<_short>Initiate Erase</_short>
 		<_long>Initiate annotate erasing</_long>
 		<default>&lt;Super&gt;&lt;Alt&gt;Button3</default>
 	    </option>
@@ -58,6 +58,7 @@
 		<_long>Fill color for annotations</_long>
 		<default>
 		    <red>0xffff</red>
+		    <alpha>0x8888</alpha>
 		</default>
 	    </option>
 	    <option name="stroke_color" type="color">

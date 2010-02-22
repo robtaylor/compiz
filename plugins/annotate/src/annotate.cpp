@@ -435,7 +435,7 @@ AnnoScreen::terminate (CompAction         *action,
 }
 
 bool
-AnnoScreen::eraseInitiate (CompAction         *action,
+AnnoScreen::initiateErase (CompAction         *action,
 		           CompAction::State  state,
 		           CompOption::Vector& options)
 {
@@ -516,7 +516,7 @@ AnnoScreen::initiateLine (CompAction         *action,
 }
 
 bool
-AnnoScreen::rectangleInitiate (CompAction         *action,
+AnnoScreen::initiateRectangle (CompAction         *action,
 			       CompAction::State  state,
 			       CompOption::Vector& options)
 {
@@ -545,7 +545,7 @@ AnnoScreen::rectangleInitiate (CompAction         *action,
 }
 
 bool
-AnnoScreen::ellipseInitiate (CompAction         *action,
+AnnoScreen::initiateEllipse (CompAction         *action,
 			     CompAction::State  state,
 			     CompOption::Vector& options)
 {
@@ -889,7 +889,7 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
     optionSetDrawInitiate
 	(boost::bind (&AnnoScreen::draw, this, _1, _2, _3));
     optionSetEraseButtonInitiate
-	(boost::bind (&AnnoScreen::eraseInitiate, this, _1, _2, _3));
+	(boost::bind (&AnnoScreen::initiateErase, this, _1, _2, _3));
     optionSetEraseButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetInitiateFreeDrawButtonInitiate
@@ -901,11 +901,11 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
     optionSetInitiateLineButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetInitiateRectangleButtonInitiate
-	(boost::bind (&AnnoScreen::rectangleInitiate, this, _1, _2, _3));
+	(boost::bind (&AnnoScreen::initiateRectangle, this, _1, _2, _3));
     optionSetInitiateRectangleButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetInitiateEllipseButtonInitiate
-	(boost::bind (&AnnoScreen::ellipseInitiate, this, _1, _2, _3));
+	(boost::bind (&AnnoScreen::initiateEllipse, this, _1, _2, _3));
     optionSetInitiateEllipseButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetClearKeyInitiate
