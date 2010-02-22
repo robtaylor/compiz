@@ -48,6 +48,11 @@
 		<_short>Clear</_short>
 		<_long>Clear</_long>
 	    </option>
+	    <option name="draw_shapes_from_center" type="bool">
+		    <_short>Draw shapes from center</_short>
+		    <_long>Uses the initial click point as the center of shapes.</_long>
+		    <default>true</default>
+	    </option>
 	    <option name="fill_color" type="color">
 		<_short>Annotate Fill Color</_short>
 		<_long>Fill color for annotations</_long>

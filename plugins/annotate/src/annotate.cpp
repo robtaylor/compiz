@@ -784,31 +784,35 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 	    break;
 
 	case RectangleMode:
-	    if ((xRoot < initialPointerX) && (yRoot < initialPointerY))
-		rectangle.setGeometry (xRoot, yRoot,
-				       initialPointerX - xRoot,
-				       initialPointerY - yRoot);
-	    else if (yRoot < initialPointerY)
-		    rectangle.setGeometry (initialPointerX, yRoot,
-					   xRoot - initialPointerX,
-					   initialPointerY - yRoot);
-	    else if (xRoot < initialPointerX)
-		    rectangle.setGeometry (xRoot, initialPointerY,
-					   initialPointerX - xRoot,
-					   yRoot - initialPointerY);
+	    if (optionGetDrawShapesFromCenter ())
+		rectangle.setGeometry (initialPointerX -
+				       abs (xRoot - initialPointerX),
+				       initialPointerY -
+				       abs (yRoot - initialPointerY),
+				      (abs (xRoot - initialPointerX)) * 2,
+				      (abs (yRoot - initialPointerY)) * 2);
 	    else
-		rectangle.setGeometry (initialPointerX, initialPointerY,
-				       xRoot - initialPointerX,
-				       yRoot - initialPointerY);
+		rectangle.setGeometry (MIN(initialPointerX, xRoot),
+				       MIN(initialPointerY, yRoot),
+				       abs (xRoot - initialPointerX),
+				       abs (yRoot - initialPointerY));
 
 	    damageRect = rectangle;
 	    break;
 
 	case EllipseMode:
-	    ellipse.center.setX (initialPointerX +
-				(xRoot - initialPointerX) / 2);
-	    ellipse.center.setY (initialPointerY +
-				(yRoot - initialPointerY) / 2);
+	    if (optionGetDrawShapesFromCenter ())
+	    {
+		ellipse.center.setX (initialPointerX);
+		ellipse.center.setY (initialPointerY);
+	    }
+	    else
+	    {
+		ellipse.center.setX (initialPointerX +
+				    (xRoot - initialPointerX) / 2);
+		ellipse.center.setY (initialPointerY +
+				    (yRoot - initialPointerY) / 2);
+	    }
 
 	    ellipse.radiusX = abs (xRoot - ellipse.center.x ());
 	    ellipse.radiusY = abs (yRoot - ellipse.center.y ());
