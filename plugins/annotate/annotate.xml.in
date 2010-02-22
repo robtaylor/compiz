@@ -9,15 +9,20 @@
 	    </requirement>
 	</deps>
 	<options>
-	    <option name="initiate_button" type="button">
-		<_short>Initiate</_short>
-		<_long>Initiate annotate drawing</_long>
+	    <option name="initiate_free_draw_button" type="button">
+		<_short>Initiate Free Draw</_short>
+		<_long>Initiate freehand drawing</_long>
 		<default>&lt;Super&gt;&lt;Alt&gt;Button1</default>
+	    </option>
+	    <option name="initiate_line_button" type="button">
+		<_short>Initiate Line</_short>
+		<_long>Initiate line drawing</_long>
+		<default>&lt;Super&gt;&lt;Alt&gt;Button2</default>
 	    </option>
 	    <option name="initiate_rectangle_button" type="button">
 		<_short>Initiate Rectangle</_short>
 		<_long>Initiate rectangle drawing</_long>
-		<default>&lt;Super&gt;&lt;Alt&gt;Button2</default>
+		<default>&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;Button1</default>
 	    </option>
 	    <option name="initiate_ellipse_button" type="button">
 		<_short>Initiate Ellipse</_short>

@@ -34,6 +34,8 @@
 
 static int annoLastPointerX = 0;
 static int annoLastPointerY = 0;
+static int initialPointerX = 0;
+static int initialPointerY = 0;
 
 typedef struct _Ellipse
 {
@@ -46,6 +48,7 @@ enum DrawMode
 {
     NoMode = 0,
     EraseMode,
+    FreeDrawMode,
     LineMode,
     RectangleMode,
     EllipseMode,
@@ -74,11 +77,11 @@ class AnnoScreen :
 	bool		content;
 	Damage		damage;
 
-	int		initialPointerX, initialPointerY;
 	CompRect	rectangle, lastRect;
 	DrawMode	drawMode;
 
-	Ellipse ellipse;
+	CompPoint	lineVector;
+	Ellipse		ellipse;
 
 	void handleEvent (XEvent *);
 
@@ -142,11 +145,6 @@ class AnnoScreen :
 	      CompOption::Vector& options);
 
 	bool
-	initiate (CompAction         *action,
-		  CompAction::State  state,
-		  CompOption::Vector& options);
-
-	bool
 	terminate (CompAction         *action,
 		   CompAction::State  state,
 		   CompOption::Vector& options);
@@ -155,6 +153,16 @@ class AnnoScreen :
 	eraseInitiate (CompAction         *action,
 		       CompAction::State  state,
 		       CompOption::Vector& options);
+
+	bool
+	initiateFreeDraw (CompAction         *action,
+			  CompAction::State  state,
+			  CompOption::Vector& options);
+
+	bool
+	initiateLine (CompAction         *action,
+		      CompAction::State  state,
+		      CompOption::Vector& options);
 
 	bool
 	rectangleInitiate (CompAction         *action,
