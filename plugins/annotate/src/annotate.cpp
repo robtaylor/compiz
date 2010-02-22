@@ -610,12 +610,12 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 
     if (status)
     {
-	CompRect rect;
-	GLMatrix sTransform = transform;
-	int      numRect;
-	int      pos = 0;
-	float vectorX, vectorY;
-	int angle;
+	CompRect	rect;
+	GLMatrix	sTransform = transform;
+	int		numRect;
+	int		pos = 0;
+	float		vectorX, vectorY, offset;
+	int		angle;
 
 	/* This replaced prepareXCoords (s, output, -DEFAULT_Z_CAMERA) */
 	sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
@@ -686,13 +686,15 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 
 	    /* draw rectangle outline */
 	    glColor4usv (optionGetStrokeColor ());
-	    glLineWidth (optionGetStrokeWidth ());
-	    glBegin (GL_LINE_LOOP);
-	    glVertex2i (rectangle.x1 (), rectangle.y1 ());
-	    glVertex2i (rectangle.x2 (), rectangle.y1 ());
-	    glVertex2i (rectangle.x2 (), rectangle.y2 ());
-	    glVertex2i (rectangle.x1 (), rectangle.y2 ());
-	    glEnd ();
+	    offset = optionGetStrokeWidth () / 2;
+	    glRecti (rectangle.x1 () - offset, rectangle.y2 (),
+		     rectangle.x1 () + offset, rectangle.y1 ());
+	    glRecti (rectangle.x2 () - offset, rectangle.y2 (),
+		     rectangle.x2 () + offset, rectangle.y1 ());
+	    glRecti (rectangle.x1 () - offset, rectangle.y1 () + offset,
+		     rectangle.x2 () + offset, rectangle.y1 () - offset);
+	    glRecti (rectangle.x1 () - offset, rectangle.y2 () + offset,
+		     rectangle.x2 () + offset, rectangle.y2 () - offset);
 	    break;
 
 	case EllipseMode:
