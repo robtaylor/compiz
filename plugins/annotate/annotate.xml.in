@@ -19,10 +19,10 @@
 		<_long>Initiate rectangle drawing</_long>
 		<default>&lt;Super&gt;&lt;Alt&gt;Button2</default>
 	    </option>
-	    <option name="initiate_circle_button" type="button">
-		<_short>Initiate Circle</_short>
-		<_long>Initiate circle drawing</_long>
-		<default>&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;Button1</default>
+	    <option name="initiate_ellipse_button" type="button">
+		<_short>Initiate Ellipse</_short>
+		<_long>Initiate ellipse drawing</_long>
+		<default>&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;Button2</default>
 	    </option>
 	    <option name="draw" type="action">
 		<_short>Draw</_short>

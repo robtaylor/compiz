@@ -35,12 +35,12 @@
 static int annoLastPointerX = 0;
 static int annoLastPointerY = 0;
 
-typedef struct _Circle
+typedef struct _Ellipse
 {
-    int centerX;
-    int centerY;
-    double radius;
-} Circle;
+    CompPoint	center;
+    int		radiusX;
+    int		radiusY;
+} Ellipse;
 
 enum DrawMode
 {
@@ -48,7 +48,7 @@ enum DrawMode
     EraseMode,
     LineMode,
     RectangleMode,
-    CircleMode,
+    EllipseMode,
     TextMode
 };
 
@@ -78,7 +78,7 @@ class AnnoScreen :
 	CompRect	rectangle, lastRect;
 	DrawMode	drawMode;
 
-	Circle circle;
+	Ellipse ellipse;
 
 	void handleEvent (XEvent *);
 
@@ -97,12 +97,13 @@ class AnnoScreen :
 			unsigned short *color);
 
 	void
-	drawCircle (double	       xc,
-		    double	       yc,
-		    double	       radius,
-		    unsigned short *fillColor,
-		    unsigned short *strokeColor,
-		    double	       strokeWidth);
+	drawEllipse (double		xc,
+		     double		yc,
+		     double		radiusX,
+		     double		radiusY,
+		     unsigned short	*fillColor,
+		     unsigned short	*strokeColor,
+		     double		strokeWidth);
 
 	void
 	drawRectangle (double	  x,
@@ -161,9 +162,9 @@ class AnnoScreen :
 			   CompOption::Vector& options);
 
 	bool
-	circleInitiate (CompAction         *action,
-		        CompAction::State  state,
-			CompOption::Vector& options);
+	ellipseInitiate (CompAction         *action,
+			 CompAction::State  state,
+			 CompOption::Vector& options);
 
 	bool
 	clear (CompAction         *action,
