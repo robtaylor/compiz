@@ -613,6 +613,8 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	float		vectorX, vectorY, offset;
 	int		angle;
 
+	offset = optionGetStrokeWidth () / 2;
+
 	/* This replaced prepareXCoords (s, output, -DEFAULT_Z_CAMERA) */
 	sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
 
@@ -682,7 +684,6 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 
 	    /* draw rectangle outline */
 	    glColor4usv (optionGetStrokeColor ());
-	    offset = optionGetStrokeWidth () / 2;
 	    glRecti (rectangle.x1 () - offset, rectangle.y2 (),
 		     rectangle.x1 () + offset, rectangle.y1 ());
 	    glRecti (rectangle.x2 () - offset, rectangle.y2 (),
@@ -715,19 +716,24 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	    glColor4usv (optionGetStrokeColor ());
 	    glLineWidth (optionGetStrokeWidth ());
 
-	    glBegin (GL_LINE_STRIP);
+	    glBegin (GL_TRIANGLE_STRIP);
 	    glVertex2d (ellipse.center.x (), ellipse.center.y () +
-			ellipse.radiusY);
-	    for (angle = 0; angle <= 360; angle += 1)
+			ellipse.radiusY - offset);
+	    for (angle = 360; angle >= 0; angle -= 1)
 	    {
-		vectorX = ellipse.center.x () +
-			 (ellipse.radiusX * sinf (angle * DEG2RAD));
-		vectorY = ellipse.center.y () +
-			 (ellipse.radiusY * cosf (angle * DEG2RAD));
+		vectorX = ellipse.center.x () + ((ellipse.radiusX -
+			  offset) * sinf (angle * DEG2RAD));
+		vectorY = ellipse.center.y () + ((ellipse.radiusY -
+			  offset) * cosf (angle * DEG2RAD));
+		glVertex2d (vectorX, vectorY);
+		vectorX = ellipse.center.x () + ((ellipse.radiusX +
+			  offset) * sinf (angle * DEG2RAD));
+		vectorY = ellipse.center.y () + ((ellipse.radiusY +
+			  offset) * cosf (angle * DEG2RAD));
 		glVertex2d (vectorX, vectorY);
 	    }
 	    glVertex2d (ellipse.center.x (), ellipse.center.y () +
-			ellipse.radiusY);
+			ellipse.radiusY + offset);
 	    glEnd();
 	    break;
 
