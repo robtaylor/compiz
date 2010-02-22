@@ -761,7 +761,7 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 	case EraseMode:
 	    drawLine (annoLastPointerX, annoLastPointerY,
 		      xRoot, yRoot,
-		      20.0, clearColor);
+		      optionGetEraseWidth (), clearColor);
 	    break;
 
 	case FreeDrawMode:

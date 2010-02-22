@@ -68,6 +68,14 @@
 		    <green>0xffff</green>
 		</default>
 	    </option>
+	    <option name="erase_width" type="float">
+		<_short>Erase width</_short>
+		<_long>Erase size</_long>
+		<default>20.0</default>
+		<min>1.0</min>
+		<max>100.0</max>
+		<precision>0.1</precision>
+	    </option>
 	    <option name="stroke_width" type="float">
 		<_short>Stroke width</_short>
 		<_long>Stroke width for annotations</_long>
