@@ -155,6 +155,9 @@ struct CompStartupSequence;
 #define CompWindowGrabResizeMask      (1 << 3)
 #define CompWindowGrabExternalAppMask (1 << 4)
 
+/**
+ * TODO
+ */
 enum CompStackingUpdateMode {
     CompStackingUpdateModeNone = 0,
     CompStackingUpdateModeNormal,
@@ -163,6 +166,9 @@ enum CompStackingUpdateMode {
     CompStackingUpdateModeInitialMapDeniedFocus
 };
 
+/**
+ * TODO
+ */
 enum CompWindowNotify {
    CompWindowNotifyMap,
    CompWindowNotifyUnmap,
@@ -187,6 +193,9 @@ enum CompWindowNotify {
    CompWindowNotifyBeforeMap
 };
 
+/**
+ * TODO
+ */
 struct CompWindowExtents {
     int left;
     int right;
@@ -194,6 +203,9 @@ struct CompWindowExtents {
     int bottom;
 };
 
+/**
+ * TODO
+ */
 struct CompStruts {
     XRectangle left;
     XRectangle right;
@@ -201,6 +213,9 @@ struct CompStruts {
     XRectangle bottom;
 };
 
+/**
+ * TODO
+ */
 class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 {
     public:
@@ -233,12 +248,19 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual bool isFocussable ();
 };
 
+/**
+ * An Window object that wraps an X window. This handles snychronization of
+ * window state, geometry, etc. between Compiz and the X server. 
+ */
 class CompWindow :
     public WrapableHandler<WindowInterface, 15>,
     public PluginClassStorage
 {
     public:
-
+    
+    /**
+     * A mutable object about the dimensions and location of a CompWindow.
+     */
 	class Geometry : public CompRect
     {
 	    public:

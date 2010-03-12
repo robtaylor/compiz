@@ -26,6 +26,10 @@
 #ifndef _COMPRECT_H
 #define _COMPRECT_H
 
+///
+/// A 2D rectangle, which is likely in screen space. It's data is
+/// isolated and can only be mutated with set() methods.
+///
 class CompRect {
 
     public:

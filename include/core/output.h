@@ -31,6 +31,9 @@
 #include <core/core.h>
 #include <core/rect.h>
 
+///
+/// Output to a device from Compiz
+///
 class CompOutput : public CompRect {
 
     public:

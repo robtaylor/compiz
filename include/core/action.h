@@ -55,6 +55,9 @@ class PrivateAction;
 
 #define CompNoMask         (1 << 25)
 
+/**
+ * Context of an event occuring.
+ */
 class CompAction {
     public:
 	typedef enum {
@@ -72,7 +75,10 @@ class CompAction {
 	    StateAutoGrab    = 1 << 11,
 	    StateNoEdgeDelay = 1 << 12
 	} StateEnum;
-
+	
+	/**
+	 * Type of event a CompAction is bound to.
+	 */
 	typedef enum {
 	    BindingTypeNone       = 0,
 	    BindingTypeKey        = 1 << 0,
