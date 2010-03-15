@@ -1364,10 +1364,6 @@ PlaceWindow::getStrategy ()
 	return NoPlacement;
     }
 
-    /* no placement for unmovable windows */
-    if (!(window->actions () & CompWindowActionMoveMask))
-	return NoPlacement;
-
     if (!ps->optionGetForcePlacementMatch ().evaluate (window))
     {
 	if ((window->type () & CompWindowTypeNormalMask) ||
