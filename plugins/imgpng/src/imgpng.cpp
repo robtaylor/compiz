@@ -92,7 +92,7 @@ PngScreen::readPngData (png_struct *png,
 
     /* expand gray bit depth if needed */
     if (colorType == PNG_COLOR_TYPE_GRAY && depth < 8)
-	png_set_gray_1_2_4_to_8 (png);
+	png_set_expand_gray_1_2_4_to_8 (png);
 
     /* transform transparency to alpha */
     if (png_get_valid (png, info, PNG_INFO_tRNS))
@@ -169,7 +169,7 @@ PngScreen::readPng (std::ifstream &file,
     file.read ((char *) png_sig, PNG_SIG_SIZE);
     if (file.fail ())
 	return false;
-    if (png_check_sig (png_sig, PNG_SIG_SIZE) == 0)
+    if (png_sig_cmp (png_sig, 0, PNG_SIG_SIZE) == 0)
 	return false;
 
     png = png_create_read_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
