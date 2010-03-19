@@ -320,8 +320,6 @@ static Atom toolkit_action_force_quit_dialog_atom;
 
 static Time dm_sn_timestamp;
 
-int file_inc = 0;
-
 #define C(name) { 0, XC_ ## name }
 
 static struct _cursor {
@@ -466,8 +464,8 @@ typedef void (*event_callback) (WnckWindow *win, decor_event *gtkwd_event, decor
 
 static char *program_name;
 
-static GtkWidget     *style_window32;
-static GtkWidget     *style_window24;
+static GtkWidget     *sytle_window_rgba;
+static GtkWidget     *sytle_window_rgb;
 static GtkWidget     *switcher_label;
 
 static GHashTable    *frame_table;
@@ -693,7 +691,7 @@ create_pixmap (int w,
     if (w == 0 || h ==0)
 	abort ();
 
-    return gdk_pixmap_new (GDK_DRAWABLE (style_window32->window), w, h, depth);
+    return gdk_pixmap_new (GDK_DRAWABLE (sytle_window_rgba->window), w, h, depth);
 }
 
 #define CORNER_TOPLEFT     (1 << 0)
@@ -986,7 +984,7 @@ draw_window_decoration (decor_t *d)
     if (!d->pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window32);
+    style = gtk_widget_get_style (sytle_window_rgba);
     
 
     if (d->state & (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
@@ -1969,13 +1967,13 @@ meta_draw_window_decoration (decor_t *d)
 
     if (gdk_drawable_get_depth (GDK_DRAWABLE (d->pixmap)) == 32)
     {
-	style = gtk_widget_get_style (style_window32);
-	style_window = style_window32;
+	style = gtk_widget_get_style (sytle_window_rgba);
+	style_window = sytle_window_rgba;
     }
     else
     {
-	style = gtk_widget_get_style (style_window24);
-	style_window = style_window24;
+	style = gtk_widget_get_style (sytle_window_rgb);
+	style_window = sytle_window_rgb;
     }
 
     drawable = d->buffer_pixmap ? d->buffer_pixmap : d->pixmap;
@@ -2336,7 +2334,7 @@ decor_update_switcher_property (decor_t *d)
 			     &_switcher_extents, &_switcher_extents,
 			     0, 0, quads, nQuad);
 
-    style = gtk_widget_get_style (style_window32);
+    style = gtk_widget_get_style (sytle_window_rgba);
 
     fgColor[0] = style->fg[GTK_STATE_NORMAL].red;
     fgColor[1] = style->fg[GTK_STATE_NORMAL].green;
@@ -2371,7 +2369,7 @@ draw_switcher_background (decor_t *d)
     if (!d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window32);
+    style = gtk_widget_get_style (sytle_window_rgba);
 
     color.r = style->bg[GTK_STATE_NORMAL].red   / 65535.0;
     color.g = style->bg[GTK_STATE_NORMAL].green / 65535.0;
@@ -2570,7 +2568,7 @@ draw_switcher_foreground (decor_t *d)
     if (!d->pixmap || !d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window32);
+    style = gtk_widget_get_style (sytle_window_rgba);
 
     cr = gdk_cairo_create (GDK_DRAWABLE (d->buffer_pixmap));
 
@@ -2660,15 +2658,8 @@ queue_decor_draw (decor_t *d)
 	draw_idle_id = g_idle_add (draw_decor_list, NULL);
 }
 
-/*static void
-queue_add_frame_window (WnckWindow *win,
-			Window frame,
-			Bool   mode)
-{
-    if (g_s
-*/
 static GdkPixmap *
-pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, Bool alpha)
+pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth)
 {
     GdkPixmap *pixmap;
     guint     width, height;
@@ -2677,7 +2668,7 @@ pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, Bool alpha)
     width  = gdk_pixbuf_get_width (pixbuf);
     height = gdk_pixbuf_get_height (pixbuf);
 
-    pixmap = create_pixmap (width, height, alpha ? 32 : 24);
+    pixmap = create_pixmap (width, height, depth);
     if (!pixmap)
 	return NULL;
 
@@ -3507,7 +3498,7 @@ update_window_decoration_icon (WnckWindow *win)
 	g_object_ref (G_OBJECT (d->icon_pixbuf));
 
 	d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						 TRUE);
+						 24);
 	cr = gdk_cairo_create (GDK_DRAWABLE (d->icon_pixmap));
 	d->icon = cairo_pattern_create_for_surface (cairo_get_target (cr));
 	cairo_destroy (cr);
@@ -3609,17 +3600,14 @@ calc_decoration_size (decor_t *d,
 	
 	decor_get_default_layout (&window_context, top_width, 1, &layout);
 	
-	if (TRUE)
-	{
-	    *width = d->client_width + _win_extents.left + _win_extents.right + 2;
-	    *height = d->client_height + _win_extents.top + _win_extents.bottom + layout.height - 2;
+	*width = d->client_width + _win_extents.left + _win_extents.right + 2;
+	*height = d->client_height + _win_extents.top + _win_extents.bottom + layout.height - 2;
 	    
-	    d->border_layout = layout;
-	    d->context = &window_context;
-	    d->shadow = border_shadow;
+	d->border_layout = layout;
+	d->context = &window_context;
+	d->shadow = border_shadow;
 
-	    return TRUE;
-	}
+	return TRUE;
     }
 
     return FALSE;
@@ -3705,18 +3693,15 @@ meta_calc_decoration_size (decor_t *d,
     }
     else
     {
-	if (TRUE)
-	{
-	    *width  = d->client_width + _win_extents.left + _win_extents.right + 2;
-	    *height = d->client_height + layout.height + _win_extents.top + _win_extents.bottom - 2;
+	*width  = d->client_width + _win_extents.left + _win_extents.right + 2;
+	*height = d->client_height + layout.height + _win_extents.top + _win_extents.bottom - 2;
 
-	    d->border_layout = layout;
-	    d->context       = context;
+	d->border_layout = layout;
+	d->context       = context;
 
-	    meta_calc_button_size (d);
+	meta_calc_button_size (d);
 
-	    return TRUE;
-	}
+	return TRUE;
     }
 
     return FALSE;
@@ -5912,8 +5897,6 @@ window_opened (WnckScreen *screen,
 
     d->draw = theme_draw_window_decoration;
     
-    /* Prevent double pixmap freeing */
-    
     d->created = FALSE;
     d->pixmap = NULL;
     d->gc = NULL;
@@ -7920,63 +7903,63 @@ init_settings (WnckScreen *screen)
     }
 #endif
 
-    style_window32 = gtk_window_new (GTK_WINDOW_POPUP);
+    sytle_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
 
     gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
     colormap = gdk_screen_get_rgba_colormap (gdkscreen);
     if (colormap)
-	gtk_widget_set_colormap (style_window32, colormap);
+	gtk_widget_set_colormap (sytle_window_rgba, colormap);
 
-    gtk_widget_realize (style_window32);
+    gtk_widget_realize (sytle_window_rgba);
 
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window32), switcher_label);
+    gtk_container_add (GTK_CONTAINER (sytle_window_rgba), switcher_label);
 
-    gtk_widget_set_size_request (style_window32, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window32), -100, -100);
-    gtk_widget_show_all (style_window32);
+    gtk_widget_set_size_request (sytle_window_rgba, 0, 0);
+    gtk_window_move (GTK_WINDOW (sytle_window_rgba), -100, -100);
+    gtk_widget_show_all (sytle_window_rgba);
 
-    g_signal_connect_object (style_window32, "style-set",
+    g_signal_connect_object (sytle_window_rgba, "style-set",
 			     G_CALLBACK (style_changed),
 			     0, 0);
 
-    settings = gtk_widget_get_settings (style_window32);
+    settings = gtk_widget_get_settings (sytle_window_rgba);
 
     g_object_get (G_OBJECT (settings), "gtk-double-click-time",
 		  &double_click_timeout, NULL);
 
-    pango_context = gtk_widget_create_pango_context (style_window32);
+    pango_context = gtk_widget_create_pango_context (sytle_window_rgba);
     
-    style_window24 = gtk_window_new (GTK_WINDOW_POPUP);
+    sytle_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
 
     gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
     colormap = gdk_screen_get_rgb_colormap (gdkscreen);
     if (colormap)
-	gtk_widget_set_colormap (style_window24, colormap);
+	gtk_widget_set_colormap (sytle_window_rgb, colormap);
 
-    gtk_widget_realize (style_window24);
+    gtk_widget_realize (sytle_window_rgb);
 
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window24), switcher_label);
+    gtk_container_add (GTK_CONTAINER (sytle_window_rgb), switcher_label);
 
-    gtk_widget_set_size_request (style_window24, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window24), -100, -100);
-    gtk_widget_show_all (style_window24);
+    gtk_widget_set_size_request (sytle_window_rgb, 0, 0);
+    gtk_window_move (GTK_WINDOW (sytle_window_rgb), -100, -100);
+    gtk_widget_show_all (sytle_window_rgb);
 
-    g_signal_connect_object (style_window24, "style-set",
+    g_signal_connect_object (sytle_window_rgb, "style-set",
 			     G_CALLBACK (style_changed),
 			     0, 0);
 
-    settings = gtk_widget_get_settings (style_window24);
+    settings = gtk_widget_get_settings (sytle_window_rgb);
 
     g_object_get (G_OBJECT (settings), "gtk-double-click-time",
 		  &double_click_timeout, NULL);
 
-    pango_context = gtk_widget_create_pango_context (style_window24);
+    pango_context = gtk_widget_create_pango_context (sytle_window_rgb);
 
 #ifdef USE_GCONF
     use_system_font = gconf_client_get_bool (gconf,
@@ -7987,8 +7970,8 @@ init_settings (WnckScreen *screen)
     button_layout_changed (gconf);
 #endif
 
-    update_style (style_window32);
-    update_style (style_window24);
+    update_style (sytle_window_rgba);
+    update_style (sytle_window_rgb);
 #ifdef USE_GCONF
     titlebar_font_changed (gconf);
 #endif
