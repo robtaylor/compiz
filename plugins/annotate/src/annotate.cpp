@@ -70,6 +70,9 @@ AnnoScreen::cairoContext ()
 	    return NULL;
 	}
 
+	damage = XDamageCreate (screen->dpy (), pixmap,
+				XDamageReportRawRectangles);
+
 	surface =
 	    cairo_xlib_surface_create_with_xrender_format (screen->dpy (),
 							   pixmap, xScreen,
@@ -95,34 +98,39 @@ AnnoScreen::setSourceColor (cairo_t	   *cr,
 }
 
 void
-AnnoScreen::drawCircle (double	       xc,
-			double	       yc,
-			double	       radius,
-			unsigned short *fillColor,
-			unsigned short *strokeColor,
-			double	       strokeWidth)
+AnnoScreen::drawEllipse (double		xc,
+			 double		yc,
+			 double		radiusX,
+			 double		radiusY,
+			 unsigned short	*fillColor,
+			 unsigned short	*strokeColor,
+			 double		strokeWidth)
 {
     cairo_t *cr;
 
     cr = cairoContext ();
     if (cr)
     {
-	double  ex1, ey1, ex2, ey2;
-
 	setSourceColor (cr, fillColor);
-	cairo_arc (cr, xc, yc, radius, 0, 2 * M_PI);
+	cairo_save (cr);
+	cairo_translate (cr, xc, yc);
+	if (radiusX > radiusY)
+	{
+	    cairo_scale (cr, 1.0, radiusY/radiusX);
+	    cairo_arc (cr, 0, 0, radiusX, 0, 2 * M_PI);
+	}
+	else
+	{
+	    cairo_scale (cr, radiusX/radiusY, 1.0);
+	    cairo_arc (cr, 0, 0, radiusY, 0, 2 * M_PI);
+	}
+	cairo_restore (cr);
 	cairo_fill_preserve (cr);
 	cairo_set_line_width (cr, strokeWidth);
-	cairo_stroke_extents (cr, &ex1, &ey1, &ex2, &ey2);
 	setSourceColor (cr, strokeColor);
 	cairo_stroke (cr);
 
-	CompRegion reg (xc - radius - strokeWidth, yc - radius - strokeWidth,
-		       (radius * 2) + (strokeWidth * 2),
-		       (radius * 2) + (strokeWidth * 2));
-
 	content = true;
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -150,12 +158,7 @@ AnnoScreen::drawRectangle (double	  x,
 	setSourceColor (cr, strokeColor);
 	cairo_stroke (cr);
 
-	CompRegion reg (x - strokeWidth, y - strokeWidth,
-		        w + (strokeWidth * 2), h + (strokeWidth * 2));
-
 	content = true;
-
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -182,13 +185,7 @@ AnnoScreen::drawLine (double	     x1,
 	setSourceColor (cr, color);
 	cairo_stroke (cr);
 
-	CompRegion reg (ex1 - width, ey1 - width,
-		       (ex2 - ex1) + (width * 2),
-		       (ey2 - ey1) + (width * 2));
-
 	content = true;
-
-	cScreen->damageRegion (reg);
     }
 }
 
@@ -233,13 +230,7 @@ AnnoScreen::drawText (double	     		     x,
 	reg.extents.x2 = x + extents.width + 20.0;
 	reg.extents.y2 = y + extents.height;
 
-	CompRegion region (reg.extents.x1, reg.extents.y1,
-			   reg.extents.x2 - reg.extents.x1,
-			   reg.extents.y2 - reg.extents.y1);
-
 	content = true;
-
-	cScreen->damageRegion (region);
     }
 }
 
@@ -290,9 +281,9 @@ AnnoScreen::draw (CompAction         *action,
     cr = cairoContext ();
     if (cr)
     {
-        const char	   *tool;
-        unsigned short *fillColor, *strokeColor;
-        double	   lineWidth, strokeWidth;
+        const char	*tool;
+        unsigned short	*fillColor, *strokeColor;
+        double		strokeWidth;
 
         tool =
 	 CompOption::getStringOptionNamed (options, "tool", "line").c_str ();
@@ -312,10 +303,6 @@ AnnoScreen::draw (CompAction         *action,
         strokeWidth = CompOption::getFloatOptionNamed (options, "stroke_width",
 				           strokeWidth);
 
-        lineWidth = optionGetLineWidth ();
-        lineWidth = CompOption::getFloatOptionNamed (options, "line_width",
-				         lineWidth);
-
         if (strcasecmp (tool, "rectangle") == 0)
         {
 	    double x, y, w, h;
@@ -328,15 +315,16 @@ AnnoScreen::draw (CompAction         *action,
 	    drawRectangle (x, y, w, h, fillColor, strokeColor,
 			       strokeWidth);
         }
-        else if (strcasecmp (tool, "circle") == 0)
+        else if (strcasecmp (tool, "ellipse") == 0)
         {
-	    double xc, yc, r;
+	    double xc, yc, xr, yr;
 
 	    xc = CompOption::getFloatOptionNamed (options, "xc", 0);
 	    yc = CompOption::getFloatOptionNamed (options, "yc", 0);
-	    r  = CompOption::getFloatOptionNamed (options, "radius", 100);
+	    xr = CompOption::getFloatOptionNamed (options, "radiusX", 100);
+	    yr = CompOption::getFloatOptionNamed (options, "radiusY", 100);
 
-	    drawCircle (xc, yc, r, fillColor, strokeColor,
+	    drawEllipse (xc, yc, xr, yr, fillColor, strokeColor,
 			    strokeWidth);
         }
         else if (strcasecmp (tool, "line") == 0)
@@ -348,7 +336,7 @@ AnnoScreen::draw (CompAction         *action,
 	    x2 = CompOption::getFloatOptionNamed (options, "x2", 100);
 	    y2 = CompOption::getFloatOptionNamed (options, "y2", 100);
 
-	    drawLine (x1, y1, x2, y2, lineWidth, fillColor);
+	    drawLine (x1, y1, x2, y2, strokeWidth, fillColor);
         }
         else if (strcasecmp (tool, "text") == 0)
         {
@@ -391,33 +379,6 @@ AnnoScreen::draw (CompAction         *action,
 }
 
 bool
-AnnoScreen::initiate (CompAction         *action,
-		      CompAction::State  state,
-		      CompOption::Vector& options)
-{
-    if (screen->otherGrabExist (NULL))
-        return false;
-
-    if (!grabIndex)
-        grabIndex = screen->pushGrab (None, "annotate");
-
-    if (state & CompAction::StateInitButton)
-        action->setState (action->state () | CompAction::StateTermButton);
-
-    if (state & CompAction::StateInitKey)
-        action->setState (action->state () | CompAction::StateTermKey);
-
-    annoLastPointerX = pointerX;
-    annoLastPointerY = pointerY;
-
-    drawMode = LineMode;
-
-    screen->handleEventSetEnabled (this, true);
-
-    return true;
-}
-
-bool
 AnnoScreen::terminate (CompAction         *action,
 		       CompAction::State  state,
 		       CompOption::Vector& options)
@@ -431,8 +392,16 @@ AnnoScreen::terminate (CompAction         *action,
     action->setState (action->state () & ~(CompAction::StateTermKey |
 					   CompAction::StateTermButton));
 
-    if (drawMode == RectangleMode)
+    switch (drawMode)
     {
+    case LineMode:
+	drawLine (initialPointerX, initialPointerY,
+		  lineVector.x (), lineVector.y (),
+		  optionGetStrokeWidth (),
+		  optionGetStrokeColor ());
+	break;
+
+    case RectangleMode:
 	drawRectangle (rectangle.x (),
 		       rectangle.y (),
 		       rectangle.width (),
@@ -440,28 +409,29 @@ AnnoScreen::terminate (CompAction         *action,
 		       optionGetFillColor (),
 		       optionGetStrokeColor (),
 		       optionGetStrokeWidth ());
-    }
-    if (drawMode == CircleMode)
-    {
-	drawCircle (circle.centerX,
-		    circle.centerY,
-		    circle.radius,
-		    optionGetFillColor (),
-		    optionGetStrokeColor (),
-		    optionGetStrokeWidth ());
+	break;
+
+    case EllipseMode:
+	drawEllipse (ellipse.center.x (),
+		     ellipse.center.y (),
+		     ellipse.radiusX,
+		     ellipse.radiusY,
+		     optionGetFillColor (),
+		     optionGetStrokeColor (),
+		     optionGetStrokeWidth ());
+	break;
+
+    default:
+	break;
     }
 
     drawMode = NoMode;
-
-    /* No need to handle motion events for now */
-
-    screen->handleEventSetEnabled (this, false);
 
     return false;
 }
 
 bool
-AnnoScreen::eraseInitiate (CompAction         *action,
+AnnoScreen::initiateErase (CompAction         *action,
 		           CompAction::State  state,
 		           CompOption::Vector& options)
 {
@@ -488,7 +458,61 @@ AnnoScreen::eraseInitiate (CompAction         *action,
 }
 
 bool
-AnnoScreen::rectangleInitiate (CompAction         *action,
+AnnoScreen::initiateFreeDraw (CompAction         *action,
+			      CompAction::State  state,
+			      CompOption::Vector& options)
+{
+    if (screen->otherGrabExist (NULL))
+        return false;
+
+    if (!grabIndex)
+        grabIndex = screen->pushGrab (None, "annotate");
+
+    if (state & CompAction::StateInitButton)
+        action->setState (action->state () | CompAction::StateTermButton);
+
+    if (state & CompAction::StateInitKey)
+        action->setState (action->state () | CompAction::StateTermKey);
+
+    annoLastPointerX = pointerX;
+    annoLastPointerY = pointerY;
+
+    drawMode = FreeDrawMode;
+
+    screen->handleEventSetEnabled (this, true);
+
+    return true;
+}
+
+bool
+AnnoScreen::initiateLine (CompAction         *action,
+			  CompAction::State  state,
+			  CompOption::Vector& options)
+{
+    if (screen->otherGrabExist (NULL))
+        return false;
+
+    if (!grabIndex)
+        grabIndex = screen->pushGrab (None, "annotate");
+
+    if (state & CompAction::StateInitButton)
+        action->setState (action->state () | CompAction::StateTermButton);
+
+    if (state & CompAction::StateInitKey)
+        action->setState (action->state () | CompAction::StateTermKey);
+
+    initialPointerX = pointerX;
+    initialPointerY = pointerY;
+
+    drawMode = LineMode;
+
+    screen->handleEventSetEnabled (this, true);
+
+    return true;
+}
+
+bool
+AnnoScreen::initiateRectangle (CompAction         *action,
 			       CompAction::State  state,
 			       CompOption::Vector& options)
 {
@@ -517,9 +541,9 @@ AnnoScreen::rectangleInitiate (CompAction         *action,
 }
 
 bool
-AnnoScreen::circleInitiate (CompAction         *action,
-			    CompAction::State  state,
-			    CompOption::Vector& options)
+AnnoScreen::initiateEllipse (CompAction         *action,
+			     CompAction::State  state,
+			     CompOption::Vector& options)
 {
     if (screen->otherGrabExist (NULL))
         return false;
@@ -533,11 +557,12 @@ AnnoScreen::circleInitiate (CompAction         *action,
     if (state & CompAction::StateInitKey)
         action->setState (action->state () | CompAction::StateTermKey);
 
-    drawMode = CircleMode;
+    drawMode = EllipseMode;
 
     initialPointerX = pointerX;
     initialPointerY = pointerY;
-    circle.radius = 0;
+    ellipse.radiusX = 0;
+    ellipse.radiusY = 0;
     lastRect.setGeometry (initialPointerX, initialPointerY, 0, 0);
 
     screen->handleEventSetEnabled (this, true);
@@ -560,7 +585,8 @@ AnnoScreen::clear (CompAction         *action,
 
         cScreen->damageScreen ();
 
-	/* We don't need to refresh the screen anymore */
+	/* We don't need to refresh the screen or handle events anymore */
+	screen->handleEventSetEnabled (this, false);
 	gScreen->glPaintOutputSetEnabled (this, false);
     }
 
@@ -580,10 +606,14 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 
     if (status)
     {
-	CompRect rect;
-	GLMatrix sTransform = transform;
-	int      numRect;
-	int      pos = 0;
+	CompRect	rect;
+	GLMatrix	sTransform = transform;
+	int		numRect;
+	int		pos = 0;
+	float		vectorX, vectorY, offset;
+	int		angle;
+
+	offset = optionGetStrokeWidth () / 2;
 
 	/* This replaced prepareXCoords (s, output, -DEFAULT_Z_CAMERA) */
 	sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
@@ -635,8 +665,18 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 	    }
 	}
 
-	if (drawMode == RectangleMode)
+	switch (drawMode)
 	{
+	case LineMode:
+	    glColor4usv (optionGetStrokeColor ());
+	    glLineWidth (optionGetStrokeWidth ());
+	    glBegin (GL_LINES);
+	    glVertex2i (initialPointerX, initialPointerY);
+	    glVertex2i (lineVector.x (), lineVector.y ());
+	    glEnd ();
+	    break;
+
+	case RectangleMode:
 	    /* fill rectangle */
 	    glColor4usv (optionGetFillColor ());
 	    glRecti (rectangle.x1 (), rectangle.y2 (),
@@ -644,52 +684,61 @@ AnnoScreen::glPaintOutput (const GLScreenPaintAttrib &attrib,
 
 	    /* draw rectangle outline */
 	    glColor4usv (optionGetStrokeColor ());
-	    glLineWidth (optionGetStrokeWidth ());
-	    glBegin (GL_LINE_LOOP);
-	    glVertex2i (rectangle.x1 (), rectangle.y1 ());
-	    glVertex2i (rectangle.x2 (), rectangle.y1 ());
-	    glVertex2i (rectangle.x2 (), rectangle.y2 ());
-	    glVertex2i (rectangle.x1 (), rectangle.y2 ());
-	    glEnd ();
-	}
+	    glRecti (rectangle.x1 () - offset, rectangle.y2 (),
+		     rectangle.x1 () + offset, rectangle.y1 ());
+	    glRecti (rectangle.x2 () - offset, rectangle.y2 (),
+		     rectangle.x2 () + offset, rectangle.y1 ());
+	    glRecti (rectangle.x1 () - offset, rectangle.y1 () + offset,
+		     rectangle.x2 () + offset, rectangle.y1 () - offset);
+	    glRecti (rectangle.x1 () - offset, rectangle.y2 () + offset,
+		     rectangle.x2 () + offset, rectangle.y2 () - offset);
+	    break;
 
-	if (drawMode == CircleMode)
-	{
-	    float vectorX, vectorY;
-	    int angle;
-
-	    /* fill circle */
+	case EllipseMode:
+	    /* fill ellipse */
 	    glColor4usv (optionGetFillColor ());
 
 	    glBegin (GL_TRIANGLE_FAN);
-	    glVertex2d (circle.centerX, circle.centerY);
+	    glVertex2d (ellipse.center.x (), ellipse.center.y ());
 	    for (angle = 0; angle <= 360; angle += 1)
 	    {
-		vectorX = circle.centerX +
-			 (circle.radius * sinf (angle * DEG2RAD));
-		vectorY = circle.centerY +
-			 (circle.radius * cosf (angle * DEG2RAD));
+		vectorX = ellipse.center.x () +
+			 (ellipse.radiusX * sinf (angle * DEG2RAD));
+		vectorY = ellipse.center.y () +
+			 (ellipse.radiusY * cosf (angle * DEG2RAD));
 		glVertex2d (vectorX, vectorY);
 	    }
-	    glVertex2d (circle.centerX, circle.centerY + circle.radius);
+	    glVertex2d (ellipse.center.x (), ellipse.center.y () +
+			ellipse.radiusY);
 	    glEnd();
 
-	    /* draw circle outline */
+	    /* draw ellipse outline */
 	    glColor4usv (optionGetStrokeColor ());
 	    glLineWidth (optionGetStrokeWidth ());
 
-	    glBegin (GL_LINE_STRIP);
-	    glVertex2d (circle.centerX, circle.centerY + circle.radius);
-	    for (angle = 0; angle <= 360; angle += 1)
+	    glBegin (GL_TRIANGLE_STRIP);
+	    glVertex2d (ellipse.center.x (), ellipse.center.y () +
+			ellipse.radiusY - offset);
+	    for (angle = 360; angle >= 0; angle -= 1)
 	    {
-		vectorX = circle.centerX +
-			 (circle.radius * sinf (angle * DEG2RAD));
-		vectorY = circle.centerY +
-			 (circle.radius * cosf (angle * DEG2RAD));
+		vectorX = ellipse.center.x () + ((ellipse.radiusX -
+			  offset) * sinf (angle * DEG2RAD));
+		vectorY = ellipse.center.y () + ((ellipse.radiusY -
+			  offset) * cosf (angle * DEG2RAD));
+		glVertex2d (vectorX, vectorY);
+		vectorX = ellipse.center.x () + ((ellipse.radiusX +
+			  offset) * sinf (angle * DEG2RAD));
+		vectorY = ellipse.center.y () + ((ellipse.radiusY +
+			  offset) * cosf (angle * DEG2RAD));
 		glVertex2d (vectorX, vectorY);
 	    }
-	    glVertex2d (circle.centerX, circle.centerY + circle.radius);
+	    glVertex2d (ellipse.center.x (), ellipse.center.y () +
+			ellipse.radiusY + offset);
 	    glEnd();
+	    break;
+
+	default:
+	    break;
 	}
 
 	/* clean up */
@@ -718,59 +767,83 @@ AnnoScreen::handleMotionEvent (int	  xRoot,
 	case EraseMode:
 	    drawLine (annoLastPointerX, annoLastPointerY,
 		      xRoot, yRoot,
-		      20.0, clearColor);
+		      optionGetEraseWidth (), clearColor);
 	    break;
-	case LineMode:
+
+	case FreeDrawMode:
 	    drawLine (annoLastPointerX, annoLastPointerY,
 		      xRoot, yRoot,
-		      optionGetLineWidth (),
+		      optionGetStrokeWidth (),
 		      optionGetStrokeColor ());
 	    break;
+
+	case LineMode:
+	    lineVector.setX (xRoot);
+	    lineVector.setY (yRoot);
+
+	    damageRect.setGeometry (MIN(initialPointerX, lineVector.x ()),
+				    MIN(initialPointerY, lineVector.y ()),
+				    abs (lineVector.x () - initialPointerX),
+				    abs (lineVector.y () - initialPointerY));
+	    break;
+
 	case RectangleMode:
-	    if ((xRoot < initialPointerX) && (yRoot < initialPointerY))
-		rectangle.setGeometry (xRoot, yRoot,
-				       initialPointerX - xRoot,
-				       initialPointerY - yRoot);
-	    else if (yRoot < initialPointerY)
-		    rectangle.setGeometry (initialPointerX, yRoot,
-					   xRoot - initialPointerX,
-					   initialPointerY - yRoot);
-	    else if (xRoot < initialPointerX)
-		    rectangle.setGeometry (xRoot, initialPointerY,
-					   initialPointerX - xRoot,
-					   yRoot - initialPointerY);
+	    if (optionGetDrawShapesFromCenter ())
+		rectangle.setGeometry (initialPointerX -
+				       abs (xRoot - initialPointerX),
+				       initialPointerY -
+				       abs (yRoot - initialPointerY),
+				      (abs (xRoot - initialPointerX)) * 2,
+				      (abs (yRoot - initialPointerY)) * 2);
 	    else
-		rectangle.setGeometry (initialPointerX, initialPointerY,
-				       xRoot - initialPointerX,
-				       yRoot - initialPointerY);
+		rectangle.setGeometry (MIN(initialPointerX, xRoot),
+				       MIN(initialPointerY, yRoot),
+				       abs (xRoot - initialPointerX),
+				       abs (yRoot - initialPointerY));
 
 	    damageRect = rectangle;
 	    break;
-	case CircleMode:
-	    circle.radius = sqrt (((xRoot - initialPointerX) *
-				   (xRoot - initialPointerX)) +
-				  ((yRoot - initialPointerY) *
-				   (yRoot - initialPointerY)));
-	    circle.centerX = initialPointerX;
-	    circle.centerY = initialPointerY;
 
-	    damageRect = CompRect (circle.centerX - circle.radius,
-				   circle.centerY - circle.radius,
-				   circle.radius * 2, circle.radius * 2);
+	case EllipseMode:
+	    if (optionGetDrawShapesFromCenter ())
+	    {
+		ellipse.center.setX (initialPointerX);
+		ellipse.center.setY (initialPointerY);
+	    }
+	    else
+	    {
+		ellipse.center.setX (initialPointerX +
+				    (xRoot - initialPointerX) / 2);
+		ellipse.center.setY (initialPointerY +
+				    (yRoot - initialPointerY) / 2);
+	    }
+
+	    ellipse.radiusX = abs (xRoot - ellipse.center.x ());
+	    ellipse.radiusY = abs (yRoot - ellipse.center.y ());
+
+	    damageRect = CompRect (ellipse.center.x () - ellipse.radiusX,
+				   ellipse.center.y () - ellipse.radiusY,
+				   ellipse.radiusX * 2,
+				   ellipse.radiusY * 2);
 	    break;
+
 	default:
 	    break;
 	}
 
-	if (cScreen && (drawMode == CircleMode || drawMode == RectangleMode))
+	if (cScreen && (drawMode == LineMode ||
+			drawMode == RectangleMode ||
+			drawMode == EllipseMode))
 	{
 	    /* Add border width to the damage region */
-	    damageRect.setGeometry (damageRect.x () - optionGetStrokeWidth (),
-				    damageRect.y () - optionGetStrokeWidth (),
+	    damageRect.setGeometry (damageRect.x () -
+				    (optionGetStrokeWidth () / 2),
+				    damageRect.y () -
+				    (optionGetStrokeWidth () / 2),
 				    damageRect.width () +
-				    (optionGetStrokeWidth () * 2),
+				    optionGetStrokeWidth () + 1,
 				    damageRect.height () +
-				    (optionGetStrokeWidth () * 2));
+				    optionGetStrokeWidth () + 1);
 
 	    cScreen->damageRegion (damageRect);
 	    cScreen->damageRegion (lastRect);
@@ -795,6 +868,12 @@ AnnoScreen::handleEvent (XEvent      *event)
     case LeaveNotify:
 	handleMotionEvent (pointerX, pointerY);
     default:
+	if (event->type == cScreen->damageEvent () + XDamageNotify)
+	{
+	    XDamageNotifyEvent *de = (XDamageNotifyEvent *) event;
+	    if (pixmap == de->drawable)
+		cScreen->damageRegion (CompRegion (CompRect (de->area)));
+	}
 	break;
     }
 
@@ -813,26 +892,30 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
     ScreenInterface::setHandler (screen, false);
     GLScreenInterface::setHandler (gScreen, false);
 
-    optionSetInitiateButtonInitiate
-	(boost::bind (&AnnoScreen::initiate, this, _1, _2, _3));
-    optionSetInitiateButtonTerminate
-	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
+    optionSetDrawInitiate
+	(boost::bind (&AnnoScreen::draw, this, _1, _2, _3));
     optionSetEraseButtonInitiate
-	(boost::bind (&AnnoScreen::eraseInitiate, this, _1, _2, _3));
+	(boost::bind (&AnnoScreen::initiateErase, this, _1, _2, _3));
     optionSetEraseButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
+    optionSetInitiateFreeDrawButtonInitiate
+	(boost::bind (&AnnoScreen::initiateFreeDraw, this, _1, _2, _3));
+    optionSetInitiateFreeDrawButtonTerminate
+	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
+    optionSetInitiateLineButtonInitiate
+	(boost::bind (&AnnoScreen::initiateLine, this, _1, _2, _3));
+    optionSetInitiateLineButtonTerminate
+	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetInitiateRectangleButtonInitiate
-	(boost::bind (&AnnoScreen::rectangleInitiate, this, _1, _2, _3));
+	(boost::bind (&AnnoScreen::initiateRectangle, this, _1, _2, _3));
     optionSetInitiateRectangleButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
-    optionSetInitiateCircleButtonInitiate
-	(boost::bind (&AnnoScreen::circleInitiate, this, _1, _2, _3));
-    optionSetInitiateCircleButtonTerminate
+    optionSetInitiateEllipseButtonInitiate
+	(boost::bind (&AnnoScreen::initiateEllipse, this, _1, _2, _3));
+    optionSetInitiateEllipseButtonTerminate
 	(boost::bind (&AnnoScreen::terminate, this, _1, _2, _3));
     optionSetClearKeyInitiate
 	(boost::bind (&AnnoScreen::clear, this, _1, _2, _3));
-    optionSetDrawInitiate
-	(boost::bind (&AnnoScreen::draw, this, _1, _2, _3));
     drawMode = NoMode;
 }
 
@@ -844,6 +927,8 @@ AnnoScreen::~AnnoScreen ()
 	cairo_surface_destroy (surface);
     if (pixmap)
 	XFreePixmap (screen->dpy (), pixmap);
+    if (damage)
+	XDamageDestroy (screen->dpy (), damage);
 }
 
 bool
