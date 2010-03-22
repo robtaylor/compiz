@@ -2167,11 +2167,11 @@ meta_draw_window_decoration (decor_t *d)
 
 	    cmap   = get_colormap_for_drawable (GDK_DRAWABLE (d->pixmap));
 	    depth  = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
-	    pixmap = create_pixmap (rect.width, size, depth);
+	    pixmap = create_pixmap (size, rect.height, depth);
 	    gdk_drawable_set_colormap (GDK_DRAWABLE (pixmap), cmap);
 	}
 	else
-	    pixmap = create_pixmap (rect.width, size, 32);
+	    pixmap = create_pixmap (size, rect.height, 32);
 
 	cr = gdk_cairo_create (GDK_DRAWABLE (pixmap));
 	gdk_cairo_set_source_color_alpha (cr, &bg_color, bg_alpha);
@@ -2666,7 +2666,6 @@ static GdkPixmap *
 pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth)
 {
     GdkPixmap *pixmap;
-    GdkColormap *colormap;
     guint     width, height;
     cairo_t   *cr;
 
