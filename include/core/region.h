@@ -34,6 +34,10 @@
 
 class PrivateRegion;
 
+///
+/// A 2D region with an (x,y) position and (width, height) dimensions similar to an XRegion.
+/// It's data membmers are private and  must be mutated with set() methods.
+///
 class CompRegion {
     public:
 	typedef std::vector<CompRegion> List;

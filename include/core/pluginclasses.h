@@ -30,6 +30,7 @@
 
 #include <vector>
 
+
 class PluginClassIndex {
     public:
 	PluginClassIndex () : index ((unsigned)~0), refCount (0),

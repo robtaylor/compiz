@@ -28,6 +28,9 @@
 
 #include <core/core.h>
 
+/**
+ * TODO
+ */
 class ModifierHandler
 {
     public:

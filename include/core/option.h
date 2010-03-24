@@ -39,7 +39,14 @@ class CompAction;
 class CompMatch;
 class CompScreen;
 
+/**
+ * A configuration option with boolean, int, float, String, Color, Key, Button,
+ * Edge, Bell, or List.
+ */
 class CompOption {
+	/**
+	 * Option data types
+	 */
     public:
 	typedef enum {
 	    TypeBool,
@@ -57,7 +64,10 @@ class CompOption {
 	    /* internal use only */
 	    TypeUnset
 	} Type;
-
+	
+	/**
+	 * A value of an Option
+	 */
 	class Value {
 	    public:
 		typedef std::vector<Value> Vector;
@@ -116,7 +126,10 @@ class CompOption {
 	    private:
 		PrivateValue *priv;
 	};
-
+	
+	/**
+	 * TODO
+	 */
 	class Restriction {
 	    public:
 		Restriction ();
@@ -141,7 +154,10 @@ class CompOption {
 	};
 
 	typedef std::vector<CompOption> Vector;
-
+	
+	/**
+	 * TODO
+	 */
 	class Class {
 	    public:
 		virtual Vector & getOptions () = 0;
