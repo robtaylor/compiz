@@ -1,0 +1,6 @@
+<compiz>
+    <plugin name="dbus">
+	<_short>D-Bus</_short>
+	<_long>D-Bus Control Backend</_long>
+    </plugin>
+</compiz>
