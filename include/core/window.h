@@ -156,7 +156,8 @@ struct CompStartupSequence;
 #define CompWindowGrabExternalAppMask (1 << 4)
 
 /**
- * TODO
+ * Enumeration value which represents
+ * how a window will be stacked by compiz
  */
 enum CompStackingUpdateMode {
     CompStackingUpdateModeNone = 0,
@@ -167,7 +168,8 @@ enum CompStackingUpdateMode {
 };
 
 /**
- * TODO
+ * Enumeration value used by CompWindow::windowNotify
+ * which specifies the type of event that occured.
  */
 enum CompWindowNotify {
    CompWindowNotifyMap,
@@ -194,7 +196,8 @@ enum CompWindowNotify {
 };
 
 /**
- * TODO
+ * Specifies the left, right, top and bottom positions of a window's
+ * geometry
  */
 struct CompWindowExtents {
     int left;
@@ -204,7 +207,7 @@ struct CompWindowExtents {
 };
 
 /**
- * TODO
+ * Specifies the area of the screen taken up by strut windows
  */
 struct CompStruts {
     XRectangle left;
@@ -214,7 +217,9 @@ struct CompStruts {
 };
 
 /**
- * TODO
+ * Wrappable core window functions. Derive from this class
+ * and overload these functions in order to have your function called
+ * after a core CompWindow function is called with the same name.
  */
 class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 {
@@ -288,7 +293,8 @@ class CompWindow :
 	            Window     aboveId);
 	~CompWindow ();
 
-	/* this is the geometry retrieved from the 
+	/**
+	*  Geometry retrieved from the 
 	 * last ConfigureNotify event received
 	 */
 	Geometry & geometry () const;
@@ -302,8 +308,8 @@ class CompWindow :
 	int height () const;
 	CompSize size () const;
 
-	/* this is the 
-         * geometry last sent to the server
+	/**
+	 * Geometry last sent to the server
          */
 	Geometry & serverGeometry () const;
 
