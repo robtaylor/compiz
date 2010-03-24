@@ -34,10 +34,11 @@
 
 class PrivateRegion;
 
-///
-/// A 2D region with an (x,y) position and (width, height) dimensions similar to an XRegion.
-/// It's data membmers are private and  must be mutated with set() methods.
-///
+/**
+ * A 2D region with an (x,y) position and arbitrary dimensions similar to
+ * an XRegion. It's data membmers are private and  must be manipulated with
+ * set() methods.
+ */
 class CompRegion {
     public:
 	typedef std::vector<CompRegion> List;
@@ -52,33 +53,110 @@ class CompRegion {
         CompRegion (const CompRect &);
 	~CompRegion ();
 
+	/**
+	 * Returns a CompRect which encapsulates a given CompRegion
+	 */
 	CompRect boundingRect () const;
 
 	bool isEmpty () const;
+	
+	/**
+	 * Returns the number of XRectangles in the XRegion handle
+	 */
 	int numRects () const;
+	
+	/**
+	 * Returns a vector of all the XRectangles in the XRegion handle
+	 */
 	CompRect::vector rects () const;
+	
+	/**
+	 * Returns the internal XRegion handle
+	 */
 	const Region handle () const;
 
+	/**
+	 * Returns true if the specified CompPoint falls within the
+	 * CompRegion
+	 */
 	bool contains (const CompPoint &) const;
+	/**
+	 * Returns true if the specified CompRect falls within the
+	 * CompRegion
+	 */
 	bool contains (const CompRect &) const;
+	/**
+	 * Returns true if the specified size falls withing the
+	 * CompRegion
+	 */
 	bool contains (int x, int y, int width, int height) const;
 
+	/**
+	 * Returns a CompRegion that is the result of an intersect with
+	 * the specified CompRegion and the region
+	 */
 	CompRegion intersected (const CompRegion &) const;
+	/**
+	 * Returns a CompRegion that is the result of an intersect with
+	 * the specified CompRect and the region
+	 */
 	CompRegion intersected (const CompRect &) const;
+	/**
+	 * Returns true if a specified CompRegion intersects a region
+	 */
 	bool intersects (const CompRegion &) const;
+	/**
+	 * Returns true if a specified CompRect intersects a region
+	 */
 	bool intersects (const CompRect &) const;
+	/**
+	 * Returns a CompRegion covering the area of the region
+	 * and not including the area of the specified CompRegion
+	 */
 	CompRegion subtracted (const CompRegion &) const;
+	/**
+	 * Returns a CompRegion covering the area of the region
+	 * and not including the area of the specified CompRect
+	 */
 	CompRegion subtracted (const CompRect &) const;
-	void translate (int, int);
+	/**
+	 * Moves a region by x and y amount
+	 */
+	void translate (int dx, int dy);
+	/**
+	 * Moves a region by an amount specified by the co-ordinates of a
+	 * CompPoint
+	 */
 	void translate (const CompPoint &);
+	/**
+	 * Returns a CompRegion which is the result of the region being moved
+	 * by dx and dy amount
+	 */
 	CompRegion translated (int, int) const;
+	/**
+	 * Returns a CompRegion which is the result of the region being moved
+	 * by an amount specified by the co-ordinates of a CompPoint
+	 */
 	CompRegion translated (const CompPoint &) const;
 	void shrink (int, int);
 	void shrink (const CompPoint &);
 	CompRegion shrinked (int, int) const;
 	CompRegion shrinked (const CompPoint &) const;
+	/**
+	 * Returns a CompRegion which is the result of the region joined
+	 * with a specified CompRegion
+	 */
 	CompRegion united (const CompRegion &) const;
+	/**
+	 * Returns a CompRegion which is the result of the region joined
+	 * with a specified CompRect
+	 */
 	CompRegion united (const CompRect &) const;
+	/**
+	 * Returns a CompRegion which is the result of the region joined
+	 * with a specified CompRegion, excluding the area in which
+	 * both regions intersect
+	 */
 	CompRegion xored (const CompRegion &) const;
 
 	bool operator== (const CompRegion &) const;

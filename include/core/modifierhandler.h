@@ -29,7 +29,8 @@
 #include <core/core.h>
 
 /**
- * TODO
+ * Toplevel class which provides access to display
+ * level modifier information
  */
 class ModifierHandler
 {
@@ -64,16 +65,37 @@ class ModifierHandler
 
     public:
 
+
+	/**
+	 * Takes an X11 Keycode and returns a bitmask
+	 * with modifiers that have been pressed
+	 */
 	unsigned int keycodeToModifiers (int keycode);
 
+	/**
+	 * Updates X11 Modifier mappings
+	 */
 	void updateModifierMappings ();
 
+	/**
+	 * Takes a virtual modMask and returns a real modifier mask
+	 * by removing unused bits
+	 */
 	unsigned int virtualToRealModMask (unsigned int modMask);
 
+	/**
+	 * Returns a bit modifier mask for a Motifier enum
+	 */
 	unsigned int modMask (Modifier);
 
+	/**
+	 * Returns a const bit modifier mask for what should be ignored
+	 */
 	unsigned int ignoredModMask ();
 
+	/**
+	 * Returns a const XModifierKeymap for compiz
+	 */
 	const XModifierKeymap * modMap ();
 
 	friend class CompScreen;

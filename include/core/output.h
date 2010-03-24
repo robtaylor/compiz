@@ -31,9 +31,11 @@
 #include <core/core.h>
 #include <core/rect.h>
 
-///
-/// Output to a device from Compiz
-///
+/**
+ * Represents a phisically attached screen in Compiz, where this
+ * phisical screen is part of an X11 screen in a configuration such
+ * as Xinerama, XRandR, TwinView or MergedFB
+ */
 class CompOutput : public CompRect {
 
     public:
@@ -43,6 +45,10 @@ class CompOutput : public CompRect {
 
 	unsigned int id () const;
 
+	/**
+	 * Returns a "working area" of the screen, which the geometry
+	 * which is not covered by strut windows (such as panels)
+	 */
 	const CompRect& workArea () const;
 
 	void setWorkArea (const CompRect&);
