@@ -56,7 +56,7 @@
 #include <libwnck/libwnck.h>
 #include <libwnck/window-action-menu.h>
 
-#ifndef HAVE_LIBWNCK_2_19_4
+#ifndef HAVE_LIBWNCK_2_29_2
 #define wnck_window_get_client_window_geometry wnck_window_get_geometry
 #endif
 
@@ -2281,8 +2281,23 @@ meta_draw_window_decoration (decor_t *d)
 
     if (d->frame_window)
     {
+	GdkWindow *gdk_frame_window = gtk_widget_get_window (d->decor_window);
+	decor_extents_t extents;
+
+	if (d->state & (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
+			WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY))
+	{
+	    extents = _max_win_extents;
+	}
+	else
+	{
+	    extents = _win_extents;
+	}
+
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
+	gdk_window_reparent (gdk_frame_window, d->frame_window, -(extents.left + extents.right - 2), -(extents.top + extents.bottom - 2));
+	gdk_window_lower (gdk_frame_window);
     }
 
     if (d->prop_xid)
@@ -3605,8 +3620,8 @@ calc_decoration_size (decor_t *d,
 
 	decor_get_default_layout (&window_context, top_width, 1, &layout);
 
-	*width = d->client_width + _win_extents.left + _win_extents.right + 2;
-	*height = d->client_height + _win_extents.top + _win_extents.bottom + layout.height - 2;
+	*width = d->client_width + (_win_extents.left + _win_extents.right) * 1.5;
+	*height = d->client_height + _win_extents.bottom + layout.height;
 
 	d->border_layout = layout;
 	d->context = &window_context;
@@ -4802,7 +4817,7 @@ frame_window_realized (GtkWidget *widget,
     if (d)
     {
 	GdkWindow *gdk_frame_window = gtk_widget_get_window (d->decor_window);
-	gdk_window_reparent (gdk_frame_window, d->frame_window, 0, 0);
+	gdk_window_reparent (gdk_frame_window, d->frame_window, -_win_extents.left - 2, -_win_extents.top - 2);
 	gdk_window_lower (gdk_frame_window);
 
     }
@@ -7975,3 +7990,5 @@ main (int argc, char *argv[])
 
     return 0;
 }
+
+
