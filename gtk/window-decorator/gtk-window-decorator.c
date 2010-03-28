@@ -185,6 +185,9 @@
 #define META_ACTIVE_OPACITY       1.0
 #define META_ACTIVE_SHADE_OPACITY TRUE
 
+#define META_MAXIMIZED (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY | \
+			WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY)
+
 #define CMDLINE_OPACITY              (1 << 0)
 #define CMDLINE_OPACITY_SHADE        (1 << 1)
 #define CMDLINE_ACTIVE_OPACITY       (1 << 2)
@@ -1419,8 +1422,12 @@ draw_window_decoration (decor_t *d)
 
     if (d->frame_window)
     {
+	GdkWindow *gdk_frame_window = gtk_widget_get_window (d->decor_window);
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
+
+	gdk_window_reparent (gdk_frame_window, d->frame_window, -_win_extents.left - 2, -_win_extents.top - 2);
+	gdk_window_lower (gdk_frame_window);
     }
 
     if (d->prop_xid)
@@ -1889,9 +1896,6 @@ meta_get_decoration_geometry (decor_t		*d,
     if (d->active)
 	*flags |= META_FRAME_HAS_FOCUS;
 
-#define META_MAXIMIZED (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY | \
-			WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY)
-
     if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
 	*flags |= META_FRAME_MAXIMIZED;
 
@@ -1970,6 +1974,13 @@ meta_draw_window_decoration (decor_t *d)
     GtkWidget	      *style_window;
     GdkColor	      bg_color;
     double	      bg_alpha;
+    int		      x1, x2, y1, y2;
+
+    x1 = d->context->left_space - _win_extents.left;
+    y1 = d->context->top_space - _win_extents.top - titlebar_height;
+    x2 = d->width - d->context->right_space + _win_extents.right;
+    y2 = d->height - d->context->bottom_space + _win_extents.bottom;
+
 
     if (!d->pixmap || !d->picture)
 	return;
@@ -2143,6 +2154,7 @@ meta_draw_window_decoration (decor_t *d)
 					alpha * 0xffff,
 					shade_alpha,
 					0);
+
 	}
 
 	cairo_destroy (cr);
@@ -2287,7 +2299,10 @@ meta_draw_window_decoration (decor_t *d)
 	if (d->state & (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
 			WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY))
 	{
-	    extents = _max_win_extents;
+	    extents.left = 0;
+	    extents.right = 0;
+	    extents.top = 10;
+	    extents.bottom = 0;
 	}
 	else
 	{
@@ -2296,7 +2311,7 @@ meta_draw_window_decoration (decor_t *d)
 
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
-	gdk_window_reparent (gdk_frame_window, d->frame_window, -(extents.left + extents.right - 2), -(extents.top + extents.bottom - 2));
+	gdk_window_reparent (gdk_frame_window, d->frame_window, -(d->context->left_space - extents.left), -(extents.top + extents.bottom - 2));
 	gdk_window_lower (gdk_frame_window);
     }
 
@@ -3692,10 +3707,10 @@ meta_calc_decoration_size (decor_t *d,
 	shadow  = border_shadow;
     }
 
-    decor_get_best_layout (context, w, h, &layout);
-
     if (!d->frame_window)
     {
+	decor_get_best_layout (context, w, h, &layout);
+
 	if (context != d->context ||
 	    memcmp (&layout, &d->border_layout, sizeof (layout)))
 	{
@@ -3713,11 +3728,25 @@ meta_calc_decoration_size (decor_t *d,
     }
     else
     {
-	*width  = d->client_width + _win_extents.left + _win_extents.right + 2;
-	*height = d->client_height + layout.height +
-		  _win_extents.top + _win_extents.bottom - 2;
+	if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
+	    decor_get_default_layout (context, d->client_width -
+				            _max_win_extents.left -
+					    _max_win_extents.right, 
+					    d->client_height - 20, &layout);
+	else
+	    decor_get_default_layout (context, d->client_width -
+					    _win_extents.left -
+					    _win_extents.right,
+					    d->client_height -
+					    context->top_space +
+					    _win_extents.bottom, &layout);
+
+	*width  = layout.width;
+	*height = d->client_height + _win_extents.bottom +
+		  titlebar_height;
 
 	d->border_layout = layout;
+
 	d->context       = context;
 
 	meta_calc_button_size (d);
