@@ -56,7 +56,7 @@
 #include <libwnck/libwnck.h>
 #include <libwnck/window-action-menu.h>
 
-#ifndef HAVE_LIBWNCK_2_29_2
+#ifndef HAVE_LIBWNCK_2_19_4
 #define wnck_window_get_client_window_geometry wnck_window_get_geometry
 #endif
 
@@ -8019,5 +8019,3 @@ main (int argc, char *argv[])
 
     return 0;
 }
-
-
