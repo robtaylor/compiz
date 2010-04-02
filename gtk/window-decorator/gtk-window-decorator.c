@@ -3729,21 +3729,14 @@ meta_calc_decoration_size (decor_t *d,
     else
     {
 	if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
-	    decor_get_default_layout (context, d->client_width -
-				            _max_win_extents.left -
-					    _max_win_extents.right, 
-					    d->client_height - 20, &layout);
+	    decor_get_default_layout (context, d->client_width,
+					    d->client_height - titlebar_height, &layout);
 	else
-	    decor_get_default_layout (context, d->client_width -
-					    _win_extents.left -
-					    _win_extents.right,
-					    d->client_height -
-					    context->top_space +
-					    _win_extents.bottom, &layout);
+	    decor_get_default_layout (context, d->client_width,
+					    d->client_height, &layout);
 
 	*width  = layout.width;
-	*height = d->client_height + _win_extents.bottom +
-		  titlebar_height;
+	*height = layout.height;
 
 	d->border_layout = layout;
 
