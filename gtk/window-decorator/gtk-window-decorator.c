@@ -2998,9 +2998,19 @@ get_button_position (decor_t *d,
     if (i > BUTTON_MENU)
 	return FALSE;
 
-    *x = bpos[i].x + bpos[i].xw * width;
-    *y = bpos[i].y + bpos[i].yh * height + bpos[i].yth *
-	(titlebar_height - 17);
+    if (d->frame_window)
+    {    
+	*x = bpos[i].x + bpos[i].xw * width + _win_extents.left + 4;
+	*y = bpos[i].y + bpos[i].yh * height + bpos[i].yth *
+	    (titlebar_height - 17) + _win_extents.top + 2;
+    }
+    else
+    {
+	*x = bpos[i].x + bpos[i].xw * width;
+	*y = bpos[i].y + bpos[i].yh * height + bpos[i].yth *
+	    (titlebar_height - 17);
+    }
+
     *w = bpos[i].w + bpos[i].ww * width;
     *h = bpos[i].h + bpos[i].hh * height + bpos[i].hth +
 	(titlebar_height - 17);
@@ -3315,6 +3325,12 @@ meta_get_button_position (decor_t *d,
     *w = space->width;
     *h = space->height;
 #endif
+
+    if (d->frame_window)
+    {
+	*x += _win_extents.left + 4;
+	*y += _win_extents.top + 2;
+    }
 
     return TRUE;
 }
