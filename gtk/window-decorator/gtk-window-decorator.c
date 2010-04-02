@@ -1980,11 +1980,11 @@ meta_draw_window_decoration (decor_t *d)
     y1 = d->context->top_space - _win_extents.top - titlebar_height;
     x2 = d->width - d->context->right_space + _win_extents.right;
     y2 = d->height - d->context->bottom_space + _win_extents.bottom;
-
-
+    
     if (!d->pixmap || !d->picture)
 	return;
 
+    
     if (d->frame_window)
     {
 	GdkColormap *cmap = get_colormap_for_drawable (GDK_DRAWABLE (d->pixmap));
@@ -3677,10 +3677,10 @@ calc_decoration_size (decor_t *d,
 	if (w < top_width)
 	    top_width = MAX (ICON_SPACE + d->button_width, w);
 
-	decor_get_default_layout (&window_context, top_width, 1, &layout);
+	decor_get_default_layout (&window_context, d->client_width, d->client_height, &layout);
 
-	*width = d->client_width + (_win_extents.left + _win_extents.right) * 1.5;
-	*height = d->client_height + _win_extents.bottom + layout.height;
+	*width = layout.width;
+	*height = layout.height; 
 
 	d->border_layout = layout;
 	d->context = &window_context;
@@ -5671,7 +5671,7 @@ active_window_changed (WnckScreen *screen)
 {
     WnckWindow *win;
     decor_t    *d;
-
+    
     win = wnck_screen_get_previously_active_window (screen);
     if (win)
     {
