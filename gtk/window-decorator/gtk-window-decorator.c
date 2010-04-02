@@ -3032,22 +3032,41 @@ meta_get_event_window_position (decor_t *d,
     case 2: /* bottom */
 	switch (j) {
 	case 2: /* bottom right */
-	    *x = width - fgeom.right_width - RESIZE_EXTENDS;
-	    *y = height - fgeom.bottom_height - RESIZE_EXTENDS;
+	    if (d->frame_window)
+	    {
+		*x = width - fgeom.right_width - RESIZE_EXTENDS + _win_extents.left + 2;
+		*y = height - fgeom.bottom_height - RESIZE_EXTENDS + _win_extents.top + 2;
+	    }
+	    else
+	    {
+		*x = width - fgeom.right_width - RESIZE_EXTENDS;
+		*y = height - fgeom.bottom_height - RESIZE_EXTENDS;
+	    }
 	    *w = fgeom.right_width + RESIZE_EXTENDS;
 	    *h = fgeom.bottom_height + RESIZE_EXTENDS;
 	    break;
 	case 1: /* bottom */
 	    *x = fgeom.left_width + RESIZE_EXTENDS;
-	    *y = height - fgeom.bottom_height;
+	    if (d->frame_window)
+		*y = height - fgeom.bottom_height + _win_extents.top + 2;
+	    else
+		*y = height - fgeom.bottom_height;
 	    *w = width - fgeom.left_width - fgeom.right_width -
 		 (2 * RESIZE_EXTENDS);
 	    *h = fgeom.bottom_height;
 	    break;
 	case 0: /* bottom left */
 	default:
-	    *x = 0;
-	    *y = height - fgeom.bottom_height - RESIZE_EXTENDS;
+	    if (d->frame_window)
+	    {
+		*x = _win_extents.left + 4;
+		*y = height - fgeom.bottom_height - RESIZE_EXTENDS + _win_extents.bottom + 2;
+	    }
+	    else
+	    {
+		*x = 0;
+		*y = height - fgeom.bottom_height - RESIZE_EXTENDS;
+	    }
 	    *w = fgeom.left_width + RESIZE_EXTENDS;
 	    *h = fgeom.bottom_height + RESIZE_EXTENDS;
 	    break;
@@ -3056,7 +3075,10 @@ meta_get_event_window_position (decor_t *d,
     case 1: /* middle */
 	switch (j) {
 	case 2: /* right */
-	    *x = width - fgeom.right_width;
+	    if (d->frame_window)
+		*x = width - fgeom.right_width + _win_extents.left + 2;
+	    else
+		*x = width - fgeom.right_width;
 	    *y = fgeom.top_height + RESIZE_EXTENDS;
 	    *w = fgeom.right_width;
 	    *h = height - fgeom.top_height - fgeom.bottom_height -
@@ -3070,7 +3092,10 @@ meta_get_event_window_position (decor_t *d,
 	    break;
 	case 0: /* left */
 	default:
-	    *x = 0;
+	    if (d->frame_window)
+		*x = _win_extents.left + 4;
+	    else
+		*x = 0;
 	    *y = fgeom.top_height + RESIZE_EXTENDS;
 	    *w = fgeom.left_width;
 	    *h = height - fgeom.top_height - fgeom.bottom_height -
@@ -3082,22 +3107,41 @@ meta_get_event_window_position (decor_t *d,
     default:
 	switch (j) {
 	case 2: /* top right */
-	    *x = width - fgeom.right_width - RESIZE_EXTENDS;
-	    *y = 0;
+	    if (d->frame_window)
+	    {
+		*x = width - fgeom.right_width - RESIZE_EXTENDS + _win_extents.left + 2;
+		*y = _win_extents.top + 2 - fgeom.title_rect.height;
+	    }
+	    else
+	    {
+		*x = width - fgeom.right_width - RESIZE_EXTENDS;
+		*y = 0;
+	    }
 	    *w = fgeom.right_width + RESIZE_EXTENDS;
 	    *h = fgeom.top_height + RESIZE_EXTENDS;
 	    break;
 	case 1: /* top */
 	    *x = fgeom.left_width + RESIZE_EXTENDS;
-	    *y = 0;
+	    if (d->frame_window)
+		*y = _win_extents.top + 2;
+	    else
+		*y = 0;
 	    *w = width - fgeom.left_width - fgeom.right_width -
 		 (2 * RESIZE_EXTENDS);
 	    *h = fgeom.title_rect.y + TOP_RESIZE_HEIGHT;
 	    break;
 	case 0: /* top left */
 	default:
-	    *x = 0;
-	    *y = 0;
+	    if (d->frame_window)
+	    {
+		*x = _win_extents.left + 4;
+		*y = _win_extents.top + 2 - fgeom.title_rect.height;
+	    }
+	    else
+	    {
+		*x = 0;
+		*y = 0;
+	    }
 	    *w = fgeom.left_width + RESIZE_EXTENDS;
 	    *h = fgeom.top_height + RESIZE_EXTENDS;
 	    break;
@@ -4778,7 +4822,6 @@ top_right_event (WnckWindow *win,
 		 decor_event *gtkwd_event,
 		 decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_TOPRIGHT,
 			gtkwd_event, gtkwd_type);
 }
@@ -4788,7 +4831,6 @@ left_event (WnckWindow *win,
 	    decor_event *gtkwd_event,
 	    decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_LEFT, gtkwd_event, gtkwd_type);
 }
 
@@ -4797,7 +4839,6 @@ right_event (WnckWindow *win,
 	     decor_event *gtkwd_event,
 	     decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_RIGHT, gtkwd_event, gtkwd_type);
 }
 
@@ -4806,7 +4847,6 @@ bottom_left_event (WnckWindow *win,
 		   decor_event *gtkwd_event,
 		   decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_BOTTOMLEFT,
 			gtkwd_event, gtkwd_type);
 }
@@ -4816,7 +4856,6 @@ bottom_event (WnckWindow *win,
 	      decor_event *gtkwd_event,
 	      decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_BOTTOM, gtkwd_event, gtkwd_type);
 }
 
@@ -4825,7 +4864,6 @@ bottom_right_event (WnckWindow *win,
 		    decor_event *gtkwd_event,
 		    decor_event_type gtkwd_type)
 {
-
     frame_common_event (win, WM_MOVERESIZE_SIZE_BOTTOMRIGHT,
 			gtkwd_event, gtkwd_type);
 }
