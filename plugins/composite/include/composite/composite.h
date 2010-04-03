@@ -1,6 +1,3 @@
-
-
-
 /*
  * Copyright © 2008 Dennis Kasprzyk
  * Copyright © 2007 Novell, Inc.
@@ -47,12 +44,38 @@
 #define COLOR  0xffff
 #define BRIGHT 0xffff
 
+/**
+ * Used to indicate only part of the screen is being redrawn
+ */
 #define PAINT_SCREEN_REGION_MASK		   (1 << 0)
+/**
+ * Used to indicate that the whole screen is being redrawn
+ */
 #define PAINT_SCREEN_FULL_MASK			   (1 << 1)
+/**
+ * Used to indicate that every window on this screen will be
+ * transformed, so non-painted areas should be
+ * double-buffered
+ */
 #define PAINT_SCREEN_TRANSFORMED_MASK		   (1 << 2)
+/**
+ * Used to indicate that some windows on this screen will
+ * be drawn transformed
+ */
 #define PAINT_SCREEN_WITH_TRANSFORMED_WINDOWS_MASK (1 << 3)
+/**
+ * Used to indicate that nothing is being drawn on this pass
+ */
 #define PAINT_SCREEN_CLEAR_MASK			   (1 << 4)
+/**
+ * Used to indicate that occlusion detection is not in use
+ * on this pass
+ */
 #define PAINT_SCREEN_NO_OCCLUSION_DETECTION_MASK   (1 << 5)
+/**
+ * Used to indicate that no background will be drawn on this
+ * pass
+ */
 #define PAINT_SCREEN_NO_BACKGROUND_MASK            (1 << 6)
 
 
@@ -68,32 +91,43 @@ class PrivateCompositeWindow;
 class CompositeScreen;
 class CompositeWindow;
 
-///
-/// Interface for painting to composite output.
-///
+/**
+ * Wrapable function interface for CompositeScreen
+ */
 class CompositeScreenInterface :
     public WrapableInterface<CompositeScreen, CompositeScreenInterface>
 {
     public:
     
-    ///
-    /// Pre-paint hook
-    ///
+	/**
+	 * Hook which activates just before the screen is painted,
+	 * plugins should use this to calculate animation parameters
+	 *
+	 * @param msSinceLastPaint Describes how many milliseconds have passed
+	 * since the last screen repaint
+	 */
 	virtual void preparePaint (int);
 	
-	///
-	/// Post-paint hook
-	///
+	/**
+	 * Hook which activates right after the screen is painted,
+	 * plugins should use this to run post-paint cleanup, damage handling
+	 * and setting next paint variables
+	 *
+	 */
 	virtual void donePaint ();
 	
-	///
-	/// Paint to composite (multiple) outputs
-	///
+	/**
+	 * Hookable function which dispatches painting of outputs
+	 * to rendering plugins such as OpenGL. Hook this function
+	 * to change which outputs are painted, or to paint them
+	 * manually if you are rendering
+	 */
 	virtual void paint (CompOutput::ptrList &outputs, unsigned int);
 	
-	///
-	/// Gets a list of windows that need to evaluated for repainting
-	///
+	/**
+	 * Hookable function which gets a list of windows that need to be 
+	 * evaluated for repainting
+	 */
 	virtual const CompWindowList & getWindowPaintList ();
 };
 
@@ -125,16 +159,33 @@ class CompositeScreen :
 	CompOption::Vector & getOptions ();
         bool setOption (const CompString &name, CompOption::Value &value);
 
+	/** 
+	 * Register a dispatch PaintHandler for a rendering plugin
+	 */	
 	bool registerPaintHandler (PaintHandler *pHnd);
         void unregisterPaintHandler ();
 
 	bool compositingActive ();
 
+	/**
+	 * Returns the value of an XDamage Extension event signature
+	 */	
 	int damageEvent ();
 
+	/**
+	 * Causes the entire screen to be redrawn on the next
+	 * event loop
+	 */
 	void damageScreen ();
+
+	/**
+	 * Adds a specific region to be redrawn on the next
+	 * event loop
+	 */
 	void damageRegion (const CompRegion &);
 	void damagePending ();
+	
+
 	unsigned int damageMask ();
 	const CompRegion & currentDamage () const;
 
@@ -150,6 +201,9 @@ class CompositeScreen :
 	void setWindowPaintOffset (int x, int y);
 	CompPoint windowPaintOffset ();
 
+	/**
+	 * Limits the number of redraws per second
+	 */	
 	void setFPSLimiterMode (CompositeFPSLimiterMode newMode);
 	CompositeFPSLimiterMode FPSLimiterMode ();
 
@@ -188,55 +242,62 @@ class CompositeScreen :
   that is used to optimize rendering.
 */
 
-/*
-  this flag is present when window is being painted
-  on a transformed screen.
-*/
+/**
+ * this flag is present when window is being painted
+ * on a transformed screen.
+ */
 #define PAINT_WINDOW_ON_TRANSFORMED_SCREEN_MASK (1 << 0)
 
-/*
-  this flag is present when window is being tested
-  for occlusion of other windows.
-*/
+/**
+ * this flag is present when window is being tested
+ * for occlusion of other windows.
+ */
 #define PAINT_WINDOW_OCCLUSION_DETECTION_MASK   (1 << 1)
 
-/*
-  this flag indicates that the window ist painted with
-  an offset
-*/
+/**
+ * this flag indicates that the window ist painted with
+ * an offset
+ */
 #define PAINT_WINDOW_WITH_OFFSET_MASK           (1 << 2)
 
-/*
-  flag indicate that window is translucent.
-*/
+/**
+ * flag indicate that window is translucent.
+ */
 #define PAINT_WINDOW_TRANSLUCENT_MASK           (1 << 16)
 
-/*
-  flag indicate that window is transformed.
-*/
+/**
+ * flag indicate that window is transformed.
+ */
 #define PAINT_WINDOW_TRANSFORMED_MASK           (1 << 17)
 
-/*
-  flag indicate that core PaintWindow function should
-  not draw this window.
-*/
+/**
+ * flag indicate that core PaintWindow function should
+ * not draw this window.
+ */
 #define PAINT_WINDOW_NO_CORE_INSTANCE_MASK	(1 << 18)
 
-/*
-  flag indicate that blending is required.
-*/
+/**
+ * flag indicate that blending is required.
+ */
 #define PAINT_WINDOW_BLEND_MASK			(1 << 19)
 
 class CompositeWindowInterface :
     public WrapableInterface<CompositeWindow, CompositeWindowInterface>
 {
     public:
-	virtual bool damageRect (bool, const CompRect &);
+
+	/**
+	 * Hookable function to determine which parts of the
+	 * screen for this window to redraw on the next pass
+	 *
+	 * @param initial Indicates if this is the first time
+	 * this window is being redrawn
+	 * @param rect Reference to a rect which describes which
+	 * parts of the screen need to be redrawn on next pass
+	 */
+	virtual bool damageRect (bool initial, const CompRect &rect);
 };
 
-///
-/// A Window that has compositing effects
-///
 class CompositeWindow :
     public WrapableHandler<CompositeWindowInterface, 1>,
     public PluginClassHandler<CompositeWindow, CompWindow, COMPIZ_COMPOSITE_ABI>
@@ -246,20 +307,39 @@ class CompositeWindow :
 	CompositeWindow (CompWindow *w);
 	~CompositeWindow ();
 
+	/**
+	 * Binds the window contents of this window to some offscreen pixmap
+	 */
 	bool bind ();
 	
-	///
-	/// Releases the pixmap data for this window with XFreePixmap.
-	///
+	/**
+	 * Releases the pixmap data for this window with XFreePixmap.
+	 */
 	void release ();
 	
-	///
-	/// Gets the X server pixel map for this
-	///
+	/**
+	 * Returns the window pixmap
+	 */
 	Pixmap pixmap ();
 
+	/**
+	 * Forces this window to be composited so that the X Server
+	 * stops drawing it and all output is redirected to an
+	 * offscreen pixmap
+	 */
 	void redirect ();
+	
+	/**
+	 * Stops this window from being composited, so that the X Server
+	 * draws the window on-screen normally and output is not redirected
+	 * to an offscreen pixmap
+	 */
+	
 	void unredirect ();
+	
+	/**
+	 * Returns true if a window is redirected
+	 */
 	bool redirected ();
 	bool overlayWindow ();
 
@@ -270,19 +350,49 @@ class CompositeWindow :
 				    const CompRect &rect);
 
 	void damageOutputExtents ();
+
+	/**
+	 * Causes an area of the window to be redrawn on the
+	 * next event loop
+	 */
 	void addDamageRect (const CompRect &);
+
+	/**
+	 * Causes the window to be redrawn on the next
+	 * event loop
+	 */
 	void addDamage (bool force = false);
 
+	/**
+	 * Returns true if this window will be redrawn or
+	 * partially redrawn on the next event loop
+	 */
 	bool damaged ();
 
+	/**
+	 * Sets screen redraw hints for "damaged" areas
+	 * as stated by XDamageNotifyEvent
+	 *
+	 * @param de An XDamageNotifyEvent to be used to
+	 * calculate areas to redraw on the next event loop
+	 */
 	void processDamage (XDamageNotifyEvent *de);
 
 	void updateOpacity ();
 	void updateBrightness ();
 	void updateSaturation ();
 
+	/**
+	 * Returns the window opacity
+	 */
 	unsigned short opacity ();
+	/**
+	 * Returns the window brightness
+	 */
 	unsigned short brightness ();
+	/**
+	 * Returns the window saturation
+	 */
 	unsigned short saturation ();
 
 	WRAPABLE_HND (0, CompositeWindowInterface, bool, damageRect,
