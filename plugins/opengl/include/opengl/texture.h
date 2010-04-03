@@ -38,16 +38,31 @@
 
 #define POWER_OF_TWO(v) ((v & (v - 1)) == 0)
 
-#define COMP_TEX_COORD_X(m, vx) ((m).xx * (vx) + (m).x0)
+/**
+ * Returns a 2D matrix adjusted texture co-ordinate x
+ */
+#define COMP_TEX_COORD_X(m, vx) 
+/**
+ * Returns a 2D matrix adjusted texture co-ordinate y
+ */
 #define COMP_TEX_COORD_Y(m, vy) ((m).yy * (vy) + (m).y0)
 
+/**
+ * Returns a 2D matrix adjusted texture co-ordinate xy
+ */
 #define COMP_TEX_COORD_XY(m, vx, vy)		\
     ((m).xx * (vx) + (m).xy * (vy) + (m).x0)
+/**
+ * Returns a 2D matrix adjusted texture co-ordinate yx
+ */
 #define COMP_TEX_COORD_YX(m, vx, vy)		\
     ((m).yx * (vx) + (m).yy * (vy) + (m).y0)
 
 class PrivateTexture;
 
+/**
+ * Class which represents an openGL texture
+ */
 class GLTexture : public CompRect {
     public:
 
@@ -64,6 +79,10 @@ class GLTexture : public CompRect {
 
 	typedef std::vector<Matrix> MatrixList;
 
+	/**
+	 * Class which represents a list of openGL textures,
+	 * usually used for texture tiling
+	 */
 	class List : public std::vector <GLTexture *> {
 
 	    public:
@@ -81,28 +100,93 @@ class GLTexture : public CompRect {
 	typedef unsigned int BindPixmapHandle;
 
     public:
+
+	/**
+	 * Returns the openGL texture name
+	 */
 	GLuint name () const;
+
+	/**
+	 * Returns the openGL texture target
+	 */
 	GLenum target () const;
+
+	/**
+	 * Returns the openGL texture filter
+	 */
 	GLenum filter () const;
 
+	/**
+	 * Returns a 2D 2x3 matrix describing the transformation of
+	 * the texture
+	 */
 	const Matrix & matrix () const;
 
+	/**
+	 * Establishes the texture as the current drawing texture
+	 * in the openGL context
+	 *
+	 * @param filter Defines what kind of filtering level this
+	 * texture should be drawn with
+	 */
 	virtual void enable (Filter filter);
+
+	/**
+	 * Stops the textures from being the current drawing texture
+	 * in the openGL context
+	 */
 	virtual void disable ();
 
+	/**
+	 * Returns true if this texture is MipMapped
+	 */
 	bool mipmap () const;
+
+	/**
+	 * Sets if this texture should be MipMapped
+	 */
 	void setMipmap (bool);
+
+	/**
+	 * Sets the openGL filter which should be used on this
+	 * texture
+	 */
 	void setFilter (GLenum);
 	void setWrap (GLenum);
 
+	/**
+	 * Increases the reference count of a texture
+	 */
 	static void incRef (GLTexture *);
+
+	/**
+	 * Decreases the reference count of a texture
+	 */
 	static void decRef (GLTexture *);
 
+	/**
+	 * Returns a GLTexture::List with the contents of
+	 * some pixmap
+	 *
+	 * @param pixmap Specifies the pixmap data which should be converted
+	 * into texture data
+	 * @param width Specifies the width of the texture
+	 * @param height Specifies the height of the texture
+	 * @param depth Specifies the color depth of the texture
+	 */
 	static List bindPixmapToTexture (Pixmap pixmap,
 					 int width,
 					 int height,
 					 int depth);
 
+	/**
+	 * Returns a GLTexture::List with the contents of of
+	 * a raw image buffer
+	 *
+	 * @param image Specifies a raw image buffer which should be converted
+	 * into texture data
+	 * @param size Specifies the size of this new texture
+	 */
 	static List imageBufferToTexture (const char *image,
 					  CompSize   size);
 
@@ -111,6 +195,13 @@ class GLTexture : public CompRect {
 					GLenum     format,
 					GLenum     type);
 
+	/**
+	 * Uses image loading plugins to read an image from the disk and
+	 * return a GLTexture::List with its contents
+	 *
+	 * @param imageFileName The filename of the image
+	 * @param size		The size of this new texture
+	 */
 	static List readImageToTexture (CompString &imageFileName,
 					CompSize   &size);
 

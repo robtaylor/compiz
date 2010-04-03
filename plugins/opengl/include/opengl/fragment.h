@@ -37,6 +37,10 @@
 struct GLWindowPaintAttrib;
 class GLScreen;
 
+/**
+ * Describes a texture modification fragment program
+ * for a texture
+ */
 namespace GLFragment {
 
     class Storage;
@@ -51,6 +55,10 @@ namespace GLFragment {
 	    FunctionData ();
 	    ~FunctionData ();
 
+	    /**
+	     * Returns the status of this fragment program
+	     * (valid or invalid)
+	     */
 	    bool status ();
 
 	    void addTempHeaderOp (const char *name);

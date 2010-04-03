@@ -26,6 +26,10 @@
 #ifndef _GLVECTOR_H
 #define _GLVECTOR_H
 
+/**
+ * Class which describes a point or vector
+ * in 3D space
+ */
 class GLVector {
     public:
 	typedef enum {
@@ -38,20 +42,66 @@ class GLVector {
 	GLVector ();
 	GLVector (float x, float y, float z, float w);
 
+	/**
+	 * Returns a reference to the x, y, z or w value by using
+	 * 0, 1, 2, 3 as array-access items
+	 */
 	float& operator[] (int item);
+
+	/**
+	 * Returns a reference to the x, y, z or w value by using
+	 * x, y, z, w as array-access items
+	 */
 	float& operator[] (VectorCoordsEnum coord);
 
+	/**
+	 * Returns a readonly x, y, z or w value by using
+	 * 0, 1, 2, 3 as array-access items
+	 */
 	const float operator[] (int item) const;
+
+	/**
+	 * Returns a readonly x, y, z or w value by using
+	 * x, y, z, w as array-access items
+	 */
 	const float operator[] (VectorCoordsEnum coord) const;
 
+	/**
+	 * Adds all elements in a GLVector
+	 */
 	GLVector& operator+= (const GLVector& rhs);
+
+	/**
+	 * Subtracts all elements in a GLVector
+	 */
 	GLVector& operator-= (const GLVector& rhs);
+
+	/**
+	 * Scales all elements in a vector
+	 * @param k Scale factor
+	 */
 	GLVector& operator*= (const float k);
+
+	/**
+	 * Scales all elements in a vector by 1 / k
+	 * @param k Scale factor
+	 */
 	GLVector& operator/= (const float k);
 	GLVector& operator^= (const GLVector& rhs);
 
+	/**
+	 * Returns the norm of this vector
+	 */
 	float norm ();
+
+	/**
+	 * Returns the normalized version of the vector
+	 */
 	GLVector& normalize ();
+	
+	/**
+	 * Returns the homogenized version of the vector
+	 */
 	GLVector& homogenize ();
 
     private:

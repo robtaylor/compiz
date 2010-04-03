@@ -39,7 +39,9 @@
 
 #include <core/pluginclasshandler.h>
 
-/* camera distance from screen, 0.5 * tan (FOV) */
+/**
+ * camera distance from screen, 0.5 * tan (FOV)
+ */
 #define DEFAULT_Z_CAMERA 0.866025404f
 
 #define RED_SATURATION_WEIGHT   0.30f
@@ -236,15 +238,61 @@ class GLScreenInterface :
     public WrapableInterface<GLScreen, GLScreenInterface>
 {
     public:
-	virtual bool glPaintOutput (const GLScreenPaintAttrib &,
-				    const GLMatrix &, const CompRegion &,
-				    CompOutput *, unsigned int);
-	virtual void glPaintTransformedOutput (const GLScreenPaintAttrib &,
-					       const GLMatrix &,
-					       const CompRegion &,
-					       CompOutput *, unsigned int);
-	virtual void glApplyTransform (const GLScreenPaintAttrib &,
-				       CompOutput *, GLMatrix *);
+
+	/**
+	 * Hookable function used for plugins to use openGL to draw on an output
+	 *
+	 * @param attrib Describes some basic drawing attribs for the screen
+	 * including translation, rotation and scale
+	 * @param matrix Describes a 4x4 3D modelview matrix for which this
+	 * screen should be drawn in
+	 * @param region Describes the region of the screen being redrawn
+	 * @param output Describes the output being redrawn
+	 * @param mask   Bitmask which describes how the screen is being redrawn'
+	 */
+	virtual bool glPaintOutput (const GLScreenPaintAttrib &attrib,
+				    const GLMatrix 	      &matrix,
+				    const CompRegion 	      &region,
+				    CompOutput 		      *output,
+				    unsigned int	      mask);
+
+
+	/**
+	 * Hookable function used for plugins to use openGL to draw on an output
+	 * when the screen is transformed
+	 *
+	 * There is little difference between this and glPaintOutput, however
+	 * this will be called when the entire screen is being transformed
+	 * (eg cube)
+	 *
+	 * @param attrib Describes some basic drawing attribs for the screen
+	 * including translation, rotation and scale
+	 * @param matrix Describes a 4x4 3D modelview matrix for which this
+	 * screen should be drawn in
+	 * @param region Describes the region of the screen being redrawn
+	 * @param output Describes the output being redrawn
+	 * @param mask   Bitmask which describes how the screen is being redrawn'
+	 */
+	virtual void glPaintTransformedOutput (const GLScreenPaintAttrib &attrib,
+					       const GLMatrix 		 &mask,
+					       const CompRegion 	 &region,
+					       CompOutput 		 *output,
+					       unsigned int		 mask);
+
+	/**
+	 * Hookable function to apply elements from a GLScreenPaintAttrib
+	 * to a GLMatrix in the context of a CompOutput
+	 *
+	 * @param attrib Describes the basic drawing attribs of a screen
+	 * including translation, rotation and scale to be applies to a matrix
+	 * @param output Describes the output in which these operations take
+	 * place
+	 * @param matrix Pointer to a matrix where transformations will
+	 * be applied
+	 */
+	virtual void glApplyTransform (const GLScreenPaintAttrib &attrib,
+				       CompOutput 		 *output,
+				       GLMatrix 		 *mask);
 
 	virtual void glEnableOutputClipping (const GLMatrix &,
 					     const CompRegion &,
@@ -266,22 +314,51 @@ class GLScreen :
 	CompOption::Vector & getOptions ();
         bool setOption (const CompString &name, CompOption::Value &value);
 
+	/**
+	 * Returns the current compiz-wide openGL texture filter
+	 */
 	GLenum textureFilter ();
+
+	/**
+	 * Sets a new compiz-wide openGL texture filter
+	 */
 	void setTextureFilter (GLenum);
 
 	void clearTargetOutput (unsigned int mask);
 
+	/**
+	 * Gets the libGL address of a particular openGL functor
+	 */
 	GL::FuncPtr getProcAddress (const char *name);
 
 	void updateBackground ();
 
+	/**
+	 * Returns the current compiz-wide texture filter
+	 */
 	GLTexture::Filter filter (int);
+
+	/**
+	 * Sets a new compiz-wide texture filter
+	 */
 	void setFilter (int, GLTexture::Filter);
 
 	GLFragment::Storage * fragmentStorage ();
 
+	/**
+	 * Sets a new compiz-wid openGL texture environment mode
+	 */
 	void setTexEnvMode (GLenum mode);
+
+	/**
+	 * Turns lighting on and off
+	 */
+
 	void setLighting (bool lighting);
+
+	/**
+	 * Returns true if lighting is enabled
+	 */
 	bool lighting ();
 
 	void clearOutput (CompOutput *output, unsigned int mask);
@@ -293,10 +370,17 @@ class GLScreen :
 
 	GLFBConfig * glxPixmapFBConfig (unsigned int depth);
 
+	/**
+	 * Returns a default icon texture
+	 */
 	GLTexture *defaultIcon ();
 
 	void resetRasterPos ();
 
+	/**
+	 * Returns a 4x4 const float array which
+	 * represents the current projection matrix
+	 */
 	const float * projectionMatrix ();
 
 	WRAPABLE_HND (0, GLScreenInterface, bool, glPaintOutput,
@@ -335,14 +419,61 @@ class GLWindowInterface :
     public WrapableInterface<GLWindow, GLWindowInterface>
 {
     public:
-	virtual bool glPaint (const GLWindowPaintAttrib &, const GLMatrix &,
-			      const CompRegion &, unsigned int);
-	virtual bool glDraw (const GLMatrix &, GLFragment::Attrib &,
-			     const CompRegion &, unsigned int);
-	virtual void glAddGeometry (const GLTexture::MatrixList &,
-				    const CompRegion &,const CompRegion &,
-				    unsigned int = MAXSHORT,
-				    unsigned int = MAXSHORT);
+
+	/**
+	 * Hookable function to paint a window on-screen
+	 *
+	 * @param attrib Describes basic drawing attribs of this window;
+	 * opacity, brightness, saturation
+	 * @param matrix A 4x4 matrix which describes the transformation of
+	 * this window
+	 * @param region Describes the region of the window being drawn
+	 * @param mask   Bitmask which describes how this window is drawn
+	 */
+	virtual bool glPaint (const GLWindowPaintAttrib &attrib,
+			      const GLMatrix 		&matrix,
+			      const CompRegion 		&region,
+			      unsigned int		mask);
+
+	/**
+	 * Hookable function to draw a window on-screen
+	 *
+	 * Unlike glPaint, when glDraw is called, the window is
+	 * drawn immediately
+	 *
+	 * @param matrix A 4x4 matrix which describes the transformation of
+	 * this window
+	 * @param attrib A Fragment attrib which describes the texture
+	 * modification state of this window
+	 * @param region Describes which region will be drawn
+	 * @param mask   Bitmask which describes how this window is drawn
+	 */
+	virtual bool glDraw (const GLMatrix 	&matrix,
+			     GLFragment::Attrib &attrib,
+			     const CompRegion 	&region,
+			     unsigned int	mask);
+
+	/**
+	 * Hookable function to add points to a window
+	 * texture geometry
+	 *
+	 * This function adds rects to a window's texture geometry
+	 * and modifies their points by the values in the GLTexture::MatrixList
+	 *
+	 * It is used for texture transformation to set points
+	 * for where the texture should be skewed
+	 *
+	 * @param matrices Describes the matrices by which the texture exists
+	 * @param region
+	 * @param clipRegion
+	 * @param min
+	 * @param max
+	 */
+	virtual void glAddGeometry (const GLTexture::MatrixList &matrices,
+				    const CompRegion 		&region,
+				    const CompRegion 		&clipRegion,
+				    unsigned int		min = MAXSHORT,
+				    unsigned int		max = MAXSHORT);
 	virtual void glDrawTexture (GLTexture *texture, GLFragment::Attrib &,
 				    unsigned int);
 	virtual void glDrawGeometry ();
@@ -354,6 +485,10 @@ class GLWindow :
 {
     public:
 
+	/**
+	 * Class which describes the texture geometry and transformation points
+	 * of a window
+	 */
 	class Geometry {
 	    public:
 		Geometry ();
@@ -361,7 +496,14 @@ class GLWindow :
 
 		void reset ();
 
+		/**
+		 * Set the number of vertices in the texture geometry
+		 */
 		bool moreVertices (int newSize);
+
+		/**
+		 * Set the number of indices in the texture geometry
+		 */
 		bool moreIndices (int newSize);
 
 	    public:
@@ -384,19 +526,43 @@ class GLWindow :
 
 	const CompRegion & clip () const;
 
+	/**
+	 * Returns the current paint attributes for this window
+	 */
 	GLWindowPaintAttrib & paintAttrib ();
+
+	/**
+	 * Returns the last paint attributes for this window
+	 */
 	GLWindowPaintAttrib & lastPaintAttrib ();
 
 	unsigned int lastMask () const;
 
+	/**
+	 * Binds this window to an openGL texture
+	 */
 	bool bind ();
+
+	/**
+	 * Releases this window from an openGL texture
+	 */
 	void release ();
 
+	/**
+	 * Returns the tiled textures for this window
+	 */
 	const GLTexture::List &       textures () const;
+
+	/**
+	 * Returns the matrices for the tiled textures for this windwo
+	 */
 	const GLTexture::MatrixList & matrices () const;
 
 	void updatePaintAttribs ();
 
+	/**
+	 * Returns the window texture geometry
+	 */
 	Geometry & geometry ();
 
 	GLTexture *getIcon (int width, int height);
