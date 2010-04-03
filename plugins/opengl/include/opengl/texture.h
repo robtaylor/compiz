@@ -41,7 +41,7 @@
 /**
  * Returns a 2D matrix adjusted texture co-ordinate x
  */
-#define COMP_TEX_COORD_X(m, vx) 
+#define COMP_TEX_COORD_X(m, vx) ((m).xx * (vx) + (m).x0)
 /**
  * Returns a 2D matrix adjusted texture co-ordinate y
  */

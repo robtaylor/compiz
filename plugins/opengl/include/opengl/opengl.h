@@ -274,7 +274,7 @@ class GLScreenInterface :
 	 * @param mask   Bitmask which describes how the screen is being redrawn'
 	 */
 	virtual void glPaintTransformedOutput (const GLScreenPaintAttrib &attrib,
-					       const GLMatrix 		 &mask,
+					       const GLMatrix 		 &matrix,
 					       const CompRegion 	 &region,
 					       CompOutput 		 *output,
 					       unsigned int		 mask);
