@@ -30,6 +30,9 @@
 
 #include <vector>
 
+/**
+ * Represents the index of a plugin's object classes
+ */
 class PluginClassIndex {
     public:
 	PluginClassIndex () : index ((unsigned)~0), refCount (0),
@@ -44,6 +47,10 @@ class PluginClassIndex {
 	unsigned int pcIndex;
 };
 
+/**
+ * Represents some storage of a plugin class on a core object,
+ * usually some pointer (void *)
+ */
 class PluginClassStorage {
 
     public:

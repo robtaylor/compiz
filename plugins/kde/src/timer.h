@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Dennis Kasprzyk <onestone@compiz.org>
+ * Copyright (c) 2010 Dennis Kasprzyk <onestone@compiz.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,43 +18,38 @@
  *
  */
 
-#ifndef KDE_H_
-#define KDE_H_
+#ifndef TIMER_H_
+#define TIMER_H_
 
-#include <core/core.h>
 #include <core/timer.h>
-#include <core/pluginclasshandler.h>
-
-#include "dispatcher.h"
 
 #include <fixx11h.h>
 
-#include <KApplication>
+#include <QPair>
+#include <QAbstractEventDispatcher>
 
-class KdeScreen :
-    public PluginClassHandler <KdeScreen, CompScreen>
+
+class TimerObject
 {
     public:
-
-	KdeScreen (CompScreen *);
-	virtual ~KdeScreen ();
-
-	void sendGlibNotify ();
-
+	TimerObject (int timerId, int interval, QObject *object);
+	~TimerObject ();
+	
+	QAbstractEventDispatcher::TimerInfo timerInfo () const;
+	
+	QObject *object () const;
+	
+	void disable ();
+	
     private:
-	KApplication          *mApp;
-	EventDispatcherCompiz *mEventDispatcher;
-
-	char        *argv[1];
-	int         argc;
-};
-
-class KdePluginVTable :
-    public CompPlugin::VTableForScreen <KdeScreen>
-{
-    public:
-
-	bool init ();
+	bool execute ();
+	
+    private:
+	QAbstractEventDispatcher::TimerInfo mTimerInfo;
+	CompTimer                           mTimer;
+	QObject                             *mObject;
+	
+	bool mEnabled;
 };
 
 #endif

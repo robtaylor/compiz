@@ -547,6 +547,7 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 
     Pixmap pixmap = None;
 
+
     if (window->shaded () || (window->isViewable () && damaged))
     {
 	int x, y, x1, x2, y1, y2;
@@ -583,10 +584,21 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	}
     }
 
-    cWindow->addDamage ();
+    if (!window->mapNum () && window->hasUnmapReference () &&
+        !window->invisible ())
+    {
+       /* keep old pixmap for windows that are unmapped on the client side,
+	* but not yet on our side as it's pretty likely that plugins are
+	* currently using it for animations
+	*/
+    }
+    else
+    {
+	cWindow->release ();
+	this->pixmap = pixmap;
+    }
 
-    cWindow->release ();
-    this->pixmap = pixmap;
+    cWindow->addDamage ();
 }
 
 void

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2009 Dennis Kasprzyk <onestone@compiz.org>
+ * Copyright (c) 2010 Dennis Kasprzyk <onestone@compiz.org>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License
@@ -18,43 +18,27 @@
  *
  */
 
-#ifndef KDE_H_
-#define KDE_H_
+#ifndef SOCKET_H_
+#define SOCKET_H_
 
-#include <core/core.h>
-#include <core/timer.h>
-#include <core/pluginclasshandler.h>
+#include <core/screen.h>
 
-#include "dispatcher.h"
+class QSocketNotifier;
 
-#include <fixx11h.h>
-
-#include <KApplication>
-
-class KdeScreen :
-    public PluginClassHandler <KdeScreen, CompScreen>
+class SocketObject
 {
     public:
-
-	KdeScreen (CompScreen *);
-	virtual ~KdeScreen ();
-
-	void sendGlibNotify ();
-
+	SocketObject (QSocketNotifier *notifier);
+	~SocketObject ();
+	
+	QSocketNotifier *notifier () const;
+	
     private:
-	KApplication          *mApp;
-	EventDispatcherCompiz *mEventDispatcher;
-
-	char        *argv[1];
-	int         argc;
-};
-
-class KdePluginVTable :
-    public CompPlugin::VTableForScreen <KdeScreen>
-{
-    public:
-
-	bool init ();
+	void callback ();
+	
+    private:
+	QSocketNotifier   *mNotifier;
+	CompWatchFdHandle mHandle;
 };
 
 #endif

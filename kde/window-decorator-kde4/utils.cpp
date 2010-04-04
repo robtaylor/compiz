@@ -52,6 +52,7 @@ namespace KWD
 	Atom toolkitActionWindowMenuAtom;
 	Atom toolkitActionForceQuitDialogAtom;
         Atom compizWindowBlurDecor;
+	Atom enlightmentDesktop;
     }
 }
 
@@ -208,4 +209,5 @@ KWD::Atoms::init (void)
 		     false);
     compizWindowBlurDecor =
 	XInternAtom (xdisplay, DECOR_BLUR_ATOM_NAME, false);
+    enlightmentDesktop = XInternAtom (xdisplay, "ENLIGHTENMENT_DESKTOP", false);
 }

@@ -40,11 +40,14 @@ set (GETTEXT_PACKAGE compiz)
 find_package (Boost 1.34.0 REQUIRED)
 
 set (COMPIZ_REQUIRES
+    x11
+    xext
     xdamage
     xcomposite
     x11-xcb
     xrandr
     xinerama
+    xext
     ice
     sm
     libxml-2.0

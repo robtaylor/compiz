@@ -12,6 +12,8 @@ if (KDE4_FOUND)
 
     add_definitions(${QT_DEFINITIONS} ${KDE4_DEFINITIONS})
 
+    QT4_AUTOMOC (src/dispatcher.cpp)
+
     compiz_plugin (kde LIBRARIES ${KDE4_KDECORE_LIBS} ${KDE4_KDEUI_LIBS}
 	LIBDIRS ${KDE4_LIB_DIR}
 	INCDIRS ${KDE4_INCLUDES}

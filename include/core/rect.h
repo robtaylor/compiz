@@ -26,6 +26,10 @@
 #ifndef _COMPRECT_H
 #define _COMPRECT_H
 
+/**
+ * A 2D rectangle, which is likely in screen space. It's data is
+ * isolated and can only be mutated with set() methods.
+ */
 class CompRect {
 
     public:
@@ -55,7 +59,10 @@ class CompRect {
 	CompPoint center () const;
 
 	int area () const;
-
+	
+	/**
+	 * Returns an X region handle for the CompRect
+	 */
 	const Region region () const;
 
 	void setGeometry (int x, int y,
@@ -69,12 +76,33 @@ class CompRect {
 	void setPos (const CompPoint&);
 	void setSize (const CompSize&);
 
-	/* Setting an edge past it's opposite edge will result in both edges
+	/** 
+	 * Sets the left edge position
+	 *
+	 * Setting an edge past it's opposite edge will result in both edges
 	 * being set to the new value
 	 */
 	void setLeft    (int);
+	/**
+	 * Sets the top edge position
+	 *
+	 * Setting an edge past it's opposite edge will result in both edges
+	 * being set to the new value
+	 */
 	void setTop     (int);
+	/** 
+	 * Sets the right edge position
+	 *
+	 * Setting an edge past it's opposite edge will result in both edges
+	 * being set to the new value
+	 */
 	void setRight   (int);
+	/** 
+	 * Sets the bottom edge position
+	 *
+	 * Setting an edge past it's opposite edge will result in both edges
+	 * being set to the new value
+	 */
 	void setBottom  (int);
 
 	bool contains (const CompPoint &) const;

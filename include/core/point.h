@@ -29,26 +29,60 @@
 #include <vector>
 #include <list>
 
+/**
+ * A 2D coordinate (likely in screen space) that can only be mutated
+ * through set() methods, since it's data members are private.
+ */
 class CompPoint {
 
     public:
 	CompPoint ();
 	CompPoint (int, int);
-
+	
+	/**
+	 * Get the x coordinate of this point
+	 */
 	int x () const;
+	
+	/**
+	 * Get the y coordinate of this point
+	 */
 	int y () const;
-
+	
+	/**
+	 * Set the x and y coordinate of this point
+	 */
 	void set (int, int);
+	
+	/**
+	 * Set the x coordinate of this point
+	 */
 	void setX (int);
+	
+	/**
+	 * Set the y coordinate of this point
+	 */
 	void setY (int);
 
 	bool operator== (const CompPoint &) const;
 	bool operator!= (const CompPoint &) const;
 	
+	/**
+	 * Takes from both co-ordinates
+	 */
 	CompPoint & operator-= (const CompPoint &);
+	/**
+	 * Adds to both co-ordinates
+	 */
 	CompPoint & operator+= (const CompPoint &);
 	
+	/**
+	 * Retuns an added point
+	 */
 	CompPoint operator+ (const CompPoint &) const;
+	/**
+	 * Returns a subtracted point
+	 */
 	CompPoint operator- (const CompPoint &) const;
 
 	typedef std::vector<CompPoint> vector;

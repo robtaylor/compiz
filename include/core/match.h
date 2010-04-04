@@ -34,9 +34,17 @@ class PrivateMatch;
 class CompWindow;
 class CompDisplay;
 
+/**
+ * Object which represents a series of window properties
+ * that can be matched in a window. Used for determining which
+ * windows to operate on, in core or in plugins
+ */
 class CompMatch {
     public:
-
+    
+    /**
+     * TODO
+     */
 	class Expression {
 	    public:
 		virtual ~Expression () {};
@@ -52,6 +60,11 @@ class CompMatch {
 	static const CompMatch emptyMatch;
 
 	void update ();
+	
+	/**
+	 * Returns true if the specified CompWindow has the properties
+	 * specified in the match object
+	 */
 	bool evaluate (CompWindow *window);
 
 	CompString toString () const;

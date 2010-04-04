@@ -1416,8 +1416,19 @@ CompWindow::resize (CompWindow::Geometry gm)
 			    priv->attrib.width, priv->attrib.height,
 			    priv->attrib.border_width);
 
-	priv->width  = pw;
-	priv->height = ph;
+	if (!priv->mapNum && priv->unmapRefCnt > 0 &&
+	     priv->attrib.map_state == IsViewable)
+	{
+	    /* keep old pixmap for windows that are unmapped on the client side,
+	     * but not yet on our side as it's pretty likely that plugins are
+	     * currently using it for animations
+	     */
+	}
+	else
+	{
+	    priv->width = pw;
+	    priv->height = ph;
+	}
 
 	if (priv->mapNum)
 	    priv->updateRegion ();
@@ -2793,9 +2804,13 @@ CompWindow::moveResize (XWindowChanges *xwc,
 			int            gravity,
 			unsigned int   source)
 {
-    bool placed = xwcm & (CWX | CWY);
+    bool placed = false;
 
     xwcm &= (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
+    
+    if (xwcm & (CWX | CWY))
+	if (priv->sizeHints.flags & (USPosition | PPosition))
+	    placed = true;
 
     if (gravity == 0)
 	gravity = priv->sizeHints.win_gravity;
@@ -4051,7 +4066,8 @@ CompWindow::getIcon (int width,
 	{
 	    CARD32   *p;
 	    CARD32   alpha, red, green, blue;
-	    int      iw, ih, j;
+	    int      iw, ih;
+	    unsigned long j;
 
 	    for (i = 0; i + 2 < n; i += iw * ih + 2)
 	    {
@@ -4060,7 +4076,13 @@ CompWindow::getIcon (int width,
 		iw = idata[i];
 		ih = idata[i + 1];
 
-		if (iw * ih + 2 > (int) (n - i))
+		/* iw * ih may be larger than the value range of unsigned
+		* long, so better do some checking for extremely weird
+		* icon sizes first */
+		if ((unsigned int) iw > 2048 || (unsigned int) 
+		    ih > 2048 || (unsigned int) iw * 
+				 (unsigned int) ih + 2 > (unsigned int) n - 
+							 (unsigned int) i)
 		    break;
 
 		if (iw && ih)
@@ -4076,7 +4098,8 @@ CompWindow::getIcon (int width,
 		    /* EWMH doesn't say if icon data is premultiplied or
 		       not but most applications seem to assume data should
 		       be unpremultiplied. */
-		    for (j = 0; j < iw * ih; j++)
+		    for (j = 0; j < (unsigned int) iw *
+				    (unsigned int) ih; j++)
 		    {
 			alpha = (idata[i + j + 2] >> 24) & 0xff;
 			red   = (idata[i + j + 2] >> 16) & 0xff;
@@ -4814,12 +4837,20 @@ PrivateWindow::updateMwmHints ()
 void
 PrivateWindow::updateStartupId ()
 {
-    if (startupId)
-	free (startupId);
+    char *oldId = startupId;
+    bool newId = true;
 
     startupId = getStartupId ();
 
-    if (managed && startupId)
+    if (oldId)
+    {
+	if (strcmp (startupId, oldId) == 0)
+	    newId = false;
+	
+	free (oldId);
+    }
+
+    if (managed && startupId && newId)
     {
 	Time       timestamp = 0;
 	CompPoint  vp, svp;
@@ -4948,8 +4979,7 @@ CompWindow::CompWindow (Window id,
 	priv->updateTransientHint ();
 
 	priv->clientLeader = priv->getClientLeader ();
-	if (!priv->clientLeader)
-	    priv->startupId = priv->getStartupId ();
+	priv->startupId = priv->getStartupId ();
 
 	recalcType ();
 
@@ -5019,6 +5049,9 @@ CompWindow::CompWindow (Window id,
 	    priv->state |= CompWindowStateHiddenMask;
 
 	    priv->pendingUnmaps++;
+
+	    if (priv->frame && !priv->shaded)
+		XUnmapWindow (screen->dpy (), priv->frame);
 
 	    XUnmapWindow (screen->dpy (), priv->id);
 
@@ -5326,9 +5359,8 @@ CompWindow::updateFrameRegion ()
     CompRect   r;
     int        x, y;
 
-    if ((priv->input.left || priv->input.right ||
-	 priv->input.top || priv->input.bottom) && priv->frame &&
-	 priv->serverGeometry == priv->geometry)
+     if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
+	 priv->serverGeometry.height () == priv->geometry.height ())
     {
 
 	priv->frameRegion = CompRegion ();
@@ -5348,8 +5380,8 @@ CompWindow::updateFrameRegion ()
 	    priv->frameRegion &= CompRegion (r);
 	}
 
-	x = priv->serverGeometry.x () - priv->input.left;
-	y = priv->serverGeometry.y () - priv->input.top;
+	x = priv->geometry.x () - priv->input.left;
+	y = priv->geometry.y () - priv->input.top;
 
 
 	XShapeCombineRegion (screen->dpy (), priv->frame,
@@ -5435,9 +5467,9 @@ PrivateWindow::reparent ()
     attr.border_pixel      = 0;
     attr.colormap          = attrib.colormap;
 
-    frame = XCreateWindow (dpy, screen->root (), sg.x (), sg.y (),
-			  sg.width (), sg.height (), 0, attrib.depth,
-			  InputOutput, attrib.visual, mask, &attr);
+    frame = XCreateWindow (dpy, screen->root (), 0, 0,
+			   1, 1, 0, attrib.depth,
+			   InputOutput, attrib.visual, mask, &attr);
 
     wrapper = XCreateWindow (dpy, frame, 0, 0,
 			    sg.width (), sg.height (), 0, attrib.depth,
@@ -5446,6 +5478,10 @@ PrivateWindow::reparent ()
     XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
+
+    xwc.stack_mode = Below;
+    xwc.sibling    = id;
+    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
 
     XMapWindow (dpy, wrapper);
     XReparentWindow (dpy, id, wrapper, 0, 0);
@@ -5482,6 +5518,8 @@ PrivateWindow::reparent ()
 		  ExposureMask);
 
     XUngrabServer (dpy);
+    
+    XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
     window->windowNotify (CompWindowNotifyReparent);
 
@@ -5494,6 +5532,7 @@ PrivateWindow::unreparent ()
     Display        *dpy = screen->dpy ();
     XEvent         e;
     bool           alive = true;
+    XWindowChanges xwc;
 
     if (!frame)
 	return;
@@ -5514,8 +5553,11 @@ PrivateWindow::unreparent ()
         XSelectInput (dpy, frame, NoEventMask);
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
-        XReparentWindow (dpy, id, screen->root (), serverGeometry.x (),
-			 serverGeometry.y ());
+        XReparentWindow (dpy, id, screen->root (), 0, 0);
+	
+	xwc.stack_mode = Below;
+	xwc.sibling    = frame;
+	XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
 
         XUnmapWindow (dpy, frame);
 	
@@ -5537,6 +5579,8 @@ PrivateWindow::unreparent ()
 		  ExposureMask);
 	
 	XUngrabServer (dpy);
+	
+	XMoveWindow (dpy, id, serverGeometry.x (), serverGeometry.y ());
     }
 
     XDestroyWindow (dpy, wrapper);

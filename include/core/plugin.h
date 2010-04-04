@@ -73,6 +73,11 @@ union CompPrivate {
     void	  *(*fptr) (void);
 };
 
+/**
+ * Base plug-in interface for Compiz. All plugins must implement this
+ * interface, which provides basics for loading, unloading, options,
+ * and linking together the plugin and Screen(s).
+ */
 class CompPlugin {
     public:
 	class VTable {
@@ -82,7 +87,10 @@ class CompPlugin {
 
 		void initVTable (CompString         name,
 				 CompPlugin::VTable **self = NULL);
-
+		
+		/**
+		 * Gets the name of this compiz plugin
+		 */
 		const CompString name () const;
 
 		virtual bool init () = 0;
@@ -106,6 +114,9 @@ class CompPlugin {
 		VTable       **mSelf;
         };
 
+    /**
+     * TODO (or not?)
+     */
 	template <typename T, typename T2>
 	class VTableForScreenAndWindow : public VTable {
 	    bool initScreen (CompScreen *s);
@@ -121,6 +132,9 @@ class CompPlugin {
 	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
 
+    /**
+     * TODO (or not?)
+     */
 	template <typename T>
 	class VTableForScreen : public VTable {
 	    bool initScreen (CompScreen *s);
@@ -131,7 +145,10 @@ class CompPlugin {
 
 	    bool setOption (const CompString &name, CompOption::Value &value);
 	};
-
+	
+	/**
+	 * Interface for matching plugins by name.
+	 */
 	struct cmpStr
 	{
 	    bool operator () (const char *a, const char *b) const
@@ -157,23 +174,58 @@ class CompPlugin {
 	static bool windowInitPlugins (CompWindow *w);
 
 	static void windowFiniPlugins (CompWindow *w);
-
+	
+	/**
+	 * Finds a plugin by name. (TODO Does it have to be loaded?)
+	 */
 	static CompPlugin *find (const char *name);
-
+	
+	/**
+	 * Load a compiz plugin. Loading a plugin that has
+	 * already been loaded will return the existing instance.
+	 */
 	static CompPlugin *load (const char *plugin);
-
+	
+	/**
+	 * Unload a compiz plugin. Unloading a plugin multiple times has no
+	 * effect, and you can't unload a plugin that hasn't been loaded already
+	 * with CompPlugin::load()
+	 */
 	static void unload (CompPlugin *p);
-
+	
+	/**
+	 * Adds a plugin onto the working set of active plugins. If the plugin fails to initPlugin
+	 * this will return false and the plugin will not be added to the working set.
+	 */
 	static bool push (CompPlugin *p);
-
+	
+	/**
+	 * Removes the last activated plugin with CompPlugin::push() and returns
+	 * the removed plugin, or NULL if there was none.
+	 */
 	static CompPlugin *pop (void);
-
+	
+	/**
+	 * Gets a list of the working set of plugins that have been CompPlugin::push() but not
+	 * CompPlugin::pop()'d.
+	 */
 	static List & getPlugins ();
-
+	
+	/**
+	 * Gets a list of the names of all the known plugins, including plugins that may
+	 * have already been loaded.
+	 */
 	static std::list<CompString> availablePlugins ();
-
+	
+	/**
+	 * Gets the Application Binary Interface (ABI) version of a (un)loaded plugin.
+	 */
 	static int getPluginABI (const char *name);
-
+	
+	/**
+	 * Verifies a signature to ensure that the plugin conforms to the Application Binary
+	 * Interface (ABI) 
+	 */
 	static bool checkPluginABI (const char *name,
 				    int	        abi);
 

@@ -48,6 +48,14 @@ class CubeScreenInterface :
     public WrapableInterface<CubeScreen, CubeScreenInterface>
 {
     public:
+
+	/**
+	 * Hookable function to get the current state of rotation
+	 *
+	 * @param x X rotation
+	 * @param v Y Rotation
+	 * @param progress
+	 */
 	virtual void cubeGetRotation (float &x, float &v, float &progress);
 	virtual void cubeClearTargetOutput (float xRotate, float vRotate);
 	virtual void cubePaintTop (const GLScreenPaintAttrib &sAttrib,

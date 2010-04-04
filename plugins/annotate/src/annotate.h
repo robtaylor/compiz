@@ -34,21 +34,24 @@
 
 static int annoLastPointerX = 0;
 static int annoLastPointerY = 0;
+static int initialPointerX = 0;
+static int initialPointerY = 0;
 
-typedef struct _Circle
+typedef struct _Ellipse
 {
-    int centerX;
-    int centerY;
-    double radius;
-} Circle;
+    CompPoint	center;
+    int		radiusX;
+    int		radiusY;
+} Ellipse;
 
 enum DrawMode
 {
     NoMode = 0,
     EraseMode,
+    FreeDrawMode,
     LineMode,
     RectangleMode,
-    CircleMode,
+    EllipseMode,
     TextMode
 };
 
@@ -72,11 +75,13 @@ class AnnoScreen :
 	cairo_surface_t *surface;
 	cairo_t		*cairo;
 	bool		content;
-	int		initialPointerX, initialPointerY;
+	Damage		damage;
+
 	CompRect	rectangle, lastRect;
 	DrawMode	drawMode;
 
-	Circle circle;
+	CompPoint	lineVector;
+	Ellipse		ellipse;
 
 	void handleEvent (XEvent *);
 
@@ -95,12 +100,12 @@ class AnnoScreen :
 			unsigned short *color);
 
 	void
-	drawCircle (double	       xc,
-		    double	       yc,
-		    double	       radius,
-		    unsigned short *fillColor,
-		    unsigned short *strokeColor,
-		    double	       strokeWidth);
+	drawLine (double	     x1,
+		  double	     y1,
+		  double	     x2,
+		  double	     y2,
+		  double	     width,
+		  unsigned short *color);
 
 	void
 	drawRectangle (double	  x,
@@ -112,12 +117,13 @@ class AnnoScreen :
 		       double	  strokeWidth);
 
 	void
-	drawLine (double	     x1,
-		  double	     y1,
-		  double	     x2,
-		  double	     y2,
-		  double	     width,
-		  unsigned short *color);
+	drawEllipse (double		xc,
+		     double		yc,
+		     double		radiusX,
+		     double		radiusY,
+		     unsigned short	*fillColor,
+		     unsigned short	*strokeColor,
+		     double		strokeWidth);
 
 	void
 	drawText (double	     		     x,
@@ -139,29 +145,34 @@ class AnnoScreen :
 	      CompOption::Vector& options);
 
 	bool
-	initiate (CompAction         *action,
-		  CompAction::State  state,
-		  CompOption::Vector& options);
-
-	bool
 	terminate (CompAction         *action,
 		   CompAction::State  state,
 		   CompOption::Vector& options);
 
 	bool
-	eraseInitiate (CompAction         *action,
+	initiateErase (CompAction         *action,
 		       CompAction::State  state,
 		       CompOption::Vector& options);
 
 	bool
-	rectangleInitiate (CompAction         *action,
+	initiateFreeDraw (CompAction         *action,
+			  CompAction::State  state,
+			  CompOption::Vector& options);
+
+	bool
+	initiateLine (CompAction         *action,
+		      CompAction::State  state,
+		      CompOption::Vector& options);
+
+	bool
+	initiateRectangle (CompAction         *action,
 			   CompAction::State  state,
 			   CompOption::Vector& options);
 
 	bool
-	circleInitiate (CompAction         *action,
-		        CompAction::State  state,
-			CompOption::Vector& options);
+	initiateEllipse (CompAction         *action,
+			 CompAction::State  state,
+			 CompOption::Vector& options);
 
 	bool
 	clear (CompAction         *action,

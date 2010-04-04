@@ -29,6 +29,10 @@
 #include <vector>
 #include <list>
 
+/**
+ * A 2D size (likely in screen space) that can only be mutated with set() methods,
+ * since it'd data members are private.
+ */
 class CompSize {
 
     public:

@@ -26,15 +26,12 @@ COMPIZ_PLUGIN_20090315 (place, PlacePluginVTable)
 
 PlaceScreen::PlaceScreen (CompScreen *screen) :
     PluginClassHandler<PlaceScreen, CompScreen> (screen),
-    mPrevSize (0, 0),
+    mPrevSize (screen->width (), screen->height ()),
     mStrutWindowCount (0),
     fullPlacementAtom (XInternAtom (screen->dpy (),
     				    "_NET_WM_FULL_PLACEMENT", 0))
 {
-    ScreenInterface::setHandler (screen);    
-    mResChangeFallbackHandle.setCallback (boost::bind (
-    				   &PlaceScreen::handleScreenSizeChangeFallback,
-    					  this));
+    ScreenInterface::setHandler (screen);
     mResChangeFallbackHandle.setTimes (4000, 4500); /* 4 Seconds */
 
     screen->updateSupportedWmHints ();
@@ -49,7 +46,9 @@ PlaceScreen::~PlaceScreen ()
 }
 
 void
-PlaceScreen::doHandleScreenSizeChange (bool firstPass)
+PlaceScreen::doHandleScreenSizeChange (bool firstPass,
+				       int  newWidth,
+				       int  newHeight)
 {
     int            vpX, vpY, shiftX, shiftY;
     CompRect       extents;
@@ -70,7 +69,7 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 
     foreach (CompWindow *w, screen->windows ())
     {
-	if (w->managed ())
+	if (!w->managed ())
 	    continue;
 	
 	PLACE_WINDOW (w);
@@ -101,10 +100,10 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 	
 	/* Also in the first pass, we save the rectangle of those windows that
 	 * don't already have a saved one. So, skip those tat do. */
-	
+
 	if (firstPass && pw->mSavedOriginal)
 	    continue;
-	
+
 	winRect = ((CompRect) w->serverGeometry ());
 	
 	
@@ -130,11 +129,12 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 	    pivotX = pw->mPrevServer.x ();
 	    pivotY = pw->mPrevServer.y ();
 	}
+
 	/* calculate target vp x, y index for window's pivot point */
-	vpX = pivotX / mPrevSize.width ();
+	vpX = pivotX / newWidth;
 	if (pivotX < 0)
 	    vpX -= 1;
-	vpY = pivotY / mPrevSize.height ();
+	vpY = pivotY / newHeight;
 	if (pivotY < 0)
 	    vpY -= 1;
 
@@ -167,9 +167,9 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 
 	    xwc.x = winRect.x ();
 	    xwc.y = winRect.y ();
-
-	    shiftX = vpX * (screen->width ()  - mPrevSize.width ());
-	    shiftY = vpY * (screen->height () - mPrevSize.height ());
+	    
+	    shiftX = vpX * (newWidth - screen->width ());
+	    shiftY = vpY * (newWidth - screen->height ());
 
 	    /* if coords. relative to viewport are outside new viewport area,
 	       shift window left/up so that it falls inside */
@@ -223,23 +223,10 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 		can be restored later */
 		pw->mSavedOriginal = TRUE;
 		pw->mOrigVpRelRect = vpRelRect;
-
-		if (firstPass)
-		{
-		    /* If first pass, store updated pos. */
-		    pw->mOrigVpRelRect.setX (xwc.x % screen->width ());
-		    if (pw->mOrigVpRelRect.x () < 0)
-			pw->mOrigVpRelRect.setX (pw->mOrigVpRelRect.x () +
-						screen->width ());
-		    pw->mOrigVpRelRect.setY (xwc.y % screen->height ());
-		    if (pw->mOrigVpRelRect.y () < 0)
-			pw->mOrigVpRelRect.setY (pw->mOrigVpRelRect.y () +
-						screen->height ());
-		}
 	    }
 	}
-	else if (pw->mOrigVpRelRect.x () + vpX * screen->width () == xwc.x &&
-		 pw->mOrigVpRelRect.y () + vpY * screen->height () == xwc.y &&
+	else if (pw->mOrigVpRelRect.x () + vpX * newWidth == xwc.x &&
+		 pw->mOrigVpRelRect.y () + vpY * newHeight == xwc.y &&
 		 pw->mOrigVpRelRect.width ()  == xwc.width &&
 		 pw->mOrigVpRelRect.height () == xwc.height)
 	{
@@ -313,7 +300,8 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass)
 }
 
 bool
-PlaceScreen::handleScreenSizeChangeFallback ()
+PlaceScreen::handleScreenSizeChangeFallback (int width,
+					     int height)
 {
     /* If countdown is not finished yet (i.e. at least one struct window didn't
      * update its struts), reset the count down and do the 2nd pass here */
@@ -321,7 +309,7 @@ PlaceScreen::handleScreenSizeChangeFallback ()
     if (mStrutWindowCount > 0) /* no windows with struts found */
     {
 	mStrutWindowCount = 0;
-	doHandleScreenSizeChange (false);
+	doHandleScreenSizeChange (false, width, height);
     }
     
     return false;
@@ -336,20 +324,26 @@ PlaceScreen::handleScreenSizeChange (int width,
     if (screen->width () == width && screen->height () == height)
 	return;
     
+    mPrevSize.setWidth (screen->width ());
+    mPrevSize.setHeight (screen->height ());    
+
     if (mResChangeFallbackHandle.active ())
 	mResChangeFallbackHandle.stop ();
 
-    doHandleScreenSizeChange (true);
+    doHandleScreenSizeChange (true, width, height);
     
     if (mStrutWindowCount == 0) /* no windows with struts found */
     {
 	mResChangeFallbackHandle.stop ();
 	/* do the 2nd pass right here instead of handleEvent */
 	
-	doHandleScreenSizeChange (false);
+	doHandleScreenSizeChange (false, width, height);
     }
     else
     {
+        mResChangeFallbackHandle.setCallback (
+        	      boost::bind (&PlaceScreen::handleScreenSizeChangeFallback,
+        		           this, width, height));
 	mResChangeFallbackHandle.start ();
     }
 }
@@ -389,7 +383,8 @@ PlaceScreen::handleEvent (XEvent *event)
 
 		        /* if this was the last window with struts */
 		        if (!mStrutWindowCount)
-			    doHandleScreenSizeChange (false); /* 2nd pass */
+			    doHandleScreenSizeChange (false, screen->width (),
+			    				     screen->height ()); /* 2nd pass */
 		    }
 	        }
 	    }
@@ -1362,10 +1357,6 @@ PlaceWindow::getStrategy ()
 	/* see above */
 	return NoPlacement;
     }
-
-    /* no placement for unmovable windows */
-    if (!(window->actions () & CompWindowActionMoveMask))
-	return NoPlacement;
 
     if (!ps->optionGetForcePlacementMatch ().evaluate (window))
     {
