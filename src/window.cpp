@@ -4066,7 +4066,8 @@ CompWindow::getIcon (int width,
 	{
 	    CARD32   *p;
 	    CARD32   alpha, red, green, blue;
-	    int      iw, ih, j;
+	    int      iw, ih;
+	    unsigned long j;
 
 	    for (i = 0; i + 2 < n; i += iw * ih + 2)
 	    {
@@ -4075,7 +4076,13 @@ CompWindow::getIcon (int width,
 		iw = idata[i];
 		ih = idata[i + 1];
 
-		if (iw * ih + 2 > (int) (n - i))
+		/* iw * ih may be larger than the value range of unsigned
+		* long, so better do some checking for extremely weird
+		* icon sizes first */
+		if ((unsigned int) iw > 2048 || (unsigned int) 
+		    ih > 2048 || (unsigned int) iw * 
+				 (unsigned int) ih + 2 > (unsigned int) n - 
+							 (unsigned int) i)
 		    break;
 
 		if (iw && ih)
@@ -4091,7 +4098,8 @@ CompWindow::getIcon (int width,
 		    /* EWMH doesn't say if icon data is premultiplied or
 		       not but most applications seem to assume data should
 		       be unpremultiplied. */
-		    for (j = 0; j < iw * ih; j++)
+		    for (j = 0; j < (unsigned int) iw *
+				    (unsigned int) ih; j++)
 		    {
 			alpha = (idata[i + j + 2] >> 24) & 0xff;
 			red   = (idata[i + j + 2] >> 16) & 0xff;
