@@ -4,7 +4,9 @@
 	<_long>Place windows at appropriate positions when mapped</_long>
 	<category>Window Management</category>
 	<relation type="after">
-	    <plugin>decoration</plugin>
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	    <plugin>decor</plugin>
 	</relation>
 	<options>
 	    <option name="workarounds" type="bool">

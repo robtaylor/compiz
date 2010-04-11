@@ -3,5 +3,9 @@
 	<_short>Regex Matching</_short>
 	<_long>Regex window matching</_long>
 	<category>Utility</category>
+	<relation type="after">
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	</relation>
     </plugin>
 </compiz>

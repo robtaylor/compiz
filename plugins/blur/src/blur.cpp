@@ -152,7 +152,7 @@ regionFromBoxes (std::vector<BlurBox> boxes,
 		 int	 width,
 		 int	 height)
 {
-    CompRegion region;
+    CompRegion region = emptyRegion;
     int        x1, x2, y1, y2;
 
     foreach (BlurBox &box, boxes)
