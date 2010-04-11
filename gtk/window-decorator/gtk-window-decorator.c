@@ -3589,8 +3589,12 @@ update_window_decoration_icon (WnckWindow *win)
 
 	g_object_ref (G_OBJECT (d->icon_pixbuf));
 
-	d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						 24);
+	if (d->frame_window)
+	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
+						     24);
+	else
+	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
+						     32);
 	cr = gdk_cairo_create (GDK_DRAWABLE (d->icon_pixmap));
 	d->icon = cairo_pattern_create_for_surface (cairo_get_target (cr));
 	cairo_destroy (cr);
