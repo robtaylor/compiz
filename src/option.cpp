@@ -486,7 +486,7 @@ CompOption::Restriction::Restriction () :
 {
 }
 
-CompOption::Restriction::Restriction (const CompOption::Restriction::Restriction &r) :
+CompOption::Restriction::Restriction (const CompOption::Restriction &r) :
     priv (new PrivateRestriction (*r.priv))
 {
 }
