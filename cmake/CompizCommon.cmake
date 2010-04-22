@@ -23,6 +23,17 @@ set (
     COMPIZ_I18N_DIR ${COMPIZ_I18N_DIR} CACHE PATH "Translation file directory"
 )
 
+set (compiz_prefix ${CMAKE_INSTALL_PREFIX})
+set (compiz_exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
+set (compiz_libdir ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
+set (compiz_includedir ${CMAKE_INSTALL_PREFIX}/include)
+set (compiz_datadir ${CMAKE_INSTALL_PREFIX}/share)
+
+set (compiz_plugindir ${compiz_libdir}/compiz)
+set (compiz_imagedir ${compiz_datadir}/compiz/images)
+set (compiz_metadatadir ${compiz_datadir}/compiz)
+set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
+
 option (COMPIZ_SIGN_WARNINGS "Should compiz use -Wsign-conversion during compilation." OFF)
 
 if (COMPIZ_SIGN_WARNINGS)
