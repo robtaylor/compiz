@@ -2,6 +2,12 @@
 set (COMPIZ_PREFIX ${CMAKE_INSTALL_PREFIX})
 set (COMPIZ_INCLUDEDIR ${includedir})
 set (COMPIZ_LIBDIR ${libdir})
+set (COMPIZ_DATADIR ${datadir})
+set (COMPIZ_METADATADIR ${datadir}/compiz)
+set (COMPIZ_IMAGEDIR ${datadir}/compiz/images)
+set (COMPIZ_PLUGINDIR ${libdir}/compiz)
+set (COMPIZ_SYSCONFDIR ${sysconfdir})
+
 list (APPEND COMPIZ_INCLUDE_DIRS ${CMAKE_SOURCE_DIR}/include)
 list (APPEND COMPIZ_INCLUDE_DIRS ${CMAKE_BINARY_DIR})
 
