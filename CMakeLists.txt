@@ -23,11 +23,16 @@ set (VERSION ${COMPIZ_VERSION_MAJOR}.${COMPIZ_VERSION_MINOR}.${COMPIZ_VERSION_MI
 
 set (DECOR_INTERFACE_VERSION 20080901)
 
-set (prefix ${compiz_prefix})
-set (exec_prefix ${compiz_exec_prefix})
-set (libdir ${compiz_libdir})
-set (includedir ${compiz_includedir})
-set (datadir ${compiz_datadir})
+set (prefix ${CMAKE_INSTALL_PREFIX})
+set (exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
+set (libdir ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
+set (includedir ${CMAKE_INSTALL_PREFIX}/include)
+set (datadir ${CMAKE_INSTALL_PREFIX}/share)
+
+set (compiz_plugindir ${libdir}/compiz)
+set (compiz_imagedir ${datadir}/compiz/images)
+set (compiz_metadatadir ${datadir}/compiz)
+set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
 
 set (ALL_LINGUAS af ar bg bn bn_IN bs ca cs cy da de el en_GB en_US es eu et fi fr gl gu he hi hr hu id it ja ka km ko lo lt mk mr nb nl or pa pl pt pt_BR ro ru sk sl sr sv ta tr uk vi xh zh_CN zh_TW zu)
 set (GETTEXT_PACKAGE compiz)
