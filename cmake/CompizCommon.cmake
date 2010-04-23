@@ -94,7 +94,6 @@ function (compiz_add_plugins_in_folder folder)
     )
 
     foreach (_plugin ${_plugins_in})
-	compiz_add_plugins_in_folder (_plugin)
         get_filename_component (_plugin_dir ${_plugin} PATH)
         add_subdirectory (${folder}/${_plugin_dir})
     endforeach ()
