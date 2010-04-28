@@ -293,6 +293,7 @@ class CompScreen :
 	void sendWindowActivationRequest (Window id);
 
 	int outputDeviceForPoint (int x, int y);
+	int outputDeviceForPoint (const CompPoint &point);
 
 	CompRect getCurrentOutputExtents ();
 

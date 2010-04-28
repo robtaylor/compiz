@@ -40,6 +40,7 @@ class CompRect {
 
 	int x () const;
 	int y () const;
+	CompPoint pos () const;
 
 	int width () const;
 	int height () const;
@@ -136,6 +137,12 @@ inline int
 CompRect::y () const
 {
     return mRegion.extents.y1;
+}
+
+inline CompPoint
+CompRect::pos () const
+{
+    return CompPoint (x (), y ());
 }
 
 inline int

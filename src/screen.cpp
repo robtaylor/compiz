@@ -3543,6 +3543,12 @@ PrivateScreen::getTopWindow ()
 }
 
 int
+CompScreen::outputDeviceForPoint (const CompPoint &point)
+{
+    return outputDeviceForPoint (point.x (), point.y ());
+}
+
+int
 CompScreen::outputDeviceForPoint (int x, int y)
 {
     CompWindow::Geometry geom (x, y, 1, 1, 0);
