@@ -129,6 +129,7 @@
 			<option name="skydome_image" type="string">
 			<_short>Skydome Image</_short>
 			<_long>Image to use as texture for the skydome</_long>
+			<hints>file;image;</hints>
 			</option>
 			<option name="skydome_animated" type="bool">
 			<_short>Animate Skydome</_short>

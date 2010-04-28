@@ -5,6 +5,10 @@
 	<category>Image Loading</category>
 	<feature>imageext:svg</feature>
 	<feature>imagemime:image/svg+xml</feature>
+	<relation type="after">
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	</relation>
 	<options>
 	    <option name="set" type="action">
 		<_short>Set overlay</_short>

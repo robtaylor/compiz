@@ -2,5 +2,10 @@
     <plugin name="dbus">
 	<_short>D-Bus</_short>
 	<_long>D-Bus Control Backend</_long>
+	<category>General</category>
+	<relation type="after">
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	</relation>
     </plugin>
 </compiz>

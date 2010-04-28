@@ -5,5 +5,9 @@
 	<category>Image Loading</category>
 	<feature>imageext:png</feature>
 	<feature>imagemime:image/png</feature>
+	<relation type="after">
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	</relation>
     </plugin>
 </compiz>

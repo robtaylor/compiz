@@ -3,5 +3,9 @@
 	<_short>GLib</_short>
 	<_long>GLib main loop support</_long>
 	<category>General</category>
+	<relation type="after">
+	    <plugin>opengl</plugin>
+	    <plugin>composite</plugin>
+	</relation>
     </plugin>
 </compiz>

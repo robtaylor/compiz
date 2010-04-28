@@ -5,7 +5,6 @@ include (CompizPlugin)
 add_definitions (
     -DHAVE_CONFIG_H
     -DPLUGINDIR=\\\"${compiz_plugindir}\\\"
-    -DIMAGEDIR=\\\"${compiz_imagedir}\\\"
     -DMETADATADIR=\\\"${compiz_metadatadir}\\\"
 )
 
