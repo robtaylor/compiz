@@ -190,7 +190,7 @@ dbusIntrospectEndRoot (xmlTextWriterPtr writer)
 }
 
 /* introspection handlers */
-static Bool
+static bool
 dbusHandleRootIntrospectMessage (DBusConnection *connection,
 				 DBusMessage    *message)
 {
@@ -235,7 +235,7 @@ dbusHandleRootIntrospectMessage (DBusConnection *connection,
     {
 	xmlFreeTextWriter (writer);
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     dbusIntrospectEndRoot (writer);
@@ -246,7 +246,7 @@ dbusHandleRootIntrospectMessage (DBusConnection *connection,
     if (!reply)
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     DBusMessageIter args;
@@ -256,20 +256,20 @@ dbusHandleRootIntrospectMessage (DBusConnection *connection,
 					 &buf->content))
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     xmlBufferFree (buf);
 
     if (!dbus_connection_send (connection, reply, NULL))
     {
-	return FALSE;
+	return false;
     }
 
     dbus_connection_flush (connection);
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 
 /* MULTIDPYERROR: only works with one or less displays present */
@@ -308,7 +308,7 @@ DbusScreen::dbusHandlePluginIntrospectMessage (DBusConnection *connection,
     if (!reply)
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     DBusMessageIter args;
@@ -318,23 +318,23 @@ DbusScreen::dbusHandlePluginIntrospectMessage (DBusConnection *connection,
 					 &buf->content))
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     xmlBufferFree (buf);
 
     if (!dbus_connection_send (connection, reply, NULL))
     {
-	return FALSE;
+	return false;
     }
 
     dbus_connection_flush (connection);
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 dbusHandleScreenIntrospectMessage (DBusConnection *connection,
 				   DBusMessage    *message,
 				   char           **path)
@@ -374,7 +374,7 @@ dbusHandleScreenIntrospectMessage (DBusConnection *connection,
     if (!reply)
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     DBusMessageIter args;
@@ -384,23 +384,23 @@ dbusHandleScreenIntrospectMessage (DBusConnection *connection,
 					 &buf->content))
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     xmlBufferFree (buf);
 
     if (!dbus_connection_send (connection, reply, NULL))
     {
-	return FALSE;
+	return false;
     }
 
     dbus_connection_flush (connection);
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 
-static Bool
+static bool
 dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 				   DBusMessage    *message,
 				   char           **path)
@@ -408,11 +408,11 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
     CompOption       *option;
     int              nOptions;
     CompOptionType   restrictionType;
-    Bool             metadataHandled;
+    bool             metadataHandled;
     char             type[3];
     xmlTextWriterPtr writer;
     xmlBufferPtr     buf;
-    Bool             isList = FALSE;
+    bool             isList = false;
 
     buf = xmlBufferCreate ();
     writer = xmlNewTextWriterMemory (buf, 0);
@@ -425,7 +425,7 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
     {
 	xmlFreeTextWriter (writer);
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     while (nOptions--)
@@ -436,10 +436,10 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 	    if (restrictionType == CompOptionTypeList)
 	    {
 		restrictionType = option->value.list.type;
-		isList = TRUE;
+		isList = true;
 	    }
 
-	    metadataHandled = FALSE;
+	    metadataHandled = false;
 	    switch (restrictionType)
 	    {
 	    case CompOptionTypeInt:
@@ -453,7 +453,7 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 					 6, "s", "out", "s", "out",
 					 "b", "out", "s", "out",
 					 "i", "out", "i", "out");
-		metadataHandled = TRUE;
+		metadataHandled = true;
 		break;
 	    case CompOptionTypeFloat:
 		if (isList)
@@ -467,7 +467,7 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 					 "b", "out", "s", "out",
 					 "d", "out", "d", "out",
 					 "d", "out");
-		metadataHandled = TRUE;
+		metadataHandled = true;
 		break;
 	    case CompOptionTypeString:
 		if (isList)
@@ -480,7 +480,7 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 					 5, "s", "out", "s", "out",
 					 "b", "out", "s", "out",
 					 "as", "out");
-		metadataHandled = TRUE;
+		metadataHandled = true;
 		break;
 	    case CompOptionTypeBool:
 	    case CompOptionTypeBell:
@@ -534,7 +534,7 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
     if (!reply)
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     DBusMessageIter args;
@@ -544,20 +544,20 @@ dbusHandleOptionIntrospectMessage (DBusConnection *connection,
 					 &buf->content))
     {
 	xmlBufferFree (buf);
-	return FALSE;
+	return false;
     }
 
     xmlBufferFree (buf);
 
     if (!dbus_connection_send (connection, reply, NULL))
     {
-	return FALSE;
+	return false;
     }
 
     dbus_connection_flush (connection);
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 
 #endif
@@ -658,7 +658,7 @@ DbusScreen::handleActionMessage (DBusConnection                 *connection,
 			switch (dbus_message_iter_get_arg_type (&iter)) {
 			case DBUS_TYPE_BOOLEAN:
 			    {
-				Bool tmp;
+				bool tmp;
 				type = CompOption::TypeBool;
 				dbus_message_iter_get_basic (&iter, &tmp);
 				value.set (tmp ? true : false);
@@ -765,7 +765,7 @@ DbusScreen::getOptionValue (DBusMessageIter   *iter,
     switch (type) {
     case CompOption::TypeBool:
 	{
-	    Bool b;
+	    bool b;
 	    success = tryGetValueWithType (iter, DBUS_TYPE_BOOLEAN, &b);
 	    if (success)
 		value.set (b ? true : false);
@@ -845,7 +845,7 @@ DbusScreen::getOptionValue (DBusMessageIter   *iter,
 	break;
     case CompOption::TypeBell:
 	{
-	    Bool       bell;
+	    bool       bell;
 	    CompAction action;
 
 	    success = tryGetValueWithType (iter, DBUS_TYPE_BOOLEAN, &bell);
@@ -981,7 +981,7 @@ DbusScreen::appendSimpleOptionValue (DBusMessage       *message,
     switch (type) {
     case CompOption::TypeBool:
 	{
-	    Bool b = value.b () ? TRUE : FALSE;
+	    bool b = value.b () ? true : false;
 	    dbus_message_append_args (message,
 				      DBUS_TYPE_BOOLEAN, &b,
 				      DBUS_TYPE_INVALID);
@@ -1050,7 +1050,7 @@ DbusScreen::appendSimpleOptionValue (DBusMessage       *message,
 	break;
     case CompOption::TypeBell:
 	{
-	    Bool bell = value.action ().bell () ? TRUE : FALSE;
+	    bool bell = value.action ().bell () ? true : false;
 	    dbus_message_append_args (message,
 				      DBUS_TYPE_BOOLEAN, &bell,
 				      DBUS_TYPE_INVALID);
@@ -1118,7 +1118,7 @@ DbusScreen::appendListOptionValue (DBusMessage       *message,
 	    break;
 	case CompOption::TypeBool:
 	    {
-		Bool b = val.b () ? TRUE : FALSE;
+		bool b = val.b () ? true : false;
 		dbus_message_iter_append_basic (&listIter, sig[0], &b);
 	    }
 	    break;
@@ -1152,7 +1152,7 @@ DbusScreen::appendListOptionValue (DBusMessage       *message,
 	    break;
 	case CompOption::TypeBell:
 	    {
-		Bool bell = val.action ().bell () ? TRUE : FALSE;
+		bool bell = val.action ().bell () ? true : false;
 		dbus_message_iter_append_basic (&listIter, sig[0], &bell);
 	    }
 	    break;
@@ -1396,7 +1396,7 @@ DbusScreen::handleGetMetadataMessage (DBusConnection                 *connection
 
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 #endif
 
@@ -1433,7 +1433,7 @@ DbusScreen::handleGetPluginsMessage (DBusConnection *connection,
 
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 
 /*
@@ -1460,12 +1460,12 @@ DbusScreen::handleGetPluginMetadataMessage (DBusConnection *connection,
     CompPlugin	    *p, *loadedPlugin = NULL;
 
     if (!dbus_message_iter_init (message, &iter))
-	return FALSE;
+	return false;
 
     if (!tryGetValueWithType (&iter,
 				  DBUS_TYPE_STRING,
 				  &name))
-	return FALSE;
+	return false;
 
     p = findActivePlugin (name);
     if (!p)
@@ -1473,7 +1473,7 @@ DbusScreen::handleGetPluginMetadataMessage (DBusConnection *connection,
 
     if (p)
     {
-	Bool	   initializedPlugin = TRUE;
+	bool	   initializedPlugin = true;
 	char	   *shortDesc = NULL;
 	char	   *longDesc = NULL;
 	const char *blankStr = "";
@@ -1483,7 +1483,7 @@ DbusScreen::handleGetPluginMetadataMessage (DBusConnection *connection,
 	if (loadedPlugin)
 	{
 	    if (!(*p->vTable->init) (p))
-		initializedPlugin = FALSE;
+		initializedPlugin = false;
 	}
 
 	if (initializedPlugin && p->vTable->getMetadata)
@@ -1538,7 +1538,7 @@ DbusScreen::handleGetPluginMetadataMessage (DBusConnection *connection,
 
 	str = malloc (strlen (name) + 256);
 	if (!str)
-	    return FALSE;
+	    return false;
 
 	sprintf (str, "Plugin '%s' could not be loaded", name);
 
@@ -1557,7 +1557,7 @@ DbusScreen::handleGetPluginMetadataMessage (DBusConnection *connection,
 
     dbus_message_unref (reply);
 
-    return TRUE;
+    return true;
 }
 #endif
 
@@ -1877,7 +1877,7 @@ DbusScreen::initPluginForScreen (CompPlugin *p)
 
     screen->initPluginForScreen (p);
 
-    return TRUE;
+    return true;
 }
 
 bool
