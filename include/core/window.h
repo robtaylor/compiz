@@ -378,7 +378,7 @@ class CompWindow :
 
 	unsigned int desktop ();
 
-	Window clientLeader ();
+	Window clientLeader (bool checkAncestor = false);
 
 	void changeState (unsigned int newState);
 

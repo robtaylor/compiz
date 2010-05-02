@@ -4770,9 +4770,15 @@ CompWindow::desktop ()
 }
 
 Window
-CompWindow::clientLeader ()
+CompWindow::clientLeader (bool checkAncestor)
 {
-    return priv->clientLeader;
+    if (priv->clientLeader)
+	return priv->clientLeader;
+
+    if (checkAncestor)
+	return priv->getClientLeaderOfAncestor ();
+
+    return None;
 }
 
 Window
