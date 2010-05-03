@@ -2887,7 +2887,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	    else
 	    {
 		min -= screen->vp ().x () * screen->width ();
-		max += (screen->vpSize ().height () - screen->vp ().x () - 2) *
+		max += (screen->vpSize ().width () - screen->vp ().x () - 2) *
 			screen->width ();
 
 		if (xwc->x < min)
