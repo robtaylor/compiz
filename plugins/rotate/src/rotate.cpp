@@ -233,7 +233,7 @@ RotateScreen::preparePaint (int msSinceLastPaint)
 			}
 		    }
 		    /* only focus default window if switcher isn't active */
-		    else if (screen->grabExist ("switcher"))
+		    else if (!screen->grabExist ("switcher"))
 			screen->focusDefaultWindow ();
 
 		    mMoveWindow = 0;
