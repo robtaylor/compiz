@@ -67,13 +67,6 @@ DbusScreen::getOptionsFromPath (const std::vector<CompString>& path)
 
     if (!p)
     {
-	fprintf (stderr, "path is ");
-	foreach (CompString s, path)
-	{
-	     fprintf (stderr, "%s/", s.c_str ());
-	}
-	fprintf (stderr, "\n");
-	fprintf (stderr, "plugin %s not found\n", path[0].c_str ());
 	return emptyList;
     }
 
@@ -1802,8 +1795,6 @@ DbusScreen::unregisterOptions (DBusConnection *connection,
     foreach (CompOption& option, options)
     {
 	snprintf (objectPath, 256, "%s/%s", screenPath, option.name ().c_str ());
-	
-	fprintf (stderr, "unregistering object path %s\n", objectPath);
 
 	dbus_connection_unregister_object_path (connection, objectPath);
     }
