@@ -885,6 +885,7 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     pixmap (None),
+    damage (None),
     surface (NULL),
     cairo (NULL),
     content (false)
