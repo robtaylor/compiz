@@ -77,8 +77,8 @@
 				<default>Toolbar | Utility | Dialog | Normal | Unknown</default>
 			</option>
 			<option name="hover_time" type="int">
-				<_short>Hover Time</_short>
-				<_long>Time (in ms) before scale mode is terminated when hovering over a window</_long>
+				<_short>Drag and Drop Hover Timeout</_short>
+				<_long>Time (in ms) before scale mode is terminated when hovering over a window dragging and dropping an item</_long>
 				<default>750</default>
 				<min>50</min>
 				<max>10000</max>
