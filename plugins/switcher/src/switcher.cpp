@@ -77,17 +77,20 @@ SwitchScreen::updateWindowList (int count)
     {
 	CompWindow *w = screen->findWindow (popupWindow);
 
+	XWindowChanges xwc;
+	unsigned int valueMask = 0;
+	
+	valueMask |= (CWX | CWY | CWWidth | CWHeight);
+	
+	xwc.x = x - WINDOW_WIDTH (count) / 2;
+	xwc.y = y - WINDOW_HEIGHT / 2;
+	xwc.width = WINDOW_WIDTH (count);
+	xwc.height = WINDOW_HEIGHT;
+
 	if (w)
-	    w->resize (x - WINDOW_WIDTH (count) / 2,
-		       y - WINDOW_HEIGHT / 2,
-		       WINDOW_WIDTH (count),
-		       WINDOW_HEIGHT);
+	    w->configureXWindow (valueMask, &xwc);
 	else
-	    XMoveResizeWindow (screen->dpy (), popupWindow,
-			       x - WINDOW_WIDTH (count) / 2,
-			       y - WINDOW_HEIGHT / 2,
-			       (unsigned) WINDOW_WIDTH (count),
-			       (unsigned) WINDOW_HEIGHT);
+	    XConfigureWindow (screen->dpy (), popupWindow, valueMask, &xwc);
     }
 }
 
