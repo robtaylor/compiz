@@ -3,9 +3,11 @@
 	<_short>D-Bus</_short>
 	<_long>D-Bus Control Backend</_long>
 	<category>Utility</category>
-	<relation type="after">
-	    <plugin>opengl</plugin>
-	    <plugin>composite</plugin>
-	</relation>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
     </plugin>
 </compiz>

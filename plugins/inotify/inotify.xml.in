@@ -3,9 +3,11 @@
 	<_short>File Watcher</_short>
 	<_long>File change notification plugin</_long>
 	<category>Utility</category>
-	<relation type="after">
-	    <plugin>opengl</plugin>
-	    <plugin>composite</plugin>
-	</relation>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
     </plugin>
 </compiz>

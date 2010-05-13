@@ -4,9 +4,11 @@
 	<_short>KDE/Qt Event Loop</_short>
 	<_long>Integrates the KDE/Qt event loop into Compiz</_long>
 	<category>General</category>
-	<relation type="after">
-	    <plugin>opengl</plugin>
-	    <plugin>composite</plugin>
-	</relation>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
     </plugin>
 </compiz>

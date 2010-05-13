@@ -3,6 +3,12 @@
 	<_short>Gnome Compatibility</_short>
 	<_long>Options that keep Compiz compatible to the Gnome desktop environment</_long>
 	<category>General</category>
+	<deps>
+	    <relation type="after">
+		<plugin>composite</plugin>
+		<plugin>opengl</plugin>
+	    </relation>
+	</deps>
 	<options>
 	    <option name="main_menu_key" type="key">
 		<_short>Show Main Menu</_short>
