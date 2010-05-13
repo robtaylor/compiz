@@ -66,6 +66,15 @@ CommandsScreen::CommandsScreen (CompScreen *s) :
     optionSetRunCommand9KeyInitiate (DISPATCH (CommandsOptions::Command9));
     optionSetRunCommand10KeyInitiate (DISPATCH (CommandsOptions::Command10));
     optionSetRunCommand11KeyInitiate (DISPATCH (CommandsOptions::Command11));
+    optionSetRunCommand12KeyInitiate (DISPATCH (CommandsOptions::Command12));
+    optionSetRunCommand13KeyInitiate (DISPATCH (CommandsOptions::Command13));
+    optionSetRunCommand14KeyInitiate (DISPATCH (CommandsOptions::Command14));
+    optionSetRunCommand15KeyInitiate (DISPATCH (CommandsOptions::Command15));
+    optionSetRunCommand16KeyInitiate (DISPATCH (CommandsOptions::Command16));
+    optionSetRunCommand17KeyInitiate (DISPATCH (CommandsOptions::Command17));
+    optionSetRunCommand18KeyInitiate (DISPATCH (CommandsOptions::Command18));
+    optionSetRunCommand19KeyInitiate (DISPATCH (CommandsOptions::Command19));
+    optionSetRunCommand20KeyInitiate (DISPATCH (CommandsOptions::Command20));
 
     optionSetRunCommand0ButtonInitiate (DISPATCH (CommandsOptions::Command0));
     optionSetRunCommand1ButtonInitiate (DISPATCH (CommandsOptions::Command1));
@@ -79,6 +88,15 @@ CommandsScreen::CommandsScreen (CompScreen *s) :
     optionSetRunCommand9ButtonInitiate (DISPATCH (CommandsOptions::Command9));
     optionSetRunCommand10ButtonInitiate (DISPATCH (CommandsOptions::Command10));
     optionSetRunCommand11ButtonInitiate (DISPATCH (CommandsOptions::Command11));
+    optionSetRunCommand12ButtonInitiate (DISPATCH (CommandsOptions::Command12));
+    optionSetRunCommand13ButtonInitiate (DISPATCH (CommandsOptions::Command13));
+    optionSetRunCommand14ButtonInitiate (DISPATCH (CommandsOptions::Command14));
+    optionSetRunCommand15ButtonInitiate (DISPATCH (CommandsOptions::Command15));
+    optionSetRunCommand16ButtonInitiate (DISPATCH (CommandsOptions::Command16));
+    optionSetRunCommand17ButtonInitiate (DISPATCH (CommandsOptions::Command17));
+    optionSetRunCommand18ButtonInitiate (DISPATCH (CommandsOptions::Command18));
+    optionSetRunCommand19ButtonInitiate (DISPATCH (CommandsOptions::Command19));
+    optionSetRunCommand20ButtonInitiate (DISPATCH (CommandsOptions::Command20));
 
     optionSetRunCommand0EdgeInitiate (DISPATCH (CommandsOptions::Command0));
     optionSetRunCommand1EdgeInitiate (DISPATCH (CommandsOptions::Command1));
@@ -92,6 +110,15 @@ CommandsScreen::CommandsScreen (CompScreen *s) :
     optionSetRunCommand9EdgeInitiate (DISPATCH (CommandsOptions::Command9));
     optionSetRunCommand10EdgeInitiate (DISPATCH (CommandsOptions::Command10));
     optionSetRunCommand11EdgeInitiate (DISPATCH (CommandsOptions::Command11));
+    optionSetRunCommand12EdgeInitiate (DISPATCH (CommandsOptions::Command12));
+    optionSetRunCommand13EdgeInitiate (DISPATCH (CommandsOptions::Command13));
+    optionSetRunCommand14EdgeInitiate (DISPATCH (CommandsOptions::Command14));
+    optionSetRunCommand15EdgeInitiate (DISPATCH (CommandsOptions::Command15));
+    optionSetRunCommand16EdgeInitiate (DISPATCH (CommandsOptions::Command16));
+    optionSetRunCommand17EdgeInitiate (DISPATCH (CommandsOptions::Command17));
+    optionSetRunCommand18EdgeInitiate (DISPATCH (CommandsOptions::Command18));
+    optionSetRunCommand19EdgeInitiate (DISPATCH (CommandsOptions::Command19));
+    optionSetRunCommand20EdgeInitiate (DISPATCH (CommandsOptions::Command20));
 }
 
 bool
