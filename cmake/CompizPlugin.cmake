@@ -407,7 +407,7 @@ function (_build_compiz_plugin plugin)
     else ()
 	message (STATUS "[WARNING] One or more dependencies for compiz plugin ${plugin} not found. Skipping plugin.")
 	message (STATUS "Missing dependencies :${COMPIZ_${_PLUGIN}_MISSING_DEPS}")
-	_COMPIZ_set (COMPIZ_${_PLUGIN}_BUILD FALSE)
+	_compiz_set (COMPIZ_${_PLUGIN}_BUILD FALSE)
     endif ()
 endfunction ()
 
