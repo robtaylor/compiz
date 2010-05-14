@@ -24,6 +24,11 @@ add_library (decoration SHARED
     decoration.c
 )
 
+set_target_properties (decoration PROPERTIES
+    VERSION 0.0.0
+    SOVERSION 0
+)
+
 target_link_libraries (
     decoration ${LIBDECORATION_LIBRARIES} m
 )
