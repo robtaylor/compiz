@@ -79,7 +79,7 @@ if (USE_GNOME)
 
     install (
 	TARGETS gnome-compiz
-	DESTINATION ${CMAKE_CURRENT_BINARY_DIR}
+	DESTINATION ${windowsettingslibdir}/window-manager-settings
     )
 
     compiz_opt_install_file (

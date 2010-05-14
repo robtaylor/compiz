@@ -13,6 +13,8 @@ cmake_policy (SET CMP0003 NEW)
 cmake_policy (SET CMP0005 OLD)
 cmake_policy (SET CMP0011 OLD)
 
+set (CMAKE_SKIP_RPATH TRUE)
+
 set (COMPIZ_DATADIR ${CMAKE_INSTALL_PREFIX}/share)
 set (COMPIZ_METADATADIR ${CMAKE_INSTALL_PREFIX}/share/compiz)
 set (COMPIZ_IMAGEDIR ${CMAKE_INSTALL_PREFIX}/share/compiz/images)
