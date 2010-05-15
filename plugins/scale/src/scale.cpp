@@ -906,16 +906,19 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 				    CompAction::State  state,
 				    CompOption::Vector &options)
 {
+    SCALE_SCREEN (screen);
+
     Window xid;
 
     action->setState (action->state () & ~(CompAction::StateTermKey |
 					   CompAction::StateTermButton));
 
+    if (ss->priv->actionShouldToggle (action, state))
+	return false;
+
     xid = CompOption::getIntOptionNamed (options, "root");
     if (xid && ::screen->root () != xid)
 	return false;
-
-    SCALE_SCREEN (::screen);
 
     if (!ss->priv->grab)
 	return false;
@@ -1000,6 +1003,28 @@ PrivateScaleScreen::ensureDndRedirectWindow ()
 }
 
 bool
+PrivateScaleScreen::actionShouldToggle (CompAction        *action,
+			 		CompAction::State state)
+{
+    if (state & EDGE_STATE)
+	return TRUE;
+
+    if (state & (CompAction::StateInitKey | CompAction::StateTermKey))
+    {
+	if (optionGetKeyBindingsToggle ())
+	    return TRUE;
+	else if (!action->key ().modifiers ())
+	    return TRUE;
+    }
+
+    if (state & (CompAction::StateInitButton | CompAction::StateTermButton))
+	if (optionGetButtonBindingsToggle ())
+	    return TRUE;
+
+    return FALSE;
+}
+
+bool
 PrivateScaleScreen::scaleInitiate (CompAction         *action,
 				   CompAction::State  state,
 				   CompOption::Vector &options,
@@ -1019,7 +1044,7 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
 	    ss->priv->type = type;
 	    return ss->priv->scaleInitiateCommon (action, state, options);
 	}
-	else if (state & EDGE_STATE)
+	else if (ss->priv->actionShouldToggle (action, state))
 	{
 	    if (ss->priv->type == type)
 		return scaleTerminate (action,

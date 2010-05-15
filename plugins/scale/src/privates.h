@@ -70,6 +70,10 @@ class PrivateScaleScreen :
 
 	void sendDndStatusMessage (Window);
 
+	bool
+	actionShouldToggle (CompAction        *action,
+			    CompAction::State state);
+
 	static bool scaleTerminate (CompAction         *action,
 				    CompAction::State  state,
 				    CompOption::Vector &options);
