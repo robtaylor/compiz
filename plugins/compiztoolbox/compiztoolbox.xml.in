@@ -1,0 +1,7 @@
+<compiz>
+    <plugin name="compiztoolbox" useBcop="true">
+	<_short>Compiz Library Toolbox</_short>
+	<_long>Commonly used routines by plugins separated into a separate library</_long>
+	<category>Utility</category>
+    </plugin>
+</compiz>

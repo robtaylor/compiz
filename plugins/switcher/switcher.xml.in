@@ -5,7 +5,9 @@
 	<category>Window Management</category>
 	<deps>
 	    <requirement>
+		<plugin>composite</plugin>
 		<plugin>opengl</plugin>
+		<plugin>compiztoolbox</plugin>
 	    </requirement>
 	</deps>
 	<options>

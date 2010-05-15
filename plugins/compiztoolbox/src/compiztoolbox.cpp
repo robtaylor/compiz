@@ -26,6 +26,24 @@
 #include <core/core.h>
 
 #include <compiztoolbox/compiztoolbox.h>
+#include "compiztoolbox_options.h"
+
+class CompizToolboxScreen :
+    public PluginClassHandler <CompizToolboxScreen, CompScreen>,
+    public CompiztoolboxOptions
+{
+    public:
+	CompizToolboxScreen (CompScreen *);
+};
+
+class CompizToolboxPluginVTable :
+    public CompPlugin::VTableForScreen <CompizToolboxScreen>
+{
+    bool init ();
+    void fini ();
+};
+
+COMPIZ_PLUGIN_20090315 (compiztoolbox, CompizToolboxPluginVTable);
 
 CompString
 getXDGUserDir (XDGUserDir userDir)
@@ -660,3 +678,28 @@ BaseSwitchWindow::BaseSwitchWindow (BaseSwitchScreen *ss, CompWindow *w) :
 {
 }
 
+CompizToolboxScreen::CompizToolboxScreen (CompScreen *screen) :
+    PluginClassHandler <CompizToolboxScreen, CompScreen> (screen)
+{
+}
+
+bool
+CompizToolboxPluginVTable::init ()
+{
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) ||
+        !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) ||
+        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+	return false;
+
+    CompPrivate p;
+    p.uval = COMPIZ_COMPOSITE_ABI;
+    screen->storeValue ("compiztoolbox_ABI", p);
+
+    return true;
+}
+
+void
+CompizToolboxPluginVTable::fini ()
+{
+    screen->eraseValue ("compiztoolbox_ABI");
+}

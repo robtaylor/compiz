@@ -39,6 +39,8 @@
 
 #include <fstream>
 
+#define COMPIZ_COMPIZTOOLBOX_ABI 1
+
 typedef enum
 {
     XDGUserDirDesktop = 0,
