@@ -6,7 +6,7 @@
 	<deps>
 	    <requirement>
 		<plugin>composite</plugin>
-		<plugin>opengl<plugin>
+		<plugin>opengl</plugin>
 	    </requirement>
 	</deps>
     </plugin>
