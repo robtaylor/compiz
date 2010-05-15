@@ -3,5 +3,11 @@
 	<_short>Compiz Library Toolbox</_short>
 	<_long>Commonly used routines by plugins separated into a separate library</_long>
 	<category>Utility</category>
+	<deps>
+	    <requirement>
+		<plugin>composite</plugin>
+		<plugin>opengl<plugin>
+	    </requirement>
+	</deps>
     </plugin>
 </compiz>
