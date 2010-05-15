@@ -74,6 +74,10 @@ compiz_configure_file (
     ${CMAKE_BINARY_DIR}/generated/compiz-common.h
 )
 
+function (do_relink)
+    execute_process (COMMAND "ldconfig" ARGS "-v" ${CMAKE_INSTALL_PREFIX})
+endfunction ()
+
 install (
     FILES ${CMAKE_BINARY_DIR}/generated/compiz-common.h
     DESTINATION ${includedir}/compiz
@@ -103,6 +107,7 @@ add_subdirectory (src)
 add_subdirectory (xslt)
 add_subdirectory (plugins)
 
+compiz_ensure_linkage ()
 compiz_package_generation ("Compiz")
 compiz_add_uninstall ()
 compiz_add_git_dist ()

@@ -40,6 +40,20 @@ else ()
     set (CMAKE_C_FLAGS "-Wall")
 endif ()
 
+function (compiz_ensure_linkage)
+    find_program (LDCONFIG_EXECUTABLE ldconfig)
+    mark_as_advanced (FORCE LDCONFIG_EXECUTABLE)
+
+    if (LDCONFIG_EXECUTABLE)
+
+    install (
+        CODE "message (\"Running \" ${LDCONFIG_EXECUTABLE} \" \" ${CMAKE_INSTALL_PREFIX} \"/lib\")
+	      exec_program (${LDCONFIG_EXECUTABLE} ARGS \"-v\" ${CMAKE_INSTALL_PREFIX}/lib)"
+        )
+
+    endif (LDCONFIG_EXECUTABLE)
+endfunction ()
+
 macro (compiz_add_git_dist)
     set(ARCHIVE_NAME ${CMAKE_PROJECT_NAME}-${VERSION})
     add_custom_target(dist
