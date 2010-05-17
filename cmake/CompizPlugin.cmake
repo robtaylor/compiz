@@ -381,13 +381,24 @@ function (_build_compiz_plugin plugin)
 			     ${_schema_sources}
 	)
 
-	set_target_properties (
-	    ${plugin} PROPERTIES
-	    SKIP_BUILD_RPATH TRUE
-	    INSTALL_RPATH "${COMPIZ_LIBDIR}/compiz"
-	    COMPILE_FLAGS "${${_PLUGIN}_CFLAGSADD}"
-	    LINK_FLAGS "${${_PLUGIN}_LDFLAGSADD}"
-	)
+	if (COMPIZ_BUILD_WITH_RPATH)
+	    set_target_properties (
+		${plugin} PROPERTIES
+		INSTALL_RPATH_USE_LINK_PATH 1
+        	BUILD_WITH_INSTALL_RPATH 1
+        	SKIP_BUILD_RPATH 0
+		COMPILE_FLAGS "${${_PLUGIN}_CFLAGSADD}"
+		LINK_FLAGS "${${_PLUGIN}_LDFLAGSADD}"
+	    )
+	else (COMPIZ_BUILD_WITH_RPATH)
+	    set_target_properties (
+		${plugin} PROPERTIES
+		SKIP_BUILD_RPATH 1
+		INSTALL_RPATH "${COMPIZ_LIBDIR}/compiz"
+		COMPILE_FLAGS "${${_PLUGIN}_CFLAGSADD}"
+		LINK_FLAGS "${${_PLUGIN}_LDFLAGSADD}"
+	    )
+	endif (COMPIZ_BUILD_WITH_RPATH)
 
 	target_link_libraries (
 	    ${plugin} ${COMPIZ_LIBRARIES}

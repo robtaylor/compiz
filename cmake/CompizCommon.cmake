@@ -15,6 +15,8 @@ cmake_policy (SET CMP0011 OLD)
 
 set (CMAKE_SKIP_RPATH FALSE)
 
+option (COMPIZ_BUILD_WITH_RPATH "Leave as ON unless building packages" ON)
+
 set (COMPIZ_DATADIR ${CMAKE_INSTALL_PREFIX}/share)
 set (COMPIZ_METADATADIR ${CMAKE_INSTALL_PREFIX}/share/compiz)
 set (COMPIZ_IMAGEDIR ${CMAKE_INSTALL_PREFIX}/share/compiz/images)
@@ -44,14 +46,14 @@ function (compiz_ensure_linkage)
     find_program (LDCONFIG_EXECUTABLE ldconfig)
     mark_as_advanced (FORCE LDCONFIG_EXECUTABLE)
 
-    if (LDCONFIG_EXECUTABLE)
+    if (LDCONFIG_EXECUTABLE AND NOT ${CMAKE_BUILD_WITH_RPATH})
 
     install (
         CODE "message (\"Running \" ${LDCONFIG_EXECUTABLE} \" \" ${CMAKE_INSTALL_PREFIX} \"/lib\")
 	      exec_program (${LDCONFIG_EXECUTABLE} ARGS \"-v\" ${CMAKE_INSTALL_PREFIX}/lib)"
         )
 
-    endif (LDCONFIG_EXECUTABLE)
+    endif (LDCONFIG_EXECUTABLE AND NOT ${CMAKE_BUILD_WITH_RPATH})
 endfunction ()
 
 macro (compiz_add_git_dist)
