@@ -333,6 +333,8 @@ class CompWindow :
 	Window id ();
 	Window frame ();
 
+	char * resName ();
+
 	const CompRegion & region () const;
 
 	const CompRegion & frameRegion () const;

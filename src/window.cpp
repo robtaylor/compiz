@@ -4641,6 +4641,12 @@ CompWindow::frame ()
     return priv->frame;
 }
 
+char *
+CompWindow::resName ()
+{
+    return priv->resName;
+}
+
 int
 CompWindow::mapNum () const
 {
