@@ -29,7 +29,7 @@ function (compiz_install_gconf_schema _src _dst)
     endif ()
     install (
 	FILES "${_src}"
-	DESTINATION "${_dst}"
+	DESTINATION "${COMPIZ_DESTDIR}${_dst}"
     )
 endfunction ()
 
@@ -40,9 +40,9 @@ function (compiz_gconf_schema _src _dst _inst)
 
     if (XSLTPROC_EXECUTABLE)
 	add_custom_command (
-	    OUTPUT ${_dst}
+	    OUTPUT ${COMPIZ_DESTDIR}${_dst}
 	    COMMAND ${XSLTPROC_EXECUTABLE}
-		    -o ${_dst}
+		    -o ${COMPIZ_DESTDIR}${_dst}
 		    ${COMPIZ_GCONF_SCHEMAS_XSLT}
 		    ${_src}
 	    DEPENDS ${_src}

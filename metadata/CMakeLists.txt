@@ -37,7 +37,7 @@ compiz_translate_xml (
 
 install (
     FILES ${CMAKE_BINARY_DIR}/generated/core.xml
-    DESTINATION ${compiz_metadatadir}
+    DESTINATION ${COMPIZ_DESTDIR}${compiz_metadatadir}
 )
 
 add_custom_target (core-xml-file ALL

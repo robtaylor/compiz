@@ -57,5 +57,5 @@ target_link_libraries (
 
 install (
     TARGETS compiz
-    DESTINATION ${exec_prefix}
+    DESTINATION ${COMPIZ_DESTDIR}${exec_prefix}
 )

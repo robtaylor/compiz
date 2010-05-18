@@ -45,7 +45,7 @@ function (_check_compiz_cmake_macro)
     endif ()
     add_custom_target (
         findcompiz_install
-	${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${CMAKE_ROOT}/Modules
+	${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${DESTDIR}${CMAKE_ROOT}/Modules
     )
 endfunction ()
 

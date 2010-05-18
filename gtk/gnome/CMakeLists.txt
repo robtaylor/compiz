@@ -22,7 +22,7 @@ if (USE_GNOME)
     )
     install (
 	FILES ${desktop_file}
-	DESTINATION ${datadir}/applications
+	DESTINATION ${COMPIZ_DESTDIR}${datadir}/applications
     )
 
     set (wmproperties_file ${CMAKE_CURRENT_BINARY_DIR}/compiz-wm.desktop)
@@ -79,7 +79,7 @@ if (USE_GNOME)
 
     install (
 	TARGETS gnome-compiz
-	DESTINATION ${windowsettingslibdir}/window-manager-settings
+	DESTINATION ${COMPIZ_DESTDIR}${windowsettingslibdir}/window-manager-settings
     )
 
     compiz_opt_install_file (

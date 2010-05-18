@@ -24,5 +24,5 @@ set (_headers
 
 install (
     FILES ${_headers}
-    DESTINATION ${includedir}/compiz/core
+    DESTINATION ${COMPIZ_DESTDIR}${includedir}/compiz/core
 )

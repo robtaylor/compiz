@@ -76,7 +76,7 @@ compiz_configure_file (
 
 install (
     FILES ${CMAKE_BINARY_DIR}/generated/compiz-common.h
-    DESTINATION ${includedir}/compiz
+    DESTINATION ${COMPIZ_DESTDIR}${includedir}/compiz
 )
 
 compiz_configure_file (
@@ -88,7 +88,7 @@ compiz_configure_file (
 
 install (
     FILES ${CMAKE_BINARY_DIR}/compiz.pc
-    DESTINATION ${libdir}/pkgconfig
+    DESTINATION ${COMPIZ_DESTDIR}${libdir}/pkgconfig
 )
 
 add_subdirectory (cmake)

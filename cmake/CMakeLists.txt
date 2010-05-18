@@ -17,5 +17,5 @@ endif ()
 
 install (
     FILES ${_files}
-    DESTINATION ${CMAKE_INSTALL_PREFIX}/share/compiz/cmake
+    DESTINATION ${COMPIZ_DESTDIR}${CMAKE_INSTALL_PREFIX}/share/compiz/cmake
 )

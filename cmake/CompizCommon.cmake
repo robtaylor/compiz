@@ -16,6 +16,8 @@ cmake_policy (SET CMP0011 OLD)
 set (CMAKE_SKIP_RPATH FALSE)
 
 option (COMPIZ_BUILD_WITH_RPATH "Leave as ON unless building packages" ON)
+option (COMPIZ_RUN_LDCONFIG "Leave OFF unless you need to run ldconfig after install")
+set (COMPIZ_DESTDIR ${COMPIZ_DESTDIR} CACHE STRING "Leave blank unless building packages")
 
 set (COMPIZ_DATADIR ${CMAKE_INSTALL_PREFIX}/share)
 set (COMPIZ_METADATADIR ${CMAKE_INSTALL_PREFIX}/share/compiz)
@@ -46,14 +48,14 @@ function (compiz_ensure_linkage)
     find_program (LDCONFIG_EXECUTABLE ldconfig)
     mark_as_advanced (FORCE LDCONFIG_EXECUTABLE)
 
-    if (LDCONFIG_EXECUTABLE AND NOT ${CMAKE_BUILD_WITH_RPATH})
+    if (LDCONFIG_EXECUTABLE AND ${COMPIZ_RUN_LDCONFIG})
 
     install (
         CODE "message (\"Running \" ${LDCONFIG_EXECUTABLE} \" \" ${CMAKE_INSTALL_PREFIX} \"/lib\")
 	      exec_program (${LDCONFIG_EXECUTABLE} ARGS \"-v\" ${CMAKE_INSTALL_PREFIX}/lib)"
         )
 
-    endif (LDCONFIG_EXECUTABLE AND NOT ${CMAKE_BUILD_WITH_RPATH})
+    endif (LDCONFIG_EXECUTABLE AND ${COMPIZ_RUN_LDCONFIG})
 endfunction ()
 
 macro (compiz_add_git_dist)
@@ -202,7 +204,7 @@ function (compiz_opt_install_file _src _dst)
     install (CODE
         "message (\"-- Installing: ${_dst}\")
          execute_process (
-	    COMMAND ${CMAKE_COMMAND} -E copy_if_different \"${_src}\" \"${_dst}\"
+	    COMMAND ${CMAKE_COMMAND} -E copy_if_different \"${_src}\" \"${COMPIZ_DESTDIR}${_dst}\"
 	    RESULT_VARIABLE _result
 	    OUTPUT_QUIET ERROR_QUIET
 	 )

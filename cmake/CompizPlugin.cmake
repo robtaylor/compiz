@@ -284,7 +284,7 @@ function (_build_compiz_plugin plugin)
 	    # install xml
 	    install (
 		FILES ${_translated_xml}
-		DESTINATION ${PLUGIN_XMLDIR}
+		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_XMLDIR}
 	    )
 	endif (_translated_xml)
 	
@@ -315,11 +315,11 @@ function (_build_compiz_plugin plugin)
 		
 		install (
 		    FILES ${CMAKE_BINARY_DIR}/generated/compiz-${plugin}.pc
-		    DESTINATION ${PLUGIN_PKGDIR}
+		    DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_PKGDIR}
 		)
 		install (
 		    DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/${plugin}
-		    DESTINATION ${PLUGIN_INCDIR}/compiz
+		    DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_INCDIR}/compiz
 		)
 	    endif ()
 	endif ()
@@ -328,7 +328,7 @@ function (_build_compiz_plugin plugin)
 	if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
 	    install (
 		DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data
-		DESTINATION ${PLUGIN_DATADIR}
+		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_DATADIR}
 	    )
 	endif ()
 
@@ -336,7 +336,7 @@ function (_build_compiz_plugin plugin)
 	if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/images)
 	    install (
 		DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/images
-		DESTINATION ${PLUGIN_IMAGEDIR}
+		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_IMAGEDIR}
 	    )
 	endif ()
 	
@@ -409,7 +409,7 @@ function (_build_compiz_plugin plugin)
 
 	install (
 	    TARGETS ${plugin}
-	    LIBRARY DESTINATION ${PLUGIN_LIBDIR}
+	    LIBRARY DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_LIBDIR}
 	)
 
 	compiz_add_uninstall ()

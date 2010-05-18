@@ -61,7 +61,7 @@ if (USE_KDE4)
 
 	install (
 	    TARGETS kde4-window-decorator
-	    DESTINATION ${exec_prefix}
+	    DESTINATION ${COMPIZ_DESTDIR}${exec_prefix}
 	)
 
     else (KDE4_FOUND)
