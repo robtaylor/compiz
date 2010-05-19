@@ -4641,10 +4641,13 @@ CompWindow::frame ()
     return priv->frame;
 }
 
-char *
+CompString
 CompWindow::resName ()
 {
-    return priv->resName;
+    if (priv->resName)
+	return priv->resName;
+
+    return CompString ();
 }
 
 int
