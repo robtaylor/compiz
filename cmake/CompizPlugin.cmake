@@ -393,6 +393,7 @@ function (_build_compiz_plugin plugin)
 	else (COMPIZ_BUILD_WITH_RPATH)
 	    set_target_properties (
 		${plugin} PROPERTIES
+		INSTALL_RPATH_USE_LINK_PATH 0
 		SKIP_BUILD_RPATH 1
 		INSTALL_RPATH "${COMPIZ_LIBDIR}/compiz"
 		COMPILE_FLAGS "${${_PLUGIN}_CFLAGSADD}"

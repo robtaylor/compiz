@@ -49,6 +49,11 @@ if (USE_KDE4)
 	    ${kwd4_SRCS}
 	)
 
+	set_target_properties (
+	    kde4-window-decorator PROPERTIES
+	    INSTALL_RPATH_USE_LINK_PATH 0
+	)
+
 	target_link_libraries (
 	    kde4-window-decorator
 	    decoration

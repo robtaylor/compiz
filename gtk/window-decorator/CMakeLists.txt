@@ -1,6 +1,8 @@
 if (USE_GTK)
 
-    set (CMAKE_INSTALL_RPATH ${libdir})
+    if (COMPIZ_BUILD_WITH_RPATH)
+	set (CMAKE_INSTALL_RPATH ${libdir})
+    endif (COMPIZ_BUILD_WITH_RPATH)
 
     include_directories (
 	${compiz_SOURCE_DIR}/include
