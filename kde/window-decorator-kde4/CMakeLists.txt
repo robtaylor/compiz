@@ -17,7 +17,9 @@ if (USE_KDE4)
 
 	qt4_add_dbus_adaptor (kwd4_SRCS org.kde.KWin.xml decorator.h KWD::Decorator kwinadaptor)
 
-	pkg_check_modules (KWD4 REQUIRED xdamage xrender xcomposite)
+	pkg_check_modules (KWD4 REQUIRED xdamage xrender xcomposite xext)
+	
+	message ("libraries are " ${KWD4_LIBARIES})
 
 	link_directories(
 	    ${KWD4_LIBRARY_DIRS}
