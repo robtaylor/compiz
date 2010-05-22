@@ -32,7 +32,7 @@ if (USE_GNOME)
     )
     compiz_opt_install_file (
 	${wmproperties_file}
-	${COMPIZ_DESTDIR}${windowsettingsdatadir}/gnome/wm-properties/compiz-wm.desktop
+	${windowsettingsdatadir}/gnome/wm-properties/compiz-wm.desktop
     )
 
 
