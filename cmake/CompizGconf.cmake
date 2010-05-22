@@ -40,9 +40,9 @@ function (compiz_gconf_schema _src _dst _inst)
 
     if (XSLTPROC_EXECUTABLE)
 	add_custom_command (
-	    OUTPUT ${COMPIZ_DESTDIR}${_dst}
+	    OUTPUT ${_dst}
 	    COMMAND ${XSLTPROC_EXECUTABLE}
-		    -o ${COMPIZ_DESTDIR}${_dst}
+		    -o ${_dst}
 		    ${COMPIZ_GCONF_SCHEMAS_XSLT}
 		    ${_src}
 	    DEPENDS ${_src}
