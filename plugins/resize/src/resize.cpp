@@ -155,6 +155,9 @@ ResizeScreen::updateWindowProperty ()
     CompOption::Vector data = resizeInformationAtom.getReadTemplate ();;
     CompOption::Value v;
 
+    if (data.size () != 4)
+	return;
+
     v = geometry.x;
     data.at (0).set (v);
 
