@@ -75,6 +75,7 @@ class PropertyWriter
 	bool updateProperty (Window, CompOption::Vector &, bool, int);
 	CompOption::Vector readProperty (Window);
 	void setReadTemplate (const CompOption::Vector &);
+	CompOption::Vector getReadTemplate ();
 
     private:
 

@@ -62,6 +62,12 @@ PropertyWriter::setReadTemplate (const CompOption::Vector &readTemplate)
     mPropertyValues = readTemplate;
 }
 
+CompOption::Vector
+PropertyWriter::getReadTemplate ()
+{
+    return mPropertyValues;
+}
+
 bool
 PropertyWriter::updateProperty (Window		  	 id,
 				CompOption::Vector &propertyData,
@@ -272,8 +278,7 @@ BaseSwitchScreen::setSelectedWindowHint ()
 	selectedWindowId = selectedWindow->id ();
 
     v = CompOption::Value ((int) selectedWindowId);
-    opts.resize (1);
-    opts.at (0).setName ("id", CompOption::TypeInt);
+    opts = selectWinAtom.getReadTemplate ();
     opts.at (0).set (v);
 
     selectWinAtom.updateProperty (popupWindow, opts, false, XA_WINDOW);

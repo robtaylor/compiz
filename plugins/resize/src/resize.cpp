@@ -152,28 +152,20 @@ ResizeScreen::sendResizeNotify ()
 void
 ResizeScreen::updateWindowProperty ()
 {
-    CompOption::Vector data;
+    CompOption::Vector data = resizeInformationAtom.getReadTemplate ();;
     CompOption::Value v;
 
-    data.resize (4);
-
     v = geometry.x;
-    data.at (0).setName ("x", CompOption::TypeInt);
     data.at (0).set (v);
 
     v = geometry.y;
-    data.at (1).setName ("y", CompOption::TypeInt);
     data.at (1).set (v);
 
     v = geometry.width;
-    data.at (2).setName ("width", CompOption::TypeInt); 
     data.at (2).set (v);
 
     v = geometry.height;
-    data.at (3).setName ("x", CompOption::TypeInt);
     data.at (3).set (v);
-
-    fprintf (stderr, "update window property\n");
 
     resizeInformationAtom.updateProperty (w->id (), data, false, XA_CARDINAL);
 }
@@ -182,7 +174,7 @@ void
 ResizeScreen::finishResizing ()
 {
     w->ungrabNotify ();
-    CompOption::Vector opts;
+    CompOption::Vector opts = resizeInformationAtom.getReadTemplate ();
     
     resizeInformationAtom.updateProperty (w->id (), opts, true, XA_CARDINAL);
 
