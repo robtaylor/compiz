@@ -31,6 +31,7 @@
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
+#include <compiztoolbox/compiztoolbox.h>
 
 #include "resize_options.h"
 
@@ -103,8 +104,8 @@ class ResizeScreen :
 	GLScreen        *gScreen;
 	CompositeScreen *cScreen;
 
-	Atom resizeNotifyAtom;
-	Atom resizeInformationAtom;
+	Atom	       resizeNotifyAtom;
+	PropertyWriter resizeInformationAtom;
 
 	CompWindow	 *w;
 	int		 mode;

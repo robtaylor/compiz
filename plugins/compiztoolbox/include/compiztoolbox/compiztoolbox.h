@@ -68,10 +68,11 @@ class PropertyWriter
 {
     public:
 
+	PropertyWriter ();
 	PropertyWriter (CompString propName,
 			CompOption::Vector &readTemplate);
 
-	bool updateProperty (Window, CompOption::Vector &, bool);
+	bool updateProperty (Window, CompOption::Vector &, bool, int);
 	CompOption::Vector readProperty (Window);
 	void setReadTemplate (const CompOption::Vector &);
 
@@ -106,8 +107,8 @@ class BaseSwitchScreen
 	CompositeScreen *cScreen;
 	GLScreen        *gScreen;
 
-	Atom selectWinAtom;
-	Atom selectFgColorAtom;
+	PropertyWriter selectWinAtom;
+	Atom	       selectFgColorAtom;
 
 	CountedList<CompWindow*> windows;
 

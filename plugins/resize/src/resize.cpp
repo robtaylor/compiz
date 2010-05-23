@@ -152,24 +152,39 @@ ResizeScreen::sendResizeNotify ()
 void
 ResizeScreen::updateWindowProperty ()
 {
-    unsigned long data[4];
+    CompOption::Vector data;
+    CompOption::Value v;
 
-    data[0] = geometry.x;
-    data[1] = geometry.y;
-    data[2] = geometry.width;
-    data[3] = geometry.height;
+    data.resize (4);
 
-    XChangeProperty (screen->dpy (), w->id (), resizeInformationAtom,
-		     XA_CARDINAL, 32, PropModeReplace,
-		     (unsigned char*) data, 4);
+    v = geometry.x;
+    data.at (0).setName ("x", CompOption::TypeInt);
+    data.at (0).set (v);
+
+    v = geometry.y;
+    data.at (1).setName ("y", CompOption::TypeInt);
+    data.at (1).set (v);
+
+    v = geometry.width;
+    data.at (2).setName ("width", CompOption::TypeInt); 
+    data.at (2).set (v);
+
+    v = geometry.height;
+    data.at (3).setName ("x", CompOption::TypeInt);
+    data.at (3).set (v);
+
+    fprintf (stderr, "update window property\n");
+
+    resizeInformationAtom.updateProperty (w->id (), data, false, XA_CARDINAL);
 }
 
 void
 ResizeScreen::finishResizing ()
 {
     w->ungrabNotify ();
-
-    XDeleteProperty (screen->dpy (), w->id (), resizeInformationAtom);
+    CompOption::Vector opts;
+    
+    resizeInformationAtom.updateProperty (w->id (), opts, true, XA_CARDINAL);
 
     w = NULL;
 }
@@ -1283,13 +1298,23 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     releaseButton (0),
     isConstrained (false)
 {
-
+    CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
+    
+    atomTemplate.resize (4);
 
-    resizeNotifyAtom      = XInternAtom (s->dpy (),
-					 "_COMPIZ_RESIZE_NOTIFY", 0);
-    resizeInformationAtom = XInternAtom (s->dpy (),
-					 "_COMPIZ_RESIZE_INFORMATION", 0);
+    for (int i = 0; i < 4; i++)
+    {
+	char buf[4];
+	snprintf (buf, 4, "%i", i);
+	CompString tmpName (buf);
+
+	atomTemplate.at (i).setName (tmpName, CompOption::TypeInt);
+    }
+
+    resizeNotifyAtom = XInternAtom (s->dpy (), "_COMPIZ_RESIZE_NOTIFY", 0);
+    resizeInformationAtom = PropertyWriter ("_COMPIZ_RESIZE_INFORMATION",
+    					    atomTemplate);
 
     for (unsigned int i = 0; i < NUM_KEYS; i++)
 	key[i] = XKeysymToKeycode (s->dpy (), XStringToKeysym (rKeys[i].name));

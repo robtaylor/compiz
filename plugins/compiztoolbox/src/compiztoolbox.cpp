@@ -45,6 +45,10 @@ class CompizToolboxPluginVTable :
     void fini ();
 };
 
+PropertyWriter::PropertyWriter ()
+{
+}
+
 PropertyWriter::PropertyWriter (CompString propName,
 				CompOption::Vector &readTemplate)
 {
@@ -61,7 +65,8 @@ PropertyWriter::setReadTemplate (const CompOption::Vector &readTemplate)
 bool
 PropertyWriter::updateProperty (Window		  	 id,
 				CompOption::Vector &propertyData,
-				bool		   	 remove)
+				bool		   	 remove,
+				int			 type)
 {
     int		  count = 0;
     long int      data[propertyData.size ()];
@@ -98,7 +103,7 @@ PropertyWriter::updateProperty (Window		  	 id,
 	}
 	
 	XChangeProperty (screen->dpy (), id,
-			 mAtom, XA_CARDINAL, 32,
+			 mAtom, type, 32,
 			 PropModeReplace,  (unsigned char *)data, 5);
     }
     
@@ -260,13 +265,18 @@ void
 BaseSwitchScreen::setSelectedWindowHint ()
 {
     Window selectedWindowId = None;
+    CompOption::Vector opts;
+    CompOption::Value  v;
 
     if (selectedWindow && !selectedWindow->destroyed ())
 	selectedWindowId = selectedWindow->id ();
 
-    XChangeProperty (::screen->dpy (), popupWindow, selectWinAtom,
-		     XA_WINDOW, 32, PropModeReplace,
-		     (unsigned char *) &selectedWindowId, 1);
+    v = CompOption::Value ((int) selectedWindowId);
+    opts.resize (1);
+    opts.at (0).setName ("id", CompOption::TypeInt);
+    opts.at (0).set (v);
+
+    selectWinAtom.updateProperty (popupWindow, opts, false, XA_WINDOW);
 }
 
 void
@@ -798,17 +808,25 @@ BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
     selection (CurrentViewport),
     ignoreSwitcher (false)
 {
+    CompOption::Vector atomTemplate;
+    CompOption::Value v;
+    CompOption	      o;
+
     if (openGLAvailable)
     {
 	cScreen = CompositeScreen::get (screen);
 	gScreen = GLScreen::get (screen);
     }
 
+    o.setName ("id", CompOption::TypeInt);
+    atomTemplate.push_back (o);
 
-    selectWinAtom =
-	XInternAtom (::screen->dpy (), DECOR_SWITCH_WINDOW_ATOM_NAME, 0);
-    selectFgColorAtom =
-	XInternAtom (::screen->dpy (), DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
+    selectWinAtom = PropertyWriter (CompString (DECOR_SWITCH_WINDOW_ATOM_NAME),
+    				    atomTemplate);
+
+    selectFgColorAtom = 
+    	XInternAtom (::screen->dpy (),
+    		     DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
 
     fgColor[0] = 0;
     fgColor[1] = 0;
