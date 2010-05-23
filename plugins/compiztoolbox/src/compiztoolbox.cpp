@@ -79,7 +79,6 @@ PropertyWriter::updateProperty (Window		  	 id,
     
     if (remove)
     {
-	mPropertyValues.clear ();
 	XDeleteProperty (screen->dpy (), id, mAtom);
 	return true;
     }
