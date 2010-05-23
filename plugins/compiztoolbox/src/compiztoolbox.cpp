@@ -28,6 +28,8 @@
 #include <compiztoolbox/compiztoolbox.h>
 #include "compiztoolbox_options.h"
 
+bool openGLAvailable;
+
 class CompizToolboxScreen :
     public PluginClassHandler <CompizToolboxScreen, CompScreen>,
     public CompiztoolboxOptions
@@ -521,7 +523,8 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 			      int                       width2,
 			      int                       height2)
 {
-    
+    if (!openGLAvailable)
+	return;    
 
     GLWindowPaintAttrib  sAttrib (attrib);
     IconMode             iconMode;
@@ -682,6 +685,9 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 bool
 BaseSwitchWindow::damageRect (bool initial, const CompRect &rect)
 {
+    if (!openGLAvailable)
+	return true;
+
     if (baseScreen->grabIndex)
     {
 	CompWindow *popup;
@@ -784,8 +790,6 @@ BaseSwitchScreen::handleEvent (XEvent *event)
 }
 
 BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
-    cScreen (CompositeScreen::get (screen)),
-    gScreen (GLScreen::get (screen)),
     popupWindow (None),
     selectedWindow (NULL),
     lastActiveNum (0),
@@ -794,6 +798,13 @@ BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
     selection (CurrentViewport),
     ignoreSwitcher (false)
 {
+    if (openGLAvailable)
+    {
+	cScreen = CompositeScreen::get (screen);
+	gScreen = GLScreen::get (screen);
+    }
+
+
     selectWinAtom =
 	XInternAtom (::screen->dpy (), DECOR_SWITCH_WINDOW_ATOM_NAME, 0);
     selectFgColorAtom =
@@ -807,11 +818,15 @@ BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
 
 BaseSwitchWindow::BaseSwitchWindow (BaseSwitchScreen *ss, CompWindow *w) :
     baseScreen (ss),
-    gWindow (GLWindow::get (w)),
-    cWindow (CompositeWindow::get (w)),
-    gScreen (GLScreen::get (::screen)),
     window (w)
 {
+    if (openGLAvailable)
+    {
+	gWindow = GLWindow::get (w);
+	cWindow = CompositeWindow::get (w);
+	gScreen = GLScreen::get (screen);
+    }
+
 }
 
 CompizToolboxScreen::CompizToolboxScreen (CompScreen *screen) :
@@ -822,10 +837,14 @@ CompizToolboxScreen::CompizToolboxScreen (CompScreen *screen) :
 bool
 CompizToolboxPluginVTable::init ()
 {
-    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION) ||
-        !CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) ||
-        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+    openGLAvailable = true;
+
+    if (!CompPlugin::checkPluginABI ("core", CORE_ABIVERSION))
 	return false;
+
+    if (!CompPlugin::checkPluginABI ("composite", COMPIZ_COMPOSITE_ABI) ||
+        !CompPlugin::checkPluginABI ("opengl", COMPIZ_OPENGL_ABI))
+	openGLAvailable = false;
 
     CompPrivate p;
     p.uval = COMPIZ_COMPOSITE_ABI;
