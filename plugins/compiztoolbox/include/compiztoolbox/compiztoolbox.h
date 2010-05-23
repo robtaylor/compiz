@@ -64,6 +64,22 @@ typedef enum
     Group
 } SwitchWindowSelection;
 
+class PropertyWriter
+{
+    public:
+
+	PropertyWriter (CompString propName,
+			CompOption::Vector &readTemplate);
+
+	bool updateProperty (Window, CompOption::Vector &, bool);
+	CompOption::Vector readProperty (Window);
+	void setReadTemplate (const CompOption::Vector &);
+
+    private:
+
+	CompOption::Vector mPropertyValues;
+	Atom		   mAtom;
+};
 
 class BaseSwitchScreen
 {

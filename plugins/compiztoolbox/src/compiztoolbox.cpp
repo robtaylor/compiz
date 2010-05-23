@@ -43,6 +43,142 @@ class CompizToolboxPluginVTable :
     void fini ();
 };
 
+PropertyWriter::PropertyWriter (CompString propName,
+				CompOption::Vector &readTemplate)
+{
+    mPropertyValues = readTemplate;
+    mAtom = XInternAtom (screen->dpy (), propName.c_str (), 0);
+}
+
+void
+PropertyWriter::setReadTemplate (const CompOption::Vector &readTemplate)
+{
+    mPropertyValues = readTemplate;
+}
+
+bool
+PropertyWriter::updateProperty (Window		  	 id,
+				CompOption::Vector &propertyData,
+				bool		   	 remove)
+{
+    int		  count = 0;
+    long int      data[propertyData.size ()];
+    
+    if (remove)
+    {
+	mPropertyValues.clear ();
+	XDeleteProperty (screen->dpy (), id, mAtom);
+	return true;
+    }
+    else
+    {
+        mPropertyValues = propertyData;
+
+        foreach (CompOption &o, propertyData)
+        {
+	    switch (o.type ())
+	    {
+	        case CompOption::TypeBool:
+		    data[count] = o.value ().b ();
+		    break;
+	        case CompOption::TypeInt:
+		    data[count] = o.value ().i ();
+		    break;
+	        case CompOption::TypeFloat:
+		    data[count] = o.value ().f ();
+		    break;
+	        default:
+		    data[count] = 0;
+		    break;
+	    }
+	
+	    count++;
+	}
+	
+	XChangeProperty (screen->dpy (), id,
+			 mAtom, XA_CARDINAL, 32,
+			 PropModeReplace,  (unsigned char *)data, 5);
+    }
+    
+    return true;
+}
+
+CompOption::Vector
+PropertyWriter::readProperty (Window id)
+{
+    Atom 	  type;
+    int  	  retval, fmt;
+    unsigned long nitems, exbyte;
+    long int	  *data;
+    int		  count = 0;
+    CompOption::Vector propertyValues;
+    
+    propertyValues.clear ();
+    
+    if (mPropertyValues.empty ())
+	return propertyValues;
+    
+    retval = XGetWindowProperty (screen->dpy (), id, mAtom, 0,
+    				 mPropertyValues.size (), False, XA_CARDINAL,
+    				 &type, &fmt, &nitems, &exbyte,
+    				 (unsigned char **)&data);
+    
+    if (retval == Success && !mPropertyValues.empty ())
+    {
+	if (type == XA_CARDINAL && fmt == 32 &&
+	    nitems == mPropertyValues.size ())
+	{
+	    propertyValues.resize (nitems);
+
+	    foreach (CompOption &o, propertyValues)
+	    {
+		CompString tmpName;
+		CompOption::Value tmpVal;
+		char buf[64];
+		snprintf (buf, 64, "%i", count);
+		tmpName = CompString(buf);
+		switch (mPropertyValues.at (count).type ())
+		{
+		    case CompOption::TypeBool:
+			tmpVal = CompOption::Value ((bool) data[count]);
+			o.setName (tmpName, CompOption::TypeBool);
+			o.set (tmpVal);
+			break;
+		    case CompOption::TypeInt:
+			tmpVal = CompOption::Value ((int) data[count]);
+			o.setName (tmpName, CompOption::TypeInt);
+			o.set (tmpVal);
+			break;
+		    case CompOption::TypeFloat:
+			tmpVal = CompOption::Value ((float) data[count]);
+			o.setName (tmpName, CompOption::TypeFloat);
+			o.set (tmpVal);
+			break;
+		    default:
+			tmpVal = CompOption::Value (CompOption::Value (0));
+			o.setName (tmpName, CompOption::TypeInt);
+			o.set (tmpVal);
+			break;
+		}
+		
+		count++;
+	    }
+	    
+	    XFree (data);
+	}
+	else if (fmt != 0)
+	{
+	    XFree (data);
+	}
+    }
+    else
+    {
+	return propertyValues;
+    }
+    
+    return propertyValues;
+}
+
 COMPIZ_PLUGIN_20090315 (compiztoolbox, CompizToolboxPluginVTable);
 
 CompString
