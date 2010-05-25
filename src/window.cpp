@@ -746,12 +746,6 @@ CompWindow::recalcType ()
 	    type = CompWindowTypeDialogMask;
     }
 
-    if (type == CompWindowTypeDockMask &&
-	(priv->state & CompWindowStateBelowMask))
-    {
-	type = CompWindowTypeNormalMask;
-    }
-
     if ((type & (CompWindowTypeNormalMask | CompWindowTypeDialogMask)) &&
 	(priv->state & CompWindowStateModalMask))
     {
@@ -2078,6 +2072,9 @@ PrivateWindow::findSiblingBelow (CompWindow *w,
 	    /* otherwise fall-through */
 	case CompWindowTypeDockMask:
 	    /* fullscreen and dock layer */
+        if (w->priv->state & CompWindowStateBelowMask)
+            /* keeping dock windows with keep below mask below other windows */
+            break;
 	    if (below->priv->type & (CompWindowTypeFullscreenMask |
 			       CompWindowTypeDockMask))
 	    {
