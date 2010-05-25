@@ -9,6 +9,7 @@
 	    </requirement>
 	    <relation type="after">
 		<plugin>cube</plugin>
+		<plugin>decor</plugin>
 	    </relation>
 	</deps>
 	<options>

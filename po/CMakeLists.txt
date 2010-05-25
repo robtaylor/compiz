@@ -21,6 +21,8 @@ add_custom_target (nls-update-sources
     WORKING_DIRECTORY ${po_SOURCE_DIR}
 )
 
+message ("po binary dir is " ${po_BINARY_DIR})
+
 add_custom_command (
     OUTPUT ${po_SOURCE_DIR}/compiz.pot
     COMMAND ${_intltool_update} --gettext-package compiz --pot

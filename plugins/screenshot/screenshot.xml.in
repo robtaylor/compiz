@@ -10,6 +10,9 @@
 		<plugin>compiztoolbox</plugin>
 		<feature>imageext:png</feature>
 	    </requirement>
+	    <relation type="after">
+		<plugin>decor</plugin>
+	    </relation>
 	</deps>
 	<options>
 	    <option name="initiate_button" type="button">

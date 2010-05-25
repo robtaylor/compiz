@@ -12,6 +12,9 @@
 		<plugin>switcher</plugin>
 		<plugin>scale</plugin>
 	    </relation>
+	    <relation type="after">
+		<plugin>decor</plugin>
+	    </relation>
 	</deps>
 	<options>
 	    <option name="unfold_key" type="key">

@@ -4,6 +4,9 @@
 	<_long>Annotate plugin</_long>
 	<category>Extras</category>
 	<deps>
+	    <relation type="after">
+		<plugin>decor</plugin>
+	    </relation>
 	    <requirement>
 		<plugin>opengl</plugin>
 	    </requirement>

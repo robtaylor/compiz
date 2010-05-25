@@ -7,6 +7,9 @@
 	    <requirement>
 		<plugin>opengl</plugin>
 	    </requirement>
+	    <relation type="after">
+		<plugin>decor</plugin>
+	    </relation>
 	    <relation type="before">
 		<plugin>cube</plugin>
 		<plugin>scale</plugin>
