@@ -23,11 +23,11 @@ set (VERSION ${COMPIZ_VERSION_MAJOR}.${COMPIZ_VERSION_MINOR}.${COMPIZ_VERSION_MI
 
 set (DECOR_INTERFACE_VERSION 20080901)
 
-set (prefix ${CMAKE_INSTALL_PREFIX})
-set (exec_prefix ${CMAKE_INSTALL_PREFIX}/bin)
-set (libdir ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX})
-set (includedir ${CMAKE_INSTALL_PREFIX}/include)
-set (datadir ${CMAKE_INSTALL_PREFIX}/share)
+set (prefix ${CMAKE_INSTALL_PREFIX}                   CACHE PATH "prefix")
+set (exec_prefix ${CMAKE_INSTALL_PREFIX}/bin          CACHE PATH "bindir")
+set (libdir ${CMAKE_INSTALL_PREFIX}/lib${LIB_SUFFIX}  CACHE PATH "libdir")
+set (includedir ${CMAKE_INSTALL_PREFIX}/include       CACHE PATH "includedir")
+set (datadir ${CMAKE_INSTALL_PREFIX}/share            CACHE PATH "datadir")
 
 set (compiz_plugindir ${libdir}/compiz)
 set (compiz_imagedir ${datadir}/compiz/images)
