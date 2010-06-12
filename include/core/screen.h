@@ -321,6 +321,8 @@ class CompScreen :
 	unsigned int nDesktop ();
 
 	CompActiveWindowHistory *currentHistory ();
+	
+	bool shouldSerializePlugins () ;
 
 	const CompRegion & region () const;
 

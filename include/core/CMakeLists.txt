@@ -12,9 +12,11 @@ set (_headers
     point.h
     pluginclasshandler.h
     pluginclasses.h
+    propertywriter.h
     rect.h
     region.h
     screen.h
+    serialization.h
     session.h
     size.h
     timer.h

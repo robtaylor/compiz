@@ -43,6 +43,12 @@
 		<_long>Default window icon image</_long>
 		<default>icon</default>
 	    </option>
+	    <option name="do_serialize" type="bool">
+		<_short>Save plugin states on unload</_short>
+		<_long>Save the state of plugins when they are unloaded such
+		       they will resume their past internal state when reloaded</_long>
+		<default>false</default>
+	    </option>
 	    <group>
 		<_short>Display Settings</_short>
 			<option name="overlapping_outputs" type="int">

@@ -170,16 +170,15 @@ ResizeScreen::updateWindowProperty ()
     v = geometry.height;
     data.at (3).set (v);
 
-    resizeInformationAtom.updateProperty (w->id (), data, false, XA_CARDINAL);
+    resizeInformationAtom.updateProperty (w->id (), data, XA_CARDINAL);
 }
 
 void
 ResizeScreen::finishResizing ()
 {
     w->ungrabNotify ();
-    CompOption::Vector opts = resizeInformationAtom.getReadTemplate ();
     
-    resizeInformationAtom.updateProperty (w->id (), opts, true, XA_CARDINAL);
+    resizeInformationAtom.deleteProperty (w->id ());
 
     w = NULL;
 }

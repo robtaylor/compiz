@@ -29,8 +29,10 @@
 
 #include "screenshot_options.h"
 
-#include <compiztoolbox/compiztoolbox.h>
+#include <core/core.h>
+#include <core/propertywriter.h>
 
+#include <compiztoolbox/compiztoolbox.h>
 #include <composite/composite.h>
 #include <opengl/opengl.h>
 

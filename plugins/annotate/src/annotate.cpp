@@ -79,8 +79,29 @@ AnnoScreen::cairoContext ()
 							   format, w, h);
 
 	cairo = cairo_create (surface);
-
-	cairoClear (cairo);
+	
+	if (cairoBuffer.size ())
+	{
+	    cairo_t *cr = cairo_create (surface);
+	    int stride = cairo_format_stride_for_width (CAIRO_FORMAT_ARGB32, w);
+	    cairo_surface_t *raw_source =
+		cairo_image_surface_create_for_data ((unsigned char *)
+						     cairoBuffer.c_str (),
+						     CAIRO_FORMAT_ARGB32,
+						     w, h, stride);
+	    
+	    if (cr && raw_source)
+	    {	      
+		cairo_set_source_surface (cr, raw_source, 0, 0);
+		cairo_paint (cr);
+		
+		cairo_surface_destroy (raw_source);
+		cairo_destroy (cr);
+		cairoBuffer.clear ();
+	    }
+	}
+	else	    
+	    cairoClear (cairo);
     }
 
     return cairo;
@@ -880,10 +901,23 @@ AnnoScreen::handleEvent (XEvent      *event)
     screen->handleEvent (event);
 }
 
+void
+AnnoScreen::postLoad ()
+{
+    if (content)
+    {
+	cairoContext ();
+	
+	gScreen->glPaintOutputSetEnabled (this, true);
+    }
+}
+
 AnnoScreen::AnnoScreen (CompScreen *screen) :
     PluginClassHandler <AnnoScreen, CompScreen> (screen),
+    PluginStateWriter <AnnoScreen> (this, "ANNOTATE", screen->root ()),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
+    grabIndex (0),
     pixmap (None),
     surface (NULL),
     damage (None),
@@ -921,7 +955,9 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
 }
 
 AnnoScreen::~AnnoScreen ()
-{
+{    
+    writeSerializedData ();
+
     if (cairo)
 	cairo_destroy (cairo);
     if (surface)

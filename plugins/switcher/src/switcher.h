@@ -33,6 +33,7 @@
 #include <compiztoolbox/compiztoolbox.h>
 
 #include <core/pluginclasshandler.h>
+#include <core/propertywriter.h>
 
 #include "switcher_options.h"
 

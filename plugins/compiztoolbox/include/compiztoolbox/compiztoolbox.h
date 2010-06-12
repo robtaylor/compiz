@@ -30,6 +30,7 @@
 #include <core/core.h>
 #include <core/atoms.h>
 #include <core/countedlist.h>
+#include <core/propertywriter.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
@@ -37,9 +38,10 @@
 #include <X11/Xatom.h>
 #include <X11/extensions/Xrender.h>
 
+#include <sstream>
 #include <fstream>
 
-#define COMPIZ_COMPIZTOOLBOX_ABI 1
+#define COMPIZ_COMPIZTOOLBOX_ABI 2
 
 typedef enum
 {
@@ -62,26 +64,7 @@ typedef enum
     AllViewports,
     Panels,
     Group
-} SwitchWindowSelection;
-
-class PropertyWriter
-{
-    public:
-
-	PropertyWriter ();
-	PropertyWriter (CompString propName,
-			CompOption::Vector &readTemplate);
-
-	bool updateProperty (Window, CompOption::Vector &, bool, int);
-	CompOption::Vector readProperty (Window);
-	void setReadTemplate (const CompOption::Vector &);
-	CompOption::Vector getReadTemplate ();
-
-    private:
-
-	CompOption::Vector mPropertyValues;
-	Atom		   mAtom;
-};
+} SwitchWindowSelection;	    
 
 class BaseSwitchScreen
 {

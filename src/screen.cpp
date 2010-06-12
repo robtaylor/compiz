@@ -4011,6 +4011,12 @@ CompScreen::currentHistory ()
     return &priv->history[priv->currentHistory];
 }
 
+bool
+CompScreen::shouldSerializePlugins ()
+{
+    return priv->optionGetDoSerialize ();
+}
+
 void
 PrivateScreen::removeDestroyed ()
 {

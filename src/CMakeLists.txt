@@ -48,6 +48,7 @@ add_executable (compiz
     windowgeometry.cpp
     icon.cpp
     modifierhandler.cpp
+    propertywriter.cpp
     ${_bcop_sources}
 )
 
