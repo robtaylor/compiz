@@ -77,11 +77,6 @@ if (USE_GNOME)
 	gnome-compiz ${GNOME_WINDOW_SETTINGS_LIBRARIES}
     )
 
-    install (
-	TARGETS gnome-compiz
-	DESTINATION ${COMPIZ_DESTDIR}${windowsettingslibdir}/window-manager-settings
-    )
-
     compiz_opt_install_file (
 	${CMAKE_CURRENT_BINARY_DIR}/libcompiz.so
 	${windowsettingslibdir}/window-manager-settings/libcompiz.so
