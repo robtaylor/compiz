@@ -400,8 +400,6 @@ function (_build_compiz_plugin plugin)
 		LINK_FLAGS "${${_PLUGIN}_LDFLAGSADD}"
 	    )
 	endif (COMPIZ_BUILD_WITH_RPATH)
-	
-	message ("libraries are " ${COMPIZ_LIBRARIES})
 
 	target_link_libraries (
 	    ${plugin} ${COMPIZ_LIBRARIES}
