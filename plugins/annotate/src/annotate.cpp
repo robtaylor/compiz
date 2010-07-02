@@ -920,9 +920,9 @@ AnnoScreen::AnnoScreen (CompScreen *screen) :
     grabIndex (0),
     pixmap (None),
     surface (NULL),
-    damage (None),
     cairo (NULL),
-    content (false)
+    content (false),
+    damage (None)
 {
     ScreenInterface::setHandler (screen, false);
     GLScreenInterface::setHandler (gScreen, false);
