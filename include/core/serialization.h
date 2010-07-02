@@ -30,6 +30,9 @@
 #include <core/timer.h>
 #include <core/propertywriter.h>
 
+#include <typeinfo>
+#include <boost/preprocessor/cat.hpp>
+
 #include <boost/archive/text_iarchive.hpp>
 #include <boost/archive/text_oarchive.hpp>
 
@@ -119,7 +122,6 @@ class PluginStateWriter
 	}	
 	
 	PluginStateWriter (T *instance,
-			   CompString pluginName,
 			   Window xid) :
 	    mResource (xid),
 	    mClassPtr (instance)
@@ -127,8 +129,8 @@ class PluginStateWriter
 	    if (screen->shouldSerializePlugins ())
 
 	    {
-		CompString atomName = CompString ("_COMPIZ_") + pluginName +
-				  CompString ("_STATE");
+		CompString atomName = compPrintf ("_COMPIZ_%s_STATE",
+						  typeid (T).name ());
 		CompOption::Vector o;
 
 		o.resize (1);

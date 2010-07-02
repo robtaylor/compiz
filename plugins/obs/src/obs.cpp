@@ -290,7 +290,7 @@ ObsWindow::postLoad ()
 
 ObsWindow::ObsWindow (CompWindow *w) :
     PluginClassHandler<ObsWindow, CompWindow> (w),
-    PluginStateWriter <ObsWindow> (this, "OBS", w->id ()),
+    PluginStateWriter <ObsWindow> (this, w->id ()),
     window (w),
     cWindow (CompositeWindow::get (w)),
     gWindow (GLWindow::get (w)),

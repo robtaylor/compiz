@@ -914,7 +914,7 @@ AnnoScreen::postLoad ()
 
 AnnoScreen::AnnoScreen (CompScreen *screen) :
     PluginClassHandler <AnnoScreen, CompScreen> (screen),
-    PluginStateWriter <AnnoScreen> (this, "ANNOTATE", screen->root ()),
+    PluginStateWriter <AnnoScreen> (this, screen->root ()),
     cScreen (CompositeScreen::get (screen)),
     gScreen (GLScreen::get (screen)),
     grabIndex (0),
