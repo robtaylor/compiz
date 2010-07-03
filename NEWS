@@ -1,3 +1,123 @@
+Release 0.8.6 (2010-03-28 Danny Baumann <dannybaumann@web.de>)
+==============================================================
+Maintenance release.
+
+Various focus and window placement fixes.
+
+Fixed handling of windows that have a (server-drawn) border.
+
+Fixed handling of window icons that have a colour depth of 1 bit.
+
+Added KDE 4.4 support to KDE4 window decorator.
+
+Release 0.8.4 (2009-10-14 Erkin Bahceci <erkinbah@gmail.com>)
+=============================================================
+Maintenance release.
+
+Fixed many crashes (including doPoll/eventLoop ones).
+
+Various memory leak fixes.
+
+Fixed lost window issues with windows that are visible on all workspaces.
+
+Fixed lost window issue when reducing the number of workspaces.
+
+Fixed placing of dialogs (e.g. PolicyKit) behind currently focused window.
+
+Fixed placing of new windows behind fullscreen window.
+
+Fixed and improved screen resolution change handling (Compiz now remembers
+original window size and position).
+
+Lowering a window now activates the topmost window when click-to-focus is on.
+
+Fixed wobbly title bar hiding and bouncing near panel edges.
+
+Screenshot plugin now saves to the correct desktop directory by default.
+
+Fixed inconsistent icon sizes in switcher plugin.
+
+Improved constraining of window size and position in move, resize, and wobbly.
+
+Ported KDE4 window decorator to KDE 4.3.
+
+Added support for _NET_REQUEST_FRAME_EXTENTS and _NET_SUPPORT_FULL_PLACEMENT
+EWMH hints.
+
+Release 0.8.2 (2009-03-01 Danny Baumann <dannybaumann@web.de>)
+==============================================================
+Maintenance release.
+
+Fixed issue in strut handling that could lead to struts being ignored
+for certain monitor configurations.
+
+Fixed window position constraining logic.
+
+Fixed kconfig xslt files missing from 0.8.0 tarball.
+
+Release 0.8.0 (2009-02-20 Danny Baumann <dannybaumann@web.de>)
+==============================================================
+Fourth stable release of compiz.
+
+New plugin "commands" that handles the bindings for arbitrary commands that
+previously were handled in core. In addition to the previously present key
+bindings button and edge bindings were added as well.
+
+New plugin "gnomecompat" which handles bindings that are exclusively used
+in the Gnome desktop environment and removed the corresponding bindings
+from core. This change fixes main menu and run dialog bindings for KDE users
+as those previously were conflicting between compiz and KDE. Gnome users
+upgrading should make sure to enable this plugin.
+
+Added support for _NET_WM_FULLSCREEN_MONITORS EWMH hint.
+
+Added support for reading the icon hint from the WM_HINTS property if
+_NET_WM_ICON is not available.
+
+Update Gnome support for Gnome 2.24.
+
+Added options to scale plugin that allow "toggle type" behaviour for
+key and button bindings.
+
+Several memory leak fixes.
+
+Adjusted gtk-window-decorator for newer libmetacity-private versions.
+
+Fixed gtk-window-decorator display for RTL languages.
+
+Adjusted kde4-window-decorator for KDE 4.2 API.
+
+Large number of minor bug fixes, especially in resize handling and
+stacking code.
+
+Translation updates
+
+Release 0.7.8 (2008-09-17 Danny Baumann <dannybaumann@web.de>)
+==============================================================
+Development release.
+
+New plugin "obs" that handles opacity, brightness and saturation bindings
+and matches.
+
+Put unresponsive window greyout, including options to configure it, to
+fade plugin.
+
+Add "constant fade time" fade mode to fade plugin.
+
+Removed opacity bindings and matches from core. Users that entered opacity
+matches should enable the obs plugin and enter the matches there.
+
+Enhanced timer infrastructure to allow synchronization of execution of
+multiple timer callbacks.
+
+Added matching for window's alpha channel (match type rgba=[0|1]).
+
+Reflect new Metacity "spacer" button type in gtk-window-decorator.
+
+Various bugfixes.
+
+Translation updates.
+
 Release 0.7.6 (2008-05-29 Dennis Kasprzyk <onestone@opencompositing.org>)
 =========================================================================
 Development release.
