@@ -1,3 +1,49 @@
+Release 0.9.0 (2010-07-03 Sam Spilsbury <smspillaz@gmail.com>)
+==============================================================
+Development release.
+
+Rewritten core in C++.
+
+Rewritten plugin APIs.
+
+Rewritten buildsystem in CMake, supports option code autogeneration,
+plugin build dependency handling, amongst other things.
+
+Smart wrappable functions, enables saving on otherwise useless CPU cycles.
+
+Reparenting window decorations.
+
+Support for tiled textures and screen sizes larger than max_texture_size
+through the use of the copytex plugin.
+
+Composite and OpenGL based rendering dropped from core, split into the
+opengl and composite plugins, which represent a step towards pluggable
+rendering backends.
+
+Ability to run in non composited mode added to gtk-window-decorator
+and kde4-window-decorator.
+
+kde-window-decorator dropped.
+
+Added KDE plugin to integrate with the QT main loop and create a KApplication
+for KCrash support on KDE.
+
+dbus plugin now uses screen number to identify compiz instance.
+
+Dropped multi-screen mode, launch compiz on individual screens instead.
+
+Shape drawing mode added to annotate plugin.
+
+Fixed screen updates issue in annotate plugin.
+
+Added serialization interface, which allows plugins to save/restore activity
+states between plugin and compiz reloads. Serialization info is stored in
+X11 window properties and is automatically dropped by the X Server when
+the window is destroyed.
+
+Added compiztoolbox library plugin used by switchers and screenshot, which
+provide a simple interface for accessing XDG and drawing thumbnails.
+
 Release 0.8.6 (2010-03-28 Danny Baumann <dannybaumann@web.de>)
 ==============================================================
 Maintenance release.
