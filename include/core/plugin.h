@@ -34,7 +34,7 @@ extern CompScreen *screen;
 
 #include <map>
 
-#define HOME_PLUGINDIR ".compiz/plugins"
+#define HOME_PLUGINDIR ".compiz-1/plugins"
 
 #define COMPIZ_PLUGIN_20090315(name, classname)                           \
     CompPlugin::VTable * name##VTable = NULL;                             \

@@ -25,7 +25,7 @@ link_directories (
     ${COMPIZ_LINK_DIRS}
 )
 
-add_executable (compiz
+add_executable (compiz_aaa
     region.cpp
     atoms.cpp
     timer.cpp
@@ -53,10 +53,10 @@ add_executable (compiz
 )
 
 target_link_libraries (
-    compiz ${COMPIZ_LIBRARIES} m pthread dl
+    compiz_aaa ${COMPIZ_LIBRARIES} m pthread dl
 )
 
 install (
-    TARGETS compiz
+    TARGETS compiz_aaa
     DESTINATION ${COMPIZ_DESTDIR}${exec_prefix}
 )
