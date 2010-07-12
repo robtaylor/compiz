@@ -617,6 +617,7 @@ bool
 PrivateScreen::handleActionEvent (XEvent *event)
 {
     static CompOption::Vector o (8);
+    Window xid;
     o.resize (8);
 
     o[0].setName ("event_window", CompOption::TypeInt);
@@ -628,8 +629,21 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
     switch (event->type) {
     case ButtonPress:
+	/* We need to determine if we clicked on a parent frame
+	 * window, if so, pass the appropriate child window as
+	 * "window" and the frame as "event_window"
+	 */
+
+	xid = event->xbutton.window;
+
+	foreach (CompWindow *w, screen->windows ())
+	{
+	    if (w->frame () == xid)
+		xid = w->id ();
+	}
+
 	o[0].value ().set ((int) event->xbutton.window);
-	o[1].value ().set ((int) event->xbutton.window);
+	o[1].value ().set ((int) xid);
 	o[2].value ().set ((int) event->xbutton.state);
 	o[3].value ().set ((int) event->xbutton.x_root);
 	o[4].value ().set ((int) event->xbutton.y_root);
