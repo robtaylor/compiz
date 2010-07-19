@@ -588,9 +588,7 @@ PrivateScaleScreen::fillInWindows ()
 	    cx += w->input ().left * sw->priv->slot->scale;
 	    cy += w->input ().top  * sw->priv->slot->scale;
 
-	    sw->priv->slot->setGeometry (cx - sx / 2, cy - sy / 2,
-					 (cx - sx / 2) + (cx + sx / 2),
-					 (cy - sy / 2) + (cy + sy / 2));
+	    sw->priv->slot->setGeometry (cx - sx / 2, cy - sy / 2, sx, sy);
 
 	    sw->priv->slot->filled = true;
 
