@@ -1971,12 +1971,6 @@ meta_draw_window_decoration (decor_t *d)
     GtkWidget	      *style_window;
     GdkColor	      bg_color;
     double	      bg_alpha;
-    int		      x1, x2, y1, y2;
-
-    x1 = d->context->left_space - _win_extents.left;
-    y1 = d->context->top_space - _win_extents.top - titlebar_height;
-    x2 = d->width - d->context->right_space + _win_extents.right;
-    y2 = d->height - d->context->bottom_space + _win_extents.bottom;
 
     if (!d->pixmap || !d->picture)
 	return;
