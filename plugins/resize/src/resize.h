@@ -28,10 +28,10 @@
 
 #include <core/core.h>
 #include <core/pluginclasshandler.h>
+#include <core/propertywriter.h>
 
 #include <composite/composite.h>
 #include <opengl/opengl.h>
-#include <compiztoolbox/compiztoolbox.h>
 
 #include "resize_options.h"
 

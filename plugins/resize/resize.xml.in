@@ -4,9 +4,6 @@
 	<_long>Resize window</_long>
 	<category>Window Management</category>
 	<deps>
-	    <requirement>
-		<plugin>compiztoolbox</plugin>
-	    </requirement>
 	    <relation type="after">
 		<plugin>composite</plugin>
 		<plugin>opengl</plugin>
