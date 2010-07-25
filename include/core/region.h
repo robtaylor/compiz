@@ -51,6 +51,7 @@ class CompRegion {
 	CompRegion (const CompRegion &);
 	CompRegion (int x, int y, int w, int h);
         CompRegion (const CompRect &);
+	CompRegion (const CompPoint::vector &); // Abstract Shape
 	~CompRegion ();
 
 	/**
@@ -157,7 +158,7 @@ class CompRegion {
 	 * with a specified CompRegion, excluding the area in which
 	 * both regions intersect
 	 */
-	CompRegion xored (const CompRegion &) const;
+	CompRegion xored (const CompRegion &) const; 
 
 	bool operator== (const CompRegion &) const;
 	bool operator!= (const CompRegion &) const;

@@ -71,6 +71,16 @@ CompRegion::CompRegion (const CompRect &r)
     priv->box.rects = &priv->box.extents;
 }
 
+CompRegion::CompRegion (const CompPoint::vector &points)
+{
+    XPoint pts[points.size ()];
+    priv = new PrivateRegion ();
+    priv->region = XPolygonRegion (pts, points.size (), 1);
+    priv->box.extents = priv->region->extents;
+    priv->box.numRects = priv->region->numRects;
+    priv->box.rects = &priv->box.extents;
+}
+
 CompRegion::~CompRegion ()
 {
     delete priv;
