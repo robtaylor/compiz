@@ -80,6 +80,8 @@ CompRegion::CompRegion (const CompPoint::vector &points)
     {
 	pts[count].x = p.x ();
 	pts[count].y = p.y ();
+
+	count++;
     }
 
     priv = new PrivateRegion ();
