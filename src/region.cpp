@@ -76,7 +76,7 @@ CompRegion::CompRegion (const CompPoint::vector &points)
     XPoint pts[points.size ()];
     int    count = 0;
 
-    foreach (CompPoint &p, points)
+    foreach (CompPoint p, points)
     {
 	pts[count].x = p.x ();
 	pts[count].y = p.y ();
