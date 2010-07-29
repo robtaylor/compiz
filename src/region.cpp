@@ -74,8 +74,16 @@ CompRegion::CompRegion (const CompRect &r)
 CompRegion::CompRegion (const CompPoint::vector &points)
 {
     XPoint pts[points.size ()];
+    int    count = 0;
+
+    foreach (CompPoint &p, points)
+    {
+	pts[count].x = p.x ();
+	pts[count].y = p.y ();
+    }
+
     priv = new PrivateRegion ();
-    priv->region = XPolygonRegion (pts, points.size (), 1);
+    priv->region = XPolygonRegion (pts, points.size (), WindingRule);
     priv->box.extents = priv->region->extents;
     priv->box.numRects = priv->region->numRects;
     priv->box.rects = &priv->box.extents;
