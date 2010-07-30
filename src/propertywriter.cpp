@@ -57,7 +57,7 @@ PropertyWriter::updateProperty (Window		  	 id,
     int count = 0;
     
 
-    if (type == XA_CARDINAL)
+    if (type != XA_STRING)
     {
         long int data[propertyData.size ()];
 
@@ -84,7 +84,7 @@ PropertyWriter::updateProperty (Window		  	 id,
 		         PropModeReplace,  (unsigned char *)data,
 		         propertyData.size ());
     }
-    else if (type == XA_STRING)
+    else
     {
         char * data[propertyData.size ()];
         XTextProperty prop;
