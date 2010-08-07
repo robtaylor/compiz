@@ -43,6 +43,10 @@ class ScaleSlot :
     public CompRect
 {
     public:
+	ScaleSlot () {};
+	ScaleSlot (const CompRect &r) :
+	    CompRect (r) {}
+    public:
 	bool  filled;
 	float scale;
 };
@@ -94,6 +98,7 @@ class ScaleScreen :
 
 	const CompMatch & getCustomMatch () const;
 	const WindowList& getWindows () const;
+	
 
 	void relayoutSlots (const CompMatch& match);
 
@@ -129,6 +134,8 @@ class ScaleWindow :
     public:
 	ScaleWindow (CompWindow *w);
 	~ScaleWindow ();
+	
+	CompWindow	*window;
 
 	bool hasSlot () const;
 

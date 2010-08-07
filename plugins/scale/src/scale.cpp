@@ -1176,7 +1176,7 @@ ScaleWindow::setSlot (const ScaleSlot &newSlot)
     priv->adjust = true;
 
     if (!priv->slot)
-	return;
+	priv->slot = new ScaleSlot ();
     *priv->slot = newSlot;
 
     /* Trigger the animation to this point */
@@ -1613,6 +1613,7 @@ ScaleScreen::~ScaleScreen ()
 
 ScaleWindow::ScaleWindow (CompWindow *w) :
     PluginClassHandler<ScaleWindow, CompWindow, COMPIZ_SCALE_ABI> (w),
+    window (w),
     priv (new PrivateScaleWindow (w))
 {
 }
