@@ -1371,7 +1371,10 @@ CompWindow::unmap ()
 bool
 PrivateWindow::restack (Window aboveId)
 {
-    if (window->prev)
+    if (aboveId && (aboveId == id || aboveId == frame))
+	// Don't try to raise a window above itself
+	return false;
+    else if (window->prev)
     {
 	if (aboveId && (aboveId == window->prev->id () ||
 		        aboveId == window->prev->frame ()))
