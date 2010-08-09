@@ -1476,7 +1476,9 @@ CompScreen::handleEvent (XEvent *event)
 			w->minimize ();
 		}
 		else if (event->xclient.data.l[0] == NormalState)
+		{
 		    w->unminimize ();
+		}
 	    }
 	}
 	else if (event->xclient.message_type == Atoms::showingDesktop)
@@ -1733,7 +1735,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (((XShapeEvent *) event)->window);
 	    if (w)
-	    {
+	    {	      
 		if (w->mapNum ())
 		    w->priv->updateRegion ();
 	    }
