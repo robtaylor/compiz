@@ -248,10 +248,6 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual void stateChangeNotify (unsigned int lastState);
 
 	virtual void updateFrameRegion (CompRegion &region);
-	
-	virtual void hide ();
-	virtual void show ();
-	virtual bool minimized ();
 
 	virtual bool alpha ();
 	virtual bool isFocussable ();
@@ -262,7 +258,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
  * window state, geometry, etc. between Compiz and the X server. 
  */
 class CompWindow :
-    public WrapableHandler<WindowInterface, 17>,
+    public WrapableHandler<WindowInterface, 15>,
     public PluginClassStorage
 {
     public:
@@ -446,7 +442,12 @@ class CompWindow :
 
 	void updateAttributes (CompStackingUpdateMode stackingMode);
 
+	void hide ();
+
+	void show ();
+
 	void minimize ();
+
 	void unminimize ();
 
 	void maximize (unsigned int state = 0);
@@ -472,6 +473,8 @@ class CompWindow :
 	Window transientFor ();
 
 	int pendingUnmaps ();
+
+	bool minimized ();
 
 	bool placed ();
 
@@ -539,13 +542,9 @@ class CompWindow :
 
 	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion,
 		      CompRegion &);
-	
-	WRAPABLE_HND (13, WindowInterface, void, hide);
-	WRAPABLE_HND (14, WindowInterface, void, show);
-	WRAPABLE_HND (15, WindowInterface, bool, minimized);
 
-	WRAPABLE_HND (16, WindowInterface, bool, alpha);
-	WRAPABLE_HND (17, WindowInterface, bool, isFocussable);
+	WRAPABLE_HND (13, WindowInterface, bool, alpha);
+	WRAPABLE_HND (14, WindowInterface, bool, isFocussable);
 
 	friend class PrivateWindow;
 	friend class CompScreen;

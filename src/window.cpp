@@ -3367,7 +3367,7 @@ PrivateWindow::ensureWindowVisibility ()
 void
 PrivateWindow::reveal ()
 {
-    if (window->minimized ())
+    if (minimized)
 	window->unminimize ();
 
     screen->leaveShowDesktopMode (window);
@@ -3571,7 +3571,6 @@ CompWindow::constrainNewWindowSize (int        width,
 void
 CompWindow::hide ()
 {
-    WRAPABLE_HND_FUNC (13, hide);
     priv->hidden = true;
     priv->hide ();
 }
@@ -3579,7 +3578,6 @@ CompWindow::hide ()
 void
 CompWindow::show ()
 {
-    WRAPABLE_HND_FUNC (14, show);
     priv->hidden = false;
     priv->show ();
 }
@@ -3592,7 +3590,7 @@ PrivateWindow::hide ()
     if (!managed)
 	return;
 
-    if (!window->minimized () && !inShowDesktopMode &&
+    if (!minimized && !inShowDesktopMode &&
 	!hidden && onDesktop)
     {
 	if (state & CompWindowStateShadedMask)
@@ -3624,7 +3622,7 @@ PrivateWindow::hide ()
 
     XUnmapWindow (screen->dpy (), id);
 
-    if (window->minimized () || inShowDesktopMode || hidden || shaded)
+    if (minimized || inShowDesktopMode || hidden || shaded)
 	window->changeState (state | CompWindowStateHiddenMask);
 
     if (shaded && id == screen->activeWindow ())
@@ -3698,7 +3696,7 @@ PrivateWindow::minimizeTransients (CompWindow *w,
 
 void
 CompWindow::minimize ()
-{    
+{
     if (!priv->managed)
 	return;
 
@@ -3711,7 +3709,7 @@ CompWindow::minimize ()
 	screen->forEachWindow (
 	    boost::bind (PrivateWindow::minimizeTransients, _1, this));
 
-	hide ();
+	priv->hide ();
     }
 }
 
@@ -3733,7 +3731,7 @@ CompWindow::unminimize ()
 
 	priv->minimized = false;
 
-	show ();
+	priv->show ();
 
 	screen->forEachWindow (
 	    boost::bind (PrivateWindow::unminimizeTransients, _1, this));
@@ -4404,18 +4402,6 @@ void
 WindowInterface::updateFrameRegion (CompRegion &region)
     WRAPABLE_DEF (updateFrameRegion, region)
 
-void
-WindowInterface::hide ()
-    WRAPABLE_DEF (hide);
-
-void
-WindowInterface::show ()
-    WRAPABLE_DEF (show);
-
-bool
-WindowInterface::minimized ()
-    WRAPABLE_DEF (minimized);
-
 bool
 WindowInterface::alpha ()
     WRAPABLE_DEF (alpha);
@@ -4608,7 +4594,7 @@ PrivateWindow::processMap ()
 
     window->updateAttributes (stackingMode);
 
-    if (window->minimized ())
+    if (priv->minimized)
 	window->unminimize ();
 
     screen->leaveShowDesktopMode (window);
@@ -4848,7 +4834,6 @@ CompWindow::pendingUnmaps ()
 bool
 CompWindow::minimized ()
 {
-    WRAPABLE_HND_FUNC_RETURN (15, bool, minimized);
     return priv->minimized;
 }
 
@@ -5326,7 +5311,7 @@ CompWindow::syncWait ()
 bool
 CompWindow::alpha ()
 {
-    WRAPABLE_HND_FUNC_RETURN (16, bool, alpha);
+    WRAPABLE_HND_FUNC_RETURN (13, bool, alpha);
 
     return priv->alpha;
 }
@@ -5368,7 +5353,7 @@ CompWindow::isViewable () const
 bool
 CompWindow::isFocussable ()
 {
-    WRAPABLE_HND_FUNC_RETURN (17, bool, isFocussable);
+    WRAPABLE_HND_FUNC_RETURN (14, bool, isFocussable);
 
     if (priv->inputHint)
 	return true;
@@ -5423,6 +5408,7 @@ CompWindow::updateFrameRegion ()
      if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
 	 priv->serverGeometry.height () == priv->geometry.height ())
     {
+
 	priv->frameRegion = CompRegion ();
 
 	updateFrameRegion (priv->frameRegion);
@@ -5442,7 +5428,8 @@ CompWindow::updateFrameRegion ()
 
 	x = priv->geometry.x () - priv->input.left;
 	y = priv->geometry.y () - priv->input.top;
-	
+
+
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeBounding, -x, -y,
 			     priv->frameRegion.united (priv->region).handle (),
@@ -5450,7 +5437,7 @@ CompWindow::updateFrameRegion ()
 
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeInput, -x, -y,
-			     priv->frameRegion.united (priv->inputRegion).handle (),
+			     priv->inputRegion.handle (),
 			     ShapeSet);
     }
 }
@@ -5495,7 +5482,7 @@ CompWindow::updateFrameRegion (CompRegion& region)
 
 bool
 PrivateWindow::reparent ()
-{  
+{
     XSetWindowAttributes attr;
     XWindowAttributes    wa;
     XWindowChanges       xwc;
@@ -5600,7 +5587,7 @@ PrivateWindow::reparent ()
 
 void
 PrivateWindow::unreparent ()
-{  
+{
     Display        *dpy = screen->dpy ();
     XEvent         e;
     bool           alive = true;
