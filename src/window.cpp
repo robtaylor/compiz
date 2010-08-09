@@ -864,39 +864,13 @@ CompWindow::getOutputExtents (CompWindowExtents& output)
     output.bottom = 0;
 }
 
-void
-PrivateWindow::updateRegion ()
+CompRegion
+PrivateWindow::rectsToRegion (unsigned int n, XRectangle *rects)
 {
+    CompRegion ret;
     int        x1, x2, y1, y2;
-    XRectangle r, *rects, *shapeRects = 0;
-    int	       i, n = 0;
 
-    priv->region = CompRegion ();
-
-    if (screen->XShape ())
-    {
-	int order;
-
-	shapeRects = XShapeGetRectangles (screen->dpy (), priv->id,
-					  ShapeBounding, &n, &order);
-    }
-
-    if (n < 1)
-    {
-	r.x      = -priv->attrib.border_width;
-	r.y      = -priv->attrib.border_width;
-	r.width  = priv->width + priv->attrib.border_width;
-	r.height = priv->height + priv->attrib.border_width;
-
-	rects = &r;
-	n = 1;
-    }
-    else
-    {
-	rects = shapeRects;
-    }
-
-    for (i = 0; i < n; i++)
+    for (unsigned int i = 0; i < n; i++)
     {
 	x1 = rects[i].x + priv->attrib.border_width;
 	y1 = rects[i].y + priv->attrib.border_width;
@@ -919,12 +893,63 @@ PrivateWindow::updateRegion ()
 	    x2 += priv->attrib.x;
 	    y2 += priv->attrib.y;
 
-	    priv->region += CompRect (x1, y1, x2 - x1, y2 - y1);
+	    ret += CompRect (x1, y1, x2 - x1, y2 - y1);
 	}
     }
 
-    if (shapeRects)
-	XFree (shapeRects);
+    return ret;
+}
+
+/* TODO: This function should be able to check the XShape event
+ * kind and only get/set shape rectangles for either ShapeInput
+ * or ShapeBounding, but not both at the same time
+ */
+
+void
+PrivateWindow::updateRegion ()
+{
+    XRectangle r, *boundingShapeRects = 0;
+    XRectangle *inputShapeRects = 0;
+    int	       nBounding = 0, nInput = 0;
+
+    priv->region = CompRegion ();
+    priv->inputRegion = CompRegion ();
+
+    if (screen->XShape ())
+    {
+	int order;
+
+	boundingShapeRects = XShapeGetRectangles (screen->dpy (), priv->id,
+					 	  ShapeBounding, &nBounding, &order);
+	inputShapeRects = XShapeGetRectangles (screen->dpy (), priv->id,
+					       ShapeInput, &nInput, &order);
+
+    }
+
+    r.x      = -priv->attrib.border_width;
+    r.y      = -priv->attrib.border_width;
+    r.width  = priv->width + priv->attrib.border_width;
+    r.height = priv->height + priv->attrib.border_width;
+
+    if (nBounding < 1)
+    {
+	boundingShapeRects = &r;
+	nBounding = 1;
+    }
+
+    if (nInput < 1)
+    {
+	inputShapeRects = &r;
+	nBounding = 1;
+    }
+
+    priv->region += rectsToRegion (nBounding, boundingShapeRects);
+    priv->inputRegion += rectsToRegion (nInput, inputShapeRects);
+
+    if (boundingShapeRects)
+	XFree (boundingShapeRects);
+    if (inputShapeRects)
+	XFree (inputShapeRects);
 
     window->updateFrameRegion ();
 }
@@ -1654,6 +1679,7 @@ CompWindow::move (int  dx,
 	priv->geometry.setY (priv->attrib.y);
 
 	priv->region.translate (dx, dy);
+	priv->inputRegion.translate (dx, dy);
 	if (!priv->frameRegion.isEmpty ())
 	    priv->frameRegion.translate (dx, dy);
 
@@ -4968,6 +4994,7 @@ CompWindow::CompWindow (Window id,
     {
 	priv->region = CompRegion (priv->attrib.x, priv->attrib.y,
 				   priv->width, priv->height);
+	priv->inputRegion = priv->region;
 
 	/* need to check for DisplayModal state on all windows */
 	priv->state = screen->priv->getWindowState (priv->id);
@@ -5364,6 +5391,11 @@ CompWindow::mwmFunc ()
     return priv->mwmFunc;
 }
 
+/* TODO: This function should be able to check the XShape event
+ * kind and only get/set shape rectangles for either ShapeInput
+ * or ShapeBounding, but not both at the same time
+ */
+
 void
 CompWindow::updateFrameRegion ()
 {
@@ -5398,6 +5430,11 @@ CompWindow::updateFrameRegion ()
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeBounding, -x, -y,
 			     priv->frameRegion.united (priv->region).handle (),
+			     ShapeSet);
+
+	XShapeCombineRegion (screen->dpy (), priv->frame,
+			     ShapeInput, -x, -y,
+			     priv->inputRegion.handle (),
 			     ShapeSet);
     }
 }
@@ -5451,6 +5488,7 @@ PrivateWindow::reparent ()
     CompWindow::Geometry sg = serverGeometry;
     Display              *dpy = screen->dpy ();
 
+
     if (frame || attrib.override_redirect)
 	return false;
 
@@ -5490,8 +5528,9 @@ PrivateWindow::reparent ()
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
 
+
     xwc.stack_mode = Below;
-    xwc.sibling    = id;
+    xwc.sibling = id;
     XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
 
     XMapWindow (dpy, wrapper);
