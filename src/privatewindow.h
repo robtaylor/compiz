@@ -157,6 +157,9 @@ class PrivateWindow {
 
 	char * getStartupId ();
 
+	CompRegion
+	rectsToRegion (unsigned int, XRectangle *);
+
 	void updateRegion ();
 
 	bool handleSyncAlarm ();
@@ -223,6 +226,7 @@ class PrivateWindow {
 	int        width;
 	int        height;
 	CompRegion region;
+	CompRegion inputRegion;
 	CompRegion frameRegion;
 
 	unsigned int wmType;
