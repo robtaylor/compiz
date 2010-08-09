@@ -3367,7 +3367,7 @@ PrivateWindow::ensureWindowVisibility ()
 void
 PrivateWindow::reveal ()
 {
-    if (minimized)
+    if (window->minimized ())
 	window->unminimize ();
 
     screen->leaveShowDesktopMode (window);
@@ -3590,7 +3590,7 @@ PrivateWindow::hide ()
     if (!managed)
 	return;
 
-    if (!minimized && !inShowDesktopMode &&
+    if (!window->minimized () && !inShowDesktopMode &&
 	!hidden && onDesktop)
     {
 	if (state & CompWindowStateShadedMask)
@@ -3622,7 +3622,7 @@ PrivateWindow::hide ()
 
     XUnmapWindow (screen->dpy (), id);
 
-    if (minimized || inShowDesktopMode || hidden || shaded)
+    if (window->minimized () || inShowDesktopMode || hidden || shaded)
 	window->changeState (state | CompWindowStateHiddenMask);
 
     if (shaded && id == screen->activeWindow ())
@@ -3697,6 +3697,8 @@ PrivateWindow::minimizeTransients (CompWindow *w,
 void
 CompWindow::minimize ()
 {
+    WRAPABLE_HND_FUNC (13, minimize);
+    
     if (!priv->managed)
 	return;
 
@@ -3725,6 +3727,7 @@ PrivateWindow::unminimizeTransients (CompWindow *w,
 void
 CompWindow::unminimize ()
 {
+    WRAPABLE_HND_FUNC (14, unminimize);
     if (priv->minimized)
     {
 	windowNotify (CompWindowNotifyUnminimize);
@@ -4402,6 +4405,18 @@ void
 WindowInterface::updateFrameRegion (CompRegion &region)
     WRAPABLE_DEF (updateFrameRegion, region)
 
+void
+WindowInterface::minimize ()
+    WRAPABLE_DEF (minimize);
+
+void
+WindowInterface::unminimize ()
+    WRAPABLE_DEF (unminimize);
+
+bool
+WindowInterface::minimized ()
+    WRAPABLE_DEF (minimized);
+
 bool
 WindowInterface::alpha ()
     WRAPABLE_DEF (alpha);
@@ -4594,7 +4609,7 @@ PrivateWindow::processMap ()
 
     window->updateAttributes (stackingMode);
 
-    if (priv->minimized)
+    if (window->minimized ())
 	window->unminimize ();
 
     screen->leaveShowDesktopMode (window);
@@ -4834,6 +4849,7 @@ CompWindow::pendingUnmaps ()
 bool
 CompWindow::minimized ()
 {
+    WRAPABLE_HND_FUNC_RETURN (15, bool, minimized);
     return priv->minimized;
 }
 
@@ -5311,7 +5327,7 @@ CompWindow::syncWait ()
 bool
 CompWindow::alpha ()
 {
-    WRAPABLE_HND_FUNC_RETURN (13, bool, alpha);
+    WRAPABLE_HND_FUNC_RETURN (16, bool, alpha);
 
     return priv->alpha;
 }
@@ -5353,7 +5369,7 @@ CompWindow::isViewable () const
 bool
 CompWindow::isFocussable ()
 {
-    WRAPABLE_HND_FUNC_RETURN (14, bool, isFocussable);
+    WRAPABLE_HND_FUNC_RETURN (17, bool, isFocussable);
 
     if (priv->inputHint)
 	return true;
@@ -5408,7 +5424,6 @@ CompWindow::updateFrameRegion ()
      if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
 	 priv->serverGeometry.height () == priv->geometry.height ())
     {
-
 	priv->frameRegion = CompRegion ();
 
 	updateFrameRegion (priv->frameRegion);
@@ -5428,8 +5443,7 @@ CompWindow::updateFrameRegion ()
 
 	x = priv->geometry.x () - priv->input.left;
 	y = priv->geometry.y () - priv->input.top;
-
-
+	
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeBounding, -x, -y,
 			     priv->frameRegion.united (priv->region).handle (),
@@ -5482,7 +5496,7 @@ CompWindow::updateFrameRegion (CompRegion& region)
 
 bool
 PrivateWindow::reparent ()
-{
+{  
     XSetWindowAttributes attr;
     XWindowAttributes    wa;
     XWindowChanges       xwc;
@@ -5587,7 +5601,7 @@ PrivateWindow::reparent ()
 
 void
 PrivateWindow::unreparent ()
-{
+{  
     Display        *dpy = screen->dpy ();
     XEvent         e;
     bool           alive = true;
