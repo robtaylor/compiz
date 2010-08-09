@@ -5490,6 +5490,8 @@ PrivateWindow::reparent ()
     XEvent               e;
     CompWindow::Geometry sg = serverGeometry;
     Display              *dpy = screen->dpy ();
+    CompWindow		 *sibling = window->next ? window->next : window->prev;
+    bool		 above = window->next ? false : true;
 
 
     if (frame || attrib.override_redirect)
@@ -5531,11 +5533,6 @@ PrivateWindow::reparent ()
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
 		 GrabModeSync, GrabModeSync, None, None);
 
-
-    xwc.stack_mode = Below;
-    xwc.sibling = id;
-    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
-
     XMapWindow (dpy, wrapper);
     XReparentWindow (dpy, id, wrapper, 0, 0);
 
@@ -5573,6 +5570,15 @@ PrivateWindow::reparent ()
     XUngrabServer (dpy);
     
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
+
+    /* Try to use a relative window as a stacking anchor point */
+    if (sibling)
+    {
+	if (above)
+	    window->restackAbove (sibling);
+	else
+	    window->restackBelow (sibling);
+    }
 
     window->windowNotify (CompWindowNotifyReparent);
 
