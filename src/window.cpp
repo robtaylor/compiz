@@ -5451,7 +5451,7 @@ CompWindow::updateFrameRegion ()
 
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeInput, -x, -y,
-			     priv->inputRegion.handle (),
+			     priv->frameRegion.united (priv->inputRegion).handle (),
 			     ShapeSet);
     }
 }
