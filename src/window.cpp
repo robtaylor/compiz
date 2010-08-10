@@ -5591,7 +5591,7 @@ PrivateWindow::reparent ()
 	if (above)
 	    window->restackAbove (sibling);
 	else
-	    window->restackBelow (sibling);
+	    priv->restack (sibling->id ());
     }
 
     window->windowNotify (CompWindowNotifyReparent);
