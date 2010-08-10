@@ -908,8 +908,8 @@ PrivateWindow::rectsToRegion (unsigned int n, XRectangle *rects)
 void
 PrivateWindow::updateRegion ()
 {
-    XRectangle r, *boundingShapeRects = 0;
-    XRectangle *inputShapeRects = 0;
+    XRectangle r, *boundingShapeRects = NULL;
+    XRectangle *inputShapeRects = NULL;
     int	       nBounding = 0, nInput = 0;
 
     priv->region = CompRegion ();
@@ -946,9 +946,9 @@ PrivateWindow::updateRegion ()
     priv->region += rectsToRegion (nBounding, boundingShapeRects);
     priv->inputRegion += rectsToRegion (nInput, inputShapeRects);
 
-    if (boundingShapeRects)
+    if (boundingShapeRects && boundingShapeRects != &r)
 	XFree (boundingShapeRects);
-    if (inputShapeRects)
+    if (inputShapeRects && inputShapeRects != &r)
 	XFree (inputShapeRects);
 
     window->updateFrameRegion ();
