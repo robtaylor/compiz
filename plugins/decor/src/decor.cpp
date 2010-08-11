@@ -662,7 +662,7 @@ DecorWindow::update (bool allowDecoration)
 
     old = (wd) ? wd->decor : NULL;
 
-    switch (window->type ()) {
+    switch (window->wmType ()) {
 	case CompWindowTypeDialogMask:
 	case CompWindowTypeModalDialogMask:
 	case CompWindowTypeUtilMask:
