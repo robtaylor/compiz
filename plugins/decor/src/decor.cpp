@@ -677,6 +677,9 @@ DecorWindow::update (bool allowDecoration)
     if (window->overrideRedirect ())
 	decorate = false;
 
+    if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
+	decorate = false;
+    
     if (decorate)
     {
 	if (!dScreen->optionGetDecorationMatch ().evaluate (window))
