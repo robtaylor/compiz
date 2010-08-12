@@ -55,8 +55,8 @@
 #define SHADOW_COLOR_BLUE  0x0000
 
 #define DBUS_DEST           "org.freedesktop.compiz"
-#define DBUS_SIGNAL_PATH    "/org/freedesktop/compiz/decoration/display"
-#define DBUS_QUERY_PATH     "/org/freedesktop/compiz/decoration/allscreens"
+#define DBUS_SIGNAL_PATH    "/org/freedesktop/compiz/decor/screen0"
+#define DBUS_QUERY_PATH     "/org/freedesktop/compiz/decor/screen0"
 #define DBUS_INTERFACE      "org.freedesktop.compiz"
 #define DBUS_METHOD_GET     "get"
 #define DBUS_SIGNAL_CHANGED "changed"
@@ -208,7 +208,7 @@ KWD::Decorator::enableDecorations (Time timestamp)
 
     if (!pluginManager ()->loadPlugin (""))
 	return false;
-
+    
     updateAllShadowOptions ();
 
     KWD::trapXError ();
@@ -262,7 +262,7 @@ KWD::Decorator::updateAllShadowOptions (void)
 				 DBUS_INTERFACE);
     doubleReply = compiz->call (DBUS_METHOD_GET);
     delete compiz;
-
+    
     if (doubleReply.isValid ())
 	mShadowOptions.shadow_radius = doubleReply.value ();
 
