@@ -297,7 +297,7 @@ PrivateCubeScreen::loadImg (int n)
 }
 
 bool
-PrivateCubeScreen::updateGeometry (int sides, bool invert)
+PrivateCubeScreen::updateGeometry (int sides, int invert)
 {
     GLfloat radius, distance;
     GLfloat *v;

@@ -76,7 +76,7 @@ class PrivateCubeScreen :
 
 	void loadImg (int n);
 
-	bool updateGeometry (int sides, bool invert);
+	bool updateGeometry (int sides, int invert);
 	void updateOutputs ();
 	void updateSkydomeTexture ();
 	void updateSkydomeList (GLfloat fRadius);
