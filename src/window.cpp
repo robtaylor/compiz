@@ -1276,52 +1276,52 @@ CompWindow::map ()
 {
     windowNotify (CompWindowNotifyBeforeMap);
 
-    if (isViewable ())
-	return;
-
-    if (priv->pendingMaps > 0)
-	priv->pendingMaps--;
-
-    priv->mapNum = screen->priv->mapNum++;
-
-    if (priv->struts)
-	screen->updateWorkarea ();
-
-    if (windowClass () == InputOnly)
-	return;
-
-    priv->unmapRefCnt = 1;
-
-    priv->attrib.map_state = IsViewable;
-
-    if (!overrideRedirect ())
-	screen->priv->setWmState (NormalState, priv->id);
-
-    priv->invisible  = true;
-    priv->alive      = true;
-
-    priv->lastPong = screen->priv->lastPing;
-
-    priv->updateRegion ();
-    priv->updateSize ();
-
-    screen->priv->updateClientList ();
-
-    if (priv->type & CompWindowTypeDesktopMask)
-	screen->priv->desktopWindowCount++;
-
-    if (priv->protocols & CompWindowProtocolSyncRequestMask)
+    if (!isViewable ())
     {
-	sendSyncRequest ();
-	sendConfigureNotify ();
-    }
+	if (priv->pendingMaps > 0)
+	    priv->pendingMaps--;
 
-    if (!overrideRedirect ())
-    {
-	/* been shaded */
-	if (!priv->height)
-	    resize (priv->attrib.x, priv->attrib.y, priv->attrib.width,
-		    ++priv->attrib.height - 1, priv->attrib.border_width);
+	priv->mapNum = screen->priv->mapNum++;
+
+	if (priv->struts)
+	    screen->updateWorkarea ();
+
+	if (windowClass () == InputOnly)
+	    return;
+
+	priv->unmapRefCnt = 1;
+
+	priv->attrib.map_state = IsViewable;
+
+	if (!overrideRedirect ())
+	    screen->priv->setWmState (NormalState, priv->id);
+
+	priv->invisible  = true;
+	priv->alive      = true;
+
+	priv->lastPong = screen->priv->lastPing;
+
+	priv->updateRegion ();
+	priv->updateSize ();
+
+	screen->priv->updateClientList ();
+
+	if (priv->type & CompWindowTypeDesktopMask)
+	    screen->priv->desktopWindowCount++;
+
+	if (priv->protocols & CompWindowProtocolSyncRequestMask)
+	{
+	    sendSyncRequest ();
+	    sendConfigureNotify ();
+	}
+
+	if (!overrideRedirect ())
+	{
+	    /* been shaded */
+	    if (!priv->height)
+		resize (priv->attrib.x, priv->attrib.y, priv->attrib.width,
+			++priv->attrib.height - 1, priv->attrib.border_width);
+	}
     }
 
     windowNotify (CompWindowNotifyMap);
