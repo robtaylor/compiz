@@ -34,6 +34,21 @@ if (USE_GTK)
 
     add_executable (gtk-window-decorator
 	gtk-window-decorator.c
+	blurprops.c
+	decorprops.c
+	cairo.c
+	gdk.c
+	switcher.c
+	metacity.c
+	events.c
+	forcequit.c
+	tooltip.c
+	actionmenu.c
+	settings.c
+	util.c
+	style.c
+	wnck.c
+	decorator.c
 	${gwd_schema}
     )
 
