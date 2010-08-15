@@ -131,7 +131,7 @@ GCONF_DIR "/blur_type"
 GCONF_DIR "/mouse_wheel_action"
 
 #define DBUS_DEST       "org.freedesktop.compiz"
-#define DBUS_PATH       "/org/freedesktop/compiz/decoration/allscreens"
+#define DBUS_PATH       "/org/freedesktop/compiz/decor/screen0"
 #define DBUS_INTERFACE  "org.freedesktop.compiz"
 #define DBUS_METHOD_GET "get"
 
