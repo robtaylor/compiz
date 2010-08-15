@@ -83,11 +83,12 @@ class CubeScreenInterface :
 					      const GLMatrix            &transform,
 					      CompOutput                *output,
 					      PaintOrder                order);
+	virtual bool cubeShouldPaintAllViewports ();
 
 };
 
 class CubeScreen :
-    public WrapableHandler<CubeScreenInterface, 8>,
+    public WrapableHandler<CubeScreenInterface, 9>,
     public PluginClassHandler<CubeScreen, CompScreen, COMPIZ_CUBE_ABI>,
     public CompOption::Class
 {
@@ -134,6 +135,7 @@ class CubeScreen :
 	WRAPABLE_HND (7, CubeScreenInterface, bool, cubeShouldPaintViewport,
 		      const GLScreenPaintAttrib &, const GLMatrix &,
 		      CompOutput *, PaintOrder);
+	WRAPABLE_HND (8, CubeScreenInterface, bool, cubeShouldPaintAllViewports);
 	
 	int invert () const;
 	
@@ -159,9 +161,6 @@ class CubeScreen :
 	int sourceOutput () const;
 	
 	PaintOrder paintOrder () const;
-	
-	bool paintAllViewports () const;
-	void paintAllViewports (bool value);
 	
 	void repaintCaps ();
 

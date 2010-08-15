@@ -93,6 +93,10 @@ CubeScreenInterface::cubeShouldPaintViewport (const GLScreenPaintAttrib &sAttrib
 					      CompOutput                *output,
 					      PaintOrder                order)
     WRAPABLE_DEF (cubeShouldPaintViewport, sAttrib, transform, output, order)
+    
+bool
+CubeScreenInterface::cubeShouldPaintAllViewports ()
+    WRAPABLE_DEF (cubeShouldPaintAllViewports);
 
 int 
 CubeScreen::invert () const
@@ -194,16 +198,12 @@ CubeScreen::paintOrder () const
     return priv->mPaintOrder;
 }
 
-bool 
-CubeScreen::paintAllViewports () const
+bool
+CubeScreen::cubeShouldPaintAllViewports ()
 {
+    WRAPABLE_HND_FUNC_RETURN (8, bool, cubeShouldPaintAllViewports);
+    
     return priv->mPaintAllViewports;
-}
-
-void 
-CubeScreen::paintAllViewports (bool value)
-{
-    priv->mPaintAllViewports = value;
 }
 
 void
@@ -1470,18 +1470,18 @@ PrivateCubeScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 	paintOrder = BTF;
     }
 
-    if (mInvert == -1 || mPaintAllViewports)
+    if (mInvert == -1 || cubeScreen->cubeShouldPaintAllViewports ())
 	paintAllViewports (sa, transform, region, outputPtr,
 			   mask, mXRotations, size, hsize, paintOrder);
 
     glCullFace (cullNorm);
 
-    if (wasCulled && mPaintAllViewports)
+    if (wasCulled && cubeScreen->cubeShouldPaintAllViewports ())
 	glDisable (GL_CULL_FACE);
 
     paintCaps = !mGrabIndex && (hsize > 2) && !mCapsPainted[output] &&
 	        (mInvert != 1 || mDesktopOpacity != OPAQUE ||
-		 mPaintAllViewports || sa.vRotate != 0.0f ||
+		 cubeScreen->cubeShouldPaintAllViewports () || sa.vRotate != 0.0f ||
 		 sa.yTranslate != 0.0f);
 
     if (paintCaps)
@@ -1503,7 +1503,7 @@ PrivateCubeScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 
 	mCapsPainted[output] = TRUE;
 
-	allCaps = mPaintAllViewports || mInvert != 1;
+	allCaps = cubeScreen->cubeShouldPaintAllViewports () || mInvert != 1;
 
 	if (topDir && bottomDir)
 	{
@@ -1556,7 +1556,7 @@ PrivateCubeScreen::glPaintTransformedOutput (const GLScreenPaintAttrib &sAttrib,
 	glCullFace (cullInv);
     }
 
-    if (mInvert == 1 || mPaintAllViewports)
+    if (mInvert == 1 || cubeScreen->cubeShouldPaintAllViewports ())
 	paintAllViewports (sa, transform, region, outputPtr, mask, mXRotations,
 			   size, hsize, paintOrder);
 
