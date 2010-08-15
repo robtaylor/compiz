@@ -34,7 +34,7 @@
 #include <opengl/vector.h>
 #include <opengl/texture.h>
 
-#define COMPIZ_CUBE_ABI 1
+#define COMPIZ_CUBE_ABI 2
 
 typedef enum {
     BTF = 0,
