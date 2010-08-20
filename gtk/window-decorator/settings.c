@@ -15,7 +15,6 @@ shadow_property_changed (WnckScreen *s)
     int  result, format;
     unsigned long n, left;
     unsigned char *prop_data;
-    gboolean	  valid_property;
     gboolean	  changed = 0;
     long	  *data;
     XTextProperty shadow_color_xtp;

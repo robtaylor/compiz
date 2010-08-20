@@ -491,6 +491,9 @@ int
 update_shadow (void);
 
 void
+shadow_property_changed (WnckScreen *screen);
+
+void
 update_titlebar_font (void);
 
 void
