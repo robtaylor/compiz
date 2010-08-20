@@ -452,6 +452,9 @@ extern Window    switcher_selected_window;
 extern XRenderPictFormat *xformat_rgba;
 extern XRenderPictFormat *xformat_rgb;
 
+extern Atom compiz_shadow_info_atom;
+extern Atom compiz_shadow_color_atom;
+
 /* gtk-window-decorator.c */
 
 double
@@ -486,6 +489,9 @@ update_event_windows (WnckWindow *win);
 
 int
 update_shadow (void);
+
+void
+shadow_property_changed (WnckScreen *screen);
 
 void
 update_titlebar_font (void);

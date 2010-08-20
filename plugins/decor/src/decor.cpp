@@ -1481,6 +1481,41 @@ DecorWindow::getOutputExtents (CompWindowExtents& output)
     }
 }
 
+void
+DecorScreen::updateDefaultShadowProperty ()
+{
+    long data[4];
+    CompOption *colorOption = CompOption::findOption (getOptions (), "shadow_color");
+    char *colorString;
+    XTextProperty xtp;
+    
+    if (!colorOption)
+	return;
+    
+    colorString = (char *) CompOption::colorToString (colorOption->value ().c ()).c_str ();
+    
+    /* 1) Shadow Radius
+     * 2) Shadow Opacity
+     * 3) Shadow Offset X
+     * 4) Shadow Offset Y
+     */
+    
+    /* the precision is 0.0001, so multiply by 1000 */
+    data[0] = optionGetShadowRadius () * 1000;
+    data[1] = optionGetShadowOpacity () * 1000;
+    data[2] = optionGetShadowXOffset ();
+    data[3] = optionGetShadowYOffset ();
+    
+    XChangeProperty (screen->dpy (), screen->root (),
+		      shadowInfoAtom, XA_INTEGER, 32,
+		      PropModeReplace, (unsigned char *) data, 4);
+    
+    if (XStringListToTextProperty (&colorString, 1, &xtp))
+	XSetTextProperty (screen->dpy (), screen->root (), &xtp, shadowColorAtom);
+    
+    
+}    
+
 bool
 DecorScreen::setOption (const CompString  &name,
 			CompOption::Value &value)
@@ -1524,6 +1559,13 @@ DecorScreen::setOption (const CompString  &name,
 	case DecorOptions::DecorationMatch:
 	    foreach (CompWindow *w, screen->windows ())
 		DecorWindow::get (w)->update (true);
+	    break;
+	case DecorOptions::ShadowRadius:
+	case DecorOptions::ShadowOpacity:
+	case DecorOptions::ShadowColor:
+	case DecorOptions::ShadowXOffset:
+	case DecorOptions::ShadowYOffset:
+	    updateDefaultShadowProperty ();
 	    break;
 	default:
 	    break;
@@ -1652,6 +1694,10 @@ DecorScreen::DecorScreen (CompScreen *s) :
 	XInternAtom (s->dpy (), DECOR_TYPE_WINDOW_ATOM_NAME, 0);
     requestFrameExtentsAtom =
         XInternAtom (s->dpy (), "_NET_REQUEST_FRAME_EXTENTS", 0);
+    shadowColorAtom =
+	XInternAtom (s->dpy (), "_COMPIZ_NET_CM_SHADOW_COLOR", 0);
+    shadowInfoAtom =
+	XInternAtom (s->dpy (), "_COMPIZ_NET_CM_SHADOW_PROPERTIES", 0);
 
     windowDefault.texture   = NULL;
     windowDefault.minWidth  = 0;

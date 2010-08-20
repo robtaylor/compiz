@@ -90,6 +90,9 @@ Atom select_window_atom;
 Atom mwm_hints_atom;
 Atom switcher_fg_atom;
 
+Atom compiz_shadow_info_atom;
+Atom compiz_shadow_color_atom;
+
 Atom toolkit_action_atom;
 Atom toolkit_action_window_menu_atom;
 Atom toolkit_action_force_quit_dialog_atom;
@@ -296,6 +299,9 @@ main (int argc, char *argv[])
     switcher_fg_atom    = XInternAtom (xdisplay,
 				       DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME,
 				       FALSE);
+    
+    compiz_shadow_info_atom  = XInternAtom (xdisplay, "_COMPIZ_NET_CM_SHADOW_PROPERTIES", FALSE);
+    compiz_shadow_color_atom = XInternAtom (xdisplay, "_COMPIZ_NET_CM_SHADOW_COLOR", FALSE);
 
     toolkit_action_atom			  =
 	XInternAtom (xdisplay, "_COMPIZ_TOOLKIT_ACTION", FALSE);

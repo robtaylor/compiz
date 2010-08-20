@@ -54,13 +54,6 @@
 #define SHADOW_COLOR_GREEN 0x0000
 #define SHADOW_COLOR_BLUE  0x0000
 
-#define DBUS_DEST           "org.freedesktop.compiz"
-#define DBUS_SIGNAL_PATH    "/org/freedesktop/compiz/decor/screen0"
-#define DBUS_QUERY_PATH     "/org/freedesktop/compiz/decor/screen0"
-#define DBUS_INTERFACE      "org.freedesktop.compiz"
-#define DBUS_METHOD_GET     "get"
-#define DBUS_SIGNAL_CHANGED "changed"
-
 int    blurType = BLUR_TYPE_NONE;
 
 decor_shadow_t *KWD::Decorator::mNoBorderShadow = 0;
@@ -94,7 +87,6 @@ KWD::Decorator::Decorator () :
 {
     XSetWindowAttributes attr;
     int			 i, j;
-    QDBusConnection      dbus = QDBusConnection::sessionBus ();
 
     mRootInfo = new NETRootInfo (QX11Info::display (), 0);
 
@@ -107,29 +99,6 @@ KWD::Decorator::Decorator () :
     Atoms::init ();
 
     (void *) new KWinAdaptor (this);
-    dbus.registerObject ("/KWin", this);
-    dbus.connect (QString (), "/KWin", "org.kde.KWin", "reloadConfig", this,
-		  SLOT (reconfigure ()));
-
-    dbus.connect (QString (), DBUS_SIGNAL_PATH "/shadow_radius",
-		  DBUS_INTERFACE, DBUS_SIGNAL_CHANGED, this,
-		  SLOT (shadowRadiusChanged (double)));
-
-    dbus.connect (QString (), DBUS_SIGNAL_PATH "/shadow_opacity",
-		  DBUS_INTERFACE, DBUS_SIGNAL_CHANGED, this,
-		  SLOT (shadowOpacityChanged (double)));
-
-    dbus.connect (QString (), DBUS_SIGNAL_PATH "/shadow_x_offset",
-		  DBUS_INTERFACE, DBUS_SIGNAL_CHANGED, this,
-		  SLOT (shadowXOffsetChanged (int)));
-
-    dbus.connect (QString (), DBUS_SIGNAL_PATH "/shadow_y_offset",
-		  DBUS_INTERFACE, DBUS_SIGNAL_CHANGED, this,
-		  SLOT (shadowYOffsetChanged (int)));
-
-    dbus.connect (QString (), DBUS_SIGNAL_PATH "/shadow_color",
-		  DBUS_INTERFACE, DBUS_SIGNAL_CHANGED, this,
-		  SLOT (shadowColorChanged (QString)));
 
     mConfig = new KConfig ("kwinrc");
 
@@ -143,6 +112,8 @@ KWD::Decorator::Decorator () :
     mShadowOptions.shadow_color[0] = SHADOW_COLOR_RED;
     mShadowOptions.shadow_color[1] = SHADOW_COLOR_GREEN;
     mShadowOptions.shadow_color[2] = SHADOW_COLOR_BLUE;
+    
+    updateShadowProperties (QX11Info::appRootWindow ());
 
     for (i = 0; i < 3; i++)
     {
@@ -252,59 +223,7 @@ KWD::Decorator::enableDecorations (Time timestamp)
 void
 KWD::Decorator::updateAllShadowOptions (void)
 {
-    QDBusInterface       *compiz;
-    QDBusReply<QString>  stringReply;
-    QDBusReply<double>   doubleReply;
-    QDBusReply<int>      intReply;
-    int                  c[4];
-
-    compiz = new QDBusInterface (DBUS_DEST, DBUS_QUERY_PATH "/shadow_radius",
-				 DBUS_INTERFACE);
-    doubleReply = compiz->call (DBUS_METHOD_GET);
-    delete compiz;
-    
-    if (doubleReply.isValid ())
-	mShadowOptions.shadow_radius = doubleReply.value ();
-
-    compiz = new QDBusInterface (DBUS_DEST, DBUS_QUERY_PATH "/shadow_opacity",
-				 DBUS_INTERFACE);
-    doubleReply = compiz->call (DBUS_METHOD_GET);
-    delete compiz;
-
-    if (doubleReply.isValid ())
-	mShadowOptions.shadow_opacity = doubleReply.value ();
-
-    compiz = new QDBusInterface (DBUS_DEST, DBUS_QUERY_PATH "/shadow_x_offset",
-				 DBUS_INTERFACE);
-    intReply = compiz->call (DBUS_METHOD_GET);
-    delete compiz;
-
-    if (intReply.isValid ())
-	mShadowOptions.shadow_offset_x = intReply.value ();
-
-    compiz = new QDBusInterface (DBUS_DEST, DBUS_QUERY_PATH "/shadow_y_offset",
-				 DBUS_INTERFACE);
-    intReply = compiz->call (DBUS_METHOD_GET);
-    delete compiz;
-
-    if (intReply.isValid ())
-	mShadowOptions.shadow_offset_y = intReply.value ();
-    else
-	mShadowOptions.shadow_offset_y = SHADOW_OFFSET_Y;
-
-    compiz = new QDBusInterface (DBUS_DEST, DBUS_QUERY_PATH "/shadow_color",
-				 DBUS_INTERFACE);
-    stringReply = compiz->call (DBUS_METHOD_GET);
-    delete compiz;
-
-    if (stringReply.isValid () &&
-	sscanf (stringReply.value ().toAscii ().data (), "#%2x%2x%2x%2x",
-		&c[0], &c[1], &c[2], &c[3]) == 4)
-    {
-	mShadowOptions.shadow_color[0] = c[0] << 8 | c[0];
-	mShadowOptions.shadow_color[1] = c[1] << 8 | c[1];
-	mShadowOptions.shadow_color[2] = c[2] << 8 | c[2];
-    }
+    updateShadowProperties (QX11Info::appRootWindow ());
 }
 
 void
@@ -371,6 +290,53 @@ KWD::Decorator::updateShadow (void)
     }
 }
 
+void
+KWD::Decorator::updateShadowProperties (WId id)
+{
+    int nItems;
+    long *data;
+    double radius, opacity;
+    int    xOffset, yOffset;
+    QVector<QString> shadowColor;
+    
+    if (id != QX11Info::appRootWindow ())
+	return;
+    
+    void *propData = KWD::readXProperty (id,
+					  Atoms::compizShadowInfo,
+					  XA_INTEGER,
+					  &nItems);
+    
+    if (nItems != 4)
+	return;
+    
+    data = reinterpret_cast <long *> (propData);
+    
+    radius = data[0];
+    opacity = data[1];
+    
+    /* We multiplied by 1000 in compiz to keep
+      * precision, now divide by that much */
+    
+    radius /= 1000;
+    opacity /= 1000;
+    
+    xOffset = data[2];
+    yOffset = data[3];
+    
+    shadowRadiusChanged (radius);
+    shadowOpacityChanged (opacity);
+    shadowXOffsetChanged (xOffset);
+    shadowYOffsetChanged (yOffset);
+    
+    shadowColor = KWD::readPropertyString (id, Atoms::compizShadowColor);
+    
+    if (shadowColor.size () == 1)
+	shadowColorChanged (shadowColor.at (0));
+    
+    XFree (propData);
+}
+
 bool
 KWD::Decorator::x11EventFilter (XEvent *xevent)
 {
@@ -405,6 +371,11 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	{
 	    handleWindowAdded (xevent->xproperty.window);
 	}
+	else if (xevent->xproperty.atom == Atoms::compizShadowInfo ||
+		 xevent->xproperty.atom == Atoms::compizShadowColor)
+	{
+	    updateShadowProperties (xevent->xproperty.window);
+	}	    
 	else if (xevent->xproperty.atom == Atoms::switchSelectWindow)
 	{
 	    WId id = xevent->xproperty.window;

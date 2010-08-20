@@ -4,76 +4,82 @@
  * instead - much much cleaner!
  */
 
-#ifdef USE_GCONF
-static gboolean
-shadow_settings_changed (GConfClient *client)
+void
+shadow_property_changed (WnckScreen *s)
 {
-    double   radius, opacity;
-    int      offset;
-    gchar    *color;
-    gboolean changed = FALSE;
+    GdkDisplay *display = gdk_display_get_default ();
+    Display    *xdisplay = GDK_DISPLAY_XDISPLAY (display);
+    GdkScreen  *screen = gdk_display_get_default_screen (display);
+    Window     root = GDK_WINDOW_XWINDOW (gdk_screen_get_root_window (screen));
+    Atom actual;
+    int  result, format;
+    unsigned long n, left;
+    unsigned char *prop_data;
+    gboolean	  changed = 0;
+    long	  *data;
+    XTextProperty shadow_color_xtp;
 
-    radius = gconf_client_get_float (client,
-				     COMPIZ_SHADOW_RADIUS_KEY,
-				     NULL);
-    radius = MAX (0.0, MIN (radius, 48.0));
-    if (shadow_radius != radius)
+    result = XGetWindowProperty (xdisplay, root, compiz_shadow_info_atom, 0, 32768,
+				 0, XA_INTEGER, &actual, &format, &n, &left, &prop_data);
+
+    if (result != Success)
+	return;
+
+    data = (long *) prop_data;
+    
+    gdouble radius = ((long) data[0]);
+    gdouble opacity = ((long) data[1]);
+    gint x_off = ((long) data[2]);
+    gint y_off = ((long) data[3]);
+    
+    /* Radius and Opacity are multiplied by 1000 to keep precision,
+     * divide by that much to get our real radius and opacity
+     */
+
+    radius /= 1000;
+    opacity /= 1000;
+
+    if (radius != shadow_radius ||
+        opacity != shadow_opacity ||
+        x_off != shadow_offset_x ||
+        y_off != shadow_offset_y)
+	changed = 1;
+
+    shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
+    shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
+    shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
+    shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
+    
+    XFree (prop_data);
+    
+    result = XGetTextProperty (xdisplay, root, &shadow_color_xtp, compiz_shadow_color_atom);
+    
+    if (shadow_color_xtp.value)
     {
-	shadow_radius = radius;
-	changed = TRUE;
-    }
-
-    opacity = gconf_client_get_float (client,
-				      COMPIZ_SHADOW_OPACITY_KEY,
-				      NULL);
-    opacity = MAX (0.0, MIN (opacity, 6.0));
-    if (shadow_opacity != opacity)
-    {
-	shadow_opacity = opacity;
-	changed = TRUE;
-    }
-
-    color = gconf_client_get_string (client,
-				     COMPIZ_SHADOW_COLOR_KEY,
-				     NULL);
-    if (color)
-    {
-	int c[4];
-
-	if (sscanf (color, "#%2x%2x%2x%2x", &c[0], &c[1], &c[2], &c[3]) == 4)
+	int  ret_count = 0;
+	char **t_data = NULL;
+	
+	XTextPropertyToStringList (&shadow_color_xtp, &t_data, &ret_count);
+	
+	if (ret_count == 1)
 	{
-	    shadow_color[0] = c[0] << 8 | c[0];
-	    shadow_color[1] = c[1] << 8 | c[1];
-	    shadow_color[2] = c[2] << 8 | c[2];
-	    changed = TRUE;
+	    int c[4];
+
+	    if (sscanf (t_data[0], "#%2x%2x%2x%2x", &c[0], &c[1], &c[2], &c[3]) == 4)
+	    {
+		shadow_color[0] = c[0] << 8 | c[0];
+		shadow_color[1] = c[1] << 8 | c[1];
+		shadow_color[2] = c[2] << 8 | c[2];
+		changed = TRUE;
+	    }
 	}
-
-	g_free (color);
     }
 
-    offset = gconf_client_get_int (client,
-				   COMPIZ_SHADOW_OFFSET_X_KEY,
-				   NULL);
-    offset = MAX (-16, MIN (offset, 16));
-    if (shadow_offset_x != offset)
-    {
-	shadow_offset_x = offset;
-	changed = TRUE;
-    }
-
-    offset = gconf_client_get_int (client,
-				   COMPIZ_SHADOW_OFFSET_Y_KEY,
-				   NULL);
-    offset = MAX (-16, MIN (offset, 16));
-    if (shadow_offset_y != offset)
-    {
-	shadow_offset_y = offset;
-	changed = TRUE;
-    }
-
-    return changed;
+    if (changed)
+	decorations_changed (s);
 }
-
+    
+#ifdef USE_GCONF
 static gboolean
 blur_settings_changed (GConfClient *client)
 {
@@ -387,15 +393,6 @@ value_changed (GConfClient *client,
     {
 	wheel_action_changed (client);
     }
-    else if (strcmp (key, COMPIZ_SHADOW_RADIUS_KEY)   == 0 ||
-	     strcmp (key, COMPIZ_SHADOW_OPACITY_KEY)  == 0 ||
-	     strcmp (key, COMPIZ_SHADOW_OFFSET_X_KEY) == 0 ||
-	     strcmp (key, COMPIZ_SHADOW_OFFSET_Y_KEY) == 0 ||
-	     strcmp (key, COMPIZ_SHADOW_COLOR_KEY) == 0)
-    {
-	if (shadow_settings_changed (client))
-	    changed = TRUE;
-    }
     else if (strcmp (key, BLUR_TYPE_KEY) == 0)
     {
 	if (blur_settings_changed (client))
@@ -424,140 +421,6 @@ value_changed (GConfClient *client,
     if (changed)
 	decorations_changed (data);
 }
-
-
-#elif USE_DBUS_GLIB
-
-static DBusHandlerResult
-dbus_handle_message (DBusConnection *connection,
-		     DBusMessage    *message,
-		     void           *user_data)
-{
-    WnckScreen	      *screen = user_data;
-    char	      **path;
-    const char        *interface, *member;
-    DBusHandlerResult result = DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
-
-    interface = dbus_message_get_interface (message);
-    member    = dbus_message_get_member (message);
-
-    (void) connection;
-
-    if (!interface || !member)
-	return result;
-
-    if (!dbus_message_is_signal (message, interface, member))
-	return result;
-
-    if (strcmp (member, "changed"))
-	return result;
-
-    if (!dbus_message_get_path_decomposed (message, &path))
-	return result;
-
-    if (!path[0] || !path[1] || !path[2] || !path[3] || !path[4] || !path[5])
-    {
-	dbus_free_string_array (path);
-	return result;
-    }
-
-    if (!strcmp (path[0], "org")	 &&
-	!strcmp (path[1], "freedesktop") &&
-	!strcmp (path[2], "compiz")      &&
-	!strcmp (path[3], "decor")  &&
-	!strcmp (path[4], "allscreens"))
-    {
-	result = DBUS_HANDLER_RESULT_HANDLED;
-
-	if (strcmp (path[5], "shadow_radius") == 0)
-	{
-	    dbus_message_get_args (message, NULL,
-				   DBUS_TYPE_DOUBLE, &shadow_radius,
-				   DBUS_TYPE_INVALID);
-	}
-	else if (strcmp (path[5], "shadow_opacity") == 0)
-	{
-	    dbus_message_get_args (message, NULL,
-				   DBUS_TYPE_DOUBLE, &shadow_opacity,
-				   DBUS_TYPE_INVALID);
-	}
-	else if (strcmp (path[5], "shadow_color") == 0)
-	{
-	    DBusError error;
-	    char      *str;
-
-	    dbus_error_init (&error);
-
-	    dbus_message_get_args (message, &error,
-				   DBUS_TYPE_STRING, &str,
-				   DBUS_TYPE_INVALID);
-
-	    if (!dbus_error_is_set (&error))
-	    {
-		int c[4];
-
-		if (sscanf (str, "#%2x%2x%2x%2x",
-			    &c[0], &c[1], &c[2], &c[3]) == 4)
-		{
-		    shadow_color[0] = c[0] << 8 | c[0];
-		    shadow_color[1] = c[1] << 8 | c[1];
-		    shadow_color[2] = c[2] << 8 | c[2];
-		}
-	    }
-
-	    dbus_error_free (&error);
-	}
-	else if (strcmp (path[5], "shadow_x_offset") == 0)
-	{
-	    dbus_message_get_args (message, NULL,
-				   DBUS_TYPE_INT32, &shadow_offset_x,
-				   DBUS_TYPE_INVALID);
-	}
-	else if (strcmp (path[5], "shadow_y_offset") == 0)
-	{
-	    dbus_message_get_args (message, NULL,
-				   DBUS_TYPE_INT32, &shadow_offset_y,
-				   DBUS_TYPE_INVALID);
-	}
-
-	decorations_changed (screen);
-    }
-
-    dbus_free_string_array (path);
-
-    return result;
-}
-
-static DBusMessage *
-send_and_block_for_shadow_option_reply (DBusConnection *connection,
-					char	       *path)
-{
-    DBusMessage *message;
-
-    message = dbus_message_new_method_call (NULL,
-					    path,
-					    DBUS_INTERFACE,
-					    DBUS_METHOD_GET);
-    if (message)
-    {
-	DBusMessage *reply;
-	DBusError   error;
-
-	dbus_message_set_destination (message, DBUS_DEST);
-
-	dbus_error_init (&error);
-	reply = dbus_connection_send_with_reply_and_block (connection,
-							   message, -1,
-							   &error);
-	dbus_message_unref (message);
-
-	if (!dbus_error_is_set (&error))
-	    return reply;
-    }
-
-    return NULL;
-}
-
 #endif
 
 gboolean
@@ -583,104 +446,10 @@ init_settings (WnckScreen *screen)
 			  GCONF_CLIENT_PRELOAD_ONELEVEL,
 			  NULL);
 
-    gconf_client_add_dir (gconf,
-			  COMPIZ_GCONF_DIR1,
-			  GCONF_CLIENT_PRELOAD_ONELEVEL,
-			  NULL);
-
     g_signal_connect (G_OBJECT (gconf),
 		      "value_changed",
 		      G_CALLBACK (value_changed),
 		      screen);
-#elif USE_DBUS_GLIB
-    DBusConnection *connection;
-    DBusMessage	   *reply;
-    DBusError	   error;
-
-    dbus_error_init (&error);
-
-    connection = dbus_bus_get (DBUS_BUS_SESSION, &error);
-    if (!dbus_error_is_set (&error))
-    {
-	dbus_bus_add_match (connection, "type='signal'", &error);
-
-	dbus_connection_add_filter (connection,
-				    dbus_handle_message,
-				    screen, NULL);
-
-	dbus_connection_setup_with_g_main (connection, NULL);
-    }
-
-    reply = send_and_block_for_shadow_option_reply (connection, DBUS_PATH
-						    "/shadow_radius");
-    if (reply)
-    {
-	dbus_message_get_args (reply, NULL,
-			       DBUS_TYPE_DOUBLE, &shadow_radius,
-			       DBUS_TYPE_INVALID);
-
-	dbus_message_unref (reply);
-    }
-
-    reply = send_and_block_for_shadow_option_reply (connection, DBUS_PATH
-						    "/shadow_opacity");
-    if (reply)
-    {
-	dbus_message_get_args (reply, NULL,
-			       DBUS_TYPE_DOUBLE, &shadow_opacity,
-			       DBUS_TYPE_INVALID);
-	dbus_message_unref (reply);
-    }
-
-    reply = send_and_block_for_shadow_option_reply (connection, DBUS_PATH
-						    "/shadow_color");
-    if (reply)
-    {
-	DBusError error;
-	char      *str;
-
-	dbus_error_init (&error);
-
-	dbus_message_get_args (reply, &error,
-			       DBUS_TYPE_STRING, &str,
-			       DBUS_TYPE_INVALID);
-
-	if (!dbus_error_is_set (&error))
-	{
-	    int c[4];
-
-	    if (sscanf (str, "#%2x%2x%2x%2x", &c[0], &c[1], &c[2], &c[3]) == 4)
-	    {
-		shadow_color[0] = c[0] << 8 | c[0];
-		shadow_color[1] = c[1] << 8 | c[1];
-		shadow_color[2] = c[2] << 8 | c[2];
-	    }
-	}
-
-	dbus_error_free (&error);
-
-	dbus_message_unref (reply);
-    }
-
-    reply = send_and_block_for_shadow_option_reply (connection, DBUS_PATH
-						    "/shadow_x_offset");
-    if (reply)
-    {
-	dbus_message_get_args (reply, NULL,
-			       DBUS_TYPE_INT32, &shadow_offset_x,
-			       DBUS_TYPE_INVALID);
-	dbus_message_unref (reply);
-    }
-
-    reply = send_and_block_for_shadow_option_reply (connection, DBUS_PATH
-						    "/shadow_y_offset");
-    if (reply)
-    {
-	dbus_message_get_args (reply, NULL,
-			       DBUS_TYPE_INT32, &shadow_offset_y,
-			       DBUS_TYPE_INVALID);
-	dbus_message_unref (reply);
-    }
 #endif
 
     style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
@@ -772,11 +541,12 @@ init_settings (WnckScreen *screen)
 				   &right_click_action,
 				   RIGHT_CLICK_ACTION_DEFAULT);
     wheel_action_changed (gconf);
-    shadow_settings_changed (gconf);
     blur_settings_changed (gconf);
 #endif
 
     (*theme_update_border_extents) (text_height);
+    
+    shadow_property_changed (screen);
 
     update_shadow ();
 

@@ -232,13 +232,15 @@ void
 EventDispatcherCompiz::wakeUp ()
 {
     if (mWakeUpPipe[1])
-	write (mWakeUpPipe[1], "w", 1);
+	if (write (mWakeUpPipe[1], "w", 1) <= 0)
+	    return;
 }
 
 void 
 EventDispatcherCompiz::startingUp ()
 {
-    pipe (mWakeUpPipe);
+    if (pipe (mWakeUpPipe) < 0)
+	return;
     mWakeUpHandle = screen->addWatchFd (mWakeUpPipe [0],POLLIN,
 				        boost::bind (&EventDispatcherCompiz::wakeUpEvent, this));
     mX11Handle = screen->addWatchFd (ConnectionNumber (QX11Info::display()),
@@ -258,5 +260,6 @@ void
 EventDispatcherCompiz::wakeUpEvent ()
 {
     char buf[256];
-    read (mWakeUpPipe[0], buf, 256);
+    if (read (mWakeUpPipe[0], buf, 256) <= 0)
+	return;
 }

@@ -788,7 +788,7 @@ KWD::Window::clientGroupItems () const
 }
 
 long
-KWD::Window::itemId (int index)
+KWD::Window::itemId (int /* index */)
 {
     return (long) mClientId;
 }
@@ -800,27 +800,27 @@ KWD::Window::visibleClientGroupItem ()
 }
 
 void
-KWD::Window::setVisibleClientGroupItem (int index)
+KWD::Window::setVisibleClientGroupItem (int /* index */)
 {
 }
 
 void
-KWD::Window::moveItemInClientGroup (int index, int before)
+KWD::Window::moveItemInClientGroup (int /* index */, int /* before */)
 {
 }
 
 void
-KWD::Window::moveItemToClientGroup (long itemId, int before)
+KWD::Window::moveItemToClientGroup (long /* itemId */, int /* before */)
 {
 }
 
 void
-KWD::Window::removeFromClientGroup (int index, const QRect& newGeom)
+KWD::Window::removeFromClientGroup (int /* index */, const QRect& /* newGeom */)
 {
 }
 
 void
-KWD::Window::closeClientGroupItem (int index)
+KWD::Window::closeClientGroupItem (int /* index */)
 {
     closeWindow ();
 }
@@ -832,7 +832,7 @@ KWD::Window::closeAllInClientGroup ()
 }
 
 void
-KWD::Window::displayClientMenu (int index, const QPoint& pos)
+KWD::Window::displayClientMenu (int /* index */, const QPoint& pos)
 {
     showWindowMenu (pos);
 }

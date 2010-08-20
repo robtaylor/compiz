@@ -30,6 +30,8 @@
 #include <stdlib.h>
 #include <QX11Info>
 
+#include <cstdio>
+
 static int trappedErrorCode = 0;
 
 namespace KWD
@@ -41,6 +43,8 @@ namespace KWD
 	Atom netWmWindowOpacity;
 	Atom netInputFrameWindow;
 	Atom netOutputFrameWindow;
+	Atom compizShadowInfo;
+	Atom compizShadowColor;
 	Atom netWindowDecor;
 	Atom netWindowDecorNormal;
 	Atom netWindowDecorActive;
@@ -144,6 +148,32 @@ KWD::readWindowProperty (long window,
     return false;
 }
 
+QVector<QString>
+KWD::readPropertyString (WId	      id,
+			 Atom	      property)
+{
+    XTextProperty xtp;
+    XGetTextProperty (QX11Info::display (), id, &xtp, property);
+    QVector<QString> ret;
+    
+    if (xtp.value)
+    {
+	int  retCount = 0;
+	char **tData = NULL;
+	
+	XTextPropertyToStringList (&xtp, &tData, &retCount);
+	
+	for (unsigned int i = 0; i < (unsigned int) retCount; i++)
+	{
+	    QString str = QString (tData[i]);
+	    ret.push_back (str);
+	}
+    }
+    
+    return ret;
+}
+			 
+
 unsigned short
 KWD::readPropertyShort (WId	       id,
 			Atom	       property,
@@ -184,6 +214,10 @@ KWD::Atoms::init (void)
 	XInternAtom (xdisplay, DECOR_INPUT_FRAME_ATOM_NAME, false);
     netOutputFrameWindow =
 	XInternAtom (xdisplay, DECOR_OUTPUT_FRAME_ATOM_NAME, false);
+    compizShadowInfo =
+	XInternAtom (xdisplay, "_COMPIZ_NET_CM_SHADOW_PROPERTIES", false);
+    compizShadowColor =
+	XInternAtom (xdisplay, "_COMPIZ_NET_CM_SHADOW_COLOR", false);
     netWindowDecor = XInternAtom (xdisplay, DECOR_WINDOW_ATOM_NAME, false);
     netWindowDecorNormal =
 	XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, false);
