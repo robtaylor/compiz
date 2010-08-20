@@ -978,7 +978,7 @@ CompWindow::updateStruts ()
 	hasOld = false;
     }
 
-    hasNew = true;
+    hasNew = false;
 
     newStrut.left.x	    = 0;
     newStrut.left.y	    = 0;
