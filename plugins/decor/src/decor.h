@@ -123,6 +123,8 @@ class DecorScreen :
 
 	void checkForDm (bool);
 	bool decoratorStartTimeout ();
+	
+	void updateDefaultShadowProperty ();
 
     public:
 
@@ -139,6 +141,8 @@ class DecorScreen :
 	Atom decorTypePixmapAtom;
 	Atom decorTypeWindowAtom;
 	Atom requestFrameExtentsAtom;
+	Atom shadowColorAtom;
+	Atom shadowInfoAtom;
 
 	Window dmWin;
 	int    dmSupports;

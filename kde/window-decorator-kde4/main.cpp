@@ -35,7 +35,6 @@
 #include "utils.h"
 
 #include <QX11Info>
-#include <QtDBus/QtDBus>
 
 
 
@@ -124,9 +123,6 @@ main (int argc, char **argv)
         appname = "org.kde.kwin";
     else
         appname.sprintf ("org.kde.kwin-screen-%d", QX11Info::appScreen ());
-
-    QDBusConnection::sessionBus ().interface ()->registerService
-	(appname, QDBusConnectionInterface::DontQueueService);
 
     status = app->exec ();
 

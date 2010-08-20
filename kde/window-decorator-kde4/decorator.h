@@ -127,6 +127,7 @@ class Decorator:public KApplication {
 	WId fetchFrame (WId window);
 	void updateShadow (void);
 	void updateAllShadowOptions (void);
+	void updateShadowProperties (WId id);
 
     private slots:
 	void handleWindowAdded (WId id);

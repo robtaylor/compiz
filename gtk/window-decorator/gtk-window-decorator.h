@@ -452,6 +452,9 @@ extern Window    switcher_selected_window;
 extern XRenderPictFormat *xformat_rgba;
 extern XRenderPictFormat *xformat_rgb;
 
+extern Atom compiz_shadow_info_atom;
+extern Atom compiz_shadow_color_atom;
+
 /* gtk-window-decorator.c */
 
 double
