@@ -644,7 +644,7 @@ GdkPixmap *
 pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth);
 
 /* metacity.c */
-
+#ifdef USE_METACITY
 void
 meta_draw_window_decoration (decor_t *d);
 
@@ -696,7 +696,7 @@ meta_update_border_extents (gint text_height);
 
 void
 meta_update_button_layout (const char *value);
-
+#endif
 /* switcher.c */
 
 #define SWITCHER_ALPHA 0xa0a0
