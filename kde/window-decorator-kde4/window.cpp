@@ -810,7 +810,7 @@ KWD::Window::moveItemInClientGroup (int /* index */, int /* before */)
 }
 
 void
-KWD::Window::moveItemToClientGroup (long itemId, int /* before */)
+KWD::Window::moveItemToClientGroup (long /* itemId */, int /* before */)
 {
 }
 
