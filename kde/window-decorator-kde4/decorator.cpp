@@ -223,7 +223,7 @@ KWD::Decorator::enableDecorations (Time timestamp)
 void
 KWD::Decorator::updateAllShadowOptions (void)
 {
-    updateShadowProperties ();
+    updateShadowProperties (QX11Info::appRootWindow ());
 }
 
 void
