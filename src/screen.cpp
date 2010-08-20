@@ -4218,7 +4218,7 @@ CompScreen::init (const char *name)
 
     attr.override_redirect = true;
     attr.event_mask        = PropertyChangeMask;
-#define PACKAGE "compiz_aaaaaaaaaaaaaaaaa"
+
     newWmSnOwner =
 	XCreateWindow (dpy, root, -100, -100, 1, 1, 0,
 		       CopyFromParent, CopyFromParent,
