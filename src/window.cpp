@@ -4969,7 +4969,6 @@ CompWindow::CompWindow (Window id,
     if (!XGetWindowAttributes (screen->dpy (), id, &priv->attrib))
 	setDefaultWindowAttributes (&priv->attrib);
 
-
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
 			      priv->attrib.border_width);
@@ -5506,42 +5505,57 @@ PrivateWindow::reparent ()
     Display              *dpy = screen->dpy ();
     CompWindow		 *sibling = window->next ? window->next : window->prev;
     bool		 above = window->next ? false : true;
-
+    Window		 root_ret, parent_ret;
+    Window		 *children_ret;
+    unsigned int	 nchildren_ret;
+    unsigned int	 uidummy;
+    int			 idummy;
+    int			 nvisuals_return;
+    Visual		 *visual = DefaultVisual (screen->dpy (),
+						  screen->screenNum ());
+    Colormap		 cmap = DefaultColormap (screen->dpy (),
+						 screen->screenNum ());
 
     if (frame || attrib.override_redirect)
 	return false;
 
     XSync (dpy, false);
+    XGrabServer (dpy);
 
-    if (XCheckTypedWindowEvent (dpy, id, DestroyNotify, &e))
+    if (!XGetGeometry (screen->dpy (), id, &root_ret, &idummy, &idummy, &uidummy, &uidummy, &uidummy, &uidummy) ||
+	!XGetWindowAttributes (dpy, id, &wa))
     {
-        XPutBackEvent (dpy, &e);
-        return false;
+	XUngrabServer (dpy);
+	XSync (dpy, false);
+	return false;
     }
 
-    XGrabServer (dpy);
     XChangeSaveSet (dpy, id, SetModeInsert);
     XSelectInput (dpy, id, NoEventMask);
     XSelectInput (dpy, screen->root (), NoEventMask);
-
-    XGetWindowAttributes (dpy, id, &wa);
 
     xwc.border_width = 0;
     XConfigureWindow (dpy, id, CWBorderWidth, &xwc);
 
     mask = CWBorderPixel | CWColormap | CWBackPixmap;
 
+    if (attrib.depth == 32)
+    {
+	cmap = attrib.colormap;
+	visual = attrib.visual;
+    }
+
     attr.background_pixmap = None;
     attr.border_pixel      = 0;
-    attr.colormap          = attrib.colormap;
+    attr.colormap          = cmap;
 
     frame = XCreateWindow (dpy, screen->root (), 0, 0,
-			   1, 1, 0, attrib.depth,
-			   InputOutput, attrib.visual, mask, &attr);
+			   sg.width (), sg.height (), 0, attrib.depth,
+			   InputOutput, visual, mask, &attr);
 
     wrapper = XCreateWindow (dpy, frame, 0, 0,
 			    sg.width (), sg.height (), 0, attrib.depth,
-			    InputOutput, attrib.visual, mask, &attr);
+			    InputOutput, visual, mask, &attr);
 
     XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
 		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
@@ -5661,4 +5675,5 @@ PrivateWindow::unreparent ()
     wrapper = None;
     frame = None;
 
-    window->windowNotify (CompWindowNotifyUnreparent);}
+    window->windowNotify (CompWindowNotifyUnreparent);
+}
