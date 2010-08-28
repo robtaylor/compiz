@@ -22,7 +22,7 @@ shadow_property_changed (WnckScreen *s)
     result = XGetWindowProperty (xdisplay, root, compiz_shadow_info_atom, 0, 32768,
 				 0, XA_INTEGER, &actual, &format, &n, &left, &prop_data);
 
-    if (result != Success)
+    if (result != Success || n != 4)
 	return;
 
     data = (long *) prop_data;
