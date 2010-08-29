@@ -16,43 +16,44 @@ shadow_property_changed (WnckScreen *s)
     unsigned long n, left;
     unsigned char *prop_data;
     gboolean	  changed = 0;
-    long	  *data;
     XTextProperty shadow_color_xtp;
 
-    result = XGetWindowProperty (xdisplay, root, compiz_shadow_info_atom, 0, 32768,
-				 0, XA_INTEGER, &actual, &format, &n, &left, &prop_data);
+    result = XGetWindowProperty (xdisplay, root, compiz_shadow_info_atom,
+				 0, 32768, 0, XA_INTEGER, &actual,
+				 &format, &n, &left, &prop_data);
 
-    if (result != Success || n != 4)
+    if (result != Success)
 	return;
 
-    data = (long *) prop_data;
-    
-    gdouble radius = ((long) data[0]);
-    gdouble opacity = ((long) data[1]);
-    gint x_off = ((long) data[2]);
-    gint y_off = ((long) data[3]);
-    
-    /* Radius and Opacity are multiplied by 1000 to keep precision,
-     * divide by that much to get our real radius and opacity
-     */
+    if (n == 4)
+    {
+	long *data      = (long *) prop_data;
+	gdouble radius  = data[0];
+	gdouble opacity = data[1];
+	gint x_off      = data[2];
+	gint y_off      = data[3];
 
-    radius /= 1000;
-    opacity /= 1000;
+	/* Radius and Opacity are multiplied by 1000 to keep precision,
+	 * divide by that much to get our real radius and opacity
+	 */
+	radius /= 1000;
+	opacity /= 1000;
 
-    if (radius != shadow_radius ||
-        opacity != shadow_opacity ||
-        x_off != shadow_offset_x ||
-        y_off != shadow_offset_y)
-	changed = 1;
+	changed = radius != shadow_radius   ||
+		  opacity != shadow_opacity ||
+		  x_off != shadow_offset_x  ||
+		  y_off != shadow_offset_y;
 
-    shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
-    shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
-    shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
-    shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
-    
+	shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
+	shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
+	shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
+	shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
+    }
+
     XFree (prop_data);
-    
-    result = XGetTextProperty (xdisplay, root, &shadow_color_xtp, compiz_shadow_color_atom);
+
+    result = XGetTextProperty (xdisplay, root, &shadow_color_xtp,
+			       compiz_shadow_color_atom);
     
     if (shadow_color_xtp.value)
     {
@@ -65,7 +66,8 @@ shadow_property_changed (WnckScreen *s)
 	{
 	    int c[4];
 
-	    if (sscanf (t_data[0], "#%2x%2x%2x%2x", &c[0], &c[1], &c[2], &c[3]) == 4)
+	    if (sscanf (t_data[0], "#%2x%2x%2x%2x",
+			&c[0], &c[1], &c[2], &c[3]) == 4)
 	    {
 		shadow_color[0] = c[0] << 8 | c[0];
 		shadow_color[1] = c[1] << 8 | c[1];
@@ -73,6 +75,10 @@ shadow_property_changed (WnckScreen *s)
 		changed = TRUE;
 	    }
 	}
+
+	XFree (shadow_color_xtp.value);
+	if (t_data)
+	    XFreeStringList (t_data);
     }
 
     if (changed)
