@@ -246,49 +246,24 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
+static int counter = 0;
+
 static gboolean
 on_timer_timeout (CompTimer *timer)
 {
-  timer->mCallBack ();
-  return TRUE;
+  return timer->mCallBack ();
 }
 
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
-    std::list<CompTimer *>::iterator it;
-
-    it = std::find (timers.begin (), timers.end (), timer);
-
-    /* ensure timer is not already in the list */
-    if (it != timers.end ())
-	return;
-
-    /* figure out where to insert the timer into the list based on min time */
-    for (it = timers.begin (); it != timers.end (); it++)
-    {
-	if ((int) timer->mMinTime < (*it)->mMinLeft)
-	    break;
-    }
-
-    printf ("%i %i timer timeout added\n", timer->mMinTime, timer->mMaxTime);
     timer->mMaxLeft = g_timeout_add (timer->mMinTime, (GSourceFunc) on_timer_timeout, timer);
-    timers.insert (it, timer);
 }
 
 void
 PrivateScreen::removeTimer (CompTimer *timer)
 {
-    std::list<CompTimer *>::iterator it;
-
-    it = std::find (timers.begin (), timers.end (), timer);
-
-    if (it == timers.end ())
-	return;
-
-    printf ("%i %i timer timeout removed\n", timer->mMinTime, timer->mMaxTime);
     g_source_remove (timer->mMaxLeft);
-    timers.erase (it);
 }
 
 CompWatchFdHandle
