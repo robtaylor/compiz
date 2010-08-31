@@ -35,6 +35,8 @@
 #include <core/timer.h>
 #include <core/plugin.h>
 
+#include <glib.h>
+
 #include "core_options.h"
 
 CompPlugin::VTable * getCoreVTable ();
@@ -294,6 +296,8 @@ class PrivateScreen : public CoreOptions {
     public:
 
 	PrivateScreen *priv;
+	
+	GMainLoop *loop;
 
 	CompFileWatchList   fileWatch;
 	CompFileWatchHandle lastFileWatchHandle;

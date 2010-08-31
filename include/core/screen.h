@@ -155,6 +155,7 @@ class CompScreen :
 	bool init (const char *name);
 
 	void eventLoop ();
+	void processEvents ();
 
 	CompFileWatchHandle addFileWatch (const char        *path,
 					  int               mask,

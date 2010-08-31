@@ -60,6 +60,8 @@ set (COMPIZ_REQUIRES
     sm
     libxml-2.0
     libxslt
+    glib-2.0
+    gio-2.0
     "libstartup-notification-1.0 >= 0.7"
 )
 

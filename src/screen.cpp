@@ -52,6 +52,7 @@
 #include <X11/extensions/shape.h>
 #include <X11/cursorfont.h>
 
+#include <glib.h>
 
 #include <core/core.h>
 
@@ -117,17 +118,38 @@ CompScreen::freePluginClassIndex (unsigned int index)
     ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
      (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
 
+static gboolean
+compiz_gio_func (GIOChannel *source, GIOCondition condition, CompScreen *screen)
+{
+  screen->processEvents ();
+  return TRUE;
+}
+
+void
+CompScreen::processEvents ()
+{
+  if (restartSignal || shutDown)
+    g_main_loop_quit (priv->loop);
+  else
+    priv->processEvents ();
+}
+
 void
 CompScreen::eventLoop ()
 {
     struct timeval    tv;
     CompTimer         *t;
     int               time;
-    CompWatchFdHandle watchFdHandle;
+    int               fd;
 
-    watchFdHandle = addWatchFd (ConnectionNumber (priv->dpy), POLLIN, NULL);
+    priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
-    for (;;)
+    fd = ConnectionNumber (priv->dpy);
+    g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) compiz_gio_func, this);
+    
+    g_main_loop_run (priv->loop);
+    
+    /*for (;;)
     {
 	if (restartSignal || shutDown)
 	    break;
@@ -170,7 +192,7 @@ CompScreen::eventLoop ()
 	}
     }
 
-    removeWatchFd (watchFdHandle);
+    removeWatchFd (watchFdHandle);*/
 }
 
 CompFileWatchHandle
