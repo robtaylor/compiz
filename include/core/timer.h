@@ -96,13 +96,13 @@ class CompTimer {
 	friend class CompScreen;
 	friend class PrivateScreen;
 
+	CallBack     mCallBack;
     private:
 	bool         mActive;
 	unsigned int mMinTime;
 	unsigned int mMaxTime;
 	int          mMinLeft;
 	int          mMaxLeft;
-	CallBack     mCallBack;
 };
 
 #endif
