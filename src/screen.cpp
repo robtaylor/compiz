@@ -137,9 +137,6 @@ CompScreen::processEvents ()
 void
 CompScreen::eventLoop ()
 {
-    struct timeval    tv;
-    CompTimer         *t;
-    int               time;
     int               fd;
 
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
@@ -201,8 +198,6 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
-static int counter = 0;
-
 static gboolean
 on_timer_timeout (CompTimer *timer)
 {
@@ -210,8 +205,6 @@ on_timer_timeout (CompTimer *timer)
 
     if (!timer->active ())
         return true;
-  
-    //printf ("Callback number %i : %i\n", counter++, timer->mId);
   
     timer->mActive = false;
     result = timer->mCallBack ();
