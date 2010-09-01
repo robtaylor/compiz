@@ -97,8 +97,9 @@ class CompTimer {
 	friend class PrivateScreen;
 
 	CallBack     mCallBack;
-    private:
+	int          mId;
 	bool         mActive;
+    private:
 	unsigned int mMinTime;
 	unsigned int mMaxTime;
 	int          mMinLeft;

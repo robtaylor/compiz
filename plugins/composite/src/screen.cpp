@@ -459,8 +459,8 @@ CompositeScreen::compositingActive ()
 void
 CompositeScreen::damageScreen ()
 {
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+    /*if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_ALL_MASK;
     priv->damageMask &= ~COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
@@ -472,8 +472,8 @@ CompositeScreen::damageRegion (const CompRegion &region)
     if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+    /*if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
 
     priv->damage += region;
 
@@ -491,8 +491,8 @@ CompositeScreen::damageRegion (const CompRegion &region)
 void
 CompositeScreen::damagePending ()
 {
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
+    /*if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_PENDING_MASK;
 }

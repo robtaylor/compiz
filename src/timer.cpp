@@ -33,6 +33,7 @@ CompTimer::CompTimer () :
     mMaxTime (0),
     mMinLeft (0),
     mMaxLeft (0),
+    mId (0),
     mCallBack (NULL)
 {
 }

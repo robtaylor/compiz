@@ -148,51 +148,6 @@ CompScreen::eventLoop ()
     g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) compiz_gio_func, this);
     
     g_main_loop_run (priv->loop);
-    
-    /*for (;;)
-    {
-	if (restartSignal || shutDown)
-	    break;
-
-	priv->processEvents ();
-
-	if (!priv->timers.empty ())
-	{
-	    gettimeofday (&tv, 0);
-	    priv->handleTimers (&tv);
-
-	    if (priv->timers.front ()->mMinLeft > 0)
-	    {
-		std::list<CompTimer *>::iterator it = priv->timers.begin ();
-
-		t = (*it);
-		time = t->mMaxLeft;
-		while (it != priv->timers.end ())
-		{
-		    t = (*it);
-		    if (t->mMinLeft >= time)
-			break;
-		    if (t->mMaxLeft < time)
-			time = t->mMaxLeft;
-		    it++;
-		}
-
-		if (time < 5)
-		    usleep (time * 1000);
-		else
-		    priv->doPoll (time);
-
-		gettimeofday (&tv, 0);
-		priv->handleTimers (&tv);
-	    }
-	}
-	else
-	{
-	    priv->doPoll (-1);
-	}
-    }
-
-    removeWatchFd (watchFdHandle);*/
 }
 
 CompFileWatchHandle
@@ -251,19 +206,46 @@ static int counter = 0;
 static gboolean
 on_timer_timeout (CompTimer *timer)
 {
-  return timer->mCallBack ();
+    bool result;
+
+    if (!timer->active ())
+        return true;
+  
+    //printf ("Callback number %i : %i\n", counter++, timer->mId);
+  
+    timer->mActive = false;
+    result = timer->mCallBack ();
+    
+    if (result)
+        timer->mActive = true;
+    else
+        timer->mId = 0;
+  
+    return result;
 }
 
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
-    timer->mMaxLeft = g_timeout_add (timer->mMinTime, (GSourceFunc) on_timer_timeout, timer);
+    if (timer->mId != 0)
+        return;
+    
+    unsigned int time = timer->mMinTime;
+    
+    timer->mId = g_timeout_add (time, (GSourceFunc) on_timer_timeout, timer);
+    printf ("Add timer %i %i: %i\n", timer->mMinTime, timer->mMaxTime, timer->mId);
 }
 
 void
 PrivateScreen::removeTimer (CompTimer *timer)
 {
-    g_source_remove (timer->mMaxLeft);
+    if (timer->mId == 0)
+        return;
+    
+    printf ("Remove timer: %i\n", timer->mId);
+    
+    g_source_remove (timer->mId);
+    timer->mId = 0;
 }
 
 CompWatchFdHandle
@@ -400,44 +382,6 @@ PrivateScreen::doPoll (int timeout)
 
     return rv;
 }
-
-void
-PrivateScreen::handleTimers (struct timeval *tv)
-{
-    CompTimer                        *t;
-    int		                     timeDiff;
-    std::list<CompTimer *>::iterator it;
-
-    timeDiff = TIMEVALDIFF (tv, &lastTimeout);
-
-    /* handle clock rollback */
-    if (timeDiff < 0)
-	timeDiff = 0;
-
-    for (it = timers.begin (); it != timers.end (); it++)
-    {
-	t = (*it);
-	t->mMinLeft -= timeDiff;
-	t->mMaxLeft -= timeDiff;
-    }
-
-    while (timers.begin () != timers.end () &&
-	   timers.front ()->mMinLeft <= 0)
-    {
-	t = timers.front ();
-	timers.pop_front ();
-
-	t->mActive = false;
-	if (t->mCallBack ())
-	{
-	    addTimer (t);
-	    t->mActive = true;
-	}
-    }
-
-    lastTimeout = *tv;
-}
-
 
 void
 CompScreen::fileWatchAdded (CompFileWatch *watch)
