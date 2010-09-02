@@ -420,7 +420,7 @@ CompositeScreen::registerPaintHandler (PaintHandler *pHnd)
 
     priv->paintTimer.start
 	(boost::bind (&CompositeScreen::handlePaintTimeout, this),
-	 priv->optimalRedrawTime, MAXSHORT);
+	 priv->optimalRedrawTime);
 
     return true;
 }
@@ -460,8 +460,8 @@ void
 CompositeScreen::damageScreen ()
 {
     /* ensure we get a draw on our minimum time */
-    /*if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_ALL_MASK;
     priv->damageMask &= ~COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
@@ -474,8 +474,8 @@ CompositeScreen::damageRegion (const CompRegion &region)
 	return;
 
     /* ensure we get a draw on our minimum time */
-    /*if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
 
     priv->damage += region;
 
@@ -494,8 +494,8 @@ void
 CompositeScreen::damagePending ()
 {
     /* ensure we get a draw on our minimum time */
-    /*if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());*/
+    if (priv->damageMask == 0)
+	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
 
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_PENDING_MASK;
 }
@@ -697,7 +697,7 @@ PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
     /* handle clock rollback */
     if (diff < 0)
 	diff = 0;
-
+    
     bool hasVSyncBehavior =
 	(FPSLimiterMode == CompositeFPSLimiterModeVSyncLike ||
 	 (pHnd && pHnd->hasVSync ()));
@@ -749,6 +749,7 @@ PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
 	    }
 	}
     }
+    
     if (diff >= redrawTime)
 	return 1;
 
@@ -856,7 +857,6 @@ CompositeScreen::handlePaintTimeout ()
 
 	paint (outputs, mask);
 
-	priv->lastRedraw = tv;
 
 	donePaint ();
 
@@ -876,6 +876,7 @@ CompositeScreen::handlePaintTimeout ()
 	priv->idle = true;
     }
 
+    priv->lastRedraw = tv;
     gettimeofday (&tv, 0);
 
     if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
@@ -897,6 +898,10 @@ CompositeScreen::handlePaintTimeout ()
     else
 	timeToNextRedraw = priv->getTimeToNextRedraw (&tv);
 
+    if (priv->idle)
+	priv->paintTimer.setTimes (timeToNextRedraw, MAXSHORT);
+    else
+	priv->paintTimer.setTimes (timeToNextRedraw);
     return true;
 }
 

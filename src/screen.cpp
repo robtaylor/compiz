@@ -111,13 +111,6 @@ CompScreen::freePluginClassIndex (unsigned int index)
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
-#define TIMEVALDIFF(tv1, tv2)						   \
-    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
-    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
-     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
-    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
-     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
-
 static gboolean
 compiz_gio_func (GIOChannel *source, GIOCondition condition, CompScreen *screen)
 {
@@ -198,6 +191,9 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
+static unsigned int executingId = 0;
+static bool forceFail = false;
+
 static gboolean
 on_timer_timeout (CompTimer *timer)
 {
@@ -206,14 +202,18 @@ on_timer_timeout (CompTimer *timer)
     if (!timer->active ())
         return true;
   
-    timer->mActive = false;
+    forceFail = false;
+    executingId = timer->mId;
     result = timer->mCallBack ();
     
     if (result)
-        timer->mActive = true;
+        timer->tick ();
     else
         timer->mId = 0;
-  
+    
+    if (forceFail)
+      return false;
+    
     return result;
 }
 
@@ -226,7 +226,7 @@ PrivateScreen::addTimer (CompTimer *timer)
     unsigned int time = timer->mMinTime;
     
     timer->mId = g_timeout_add (time, (GSourceFunc) on_timer_timeout, timer);
-    printf ("Add timer %i %i: %i\n", timer->mMinTime, timer->mMaxTime, timer->mId);
+    timer->tick ();
 }
 
 void
@@ -235,7 +235,8 @@ PrivateScreen::removeTimer (CompTimer *timer)
     if (timer->mId == 0)
         return;
     
-    printf ("Remove timer: %i\n", timer->mId);
+    if (executingId == timer->mId)
+      forceFail = true;
     
     g_source_remove (timer->mId);
     timer->mId = 0;

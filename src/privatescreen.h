@@ -81,6 +81,13 @@ typedef struct _CompDelayedEdgeSettings
 #define SCREEN_EDGE_BOTTOMRIGHT 7
 #define SCREEN_EDGE_NUM		8
 
+#define TIMEVALDIFF(tv1, tv2)						   \
+    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
+    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
+     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
+    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
+     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
+
 struct CompScreenEdge {
     Window	 id;
     unsigned int count;

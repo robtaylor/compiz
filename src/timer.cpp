@@ -125,17 +125,35 @@ CompTimer::maxTime ()
 unsigned int
 CompTimer::minLeft ()
 {
-    return (mMinLeft < 0)? 0 : mMinLeft;
+    struct timeval current;
+    int left;
+    
+    gettimeofday (&current, 0);
+    left = mMinTime - TIMEVALDIFF (&current, &tickStart);
+    
+    return (left < 0)? 0 : (unsigned int) left;
 }
 
 unsigned int
 CompTimer::maxLeft ()
 {
-    return (mMaxLeft < 0)? 0 : mMaxLeft;
+    struct timeval current;
+    int left;
+    
+    gettimeofday (&current, 0);
+    left = mMaxTime - TIMEVALDIFF (&current, &tickStart);
+    
+    return (left < 0)? 0 : (unsigned int) left;
 }
 
 bool
 CompTimer::active ()
 {
     return mActive;
+}
+
+void
+CompTimer::tick ()
+{
+    gettimeofday (&tickStart, 0);
 }
