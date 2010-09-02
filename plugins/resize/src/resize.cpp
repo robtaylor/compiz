@@ -663,8 +663,17 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    /* only accumulate pointer movement if a mask is
 	       already set as we don't have a use for the
 	       difference information otherwise */
-	    pointerDx += xRoot - lastPointerX;
-	    pointerDy += yRoot - lastPointerY;
+
+	    if (optionGetResizeFromCenter ())
+	    {
+		pointerDx += (xRoot - lastPointerX) * 2;
+		pointerDy += (yRoot - lastPointerY) * 2;
+	    }
+	    else
+	    {
+		pointerDx += xRoot - lastPointerX;
+		pointerDy += yRoot - lastPointerY;
+	    }
 	}
 
 	if (mask & ResizeLeftMask)
@@ -689,17 +698,34 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	wWidth  = wi + w->input ().left + w->input ().right;
 	wHeight = he + w->input ().top + w->input ().bottom;
 
-	if (mask & ResizeLeftMask)
-	    wX = savedGeometry.x + savedGeometry.width -
-		 (wi + w->input ().left);
-	else
-	    wX = savedGeometry.x - w->input ().left;
+	if (optionGetResizeFromCenter ())
+	{
+	    if (mask & ResizeLeftMask)
+		wX = geometry.x + geometry.width -
+		     (wi + w->input ().left);
+	    else
+		wX = geometry.x - w->input ().left;
 
-	if (mask & ResizeUpMask)
-	    wY = savedGeometry.y + savedGeometry.height -
-		 (he + w->input ().top);
+	    if (mask & ResizeUpMask)
+		wY = geometry.y + geometry.height -
+		     (he + w->input ().top);
+	    else
+		wY = geometry.y - w->input ().top;
+	}
 	else
-	    wY = savedGeometry.y - w->input ().top;
+	{
+	    if (mask & ResizeLeftMask)
+		wX = savedGeometry.x + savedGeometry.width -
+		     (wi + w->input ().left);
+	    else
+		wX = savedGeometry.x - w->input ().left;
+
+	    if (mask & ResizeUpMask)
+		wY = savedGeometry.y + savedGeometry.height -
+		     (he + w->input ().top);
+	    else
+		wY = savedGeometry.y - w->input ().top;
+	}
 
 	/* Check if resized edge(s) are near output work-area boundaries */
 	foreach (CompOutput &output, ::screen->outputDevs ())
@@ -922,11 +948,20 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
-	if (mask & ResizeLeftMask)
-	    geometry.x -= wi - geometry.width;
-
-	if (mask & ResizeUpMask)
-	    geometry.y -= he - geometry.height;
+	if (optionGetResizeFromCenter ())
+	{
+	    if ((mask & ResizeLeftMask) || (mask & ResizeRightMask))
+		geometry.x -= ((wi - geometry.width) / 2);
+	    if ((mask & ResizeUpMask) || (mask & ResizeDownMask))
+		geometry.y -= ((he - geometry.height) / 2);
+	}
+	else
+	{
+	    if (mask & ResizeLeftMask)
+		geometry.x -= wi - geometry.width;
+	    if (mask & ResizeUpMask)
+		geometry.y -= he - geometry.height;
+	}
 
 	geometry.width  = wi;
 	geometry.height = he;
