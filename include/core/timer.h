@@ -28,6 +28,7 @@
 
 #include <boost/function.hpp>
 #include <sys/time.h>
+#include <core/core.h>
 
 /**
  * A simple timer for use with invoking a CallBack during a timed duration.
@@ -95,19 +96,25 @@ class CompTimer {
 	void stop ();
 
         void tick ();
+	
+	const struct timeval & tickInfo () const;
 
 	friend class CompScreen;
 	friend class PrivateScreen;
+	friend gboolean onTimerTimeout (CompTimer *);
 
-	CallBack     mCallBack;
-	int          mId;
-	bool         mActive;
-	struct timeval tickStart;
     private:
+	bool         mActive;
 	unsigned int mMinTime;
 	unsigned int mMaxTime;
 	int          mMinLeft;
 	int          mMaxLeft;
+
+    private:
+	CallBack     mCallBack;
+	unsigned int mId;
+	struct timeval tickStart;
+
 };
 
 #endif

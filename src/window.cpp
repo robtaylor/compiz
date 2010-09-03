@@ -3462,7 +3462,7 @@ CompWindow::constrainNewWindowSize (int        width,
 
 #define FLOOR(value, base) (((int) ((value) / (base))) * (base))
 #define FLOOR64(value, base) (((uint64_t) ((value) / (base))) * (base))
-#define CLAMP(v, min, max) ((v) <= (min) ? (min) : (v) >= (max) ? (max) : (v))
+#define CLAMPW(v, min, max) ((v) <= (min) ? (min) : (v) >= (max) ? (max) : (v))
 
     if ((flags & PBaseSize) && (flags & PMinSize))
     {
@@ -3499,8 +3499,8 @@ CompWindow::constrainNewWindowSize (int        width,
 	yinc = MAX (yinc, hints->height_inc);
 
     /* clamp width and height to min and max values */
-    width  = CLAMP (width, min_width, max_width);
-    height = CLAMP (height, min_height, max_height);
+    width  = CLAMPW (width, min_width, max_width);
+    height = CLAMPW (height, min_height, max_height);
 
     /* shrink to base + N * inc */
     width  = base_width + FLOOR (width - base_width, xinc);
@@ -3553,7 +3553,7 @@ CompWindow::constrainNewWindowSize (int        width,
 	}
     }
 
-#undef CLAMP
+#undef CLAMPW
 #undef FLOOR64
 #undef FLOOR
 

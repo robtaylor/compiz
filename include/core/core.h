@@ -51,6 +51,8 @@ typedef XBool Bool;
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
 
+#include <glib.h>
+
 /*
  * WORDS_BIGENDIAN should be defined before including this file for
  * IMAGE_BYTE_ORDER and BITMAP_BIT_ORDER to be set correctly.

@@ -33,8 +33,8 @@ CompTimer::CompTimer () :
     mMaxTime (0),
     mMinLeft (0),
     mMaxLeft (0),
-    mId (0),
-    mCallBack (NULL)
+    mCallBack (NULL),
+    mId (0)
 {
 }
 
@@ -156,4 +156,10 @@ void
 CompTimer::tick ()
 {
     gettimeofday (&tickStart, 0);
+}
+
+const struct timeval &
+CompTimer::tickInfo () const
+{
+    return tickStart;
 }

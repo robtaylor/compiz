@@ -52,8 +52,6 @@
 #include <X11/extensions/shape.h>
 #include <X11/cursorfont.h>
 
-#include <glib.h>
-
 #include <core/core.h>
 
 #include <core/screen.h>
@@ -111,20 +109,25 @@ CompScreen::freePluginClassIndex (unsigned int index)
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
-static gboolean
-compiz_gio_func (GIOChannel *source, GIOCondition condition, CompScreen *screen)
+extern "C"
 {
-  screen->processEvents ();
-  return TRUE;
+    static gboolean
+    gioFunc (GIOChannel *source,
+	     GIOCondition condition,
+	     CompScreen *screen)
+    {
+	screen->processEvents ();
+	return true;
+    }
 }
 
 void
 CompScreen::processEvents ()
 {
-  if (restartSignal || shutDown)
-    g_main_loop_quit (priv->loop);
-  else
-    priv->processEvents ();
+    if (restartSignal || shutDown)
+	g_main_loop_quit (priv->loop);
+    else
+	priv->processEvents ();
 }
 
 void
@@ -135,7 +138,7 @@ CompScreen::eventLoop ()
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
     fd = ConnectionNumber (priv->dpy);
-    g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) compiz_gio_func, this);
+    g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) gioFunc, this);
     
     g_main_loop_run (priv->loop);
 }
@@ -194,8 +197,8 @@ CompScreen::getFileWatches () const
 static unsigned int executingId = 0;
 static bool forceFail = false;
 
-static gboolean
-on_timer_timeout (CompTimer *timer)
+gboolean
+onTimerTimeout (CompTimer *timer)
 {
     bool result;
 
@@ -212,7 +215,7 @@ on_timer_timeout (CompTimer *timer)
         timer->mId = 0;
     
     if (forceFail)
-      return false;
+	return false;
     
     return result;
 }
@@ -225,7 +228,7 @@ PrivateScreen::addTimer (CompTimer *timer)
     
     unsigned int time = timer->mMinTime;
     
-    timer->mId = g_timeout_add (time, (GSourceFunc) on_timer_timeout, timer);
+    timer->mId = g_timeout_add (time, (GSourceFunc) onTimerTimeout, timer);
     timer->tick ();
 }
 
