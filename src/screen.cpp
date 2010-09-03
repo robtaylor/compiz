@@ -139,6 +139,9 @@ CompScreen::eventLoop ()
 
     fd = ConnectionNumber (priv->dpy);
     g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) gioFunc, this);
+
+    /* Kick the event loop */
+    processEvents ();
     
     g_main_loop_run (priv->loop);
 }
