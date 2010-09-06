@@ -385,15 +385,15 @@ update_window_decoration_size (WnckWindow *win)
     if (d->buffer_pixmap)
 	g_object_unref (G_OBJECT (d->buffer_pixmap));
 
-    if (d->gc)
-	g_object_unref (G_OBJECT (d->gc));
-
     if (d->picture)
 	XRenderFreePicture (xdisplay, d->picture);
 
+    if (d->cr)
+	cairo_destroy (d->cr);
+
     d->pixmap	     = pixmap;
     d->buffer_pixmap = buffer_pixmap;
-    d->gc	     = gdk_gc_new (pixmap);
+    d->cr	     = gdk_cairo_create (pixmap);
 
     d->picture = picture;
 
@@ -798,4 +798,15 @@ update_default_decorations (GdkScreen *screen)
 
     if (d.layout)
 	g_object_unref (G_OBJECT (d.layout));
+}
+
+void
+copy_to_front_buffer (decor_t *d)
+{
+    if (!d->buffer_pixmap)
+	return;
+
+    cairo_set_operator (d->cr, CAIRO_OPERATOR_SOURCE);
+    gdk_cairo_set_source_pixmap (d->cr, d->buffer_pixmap, 0, 0);
+    cairo_paint (d->cr);
 }

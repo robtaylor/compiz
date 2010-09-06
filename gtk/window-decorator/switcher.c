@@ -178,15 +178,7 @@ draw_switcher_background (decor_t *d)
 
     cairo_destroy (cr);
 
-    gdk_draw_drawable (d->pixmap,
-		       d->gc,
-		       d->buffer_pixmap,
-		       0,
-		       0,
-		       0,
-		       0,
-		       d->width,
-		       d->height);
+    copy_to_front_buffer (d);
 
     pixel = ((((a * style->bg[GTK_STATE_NORMAL].blue ) >> 24) & 0x0000ff) |
 	     (((a * style->bg[GTK_STATE_NORMAL].green) >> 16) & 0x00ff00) |
@@ -253,15 +245,7 @@ draw_switcher_foreground (decor_t *d)
 
     cairo_destroy (cr);
 
-    gdk_draw_drawable  (d->pixmap,
-			d->gc,
-			d->buffer_pixmap,
-			0,
-			0,
-			0,
-			0,
-			d->width,
-			d->height);
+    copy_to_front_buffer (d);
 }
 
 void
@@ -388,8 +372,6 @@ update_switcher_window (WnckWindow *win,
 
     if (width == d->width && height == d->height)
     {
-	if (!d->gc)
-	    d->gc = gdk_gc_new (d->pixmap);
 
 	if (!d->picture)
 	{
@@ -428,8 +410,8 @@ update_switcher_window (WnckWindow *win,
     if (d->buffer_pixmap)
 	g_object_unref (G_OBJECT (d->buffer_pixmap));
 
-    if (d->gc)
-	g_object_unref (G_OBJECT (d->gc));
+    if (d->cr)
+	cairo_destroy (d->cr);
 
     if (d->picture)
 	XRenderFreePicture (xdisplay, d->picture);
@@ -445,7 +427,7 @@ update_switcher_window (WnckWindow *win,
 
     d->pixmap	     = pixmap;
     d->buffer_pixmap = buffer_pixmap;
-    d->gc	     = gdk_gc_new (pixmap);
+    d->cr	     = gdk_cairo_create (pixmap);
 
     format = get_format_for_drawable (d, GDK_DRAWABLE (d->buffer_pixmap));
     d->picture = XRenderCreatePicture (xdisplay, GDK_PIXMAP_XID (buffer_pixmap),
