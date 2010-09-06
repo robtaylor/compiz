@@ -1,3 +1,4 @@
+<?xml version="1.0"?>
 <compiz>
     <plugin name="resize" useBcop="true">
 	<_short>Resize Window</_short>
@@ -106,6 +107,11 @@
 		<_short>Stretch Resize Windows</_short>
 		<_long>Windows that stretch resize should be used for</_long>
 		<default/>
+	    </option>
+	    <option name="resize_from_center" type="bool">
+		<short>Resize From Center</short>
+		<long>Equally resize opposite sides of window</long>
+		<default>false</default>
 	    </option>
 	</options>
     </plugin>
