@@ -361,7 +361,7 @@ typedef struct _decor {
     GtkWidget         *decor_window;
     GtkWidget	      *decor_event_box;
     GtkWidget         *decor_image;
-    GdkGC	      *gc;
+    cairo_t	      *cr;
     decor_layout_t    border_layout;
     decor_context_t   *context;
     decor_shadow_t    *shadow;
@@ -504,6 +504,11 @@ update_window_decoration (WnckWindow *win);
 
 void
 queue_decor_draw (decor_t *d);
+
+void
+copy_to_front_buffer (decor_t *d);
+
+	
 
 /* wnck.c*/
 

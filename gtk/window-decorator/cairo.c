@@ -668,16 +668,7 @@ draw_window_decoration (decor_t *d)
 
     cairo_destroy (cr);
 
-    if (d->buffer_pixmap)
-	gdk_draw_drawable  (d->pixmap,
-			    d->gc,
-			    d->buffer_pixmap,
-			    0,
-			    0,
-			    0,
-			    0,
-			    d->width,
-			    d->height);
+    copy_to_front_buffer (d);
 
     if (d->frame_window)
     {
