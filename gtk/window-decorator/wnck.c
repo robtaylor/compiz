@@ -350,10 +350,10 @@ remove_frame_window (WnckWindow *win)
 	d->buffer_pixmap = NULL;
     }
 
-    if (d->gc)
+    if (d->cr)
     {
-	g_object_unref (G_OBJECT (d->gc));
-	d->gc = NULL;
+	cairo_destroy (d->cr);
+	d->cr = NULL;
     }
 
     if (d->picture && !d->frame_window)
@@ -533,7 +533,7 @@ window_opened (WnckScreen *screen,
 
     d->created = FALSE;
     d->pixmap = NULL;
-    d->gc = NULL;
+    d->cr = NULL;
     d->buffer_pixmap = NULL;
     d->picture = None;
 
