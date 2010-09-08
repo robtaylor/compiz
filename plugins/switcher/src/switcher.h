@@ -76,6 +76,8 @@ class SwitchScreen :
 	void windowRemove (CompWindow *w);
 
 	bool adjustVelocity ();
+	
+	Window	   lastActiveWindow;
 
 	CompWindow *zoomedWindow;
 
