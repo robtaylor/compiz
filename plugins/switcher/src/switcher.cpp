@@ -313,6 +313,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 		setSelectedWindowHint ();
 	    }
 
+	    lastActiveWindow = screen->activeWindow ();
 	    activateEvent (true);
 	}
 
@@ -379,6 +380,14 @@ switchTerminate (CompAction         *action,
 	{
 	    ss->selectedWindow = NULL;
 	    ss->zoomedWindow   = NULL;
+	    
+	    if (screen->activeWindow () != ss->lastActiveWindow)
+	    {
+		CompWindow *w = screen->findWindow (ss->lastActiveWindow);
+		
+		if (w)
+		    w->moveInputFocusTo ();
+	    }
 	}
 
 	if (state && ss->selectedWindow && !ss->selectedWindow->destroyed ())
@@ -1091,6 +1100,7 @@ SwitchScreen::setZoom ()
 SwitchScreen::SwitchScreen (CompScreen *screen) :
     BaseSwitchScreen (screen),
     PluginClassHandler<SwitchScreen,CompScreen> (screen),
+    lastActiveWindow (None),
     zoomedWindow (NULL),
     switching (false),
     zoomMask (~0),

@@ -129,7 +129,10 @@ BaseSwitchScreen::setSelectedWindowHint ()
     CompOption::Value  v;
 
     if (selectedWindow && !selectedWindow->destroyed ())
+    {
 	selectedWindowId = selectedWindow->id ();
+	selectedWindow->moveInputFocusTo ();
+    }
 
     v = CompOption::Value ((int) selectedWindowId);
     opts = selectWinAtom.getReadTemplate ();
