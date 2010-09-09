@@ -93,6 +93,7 @@ class PlaceWindow :
 
 	void doPlacement (CompPoint &pos);
 	bool windowIsPlaceRelevant (CompWindow *w);
+	bool hasUserDefinedPosition (bool);
 	PlacementStrategy getStrategy ();
 	const CompOutput & getPlacementOutput (int		 mode,
 					       PlacementStrategy strategy,
