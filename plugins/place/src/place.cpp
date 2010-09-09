@@ -655,18 +655,10 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	return;
     }
 
-    if (window->sizeHints ().flags & USPosition)
-    {
-	/* only respect USPosition on normal windows if
-	   workarounds are disabled, reason see above */
-	if (ps->optionGetWorkarounds () ||
-	    (window->type () & CompWindowTypeNormalMask))
-	{
-	    /* try to keep the window position intact for USPosition -
-	       obviously we can't do that if we need to change the size */
-	    sizeOnly = true;
-	}
-    }
+    if (hasUserDefinedPosition (false))
+	/* try to keep the window position intact for USPosition -
+	   obviously we can't do that if we need to change the size */
+	sizeOnly = true;
     
     doValidateResizeRequest (mask, xwc, sizeOnly, true);
 }
@@ -1336,6 +1328,33 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
     pos.setY (cascadeY + window->input ().top);
 }
 
+bool
+PlaceWindow::hasUserDefinedPosition (bool acceptPPosition)
+{
+    PLACE_SCREEN (screen);
+
+    CompMatch &match = ps->optionGetForcePlacementMatch ();
+
+    if (match.evaluate (window))
+	return false;
+
+    if (acceptPPosition && (window->sizeHints ().flags & PPosition))
+	return true;
+
+    if ((window->type () & CompWindowTypeNormalMask) ||
+	ps->optionGetWorkarounds ())
+    {
+	/* Only accept USPosition on non-normal windows if workarounds are
+	 * enabled because apps claiming the user set -geometry for a
+	 * dialog or dock are most likely wrong
+	 */
+	if (window->sizeHints ().flags & USPosition)
+	    return true;
+    }
+   
+    return false;
+}
+
 PlaceWindow::PlacementStrategy
 PlaceWindow::getStrategy ()
 {
@@ -1358,22 +1377,8 @@ PlaceWindow::getStrategy ()
 	return NoPlacement;
     }
 
-    if (!ps->optionGetForcePlacementMatch ().evaluate (window))
-    {
-	if ((window->type () & CompWindowTypeNormalMask) ||
-	    ps->optionGetWorkarounds ())
-	{
-	    /* Only accept USPosition on non-normal windows if workarounds are
-	     * enabled because apps claiming the user set -geometry for a
-	     * dialog or dock are most likely wrong
-	     */
-	    if (window->sizeHints ().flags & USPosition)
-		return ConstrainOnly;
-	}
-
-	if (window->sizeHints ().flags & PPosition)
-	    return ConstrainOnly;
-    }
+    if (hasUserDefinedPosition (true))
+	return ConstrainOnly;
 
    if (window->transientFor () &&
        (window->type () & (CompWindowTypeDialogMask |
