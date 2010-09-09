@@ -1143,9 +1143,8 @@ CompScreen::handleEvent (XEvent *event)
 			w->updateAttributes (
 					CompStackingUpdateModeAboveFullscreen);
 
-		    if (w->id () != priv->activeWindow)
-			if (!(w->type () & CompWindowTypeDockMask))
-			    w->moveInputFocusTo ();
+		    if (!(w->type () & CompWindowTypeDockMask))
+			w->moveInputFocusTo ();
 		}
 	    }
 
