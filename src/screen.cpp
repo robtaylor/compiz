@@ -133,12 +133,12 @@ CompScreen::processEvents ()
 void
 CompScreen::eventLoop ()
 {
-    int               fd;
+    int fd;
 
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
     fd = ConnectionNumber (priv->dpy);
-    g_io_add_watch (g_io_channel_unix_new (fd), G_IO_IN, (GIOFunc) gioFunc, this);
+    g_io_add_watch_full (g_io_channel_unix_new (fd), -1, G_IO_IN, (GIOFunc) gioFunc, this, NULL);
 
     /* Kick the event loop */
     processEvents ();
