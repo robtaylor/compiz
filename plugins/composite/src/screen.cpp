@@ -45,7 +45,6 @@
 
 CompWindow *lastDamagedWindow = 0;
 
-
 void
 PrivateCompositeScreen::handleEvent (XEvent *event)
 {
