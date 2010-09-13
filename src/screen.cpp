@@ -109,17 +109,67 @@ CompScreen::freePluginClassIndex (unsigned int index)
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
+
+struct CompizEventQueue
+{
+  GSource source;
+
+  Display *display;
+  GPollFD poll_fd;
+  int connection_fd;
+};
+
 extern "C"
 {
-    static gboolean
-    gioFunc (GIOChannel *source,
-	     GIOCondition condition,
-	     CompScreen *screen)
-    {
-	screen->processEvents ();
-	return true;
-    }
+   static gboolean
+   process_callback (CompScreen *screen)
+   {
+     screen->processEvents ();
+     return TRUE;
+   }
 }
+
+static gboolean  
+gsource_prepare (GSource *source, gint *timeout)
+{
+  CompizEventQueue *ceq;
+  
+  ceq = (CompizEventQueue *) source;
+
+  *timeout = -1;
+  return XPending (ceq->display);;
+}
+
+static gboolean  
+gsource_check (GSource  *source) 
+{
+  CompizEventQueue *ceq;
+  
+  ceq = (CompizEventQueue *) source;
+  
+  if (ceq->poll_fd.revents & G_IO_IN)
+    return XPending (ceq->display);
+  else
+    return FALSE;
+}
+
+static gboolean  
+gsource_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
+{
+  return callback (user_data);
+}
+
+static void
+gsource_destroy (GSource *source)
+{
+}
+
+static GSourceFuncs gsource_funcs = {
+  gsource_prepare,
+  gsource_check,
+  gsource_dispatch,
+  gsource_destroy
+};
 
 void
 CompScreen::processEvents ()
@@ -134,12 +184,29 @@ void
 CompScreen::eventLoop ()
 {
     int fd;
+    GSource *source;
+    CompizEventQueue *ceq;
 
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
+    source = g_source_new (&gsource_funcs, sizeof (CompizEventQueue));
+    ceq = (CompizEventQueue*) source;
+    
     fd = ConnectionNumber (priv->dpy);
-    g_io_add_watch_full (g_io_channel_unix_new (fd), -1, G_IO_IN, (GIOFunc) gioFunc, this, NULL);
-
+    ceq->connection_fd = fd;
+    ceq->poll_fd.fd = fd;
+    ceq->poll_fd.events = G_IO_IN;
+    ceq->display = priv->dpy;
+    
+    g_source_set_priority (source, G_PRIORITY_DEFAULT);
+    g_source_add_poll (source, &ceq->poll_fd);
+    g_source_set_can_recurse (source, TRUE);
+    
+    g_source_set_callback (source, (GSourceFunc) process_callback, this, NULL);
+    
+    g_source_attach (source, NULL);
+    g_source_unref (source);
+    
     /* Kick the event loop */
     processEvents ();
     
