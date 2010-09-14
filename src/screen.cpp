@@ -137,7 +137,7 @@ gsource_prepare (GSource *source, gint *timeout)
   ceq = (CompizEventQueue *) source;
 
   *timeout = -1;
-  return XPending (ceq->display);;
+  return XPending (ceq->display);
 }
 
 static gboolean  
