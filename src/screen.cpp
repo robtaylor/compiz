@@ -112,63 +112,65 @@ CompScreen::freePluginClassIndex (unsigned int index)
 
 struct CompizEventQueue
 {
-  GSource source;
+    GSource source;
 
-  Display *display;
-  GPollFD poll_fd;
-  int connection_fd;
+    Display *display;
+    GPollFD pollFd;
+    int connectionFd;
 };
+
+/* XXX:
+ * We should use GlibMM here and avoid mixing C and C++ linkage
+ */
 
 extern "C"
 {
-   static gboolean
-   process_callback (CompScreen *screen)
-   {
-     screen->processEvents ();
-     return TRUE;
-   }
+    static gboolean
+    processCallback (CompScreen *screen)
+    {
+	screen->processEvents ();
+	return TRUE;
+    }
 }
 
-static gboolean  
-gsource_prepare (GSource *source, gint *timeout)
+static gboolean
+gsourcePrepare (GSource *source, gint *timeout)
 {
-  CompizEventQueue *ceq;
-  
-  ceq = (CompizEventQueue *) source;
+    CompizEventQueue *ceq = (CompizEventQueue *) source;
 
-  *timeout = -1;
-  return XPending (ceq->display);
-}
-
-static gboolean  
-gsource_check (GSource  *source) 
-{
-  CompizEventQueue *ceq;
-  
-  ceq = (CompizEventQueue *) source;
-  
-  if (ceq->poll_fd.revents & G_IO_IN)
+    *timeout = -1;
     return XPending (ceq->display);
-  else
-    return FALSE;
 }
 
 static gboolean  
-gsource_dispatch (GSource *source, GSourceFunc callback, gpointer user_data)
+gsourceCheck (GSource  *source) 
 {
-  return callback (user_data);
+    CompizEventQueue *ceq;
+  
+    ceq = (CompizEventQueue *) source;
+  
+    if (ceq->pollFd.revents & G_IO_IN)
+	return XPending (ceq->display);
+    else
+	return FALSE;
+}
+
+static gboolean  
+gsourceDispatch (GSource *source, GSourceFunc callback, gpointer data)
+{
+    return callback (data);
 }
 
 static void
-gsource_destroy (GSource *source)
+gsourceDestroy (GSource *source)
 {
 }
 
-static GSourceFuncs gsource_funcs = {
-  gsource_prepare,
-  gsource_check,
-  gsource_dispatch,
-  gsource_destroy
+static GSourceFuncs gsourceFuncs = {
+    gsourcePrepare,
+    gsourceCheck,
+    gsourceDispatch,
+    gsourceDestroy
 };
 
 void
@@ -189,20 +191,20 @@ CompScreen::eventLoop ()
 
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
-    source = g_source_new (&gsource_funcs, sizeof (CompizEventQueue));
+    source = g_source_new (&gsourceFuncs, sizeof (CompizEventQueue));
     ceq = (CompizEventQueue*) source;
     
     fd = ConnectionNumber (priv->dpy);
-    ceq->connection_fd = fd;
-    ceq->poll_fd.fd = fd;
-    ceq->poll_fd.events = G_IO_IN;
+    ceq->connectionFd = fd;
+    ceq->pollFd.fd = fd;
+    ceq->pollFd.events = G_IO_IN;
     ceq->display = priv->dpy;
     
     g_source_set_priority (source, G_PRIORITY_DEFAULT);
-    g_source_add_poll (source, &ceq->poll_fd);
+    g_source_add_poll (source, &ceq->pollFd);
     g_source_set_can_recurse (source, TRUE);
     
-    g_source_set_callback (source, (GSourceFunc) process_callback, this, NULL);
+    g_source_set_callback (source, (GSourceFunc) processCallback, this, NULL);
     
     g_source_attach (source, NULL);
     g_source_unref (source);
