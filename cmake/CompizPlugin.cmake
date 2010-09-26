@@ -77,6 +77,30 @@ else (COMPIZ_PACKAGING_ENABLED)
     set (datadir ${CMAKE_INSTALL_PREFIX}/share          )
 endif (COMPIZ_PACKAGING_ENABLED)
 
+### Set up core lib dependences so this in correctly imported into plugins
+
+find_package (Boost 1.34.0 REQUIRED serialization)
+
+set (COMPIZ_REQUIRES
+    x11
+    xext
+    xdamage
+    xcomposite
+    x11-xcb
+    xrandr
+    xinerama
+    xext
+    ice
+    sm
+    libxml-2.0
+    libxslt
+    "libstartup-notification-1.0 >= 0.7"
+)
+
+compiz_pkg_check_modules (COMPIZ REQUIRED ${COMPIZ_REQUIRES})
+
+list (APPEND COMPIZ_LIBRARIES ${Boost_LIBRARIES})
+
 # determinate installation directories
 macro (_prepare_directories)
     set (CMAKE_CONFIGURATION_TYPES "Debug;Release;RelWithDebInfo;MinSizeRe" CACHE INTERNAL "" FORCE)
