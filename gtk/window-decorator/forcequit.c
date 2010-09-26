@@ -9,11 +9,11 @@ get_client_machine (Window xwindow)
     int    format, result;
     char   *retval;
 
-    atom = XInternAtom (gdk_display, "WM_CLIENT_MACHINE", FALSE);
+    atom = XInternAtom (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), "WM_CLIENT_MACHINE", FALSE);
 
     gdk_error_trap_push ();
 
-    result = XGetWindowProperty (gdk_display,
+    result = XGetWindowProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
 				 xwindow, atom,
 				 0, G_MAXLONG,
 				 FALSE, XA_STRING, &type, &format, &nitems,
@@ -65,7 +65,7 @@ kill_window (WnckWindow *win)
     }
 
     gdk_error_trap_push ();
-    XKillClient (gdk_display, wnck_window_get_xid (win));
+    XKillClient (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()), wnck_window_get_xid (win));
     gdk_display_sync (gdk_display_get_default ());
     gdk_error_trap_pop ();
 }
