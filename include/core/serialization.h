@@ -112,7 +112,13 @@ class PluginStateWriter
 	    std::string str;  
 	    std::ostringstream oss (str);
 	    boost::archive::text_oarchive oa (oss);
-	    
+
+	    /* Nothing was initially read from the property, which probably means that
+	     * shouldSerializePlugins was turned on in between plugin load and unload
+	     * so don't attempt to do anything here */
+	    if (!atomTemplate.size ())
+		return;
+
 	    oa << *this;
 	    
 	    CompOption::Value v (oss.str ().c_str ());
