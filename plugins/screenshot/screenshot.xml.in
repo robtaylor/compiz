@@ -5,7 +5,6 @@
 	<category>Extras</category>
 	<deps>
 	    <requirement>
-		<plugin>composite</plugin>
 		<plugin>opengl</plugin>
 		<plugin>compiztoolbox</plugin>
 		<feature>imageext:png</feature>
