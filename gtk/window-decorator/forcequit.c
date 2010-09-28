@@ -77,7 +77,7 @@ force_quit_dialog_realize (GtkWidget *dialog,
     WnckWindow *win = data;
 
     gdk_error_trap_push ();
-    XSetTransientForHint (gdk_display,
+    XSetTransientForHint (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
 			  GDK_WINDOW_XID (dialog->window),
 			  wnck_window_get_xid (win));
     gdk_display_sync (gdk_display_get_default ());
