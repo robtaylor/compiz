@@ -30,7 +30,7 @@ get_window_prop (Window xwindow,
     gdk_error_trap_push ();
 
     type = None;
-    result = XGetWindowProperty (gdk_display,
+    result = XGetWindowProperty (GDK_DISPLAY_XDISPLAY (gdk_display_get_default ()),
 				 xwindow,
 				 atom,
 				 0, G_MAXLONG,
