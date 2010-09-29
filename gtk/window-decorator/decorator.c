@@ -469,7 +469,7 @@ int
 update_shadow (void)
 {
     decor_shadow_options_t opt;
-    Display		   *xdisplay = gdk_display;
+    Display		   *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     GdkDisplay		   *display = gdk_display_get_default ();
     GdkScreen		   *screen = gdk_display_get_default_screen (display);
 
