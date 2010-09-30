@@ -104,6 +104,18 @@ CubeScreen::invert () const
     return priv->mInvert;
 }
 
+unsigned short* 
+CubeScreen::topColor () const
+{
+    return priv->optionGetTopColor ();
+}
+
+unsigned short*  
+CubeScreen::bottomColor () const
+{
+    return priv->optionGetBottomColor ();
+}
+
 bool 
 CubeScreen::unfolded () const
 {
@@ -617,10 +629,6 @@ PrivateCubeScreen::setOption (const CompString &name, CompOption::Value &value)
         return false;
 
     switch (index) {
-	case CubeOptions::Color:
-	    memcpy (mColor, value.c (), sizeof (mColor));
-	    cScreen->damageScreen ();
-	    break;
 	case CubeOptions::In:
 	    rv = updateGeometry (screen->vpSize ().width (), value.b () ? -1 : 1);
 	    break;
@@ -1082,9 +1090,18 @@ CubeScreen::cubePaintTop (const GLScreenPaintAttrib &sAttrib,
     GLScreenPaintAttrib sa = sAttrib;
     GLMatrix            sTransform = transform;
 
+    unsigned short*	color;
+    int			opacity;
+
     priv->gScreen->setLighting (true);
 
-    glColor4us (priv->mColor[0], priv->mColor[1], priv->mColor[2], priv->mDesktopOpacity);
+    color = priv->optionGetTopColor ();
+    opacity = priv->mDesktopOpacity * color[3] / 0xffff;
+
+    glColor4us (color[0] * opacity / 0xffff,
+		color[1] * opacity / 0xffff,
+		color[2] * opacity / 0xffff,
+		opacity);
 
     glPushMatrix ();
 
@@ -1096,7 +1113,7 @@ CubeScreen::cubePaintTop (const GLScreenPaintAttrib &sAttrib,
     glTranslatef (priv->mOutputXOffset, -priv->mOutputYOffset, 0.0f);
     glScalef (priv->mOutputXScale, priv->mOutputYScale, 1.0f);
 
-    if (priv->mDesktopOpacity != OPAQUE)
+    if ((priv->mDesktopOpacity != OPAQUE) || (color[3] != OPAQUE))
     {
 	priv->gScreen->setTexEnvMode (GL_MODULATE);
 	glEnable (GL_BLEND);
@@ -1140,9 +1157,18 @@ CubeScreen::cubePaintBottom (const GLScreenPaintAttrib &sAttrib,
     GLScreenPaintAttrib sa = sAttrib;
     GLMatrix            sTransform = transform;
 
+    unsigned short*	color;
+    int			opacity;
+
     priv->gScreen->setLighting (true);
 
-    glColor4us (priv->mColor[0], priv->mColor[1], priv->mColor[2], priv->mDesktopOpacity);
+    color   = priv->optionGetBottomColor ();
+    opacity = priv->mDesktopOpacity * color[3] / 0xffff;
+
+    glColor4us (color[0] * opacity / 0xffff,
+		color[1] * opacity / 0xffff,
+		color[2] * opacity / 0xffff,
+		opacity);
 
     glPushMatrix ();
 
@@ -1154,7 +1180,7 @@ CubeScreen::cubePaintBottom (const GLScreenPaintAttrib &sAttrib,
     glTranslatef (priv->mOutputXOffset, -priv->mOutputYOffset, 0.0f);
     glScalef (priv->mOutputXScale, priv->mOutputYScale, 1.0f);
 
-    if (priv->mDesktopOpacity != OPAQUE)
+    if ((priv->mDesktopOpacity != OPAQUE) || (color[3] != OPAQUE))
     {
 	priv->gScreen->setTexEnvMode (GL_MODULATE);
 	glEnable (GL_BLEND);
@@ -1618,8 +1644,6 @@ PrivateCubeScreen::PrivateCubeScreen (CompScreen *s) :
 
     for (int i = 0; i < 8; i++)
 	mTc[i] = 0.0f;
-
-    memcpy (mColor, optionGetColor (), sizeof (mColor));
 
     mNVertices = 0;
     mVertices  = NULL;

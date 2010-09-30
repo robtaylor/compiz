@@ -117,7 +117,6 @@ class PrivateCubeScreen :
 	bool mPaintAllViewports;
 
 	GLfloat  mDistance;
-	GLushort mColor[3];
 	GLfloat  mTc[12];
 
 	CompScreen::GrabHandle mGrabIndex;

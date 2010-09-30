@@ -92,15 +92,27 @@
 	    </group>
 	    <group>
 		<_short>Appearance</_short>
-			<option name="color" type="color">
-			<_short>Cube Color</_short>
-			<_long>Color of top and bottom sides of the cube</_long>
-			<default>
-				<red>0xfefe</red>
-				<green>0xffff</green>
-				<blue>0xc7c7</blue>
-			</default>
+			<subgroup>
+			<_short>Cube Cap Colors</_short>
+			<option name="top_color" type="color">
+				<_short>Top</_short>
+				<_long>Color of top face of the cube</_long>
+				<default>
+					<red>0xffff</red>
+					<green>0xffff</green>
+					<blue>0xffff</blue>
+				</default>
 			</option>
+			<option name="bottom_color" type="color">
+				<_short>Bottom</_short>
+				<_long>Color of bottom face of the cube</_long>
+				<default>
+					<red>0xffff</red>
+					<green>0xffff</green>
+					<blue>0xffff</blue>
+				</default>
+			</option>
+			</subgroup>
 			<subgroup>
 				<_short>Skydome</_short>
 			<option name="skydome" type="bool">
