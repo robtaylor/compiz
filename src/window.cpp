@@ -5507,17 +5507,13 @@ PrivateWindow::reparent ()
     XWindowAttributes    wa;
     XWindowChanges       xwc;
     int                  mask;
-    XEvent               e;
     CompWindow::Geometry sg = serverGeometry;
     Display              *dpy = screen->dpy ();
     CompWindow		 *sibling = window->next ? window->next : window->prev;
     bool		 above = window->next ? false : true;
-    Window		 root_ret, parent_ret;
-    Window		 *children_ret;
-    unsigned int	 nchildren_ret;
+    Window		 root_ret;
     unsigned int	 uidummy;
     int			 idummy;
-    int			 nvisuals_return;
     Visual		 *visual = DefaultVisual (screen->dpy (),
 						  screen->screenNum ());
     Colormap		 cmap = DefaultColormap (screen->dpy (),
