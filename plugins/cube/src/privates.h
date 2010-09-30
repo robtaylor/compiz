@@ -72,10 +72,6 @@ class PrivateCubeScreen :
 
 	const CompWindowList & getWindowPaintList ();
 
-
-
-	void loadImg (int n);
-
 	bool updateGeometry (int sides, int invert);
 	void updateOutputs ();
 	void updateSkydomeTexture ();
@@ -109,14 +105,6 @@ class PrivateCubeScreen :
 	static bool fold (CompAction         *action,
 			  CompAction::State  state,
 			  CompOption::Vector &options);
-
-	static bool nextImage (CompAction         *action,
-			       CompAction::State  state,
-			       CompOption::Vector &options);
-
-	static bool prevImage (CompAction         *action,
-			       CompAction::State  state,
-			       CompOption::Vector &options);
 
     public:
 

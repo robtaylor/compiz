@@ -212,90 +212,6 @@ CubeScreen::repaintCaps ()
     memset (priv->mCapsPainted, 0, sizeof (Bool) * screen->outputDevs ().size ());
 }
 
-void
-PrivateCubeScreen::loadImg (int n)
-{
-    CompSize tSize;
-    int      pw, ph;
-    
-    CompOption::Value::Vector &imgFiles = optionGetImages ();
-
-    if (!mFullscreenOutput)
-    {
-	pw = screen->width ();
-	ph = screen->height ();
-    }
-    else
-    {
-	pw = screen->outputDevs ()[0].width ();
-	ph = screen->outputDevs ()[0].height ();
-    }
-
-    if (imgFiles.empty () || mPw != pw || mPh != ph)
-    {
-        mTexture.clear ();
-
-	if (imgFiles.empty ())
-	    return;
-    }
-
-    mImgCurFile = n % imgFiles.size ();
-
-    CompString imgName = imgFiles[mImgCurFile].s ();
-    mTexture = GLTexture::readImageToTexture (imgName, tSize);
-
-    if (mTexture.empty ())
-    {
-	compLogMessage ("cube", CompLogLevelWarn,
-			"Failed to load slide: %s",
-			imgFiles[mImgCurFile].s ().c_str ());
-	return;
-    }
-
-    mTc[0] = COMP_TEX_COORD_X (mTexture[0]->matrix (), tSize.width () / 2.0f);
-    mTc[1] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), tSize.height () / 2.0f);
-
-    if (optionGetScaleImage ())
-    {
-	mTc[2] = COMP_TEX_COORD_X (mTexture[0]->matrix (), tSize.width ());
-	mTc[3] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), 0.0f);
-
-	mTc[4] = COMP_TEX_COORD_X (mTexture[0]->matrix (), 0.0f);
-	mTc[5] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), 0.0f);
-
-	mTc[6] = COMP_TEX_COORD_X (mTexture[0]->matrix (), 0.0f);
-	mTc[7] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), tSize.height ());
-
-	mTc[8] = COMP_TEX_COORD_X (mTexture[0]->matrix (), tSize.width ());
-	mTc[9] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), tSize.height ());
-
-	mTc[10] = COMP_TEX_COORD_X (mTexture[0]->matrix (), tSize.width ());
-	mTc[11] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), 0.0f);
-    }
-    else
-    {
-	float x1 = tSize.width () / 2.0f - pw / 2.0f;
-	float y1 = tSize.height () / 2.0f - ph / 2.0f;
-	float x2 = tSize.width () / 2.0f + pw / 2.0f;
-	float y2 = tSize.height () / 2.0f + ph / 2.0f;
-
-	mTc[2] = COMP_TEX_COORD_X (mTexture[0]->matrix (), x2);
-	mTc[3] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), y1);
-
-	mTc[4] = COMP_TEX_COORD_X (mTexture[0]->matrix (), x1);
-	mTc[5] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), y1);
-
-	mTc[6] = COMP_TEX_COORD_X (mTexture[0]->matrix (), x1);
-	mTc[7] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), y2);
-
-	mTc[8] = COMP_TEX_COORD_X (mTexture[0]->matrix (), x2);
-	mTc[9] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), y2);
-
-	mTc[10] = COMP_TEX_COORD_X (mTexture[0]->matrix (), x2);
-	mTc[11] = COMP_TEX_COORD_Y (mTexture[0]->matrix (), y1);
-    }
-}
-
 bool
 PrivateCubeScreen::updateGeometry (int sides, int invert)
 {
@@ -707,11 +623,6 @@ PrivateCubeScreen::setOption (const CompString &name, CompOption::Value &value)
 	    break;
 	case CubeOptions::In:
 	    rv = updateGeometry (screen->vpSize ().width (), value.b () ? -1 : 1);
-	    break;
-	case CubeOptions::ScaleImage:
-	case CubeOptions::Images:
-	    loadImg (mImgCurFile);
-	    cScreen->damageScreen ();
 	    break;
 	case CubeOptions::Skydome:
 	case CubeOptions::SkydomeImage:
@@ -1178,8 +1089,6 @@ CubeScreen::cubePaintTop (const GLScreenPaintAttrib &sAttrib,
     glPushMatrix ();
 
     sa.yRotate += (360.0f / size) * (priv->mXRotations + 1);
-    if (!priv->optionGetAdjustImage ())
-	sa.yRotate -= (360.0f / size) * screen->vp ().x ();
 
     priv->gScreen->glApplyTransform (sa, output, &sTransform);
 
@@ -1238,8 +1147,6 @@ CubeScreen::cubePaintBottom (const GLScreenPaintAttrib &sAttrib,
     glPushMatrix ();
 
     sa.yRotate += (360.0f / size) * (priv->mXRotations + 1);
-    if (!priv->optionGetAdjustImage ())
-	sa.yRotate -= (360.0f / size) * screen->vp ().x ();
 
     priv->gScreen->glApplyTransform (sa, output, &sTransform);
 
@@ -1671,67 +1578,11 @@ PrivateCubeScreen::fold (CompAction         *action,
     return false;
 }
 
-bool
-PrivateCubeScreen::nextImage (CompAction         *action,
-			      CompAction::State  state,
-			      CompOption::Vector &options)
-{
-    Window     xid;
-
-    xid = CompOption::getIntOptionNamed (options, "root");
-
-    if (::screen->root () == xid)
-    {
-	int imgNFile;
-	
-	CUBE_SCREEN (screen);
-
-	imgNFile = cs->priv->optionGetImages ().size ();
-	if (imgNFile)
-	{
-	    cs->priv->loadImg ((cs->priv->mImgCurFile + 1) % imgNFile);
-	    cs->priv->cScreen->damageScreen ();
-	}
-    }
-
-    return false;
-}
-
-bool
-PrivateCubeScreen::prevImage (CompAction         *action,
-			      CompAction::State  state,
-			      CompOption::Vector &options)
-{
-    Window     xid;
-
-    xid = CompOption::getIntOptionNamed (options, "root");
-
-    if (::screen->root () == xid)
-    {
-	int imgNFile;
-	
-	CUBE_SCREEN (screen);
-
-	imgNFile = cs->priv->optionGetImages ().size ();
-	if (imgNFile)
-	{
-	    cs->priv->loadImg ((cs->priv->mImgCurFile - 1 + imgNFile) % imgNFile);
-	    cs->priv->cScreen->damageScreen ();
-	}
-    }
-
-    return false;
-}
-
-
 void
 PrivateCubeScreen::outputChangeNotify ()
 {
     updateOutputs ();
     updateGeometry (screen->vpSize ().width (), mInvert);
-
-    if (optionGetImages ().size ())
-	loadImg (mImgCurFile);
 
     screen->outputChangeNotify ();
 }
@@ -1809,16 +1660,8 @@ PrivateCubeScreen::PrivateCubeScreen (CompScreen *s) :
 
     updateGeometry (screen->vpSize ().width (), mInvert);
 
-    if (optionGetImages ().size ())
-    {
-	loadImg (mImgCurFile);
-	cScreen->damageScreen ();
-    }
-
     optionSetUnfoldKeyInitiate (PrivateCubeScreen::unfold);
     optionSetUnfoldKeyTerminate (PrivateCubeScreen::fold);
-    optionSetNextSlideKeyInitiate (PrivateCubeScreen::nextImage);
-    optionSetPrevSlideKeyInitiate (PrivateCubeScreen::prevImage);
 
     ScreenInterface::setHandler (s);
     CompositeScreenInterface::setHandler (cScreen);
