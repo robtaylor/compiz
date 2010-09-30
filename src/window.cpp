@@ -4990,9 +4990,16 @@ CompWindow::CompWindow (Window id,
     priv->clientLeader = None;
 
     XSelectInput (screen->dpy (), id,
-		  PropertyChangeMask |
-		  EnterWindowMask    |
-		  FocusChangeMask);
+                      KeyPressMask      | 
+	              KeyReleaseMask    | 
+	              ButtonPressMask   | 
+	              ButtonReleaseMask |
+	              EnterWindowMask   |
+	              LeaveWindowMask   |
+	              PointerMotionMask |
+	              ButtonMotionMask  |
+     	 	      PropertyChangeMask |
+		      FocusChangeMask);
 
     priv->id = id;
 
