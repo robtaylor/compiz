@@ -5359,10 +5359,7 @@ CompWindow::isMapped () const
 bool
 CompWindow::isViewable () const
 {
-    if (priv->attrib.map_state != IsViewable)
-	return false;
-
-    return true;
+    return (priv->attrib.map_state == IsViewable);
 }
 
 bool
