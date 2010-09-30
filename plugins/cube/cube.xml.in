@@ -102,27 +102,6 @@
 			</default>
 			</option>
 			<subgroup>
-				<_short>Cube Caps</_short>
-			<option name="scale_image" type="bool">
-			<_short>Scale image</_short>
-			<_long>Scale images to cover top face of cube</_long>
-			<default>false</default>
-			</option>
-			<option name="images" type="list">
-			<_short>Image files</_short>
-			<_long>List of PNG and SVG files that should be rendered on top face of cube</_long>
-			<type>string</type>
-			<default>
-				<value>freedesktop</value>
-			</default>
-			</option>
-			<option name="adjust_image" type="bool">
-			<_short>Adjust Image</_short>
-			<_long>Adjust top face image to rotation</_long>
-			<default>false</default>
-			</option>
-			</subgroup>
-			<subgroup>
 				<_short>Skydome</_short>
 			<option name="skydome" type="bool">
 			<_short>Skydome</_short>
