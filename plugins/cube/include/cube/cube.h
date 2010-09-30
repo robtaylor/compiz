@@ -138,6 +138,9 @@ class CubeScreen :
 	WRAPABLE_HND (8, CubeScreenInterface, bool, cubeShouldPaintAllViewports);
 	
 	int invert () const;
+
+	unsigned short* topColor () const;
+	unsigned short* bottomColor () const;
 	
 	bool unfolded () const;
 	
