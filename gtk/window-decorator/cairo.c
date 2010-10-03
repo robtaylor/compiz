@@ -676,8 +676,8 @@ draw_window_decoration (decor_t *d)
 
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
-	gdk_window_reparent (gdk_frame_window, d->frame_window,
-			     -_win_extents.left - 2, -_win_extents.top - 2);
+	gdk_window_move (gdk_frame_window, -(d->context->left_space - _win_extents.left),
+					   -(d->context->top_space - d->context->bottom_space) - shadow_offset_y - 1);
 	gdk_window_lower (gdk_frame_window);
     }
 

@@ -625,8 +625,7 @@ frame_window_realized (GtkWidget *widget,
     if (d)
     {
 	GdkWindow *gdk_frame_window = gtk_widget_get_window (d->decor_window);
-	gdk_window_reparent (gdk_frame_window, d->frame_window,
-			     -_win_extents.left - 2, -_win_extents.top - 2);
+	gdk_window_reparent (gdk_frame_window, d->frame_window, 0, 0);
 	gdk_window_lower (gdk_frame_window);
 
     }
