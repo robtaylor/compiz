@@ -754,7 +754,7 @@ PrivateScreen::setOption (const CompString  &name,
 void
 PrivateScreen::processEvents ()
 {
-    XEvent event;
+    XEvent event, peekEvent;
 
     /* remove destroyed windows */
     removeDestroyed ();
@@ -778,6 +778,16 @@ PrivateScreen::processEvents ()
 	    pointerY = event.xkey.y_root;
 	    break;
 	case MotionNotify:
+	    while (XPending (dpy))
+	    {
+		XPeekEvent (dpy, &peekEvent);
+
+		if (peekEvent.type != MotionNotify)
+		    break;
+
+		XNextEvent (dpy, &event);
+	    }
+	    
 	    pointerX = event.xmotion.x_root;
 	    pointerY = event.xmotion.y_root;
 	    break;
