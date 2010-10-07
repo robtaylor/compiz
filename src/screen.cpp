@@ -41,6 +41,9 @@
 #include <poll.h>
 #include <algorithm>
 
+#include <glib.h>
+#include <glib-object.h>
+
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -188,6 +191,8 @@ CompScreen::eventLoop ()
     int fd;
     GSource *source;
     CompizEventQueue *ceq;
+    
+    g_type_init ();
 
     priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
 
