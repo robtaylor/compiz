@@ -681,6 +681,7 @@ PrivateCubeScreen::preparePaint (int msSinceLastPaint)
 {
     int   opt;
     float x, progress;
+    unsigned short *topColor, *bottomColor;
 
     if (mGrabIndex)
     {
@@ -750,7 +751,12 @@ PrivateCubeScreen::preparePaint (int msSinceLastPaint)
 
     }
 
-    mPaintAllViewports = (mDesktopOpacity != OPAQUE);
+    topColor	= optionGetTopColor ();
+    bottomColor	= optionGetBottomColor ();
+
+    mPaintAllViewports = (mDesktopOpacity != OPAQUE ||
+			  topColor[3] != OPAQUE ||
+			  bottomColor[3] != OPAQUE);
  
     cScreen->preparePaint (msSinceLastPaint);
 }
