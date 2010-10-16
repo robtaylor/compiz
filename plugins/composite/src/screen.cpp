@@ -880,19 +880,16 @@ CompositeScreen::handlePaintTimeout ()
 
     if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
     {
-	if (priv->FPSLimiterMode == CompositeFPSLimiterModeDisabled)
-	{
-	    const int msToReturn1After = 100;
+	const int msToReturn1After = 100;
 
-	    priv->frameTimeAccumulator += priv->redrawTime;
-	    if (priv->frameTimeAccumulator > msToReturn1After)
-	    {
-		priv->frameTimeAccumulator %= msToReturn1After;
-		timeToNextRedraw = 1;
-	    }
-	    else
-		timeToNextRedraw = 0;
+	priv->frameTimeAccumulator += priv->redrawTime;
+	if (priv->frameTimeAccumulator > msToReturn1After)
+	{
+	    priv->frameTimeAccumulator %= msToReturn1After;
+	    timeToNextRedraw = 1;
 	}
+	else
+	    timeToNextRedraw = 0;
     }
     else
 	timeToNextRedraw = priv->getTimeToNextRedraw (&tv);

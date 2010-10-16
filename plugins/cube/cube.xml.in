@@ -22,18 +22,6 @@
 		<_long>Unfold cube</_long>
 		<default>&lt;Control&gt;&lt;Alt&gt;Down</default>
 	    </option>
-	    <option name="next_slide_key" type="key">
-		<_short>Next Slide</_short>
-		<_long>Advance to next slide</_long>
-		<default>space</default>
-		<passive_grab>false</passive_grab>
-	    </option>
-	    <option name="prev_slide_key" type="key">
-		<_short>Prev Slide</_short>
-		<_long>Go back to previous slide</_long>
-		<default>Backspace</default>
-		<passive_grab>false</passive_grab>
-	    </option>
 	    <option name="mipmap" type="bool">
 		<_short>Mipmap</_short>
 		<_long>Generate mipmaps when possible for higher quality scaling</_long>

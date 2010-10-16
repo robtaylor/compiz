@@ -763,6 +763,7 @@ PlaceWindow::doPlacement (CompPoint &pos)
 	    break;
 	case PlaceOptions::ModePointer:
 	    placePointer (workArea, pos);
+	    break;
 	case PlaceOptions::ModeMaximize:
 	    sendMaximizationRequest ();
 	    break;
@@ -1576,15 +1577,18 @@ PlaceScreen::getPointerPosition (CompPoint &p)
     int	   iDummy;
     unsigned int uiDummy;
     int x, y;
-    
+    bool ret;
+
     /* this means a server roundtrip, which kind of sucks; this
      * this code should be removed as soon as we have software cursor
      * rendering and thus a cache pointer co-ordinate */
-    
-    return XQueryPointer (screen->dpy (), screen->root (), &wDummy, &wDummy,
+
+    ret = XQueryPointer (screen->dpy (), screen->root (), &wDummy, &wDummy,
     			  &x, &y, &iDummy, &iDummy, &uiDummy);
-    
+
     p.set (x, y);
+
+    return ret;
 }
 
 bool
