@@ -92,14 +92,18 @@ PrivateGLWindow::setWindowMatrix ()
 bool
 GLWindow::bind ()
 {
-    CompRect input (priv->window->inputRect ());
+    XWindowAttributes attr;
+    const CompRect	&input = priv->window->inputRect ();
+    CompWindow             *w = priv->window;
 
-    if (!priv->cWindow->pixmap () && !priv->cWindow->bind ())
+    if (!XGetWindowAttributes (screen->dpy (), w->id (), &attr) ||
+	  (!priv->cWindow->pixmap () && !priv->cWindow->bind ()))
 	return false;
 
     priv->textures =
 	GLTexture::bindPixmapToTexture (priv->cWindow->pixmap (),
-					input.width (), input.height (),
+					input.width () + attr.border_width * 2,
+					input.height () + attr.border_width * 2,
 					priv->window->depth ());
     if (priv->textures.empty ())
     {
