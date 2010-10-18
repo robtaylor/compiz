@@ -1492,7 +1492,7 @@ DecorScreen::updateDefaultShadowProperty ()
     if (!colorOption)
 	return;
     
-    colorString = (char *) CompOption::colorToString (colorOption->value ().c ()).c_str ();
+    colorString = strdup (CompOption::colorToString (colorOption->value ().c ()).c_str ());
     
     /* 1) Shadow Radius
      * 2) Shadow Opacity
@@ -1512,6 +1512,8 @@ DecorScreen::updateDefaultShadowProperty ()
     
     if (XStringListToTextProperty (&colorString, 1, &xtp))
 	XSetTextProperty (screen->dpy (), screen->root (), &xtp, shadowColorAtom);
+
+    free (colorString);
     
     
 }    
