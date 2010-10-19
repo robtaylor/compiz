@@ -687,7 +687,7 @@ CompositeScreen::setFPSLimiterMode (CompositeFPSLimiterMode newMode)
 int
 PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
 {
-    int diff, next;
+    int diff
 
     diff = TIMEVALDIFF (tv, &lastRedraw);
 
@@ -710,6 +710,7 @@ PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
     }
     else
     {
+	int next;
 	if (diff > redrawTime)
 	{
 	    if (frameStatus > 0)
@@ -770,7 +771,6 @@ CompositeScreen::optimalRedrawTime ()
 bool
 CompositeScreen::handlePaintTimeout ()
 {
-    int         timeDiff;
     struct      timeval tv;
     int         timeToNextRedraw;
 
@@ -778,6 +778,8 @@ CompositeScreen::handlePaintTimeout ()
 
     if (priv->damageMask)
     {
+	int         timeDiff;
+
 	if (priv->pHnd)
 	    priv->pHnd->prepareDrawing ();
 

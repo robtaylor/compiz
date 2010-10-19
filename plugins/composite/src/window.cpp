@@ -300,13 +300,13 @@ CompositeWindow::damageOutputExtents ()
 void
 CompositeWindow::addDamageRect (const CompRect &rect)
 {
-    int x, y;
-
     if (priv->cScreen->damageMask () & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
     if (!damageRect (false, rect))
     {
+	int x, y;
+
 	x = rect.x ();
 	y = rect.y ();
 
