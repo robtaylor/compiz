@@ -4098,7 +4098,7 @@ CompScreen::init (const char *name)
     Window               rootReturn, parentReturn;
     Window               *children;
     unsigned int         nchildren;
-    int                  defaultDepth, nvisinfo;
+    int                  nvisinfo;
     XSetWindowAttributes attrib;
 
     CompOption::Value::Vector vList;
@@ -4334,8 +4334,6 @@ CompScreen::init (const char *name)
 			"Couldn't get visual info for default visual");
 	return false;
     }
-
-    defaultDepth = visinfo->depth;
 
     black.red = black.green = black.blue = 0;
 

@@ -135,8 +135,7 @@ PropertyWriter::readProperty (Window id)
     Atom 	  type;
     int  	  retval, fmt;
     unsigned long nitems, exbyte;
-    long int	  *data;
-    int		  count = 0;		
+    long int	  *data;	
     
     if (mPropertyValues.empty ())
 	return mPropertyValues;
@@ -148,6 +147,8 @@ PropertyWriter::readProperty (Window id)
 
     if (retval == Success && !mPropertyValues.empty ())
     {
+	int  count = 0;	
+
 	if (type == XA_CARDINAL && fmt == 32 &&
 	    nitems == mPropertyValues.size ())
 	{
