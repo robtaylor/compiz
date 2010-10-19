@@ -42,8 +42,9 @@ class CompizToolboxScreen :
 class CompizToolboxPluginVTable :
     public CompPlugin::VTableForScreen <CompizToolboxScreen>
 {
-    bool init ();
-    void fini ();
+    public:
+	bool init ();
+	void fini ();
 };
 
 COMPIZ_PLUGIN_20090315 (compiztoolbox, CompizToolboxPluginVTable);
