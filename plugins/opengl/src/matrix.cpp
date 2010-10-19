@@ -174,7 +174,7 @@ GLMatrix::rotate (const float angle,
 		    const float zRot)
 {
     float x = xRot, y = yRot, z = zRot;
-    float xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c, s, c;
+    float s, c;
     float matrix[16];
     bool  optimized;
 
@@ -249,6 +249,7 @@ GLMatrix::rotate (const float angle,
 
     if (!optimized)
     {
+	float xx, yy, zz, xy, yz, zx, xs, ys, zs, one_c;
 	const float mag = sqrtf (x * x + y * y + z * z);
 
 	if (mag <= 1.0e-4)

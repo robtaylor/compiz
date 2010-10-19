@@ -94,7 +94,6 @@ GLWindow::bind ()
 {
     const CompRect	&input = priv->window->inputRect ();
     const CompWindow::Geometry &wg = priv->window->geometry ();
-    CompWindow             *w = priv->window;
 
     if ((!priv->cWindow->pixmap () && !priv->cWindow->bind ()))
 	return false;
