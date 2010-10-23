@@ -205,7 +205,7 @@ PropertyWriter::readProperty (Window id)
 		        count++;
 		    }
 
-		    XFree (tData);
+		    XFreeStringList (tData);
 		    XFree (data);
 		    XFree (tProp.value);
 
@@ -213,7 +213,7 @@ PropertyWriter::readProperty (Window id)
 	        }
 	        else
 	        {
-		    XFree (tData);
+		    XFreeStringList (tData);
 		    XFree (data);
 		    XFree (tProp.value);
 
