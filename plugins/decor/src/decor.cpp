@@ -1511,7 +1511,10 @@ DecorScreen::updateDefaultShadowProperty ()
 		      PropModeReplace, (unsigned char *) data, 4);
 
     if (XStringListToTextProperty (&colorString, 1, &xtp))
+    {
 	XSetTextProperty (screen->dpy (), screen->root (), &xtp, shadowColorAtom);
+	XFree (xtp.value);
+    }
 
     free (colorString);
 
