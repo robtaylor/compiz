@@ -207,6 +207,7 @@ PropertyWriter::readProperty (Window id)
 
 		    XFree (tData);
 		    XFree (data);
+		    XFree (tProp.value);
 
 		    return mPropertyValues;
 	        }
@@ -214,6 +215,7 @@ PropertyWriter::readProperty (Window id)
 	        {
 		    XFree (tData);
 		    XFree (data);
+		    XFree (tProp.value);
 
 		    return nilValues;
 	        }
@@ -221,6 +223,7 @@ PropertyWriter::readProperty (Window id)
 	    else
 	    {
 		XFree (data);
+		XFree (tProp.value);
 
 	        return nilValues;
 	    }

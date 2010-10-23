@@ -729,7 +729,7 @@ PrivateGLScreen::updateScreenBackground ()
     unsigned long nItems;
     unsigned long bytesAfter;
     unsigned char *prop;
-    Pixmap	  pixmap = 0;
+    Pixmap	  pixmap = None;
 
     pixmapAtom = XInternAtom (dpy, "PIXMAP", false);
 
@@ -747,7 +747,7 @@ PrivateGLScreen::updateScreenBackground ()
 		actualFormat == 32         &&
 		nItems	     == 1)
 	    {
-		Pixmap p;
+		Pixmap p = None;
 
 		memcpy (&p, prop, 4);
 

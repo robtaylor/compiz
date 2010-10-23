@@ -679,7 +679,7 @@ DecorWindow::update (bool allowDecoration)
 
     if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
 	decorate = false;
-    
+
     if (decorate)
     {
 	if (!dScreen->optionGetDecorationMatch ().evaluate (window))
@@ -864,7 +864,6 @@ DecorWindow::updateInputFrame ()
 {
     XRectangle           rects[4];
     int                  x, y, width, height;
-    int                  i = 0;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
     CompWindowExtents    input;
@@ -919,6 +918,7 @@ DecorWindow::updateInputFrame ()
 
     if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
     {
+	int    i = 0;
 	oldX = x;
 	oldY = y;
 	oldWidth  = width;
@@ -976,7 +976,6 @@ DecorWindow::updateOutputFrame ()
 {
     XRectangle           rects[4];
     int                  x, y, width, height;
-    int                  i = 0;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
     CompWindowExtents    input;
@@ -1038,6 +1037,7 @@ DecorWindow::updateOutputFrame ()
 
     if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
     {
+	int    i = 0;
 	oldX = x;
 	oldY = y;
 	oldWidth  = width;
@@ -1488,35 +1488,35 @@ DecorScreen::updateDefaultShadowProperty ()
     CompOption *colorOption = CompOption::findOption (getOptions (), "shadow_color");
     char *colorString;
     XTextProperty xtp;
-    
+
     if (!colorOption)
 	return;
-    
+
     colorString = strdup (CompOption::colorToString (colorOption->value ().c ()).c_str ());
-    
+
     /* 1) Shadow Radius
      * 2) Shadow Opacity
      * 3) Shadow Offset X
      * 4) Shadow Offset Y
      */
-    
+
     /* the precision is 0.0001, so multiply by 1000 */
     data[0] = optionGetShadowRadius () * 1000;
     data[1] = optionGetShadowOpacity () * 1000;
     data[2] = optionGetShadowXOffset ();
     data[3] = optionGetShadowYOffset ();
-    
+
     XChangeProperty (screen->dpy (), screen->root (),
 		      shadowInfoAtom, XA_INTEGER, 32,
 		      PropModeReplace, (unsigned char *) data, 4);
-    
+
     if (XStringListToTextProperty (&colorString, 1, &xtp))
 	XSetTextProperty (screen->dpy (), screen->root (), &xtp, shadowColorAtom);
 
     free (colorString);
-    
-    
-}    
+
+
+}
 
 bool
 DecorScreen::setOption (const CompString  &name,

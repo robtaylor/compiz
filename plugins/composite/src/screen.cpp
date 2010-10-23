@@ -687,7 +687,7 @@ CompositeScreen::setFPSLimiterMode (CompositeFPSLimiterMode newMode)
 int
 PrivateCompositeScreen::getTimeToNextRedraw (struct timeval *tv)
 {
-    int diff
+    int diff;
 
     diff = TIMEVALDIFF (tv, &lastRedraw);
 
