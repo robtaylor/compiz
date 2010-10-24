@@ -1,5 +1,7 @@
-Release 0.9.2 (2010-10-27 Sam Spilsbury <smspillaz@gmail.com>)
+Release 0.9.2 (2010-10-24 Sam Spilsbury <smspillaz@gmail.com>)
 ==============================================================
+Development release.
+
 Made minimization functions wrappable
 
 Decorators now get shadow settings from window properties on the root
