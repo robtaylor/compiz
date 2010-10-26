@@ -29,6 +29,7 @@
 #include <core/core.h>
 #include <core/atoms.h>
 #include <core/pluginclasshandler.h>
+#include <core/timer.h>
 
 class RegexScreen :
     public PluginClassHandler<RegexScreen, CompScreen>,
@@ -40,10 +41,14 @@ class RegexScreen :
 
 	void handleEvent (XEvent *event);
 
+	bool applyInitialActions ();
+
 	CompMatch::Expression * matchInitExp (const CompString& value);
 
 	Atom roleAtom;
 	Atom visibleNameAtom;
+
+	CompTimer mApplyInitialActionsTimer;
 };
 
 class RegexWindow :
