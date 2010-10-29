@@ -40,7 +40,7 @@ PlaceScreen::PlaceScreen (CompScreen *screen) :
 PlaceScreen::~PlaceScreen ()
 {
     screen->addSupportedAtomsSetEnabled (this, false);
-    
+
     mResChangeFallbackHandle.stop ();
     screen->updateSupportedWmHints ();
 }
@@ -71,9 +71,9 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
     {
 	if (!w->managed ())
 	    continue;
-	
+
 	PLACE_WINDOW (w);
-	    
+
 	if (firstPass)
 	{
 	    /* count the windows that have struts */
@@ -83,7 +83,7 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 	    /* for maximized/fullscreen windows, keep window coords before
 	     * screen resize, as they are sometimes automaticall changed
 	     * before the 2nd pass */
-	    
+
 	    if (w->type () & CompWindowTypeFullscreenMask ||
 		(w->state () & (CompWindowStateMaximizedVertMask |
 			        CompWindowStateMaximizedHorzMask)))
@@ -91,13 +91,13 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 		pw->mPrevServer.set (w->serverX (), w->serverY ());
 	    }
 	}
-	
+
 	if (w->wmType () & (CompWindowTypeDockMask |
 			    CompWindowTypeDesktopMask))
 	{
 	    continue;
 	}
-	
+
 	/* Also in the first pass, we save the rectangle of those windows that
 	 * don't already have a saved one. So, skip those tat do. */
 
@@ -105,11 +105,11 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 	    continue;
 
 	winRect = ((CompRect) w->serverGeometry ());
-	
-	
+
+
 	pivotX = winRect.x ();
 	pivotY = winRect.y ();
-	
+
 	if (w->type () & CompWindowTypeFullscreenMask ||
 	    (w->state () & (CompWindowStateMaximizedVertMask |
 	    		    CompWindowStateMaximizedHorzMask)))
@@ -122,10 +122,10 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 
 	    if (w->saveMask () & CWWidth)
 		winRect.setWidth (w->saveWc ().width);
-		
+
 	    if (w->saveMask () & CWHeight)
 		winRect.setHeight (w->saveWc ().height);
-		
+
 	    pivotX = pw->mPrevServer.x ();
 	    pivotY = pw->mPrevServer.y ();
 	}
@@ -167,7 +167,7 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 
 	    xwc.x = winRect.x ();
 	    xwc.y = winRect.y ();
-	    
+
 	    shiftX = vpX * (newWidth - screen->width ());
 	    shiftY = vpY * (newWidth - screen->height ());
 
@@ -305,13 +305,13 @@ PlaceScreen::handleScreenSizeChangeFallback (int width,
 {
     /* If countdown is not finished yet (i.e. at least one struct window didn't
      * update its struts), reset the count down and do the 2nd pass here */
-     
+
     if (mStrutWindowCount > 0) /* no windows with struts found */
     {
 	mStrutWindowCount = 0;
 	doHandleScreenSizeChange (false, width, height);
     }
-    
+
     return false;
 }
 
@@ -320,23 +320,23 @@ PlaceScreen::handleScreenSizeChange (int width,
 				     int height)
 {
     CompRect       extents;
-    
+
     if (screen->width () == width && screen->height () == height)
 	return;
-    
+
     mPrevSize.setWidth (screen->width ());
-    mPrevSize.setHeight (screen->height ());    
+    mPrevSize.setHeight (screen->height ());
 
     if (mResChangeFallbackHandle.active ())
 	mResChangeFallbackHandle.stop ();
 
     doHandleScreenSizeChange (true, width, height);
-    
+
     if (mStrutWindowCount == 0) /* no windows with struts found */
     {
 	mResChangeFallbackHandle.stop ();
 	/* do the 2nd pass right here instead of handleEvent */
-	
+
 	doHandleScreenSizeChange (false, width, height);
     }
     else
@@ -354,7 +354,7 @@ PlaceScreen::handleEvent (XEvent *event)
     switch (event->type)
     {
 	case ConfigureNotify:
-	    {	
+	    {
 
 		if (event->type == ConfigureNotify &&
 		event->xconfigure.window == screen->root ())
@@ -497,17 +497,17 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
     CompWindow::Geometry geom;
     int      output;
     bool     sizeOnly = true;
-    
+
     if (clampToViewport)
     {
 	/* left, right, top, bottom target coordinates, clamed to viewport
 	 * sizes as we don't need to validate movements to other viewports;
 	 * we are only interested in inner-viewport movements */
-	 
+
 	x = xwc->x % screen->width ();
 	if ((x + xwc->width) < 0)
 	    x += screen->width ();
-		
+
 	y = xwc->y % screen->height ();
 	if ((y + xwc->height))
 	    y += screen->height ();
@@ -659,7 +659,7 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	/* try to keep the window position intact for USPosition -
 	   obviously we can't do that if we need to change the size */
 	sizeOnly = true;
-    
+
     doValidateResizeRequest (mask, xwc, sizeOnly, true);
 }
 
@@ -957,8 +957,12 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 
 		xl = w->serverX () - w->input ().left;
 		yt = w->serverY () - w->input ().top;
-		xr = xl + w->serverWidth ();
-		yb = yt + w->serverHeight ();
+		xr = w->serverX () + w->serverWidth () +
+		     w->input ().right +
+		     w->serverGeometry ().border () * 2;
+		yb = w->serverY () + w->serverHeight () +
+		     w->input ().bottom +
+		     w->serverGeometry ().border () * 2;
 
 		/* if windows overlap, calc the overall overlapping */
 		if (cxl < xr && cxr > xl && cyt < yb && cyb > yt)
@@ -1015,8 +1019,12 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 
 		xl = w->serverX () - w->input ().left;
 		yt = w->serverY () - w->input ().top;
-		xr = xl + w->serverWidth ();
-		yb = yt + w->serverHeight ();
+		xr = w->serverX () + w->serverWidth () +
+		     w->input ().right +
+		     w->serverGeometry ().border () * 2;
+		yb = w->serverY () + w->serverHeight () +
+		     w->input ().bottom +
+		     w->serverGeometry ().border () * 2;
 
 		/* if not enough room above or under the current
 		 * client determine the first non-overlapped x position
@@ -1050,8 +1058,12 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 
 		xl = w->serverX () - w->input ().left;
 		yt = w->serverY () - w->input ().top;
-		xr = xl + w->serverWidth ();
-		yb = yt + w->serverHeight ();
+		xr = w->serverX () + w->serverWidth () +
+		     w->input ().right +
+		     w->serverGeometry ().border () * 2;
+		yb = w->serverY () + w->serverHeight () +
+		     w->input ().bottom +
+		     w->serverGeometry ().border () * 2;
 
 		/* if not enough room to the left or right of the current
 		 * client determine the first non-overlapped y position
@@ -1352,7 +1364,7 @@ PlaceWindow::hasUserDefinedPosition (bool acceptPPosition)
 	if (window->sizeHints ().flags & USPosition)
 	    return true;
     }
-   
+
     return false;
 }
 
@@ -1408,7 +1420,7 @@ PlaceWindow::getPlacementOutput (int		   mode,
 {
     int output = -1;
     int multiMode;
-    
+
     /* short cut: it makes no sense to determine a placement
        output if there is only one output */
     if (screen->outputDevs ().size () == 1)
@@ -1438,7 +1450,7 @@ PlaceWindow::getPlacementOutput (int		   mode,
 
     if (output >= 0)
 	return screen->outputDevs ()[output];
-	
+
     multiMode = ps->optionGetMultioutputMode ();
     /* force 'output with pointer' for placement under pointer */
     if (mode == PlaceOptions::ModePointer)
@@ -1503,14 +1515,16 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
     CompWindowExtents extents;
     int               delta;
 
-    extents.left   = pos.x ()- window->input ().left;
+    extents.left   = pos.x () - window->input ().left;
     extents.top    = pos.y () - window->input ().top;
-    extents.right  = window->serverWidth () + (window->input ().left +
-    					       window->input ().right +
-					       2 * window->serverGeometry ().border ());
-    extents.bottom = window->serverHeight () + (window->input ().left +
-    					        window->input ().right +
-					        2 * window->serverGeometry ().border ());;
+    extents.right  = pos.x () + window->serverWidth () +
+		     (window->input ().left +
+		      window->input ().right +
+		      2 * window->serverGeometry ().border ());
+    extents.bottom = pos.y () + window->serverHeight () +
+		     (window->input ().left +
+		      window->input ().right +
+		      2 * window->serverGeometry ().border ());;
 
     delta = workArea.right () - extents.right;
     if (delta < 0)
@@ -1665,14 +1679,14 @@ PlaceWindow::grabNotify (int x,
 			 int y,
 			 unsigned int state,
 			 unsigned int mask)
-{    
+{
     if (mSavedOriginal)
     {
 	if (screen->grabExist ("move") ||
 	    screen->grabExist ("resize"))
 	    mSavedOriginal = false;
     }
-    
+
     window->grabNotify (x, y, state, mask);
 }
 
