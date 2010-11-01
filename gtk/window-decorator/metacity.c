@@ -868,8 +868,9 @@ meta_draw_window_decoration (decor_t *d)
 
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
-	gdk_window_move (gdk_frame_window, -(fgeom.left_width),
-					   -(fgeom.bottom_height));
+	gdk_window_move (gdk_frame_window,
+			 d->context->left_corner_space - 1,
+			 d->context->top_corner_space - 1);
 	gdk_window_lower (gdk_frame_window);
     }
 
