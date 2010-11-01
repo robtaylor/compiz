@@ -868,8 +868,8 @@ meta_draw_window_decoration (decor_t *d)
 
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
-	gdk_window_move (gdk_frame_window, -(d->context->left_space - extents.left),
-					   -(d->context->top_space - d->context->bottom_space) - shadow_offset_y);
+	gdk_window_move (gdk_frame_window, -(fgeom.left_width),
+					   -(fgeom.bottom_height));
 	gdk_window_lower (gdk_frame_window);
     }
 
@@ -1077,13 +1077,29 @@ meta_calc_decoration_size (decor_t *d,
 
     if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
     {
-	context = &max_window_context;
-	shadow  = max_border_shadow;
+	if (!d->frame_window)
+	{
+	    context = &max_window_context;
+	    shadow  = max_border_shadow;
+	}
+	else
+	{
+	    context = &max_window_context_no_shadow;
+	    shadow  = max_border_no_shadow;
+	}
     }
     else
     {
-	context = &window_context;
-	shadow  = border_shadow;
+	if (!d->frame_window)
+	{
+	    context = &window_context;
+	    shadow  = border_shadow;
+	}
+	else
+	{
+	    context = &window_context_no_shadow;
+	    shadow  = border_no_shadow;
+	}
     }
 
     if (!d->frame_window)
@@ -1119,7 +1135,7 @@ meta_calc_decoration_size (decor_t *d,
 	*height = layout.height;
 
 	d->border_layout = layout;
-	d->shadow	 = NULL;
+	d->shadow	 = no_border_shadow;
 	d->context       = context;
 
 	meta_calc_button_size (d);

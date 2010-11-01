@@ -48,6 +48,18 @@ decor_context_t max_window_context = {
     0, 0, 0, 0
 };
 
+decor_context_t window_context_no_shadow = {
+    { 0, 0, 0, 0 },
+    6, 6, 4, 6,
+    0, 0, 0, 0
+};
+
+decor_context_t max_window_context_no_shadow = {
+    { 0, 0, 0, 0 },
+    6, 6, 4, 6,
+    0, 0, 0, 0
+};
+
 decor_context_t switcher_context = {
     { 0, 0, 0, 0 },
     6, 6, 6, 6 + SWITCHER_SPACE,
@@ -75,6 +87,8 @@ guint cmdline_options = 0;
 decor_shadow_t *no_border_shadow = NULL;
 decor_shadow_t *border_shadow = NULL;
 decor_shadow_t *max_border_shadow = NULL;
+decor_shadow_t *border_no_shadow = NULL;
+decor_shadow_t *max_border_no_shadow = NULL;
 decor_shadow_t *switcher_shadow = NULL;
 
 GdkPixmap *decor_normal_pixmap = NULL;

@@ -468,18 +468,25 @@ draw_border_shape (Display	   *xdisplay,
 int
 update_shadow (void)
 {
-    decor_shadow_options_t opt;
+    decor_shadow_options_t opt_shadow;
+    decor_shadow_options_t opt_no_shadow;
     Display		   *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     GdkDisplay		   *display = gdk_display_get_default ();
     GdkScreen		   *screen = gdk_display_get_default_screen (display);
 
-    opt.shadow_radius  = shadow_radius;
-    opt.shadow_opacity = shadow_opacity;
+    opt_shadow.shadow_radius  = shadow_radius;
+    opt_shadow.shadow_opacity = shadow_opacity;
 
-    memcpy (opt.shadow_color, shadow_color, sizeof (shadow_color));
+    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
 
-    opt.shadow_offset_x = shadow_offset_x;
-    opt.shadow_offset_y = shadow_offset_y;
+    opt_shadow.shadow_offset_x = shadow_offset_x;
+    opt_shadow.shadow_offset_y = shadow_offset_y;
+
+    opt_no_shadow.shadow_radius  = 0;
+    opt_no_shadow.shadow_opacity = 0;
+
+    opt_no_shadow.shadow_offset_x = 0;
+    opt_no_shadow.shadow_offset_y = 0;
 
     if (no_border_shadow)
     {
@@ -495,7 +502,7 @@ update_shadow (void)
 					    0,
 					    0,
 					    0, 0, 0, 0,
-					    &opt,
+					    &opt_shadow,
 					    &shadow_context,
 					    decor_draw_simple,
 					    0);
@@ -521,10 +528,39 @@ update_shadow (void)
 					 TRANSLUCENT_CORNER_SIZE,
 					 _win_extents.bottom -
 					 TRANSLUCENT_CORNER_SIZE,
-					 &opt,
+					 &opt_shadow,
 					 &window_context,
 					 draw_border_shape,
 					 0);
+
+    if (border_no_shadow)
+    {
+	decor_shadow_destroy (xdisplay, border_no_shadow);
+	border_no_shadow = NULL;
+    }
+
+    border_no_shadow = decor_shadow_create (xdisplay,
+					 gdk_x11_screen_get_xscreen (screen),
+					 1, 1,
+					 _win_extents.left,
+					 _win_extents.right,
+					 _win_extents.top + titlebar_height,
+					 _win_extents.bottom,
+					 _win_extents.left -
+					 TRANSLUCENT_CORNER_SIZE,
+					 _win_extents.right -
+					 TRANSLUCENT_CORNER_SIZE,
+					 _win_extents.top + titlebar_height -
+					 TRANSLUCENT_CORNER_SIZE,
+					 _win_extents.bottom -
+					 TRANSLUCENT_CORNER_SIZE,
+					 &opt_no_shadow,
+					 &window_context_no_shadow,
+					 draw_border_shape,
+					 0);
+
+    decor_context_t *context = &window_context_no_shadow;
+
 
     if (max_border_shadow)
     {
@@ -545,8 +581,32 @@ update_shadow (void)
 			     _max_win_extents.top + max_titlebar_height -
 			     TRANSLUCENT_CORNER_SIZE,
 			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-			     &opt,
+			     &opt_shadow,
 			     &max_window_context,
+			     draw_border_shape,
+			     (void *) 1);
+
+    if (max_border_no_shadow)
+    {
+	decor_shadow_destroy (xdisplay, max_border_shadow);
+	max_border_shadow = NULL;
+    }
+
+    max_border_no_shadow =
+	decor_shadow_create (xdisplay,
+			     gdk_x11_screen_get_xscreen (screen),
+			     1, 1,
+			     _max_win_extents.left,
+			     _max_win_extents.right,
+			     _max_win_extents.top + max_titlebar_height,
+			     _max_win_extents.bottom,
+			     _max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+			     _max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+			     _max_win_extents.top + max_titlebar_height -
+			     TRANSLUCENT_CORNER_SIZE,
+			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+			     &opt_no_shadow,
+			     &max_window_context_no_shadow,
 			     draw_border_shape,
 			     (void *) 1);
 
@@ -571,7 +631,7 @@ update_shadow (void)
 					   TRANSLUCENT_CORNER_SIZE,
 					   _switcher_extents.bottom -
 					   TRANSLUCENT_CORNER_SIZE,
-					   &opt,
+					   &opt_shadow,
 					   &switcher_context,
 					   decor_draw_simple,
 					   0);

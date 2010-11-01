@@ -234,11 +234,10 @@ extern int titlebar_height;
 extern int max_titlebar_height;
 
 extern decor_context_t window_context;
-
+extern decor_context_t window_context_no_shadow;
 extern decor_context_t max_window_context;
-
+extern decor_context_t max_window_context_no_shadow;
 extern decor_context_t switcher_context;
-
 extern decor_context_t shadow_context;
 
 extern gdouble shadow_radius;
@@ -261,7 +260,9 @@ extern guint cmdline_options;
 
 extern decor_shadow_t *no_border_shadow;
 extern decor_shadow_t *border_shadow;
+extern decor_shadow_t *border_no_shadow;
 extern decor_shadow_t *max_border_shadow;
+extern decor_shadow_t *max_border_no_shadow;
 extern decor_shadow_t *switcher_shadow;
 
 extern GdkPixmap *decor_normal_pixmap;
