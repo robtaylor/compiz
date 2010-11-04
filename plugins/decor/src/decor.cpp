@@ -679,7 +679,7 @@ DecorWindow::update (bool allowDecoration)
 
     if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
 	decorate = false;
-    
+
     if (decorate)
     {
 	if (!dScreen->optionGetDecorationMatch ().evaluate (window))
@@ -783,11 +783,36 @@ DecorWindow::update (bool allowDecoration)
     {
 	XWindowChanges xwc;
 	unsigned int   mask = CWX | CWY;
+	int	       out = screen->outputDeviceForGeometry (window->serverGeometry ());
+	const CompRect &workArea =
+	screen->outputDevs ().at (out).workArea ();
 
 	memset (&xwc, 0, sizeof (XWindowChanges));
 
 	xwc.x = window->serverGeometry ().x () + moveDx;
 	xwc.y = window->serverGeometry ().y () + moveDy;
+
+	/* Constrain to workArea */
+
+
+	if (!workArea.contains (CompRect (xwc.x - window->input ().left,
+					  xwc.y - window->input ().top,
+					  window->inputRect ().width (),
+					  window->inputRect ().height ())))
+	{
+	    int tx = MIN (0, xwc.x - window->input ().left - workArea.x ());
+	    int ty = MIN (0, xwc.y - window->input ().top - workArea.y ());
+
+	    if (!fabs (tx))
+		tx = MIN (0, workArea.x2 () -
+			  (xwc.x + window->width () + window->input ().right));
+	    if (!fabs (ty))
+		ty = MIN (0, workArea.y2 () -
+			  (xwc.y + window->height () + window->input ().bottom));
+
+	    xwc.x += tx;
+	    xwc.y += ty;
+	}
 
 	if (window->state () & CompWindowStateFullscreenMask)
 	    mask &= ~(CWX | CWY);
@@ -864,7 +889,6 @@ DecorWindow::updateInputFrame ()
 {
     XRectangle           rects[4];
     int                  x, y, width, height;
-    int                  i = 0;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
     CompWindowExtents    input;
@@ -919,6 +943,7 @@ DecorWindow::updateInputFrame ()
 
     if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
     {
+	int    i = 0;
 	oldX = x;
 	oldY = y;
 	oldWidth  = width;
@@ -976,7 +1001,6 @@ DecorWindow::updateOutputFrame ()
 {
     XRectangle           rects[4];
     int                  x, y, width, height;
-    int                  i = 0;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
     CompWindowExtents    input;
@@ -1038,6 +1062,7 @@ DecorWindow::updateOutputFrame ()
 
     if (x != oldX || y != oldY || width != oldWidth || height != oldHeight)
     {
+	int    i = 0;
 	oldX = x;
 	oldY = y;
 	oldWidth  = width;
@@ -1488,33 +1513,38 @@ DecorScreen::updateDefaultShadowProperty ()
     CompOption *colorOption = CompOption::findOption (getOptions (), "shadow_color");
     char *colorString;
     XTextProperty xtp;
-    
+
     if (!colorOption)
 	return;
-    
-    colorString = (char *) CompOption::colorToString (colorOption->value ().c ()).c_str ();
-    
+
+    colorString = strdup (CompOption::colorToString (colorOption->value ().c ()).c_str ());
+
     /* 1) Shadow Radius
      * 2) Shadow Opacity
      * 3) Shadow Offset X
      * 4) Shadow Offset Y
      */
-    
+
     /* the precision is 0.0001, so multiply by 1000 */
     data[0] = optionGetShadowRadius () * 1000;
     data[1] = optionGetShadowOpacity () * 1000;
     data[2] = optionGetShadowXOffset ();
     data[3] = optionGetShadowYOffset ();
-    
+
     XChangeProperty (screen->dpy (), screen->root (),
 		      shadowInfoAtom, XA_INTEGER, 32,
 		      PropModeReplace, (unsigned char *) data, 4);
-    
+
     if (XStringListToTextProperty (&colorString, 1, &xtp))
+    {
 	XSetTextProperty (screen->dpy (), screen->root (), &xtp, shadowColorAtom);
-    
-    
-}    
+	XFree (xtp.value);
+    }
+
+    free (colorString);
+
+
+}
 
 bool
 DecorScreen::setOption (const CompString  &name,

@@ -1154,10 +1154,10 @@ KWD::Window::updateProperty (void)
 
 	  int	topXOffset = width;
 	  QWidget *widget = mDecor->widget ();
-	  int	x;
 
 	  if (widget)
 	  {
+	      int		    x;
 	      const QList<QObject*> children = widget->children ();
 
 	      foreach (QObject *obj, children)
@@ -1301,10 +1301,6 @@ KWD::Window::updateWindowGeometry (void)
 	return;
 
     QRect	geometry = wInfo.geometry ();
-    int         w, h;
-
-    w = mGeometry.width () + mBorder.left + mBorder.right;
-    h = mGeometry.height () + mBorder.top + mBorder.bottom;
 
     if (mGeometry.width ()  != geometry.width () ||
 	mGeometry.height () != geometry.height ())

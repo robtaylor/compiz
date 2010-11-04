@@ -484,6 +484,9 @@ CompAction::operator== (const CompAction& val)
 CompAction &
 CompAction::operator= (const CompAction &action)
 {
+    if (this == &action)
+	return *this;
+
     delete priv;
     priv = new PrivateAction (*action.priv);
 

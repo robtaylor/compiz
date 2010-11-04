@@ -370,23 +370,6 @@ update_switcher_window (WnckWindow *win,
 	switcher_selected_window = selected;
     }
 
-    if (width == d->width && height == d->height)
-    {
-
-	if (!d->picture)
-	{
-	    XRenderPictFormat *format;
-
-	    format = get_format_for_drawable (d,
-					      GDK_DRAWABLE (d->buffer_pixmap));
-	    d->picture = XRenderCreatePicture (xdisplay,
-					       GDK_PIXMAP_XID (buffer_pixmap),
-					       format, 0, NULL);
-	}
-	queue_decor_draw (d);
-	return FALSE;
-    }
-
     pixmap = create_pixmap (width, height, 32);
     if (!pixmap)
 	return FALSE;

@@ -676,8 +676,7 @@ draw_window_decoration (decor_t *d)
 
 	gtk_image_set_from_pixmap (GTK_IMAGE (d->decor_image), d->pixmap, NULL);
 	gtk_window_resize (GTK_WINDOW (d->decor_window), d->width, d->height);
-	gdk_window_reparent (gdk_frame_window, d->frame_window,
-			     -_win_extents.left - 2, -_win_extents.top - 2);
+	gdk_window_move (gdk_frame_window, 0, 0);
 	gdk_window_lower (gdk_frame_window);
     }
 
@@ -765,15 +764,15 @@ calc_decoration_size (decor_t *d,
 	if (w < top_width)
 	    top_width = MAX (ICON_SPACE + d->button_width, w);
 
-	decor_get_default_layout (&window_context,
+	decor_get_default_layout (&window_context_no_shadow,
 				  d->client_width, d->client_height, &layout);
 
 	*width = layout.width;
 	*height = layout.height;
 
 	d->border_layout = layout;
-	d->context = &window_context;
-	d->shadow = border_shadow;
+	d->context = &window_context_no_shadow;
+	d->shadow = border_no_shadow;
 
 	return TRUE;
     }

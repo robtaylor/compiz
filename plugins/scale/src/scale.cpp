@@ -90,7 +90,7 @@ PrivateScaleWindow::isScaleWin () const
 		return false;
 	    break;
 	case ScaleTypeOutput:
-	    if ((unsigned int) window->outputDevice () != 
+	    if ((unsigned int) window->outputDevice () !=
 	    		       (unsigned int) screen->currentOutputDev ().id ())
 		return false;
 	default:
@@ -147,7 +147,6 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 	    float  x, y;
 	    int    width, height;
 	    int    scaledWinWidth, scaledWinHeight;
-	    float  ds;
 
 	    scaledWinWidth  = priv->window->width () * priv->scale;
 	    scaledWinHeight = priv->window->height () * priv->scale;
@@ -194,6 +193,7 @@ ScaleWindow::scalePaintDecoration (const GLWindowPaintAttrib& attrib,
 	    if (priv->delta)
 	    {
 		float o;
+		float ds;
 
 		ds = fabs (priv->tx) +
 		     fabs (priv->ty) +

@@ -273,15 +273,34 @@ RegexScreen::handleEvent (XEvent *event)
     }
 }
 
+/* It's not safe to call CompScreen::matchExpHandlerChanged
+ * from the ::RegexScreen constructor since that could end
+ * up calling RegexWindow::get () on windows (which haven't
+ * had a RegexWindow struct created for them) through
+ * ::matchExpHandlerChanged -> CompMatch::evaluate () ->
+ * RegexExp::evaluate () ->  RegexWindow::get ()
+ */
+
+bool
+RegexScreen::applyInitialActions ()
+{
+    screen->matchExpHandlerChanged ();
+    return false;
+}
+
 RegexScreen::RegexScreen (CompScreen *s) :
     PluginClassHandler<RegexScreen, CompScreen> (s)
 {
+    CompTimer::CallBack cb =
+	boost::bind (&RegexScreen::applyInitialActions, this);
     ScreenInterface::setHandler (s);
 
     roleAtom        = XInternAtom (s->dpy (), "WM_WINDOW_ROLE", 0);
     visibleNameAtom = XInternAtom (s->dpy (), "_NET_WM_VISIBLE_NAME", 0);
 
-    s->matchExpHandlerChanged ();
+    mApplyInitialActionsTimer.setTimes (0, 0);
+    mApplyInitialActionsTimer.setCallback (cb);
+    mApplyInitialActionsTimer.start ();
 }
 
 RegexScreen::~RegexScreen ()

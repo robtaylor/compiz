@@ -414,6 +414,7 @@ namespace GLFragment {
 		dataOp.data += functionPrefix;
 		dataOp.data += "_";
 		dataOp.data += header.name;
+
 		callBack (&dataOp, index);
 
 		count++;
@@ -526,6 +527,7 @@ namespace GLFragment {
 	int                     mask = COMP_FUNCTION_MASK;
 	int                     type;
 	GLint                   errorPos;
+	GLenum			errorType;
 	CompString fetchData;
 	bool       indices[MAX_FRAGMENT_FUNCTIONS];
 	int        i;
@@ -587,7 +589,8 @@ namespace GLFragment {
 			      fetchData.size (), fetchData.c_str ());
 
 	glGetIntegerv (GL_PROGRAM_ERROR_POSITION_ARB, &errorPos);
-	if (glGetError () != GL_NO_ERROR || errorPos != -1)
+	errorType = glGetError ();
+	if (errorType != GL_NO_ERROR || errorPos != -1)
 	{
 	    compLogMessage ("opengl", CompLogLevelError,
 			    "failed to load fragment program");
@@ -648,9 +651,46 @@ namespace GLFragment {
 	    size_t pos = data.find (h.name);
 	    while (pos != std::string::npos)
 	    {
-		data.insert (pos,inPrefix);
-		pos += inPrefix.size () + h.name.size ();
-		pos = data.find (h.name, pos);
+		bool prependPrefix = false;
+		/* It is possible to match parts of words here, so
+		 * make sure that we have found the next chunk in the
+		 * string and not just a header which matches
+		 * part of another word */
+		if (data.size () > pos + h.name.size ())
+		{
+		    const CompString &token = data.substr (pos + h.name.size (), 1);
+		    if (token == "," ||
+			token == "." ||
+			token == ";")
+		    {
+			prependPrefix = true;
+		    }
+		    else
+		    {
+			/* We matched part of another word as our
+			 * token so search for the next whole
+			 * header op */
+			pos = data.find (h.name, pos + 1);
+		    }
+		}
+		else
+		{
+		    /* If this is the last word in the string, then it must
+		     * have matched exactly our header op, so it is ok
+		     * to prepend a prefix here and go straight to
+		     * std::string::npos */
+		    prependPrefix = true;
+		}
+
+		if (prependPrefix)
+		{
+		    /* prepend the header op prefix to the header op
+		     * and seek past this word to the next instance
+		     * of the unprepended header op */
+		    data.insert (pos, inPrefix);
+		    pos += inPrefix.size () + h.name.size ();
+		    pos = data.find (h.name, pos);
+		}
 	    }
 	}
 

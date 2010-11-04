@@ -15,7 +15,7 @@ shadow_property_changed (WnckScreen *s)
     int  result, format;
     unsigned long n, left;
     unsigned char *prop_data;
-    gboolean	  changed = 0;
+    gboolean	  changed = FALSE;
     XTextProperty shadow_color_xtp;
 
     result = XGetWindowProperty (xdisplay, root, compiz_shadow_info_atom,

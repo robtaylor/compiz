@@ -409,6 +409,9 @@ CompOption::Value::operator!= (const CompOption::Value &val)
 CompOption::Value &
 CompOption::Value::operator= (const CompOption::Value &val)
 {
+    if (this == &val)
+	return *this;
+
     delete priv;
     priv = new PrivateValue (*val.priv);
 
@@ -581,6 +584,9 @@ CompOption::Restriction::inRange (float f)
 CompOption::Restriction &
 CompOption::Restriction::operator= (const CompOption::Restriction &rest)
 {
+    if (this == &rest)
+	return *this;
+	
     delete priv;
     priv = new PrivateRestriction (*rest.priv);
     return *this;
@@ -800,6 +806,9 @@ CompOption::isAction ()
 CompOption &
 CompOption::operator= (const CompOption &option)
 {
+    if (this == &option)
+	return *this;
+	
     delete priv;
     priv = new PrivateOption (*option.priv);
     return *this;

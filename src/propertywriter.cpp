@@ -55,7 +55,7 @@ PropertyWriter::updateProperty (Window		  	 id,
 				int			 type)
 {
     int count = 0;
-    
+
 
     if (type != XA_STRING)
     {
@@ -89,7 +89,7 @@ PropertyWriter::updateProperty (Window		  	 id,
         char * data[propertyData.size ()];
         XTextProperty prop;
         bool   ok = true;
-        
+
         foreach (CompOption &o, propertyData)
         {
 	    switch (o.type ())
@@ -101,10 +101,10 @@ PropertyWriter::updateProperty (Window		  	 id,
 		    data[count] = NULL;
 		    break;
 	    }
-	
+
 	    count++;
         }
-        
+
         for (int i = 0; i < count; i++)
         {
 	    if (data[i] == NULL)
@@ -112,14 +112,17 @@ PropertyWriter::updateProperty (Window		  	 id,
 	        ok = false;
 	    }
         }
-        
+
         if (ok)
         {
 	    if (XStringListToTextProperty (data, count, &prop))
+	    {
 	        XSetTextProperty (screen->dpy (), id, &prop, mAtom);
+		XFree (prop.value);
+	    }
         }
     }
-    
+
     return true;
 }
 
@@ -136,8 +139,7 @@ PropertyWriter::readProperty (Window id)
     int  	  retval, fmt;
     unsigned long nitems, exbyte;
     long int	  *data;
-    int		  count = 0;		
-    
+
     if (mPropertyValues.empty ())
 	return mPropertyValues;
 
@@ -148,6 +150,8 @@ PropertyWriter::readProperty (Window id)
 
     if (retval == Success && !mPropertyValues.empty ())
     {
+	int  count = 0;
+
 	if (type == XA_CARDINAL && fmt == 32 &&
 	    nitems == mPropertyValues.size ())
 	{
@@ -169,12 +173,12 @@ PropertyWriter::readProperty (Window id)
 			o.set (tmpVal);
 			break;
 		}
-		
+
 		count++;
 	    }
-	    
+
 	    XFree (data);
-	    
+
 	    return mPropertyValues;
 	}
 	else if (type == XA_STRING && fmt == 8)
@@ -186,30 +190,41 @@ PropertyWriter::readProperty (Window id)
 	    {
 	        int  retCount = 0;
 	        char **tData = NULL;
-	        
+
 	        XTextPropertyToStringList (&tProp, &tData, &retCount);
-	        
+
 	        if (retCount == (int) mPropertyValues.size ())
 	        {
 		    foreach (CompOption &o, mPropertyValues)
 		    {
 		        CompOption::Value tmpVal;
 		        tmpVal = CompOption::Value (CompString ((char *) tData[count]));
-		        
+
 		        o.set (tmpVal);
-		        
+
 		        count++;
 		    }
+
+		    XFreeStringList (tData);
+		    XFree (data);
+		    XFree (tProp.value);
 
 		    return mPropertyValues;
 	        }
 	        else
 	        {
+		    XFreeStringList (tData);
+		    XFree (data);
+		    XFree (tProp.value);
+
 		    return nilValues;
-	        } 
+	        }
 	    }
 	    else
 	    {
+		XFree (data);
+		XFree (tProp.value);
+
 	        return nilValues;
 	    }
 	}
@@ -222,6 +237,6 @@ PropertyWriter::readProperty (Window id)
     {
 	return mPropertyValues;
     }
-    
+
     return mPropertyValues;
 }

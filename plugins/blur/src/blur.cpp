@@ -1810,8 +1810,6 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 
 		    if (function)
 		    {
-			int           i;
-
 			dstFa.addFunction (function);
 
 			(*GL::activeTexture) (GL_TEXTURE0_ARB + unit);
@@ -1834,7 +1832,7 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 			    GLMatrix tm, rm;
 			    float s_gen[4], t_gen[4], q_gen[4];
 
-			    for (i = 0; i < 16; i++)
+			    for (unsigned int i = 0; i < 16; i++)
 				tm[i] = 0;
 			    tm[0] = (bScreen->output->width () / 2.0) *
 				    bScreen->tx;
@@ -1852,7 +1850,7 @@ BlurWindow::glDrawTexture (GLTexture          *texture,
 
 			    tm *= bScreen->mvp;
 
-			    for (i = 0; i < iTC; i++)
+			    for (int i = 0; i < iTC; i++)
 			    {
 				(*GL::activeTexture) (GL_TEXTURE0_ARB +
 				    gWindow->geometry ().texUnits + (i * 2));

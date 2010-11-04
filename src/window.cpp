@@ -4103,7 +4103,6 @@ CompWindow::getIcon (int width,
 	    for (i = 0; i + 2 < n; i += iw * ih + 2)
 	    {
 		unsigned long *idata = (unsigned long *) data;
-		unsigned long j;
 
 		iw = idata[i];
 		ih = idata[i + 1];
@@ -4116,6 +4115,7 @@ CompWindow::getIcon (int width,
 
 		if (iw && ih)
 		{
+		    unsigned long j;
 		    icon = new CompIcon (screen, iw, ih);
 		    if (!icon)
 			continue;
@@ -5414,12 +5414,12 @@ CompWindow::mwmFunc ()
 void
 CompWindow::updateFrameRegion ()
 {
-    CompRect   r;
-    int        x, y;
-
-     if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
+    if (priv->frame && priv->serverGeometry.width () == priv->geometry.width () &&
 	 priv->serverGeometry.height () == priv->geometry.height ())
     {
+	CompRect   r;
+	int        x, y;
+
 	priv->frameRegion = CompRegion ();
 
 	updateFrameRegion (priv->frameRegion);

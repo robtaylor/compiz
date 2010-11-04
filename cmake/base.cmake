@@ -43,8 +43,8 @@ function (_check_compiz_cmake_macro)
         message ("Call \"sudo make findcompiz_install\" to install it.\n")
         compiz_print_configure_footer ()
     endif ()
-    add_custom_target (
-        findcompiz_install
+    add_custom_target (findcompiz_install
+	${CMAKE_COMMAND} -E make_directory ${COMPIZ_DESTDIR}${CMAKE_ROOT}/Modules &&
 	${CMAKE_COMMAND} -E copy ${CMAKE_SOURCE_DIR}/cmake/FindCompiz.cmake ${COMPIZ_DESTDIR}${CMAKE_ROOT}/Modules
     )
 endfunction ()

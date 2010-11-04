@@ -248,7 +248,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 	virtual void stateChangeNotify (unsigned int lastState);
 
 	virtual void updateFrameRegion (CompRegion &region);
-	
+
 	virtual void minimize ();
 	virtual void unminimize ();
 	virtual bool minimized ();
@@ -259,14 +259,14 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 
 /**
  * An Window object that wraps an X window. This handles snychronization of
- * window state, geometry, etc. between Compiz and the X server. 
+ * window state, geometry, etc. between Compiz and the X server.
  */
 class CompWindow :
-    public WrapableHandler<WindowInterface, 17>,
+    public WrapableHandler<WindowInterface, 18>,
     public PluginClassStorage
 {
     public:
-    
+
     /**
      * A mutable object about the dimensions and location of a CompWindow.
      */
@@ -298,7 +298,7 @@ class CompWindow :
 	~CompWindow ();
 
 	/**
-	*  Geometry retrieved from the 
+	*  Geometry retrieved from the
 	 * last ConfigureNotify event received
 	 */
 	Geometry & geometry () const;
@@ -514,7 +514,7 @@ class CompWindow :
 
 	static unsigned int allocPluginClassIndex ();
 	static void freePluginClassIndex (unsigned int index);
-	
+
 	bool updateStruts ();
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
@@ -540,7 +540,7 @@ class CompWindow :
 
 	WRAPABLE_HND (12, WindowInterface, void, updateFrameRegion,
 		      CompRegion &);
-	
+
 	WRAPABLE_HND (13, WindowInterface, void, minimize);
 	WRAPABLE_HND (14, WindowInterface, void, unminimize);
 	WRAPABLE_HND (15, WindowInterface, bool, minimized);
