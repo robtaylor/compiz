@@ -66,7 +66,6 @@ class DbusScreen :
 	~DbusScreen ();
 
 	CompFileWatchHandle fileWatch[DBUS_FILE_WATCH_NUM];
-	unsigned int internalRefCnt;
 
 	DBusConnection    *connection;
 	CompWatchFdHandle watchFdHandle;
