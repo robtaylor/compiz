@@ -1199,7 +1199,7 @@ DbusScreen::handleGetOptionMessage (DBusConnection                 *connection,
 {
     CompOption::Vector  &options = getOptionsFromPath (path);
     DBusMessage         *reply = NULL;
-
+    
     foreach (CompOption& option, options)
     {
 	if (option.name () == path[2])
@@ -1240,7 +1240,7 @@ DbusScreen::handleListMessage (DBusConnection                 *connection,
 {
     CompOption::Vector &options = getOptionsFromPath (path);
     DBusMessage        *reply;
-
+    
     reply   = dbus_message_new_method_return (message);
 
     foreach (CompOption& option, options)
@@ -1634,7 +1634,7 @@ DbusScreen::handleMessage (DBusConnection *connection,
 				     "Introspect"))
     {
 	status = handleOptionIntrospectMessage (connection, message, path);
-    }
+    }    
 #endif
 
     if (dbus_message_is_method_call (message, COMPIZ_DBUS_INTERFACE,
@@ -1724,7 +1724,7 @@ DbusScreen::getPathDecomposed (const char              *data,
     while ((pos = full.find ('/', lastPos)) != CompString::npos)
     {
 	CompString part = full.substr (lastPos, pos - lastPos);
-
+	
 	/* If we just have "/", then strip it, but don't push back
 	 * an empty string at the start
 	 */
@@ -1733,12 +1733,12 @@ DbusScreen::getPathDecomposed (const char              *data,
 	    lastPos = pos + 1;
 	    continue;
 	}
-
+	     
 	path.push_back (part);
 	lastPos = pos + 1;
     }
-
-    /* Remaining part because there was no "/" at the end of path */
+    
+    /* Remaining part because there was no "/" at the end of path */    
     path.push_back (full.substr (lastPos, pos - lastPos).c_str ());
 
     if (path.size () < 3)
@@ -1918,8 +1918,7 @@ DbusScreen::sendPluginsChangedSignal (const char *name)
 
 /* We might have to hook initScreen here instead of the screen ctor */
 DbusScreen::DbusScreen (CompScreen *screen) :
-    PluginClassHandler <DbusScreen, CompScreen> (screen),
-    internalRefCnt (0)
+    PluginClassHandler <DbusScreen, CompScreen> (screen)
 {
     DBusError         error;
     dbus_bool_t       status;
@@ -1932,7 +1931,6 @@ DbusScreen::DbusScreen (CompScreen *screen) :
     dbus_error_init (&error);
 
     connection = dbus_bus_get (DBUS_BUS_SESSION, &error);
-    internalRefCnt++;
     if (dbus_error_is_set (&error))
     {
 	compLogMessage ("dbus", CompLogLevelError,
@@ -1944,9 +1942,8 @@ DbusScreen::DbusScreen (CompScreen *screen) :
 
     ret = dbus_bus_request_name (connection,
 				 COMPIZ_DBUS_SERVICE_NAME,
-				 DBUS_NAME_FLAG_REPLACE_EXISTING  |
-				 DBUS_NAME_FLAG_ALLOW_REPLACEMENT |
-				 DBUS_NAME_FLAG_DO_NOT_QUEUE,
+				 DBUS_NAME_FLAG_REPLACE_EXISTING |
+				 DBUS_NAME_FLAG_ALLOW_REPLACEMENT,
 				 &error);
 
     if (dbus_error_is_set (&error))
@@ -1954,8 +1951,7 @@ DbusScreen::DbusScreen (CompScreen *screen) :
 	compLogMessage ("dbus", CompLogLevelError,
 			"dbus_bus_request_name error: %s", error.message);
 
-	internalRefCnt--;
-	dbus_connection_unref (connection);
+	/* dbus_connection_unref (dc->connection); */
 	dbus_error_free (&error);
 	setFailed ();
     }
@@ -1967,8 +1963,7 @@ DbusScreen::DbusScreen (CompScreen *screen) :
 	compLogMessage ("dbus", CompLogLevelError,
 			"dbus_bus_request_name reply is not primary owner");
 
-	internalRefCnt--;
-	dbus_connection_unref (connection);
+	/* dbus_connection_unref (dc->connection); */
 	setFailed ();
     }
 
@@ -1978,8 +1973,7 @@ DbusScreen::DbusScreen (CompScreen *screen) :
 	compLogMessage ("dbus", CompLogLevelError,
 			"dbus_connection_get_unix_fd failed");
 
-	internalRefCnt--;
-	dbus_connection_unref (connection);
+	/* dbus_connection_unref (dc->connection); */
 	setFailed ();
     }
 
@@ -2030,11 +2024,15 @@ DbusScreen::~DbusScreen ()
 
     screen->removeWatchFd (watchFdHandle);
 
+    /*
+      can't unref the connection returned by dbus_bus_get as it's
+      shared and we can't know if it's closed or not.
+
+      dbus_connection_unref (connection);
+    */
+
     unregisterPluginForScreen (connection, "core");
     unregisterPluginsForScreen (connection);
-
-    if (internalRefCnt)
-	dbus_connection_unref (connection);
 }
 
 bool
