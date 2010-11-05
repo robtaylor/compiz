@@ -8,7 +8,7 @@ mark_as_advanced (FORCE XSLTPROC_EXECUTABLE)
 
 if (XSLTPROC_EXECUTABLE)
 
-    if (NOT ${COMPIZ_DEFAULT_PLUGINS})
+    if (NOT COMPIZ_DEFAULT_PLUGINS)
       set (COMPIZ_DEFAULT_PLUGINS "core")
     endif ()
 
