@@ -1199,7 +1199,7 @@ DbusScreen::handleGetOptionMessage (DBusConnection                 *connection,
 {
     CompOption::Vector  &options = getOptionsFromPath (path);
     DBusMessage         *reply = NULL;
-    
+
     foreach (CompOption& option, options)
     {
 	if (option.name () == path[2])
@@ -1240,7 +1240,7 @@ DbusScreen::handleListMessage (DBusConnection                 *connection,
 {
     CompOption::Vector &options = getOptionsFromPath (path);
     DBusMessage        *reply;
-    
+
     reply   = dbus_message_new_method_return (message);
 
     foreach (CompOption& option, options)
@@ -1634,7 +1634,7 @@ DbusScreen::handleMessage (DBusConnection *connection,
 				     "Introspect"))
     {
 	status = handleOptionIntrospectMessage (connection, message, path);
-    }    
+    }
 #endif
 
     if (dbus_message_is_method_call (message, COMPIZ_DBUS_INTERFACE,
@@ -1724,7 +1724,7 @@ DbusScreen::getPathDecomposed (const char              *data,
     while ((pos = full.find ('/', lastPos)) != CompString::npos)
     {
 	CompString part = full.substr (lastPos, pos - lastPos);
-	
+
 	/* If we just have "/", then strip it, but don't push back
 	 * an empty string at the start
 	 */
@@ -1733,12 +1733,12 @@ DbusScreen::getPathDecomposed (const char              *data,
 	    lastPos = pos + 1;
 	    continue;
 	}
-	     
+
 	path.push_back (part);
 	lastPos = pos + 1;
     }
-    
-    /* Remaining part because there was no "/" at the end of path */    
+
+    /* Remaining part because there was no "/" at the end of path */
     path.push_back (full.substr (lastPos, pos - lastPos).c_str ());
 
     if (path.size () < 3)
@@ -2030,6 +2030,8 @@ DbusScreen::~DbusScreen ()
 
       dbus_connection_unref (connection);
     */
+
+    dbus_bus_release_name (connection, COMPIZ_DBUS_SERVICE_NAME, NULL);
 
     unregisterPluginForScreen (connection, "core");
     unregisterPluginsForScreen (connection);
