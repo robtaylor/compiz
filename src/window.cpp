@@ -803,7 +803,7 @@ PrivateWindow::updateFrameWindow ()
     {
 	int	   x, y, width, height;
 	int	   bw = serverGeometry.border () * 2;
-	
+
 	x      = serverGeometry.x ();
 	y      = serverGeometry.y ();
 	width  = serverGeometry.width () + bw;
@@ -1279,7 +1279,7 @@ CompWindow::map ()
     if (!isViewable ())
     {
 	if (priv->pendingMaps > 0)
-	    priv->pendingMaps--;
+	    priv->pendingMaps = 0;
 
 	priv->mapNum = screen->priv->mapNum++;
 
@@ -2836,7 +2836,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
     bool placed = false;
 
     xwcm &= (CWX | CWY | CWWidth | CWHeight | CWBorderWidth);
-    
+
     if (xwcm & (CWX | CWY))
 	if (priv->sizeHints.flags & (USPosition | PPosition))
 	    placed = true;
@@ -2882,7 +2882,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 
 	    min = screen->workArea ().y () + priv->input.top;
 	    max = screen->workArea ().bottom ();
-	    
+
 	    if (priv->state & CompWindowStateStickyMask &&
 	    	 (xwc->y < min || xwc->y > max))
 	    {
@@ -2893,7 +2893,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 		min -= screen->vp ().y () * screen->height ();
 		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
 			screen->height ();
-			
+
 		if (xwc->y < min)
 		    xwc->y = min;
 		else if (xwc->y > max)
@@ -2907,7 +2907,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 
 	    min = screen->workArea ().x () + priv->input.left;
 	    max = screen->workArea ().right ();
-	    
+
 	    if (priv->state & CompWindowStateStickyMask &&
 		(xwc->x < min || xwc->x > max))
 	    {
@@ -3106,7 +3106,7 @@ PrivateScreen::focusTopMostWindow ()
     for (; it != windows.rend (); it++)
     {
 	CompWindow *w = *it;
-    
+
 	if (w->type () & CompWindowTypeDockMask)
 	    continue;
 
@@ -3134,12 +3134,12 @@ CompWindow::lower ()
 {
     XWindowChanges xwc;
     int		   mask;
-    
+
     mask = priv->addWindowStackChanges (&xwc,
 	PrivateWindow::findLowestSiblingBelow (this));
     if (mask)
 	configureXWindow (mask, &xwc);
-    
+
     /* when lowering a window, focus the topmost window if
        the click-to-focus option is on */
     if ((screen->getOption ("click_to_focus")->value ().b ()))
@@ -3698,7 +3698,7 @@ void
 CompWindow::minimize ()
 {
     WRAPABLE_HND_FUNC (13, minimize);
-    
+
     if (!priv->managed)
 	return;
 
@@ -4902,7 +4902,7 @@ PrivateWindow::updateStartupId ()
     {
 	if (strcmp (startupId, oldId) == 0)
 	    newId = false;
-	
+
 	free (oldId);
     }
 
@@ -5439,7 +5439,7 @@ CompWindow::updateFrameRegion ()
 
 	x = priv->geometry.x () - priv->input.left;
 	y = priv->geometry.y () - priv->input.top;
-	
+
 	XShapeCombineRegion (screen->dpy (), priv->frame,
 			     ShapeBounding, -x, -y,
 			     priv->frameRegion.united (priv->region).handle (),
@@ -5492,7 +5492,7 @@ CompWindow::updateFrameRegion (CompRegion& region)
 
 bool
 PrivateWindow::reparent ()
-{  
+{
     XSetWindowAttributes attr;
     XWindowAttributes    wa;
     XWindowChanges       xwc;
@@ -5589,7 +5589,7 @@ PrivateWindow::reparent ()
 		  ExposureMask);
 
     XUngrabServer (dpy);
-    
+
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
     /* Try to use a relative window as a stacking anchor point */
@@ -5608,7 +5608,7 @@ PrivateWindow::reparent ()
 
 void
 PrivateWindow::unreparent ()
-{  
+{
     Display        *dpy = screen->dpy ();
     XEvent         e;
     bool           alive = true;
@@ -5634,13 +5634,13 @@ PrivateWindow::unreparent ()
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
         XReparentWindow (dpy, id, screen->root (), 0, 0);
-	
+
 	xwc.stack_mode = Below;
 	xwc.sibling    = frame;
 	XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
 
         XUnmapWindow (dpy, frame);
-	
+
 	XSelectInput (dpy, id, PropertyChangeMask | EnterWindowMask |
 		      FocusChangeMask);
 
@@ -5657,9 +5657,9 @@ PrivateWindow::unreparent ()
 		  ButtonReleaseMask        |
 		  FocusChangeMask          |
 		  ExposureMask);
-	
+
 	XUngrabServer (dpy);
-	
+
 	XMoveWindow (dpy, id, serverGeometry.x (), serverGeometry.y ());
     }
 
