@@ -35,20 +35,20 @@ foreach(catalog ${compiz_catalogs})
 	WORKING_DIRECTORY ${po_SOURCE_DIR}
     )
 
-    file (MAKE_DIRECTORY "${po_BINARY_DIR}/${catalog}/lc_messages")
+    file (MAKE_DIRECTORY "${po_BINARY_DIR}/${catalog}/LC_MESSAGES")
 
     add_custom_command (
-	OUTPUT ${po_BINARY_DIR}/${catalog}/lc_messages/compiz.mo
-	COMMAND ${_msgfmt} -c -o ${po_BINARY_DIR}/${catalog}/lc_messages/compiz.mo ${po_SOURCE_DIR}/${catalog}.po
+	OUTPUT ${po_BINARY_DIR}/${catalog}/LC_MESSAGES/compiz.mo
+	COMMAND ${_msgfmt} -c -o ${po_BINARY_DIR}/${catalog}/LC_MESSAGES/compiz.mo ${po_SOURCE_DIR}/${catalog}.po
 	DEPENDS ${po_SOURCE_DIR}/${catalog}.po
     )
 
     install (
-	FILES ${po_BINARY_DIR}/${catalog}/lc_messages/compiz.mo
-	DESTINATION ${COMPIZ_DESTDIR}${datadir}/locale/${catalog}/lc_messages
+	FILES ${po_BINARY_DIR}/${catalog}/LC_MESSAGES/compiz.mo
+	DESTINATION ${COMPIZ_DESTDIR}${datadir}/locale/${catalog}/LC_MESSAGES
     )
 
-    set (compiz_catalog_targets ${compiz_catalog_targets} ${po_BINARY_DIR}/${catalog}/lc_messages/compiz.mo)
+    set (compiz_catalog_targets ${compiz_catalog_targets} ${po_BINARY_DIR}/${catalog}/LC_MESSAGES/compiz.mo)
 endforeach(catalog)
 
 add_custom_target(nls ALL
