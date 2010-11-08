@@ -47,6 +47,8 @@ class PrivateAction {
 
 	unsigned int edgeMask;
 
+	bool active;
+
 	CompPrivate priv;
 };
 

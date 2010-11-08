@@ -62,6 +62,7 @@
 #include <core/atoms.h>
 #include "privatescreen.h"
 #include "privatewindow.h"
+#include "privateaction.h"
 
 bool inHandleEvent = false;
 
@@ -1877,7 +1878,7 @@ PrivateScreen::updateOutputDevices ()
     foreach (CompWindow *w, windows)
 	if (w->priv->fullscreenMonitorsSet)
 	    w->priv->setFullscreenMonitors (NULL);
-	
+
     for (unsigned int i = 0; i < nOutput - 1; i++)
 	for (unsigned int j = i + 1; j < nOutput; j++)
 	    if (outputDevs[i].intersects (outputDevs[j]))
@@ -3041,6 +3042,9 @@ CompScreen::addAction (CompAction *action)
     if (!screenInitalized || !priv->initialized)
 	return false;
 
+    if (action->active ())
+	return false;
+
     if (action->type () & CompAction::BindingTypeKey)
     {
 	if (!priv->addPassiveKeyGrab (action->key ()))
@@ -3067,6 +3071,8 @@ CompScreen::addAction (CompAction *action)
 		priv->enableEdge (i);
     }
 
+    action->priv->active = true;
+
     return true;
 }
 
@@ -3074,6 +3080,9 @@ void
 CompScreen::removeAction (CompAction *action)
 {
     if (!priv->initialized)
+	return;
+
+    if (!action->active ())
 	return;
 
     if (action->type () & CompAction::BindingTypeKey)
@@ -3090,6 +3099,8 @@ CompScreen::removeAction (CompAction *action)
 	    if (action->edgeMask () & (1 << i))
 		priv->disableEdge (i);
     }
+
+    action->priv->active = false;
 }
 
 CompRect
@@ -3896,7 +3907,7 @@ ScreenInterface::leaveShowDesktopMode (CompWindow *window)
 void
 ScreenInterface::outputChangeNotify ()
     WRAPABLE_DEF (outputChangeNotify)
-    
+
 void
 ScreenInterface::addSupportedAtoms (std::vector<Atom>& atoms)
     WRAPABLE_DEF (addSupportedAtoms, atoms)
@@ -4611,7 +4622,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
 	boost::bind (&PrivateScreen::handleStartupSequenceTimeout, this));
     startupSequenceTimer.setTimes (1000, 1500);
 
-    
     optionSetCloseWindowKeyInitiate (CompScreen::closeWin);
     optionSetCloseWindowButtonInitiate (CompScreen::closeWin);
     optionSetRaiseWindowKeyInitiate (CompScreen::raiseWin);
