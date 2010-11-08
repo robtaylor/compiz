@@ -75,7 +75,7 @@ class CompAction {
 	    StateAutoGrab    = 1 << 11,
 	    StateNoEdgeDelay = 1 << 12
 	} StateEnum;
-	
+
 	/**
 	 * Type of event a CompAction is bound to.
 	 */
@@ -166,6 +166,10 @@ class CompAction {
 	CompString edgeMaskToString ();
 
 	static CompString edgeToString (unsigned int edge);
+
+	bool active ();
+
+	friend class CompScreen;
 
     private:
 	PrivateAction *priv;

@@ -620,6 +620,12 @@ CompAction::edgeToString (unsigned int edge)
     return edges[edge].name;
 }
 
+bool
+CompAction::active ()
+{
+    return priv->active;
+}
+
 PrivateAction::PrivateAction () :
     initiate (),
     terminate (),
@@ -628,7 +634,8 @@ PrivateAction::PrivateAction () :
     key (),
     button (),
     bell (false),
-    edgeMask (0)
+    edgeMask (0),
+    active (false)
 {
     memset (&priv, 0, sizeof (CompPrivate));
 }
