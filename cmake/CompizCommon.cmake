@@ -20,6 +20,10 @@ option (COMPIZ_RUN_LDCONFIG "Leave OFF unless you need to run ldconfig after ins
 option (COMPIZ_PACKAGING_ENABLED "Enable to manually set prefix, exec_prefix, libdir, includedir, datadir" OFF)
 set (COMPIZ_DESTDIR ${COMPIZ_DESTDIR} CACHE STRING "Leave blank unless building packages")
 
+if (NOT COMPIZ_DESTDIR)
+    set (COMPIZ_DESTDIR $ENV{DESTDIR})
+endif ()
+
 set (COMPIZ_DATADIR ${CMAKE_INSTALL_PREFIX}/share)
 set (COMPIZ_METADATADIR ${CMAKE_INSTALL_PREFIX}/share/compiz)
 set (COMPIZ_IMAGEDIR ${CMAKE_INSTALL_PREFIX}/share/compiz/images)
