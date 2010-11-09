@@ -648,7 +648,8 @@ PrivateAction::PrivateAction (const PrivateAction& a) :
     key (a.key),
     button (a.button),
     bell (a.bell),
-    edgeMask (a.edgeMask)
+    edgeMask (a.edgeMask),
+    active (a.active)
 {
     memcpy (&priv, &a.priv, sizeof (CompPrivate));
 }
