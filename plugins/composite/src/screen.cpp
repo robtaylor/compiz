@@ -458,10 +458,6 @@ CompositeScreen::compositingActive ()
 void
 CompositeScreen::damageScreen ()
 {
-    /* ensure we get a draw on our minimum time */
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_ALL_MASK;
     priv->damageMask &= ~COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
 }
@@ -472,12 +468,7 @@ CompositeScreen::damageRegion (const CompRegion &region)
     if (priv->damageMask & COMPOSITE_SCREEN_DAMAGE_ALL_MASK)
 	return;
 
-    /* ensure we get a draw on our minimum time */
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
     priv->damage += region;
-
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_REGION_MASK;
 
     /* if the number of damage rectangles grows two much between repaints,
@@ -492,10 +483,6 @@ CompositeScreen::damageRegion (const CompRegion &region)
 void
 CompositeScreen::damagePending ()
 {
-    /* ensure we get a draw on our minimum time */
-    if (priv->damageMask == 0)
-	priv->paintTimer.setTimes (priv->paintTimer.minLeft ());
-
     priv->damageMask |= COMPOSITE_SCREEN_DAMAGE_PENDING_MASK;
 }
 
@@ -896,10 +883,6 @@ CompositeScreen::handlePaintTimeout ()
     else
 	timeToNextRedraw = priv->getTimeToNextRedraw (&tv);
 
-    if (priv->idle)
-	priv->paintTimer.setTimes (timeToNextRedraw, MAXSHORT);
-    else
-	priv->paintTimer.setTimes (timeToNextRedraw);
     return true;
 }
 
