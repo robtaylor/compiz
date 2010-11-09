@@ -64,7 +64,7 @@ class CompOption {
 	    /* internal use only */
 	    TypeUnset
 	} Type;
-	
+
 	/**
 	 * A value of an Option
 	 */
@@ -126,7 +126,7 @@ class CompOption {
 	    private:
 		PrivateValue *priv;
 	};
-	
+
 	/**
 	 * TODO
 	 */
@@ -154,7 +154,7 @@ class CompOption {
 	};
 
 	typedef std::vector<CompOption> Vector;
-	
+
 	/**
 	 * TODO
 	 */
@@ -175,6 +175,8 @@ class CompOption {
 	~CompOption ();
 
 	void setName (CompString name, Type type);
+
+	void reset ();
 
 	CompString name ();
 

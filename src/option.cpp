@@ -586,7 +586,7 @@ CompOption::Restriction::operator= (const CompOption::Restriction &rest)
 {
     if (this == &rest)
 	return *this;
-	
+
     delete priv;
     priv = new PrivateRestriction (*rest.priv);
     return *this;
@@ -692,6 +692,13 @@ CompOption::~CompOption ()
 }
 
 void
+CompOption::reset ()
+{
+    priv->name = "";
+    priv->type = TypeUnset;
+}
+
+void
 CompOption::setName (CompString name, CompOption::Type type)
 {
     priv->name = name;
@@ -776,13 +783,13 @@ CompOption::set (CompOption::Value &val)
 	    return false;
 
 	case CompOption::TypeKey:
-	    if (val.action ().type () == value().action ().type () && 
+	    if (val.action ().type () == value().action ().type () &&
 		!(val.action ().type () & CompAction::BindingTypeKey))
 		return false;
 	    break;
 
 	case CompOption::TypeButton:
-	    if (val.action ().type () == value().action ().type () && 
+	    if (val.action ().type () == value().action ().type () &&
 		!(val.action ().type () & (CompAction::BindingTypeButton |
 					   CompAction::BindingTypeEdgeButton)))
 		return false;
@@ -808,7 +815,7 @@ CompOption::operator= (const CompOption &option)
 {
     if (this == &option)
 	return *this;
-	
+
     delete priv;
     priv = new PrivateOption (*option.priv);
     return *this;

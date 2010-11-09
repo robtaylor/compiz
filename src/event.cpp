@@ -618,7 +618,6 @@ PrivateScreen::handleActionEvent (XEvent *event)
 {
     static CompOption::Vector o (8);
     Window xid;
-    o.resize (8);
 
     o[0].setName ("event_window", CompOption::TypeInt);
     o[1].setName ("window", CompOption::TypeInt);
@@ -626,6 +625,8 @@ PrivateScreen::handleActionEvent (XEvent *event)
     o[3].setName ("x", CompOption::TypeInt);
     o[4].setName ("y", CompOption::TypeInt);
     o[5].setName ("root", CompOption::TypeInt);
+    o[6].reset ();
+    o[7].reset ();
 
     switch (event->type) {
     case ButtonPress:
@@ -764,8 +765,6 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		o[6].setName ("time", CompOption::TypeInt);
 		o[6].value ().set ((int) event->xcrossing.time);
-		
-		o.resize (7);
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -801,8 +800,6 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		o[6].setName ("time", CompOption::TypeInt);
 		o[6].value ().set ((int) event->xcrossing.time);
-		
-		o.resize (7);
 
 		if (triggerEdgeEnter (edge, state, o))
 		    return true;
@@ -849,8 +846,6 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[3].value ().set ((int) 0); /* fixme */
 		o[4].value ().set ((int) 0); /* fixme */
 		o[5].value ().set ((int) root);
-		
-		o.resize (6);
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -895,8 +890,6 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[3].value ().set ((int) event->xclient.data.l[2] >> 16);
 		o[4].value ().set ((int) event->xclient.data.l[2] & 0xffff);
 		o[5].value ().set ((int) root);
-		
-		o.resize (6);
 
 		if (triggerEdgeEnter (edge, state, o))
 		    return true;
@@ -918,10 +911,10 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[1].value ().set ((int) activeWindow);
 		o[2].value ().set ((int) stateEvent->mods);
 
-		o[3] = CompOption ("time", CompOption::TypeInt);
+		o[3].setName ("time", CompOption::TypeInt);
 		o[3].value ().set ((int) xkbEvent->time);
-
-		o.resize (4);
+		o[4].reset ();
+		o[5].reset ();
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -935,10 +928,12 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		o[0].value ().set ((int) activeWindow);
 		o[1].value ().set ((int) activeWindow);
 
-		o[2] = CompOption ("time", CompOption::TypeInt);
+		o[2].setName ("time", CompOption::TypeInt);
 		o[2].value ().set ((int) xkbEvent->time);
+		o[3].reset ();
+		o[4].reset ();
+		o[5].reset ();
 
-		o.resize (3);
 
 		foreach (CompPlugin *p, CompPlugin::getPlugins ())
 		{
@@ -1734,7 +1729,7 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    w = findWindow (((XShapeEvent *) event)->window);
 	    if (w)
-	    {	      
+	    {
 		if (w->mapNum ())
 		    w->priv->updateRegion ();
 	    }

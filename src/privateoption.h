@@ -78,6 +78,8 @@ class PrivateValue {
 	CompMatch                 match;
 	CompOption::Type          listType;
 	CompOption::Value::Vector list;
+
+	bool			  active;
 };
 
 class PrivateOption
