@@ -11,7 +11,7 @@ compiz_set (USE_GNOME_KEYBINDINGS ${BUILD_GNOME_KEYBINDINGS})
 if (USE_GTK)
     pkg_check_modules (GTK_WINDOW_DECORATOR
 	xrender>=0.8.4
-	gtk+-2.0>=2.8.0
+	gtk+-2.0>=2.18.0
 	libwnck-1.0
 	pangocairo
     )
