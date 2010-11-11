@@ -146,20 +146,20 @@ gsourcePrepare (GSource *source, gint *timeout)
     return XPending (ceq->display);
 }
 
-static gboolean  
-gsourceCheck (GSource  *source) 
+static gboolean
+gsourceCheck (GSource  *source)
 {
     CompizEventQueue *ceq;
-  
+
     ceq = (CompizEventQueue *) source;
-  
+
     if (ceq->pollFd.revents & G_IO_IN)
 	return XPending (ceq->display);
     else
 	return FALSE;
 }
 
-static gboolean  
+static gboolean
 gsourceDispatch (GSource *source, GSourceFunc callback, gpointer data)
 {
     return callback (data);
@@ -189,35 +189,38 @@ CompScreen::processEvents ()
 void
 CompScreen::eventLoop ()
 {
-    int fd;
-    GSource *source;
+    int		     fd;
+    GSource	     *source;
+    GMainContext     *ctx;
     CompizEventQueue *ceq;
-    
+
     g_type_init ();
 
-    priv->loop = g_main_loop_new (g_main_context_default (), FALSE);
+    ctx = g_main_context_default ();
+
+    priv->loop = g_main_loop_new (ctx, false);
 
     source = g_source_new (&gsourceFuncs, sizeof (CompizEventQueue));
     ceq = (CompizEventQueue*) source;
-    
+
     fd = ConnectionNumber (priv->dpy);
     ceq->connectionFd = fd;
     ceq->pollFd.fd = fd;
     ceq->pollFd.events = G_IO_IN;
     ceq->display = priv->dpy;
-    
+
     g_source_set_priority (source, G_PRIORITY_DEFAULT);
     g_source_add_poll (source, &ceq->pollFd);
     g_source_set_can_recurse (source, TRUE);
-    
+
     g_source_set_callback (source, (GSourceFunc) processCallback, this, NULL);
-    
+
     g_source_attach (source, NULL);
     g_source_unref (source);
-    
+
     /* Kick the event loop */
-    processEvents ();
-    
+    g_main_context_iteration (ctx, false);
+
     g_main_loop_run (priv->loop);
 }
 
@@ -282,19 +285,19 @@ onTimerTimeout (CompTimer *timer)
 
     if (!timer->active ())
         return true;
-  
+
     forceFail = false;
     executingId = timer->mId;
     result = timer->mCallBack ();
-    
+
     if (result)
         timer->tick ();
     else
         timer->mId = 0;
-    
+
     if (forceFail)
 	return false;
-    
+
     return result;
 }
 
@@ -303,9 +306,9 @@ PrivateScreen::addTimer (CompTimer *timer)
 {
     if (timer->mId != 0)
         return;
-    
+
     unsigned int time = timer->mMinTime;
-    
+
     timer->mId = g_timeout_add (time, (GSourceFunc) onTimerTimeout, timer);
     timer->tick ();
 }
@@ -315,10 +318,10 @@ PrivateScreen::removeTimer (CompTimer *timer)
 {
     if (timer->mId == 0)
         return;
-    
+
     if (executingId == timer->mId)
       forceFail = true;
-    
+
     g_source_remove (timer->mId);
     timer->mId = 0;
 }
@@ -793,7 +796,7 @@ PrivateScreen::processEvents ()
 
 		XNextEvent (dpy, &event);
 	    }
-	    
+
 	    pointerX = event.xmotion.x_root;
 	    pointerY = event.xmotion.y_root;
 	    break;
