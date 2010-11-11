@@ -406,11 +406,37 @@ CompOption::Value::operator!= (const CompOption::Value &val)
     return !(*this == val);
 }
 
+static void
+finiOptionValue (CompOption::Value &v,
+		 CompOption::Type  type)
+{
+    switch (type) {
+	case CompOption::TypeAction:
+	case CompOption::TypeKey:
+	case CompOption::TypeButton:
+	case CompOption::TypeEdge:
+	case CompOption::TypeBell:
+	    if (v.action ().state () & CompAction::StateAutoGrab && screen)
+		screen->removeAction (&v.action ());
+	    break;
+
+	case CompOption::TypeList:
+	    foreach (CompOption::Value &val, v.list ())
+		finiOptionValue (val, v.listType ());
+	    break;
+
+	default:
+	    break;
+    }
+}
+
 CompOption::Value &
 CompOption::Value::operator= (const CompOption::Value &val)
 {
     if (this == &val)
 	return *this;
+
+    finiOptionValue (*this, priv->type);
 
     delete priv;
     priv = new PrivateValue (*val.priv);
@@ -654,30 +680,6 @@ finiScreenOptionValue (CompScreen        *s,
 	case CompOption::TypeList:
 	    foreach (CompOption::Value &val, v.list ())
 		finiScreenOptionValue (s, val, v.listType ());
-	    break;
-
-	default:
-	    break;
-    }
-}
-
-static void
-finiOptionValue (CompOption::Value &v,
-		 CompOption::Type  type)
-{
-    switch (type) {
-	case CompOption::TypeAction:
-	case CompOption::TypeKey:
-	case CompOption::TypeButton:
-	case CompOption::TypeEdge:
-	case CompOption::TypeBell:
-	    if (v.action ().state () & CompAction::StateAutoGrab && screen)
-		screen->removeAction (&v.action ());
-	    break;
-
-	case CompOption::TypeList:
-	    foreach (CompOption::Value &val, v.list ())
-		finiOptionValue (val, v.listType ());
 	    break;
 
 	default:
