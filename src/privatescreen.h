@@ -287,7 +287,7 @@ class PrivateScreen : public CoreOptions {
 	void disableEdge (int edge);
 
 	void addScreenActions ();
-	
+
 	CompWindow *
 	focusTopMostWindow ();
 
@@ -411,6 +411,10 @@ class PrivateScreen : public CoreOptions {
 	std::list<KeyGrab>    keyGrabs;
 
 	std::list<Grab *> grabs;
+
+	bool		      grabbed; /* true once we recieve a GrabNotify
+					  on FocusOut and false on
+					  UngrabNotify from FocusIn */
 
 	unsigned int pendingDestroys;
 

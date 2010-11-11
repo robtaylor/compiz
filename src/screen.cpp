@@ -2792,6 +2792,12 @@ CompScreen::grabExist (const char *grab)
     return false;
 }
 
+bool
+CompScreen::grabbed ()
+{
+    return priv->grabbed;
+}
+
 void
 PrivateScreen::grabUngrabOneKey (unsigned int modifiers,
 				 int          keycode,
@@ -4571,6 +4577,7 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     buttonGrabs (0),
     keyGrabs (0),
     grabs (0),
+    grabbed (false),
     pendingDestroys (0),
     showingDesktopMask (0),
     desktopHintData (0),

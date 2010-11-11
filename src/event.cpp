@@ -1662,6 +1662,12 @@ CompScreen::handleEvent (XEvent *event)
 		w->changeState (state);
 	    }
 	}
+	else
+	    priv->grabbed = true;
+	break;
+    case FocusOut:
+	if (event->xfocus.mode == NotifyUngrab)
+	    priv->grabbed = false;
 	break;
     case EnterNotify:
 	if (event->xcrossing.root == priv->root)
