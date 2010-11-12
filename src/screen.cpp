@@ -156,7 +156,7 @@ gsourceCheck (GSource  *source)
     if (ceq->pollFd.revents & G_IO_IN)
 	return XPending (ceq->display);
     else
-	return FALSE;
+	return false;
 }
 
 static gboolean
