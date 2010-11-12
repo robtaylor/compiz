@@ -15,6 +15,8 @@ set (_PluginExtensionFiles
      plugin_extensions/CompizGenPrintMessage.cmake)
 list (APPEND _PluginExtensionFiles
       plugin_extensions/CompizGenInstallData.cmake)
+list (APPEND _PluginExtensionFiles
+      plugin_extensions/CompizGenInstallImages.cmake)
 
 if (USE_GCONF)
     list (APPEND _files CompizGconf.cmake)

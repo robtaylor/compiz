@@ -111,7 +111,6 @@ macro (_prepare_directories)
 	set (PLUGIN_INCDIR    ${includedir})
 	set (PLUGIN_PKGDIR    ${libdir}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${datadir}/compiz)
-	set (PLUGIN_IMAGEDIR  ${datadir}/compiz)
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "${datadir}/gconf/schemas")
         else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
@@ -126,7 +125,6 @@ macro (_prepare_directories)
 	set (PLUGIN_INCDIR    ${COMPIZ_INCLUDEDIR})
 	set (PLUGIN_PKGDIR    ${COMPIZ_LIBDIR}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${COMPIZ_PREFIX}/share/compiz)
-	set (PLUGIN_IMAGEDIR  ${COMPIZ_PREFIX}/share/compiz)
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "${COMPIZ_PREFIX}/share/gconf/schemas")
         else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
@@ -142,7 +140,6 @@ macro (_prepare_directories)
 	set (PLUGIN_PREFIX    $ENV{HOME}/.compiz-1)
 	set (PLUGIN_LIBDIR    $ENV{HOME}/.compiz-1/plugins)
 	set (PLUGIN_XMLDIR    $ENV{HOME}/.compiz-1/metadata)
-	set (PLUGIN_IMAGEDIR  $ENV{HOME}/.compiz-1)
 
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "$ENV{HOME}/.gconf/schemas")
@@ -359,14 +356,6 @@ function (_build_compiz_plugin plugin)
 	    endif ()
 	endif ()
 
-	# install plugin image files
-	if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/images)
-	    install (
-		DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/images
-		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_IMAGEDIR}
-	    )
-	endif ()
-
 	set (COMPIZ_CURRENT_PLUGIN ${plugin})
 	set (COMPIZ_CURRENT_XML_FILE ${_translated_xml})
 
@@ -388,7 +377,6 @@ function (_build_compiz_plugin plugin)
 
 
 	add_definitions (-DPREFIX='\"${PLUGIN_PREFIX}\"'
-			 -DIMAGEDIR='\"${PLUGIN_IMAGEDIR}\"'
 			 ${COMPIZ_DEFINITIONS_ADD})
 
 	include_directories (
