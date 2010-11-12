@@ -11,8 +11,6 @@ set (_files
     ${CMAKE_CURRENT_BINARY_DIR}/CompizDefaults.cmake
 )
 
-set (_PluginExtensionFiles
-     plugin_extensions/CompizGenPrintMessage.cmake)
 list (APPEND _PluginExtensionFiles
       plugin_extensions/CompizGenInstallData.cmake)
 list (APPEND _PluginExtensionFiles
