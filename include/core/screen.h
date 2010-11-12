@@ -262,22 +262,37 @@ class CompScreen :
 
 	Cursor invisibleCursor ();
 
+	/* Adds an X Pointer and Keyboard grab to the stack. Since
+	 * compiz as a client only need to grab once, multiple clients
+	 * can call this and all get events, but the pointer will
+	 * be grabbed once and the actual grab refcounted */
 	GrabHandle pushGrab (Cursor cursor, const char *name);
 
+	/* Allows you to change the pointer of your grab */
 	void updateGrab (GrabHandle handle, Cursor cursor);
 
+	/* Removes your grab from the stack. Once the internal refcount
+	 * reaches zero, the X Pointer and Keyboard are both ungrabbed
+	 */
 	void removeGrab (GrabHandle handle, CompPoint *restorePointer);
 
+	/* Returns true if a grab other than the grabs specified here
+	 * exists */
 	bool otherGrabExist (const char *, ...);
 
+	/* Returns true if the specified grab exists */
 	bool grabExist (const char *);
+
+	/* Returns true if the X Pointer and / or Keyboard is grabbed
+	 * by anything (another application, pluigins etc) */
+	bool grabbed ();
 
 	const CompWindowVector & clientList (bool stackingOrder = true);
 
 	bool addAction (CompAction *action);
 
 	void removeAction (CompAction *action);
-	
+
 	void updateWorkarea ();
 
 	void toolkitAction (Atom   toolkitAction,
@@ -322,7 +337,7 @@ class CompScreen :
 	unsigned int nDesktop ();
 
 	CompActiveWindowHistory *currentHistory ();
-	
+
 	bool shouldSerializePlugins () ;
 
 	const CompRegion & region () const;

@@ -109,10 +109,8 @@ macro (_prepare_directories)
 	set (PLUGIN_PREFIX    ${CMAKE_INSTALL_PREFIX})
 	set (PLUGIN_LIBDIR    ${libdir}/compiz)
 	set (PLUGIN_INCDIR    ${includedir})
-	set (PLUGIN_PKGDIR    ${libdir}/pkgconfig) 
+	set (PLUGIN_PKGDIR    ${libdir}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${datadir}/compiz)
-	set (PLUGIN_IMAGEDIR  ${datadir}/compiz)
-	set (PLUGIN_DATADIR   ${datadir}/compiz)
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "${datadir}/gconf/schemas")
         else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
@@ -127,32 +125,28 @@ macro (_prepare_directories)
 	set (PLUGIN_INCDIR    ${COMPIZ_INCLUDEDIR})
 	set (PLUGIN_PKGDIR    ${COMPIZ_LIBDIR}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${COMPIZ_PREFIX}/share/compiz)
-	set (PLUGIN_IMAGEDIR  ${COMPIZ_PREFIX}/share/compiz)
-	set (PLUGIN_DATADIR   ${COMPIZ_PREFIX}/share/compiz)
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "${COMPIZ_PREFIX}/share/gconf/schemas")
         else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 	    set (PLUGIN_SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
 	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-	
+
 	if (NOT "${CMAKE_BUILD_TYPE}")
 	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
-	endif (NOT "${CMAKE_BUILD_TYPE}")	
+	endif (NOT "${CMAKE_BUILD_TYPE}")
     else ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "compiz" OR
 	  "$ENV{BUILD_GLOBAL}" STREQUAL "true")
 	set (PLUGIN_BUILDTYPE local)
 	set (PLUGIN_PREFIX    $ENV{HOME}/.compiz-1)
 	set (PLUGIN_LIBDIR    $ENV{HOME}/.compiz-1/plugins)
 	set (PLUGIN_XMLDIR    $ENV{HOME}/.compiz-1/metadata)
-	set (PLUGIN_IMAGEDIR  $ENV{HOME}/.compiz-1)
-	set (PLUGIN_DATADIR   $ENV{HOME}/.compiz-1)
 
 	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
             set (PLUGIN_SCHEMADIR "$ENV{HOME}/.gconf/schemas")
         else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 	    set (PLUGIN_SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
 	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-	
+
 	if (NOT "${CMAKE_BUILD_TYPE}")
 	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
 	endif (NOT "${CMAKE_BUILD_TYPE}")
@@ -173,7 +167,7 @@ macro (_get_plugin_parameters _prefix)
 		set (_found TRUE)
 	    endif ("${_find}" STREQUAL "${_val}")
 	endforeach (_find)
-	
+
 	if (_found)
 	    set (_current_var ${_prefix}_${_val})
 	else (_found)
@@ -215,7 +209,7 @@ macro (_check_plugin_plugin_deps _prefix)
 	    PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../${_val}
 	    NO_DEFAULT_PATH
 	)
-	
+
 	if (_plugin_dep_${_val})
 	    file (RELATIVE_PATH _relative ${CMAKE_CURRENT_SOURCE_DIR} ${_plugin_dep_${_val}})
 	    get_filename_component (_plugin_inc_dir ${_relative} PATH)
@@ -291,7 +285,7 @@ function (_build_compiz_plugin plugin)
 	if (NOT EXISTS ${CMAKE_BINARY_DIR}/generated)
 	    file (MAKE_DIRECTORY ${CMAKE_BINARY_DIR}/generated)
 	endif (NOT EXISTS ${CMAKE_BINARY_DIR}/generated)
-	
+
 	if (_${plugin}_xml_in)
 	    # translate xml
 	    compiz_translate_xml ( ${_${plugin}_xml_in} "${CMAKE_BINARY_DIR}/generated/${plugin}.xml")
@@ -302,7 +296,7 @@ function (_build_compiz_plugin plugin)
 		set (_translated_xml ${_${plugin}_xml})
 	    endif ()
 	endif ()
-	
+
 	if (_${plugin}_xml)
 	    # do we need bcop for our plugin
 	    compiz_plugin_needs_bcop (${_${plugin}_xml} _needs_bcop)
@@ -311,7 +305,7 @@ function (_build_compiz_plugin plugin)
 		compiz_add_bcop_targets (${plugin} ${_${plugin}_xml} _bcop_sources)
 	    endif ()
 	endif ()
-	
+
 	if (_translated_xml)
 	    if (COMPIZ_GCONF_SCHEMAS_SUPPORT)
 	        # generate gconf schema
@@ -325,7 +319,7 @@ function (_build_compiz_plugin plugin)
 		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_XMLDIR}
 	    )
 	endif (_translated_xml)
-	
+
 	find_file (
 	    _${plugin}_pkg compiz-${plugin}.pc.in
 	    PATHS ${CMAKE_CURRENT_SOURCE_DIR}
@@ -350,7 +344,7 @@ function (_build_compiz_plugin plugin)
 		    COMPIZ_REQUIRES
 		    COMPIZ_CFLAGS
 		)
-		
+
 		install (
 		    FILES ${CMAKE_BINARY_DIR}/generated/compiz-${plugin}.pc
 		    DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_PKGDIR}
@@ -362,22 +356,16 @@ function (_build_compiz_plugin plugin)
 	    endif ()
 	endif ()
 
-	# install plugin data files
-	if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/data)
-	    install (
-		DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/data
-		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_DATADIR}
-	    )
-	endif ()
+	set (COMPIZ_CURRENT_PLUGIN ${plugin})
+	set (COMPIZ_CURRENT_XML_FILE ${_translated_xml})
 
-	# install plugin image files
-	if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/images)
-	    install (
-		DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/images
-		DESTINATION ${COMPIZ_DESTDIR}${PLUGIN_IMAGEDIR}
-	    )
-	endif ()
-	
+	# find extension files
+	file (GLOB _extension_files "${COMPIZ_CMAKE_MODULE_PATH}/plugin_extensions/*.cmake")
+
+	foreach (_file ${_extension_files})
+	    include (${_file})
+	endforeach ()
+
 	# find files for build
 	file (GLOB _h_files "${CMAKE_CURRENT_SOURCE_DIR}/src/*.h")
 	file (GLOB _h_ins_files "${CMAKE_CURRENT_SOURCE_DIR}/include/${plugin}/*.h")
@@ -386,11 +374,10 @@ function (_build_compiz_plugin plugin)
 #	set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wnested-externs")
 
 #	set (_cflags "-Wall -Wpointer-arith  -fno-strict-aliasing")
-	
+
 
 	add_definitions (-DPREFIX='\"${PLUGIN_PREFIX}\"'
-			 -DIMAGEDIR='\"${PLUGIN_IMAGEDIR}\"'
-			 -DDATADIR='\"${PLUGIN_DATADIR}\"')
+			 ${COMPIZ_DEFINITIONS_ADD})
 
 	include_directories (
             ${CMAKE_CURRENT_SOURCE_DIR}/src

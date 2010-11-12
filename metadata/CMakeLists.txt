@@ -1,5 +1,5 @@
 set (
-    COMPIZ_DEFAULT_PLUGINS ${COMPIZ_DEFAULT_PLUGINS} CACHE STRING
+    COMPIZ_DEFAULT_PLUGINS "core" CACHE STRING
     "Default plugins list that will be added to core metadata file"
 )
 
@@ -7,10 +7,6 @@ find_program (XSLTPROC_EXECUTABLE xsltproc)
 mark_as_advanced (FORCE XSLTPROC_EXECUTABLE)
 
 if (XSLTPROC_EXECUTABLE)
-
-    if (NOT COMPIZ_DEFAULT_PLUGINS)
-      set (COMPIZ_DEFAULT_PLUGINS "core")
-    endif ()
 
     add_custom_command (
 	OUTPUT ${CMAKE_BINARY_DIR}/generated/core.xml.in

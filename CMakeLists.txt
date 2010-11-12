@@ -1,9 +1,10 @@
 project (compiz)
 
 set (CMAKE_MODULE_PATH_ORIG ${CMAKE_MODULE_PATH})
-set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_SOURCE_DIR}/cmake)
+set (COMPIZ_CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+set (CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${COMPIZ_CMAKE_MODULE_PATH})
 include (CompizCommon)
-include (CompizPackage) 
+include (CompizPackage)
 include (cmake/base.cmake)
 include (CheckFunctionExists)
 
