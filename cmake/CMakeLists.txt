@@ -13,10 +13,12 @@ set (_files
 
 set (_PluginExtensionFiles
      plugin_extensions/CompizGenPrintMessage.cmake)
+list (APPEND _PluginExtensionFiles
+      plugin_extensions/CompizGenInstallData.cmake)
 
 if (USE_GCONF)
     list (APPEND _files CompizGconf.cmake)
-endif ()
+endif (USE_GCONF)
 
 install (
     FILES ${_files}
