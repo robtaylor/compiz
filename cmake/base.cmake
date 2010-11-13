@@ -1,4 +1,4 @@
-set (USE_GCONF 1 CACHE BOOL "Install GConf schemas")
+set (USE_GCONF 1 CACHE BOOL "Install core GConf schemas")
 
 if (USE_GCONF)
     pkg_check_modules (GCONF gconf-2.0)

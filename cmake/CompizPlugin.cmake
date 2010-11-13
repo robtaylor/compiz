@@ -59,10 +59,6 @@
 include (CompizCommon)
 include (CompizBcop)
 
-if (COMPIZ_GCONF_SCHEMAS_SUPPORT)
-    include (CompizGconf)
-endif ()
-
 if (COMPIZ_PACKAGING_ENABLED)
     set (prefix ${CMAKE_INSTALL_PREFIX}                   CACHE PATH "prefix")
     set (exec_prefix ${CMAKE_INSTALL_PREFIX}/bin          CACHE PATH "bindir")
@@ -111,11 +107,7 @@ macro (_prepare_directories)
 	set (PLUGIN_INCDIR    ${includedir})
 	set (PLUGIN_PKGDIR    ${libdir}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${datadir}/compiz)
-	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-            set (PLUGIN_SCHEMADIR "${datadir}/gconf/schemas")
-        else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-	    set (PLUGIN_SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
-	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
+
 
     elseif ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "compiz" OR
 	    "$ENV{BUILD_GLOBAL}" STREQUAL "true")
@@ -125,11 +117,6 @@ macro (_prepare_directories)
 	set (PLUGIN_INCDIR    ${COMPIZ_INCLUDEDIR})
 	set (PLUGIN_PKGDIR    ${COMPIZ_LIBDIR}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${COMPIZ_PREFIX}/share/compiz)
-	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-            set (PLUGIN_SCHEMADIR "${COMPIZ_PREFIX}/share/gconf/schemas")
-        else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-	    set (PLUGIN_SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
-	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 
 	if (NOT "${CMAKE_BUILD_TYPE}")
 	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
@@ -140,12 +127,6 @@ macro (_prepare_directories)
 	set (PLUGIN_PREFIX    $ENV{HOME}/.compiz-1)
 	set (PLUGIN_LIBDIR    $ENV{HOME}/.compiz-1/plugins)
 	set (PLUGIN_XMLDIR    $ENV{HOME}/.compiz-1/metadata)
-
-	if (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-            set (PLUGIN_SCHEMADIR "$ENV{HOME}/.gconf/schemas")
-        else (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
-	    set (PLUGIN_SCHEMADIR "${COMPIZ_INSTALL_GCONF_SCHEMA_DIR}")
-	endif (NOT COMPIZ_INSTALL_GCONF_SCHEMA_DIR)
 
 	if (NOT "${CMAKE_BUILD_TYPE}")
 	     set (CMAKE_BUILD_TYPE "Debug" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
@@ -307,11 +288,6 @@ function (_build_compiz_plugin plugin)
 	endif ()
 
 	if (_translated_xml)
-	    if (COMPIZ_GCONF_SCHEMAS_SUPPORT)
-	        # generate gconf schema
-	        compiz_gconf_schema (${_translated_xml} "${CMAKE_BINARY_DIR}/generated/compiz-${plugin}.schemas" ${PLUGIN_SCHEMADIR})
-	        set (_schema_sources "${CMAKE_BINARY_DIR}/generated/compiz-${plugin}.schemas")
-	    endif ()
 
 	    # install xml
 	    install (
@@ -403,7 +379,7 @@ function (_build_compiz_plugin plugin)
 			     ${_h_ins_files}
 			     ${_bcop_sources}
 			     ${_translation_sources}
-			     ${_schema_sources}
+			     ${COMPIZ_CURRENT_SOURCES_ADDS}
 	)
 
 	if (COMPIZ_BUILD_WITH_RPATH)
