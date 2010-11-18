@@ -127,10 +127,10 @@ CompTimer::minLeft ()
 {
     struct timeval current;
     int left;
-    
+
     gettimeofday (&current, 0);
     left = mMinTime - TIMEVALDIFF (&current, &tickStart);
-    
+
     return (left < 0)? 0 : (unsigned int) left;
 }
 
@@ -139,10 +139,10 @@ CompTimer::maxLeft ()
 {
     struct timeval current;
     int left;
-    
+
     gettimeofday (&current, 0);
     left = mMaxTime - TIMEVALDIFF (&current, &tickStart);
-    
+
     return (left < 0)? 0 : (unsigned int) left;
 }
 

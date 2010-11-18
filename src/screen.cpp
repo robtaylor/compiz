@@ -288,17 +288,22 @@ onTimerTimeout (CompTimer *timer)
 
     forceFail = false;
     executingId = timer->mId;
-    result = timer->mCallBack ();
 
-    if (result)
-        timer->tick ();
-    else
-        timer->mId = 0;
+    result = timer->mCallBack ();
 
     if (forceFail)
 	return false;
 
-    return result;
+    if (result)
+    {
+        timer->tick ();
+	return true;
+    }
+    else
+    {
+        timer->mId = 0;
+	return false;
+    }
 }
 
 void
@@ -310,6 +315,7 @@ PrivateScreen::addTimer (CompTimer *timer)
     unsigned int time = timer->mMinTime;
 
     timer->mId = g_timeout_add (time, (GSourceFunc) onTimerTimeout, timer);
+
     timer->tick ();
 }
 
