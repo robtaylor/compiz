@@ -242,6 +242,8 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
+/* TODO: move this code to timer.cpp */
+
 bool
 CompTimer::internalCallback ()
 {
