@@ -146,7 +146,6 @@ CompEventSource::callback ()
 {
     if (restartSignal || shutDown)
     {
-	screen->priv->source->destroy ();
 	screen->priv->source.reset ();
 	screen->priv->mainloop->quit ();
     }
@@ -269,10 +268,7 @@ CompTimer::internalCallback ()
     else
     {
         if (mSource)
-	{
-	    mSource->destroy ();
 	    mSource.reset ();
-	}
 	return false;
     }
 }
@@ -306,7 +302,6 @@ PrivateScreen::removeTimer (CompTimer *timer)
     if (timer->mExecuting)
 	timer->mForceFail = true;
 
-    timer->mSource->destroy ();
     timer->mSource.reset (); /* This will NULL the pointer */
 }
 
