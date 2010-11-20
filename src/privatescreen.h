@@ -35,7 +35,7 @@
 #include <core/timer.h>
 #include <core/plugin.h>
 
-#include <glib.h>
+#include <glibmm/main.h>
 
 #include "core_options.h"
 
@@ -102,6 +102,33 @@ struct CompStartupSequence {
     SnStartupSequence		*sequence;
     unsigned int		viewportX;
     unsigned int		viewportY;
+};
+
+class CompEventSource:
+    public Glib::Source
+{
+    public:
+
+	static
+	Glib::RefPtr <CompEventSource> create ();
+
+	sigc::connection connect (const sigc::slot <bool> &slot);
+
+    protected:
+
+	bool prepare (int &timeout);
+	bool check ();
+	bool dispatch (sigc::slot_base *slot);
+	bool callback ();
+
+	explicit CompEventSource ();
+	virtual ~CompEventSource ();
+
+    private:
+
+	Display	      *mDpy;
+	Glib::PollFD  mPollFD;
+	int	      mConnectionFD;
 };
 
 class PrivateScreen : public CoreOptions {
@@ -303,8 +330,10 @@ class PrivateScreen : public CoreOptions {
     public:
 
 	PrivateScreen *priv;
-	
-	GMainLoop *loop;
+
+	Glib::RefPtr <Glib::MainLoop>  mainloop;
+	Glib::RefPtr <CompEventSource> source;
+	Glib::RefPtr <Glib::MainContext> ctx;
 
 	CompFileWatchList   fileWatch;
 	CompFileWatchHandle lastFileWatchHandle;

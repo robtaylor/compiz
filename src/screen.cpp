@@ -41,9 +41,6 @@
 #include <poll.h>
 #include <algorithm>
 
-#include <glib.h>
-#include <glib-object.h>
-
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -113,115 +110,86 @@ CompScreen::freePluginClassIndex (unsigned int index)
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
-
-struct CompizEventQueue
+Glib::RefPtr <CompEventSource>
+CompEventSource::create ()
 {
-    GSource source;
-
-    Display *display;
-    GPollFD pollFd;
-    int connectionFd;
-};
-
-/* XXX:
- * We should use GlibMM here and avoid mixing C and C++ linkage
- */
-
-extern "C"
-{
-    static gboolean
-    processCallback (CompScreen *screen)
-    {
-	screen->processEvents ();
-	return TRUE;
-    }
+    return Glib::RefPtr <CompEventSource> (new CompEventSource ());
 }
 
-static gboolean
-gsourcePrepare (GSource *source, gint *timeout)
+sigc::connection
+CompEventSource::connect (const sigc::slot <bool> &slot)
 {
-    CompizEventQueue *ceq = (CompizEventQueue *) source;
-
-    *timeout = -1;
-    return XPending (ceq->display);
+    return connect_generic (slot);
 }
 
-static gboolean
-gsourceCheck (GSource  *source)
+CompEventSource::CompEventSource () :
+    Glib::Source (),
+    mDpy (screen->dpy ()),
+    mConnectionFD (ConnectionNumber (screen->dpy ()))
 {
-    CompizEventQueue *ceq;
+    mPollFD.set_fd (mConnectionFD);
+    mPollFD.set_events (Glib::IO_IN);
 
-    ceq = (CompizEventQueue *) source;
+    set_priority (G_PRIORITY_DEFAULT);
+    add_poll (mPollFD);
+    set_can_recurse (true);
 
-    if (ceq->pollFd.revents & G_IO_IN)
-	return XPending (ceq->display);
-    else
-	return false;
+    connect (sigc::mem_fun <bool, CompEventSource> (this, &CompEventSource::callback));
 }
 
-static gboolean
-gsourceDispatch (GSource *source, GSourceFunc callback, gpointer data)
-{
-    return callback (data);
-}
-
-static void
-gsourceDestroy (GSource *source)
+CompEventSource::~CompEventSource ()
 {
 }
 
-static GSourceFuncs gsourceFuncs = {
-    gsourcePrepare,
-    gsourceCheck,
-    gsourceDispatch,
-    gsourceDestroy
-};
-
-void
-CompScreen::processEvents ()
+bool
+CompEventSource::callback ()
 {
     if (restartSignal || shutDown)
-	g_main_loop_quit (priv->loop);
+    {
+	screen->priv->source->destroy ();
+	screen->priv->source.reset ();
+	screen->priv->mainloop->quit ();
+    }
     else
-	priv->processEvents ();
+	screen->priv->processEvents ();
+    return true;
+}
+
+bool
+CompEventSource::prepare (int &timeout)
+{
+    timeout = -1;
+    return XPending (mDpy);
+}
+
+bool
+CompEventSource::check ()
+{
+    if (mPollFD.get_revents () & Glib::IO_IN)
+	return XPending (mDpy);
+
+    return false;
+}
+
+bool
+CompEventSource::dispatch (sigc::slot_base *slot)
+{
+    return (*static_cast <sigc::slot <bool> *> (slot)) ();
 }
 
 void
 CompScreen::eventLoop ()
 {
-    int		     fd;
-    GSource	     *source;
-    GMainContext     *ctx;
-    CompizEventQueue *ceq;
+    priv->ctx = Glib::MainContext::get_default ();
+    priv->mainloop = Glib::MainLoop::create (priv->ctx, false);
+    priv->source = CompEventSource::create ();
 
-    g_type_init ();
-
-    ctx = g_main_context_default ();
-
-    priv->loop = g_main_loop_new (ctx, false);
-
-    source = g_source_new (&gsourceFuncs, sizeof (CompizEventQueue));
-    ceq = (CompizEventQueue*) source;
-
-    fd = ConnectionNumber (priv->dpy);
-    ceq->connectionFd = fd;
-    ceq->pollFd.fd = fd;
-    ceq->pollFd.events = G_IO_IN;
-    ceq->display = priv->dpy;
-
-    g_source_set_priority (source, G_PRIORITY_DEFAULT);
-    g_source_add_poll (source, &ceq->pollFd);
-    g_source_set_can_recurse (source, TRUE);
-
-    g_source_set_callback (source, (GSourceFunc) processCallback, this, NULL);
-
-    g_source_attach (source, NULL);
-    g_source_unref (source);
+    priv->source->attach (priv->ctx);
 
     /* Kick the event loop */
-    g_main_context_iteration (ctx, false);
+    priv->ctx->iteration (false);
 
-    g_main_loop_run (priv->loop);
+    priv->mainloop->run ();
 }
 
 CompFileWatchHandle
@@ -275,33 +243,36 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
-static unsigned int executingId = 0;
-static bool forceFail = false;
-
-gboolean
-onTimerTimeout (CompTimer *timer)
+bool
+CompTimer::internalCallback ()
 {
     bool result;
 
-    if (!timer->active ())
-        return true;
+    if (!mActive)
+        return false;
 
-    forceFail = false;
-    executingId = timer->mId;
+    mForceFail = false;
+    mExecuting = true;
 
-    result = timer->mCallBack ();
+    result = mCallBack ();
 
-    if (forceFail)
+    mExecuting = false;
+
+    if (mForceFail)
 	return false;
 
     if (result)
     {
-        timer->tick ();
+        tick ();
 	return true;
     }
     else
     {
-        timer->mId = 0;
+        if (mSource)
+	{
+	    mSource->destroy ();
+	    mSource.reset ();
+	}
 	return false;
     }
 }
@@ -309,27 +280,34 @@ onTimerTimeout (CompTimer *timer)
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
-    if (timer->mId != 0)
+    if (timer->mSource)
         return;
 
     unsigned int time = timer->mMinTime;
 
-    timer->mId = g_timeout_add (time, (GSourceFunc) onTimerTimeout, timer);
+    timer->mSource = Glib::TimeoutSource::create (time);
 
-    timer->tick ();
+    if (timer->mSource)
+    {
+	timer->mSource->attach (priv->ctx);
+	timer->mSource->connect (sigc::mem_fun <bool, CompTimer> (timer, &CompTimer::internalCallback));
+	timer->tick ();
+    }
+    else
+	timer->mActive = false;
 }
 
 void
 PrivateScreen::removeTimer (CompTimer *timer)
 {
-    if (timer->mId == 0)
+    if (!timer->mSource)
         return;
 
-    if (executingId == timer->mId)
-      forceFail = true;
+    if (timer->mExecuting)
+	timer->mForceFail = true;
 
-    g_source_remove (timer->mId);
-    timer->mId = 0;
+    timer->mSource->destroy ();
+    timer->mSource.reset (); /* This will NULL the pointer */
 }
 
 CompWatchFdHandle

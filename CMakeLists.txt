@@ -64,6 +64,7 @@ set (COMPIZ_REQUIRES
     libxslt
     glib-2.0
     gio-2.0
+    glibmm-2.4
     "libstartup-notification-1.0 >= 0.7"
 )
 

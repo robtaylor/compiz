@@ -34,7 +34,9 @@ CompTimer::CompTimer () :
     mMinLeft (0),
     mMaxLeft (0),
     mCallBack (NULL),
-    mId (0)
+    mForceFail (false),
+    mExecuting (false),
+    mSource (NULL)
 {
 }
 
@@ -81,8 +83,10 @@ CompTimer::start ()
 	return;
     }
 
+    if (!mActive)
+	screen->priv->addTimer (this);
+
     mActive = true;
-    screen->priv->addTimer (this);
 }
 
 void
@@ -106,8 +110,10 @@ CompTimer::start (CompTimer::CallBack callback,
 void
 CompTimer::stop ()
 {
+    if (mActive)
+	screen->priv->removeTimer (this);
+
     mActive = false;
-    screen->priv->removeTimer (this);
 }
 
 unsigned int

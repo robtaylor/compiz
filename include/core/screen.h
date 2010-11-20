@@ -399,6 +399,7 @@ class CompScreen :
 	friend class CompWindow;
 	friend class PrivateWindow;
 	friend class ModifierHandler;
+	friend class CompEventSource;
 
     private:
 	PrivateScreen *priv;
