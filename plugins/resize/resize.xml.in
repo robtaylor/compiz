@@ -14,25 +14,100 @@
 	<options>
 	    <group>
 		<_short>Bindings</_short>
-		<option name="initiate_normal_key" type="key">
-		    <_short>Initiate Normal Window Resize</_short>
-		    <_long>Start resizing window normally</_long>
-		    <default/>
+		<option name="outline_modifier" type="list">
+		    <_short>Outline Modifier</_short>
+		    <_long>Use these bindings to resize with an outline.</_long>
+		    <type>int</type>
+		    <min>0</min>
+		    <max>3</max>
+		    <desc>
+			<value>0</value>
+			<_name>Shift</_name>
+		    </desc>
+		    <desc>
+			<value>1</value>
+			<_name>Alt</_name>
+		    </desc>
+		    <desc>
+			<value>2</value>
+			<_name>Control</_name>
+		    </desc>
+		    <desc>
+			<value>3</value>
+			<_name>Meta</_name>
+		    </desc>
 		</option>
-		<option name="initiate_outline_key" type="key">
-		    <_short>Initiate Outline Window Resize</_short>
-		    <_long>Start resizing window with outline</_long>
-		    <default/>
+		<option name="rectangle_modifier" type="list">
+		    <_short>Rectangle Modifier</_short>
+		    <_long>Use these bindings to resize with an rectangle.</_long>
+		    <type>int</type>
+		    <min>0</min>
+		    <max>3</max>
+		    <desc>
+			<value>0</value>
+			<_name>Shift</_name>
+		    </desc>
+		    <desc>
+			<value>1</value>
+			<_name>Alt</_name>
+		    </desc>
+		    <desc>
+			<value>2</value>
+			<_name>Control</_name>
+		    </desc>
+		    <desc>
+			<value>3</value>
+			<_name>Meta</_name>
+		    </desc>
 		</option>
-		<option name="initiate_rectangle_key" type="key">
-		    <_short>Initiate Rectangle Window Resize</_short>
-		    <_long>Start resizing window with rectangle</_long>
-		    <default/>
+		<option name="stretch_modifier" type="list">
+		    <_short>Stretch Modifier</_short>
+		    <_long>Use these bindings to resize by stretching.</_long>
+		    <type>int</type>
+		    <min>0</min>
+		    <max>3</max>
+		    <desc>
+			<value>0</value>
+			<_name>Shift</_name>
+		    </desc>
+		    <desc>
+			<value>1</value>
+			<_name>Alt</_name>
+		    </desc>
+		    <desc>
+			<value>2</value>
+			<_name>Control</_name>
+		    </desc>
+		    <desc>
+			<value>3</value>
+			<_name>Meta</_name>
+		    </desc>
 		</option>
-		<option name="initiate_stretch_key" type="key">
-		    <_short>Initiate Stretch Window Resize</_short>
-		    <_long>Start resizing window by stretching it</_long>
-		    <default/>
+		<option name="centered_modifier" type="list">
+		    <_short>Centered Modifier</_short>
+		    <_long>Use these bindings to resize from the center.</_long>
+		    <type>int</type>
+		    <min>0</min>
+		    <max>3</max>
+		    <default>
+			<value>0</value>
+		    </default>
+		    <desc>
+			<value>0</value>
+			<_name>Shift</_name>
+		    </desc>
+		    <desc>
+			<value>1</value>
+			<_name>Alt</_name>
+		    </desc>
+		    <desc>
+			<value>2</value>
+			<_name>Control</_name>
+		    </desc>
+		    <desc>
+			<value>3</value>
+			<_name>Meta</_name>
+		    </desc>
 		</option>
 		<option name="initiate_button" type="button">
 		    <_short>Initiate Window Resize</_short>
