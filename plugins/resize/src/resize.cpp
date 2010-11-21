@@ -177,7 +177,7 @@ void
 ResizeScreen::finishResizing ()
 {
     w->ungrabNotify ();
-    
+
     resizeInformationAtom.deleteProperty (w->id ());
 
     w = NULL;
@@ -277,6 +277,8 @@ resizeInitiate (CompAction         *action,
 
 	rs->pointerDx = x - pointerX;
 	rs->pointerDy = y - pointerY;
+
+	rs->centered =  rs->optionGetResizeFromCenterMatch ().evaluate (w);
 
 	if ((w->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
 	{
@@ -664,7 +666,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	       already set as we don't have a use for the
 	       difference information otherwise */
 
-	    if (optionGetResizeFromCenter ())
+	    if (centered)
 	    {
 		pointerDx += (xRoot - lastPointerX) * 2;
 		pointerDy += (yRoot - lastPointerY) * 2;
@@ -698,7 +700,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	wWidth  = wi + w->input ().left + w->input ().right;
 	wHeight = he + w->input ().top + w->input ().bottom;
 
-	if (optionGetResizeFromCenter ())
+	if (centered)
 	{
 	    if (mask & ResizeLeftMask)
 		wX = geometry.x + geometry.width -
@@ -948,7 +950,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
-	if (optionGetResizeFromCenter ())
+	if (centered)
 	{
 	    if ((mask & ResizeLeftMask) || (mask & ResizeRightMask))
 		geometry.x -= ((wi - geometry.width) / 2);
@@ -1329,7 +1331,7 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
-    
+
     atomTemplate.resize (4);
 
     for (int i = 0; i < 4; i++)

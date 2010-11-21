@@ -109,6 +109,7 @@ class ResizeScreen :
 
 	CompWindow	 *w;
 	int		 mode;
+	bool		 centered;
 	XRectangle	 savedGeometry;
 	XRectangle	 geometry;
 

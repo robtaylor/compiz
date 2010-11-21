@@ -108,10 +108,10 @@
 		<_long>Windows that stretch resize should be used for</_long>
 		<default/>
 	    </option>
-	    <option name="resize_from_center" type="bool">
-		<short>Resize From Center</short>
-		<long>Equally resize opposite sides of window</long>
-		<default>false</default>
+	    <option name="resize_from_center_match" type="match">
+		<short>Resize From Center Windows</short>
+		<long>Windows that should be resized from center</long>
+		<default></default>
 	    </option>
 	</options>
     </plugin>
