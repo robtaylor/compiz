@@ -581,7 +581,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
     if (grabIndex)
     {
 	BoxRec box;
-	int    wi, he;                  /* size of window contents */
+	int    wi, he, cwi, che;        /* size of window contents (c prefix for constrained)*/
 	int    wX, wY, wWidth, wHeight; /* rect. for window contents+borders */
 	int    workAreaSnapDistance = 15;
 
@@ -694,7 +694,25 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	if (w->state () & CompWindowStateMaximizedHorzMask)
 	    wi = w->serverGeometry ().width ();
 
-	w->constrainNewWindowSize (wi, he, &wi, &he);
+	cwi = wi;
+	che = he;
+
+	if (w->constrainNewWindowSize (wi, he, &cwi, &che))
+	{
+	    Box box;
+
+	    /* Also, damage relevant paint rectangles */
+	    if (mode == ResizeOptions::ModeRectangle ||
+	        mode == ResizeOptions::ModeOutline)
+		getPaintRectangle (&box);
+	    else if (mode == ResizeOptions::ModeStretch)
+		getStretchRectangle (&box);
+
+	    damageRectangle (&box);
+	}
+
+	wi = cwi;
+	he = che;
 
 	/* compute rect. for window + borders */
 	wWidth  = wi + w->input ().left + w->input ().right;
