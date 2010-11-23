@@ -245,7 +245,8 @@ GLScreen::GLScreen (CompScreen *s) :
 			CompLogLevelFatal,
 			"Software rendering detected");
 	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
-	setFaipriv->fallbackAndFailreturn
+	setFailed ();
+	return;
     }
 
     if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))    
@@ -486,7 +487,7 @@ GLScreen::GLScreen (CompScreen *s) :
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"No GLXFBConfig for default depth, "
 			"this isn't going to work.");
-	priv->screen->handleCompizEvent ("opengl", "fatal_fallback", o);
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
