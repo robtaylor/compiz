@@ -112,7 +112,7 @@ KWD::Decorator::Decorator () :
     mShadowOptions.shadow_color[0] = SHADOW_COLOR_RED;
     mShadowOptions.shadow_color[1] = SHADOW_COLOR_GREEN;
     mShadowOptions.shadow_color[2] = SHADOW_COLOR_BLUE;
-    
+
     updateShadowProperties (QX11Info::appRootWindow ());
 
     for (i = 0; i < 3; i++)
@@ -135,7 +135,7 @@ KWD::Decorator::Decorator () :
 				      CopyFromParent,
 				      CopyFromParent,
 				      CWOverrideRedirect, &attr);
-				      
+
     long data = 1;
     XChangeProperty (QX11Info::display(), mCompositeWindow, Atoms::enlightmentDesktop,
 		      XA_CARDINAL, 32, PropModeReplace, (unsigned char *) &data, 1);
@@ -179,7 +179,7 @@ KWD::Decorator::enableDecorations (Time timestamp)
 
     if (!pluginManager ()->loadPlugin (""))
 	return false;
-    
+
     updateAllShadowOptions ();
 
     KWD::trapXError ();
@@ -298,42 +298,42 @@ KWD::Decorator::updateShadowProperties (WId id)
     double radius, opacity;
     int    xOffset, yOffset;
     QVector<QString> shadowColor;
-    
+
     if (id != QX11Info::appRootWindow ())
 	return;
-    
+
     void *propData = KWD::readXProperty (id,
 					  Atoms::compizShadowInfo,
 					  XA_INTEGER,
 					  &nItems);
-    
+
     if (nItems != 4)
 	return;
-    
+
     data = reinterpret_cast <long *> (propData);
-    
+
     radius = data[0];
     opacity = data[1];
-    
+
     /* We multiplied by 1000 in compiz to keep
       * precision, now divide by that much */
-    
+
     radius /= 1000;
     opacity /= 1000;
-    
+
     xOffset = data[2];
     yOffset = data[3];
-    
+
     shadowRadiusChanged (radius);
     shadowOpacityChanged (opacity);
     shadowXOffsetChanged (xOffset);
     shadowYOffsetChanged (yOffset);
-    
+
     shadowColor = KWD::readPropertyString (id, Atoms::compizShadowColor);
-    
+
     if (shadowColor.size () == 1)
 	shadowColorChanged (shadowColor.at (0));
-    
+
     XFree (propData);
 }
 
@@ -375,7 +375,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 		 xevent->xproperty.atom == Atoms::compizShadowColor)
 	{
 	    updateShadowProperties (xevent->xproperty.window);
-	}	    
+	}
 	else if (xevent->xproperty.atom == Atoms::switchSelectWindow)
 	{
 	    WId id = xevent->xproperty.window;
@@ -399,7 +399,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xce->window];
-	
+
 	if (!client->decorWidget ())
 	    break;
 
@@ -439,7 +439,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xme->window];
-	
+
 	if (!client->decorWidget ())
 	    break;
 
@@ -483,7 +483,7 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    break;
 
 	client = mFrames[xbe->window];
-	
+
 	if (!client->decorWidget ())
 	    break;
 
@@ -494,11 +494,11 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	    XButtonEvent xbe2 = *xbe;
 	    xbe2.window = child->winId ();
 	    QPoint p;
-		
+
 	    p = client->mapToChildAt (QPoint (xbe->x, xbe->y));
 	    xbe2.x = p.x ();
 	    xbe2.y = p.y ();
-	    
+
 	    p = child->mapToGlobal(p);
 	    xbe2.x_root = p.x ();
 	    xbe2.y_root = p.y ();
@@ -765,7 +765,8 @@ KWD::Decorator::handleWindowChanged (WId		 id,
 
     if (mSwitcher && mSwitcher->xid () == id)
     {
-	mSwitcher->updateGeometry ();
+	if (properties[0] & NET::WMGeometry)
+	    mSwitcher->updateGeometry ();
 	return;
     }
 

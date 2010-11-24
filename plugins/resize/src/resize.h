@@ -93,6 +93,10 @@ class ResizeScreen :
 	void handleKeyEvent (KeyCode keycode);
 	void handleMotionEvent (int xRoot, int yRoot);
 
+	void optionChanged (CompOption *o, Options);
+	void resizeMaskValueToKeyMask (int valueMask,
+				       int *mask);
+
 	void glPaintRectangle (const GLScreenPaintAttrib &sAttrib,
 			       const GLMatrix            &transform,
 			       CompOutput                *output,
@@ -109,8 +113,14 @@ class ResizeScreen :
 
 	CompWindow	 *w;
 	int		 mode;
+	bool		 centered;
 	XRectangle	 savedGeometry;
 	XRectangle	 geometry;
+
+	int		 outlineMask;
+	int		 rectangleMask;
+	int		 stretchMask;
+	int		 centeredMask;
 
 	int          releaseButton;
 	unsigned int mask;
