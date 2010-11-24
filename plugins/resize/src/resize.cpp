@@ -177,7 +177,7 @@ void
 ResizeScreen::finishResizing ()
 {
     w->ungrabNotify ();
-    
+
     resizeInformationAtom.deleteProperty (w->id ());
 
     w = NULL;
@@ -277,6 +277,8 @@ resizeInitiate (CompAction         *action,
 
 	rs->pointerDx = x - pointerX;
 	rs->pointerDy = y - pointerY;
+
+	rs->centered =  rs->optionGetResizeFromCenterMatch ().evaluate (w);
 
 	if ((w->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
 	{
@@ -579,7 +581,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
     if (grabIndex)
     {
 	BoxRec box;
-	int    wi, he;                  /* size of window contents */
+	int    wi, he, cwi, che;        /* size of window contents (c prefix for constrained)*/
 	int    wX, wY, wWidth, wHeight; /* rect. for window contents+borders */
 	int    workAreaSnapDistance = 15;
 
@@ -664,7 +666,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	       already set as we don't have a use for the
 	       difference information otherwise */
 
-	    if (optionGetResizeFromCenter ())
+	    if (centered)
 	    {
 		pointerDx += (xRoot - lastPointerX) * 2;
 		pointerDy += (yRoot - lastPointerY) * 2;
@@ -692,13 +694,31 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	if (w->state () & CompWindowStateMaximizedHorzMask)
 	    wi = w->serverGeometry ().width ();
 
-	w->constrainNewWindowSize (wi, he, &wi, &he);
+	cwi = wi;
+	che = he;
+
+	if (w->constrainNewWindowSize (wi, he, &cwi, &che))
+	{
+	    Box box;
+
+	    /* Also, damage relevant paint rectangles */
+	    if (mode == ResizeOptions::ModeRectangle ||
+	        mode == ResizeOptions::ModeOutline)
+		getPaintRectangle (&box);
+	    else if (mode == ResizeOptions::ModeStretch)
+		getStretchRectangle (&box);
+
+	    damageRectangle (&box);
+	}
+
+	wi = cwi;
+	he = che;
 
 	/* compute rect. for window + borders */
 	wWidth  = wi + w->input ().left + w->input ().right;
 	wHeight = he + w->input ().top + w->input ().bottom;
 
-	if (optionGetResizeFromCenter ())
+	if (centered)
 	{
 	    if (mask & ResizeLeftMask)
 		wX = geometry.x + geometry.width -
@@ -948,7 +968,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
-	if (optionGetResizeFromCenter ())
+	if (centered)
 	{
 	    if ((mask & ResizeLeftMask) || (mask & ResizeRightMask))
 		geometry.x -= ((wi - geometry.width) / 2);
@@ -1131,6 +1151,80 @@ ResizeScreen::handleEvent (XEvent *event)
 	    }
 	default:
 	    break;
+    }
+
+    if (event->type == screen->xkbEvent () && w)
+    {
+	XkbAnyEvent *xkbEvent = (XkbAnyEvent *) event;
+
+	if (xkbEvent->xkb_type == XkbStateNotify)
+	{
+	    XkbStateNotifyEvent *stateEvent = (XkbStateNotifyEvent *) event;
+
+	    /* Check if we need to change to outline mode */
+
+	    unsigned int mods = 0xffffffff;
+	    bool	 modifierMode = false;
+	    int		 oldMode = mode;
+	    if (outlineMask)
+		mods = outlineMask;
+
+	    if ((stateEvent->mods & mods) == mods)
+	    {
+		modifierMode = true;
+		mode = ResizeOptions::ModeOutline;
+	    }
+
+	    mods = 0xffffffff;
+	    if (rectangleMask)
+		mods = rectangleMask;
+
+	    if ((stateEvent->mods & mods) == mods)
+	    {
+		modifierMode = true;
+		mode = ResizeOptions::ModeRectangle;
+	    }
+
+	    mods = 0xffffffff;
+	    if (stretchMask)
+		mods = stretchMask;
+
+	    if ((stateEvent->mods & mods) == mods)
+	    {
+		modifierMode = true;
+		mode = ResizeOptions::ModeStretch;
+	    }
+
+	    mods = 0xffffffff;
+	    if (centeredMask)
+		mods = centeredMask;
+
+	    if (!modifierMode)
+		mode = optionGetMode ();
+
+	    if (oldMode != mode)
+	    {
+		Box box;
+
+		getStretchRectangle (&box);
+		damageRectangle (&box);
+		getPaintRectangle (&box);
+		damageRectangle (&box);
+
+		box.x1 = w->outputRect ().x ();
+		box.y1 = w->outputRect ().y ();
+		box.x2 = box.x1 + w->outputRect ().width ();
+		box.y2 = box.y1 + w->outputRect ().height ();
+
+		damageRectangle (&box);
+	    }
+
+	    if ((stateEvent->mods & mods) == mods)
+		centered = true;
+	    else if ((w &&
+		      !optionGetResizeFromCenterMatch ().evaluate (w)))
+		centered = false;
+	}
     }
 
     screen->handleEvent (event);
@@ -1319,17 +1413,78 @@ ResizeWindow::damageRect (bool initial, const CompRect &rect)
     return status;
 }
 
+/* We have to make some assumptions here in order to do this neatly,
+ * see build/generated/resize_options.h for more info */
+
+#define ResizeModeShiftMask (1 << 0)
+#define ResizeModeAltMask (1 << 1)
+#define ResizeModeControlMask (1 << 2)
+#define ResizeModeMetaMask (1 << 3)
+
+void
+ResizeScreen::resizeMaskValueToKeyMask (int	   valueMask,
+					int	   *mask)
+{
+    if (valueMask & ResizeModeShiftMask)
+	*mask |= ShiftMask;
+    if (valueMask & ResizeModeAltMask)
+	*mask |= CompAltMask;
+    if (valueMask & ResizeModeControlMask)
+	*mask |= ControlMask;
+    if (valueMask & ResizeModeMetaMask)
+	*mask |= CompMetaMask;
+}
+
+void
+ResizeScreen::optionChanged (CompOption		    *option,
+			     ResizeOptions::Options num)
+{
+    int *mask = NULL;
+    int valueMask;
+
+    switch (num)
+    {
+	case ResizeOptions::OutlineModifier:
+	    mask = &outlineMask;
+	    valueMask = optionGetOutlineModifierMask ();
+	    break;
+	case ResizeOptions::RectangleModifier:
+	    mask = &rectangleMask;
+	    valueMask = optionGetRectangleModifierMask ();
+	    break;
+	case ResizeOptions::StretchModifier:
+	    mask = &stretchMask;
+	    valueMask = optionGetStretchModifierMask ();
+	    break;
+	case ResizeOptions::CenteredModifier:
+	    mask = &centeredMask;
+	    valueMask = optionGetCenteredModifierMask ();
+	    break;
+	default:
+	    break;
+    }
+
+    if (mask)
+	resizeMaskValueToKeyMask (valueMask, mask);
+}
+
 ResizeScreen::ResizeScreen (CompScreen *s) :
     PluginClassHandler<ResizeScreen,CompScreen> (s),
     gScreen (GLScreen::get (s)),
     cScreen (CompositeScreen::get (s)),
     w (NULL),
+    outlineMask (0),
+    rectangleMask (0),
+    stretchMask (0),
+    centeredMask (0),
     releaseButton (0),
     isConstrained (false)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
-    
+    ResizeOptions::ChangeNotify notify =
+	       boost::bind (&ResizeScreen::optionChanged, this, _1, _2);
+
     atomTemplate.resize (4);
 
     for (int i = 0; i < 4; i++)
@@ -1365,26 +1520,20 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     cursor[2] = upCursor;
     cursor[3] = downCursor;
 
-    optionSetInitiateNormalKeyInitiate (boost::bind
-					 (resizeInitiate, _1, _2, _3,
-					  ResizeOptions::ModeNormal));
-    optionSetInitiateNormalKeyTerminate (resizeTerminate);
-    optionSetInitiateOutlineKeyInitiate (boost::bind
-					 (resizeInitiate, _1, _2, _3,
-					  ResizeOptions::ModeOutline));
-    optionSetInitiateOutlineKeyTerminate (resizeTerminate);
-    optionSetInitiateRectangleKeyInitiate (boost::bind
-					   (resizeInitiate, _1, _2, _3,
-					    ResizeOptions::ModeRectangle));
-    optionSetInitiateRectangleKeyTerminate (resizeTerminate);
-    optionSetInitiateStretchKeyInitiate (boost::bind
-					 (resizeInitiate, _1, _2, _3,
-					  ResizeOptions::ModeStretch));
-    optionSetInitiateStretchKeyTerminate (resizeTerminate);
     optionSetInitiateKeyInitiate (resizeInitiateDefaultMode);
     optionSetInitiateKeyTerminate (resizeTerminate);
     optionSetInitiateButtonInitiate (resizeInitiateDefaultMode);
     optionSetInitiateButtonTerminate (resizeTerminate);
+
+    optionSetOutlineModifierNotify (notify);
+    optionSetRectangleModifierNotify (notify);
+    optionSetStretchModifierNotify (notify);
+    optionSetCenteredModifierNotify (notify);
+
+    resizeMaskValueToKeyMask (optionGetOutlineModifierMask (), &outlineMask);
+    resizeMaskValueToKeyMask (optionGetRectangleModifierMask (), &rectangleMask);
+    resizeMaskValueToKeyMask (optionGetStretchModifierMask (), &stretchMask);
+    resizeMaskValueToKeyMask (optionGetCenteredModifierMask (), &centeredMask);
 
     ScreenInterface::setHandler (s);
 
