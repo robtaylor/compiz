@@ -146,8 +146,8 @@ CompEventSource::callback ()
 {
     if (restartSignal || shutDown)
     {
-	screen->priv->source.reset ();
 	screen->priv->mainloop->quit ();
+	return false;
     }
     else
 	screen->priv->processEvents ();
@@ -4512,6 +4512,8 @@ CompScreen::init (const char *name)
 CompScreen::~CompScreen ()
 {
     CompPlugin  *p;
+
+    priv->source.reset ();
 
     priv->removeAllSequences ();
 
