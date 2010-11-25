@@ -132,8 +132,7 @@ extern "C"
     static gboolean
     processCallback (CompScreen *screen)
     {
-	screen->processEvents ();
-	return TRUE;
+	return screen->processEvents ();
     }
 }
 
@@ -177,13 +176,18 @@ static GSourceFuncs gsourceFuncs = {
     gsourceDestroy
 };
 
-void
+bool
 CompScreen::processEvents ()
 {
     if (restartSignal || shutDown)
+    {
 	g_main_loop_quit (priv->loop);
+	return false;
+    }
     else
 	priv->processEvents ();
+
+    return true;
 }
 
 void
