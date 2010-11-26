@@ -4531,8 +4531,6 @@ CompScreen::~CompScreen ()
 {
     CompPlugin  *p;
 
-    priv->source.reset ();
-
     priv->removeAllSequences ();
 
     while (!priv->windows.empty ())

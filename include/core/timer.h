@@ -117,7 +117,7 @@ class CompTimer {
 	bool	     mExecuting;
 	struct timeval tickStart;
 
-	bool 	     internalCallback ();
+	bool 	     internalCallback (unsigned int);
 	Glib::RefPtr <Glib::TimeoutSource> mSource;
 
 };
