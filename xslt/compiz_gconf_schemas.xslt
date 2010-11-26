@@ -26,7 +26,7 @@
 <xsl:stylesheet version='1.0' xmlns:xsl='http://www.w3.org/1999/XSL/Transform' >
   <xsl:output method="xml" indent="yes"/>
 
-  <xsl:param name="appName">/apps/compiz</xsl:param>
+  <xsl:param name="appName">/apps/compiz-1</xsl:param>
 
   <xsl:template  match="/compiz">
     <gconfschemafile>
@@ -43,7 +43,7 @@
     <schema>
       <key>/schemas<xsl:call-template name="printKey"/></key>
       <applyto><xsl:call-template name="printKey"/></applyto>
-      <owner>compiz</owner>
+      <owner>compiz-1</owner>
       <type><xsl:call-template name="printType"/></type>
       <xsl:choose>
         <!-- color values need a special handling -->
