@@ -31,7 +31,8 @@
   <xsl:template  match="/compiz">
     <gconfschemafile>
       <schemalist>
-        <xsl:for-each select="/compiz//options/option[not(@read_only='true') and not(@type='action')]">
+        <!-- two levels of indentation: group and subgroup>= -->
+        <xsl:for-each select="/compiz//options//option[not(@read_only='true') and not(@type='action')]">
           <xsl:call-template name="dumpOption"/>
         </xsl:for-each>
       </schemalist>
@@ -242,7 +243,7 @@
       <xsl:value-of select="$info"/>
     </xsl:if>
   </xsl:template>
-  
+
   <!-- generates a list of int descriptions -->
   <xsl:template name="printIntDescListTrans">
     <xsl:param name="language"/>
