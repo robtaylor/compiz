@@ -307,47 +307,73 @@ PrivateScreen::removeTimer (CompTimer *timer)
     timer->mSource.reset (); /* This will NULL the pointer */
 }
 
+CompWatchFd::CompWatchFd (int		    fd,
+			  Glib::IOCondition events,
+			  FdWatchCallBack   callback) :
+    Glib::IOSource (fd, events),
+    mFd (fd),
+    mCallBack (callback),
+    mForceFail (false),
+    mExecuting (false)
+{
+    connect (sigc::mem_fun <Glib::IOCondition, bool>
+	     (this, &CompWatchFd::internalCallback));
+}
+
+Glib::RefPtr <CompWatchFd>
+CompWatchFd::create (int               fd,
+		     Glib::IOCondition events,
+		     FdWatchCallBack   callback)
+{
+    return Glib::RefPtr <CompWatchFd> (new CompWatchFd (fd, events, callback));
+}
+
 CompWatchFdHandle
 CompScreen::addWatchFd (int             fd,
 			short int       events,
 			FdWatchCallBack callBack)
 {
-    CompWatchFd *watchFd = new CompWatchFd ();
+    Glib::IOCondition gEvents;
+    
+    memset (&gEvents, 0, sizeof (Glib::IOCondition));
+
+    if (events & POLLIN)
+	gEvents |= Glib::IO_IN;
+    if (events & POLLOUT)
+	gEvents |= Glib::IO_OUT;
+    if (events & POLLPRI)
+	gEvents |= Glib::IO_PRI;
+    if (events & POLLERR)
+	gEvents |= Glib::IO_ERR;
+    if (events & POLLHUP)
+	gEvents |= Glib::IO_HUP;
+
+    Glib::RefPtr <CompWatchFd> watchFd = CompWatchFd::create (fd, gEvents, callBack);
+
+    watchFd->attach (priv->ctx);
 
     if (!watchFd)
 	return 0;
-
-    watchFd->fd	      = fd;
-    watchFd->callBack = callBack;
-    watchFd->handle   = priv->lastWatchFdHandle++;
+    watchFd->mHandle   = priv->lastWatchFdHandle++;
 
     if (priv->lastWatchFdHandle == MAXSHORT)
 	priv->lastWatchFdHandle = 1;
 
     priv->watchFds.push_front (watchFd);
 
-    priv->nWatchFds++;
-
-    priv->watchPollFds = (struct pollfd *) realloc (priv->watchPollFds,
-			  priv->nWatchFds * sizeof (struct pollfd));
-
-    priv->watchPollFds[priv->nWatchFds - 1].fd     = fd;
-    priv->watchPollFds[priv->nWatchFds - 1].events = events;
-
-    return watchFd->handle;
+    return watchFd->mHandle;
 }
 
 void
 CompScreen::removeWatchFd (CompWatchFdHandle handle)
 {
-    std::list<CompWatchFd *>::iterator it;
-    CompWatchFd                        *w;
-    int                                i;
+    std::list<Glib::RefPtr <CompWatchFd> >::iterator it;
+    Glib::RefPtr <CompWatchFd>	       w;
 
-    for (it = priv->watchFds.begin(), i = priv->nWatchFds - 1;
-	 it != priv->watchFds.end (); it++, i--)
+    for (it = priv->watchFds.begin();
+	 it != priv->watchFds.end (); it++)
     {
-	if ((*it)->handle == handle)
+	if ((*it)->mHandle == handle)
 	    break;
     }
 
@@ -355,15 +381,15 @@ CompScreen::removeWatchFd (CompWatchFdHandle handle)
 	return;
 
     w = (*it);
+
+    if (w->mExecuting)
+    {
+	w->mForceFail = true;
+	return;
+    }
+
+    w.reset ();
     priv->watchFds.erase (it);
-
-    priv->nWatchFds--;
-
-    if (i < priv->nWatchFds)
-	memmove (&priv->watchPollFds[i], &priv->watchPollFds[i + 1],
-		 (priv->nWatchFds - i) * sizeof (struct pollfd));
-
-    delete w;
 }
 
 void
@@ -408,6 +434,42 @@ CompScreen::getValue (CompString key)
     }
 }
 
+bool
+CompWatchFd::internalCallback (Glib::IOCondition events)
+{
+    short int revents = 0;
+
+    if (events & Glib::IO_IN)
+	revents |= POLLIN;
+    if (events & Glib::IO_OUT)
+	revents |= POLLOUT;
+    if (events & Glib::IO_PRI)
+	revents |= POLLPRI;
+    if (events & Glib::IO_ERR)
+	revents |= POLLERR;
+    if (events & Glib::IO_HUP)
+	revents |= POLLHUP;
+    if (events & Glib::IO_NVAL)
+	return false;
+
+    mExecuting = true;
+    mCallBack (revents);
+    mExecuting = false;
+
+    if (mForceFail)
+    {
+	/* FIXME: Need to find a way to properly remove the watchFd
+	 * from the internal list in core */
+	//screen->priv->watchFds.remove (this);
+	return false;
+    }
+    
+    return true;
+}
+    
+
+    
+
 void
 CompScreen::eraseValue (CompString key)
 {
@@ -418,28 +480,6 @@ CompScreen::eraseValue (CompString key)
     {
 	priv->valueMap.erase (key);
     }
-}
-
-int
-PrivateScreen::doPoll (int timeout)
-{
-    int rv;
-
-    rv = poll (watchPollFds, nWatchFds, timeout);
-    if (rv)
-    {
-	std::list<CompWatchFd *>::iterator it;
-	int                                i;
-
-	for (it = watchFds.begin (), i = nWatchFds - 1; it != watchFds.end ();
-	    it++, i--)
-	{
-	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
-		(*it)->callBack (watchPollFds[i].revents);
-	}
-    }
-
-    return rv;
 }
 
 void
@@ -4546,9 +4586,6 @@ CompScreen::~CompScreen ()
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
-    if (priv->watchPollFds)
-	free (priv->watchPollFds);
-
     XSync (priv->dpy, False);
     XCloseDisplay (priv->dpy);
 
@@ -4564,8 +4601,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     timers (0),
     watchFds (0),
     lastWatchFdHandle (1),
-    watchPollFds (0),
-    nWatchFds (0),
     valueMap (),
     screenInfo (0),
     activeWindow (0),

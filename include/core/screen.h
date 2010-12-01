@@ -467,6 +467,8 @@ class CompScreen :
 			   void           *userData);
 
 	static int checkForError (Display *dpy);
+
+    friend class CompWatchFd;
 };
 
 #endif

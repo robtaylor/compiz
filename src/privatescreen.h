@@ -44,11 +44,31 @@ CompPlugin::VTable * getCoreVTable ();
 extern bool shutDown;
 extern bool restartSignal;
 
-typedef struct _CompWatchFd {
-    int               fd;
-    FdWatchCallBack   callBack;
-    CompWatchFdHandle handle;
-} CompWatchFd;
+class CompWatchFd :
+    public Glib::IOSource
+{
+    public:
+
+	static
+	Glib::RefPtr <CompWatchFd> create (int,
+					   Glib::IOCondition,
+					   FdWatchCallBack);
+
+    protected:
+
+	explicit CompWatchFd (int, Glib::IOCondition, FdWatchCallBack);
+	bool		 internalCallback (Glib::IOCondition);
+
+    private:
+
+	int		  mFd;
+	FdWatchCallBack   mCallBack;
+	CompWatchFdHandle mHandle;
+	bool		  mForceFail;
+	bool		  mExecuting;
+
+    friend class CompScreen;
+};
 
 extern CompWindow *lastFoundWindow;
 extern bool	  useDesktopHints;
@@ -168,8 +188,6 @@ class PrivateScreen : public CoreOptions {
 	void removeDestroyed ();
 
 	void updatePassiveGrabs ();
-
-	int doPoll (int timeout);
 
 	void handleTimers (struct timeval *tv);
 
@@ -341,10 +359,8 @@ class PrivateScreen : public CoreOptions {
 	std::list<CompTimer *> timers;
 	struct timeval               lastTimeout;
 
-	std::list<CompWatchFd *> watchFds;
+	std::list<Glib::RefPtr <CompWatchFd> > watchFds;
 	CompWatchFdHandle        lastWatchFdHandle;
-	struct pollfd            *watchPollFds;
-	int                      nWatchFds;
 
 	std::map<CompString, CompPrivate> valueMap;
 
