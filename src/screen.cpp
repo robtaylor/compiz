@@ -245,9 +245,22 @@ CompScreen::getFileWatches () const
 /* TODO: move this code to timer.cpp */
 
 bool
-CompTimer::internalCallback ()
+CompTimer::internalCallback (unsigned int id)
 {
     bool result;
+
+    /* Detect when the timer is still going and the internal
+     * object has been freed */
+    if (!screen->priv->removedTimers.empty ())
+    {
+	if (std::find (screen->priv->removedTimers.begin (),
+		       screen->priv->removedTimers.end (),
+		       id) != screen->priv->removedTimers.end ())
+	{
+	    screen->priv->removedTimers.remove (id);
+	    return false;
+	}
+    }
 
     if (!mActive)
         return false;
@@ -278,17 +291,20 @@ CompTimer::internalCallback ()
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
+    unsigned int time = timer->mMinTime;
+    unsigned int id;
+
     if (timer->mSource)
         return;
-
-    unsigned int time = timer->mMinTime;
 
     timer->mSource = Glib::TimeoutSource::create (time);
 
     if (timer->mSource)
     {
 	timer->mSource->attach (priv->ctx);
-	timer->mSource->connect (sigc::mem_fun <bool, CompTimer> (timer, &CompTimer::internalCallback));
+	id = g_source_get_id (timer->mSource->gobj ());
+	removedTimers.remove (id);
+	timer->mSource->connect (sigc::bind <unsigned int>(sigc::mem_fun (timer, &CompTimer::internalCallback), id));
 	timer->tick ();
     }
     else
@@ -303,6 +319,8 @@ PrivateScreen::removeTimer (CompTimer *timer)
 
     if (timer->mExecuting)
 	timer->mForceFail = true;
+
+    removedTimers.push_back (g_source_get_id (timer->mSource->gobj ()));
 
     timer->mSource.reset (); /* This will NULL the pointer */
 }
@@ -4553,8 +4571,6 @@ CompScreen::~CompScreen ()
 {
     CompPlugin  *p;
 
-    priv->source.reset ();
-
     priv->removeAllSequences ();
 
     while (!priv->windows.empty ())
@@ -4598,7 +4614,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     priv (this),
     fileWatch (0),
     lastFileWatchHandle (1),
-    timers (0),
     watchFds (0),
     lastWatchFdHandle (1),
     valueMap (),

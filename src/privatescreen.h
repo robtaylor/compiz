@@ -356,7 +356,7 @@ class PrivateScreen : public CoreOptions {
 	CompFileWatchList   fileWatch;
 	CompFileWatchHandle lastFileWatchHandle;
 
-	std::list<CompTimer *> timers;
+	std::list <int> 	     removedTimers;
 	struct timeval               lastTimeout;
 
 	std::list<Glib::RefPtr <CompWatchFd> > watchFds;
