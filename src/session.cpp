@@ -366,7 +366,7 @@ iceNewConnection (IceConn    connection,
 {
     if (opening)
     {
-	fprintf (stderr, "ICE connection opening\n");
+	SM_DEBUG (printf ("ICE connection opening\n"));
 
 	/* Make sure we don't pass on these file descriptors to any
 	   exec'ed children */
