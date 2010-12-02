@@ -301,6 +301,8 @@ class CompScreen :
 			    long   data1,
 			    long   data2);
 
+	bool requestFocus (CompWindow *);
+
 	void runCommand (CompString command);
 
 	void moveViewport (int tx, int ty, bool sync);

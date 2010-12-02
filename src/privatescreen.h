@@ -333,7 +333,12 @@ class PrivateScreen : public CoreOptions {
 	unsigned int lastPing;
 	CompTimer    pingTimer;
 
+	/* The window that last receieved a FocusIn and was
+	 * also valid */
 	Window activeWindow;
+
+	/* The last window we sent a WM_TAKE_FOCUS to */
+	Window requestedFocusWindow;
 
 	Window below;
 	char   displayString[256];
