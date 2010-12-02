@@ -4425,6 +4425,10 @@ bool
 WindowInterface::isFocussable ()
     WRAPABLE_DEF (isFocussable);
 
+bool
+WindowInterface::managed ()
+    WRAPABLE_DEF (managed);
+
 Window
 CompWindow::id ()
 {
@@ -4652,6 +4656,7 @@ CompWindow::setShowDesktopMode (bool value)
 bool
 CompWindow::managed ()
 {
+    WRAPABLE_HND_FUNC_RETURN (18, bool, managed);
     return priv->managed;
 }
 

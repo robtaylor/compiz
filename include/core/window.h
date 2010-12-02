@@ -255,6 +255,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
 
 	virtual bool alpha ();
 	virtual bool isFocussable ();
+	virtual bool managed ();
 };
 
 /**
@@ -262,7 +263,7 @@ class WindowInterface : public WrapableInterface<CompWindow, WindowInterface>
  * window state, geometry, etc. between Compiz and the X server.
  */
 class CompWindow :
-    public WrapableHandler<WindowInterface, 18>,
+    public WrapableHandler<WindowInterface, 19>,
     public PluginClassStorage
 {
     public:
@@ -361,8 +362,6 @@ class CompWindow :
 	bool inShowDesktopMode ();
 
 	void setShowDesktopMode (bool);
-
-	bool managed ();
 
 	bool grabbed ();
 
@@ -547,6 +546,7 @@ class CompWindow :
 
 	WRAPABLE_HND (16, WindowInterface, bool, alpha);
 	WRAPABLE_HND (17, WindowInterface, bool, isFocussable);
+	WRAPABLE_HND (18, WindowInterface, bool, managed);
 
 	friend class PrivateWindow;
 	friend class CompScreen;
