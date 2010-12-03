@@ -389,7 +389,6 @@ PlaceScreen::handleEvent (XEvent *event)
 	        }
 	    }
     }
-
     screen->handleEvent (event);
 }
 
@@ -509,7 +508,7 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
 	    x += screen->width ();
 
 	y = xwc->y % screen->height ();
-	if ((y + xwc->height))
+	if ((y + xwc->height) < 0)
 	    y += screen->height ();
     }
     else
@@ -590,6 +589,11 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
     top    += window->input ().top;
     bottom -= window->input ().bottom + 2 * window->serverGeometry ().border ();
 
+    /* always validate position if the applicaiton changed only its size,
+     * as it might become partially offscreen because of that */
+    if (!(mask) & (CWX | CWY) && (mask & (CWWidth | CWHeight)))
+	sizeOnly = false;
+
     if ((right - left) != xwc->width)
     {
 	xwc->width = right - left;
@@ -661,11 +665,13 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	sizeOnly = true;
 
     doValidateResizeRequest (mask, xwc, sizeOnly, true);
+
 }
 
 void
 PlaceScreen::addSupportedAtoms (std::vector<Atom> &atoms)
 {
+
     atoms.push_back (fullPlacementAtom);
 
     screen->addSupportedAtoms (atoms);
@@ -1522,9 +1528,9 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
 		      window->input ().right +
 		      2 * window->serverGeometry ().border ());
     extents.bottom = pos.y () + window->serverHeight () +
-		     (window->input ().left +
-		      window->input ().right +
-		      2 * window->serverGeometry ().border ());;
+		     (window->input ().top +
+		      window->input ().bottom +
+		      2 * window->serverGeometry ().border ());
 
     delta = workArea.right () - extents.right;
     if (delta < 0)
@@ -1542,8 +1548,9 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
     if (delta > 0)
 	extents.top += delta;
 
-   pos.setX (extents.left + window->input ().left);
-   pos.setY (extents.top  + window->input ().top);
+    pos.setX (extents.left + window->input ().left);
+    pos.setY (extents.top  + window->input ().top);
+
 }
 
 bool

@@ -1718,10 +1718,13 @@ CompWindow::focus ()
     if (overrideRedirect ())
 	return false;
 
-    if (!priv->managed)
+    if (!priv->managed || priv->unmanaging)
 	return false;
 
     if (!onCurrentDesktop ())
+	return false;
+
+    if (priv->destroyed)
 	return false;
 
     if (!priv->shaded && (priv->state & CompWindowStateHiddenMask))
@@ -1937,6 +1940,9 @@ CompWindow::moveInputFocusTo ()
 	    setFocus = true;
 	}
 
+	if (setFocus)
+	    screen->priv->nextActiveWindow = priv->id;
+
 	if (!setFocus && !modalTransient)
 	{
 	    CompWindow *ancestor;
@@ -1958,7 +1964,8 @@ CompWindow::moveInputFocusTo ()
 void
 CompWindow::moveInputFocusToOtherWindow ()
 {
-    if (priv->id == screen->activeWindow ())
+    if (priv->id == screen->activeWindow () ||
+	priv->id == screen->priv->nextActiveWindow)
     {
 	CompWindow *ancestor;
 
@@ -4425,6 +4432,10 @@ bool
 WindowInterface::isFocussable ()
     WRAPABLE_DEF (isFocussable);
 
+bool
+WindowInterface::managed ()
+    WRAPABLE_DEF (managed);
+
 Window
 CompWindow::id ()
 {
@@ -4652,6 +4663,7 @@ CompWindow::setShowDesktopMode (bool value)
 bool
 CompWindow::managed ()
 {
+    WRAPABLE_HND_FUNC_RETURN (18, bool, managed);
     return priv->managed;
 }
 
@@ -5228,6 +5240,7 @@ PrivateWindow::PrivateWindow (CompWindow *window) :
     invisible (true),
     destroyed (false),
     managed (false),
+    unmanaging (false),
     destroyRefCnt (1),
     unmapRefCnt (1),
 
