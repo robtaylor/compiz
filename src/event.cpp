@@ -1086,6 +1086,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		w->priv->placed = false;
 		w->priv->managed = false;
+		w->priv->unmanaging = true;
 		if (w->priv->frame)
 		{
 		    w->priv->unreparent ();
@@ -1660,6 +1661,9 @@ CompScreen::handleEvent (XEvent *event)
 
 		state &= ~CompWindowStateDemandsAttentionMask;
 		w->changeState (state);
+
+		if (priv->nextActiveWindow == event->xfocus.window)
+		    priv->nextActiveWindow = None;
 	    }
 	}
 	else

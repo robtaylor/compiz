@@ -334,6 +334,7 @@ class PrivateScreen : public CoreOptions {
 	CompTimer    pingTimer;
 
 	Window activeWindow;
+	Window nextActiveWindow;
 
 	Window below;
 	char   displayString[256];
