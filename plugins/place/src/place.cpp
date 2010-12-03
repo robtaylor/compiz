@@ -389,7 +389,6 @@ PlaceScreen::handleEvent (XEvent *event)
 	        }
 	    }
     }
-
     screen->handleEvent (event);
 }
 
@@ -509,7 +508,7 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
 	    x += screen->width ();
 
 	y = xwc->y % screen->height ();
-	if ((y + xwc->height))
+	if ((y + xwc->height) < 0)
 	    y += screen->height ();
     }
     else
@@ -666,11 +665,13 @@ PlaceWindow::validateResizeRequest (unsigned int   &mask,
 	sizeOnly = true;
 
     doValidateResizeRequest (mask, xwc, sizeOnly, true);
+
 }
 
 void
 PlaceScreen::addSupportedAtoms (std::vector<Atom> &atoms)
 {
+
     atoms.push_back (fullPlacementAtom);
 
     screen->addSupportedAtoms (atoms);
@@ -1522,11 +1523,11 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
 
     extents.left   = pos.x () - window->input ().left;
     extents.top    = pos.y () - window->input ().top;
-    extents.right  = window->serverWidth () +
+    extents.right  = pos.x () + window->serverWidth () +
 		     (window->input ().left +
 		      window->input ().right +
 		      2 * window->serverGeometry ().border ());
-    extents.bottom = window->serverHeight () +
+    extents.bottom = pos.y () + window->serverHeight () +
 		     (window->input ().top +
 		      window->input ().bottom +
 		      2 * window->serverGeometry ().border ());
@@ -1547,8 +1548,9 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
     if (delta > 0)
 	extents.top += delta;
 
-   pos.setX (extents.left + window->input ().left);
-   pos.setY (extents.top  + window->input ().top);
+    pos.setX (extents.left + window->input ().left);
+    pos.setY (extents.top  + window->input ().top);
+
 }
 
 bool
