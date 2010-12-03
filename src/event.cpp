@@ -1095,23 +1095,7 @@ CompScreen::handleEvent (XEvent *event)
 	    w->unmap ();
 
 	    if (!w->shaded () && !w->priv->pendingMaps)
-	    {
-		/* It is possible that we requested for this window to
-		 * have focus and it was unmapped before it responded
-		 * to that request (eg XSetInputFocus) - if that is
-		 * the case then we need to set the active window to
-		 * the one being unmapped so that we can properly
-		 * transfer focus away
-		 */
-
-		if (priv->requestedFocusWindow == w->id ())
-		{
-		    priv->activeWindow = priv->requestedFocusWindow;
-		    priv->requestedFocusWindow = 0;
-		}
-
 		w->moveInputFocusToOtherWindow ();
-	    }
 	}
 	break;
     case ReparentNotify:
@@ -1676,8 +1660,6 @@ CompScreen::handleEvent (XEvent *event)
 
 		state &= ~CompWindowStateDemandsAttentionMask;
 		w->changeState (state);
-
-		priv->requestedFocusWindow = None;
 	    }
 	}
 	else

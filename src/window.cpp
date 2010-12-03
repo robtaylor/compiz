@@ -1920,7 +1920,21 @@ CompWindow::moveInputFocusTo ()
 
 	if (priv->protocols & CompWindowProtocolTakeFocusMask)
 	{
-	    setFocus |= screen->requestFocus (this);
+	    XEvent ev;
+
+	    ev.type		    = ClientMessage;
+	    ev.xclient.window	    = priv->id;
+	    ev.xclient.message_type = Atoms::wmProtocols;
+	    ev.xclient.format	    = 32;
+	    ev.xclient.data.l[0]    = Atoms::wmTakeFocus;
+	    ev.xclient.data.l[1]    = s->getCurrentTime ();
+	    ev.xclient.data.l[2]    = 0;
+	    ev.xclient.data.l[3]    = 0;
+	    ev.xclient.data.l[4]    = 0;
+
+	    XSendEvent (s->dpy (), priv->id, false, NoEventMask, &ev);
+
+	    setFocus = true;
 	}
 
 	if (!setFocus && !modalTransient)

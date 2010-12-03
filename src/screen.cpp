@@ -3332,33 +3332,6 @@ CompScreen::toolkitAction (Atom   toolkitAction,
 		StructureNotifyMask, &ev);
 }
 
-bool
-CompScreen::requestFocus (CompWindow *w)
-{
-    if (w->protocols () & CompWindowProtocolTakeFocusMask)
-    {
-	XEvent ev;
-
-	ev.type		    = ClientMessage;
-	ev.xclient.window	    = w->id ();
-	ev.xclient.message_type = Atoms::wmProtocols;
-	ev.xclient.format	    = 32;
-	ev.xclient.data.l[0]    = Atoms::wmTakeFocus;
-	ev.xclient.data.l[1]    = screen->getCurrentTime ();
-	ev.xclient.data.l[2]    = 0;
-	ev.xclient.data.l[3]    = 0;
-	ev.xclient.data.l[4]    = 0;
-
-	XSendEvent (screen->dpy (), w->id (), false, NoEventMask, &ev);
-
-	priv->requestedFocusWindow = w->id ();
-
-	return true;
-    }
-
-    return false;
-}
-
 void
 CompScreen::runCommand (CompString command)
 {
@@ -4575,7 +4548,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     valueMap (),
     screenInfo (0),
     activeWindow (0),
-    requestedFocusWindow (0),
     below (None),
     autoRaiseTimer (),
     autoRaiseWindow (0),
