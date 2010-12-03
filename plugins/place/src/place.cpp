@@ -590,6 +590,11 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
     top    += window->input ().top;
     bottom -= window->input ().bottom + 2 * window->serverGeometry ().border ();
 
+    /* always validate position if the applicaiton changed only its size,
+     * as it might become partially offscreen because of that */
+    if (!(mask) & (CWX | CWY) && (mask & (CWWidth | CWHeight)))
+	sizeOnly = false;
+
     if ((right - left) != xwc->width)
     {
 	xwc->width = right - left;
