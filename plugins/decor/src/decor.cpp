@@ -1246,7 +1246,7 @@ DecorScreen::handleEvent (XEvent *event)
 	    }
 	    break;
 	case MapRequest:
-	    w = screen->findWindow (event->xdestroywindow.window);
+	    w = screen->findWindow (event->xmaprequest.window);
 	    if (w)
 		DecorWindow::get (w)->update (true);
 	    break;
