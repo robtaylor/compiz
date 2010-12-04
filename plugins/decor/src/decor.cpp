@@ -669,7 +669,7 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->managed ();
+		decorate = true;
 	default:
 	    break;
     }
@@ -1231,6 +1231,18 @@ DecorWindow::updateWindowRegions ()
 }
 
 void
+DecorWindow::windowNotify (CompWindowNotify n)
+{
+    if (n == CompWindowNotifyReparent)
+    {
+	DecorWindow::get (window)->update (true);
+	window->windowNotifySetEnabled (this, false);
+    }
+
+    window->windowNotify (n);
+}
+
+void
 DecorScreen::handleEvent (XEvent *event)
 {
     Window  activeWindow = screen->activeWindow ();
@@ -1244,11 +1256,6 @@ DecorScreen::handleEvent (XEvent *event)
 		if (w->id () == dmWin)
 		    checkForDm (true);
 	    }
-	    break;
-	case MapRequest:
-	    w = screen->findWindow (event->xmaprequest.window);
-	    if (w)
-		DecorWindow::get (w)->update (true);
 	    break;
 	case ClientMessage:
 	    if (event->xclient.message_type == requestFrameExtentsAtom)
