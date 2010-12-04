@@ -669,7 +669,7 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = true;
+		decorate = window->frame () ? true : false;
 	default:
 	    break;
     }
