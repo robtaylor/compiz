@@ -45,7 +45,6 @@ CompRegion::CompRegion ()
 CompRegion::CompRegion (const CompRegion &c)
 {
     priv = new PrivateRegion ();
-    priv->region = XCreateRegion ();
     XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
 }
 
@@ -95,6 +94,8 @@ CompRegion::CompRegion (const CompPoint::vector &points)
     }
 
     priv = new PrivateRegion ();
+    
+    XDestroyRegion (priv->region);
     priv->region = XPolygonRegion (pts, points.size (), WindingRule);
 }
 
