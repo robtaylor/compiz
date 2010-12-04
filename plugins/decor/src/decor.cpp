@@ -783,36 +783,11 @@ DecorWindow::update (bool allowDecoration)
     {
 	XWindowChanges xwc;
 	unsigned int   mask = CWX | CWY;
-	int	       out = screen->outputDeviceForGeometry (window->serverGeometry ());
-	const CompRect &workArea =
-	screen->outputDevs ().at (out).workArea ();
 
 	memset (&xwc, 0, sizeof (XWindowChanges));
 
 	xwc.x = window->serverGeometry ().x () + moveDx;
 	xwc.y = window->serverGeometry ().y () + moveDy;
-
-	/* Constrain to workArea */
-
-
-	if (!workArea.contains (CompRect (xwc.x - window->input ().left,
-					  xwc.y - window->input ().top,
-					  window->inputRect ().width (),
-					  window->inputRect ().height ())))
-	{
-	    int tx = MIN (0, xwc.x - window->input ().left - workArea.x ());
-	    int ty = MIN (0, xwc.y - window->input ().top - workArea.y ());
-
-	    if (!fabs (tx))
-		tx = MIN (0, workArea.x2 () -
-			  (xwc.x + window->width () + window->input ().right));
-	    if (!fabs (ty))
-		ty = MIN (0, workArea.y2 () -
-			  (xwc.y + window->height () + window->input ().bottom));
-
-	    xwc.x += tx;
-	    xwc.y += ty;
-	}
 
 	if (window->state () & CompWindowStateFullscreenMask)
 	    mask &= ~(CWX | CWY);
