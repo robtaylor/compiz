@@ -669,7 +669,7 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->managed ();
+		decorate = window->frame () ? true : false;
 	default:
 	    break;
     }
@@ -783,36 +783,11 @@ DecorWindow::update (bool allowDecoration)
     {
 	XWindowChanges xwc;
 	unsigned int   mask = CWX | CWY;
-	int	       out = screen->outputDeviceForGeometry (window->serverGeometry ());
-	const CompRect &workArea =
-	screen->outputDevs ().at (out).workArea ();
 
 	memset (&xwc, 0, sizeof (XWindowChanges));
 
 	xwc.x = window->serverGeometry ().x () + moveDx;
 	xwc.y = window->serverGeometry ().y () + moveDy;
-
-	/* Constrain to workArea */
-
-
-	if (!workArea.contains (CompRect (xwc.x - window->input ().left,
-					  xwc.y - window->input ().top,
-					  window->inputRect ().width (),
-					  window->inputRect ().height ())))
-	{
-	    int tx = MIN (0, xwc.x - window->input ().left - workArea.x ());
-	    int ty = MIN (0, xwc.y - window->input ().top - workArea.y ());
-
-	    if (!fabs (tx))
-		tx = MIN (0, workArea.x2 () -
-			  (xwc.x + window->width () + window->input ().right));
-	    if (!fabs (ty))
-		ty = MIN (0, workArea.y2 () -
-			  (xwc.y + window->height () + window->input ().bottom));
-
-	    xwc.x += tx;
-	    xwc.y += ty;
-	}
 
 	if (window->state () & CompWindowStateFullscreenMask)
 	    mask &= ~(CWX | CWY);
@@ -1256,6 +1231,18 @@ DecorWindow::updateWindowRegions ()
 }
 
 void
+DecorWindow::windowNotify (CompWindowNotify n)
+{
+    if (n == CompWindowNotifyReparent)
+    {
+	DecorWindow::get (window)->update (true);
+	window->windowNotifySetEnabled (this, false);
+    }
+
+    window->windowNotify (n);
+}
+
+void
 DecorScreen::handleEvent (XEvent *event)
 {
     Window  activeWindow = screen->activeWindow ();
@@ -1269,11 +1256,6 @@ DecorScreen::handleEvent (XEvent *event)
 		if (w->id () == dmWin)
 		    checkForDm (true);
 	    }
-	    break;
-	case MapRequest:
-	    w = screen->findWindow (event->xdestroywindow.window);
-	    if (w)
-		DecorWindow::get (w)->update (true);
 	    break;
 	case ClientMessage:
 	    if (event->xclient.message_type == requestFrameExtentsAtom)

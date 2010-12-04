@@ -123,7 +123,7 @@ class DecorScreen :
 
 	void checkForDm (bool);
 	bool decoratorStartTimeout ();
-	
+
 	void updateDefaultShadowProperty ();
 
     public:
@@ -177,6 +177,8 @@ class DecorWindow :
 
 	bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 		     const CompRegion &, unsigned int);
+
+	void windowNotify (CompWindowNotify n);
 
 	void updateDecoration ();
 
