@@ -45,30 +45,40 @@ CompRegion::CompRegion ()
 CompRegion::CompRegion (const CompRegion &c)
 {
     priv = new PrivateRegion ();
-    priv->box = c.priv->box;
-    if (priv->box.rects)
-	priv->box.rects = &priv->box.extents;
-    if (c.priv->region)
-    {
-	priv->region = XCreateRegion ();
-	XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
-    }
+    priv->region = XCreateRegion ();
+    XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
 }
 
 CompRegion::CompRegion ( int x, int y, int w, int h)
 {
     priv = new PrivateRegion ();
-    priv->box.extents = CompRect (x, y, w, h).region ()->extents;
-    priv->box.numRects = 1;
-    priv->box.rects = &priv->box.extents;
+    
+    XRectangle rect;
+    
+    rect.x = x;
+    rect.y = y;
+    rect.width = w;
+    rect.height = h;
+    
+    Region tmp = XCreateRegion ();
+    XUnionRectWithRegion (&rect, tmp, priv->region);
+    XDestroyRegion (tmp);
 }
 
 CompRegion::CompRegion (const CompRect &r)
 {
     priv = new PrivateRegion ();
-    priv->box.extents = r.region ()->extents;
-    priv->box.numRects = 1;
-    priv->box.rects = &priv->box.extents;
+    
+    XRectangle rect;
+    
+    rect.x = r.x ();
+    rect.y = r.y ();
+    rect.width = r.width ();
+    rect.height = r.height ();
+    
+    Region tmp = XCreateRegion ();
+    XUnionRectWithRegion (&rect, tmp, priv->region);
+    XDestroyRegion (tmp);
 }
 
 CompRegion::CompRegion (const CompPoint::vector &points)
@@ -86,9 +96,6 @@ CompRegion::CompRegion (const CompPoint::vector &points)
 
     priv = new PrivateRegion ();
     priv->region = XPolygonRegion (pts, points.size (), WindingRule);
-    priv->box.extents = priv->region->extents;
-    priv->box.numRects = priv->region->numRects;
-    priv->box.rects = &priv->box.extents;
 }
 
 CompRegion::~CompRegion ()
@@ -99,29 +106,13 @@ CompRegion::~CompRegion ()
 const Region
 CompRegion::handle () const
 {
-    return (priv->region)? priv->region : &priv->box;
+    return priv->region;
 }
 
 CompRegion &
 CompRegion::operator= (const CompRegion &c)
 {
-    priv->box = c.priv->box;
-    if (priv->box.rects)
-	priv->box.rects = &priv->box.extents;
-    if (c.priv->region)
-    {
-	if (!priv->region)
-	    priv->region = XCreateRegion ();
-	XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
-    }
-    else
-    {
-	if (priv->region)
-	{
-	    XDestroyRegion (priv->region);
-	    priv->region = NULL;
-	}
-    }
+    XUnionRegion (CompRegion ().handle (), c.priv->region, priv->region);
     return *this;
 }
 
@@ -174,7 +165,6 @@ CompRegion
 CompRegion::intersected (const CompRegion &r) const
 {
     CompRegion reg (r);
-    reg.priv->makeReal ();
     XIntersectRegion (reg.handle (), handle (), reg.handle ());
     return reg;
 }
@@ -183,7 +173,6 @@ CompRegion
 CompRegion::intersected (const CompRect &r) const
 {
     CompRegion reg (r);
-    reg.priv->makeReal ();
     XIntersectRegion (reg.handle (), handle (), reg.handle ());
     return reg;
 }
@@ -221,14 +210,6 @@ CompRegion::rects () const
     CompRect::vector rv;
     if (!numRects ())
 	return rv;
-    if (!priv->region)
-    {
-	rv.push_back (CompRect (priv->box.extents.x1,
-		                priv->box.extents.y1,
-				priv->box.extents.x2 - priv->box.extents.x1,
-				priv->box.extents.y2 - priv->box.extents.y1));
-	return rv;
-    }
 
     BOX b;
     for (int i = 0; i < priv->region->numRects; i++)
@@ -243,7 +224,6 @@ CompRegion
 CompRegion::subtracted (const CompRegion &r) const
 {
     CompRegion rv;
-    rv.priv->makeReal ();
     XSubtractRegion (handle (), r.handle (), rv.handle ());
     return rv;
 }
@@ -252,7 +232,6 @@ CompRegion
 CompRegion::subtracted (const CompRect &r) const
 {
     CompRegion rv;
-    rv.priv->makeReal ();
     XSubtractRegion (handle (), r.region (), rv.handle ());
     return rv;
 }
@@ -260,7 +239,6 @@ CompRegion::subtracted (const CompRect &r) const
 void
 CompRegion::translate (int dx, int dy)
 {
-    priv->makeReal ();
     XOffsetRegion (handle (), dx, dy);
 }
 
@@ -289,7 +267,6 @@ CompRegion::translated (const CompPoint &p) const
 void
 CompRegion::shrink (int dx, int dy)
 {
-    priv->makeReal ();
     XShrinkRegion (handle (), dx, dy);
 }
 
@@ -319,7 +296,6 @@ CompRegion
 CompRegion::united (const CompRegion &r) const
 {
     CompRegion rv;
-    rv.priv->makeReal ();
     XUnionRegion (handle (), r.handle (), rv.handle ());
     return rv;
 }
@@ -328,7 +304,6 @@ CompRegion
 CompRegion::united (const CompRect &r) const
 {
     CompRegion rv;
-    rv.priv->makeReal ();
     XUnionRegion (handle (), r.region (), rv.handle ());
     return rv;
 }
@@ -337,7 +312,6 @@ CompRegion
 CompRegion::xored (const CompRegion &r) const
 {
     CompRegion rv;
-    rv.priv->makeReal ();
     XXorRegion (handle (), r.handle (), rv.handle ());
     return rv;
 }
@@ -441,29 +415,10 @@ CompRegion::operator|= (const CompRegion &r)
 
 PrivateRegion::PrivateRegion ()
 {
-    region = NULL;
-    box.numRects = 0;
-    box.extents.x1 = 0;
-    box.extents.y1 = 0;
-    box.extents.x2 = 0;
-    box.extents.y2 = 0;
-    box.rects = NULL;
-    box.size = 0;
+    region = XCreateRegion ();
 }
 
 PrivateRegion::~PrivateRegion ()
 {
-    if (region)
-	XDestroyRegion (region);
+   XDestroyRegion (region);
 }
-
-void
-PrivateRegion::makeReal ()
-{
-    if (region)
-	return;
-    region = XCreateRegion ();
-    if (box.numRects)
-	XUnionRegion (CompRegion ().handle (), &box, region);
-}
-

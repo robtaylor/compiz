@@ -34,11 +34,8 @@ class PrivateRegion {
 	PrivateRegion ();
 	~PrivateRegion ();
 
-	void makeReal ();
-
     public:
 	Region region;
-	REGION box;
 };
 
 #endif
