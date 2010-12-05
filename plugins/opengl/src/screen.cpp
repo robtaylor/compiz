@@ -94,6 +94,8 @@ GLScreen::GLScreen (CompScreen *s) :
     GLfloat		 diffuseLight[]   = { 0.9f, 0.9f,  0.9f, 0.9f };
     GLfloat		 light0Position[] = { -0.5f, 0.5f, -9.0f, 1.0f };
     XWindowAttributes    attr;
+    const char           *glRenderer;
+    CompOption::Vector o (0);
 
     if (indirectRendering)
     {
@@ -104,6 +106,7 @@ GLScreen::GLScreen (CompScreen *s) :
 
     if (!XGetWindowAttributes (dpy, s->root (), &attr))
     {
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -115,6 +118,7 @@ GLScreen::GLScreen (CompScreen *s) :
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"Couldn't get visual info for default visual");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -127,6 +131,7 @@ GLScreen::GLScreen (CompScreen *s) :
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"Root visual is not a GL visual");
 	XFree (visinfo);
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -137,6 +142,7 @@ GLScreen::GLScreen (CompScreen *s) :
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"Root visual is not a double buffered GL visual");
 	XFree (visinfo);
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -148,6 +154,7 @@ GLScreen::GLScreen (CompScreen *s) :
 			"glXCreateContext failed");
 	XFree (visinfo);
 
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -159,6 +166,7 @@ GLScreen::GLScreen (CompScreen *s) :
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"GLX_SGIX_fbconfig is missing");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -198,6 +206,7 @@ GLScreen::GLScreen (CompScreen *s) :
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"fbconfig functions missing");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -222,11 +231,25 @@ GLScreen::GLScreen (CompScreen *s) :
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"No valid GL extensions string found.");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
 
-    if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))
+    glRenderer = (const char *) glGetString (GL_RENDERER);
+    if (glRenderer != NULL &&
+	(strcmp (glRenderer, "Software Rasterizer") == 0 ||
+	 strcmp (glRenderer, "Mesa X11") == 0))
+    {
+	compLogMessage ("opengl",
+			CompLogLevelFatal,
+			"Software rendering detected");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
+	setFailed ();
+	return;
+    }
+
+    if (strstr (glExtensions, "GL_ARB_texture_non_power_of_two"))    
 	GL::textureNonPowerOfTwo = true;
 
     glGetIntegerv (GL_MAX_TEXTURE_SIZE, &GL::maxTextureSize);
@@ -251,6 +274,7 @@ GLScreen::GLScreen (CompScreen *s) :
     {
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"Support for non power of two textures missing");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
@@ -463,6 +487,7 @@ GLScreen::GLScreen (CompScreen *s) :
 	compLogMessage ("opengl", CompLogLevelFatal,
 			"No GLXFBConfig for default depth, "
 			"this isn't going to work.");
+	screen->handleCompizEvent ("opengl", "fatal_fallback", o);
 	setFailed ();
 	return;
     }
