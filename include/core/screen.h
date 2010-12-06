@@ -39,6 +39,8 @@
 
 class CompScreen;
 class PrivateScreen;
+class CompManager;
+
 typedef std::list<CompWindow *> CompWindowList;
 typedef std::vector<CompWindow *> CompWindowVector;
 
@@ -398,6 +400,7 @@ class CompScreen :
 	friend class CompWindow;
 	friend class PrivateWindow;
 	friend class ModifierHandler;
+	friend class CompManager;
 
     private:
 	PrivateScreen *priv;

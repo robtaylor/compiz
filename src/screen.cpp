@@ -4083,13 +4083,46 @@ CompScreen::screenInfo ()
     return priv->screenInfo;
 }
 
+bool
+PrivateScreen::createFailed ()
+{
+    return !screenInitalized;
+}
+
 CompScreen::CompScreen ():
     PluginClassStorage (screenPluginClassIndices),
     priv (NULL)
 {
+    CompPrivate p;
+    CompOption::Value::Vector vList;
+    CompPlugin  *corePlugin;
+
     priv = new PrivateScreen (this);
     assert (priv);
+
     screenInitalized = true;
+
+    corePlugin = CompPlugin::load ("core");
+    if (!corePlugin)
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't load core plugin");
+	screenInitalized = false;
+    }
+
+    if (!CompPlugin::push (corePlugin))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't activate core plugin");
+	screenInitalized = false;
+    }
+
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
+    vList.push_back ("core");
+
+    priv->plugin.set (CompOption::TypeString, vList);
 }
 
 bool
@@ -4117,31 +4150,6 @@ CompScreen::init (const char *name)
     unsigned int         nchildren;
     int                  nvisinfo;
     XSetWindowAttributes attrib;
-
-    CompOption::Value::Vector vList;
-
-    CompPlugin *corePlugin = CompPlugin::load ("core");
-    if (!corePlugin)
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't load core plugin");
-	return false;
-    }
-
-    if (!CompPlugin::push (corePlugin))
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't activate core plugin");
-	return false;
-    }
-
-    CompPrivate p;
-    p.uval = CORE_ABIVERSION;
-    storeValue ("core_ABI", p);
-
-    vList.push_back ("core");
-
-    priv->plugin.set (CompOption::TypeString, vList);
 
     dpy = priv->dpy = XOpenDisplay (name);
     if (!priv->dpy)
@@ -4286,6 +4294,8 @@ CompScreen::init (const char *name)
 	} while (event.type != DestroyNotify);
     }
 
+    modHandler->updateModifierMappings ();
+
     CompScreen::checkForError (dpy);
 
     XGrabServer (dpy);
@@ -4313,9 +4323,6 @@ CompScreen::init (const char *name)
 	XUngrabServer (dpy);
 	return false;
     }
-
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -4393,24 +4400,6 @@ CompScreen::init (const char *name)
 
     priv->getDesktopHints ();
 
-    /* TODO: bailout properly when objectInitPlugins fails */
-    assert (CompPlugin::screenInitPlugins (this));
-
-    XQueryTree (dpy, priv->root,
-		&rootReturn, &parentReturn,
-		&children, &nchildren);
-
-    for (unsigned int i = 0; i < nchildren; i++)
-	new CompWindow (children[i], i ? children[i - 1] : 0);
-
-    foreach (CompWindow *w, priv->windows)
-    {
-	if (w->isViewable ())
-	    w->priv->activeNum = priv->activeNum++;
-    }
-
-    XFree (children);
-
     attrib.override_redirect = 1;
     attrib.event_mask	     = PropertyChangeMask;
 
@@ -4458,6 +4447,47 @@ CompScreen::init (const char *name)
 
     priv->setAudibleBell (priv->optionGetAudibleBell ());
 
+    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
+			      priv->optionGetPingDelay () + 500);
+
+    priv->pingTimer.start ();
+
+    priv->addScreenActions ();
+
+    priv->initialized = true;
+
+    /* TODO: Bailout properly when screenInitPlugins fails
+     * TODO: It would be nicer if this line could mean
+     * "init all the screens", but unfortunately it only inits
+     * plugins loaded on the command line screen's and then
+     * we need to call updatePlugins () to init the remaining
+     * screens from option changes */
+    assert (CompPlugin::screenInitPlugins (this));
+
+    /* The active plugins list might have been changed - load any
+     * new plugins */
+
+    if (priv->dirtyPluginList)
+	priv->updatePlugins ();
+
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
+    XQueryTree (dpy, priv->root,
+		&rootReturn, &parentReturn,
+		&children, &nchildren);
+
+    for (unsigned int i = 0; i < nchildren; i++)
+	new CompWindow (children[i], i ? children[i - 1] : 0);
+
+    foreach (CompWindow *w, priv->windows)
+    {
+	if (w->isViewable ())
+	    w->priv->activeNum = priv->activeNum++;
+    }
+
+    XFree (children);
+
     XGetInputFocus (dpy, &focus, &revertTo);
 
     /* move input focus to root window so that we get a FocusIn event when
@@ -4478,14 +4508,6 @@ CompScreen::init (const char *name)
 	else
 	    focusDefaultWindow ();
     }
-
-    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
-			      priv->optionGetPingDelay () + 500);
-
-    priv->pingTimer.start ();
-
-    priv->initialized = true;
-    priv->addScreenActions ();
 
     return true;
 }
