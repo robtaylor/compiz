@@ -1045,7 +1045,6 @@ CompScreen::handleEvent (XEvent *event)
 		if (!w->priv->frame)
 		    w->priv->reparent ();
 		w->priv->managed = true;
-		w->priv->unmanaging = false;
 	    }
 
 	    /* been shaded */

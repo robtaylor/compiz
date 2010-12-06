@@ -79,6 +79,7 @@ PrivateScaleWindow::isScaleWin () const
 
     if (window->state () & CompWindowStateShadedMask)
 	return false;
+
     if (!window->mapNum () || !window->isViewable ())
 	return false;
 
