@@ -172,7 +172,8 @@ class PrivateWindow {
 
 	unsigned int adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						       unsigned int   xwcm,
-						       int            gravity);
+						       int            gravity,
+						       int	      direction);
 
 	void updateSize ();
 

@@ -1084,6 +1084,26 @@ CompScreen::handleEvent (XEvent *event)
 		if (!w->overrideRedirect ())
 		    priv->setWmState (WithdrawnState, w->id ());
 
+		if (w->priv->managed)
+		{
+		    XWindowChanges xwc;
+		    unsigned int   xwcm;
+		    int		   gravity = w->priv->sizeHints.win_gravity;
+
+		    /* revert gravity adjustment made at MapNotify time */
+		    xwc.x	= w->priv->serverGeometry.x ();
+		    xwc.y	= w->priv->serverGeometry.y ();
+		    xwc.width   = w->priv->serverGeometry.width ();
+		    xwc.height  = w->priv->serverGeometry.height ();
+
+		    xwcm = w->priv->adjustConfigureRequestForGravity (&xwc,
+							           CWX | CWY,
+							           gravity,
+							           -1);
+		    if (xwcm)
+			w->configureXWindow (xwcm, &xwc);
+		}
+
 		w->priv->placed = false;
 		w->priv->managed = false;
 		w->priv->unmanaging = true;

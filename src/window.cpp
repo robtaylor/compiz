@@ -2741,7 +2741,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 unsigned int
 PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						 unsigned int   xwcm,
-						 int            gravity)
+						 int            gravity,
+						 int		direction)
 {
     int          newX, newY;
     unsigned int mask = 0;
@@ -2756,26 +2757,26 @@ PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case WestGravity:
 	case SouthWestGravity:
 	    if (xwcm & CWX)
-		newX += priv->input.left;
+		newX += priv->input.left * direction;
 	    break;
 
 	case NorthGravity:
 	case CenterGravity:
 	case SouthGravity:
 	    if (xwcm & CWX)
-		newX -= xwc->width / 2 - priv->input.left +
-			(priv->input.left + priv->input.right) / 2;
+		newX -= (xwc->width / 2 - priv->input.left +
+			(priv->input.left + priv->input.right) / 2) * direction;
 	    else
-	        newX -= (xwc->width - priv->serverGeometry.width ());
+	        newX -= (xwc->width - priv->serverGeometry.width ()) * direction;
 	    break;
 
 	case NorthEastGravity:
 	case EastGravity:
 	case SouthEastGravity:
 	    if (xwcm & CWX)
-		newX -= xwc->width + priv->input.right;
+		newX -= xwc->width + priv->input.right * direction;
 	    else
-		newX -= xwc->width - priv->serverGeometry.width ();
+		newX -= (xwc->width - priv->serverGeometry.width ()) * direction;
 	    break;
 
 	case StaticGravity:
@@ -2791,26 +2792,26 @@ PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case NorthGravity:
 	case NorthEastGravity:
 	    if (xwcm & CWY)
-		newY = xwc->y + priv->input.top;
+		newY = xwc->y + priv->input.top * direction;
 	    break;
 
 	case WestGravity:
 	case CenterGravity:
 	case EastGravity:
 	    if (xwcm & CWY)
-		newY -= xwc->height / 2 - priv->input.top +
-			(priv->input.top + priv->input.bottom) / 2;
+		newY -= (xwc->height / 2 - priv->input.top +
+			(priv->input.top + priv->input.bottom) / 2) * direction;
 	    else
-		newY -= (xwc->height - priv->serverGeometry.height ()) / 2;
+		newY -= ((xwc->height - priv->serverGeometry.height ()) / 2) * direction;
 	    break;
 
 	case SouthWestGravity:
 	case SouthGravity:
 	case SouthEastGravity:
 	    if (xwcm & CWY)
-		newY -= xwc->height + priv->input.bottom;
+		newY -= xwc->height + priv->input.bottom * direction;
 	    else
-		newY -= xwc->height - priv->serverGeometry.height ();
+		newY -= (xwc->height - priv->serverGeometry.height ()) * direction;
 	    break;
 
 	case StaticGravity:
@@ -2877,7 +2878,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	}
     }
 
-    xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity);
+    xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity, 1);
 
     if (!(priv->type & (CompWindowTypeDockMask    |
 		     CompWindowTypeFullscreenMask |
@@ -4593,7 +4594,7 @@ PrivateWindow::processMap ()
 	xwc.width  = priv->serverGeometry.width ();
 	xwc.height = priv->serverGeometry.height ();
 
-	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity);
+	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity, 1);
 
 	window->validateResizeRequest (xwcm, &xwc, ClientTypeApplication);
 
