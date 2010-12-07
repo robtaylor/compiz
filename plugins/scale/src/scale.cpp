@@ -1348,9 +1348,8 @@ ScaleScreen::relayoutSlots (const CompMatch& match)
 }
 
 void
-PrivateScaleScreen::windowRemove (Window id)
+PrivateScaleScreen::windowRemove (CompWindow *w)
 {
-    CompWindow *w = screen->findWindow (id);
     if (!w)
 	return;
 
@@ -1419,6 +1418,8 @@ PrivateScaleScreen::hoverTimeout ()
 void
 PrivateScaleScreen::handleEvent (XEvent *event)
 {
+    CompWindow *w;
+
     switch (event->type) {
 	case KeyPress:
 	    if (screen->root () == event->xkey.root)
@@ -1483,11 +1484,23 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 				focus);
 	    }
 	    break;
+	case DestroyNotify:
+
+	    /* We need to get the CompWindow * for event->xdestroywindow.window
+	     * here because in the ::handleEvent call below that CompWindow's
+	     * id will become "1" so CompScreen::findWindow won't
+	     * be able to find teh window after that
+	     */
+
+	    w = screen->findWindow (event->xdestroywindow.window);
+	    break;
+	case UnmapNotify:
+
+	     w = screen->findWindow (event->xunmap.window);
+	     break;
 	case ClientMessage:
 	    if (event->xclient.message_type == Atoms::xdndPosition)
 	    {
-		CompWindow *w;
-
 		w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
@@ -1536,7 +1549,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    else if (event->xclient.message_type == Atoms::xdndDrop ||
 		     event->xclient.message_type == Atoms::xdndLeave)
 	    {
-		CompWindow *w = screen->findWindow (event->xclient.window);
+		w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
 		    if (grab			 &&
@@ -1558,12 +1571,16 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 
     screen->handleEvent (event);
 
+    /* Only safe to remove the window after all events have been
+     * handled, so that we don't get race conditions on calls
+     * to scale functions */
+
     switch (event->type) {
 	case UnmapNotify:
-	    windowRemove (event->xunmap.window);
+	    windowRemove (w);
 	    break;
 	case DestroyNotify:
-	    windowRemove (event->xdestroywindow.window);
+	    windowRemove (w);
 	    break;
     }
 }
