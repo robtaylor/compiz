@@ -467,9 +467,9 @@ PlaceWindow::place (CompPoint &pos)
 	int x, y;
 
 	viewport.setX (MAX (MIN (viewport.x (),
-				 screen->vpSize ().width ()), 0));
+				 screen->vpSize ().width () - 1), 0));
 	viewport.setY (MAX (MIN (viewport.y (),
-				 screen->vpSize ().height ()), 0));
+				 screen->vpSize ().height () - 1), 0));
 
 	x = pos.x () % screen->width ();
 	if (x < 0)
