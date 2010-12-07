@@ -1354,8 +1354,8 @@ CompWindow::unmap ()
 	/* revert gravity adjustment made at MapNotify time */
 	xwc.x	= priv->serverGeometry.x ();
 	xwc.y	= priv->serverGeometry.y ();
-	xwc.width   = priv->serverGeometry.width ();
-	xwc.height  = priv->serverGeometry.height ();
+	xwc.width   = 0;
+	xwc.height  = 0;
 
 	xwcm = priv->adjustConfigureRequestForGravity (&xwc,
 						       CWX | CWY,
@@ -4627,11 +4627,11 @@ PrivateWindow::processMap ()
 	XWindowChanges xwc;
 	unsigned int   xwcm;
 
-	/* adjust for gravity */
+	/* adjust for gravity, but only for frame size */
 	xwc.x      = priv->serverGeometry.x ();
 	xwc.y      = priv->serverGeometry.y ();
-	xwc.width  = priv->serverGeometry.width ();
-	xwc.height = priv->serverGeometry.height ();
+	xwc.width  = 0;
+	xwc.height = 0;
 
 	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity, 1);
 
