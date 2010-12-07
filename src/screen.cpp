@@ -792,7 +792,7 @@ void
 PrivateScreen::updatePlugins ()
 {
     CompPlugin                *p;
-    unsigned int              nPop, i, j, dupPluginCount;
+    unsigned int              nPop, i, j, pListCount = 1;
     CompOption::Value::Vector pList;
     CompPlugin::List          pop;
     bool                      failedPush;
@@ -802,31 +802,38 @@ PrivateScreen::updatePlugins ()
 
     CompOption::Value::Vector &list = optionGetActivePlugins ();
 
-    /* Make sure the new plugin list always has core first, then the
-     * initial plugins.... */
-
-    dupPluginCount = 0;
+    /* Determine the number of plugins, which is core +
+     * initial plugins + plugins in option list in addition
+     * to initial plugins */
+    foreach (CompString &pn, initialPlugins)
+    {
+	if (pn != "core")
+	    pListCount++;
+    }
 
     foreach (CompOption::Value &lp, list)
     {
+	bool skip = false;
 	if (lp.s () == "core")
-	    dupPluginCount++;
-	else
+	    continue;
+
+	foreach (CompString &p, initialPlugins)
 	{
-	    foreach (CompString &p, initialPlugins)
+	    if (p == lp.s ())
 	    {
-		if (p == lp.s ())
-		{
-		    dupPluginCount++;
-		    break;
-		}
+		skip = true;
+		break;
 	    }
 	}
+
+	/* plugin not in initial list */
+	if (!skip)
+	    pListCount++;
     }
 
     /* dupPluginCount is now the number of plugisn contained in both the
      * initial and new plugins list */
-    pList.resize (1 + initialPlugins.size () + list.size () - dupPluginCount);
+    pList.resize (pListCount);
 
     if (pList.empty ())
     {
