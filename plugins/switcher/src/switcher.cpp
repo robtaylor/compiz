@@ -950,6 +950,14 @@ SwitchWindow::updateIconPos (int   &wx,
     wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
 }
 
+
+/* Only for the popup window */
+bool
+SwitchWindow::managed ()
+{
+    return true;
+}
+
 bool
 SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		       const GLMatrix            &transform,
@@ -1177,6 +1185,11 @@ SwitchWindow::SwitchWindow (CompWindow *window) :
 {
     GLWindowInterface::setHandler (gWindow, false);
     CompositeWindowInterface::setHandler (cWindow, false);
+
+    if (window->id () == sScreen->popupWindow)
+	WindowInterface::setHandler (window, true);
+    else
+	WindowInterface::setHandler (window, false);
 
     if (sScreen->popupWindow && sScreen->popupWindow == window->id ())
 	gWindow->glPaintSetEnabled (this, true);
