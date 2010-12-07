@@ -1345,6 +1345,28 @@ CompWindow::unmap ()
     if (priv->unmapRefCnt > 0)
 	return;
 
+    if (priv->managed)
+    {
+	XWindowChanges xwc;
+	unsigned int   xwcm;
+	int		   gravity = priv->sizeHints.win_gravity;
+
+	/* revert gravity adjustment made at MapNotify time */
+	xwc.x	= priv->serverGeometry.x ();
+	xwc.y	= priv->serverGeometry.y ();
+	xwc.width   = priv->serverGeometry.width ();
+	xwc.height  = priv->serverGeometry.height ();
+
+	xwcm = priv->adjustConfigureRequestForGravity (&xwc,
+						       CWX | CWY,
+						       gravity,
+						       -1);
+	if (xwcm)
+	    configureXWindow (xwcm, &xwc);
+
+	priv->managed = false;
+    }
+
     if (priv->struts)
 	screen->updateWorkarea ();
 
