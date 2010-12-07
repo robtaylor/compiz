@@ -1772,7 +1772,64 @@ void
 CompWindow::validateResizeRequest (unsigned int   &mask,
 				   XWindowChanges *xwc,
 				   unsigned int   source)
+{
     WRAPABLE_HND_FUNC (5, validateResizeRequest, mask, xwc, source)
+
+    if (!(priv->type & (CompWindowTypeDockMask    |
+		     CompWindowTypeFullscreenMask |
+		     CompWindowTypeUnknownMask)))
+    {
+	if (mask & CWY)
+	{
+	    int min, max;
+
+	    min = screen->workArea ().y () + priv->input.top;
+	    max = screen->workArea ().bottom ();
+
+	    if (priv->state & CompWindowStateStickyMask &&
+	    	 (xwc->y < min || xwc->y > max))
+	    {
+		xwc->y = priv->serverGeometry.y ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().y () * screen->height ();
+		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
+			screen->height ();
+
+		if (xwc->y < min)
+		    xwc->y = min;
+		else if (xwc->y > max)
+		    xwc->y = max;
+	    }
+	}
+
+	if (mask & CWX)
+	{
+	    int min, max;
+
+	    min = screen->workArea ().x () + priv->input.left;
+	    max = screen->workArea ().right ();
+
+	    if (priv->state & CompWindowStateStickyMask &&
+		(xwc->x < min || xwc->x > max))
+	    {
+		xwc->x = priv->serverGeometry.x ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().x () * screen->width ();
+		max += (screen->vpSize ().width () - screen->vp ().x () - 1) *
+			screen->width ();
+
+		if (xwc->x < min)
+		    xwc->x = min;
+		else if (xwc->x > max)
+		    xwc->x = max;
+	    }
+	}
+    }
+}
 
 void
 CompWindow::resizeNotify (int dx,
@@ -2901,61 +2958,6 @@ CompWindow::moveResize (XWindowChanges *xwc,
     }
 
     xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity, 1);
-
-    if (!(priv->type & (CompWindowTypeDockMask    |
-		     CompWindowTypeFullscreenMask |
-		     CompWindowTypeUnknownMask)))
-    {
-	if (xwcm & CWY)
-	{
-	    int min, max;
-
-	    min = screen->workArea ().y () + priv->input.top;
-	    max = screen->workArea ().bottom ();
-
-	    if (priv->state & CompWindowStateStickyMask &&
-	    	 (xwc->y < min || xwc->y > max))
-	    {
-		xwc->y = priv->serverGeometry.y ();
-	    }
-	    else
-	    {
-		min -= screen->vp ().y () * screen->height ();
-		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
-			screen->height ();
-
-		if (xwc->y < min)
-		    xwc->y = min;
-		else if (xwc->y > max)
-		    xwc->y = max;
-	    }
-	}
-
-	if (xwcm & CWX)
-	{
-	    int min, max;
-
-	    min = screen->workArea ().x () + priv->input.left;
-	    max = screen->workArea ().right ();
-
-	    if (priv->state & CompWindowStateStickyMask &&
-		(xwc->x < min || xwc->x > max))
-	    {
-		xwc->x = priv->serverGeometry.x ();
-	    }
-	    else
-	    {
-		min -= screen->vp ().x () * screen->width ();
-		max += (screen->vpSize ().width () - screen->vp ().x () - 1) *
-			screen->width ();
-
-		if (xwc->x < min)
-		    xwc->x = min;
-		else if (xwc->x > max)
-		    xwc->x = max;
-	    }
-	}
-    }
 
     validateResizeRequest (xwcm, xwc, source);
 
