@@ -148,6 +148,7 @@ class ResizeScreen :
 	CompSize   lastGoodSize;
 
 	bool	         yConstrained;
+	bool		 offScreenConstrained;
 	const CompRect   *grabWindowWorkArea;
 };
 

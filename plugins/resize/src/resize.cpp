@@ -353,6 +353,7 @@ resizeInitiate (CompAction         *action,
 	    /* Update yConstrained and workArea at grab time */
 	    pMove = CompPlugin::find ("move");
 	    rs->yConstrained = false;
+	    rs->offScreenConstrained = false;
 	    if (pMove)
 	    {
 		CompOption::Vector &options = pMove->vTable->getOptions ();
@@ -371,6 +372,7 @@ resizeInitiate (CompAction         *action,
 
 	    if (sourceExternalApp)
 	    {
+		rs->offScreenConstrained = true;
 		/* Prevent resizing beyond work area edges when resize is
 		   initiated externally (e.g. with window frame or menu)
 		   and not with a key (e.g. alt+button) */
@@ -750,7 +752,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	}
 
 	/* constrain to screen */
-	if (mask & ResizeDownMask)
+	if (mask & ResizeDownMask && offScreenConstrained)
 	{
 	    int decorBottom = savedGeometry.y + che + w->input ().bottom;
 
@@ -758,7 +760,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		che -= decorBottom = screen->height ();
 	}
 
-	if (mask & ResizeLeftMask)
+	if (mask & ResizeLeftMask && offScreenConstrained)
 	{
 	    int decorLeft = savedGeometry.x + savedGeometry.width -
 			(cwi + w->input ().left);
@@ -767,7 +769,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		cwi += decorLeft;
 	}
 
-	if (mask & ResizeRightMask)
+	if (mask & ResizeRightMask && offScreenConstrained)
 	{
 	    int decorRight = savedGeometry.x + cwi + w->input ().right;
 
@@ -1543,7 +1545,8 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     centeredMask (0),
     releaseButton (0),
     isConstrained (false),
-    yConstrained (true)
+    yConstrained (true),
+    offScreenConstrained (true)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
