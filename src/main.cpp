@@ -57,6 +57,8 @@ bool useDesktopHints = false;
 bool debugOutput = false;
 bool useCow = true;
 
+std::list <CompString> initialPlugins;
+
 unsigned int pluginClassHandlerIndex = 0;
 
 void
@@ -167,6 +169,8 @@ CompManager::parseArguments (int argc, char **argv)
 	    plugins.push_back (argv[i]);
 	}
     }
+
+    initialPlugins = plugins;
 
     return true;
 }

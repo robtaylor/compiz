@@ -56,6 +56,8 @@ extern bool inHandleEvent;
 extern CompScreen *targetScreen;
 extern CompOutput *targetOutput;
 
+extern std::list <CompString> initialPlugins;
+
 
 typedef struct _CompDelayedEdgeSettings
 {

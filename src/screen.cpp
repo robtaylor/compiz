@@ -791,48 +791,102 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompPlugin        *p;
-    unsigned int      nPop, i, j;
-    CompPlugin::List  pop;
-    bool              failedPush;
+    CompPlugin                *p;
+    unsigned int              nPop, i, j, dupPluginCount;
+    CompOption::Value::Vector pList;
+    CompPlugin::List          pop;
+    bool                      failedPush;
 
 
     dirtyPluginList = false;
 
     CompOption::Value::Vector &list = optionGetActivePlugins ();
 
-    /* The old plugin list always begins with the core plugin. To make sure
-       we don't unnecessarily unload plugins if the new plugin list does not
-       contain the core plugin, we have to use an offset */
+    /* Make sure the new plugin list always has core first, then the
+     * initial plugins.... */
 
-    if (list.size () > 0 && list[0].s () != "core")
-	i = 0;
-    else
-	i = 1;
+    dupPluginCount = 0;
+
+    foreach (CompOption::Value &lp, list)
+    {
+	if (lp.s () == "core")
+	    dupPluginCount++;
+	else
+	{
+	    foreach (CompString &p, initialPlugins)
+	    {
+		if (p == lp.s ())
+		{
+		    dupPluginCount++;
+		    break;
+		}
+	    }
+	}
+    }
+
+    pList.resize (1 + initialPlugins.size () + list.size () - dupPluginCount);
+
+    if (pList.empty ())
+    {
+	screen->setOptionForPlugin ("core", "active_plugins", plugin);
+	return;
+    }
+
+    pList.at (0) = "core";
+    j = 1;
+    foreach (CompString &p, initialPlugins)
+    {
+	pList.at (j).set (p);
+	j++;
+    }
+
+    foreach (CompOption::Value &opt, list)
+    {
+	std::list <CompString>::iterator it = initialPlugins.begin ();
+	bool				 skip = false;
+	if (opt.s () == "core")
+	    continue;
+
+	for (; it != initialPlugins.end (); it++)
+	{
+	    if ((*it) == opt.s ())
+	    {
+		skip = true;
+		break;
+	    }
+	}
+
+	if (!skip)
+	    pList.at (j++).set (opt.s ());
+    }
+
+    assert (j == pList.size ());
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
-    for (j = 1; j < plugin.list ().size () &&
-	 i < list.size (); i++, j++)
+    for (i = j = 1; j < plugin.list ().size () && i < pList.size (); i++, j++)
     {
-	if (plugin.list ()[j].s () != list[i].s ())
+	if (plugin.list ().at (j).s () != pList.at (i).s ())
 	    break;
     }
 
     nPop = plugin.list ().size () - j;
 
-    for (j = 0; j < nPop; j++)
+    if (nPop)
     {
-	pop.push_back (CompPlugin::pop ());
-	plugin.list ().pop_back ();
+	for (j = 0; j < nPop; j++)
+	{
+	    pop.push_back (CompPlugin::pop ());
+	    plugin.list ().pop_back ();
+	}
     }
 
-    for (; i < list.size (); i++)
+    for (; i < pList.size (); i++)
     {
 	p = NULL;
 	failedPush = false;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (list[i]. s () == pp->vTable->name ())
+	    if (pList[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -853,7 +907,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0 && !failedPush)
 	{
-	    p = CompPlugin::load (list[i].s ().c_str ());
+	    p = CompPlugin::load (pList[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
