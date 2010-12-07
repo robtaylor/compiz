@@ -147,8 +147,7 @@ class ResizeScreen :
 	int        lastGoodHotSpotY;
 	CompSize   lastGoodSize;
 
-	bool	         yConstrained;
-	bool		 offScreenConstrained;
+	bool		 offWorkAreaConstrained;
 	const CompRect   *grabWindowWorkArea;
 };
 

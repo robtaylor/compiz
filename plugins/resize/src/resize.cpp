@@ -322,7 +322,6 @@ resizeInitiate (CompAction         *action,
 	if (rs->grabIndex)
 	{
 	    BoxRec box;
-	    CompPlugin *pMove;
 	    unsigned int grabMask = CompWindowGrabResizeMask |
 				    CompWindowGrabButtonMask;
 	    bool sourceExternalApp =
@@ -350,33 +349,19 @@ resizeInitiate (CompAction         *action,
 		screen->warpPointer (xRoot - pointerX, yRoot - pointerY);
 	    }
 
-	    /* Update yConstrained and workArea at grab time */
-	    pMove = CompPlugin::find ("move");
-	    rs->yConstrained = false;
-	    rs->offScreenConstrained = false;
-	    if (pMove)
-	    {
-		CompOption::Vector &options = pMove->vTable->getOptions ();
-
-		rs->yConstrained =
-			CompOption::getBoolOptionNamed (options,
-							"constrain_y",
-							true);
-		if (rs->yConstrained)
-		    rs->grabWindowWorkArea =
-			&(screen->outputDevs ().at (w->outputDevice ()).workArea ());
-
-	    }
-
 	    rs->isConstrained = sourceExternalApp;
 
+	    /* Update offWorkAreaConstrained and workArea at grab time */
+	    rs->offWorkAreaConstrained = false;
 	    if (sourceExternalApp)
 	    {
-		rs->offScreenConstrained = true;
+		int output = w->outputDevice ();
 		/* Prevent resizing beyond work area edges when resize is
 		   initiated externally (e.g. with window frame or menu)
 		   and not with a key (e.g. alt+button) */
-
+		rs->offWorkAreaConstrained = true;
+		rs->grabWindowWorkArea =
+		    &screen->outputDevs ().at (output).workArea ();
 		rs->inRegionStatus   = false;
 		rs->lastGoodHotSpotY = -1;
 		rs->lastGoodSize     = w->serverSize ();
@@ -731,50 +716,43 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
-	if (mask & ResizeUpMask)
+	/* constrain to work area */
+	if (offWorkAreaConstrained)
 	{
-	    int decorTop = savedGeometry.y + savedGeometry.height -
-			   (che + w->input ().top);
-
-	    if (yConstrained)
+	    if (mask & ResizeUpMask)
 	    {
+		int decorTop = savedGeometry.y + savedGeometry.height -
+		    (che + w->input ().top);
+
 		if (grabWindowWorkArea->y () > decorTop)
-		{
-		    /* constrain to workarea */
 		    che -= grabWindowWorkArea->y () - decorTop;
-		}
 	    }
-	    else if (decorTop <  0)
+	    if (mask & ResizeDownMask)
 	    {
-		/* constrain to screen */
-		che += decorTop;
+		int decorBottom = savedGeometry.y + che + w->input ().bottom;
+
+		if (decorBottom >
+		    grabWindowWorkArea->y () + grabWindowWorkArea->height ())
+		    che -= decorBottom - (grabWindowWorkArea->y () +
+					  grabWindowWorkArea->height ());
 	    }
-	}
+	    if (mask & ResizeLeftMask)
+	    {
+		int decorLeft = savedGeometry.x + savedGeometry.width -
+		    (cwi + w->input ().left);
 
-	/* constrain to screen */
-	if (mask & ResizeDownMask && offScreenConstrained)
-	{
-	    int decorBottom = savedGeometry.y + che + w->input ().bottom;
+		if (grabWindowWorkArea->x () > decorLeft)
+		    cwi -= grabWindowWorkArea->x () - decorLeft;
+	    }
+	    if (mask & ResizeRightMask)
+	    {
+		int decorRight = savedGeometry.x + cwi + w->input ().right;
 
-	    if (decorBottom > screen->height ())
-		che -= decorBottom - screen->height ();
-	}
-
-	if (mask & ResizeLeftMask && offScreenConstrained)
-	{
-	    int decorLeft = savedGeometry.x + savedGeometry.width -
-			(cwi + w->input ().left);
-
-	    if (decorLeft < 0)
-		cwi += decorLeft;
-	}
-
-	if (mask & ResizeRightMask && offScreenConstrained)
-	{
-	    int decorRight = savedGeometry.x + cwi + w->input ().right;
-
-	    if (decorRight > screen->width ())
-		w -= decorRight - screen->width ();
+		if (decorRight >
+		    grabWindowWorkArea->x () + grabWindowWorkArea->width ())
+		    cwi -= decorRight - (grabWindowWorkArea->x () +
+				         grabWindowWorkArea->width ());
+	    }
 	}
 
 	wi = cwi;
@@ -1545,8 +1523,7 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     centeredMask (0),
     releaseButton (0),
     isConstrained (false),
-    yConstrained (true),
-    offScreenConstrained (true)
+    offWorkAreaConstrained (true)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
