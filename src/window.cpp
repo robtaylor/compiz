@@ -3152,10 +3152,10 @@ CompWindow::lower ()
        the click-to-focus option is on */
     if ((screen->getOption ("click_to_focus")->value ().b ()))
     {
-	Window aboveId = next ? next->id () : None;
+	Window aboveWindowId = prev ? prev->id () : None;
 	screen->unhookWindow (this);
 	CompWindow *focusedWindow = screen->priv->focusTopMostWindow ();
-	screen->insertWindow (this , aboveId);
+	screen->insertWindow (this , aboveWindowId);
 
 	/* if the newly focused window is a desktop window,
 	   give the focus back to w */
