@@ -1345,7 +1345,7 @@ CompWindow::unmap ()
     if (priv->unmapRefCnt > 0)
 	return;
 
-    if (priv->managed)
+    if (priv->managed && !priv->placed)
     {
 	XWindowChanges xwc;
 	unsigned int   xwcm;
