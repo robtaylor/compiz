@@ -757,7 +757,7 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    int decorBottom = savedGeometry.y + che + w->input ().bottom;
 
 	    if (decorBottom > screen->height ())
-		che -= decorBottom = screen->height ();
+		che -= decorBottom - screen->height ();
 	}
 
 	if (mask & ResizeLeftMask && offScreenConstrained)
