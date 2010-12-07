@@ -322,6 +322,7 @@ resizeInitiate (CompAction         *action,
 	if (rs->grabIndex)
 	{
 	    BoxRec box;
+	    CompPlugin *pMove;
 	    unsigned int grabMask = CompWindowGrabResizeMask |
 				    CompWindowGrabButtonMask;
 	    bool sourceExternalApp =
@@ -347,6 +348,23 @@ resizeInitiate (CompAction         *action,
 		yRoot = server.y () + (server.height () / 2);
 
 		screen->warpPointer (xRoot - pointerX, yRoot - pointerY);
+	    }
+
+	    /* Update yConstrained and workArea at grab time */
+	    pMove = CompPlugin::find ("move");
+
+	    if (pMove)
+	    {
+		CompOption::Vector &options = pMove->vTable->getOptions ();
+
+		rs->yConstrained =
+			CompOption::getBoolOptionNamed (options,
+							"constrain_y",
+							true);
+		if (rs->yConstrained)
+		    rs->grabWindowWorkArea =
+			&(screen->outputDevs ().at (w->outputDevice ()).workArea ());
+
 	    }
 
 	    rs->isConstrained = sourceExternalApp;
@@ -709,6 +727,18 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		getStretchRectangle (&box);
 
 	    damageRectangle (&box);
+	}
+
+	if (mask & ResizeUpMask && yConstrained)
+	{
+	    int decorTop = savedGeometry.y + savedGeometry.height -
+			   (he + w->input ().top);
+
+	    if (grabWindowWorkArea->y () > decorTop)
+	    {
+		/* constrain to workarea */
+		he -= grabWindowWorkArea->y () - decorTop;
+	    }
 	}
 
 	wi = cwi;
@@ -1478,7 +1508,8 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     stretchMask (0),
     centeredMask (0),
     releaseButton (0),
-    isConstrained (false)
+    isConstrained (false),
+    yConstrained (true)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
