@@ -824,6 +824,8 @@ PrivateScreen::updatePlugins ()
 	}
     }
 
+    /* dupPluginCount is now the number of plugisn contained in both the
+     * initial and new plugins list */
     pList.resize (1 + initialPlugins.size () + list.size () - dupPluginCount);
 
     if (pList.empty ())
@@ -832,14 +834,18 @@ PrivateScreen::updatePlugins ()
 	return;
     }
 
+    /* Must have core as first plugin */
     pList.at (0) = "core";
     j = 1;
+
+    /* Add initial plugins */
     foreach (CompString &p, initialPlugins)
     {
 	pList.at (j).set (p);
 	j++;
     }
 
+    /* Add plugins not in the initial list */
     foreach (CompOption::Value &opt, list)
     {
 	std::list <CompString>::iterator it = initialPlugins.begin ();
