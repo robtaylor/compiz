@@ -76,7 +76,7 @@ class SwitchScreen :
 	void windowRemove (CompWindow *w);
 
 	bool adjustVelocity ();
-	
+
 	Window	   lastActiveWindow;
 
 	CompWindow *zoomedWindow;
@@ -100,12 +100,15 @@ class SwitchScreen :
 
 class SwitchWindow :
     public BaseSwitchWindow,
+    public WindowInterface,
     public CompositeWindowInterface,
     public GLWindowInterface,
     public PluginClassHandler<SwitchWindow,CompWindow>
 {
     public:
 	SwitchWindow (CompWindow *window);
+
+	bool managed ();
 
 	bool damageRect (bool initial, const CompRect &rect);
 

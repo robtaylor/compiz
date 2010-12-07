@@ -868,48 +868,117 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompPlugin        *p;
-    unsigned int      nPop, i, j;
-    CompPlugin::List  pop;
-    bool              failedPush;
+    CompPlugin                *p;
+    unsigned int              nPop, i, j, pListCount = 1;
+    CompOption::Value::Vector pList;
+    CompPlugin::List          pop;
+    bool                      failedPush;
 
 
     dirtyPluginList = false;
 
     CompOption::Value::Vector &list = optionGetActivePlugins ();
 
-    /* The old plugin list always begins with the core plugin. To make sure
-       we don't unnecessarily unload plugins if the new plugin list does not
-       contain the core plugin, we have to use an offset */
+    /* Determine the number of plugins, which is core +
+     * initial plugins + plugins in option list in addition
+     * to initial plugins */
+    foreach (CompString &pn, initialPlugins)
+    {
+	if (pn != "core")
+	    pListCount++;
+    }
 
-    if (list.size () > 0 && list[0].s () != "core")
-	i = 0;
-    else
-	i = 1;
+    foreach (CompOption::Value &lp, list)
+    {
+	bool skip = false;
+	if (lp.s () == "core")
+	    continue;
+
+	foreach (CompString &p, initialPlugins)
+	{
+	    if (p == lp.s ())
+	    {
+		skip = true;
+		break;
+	    }
+	}
+
+	/* plugin not in initial list */
+	if (!skip)
+	    pListCount++;
+    }
+
+    /* dupPluginCount is now the number of plugisn contained in both the
+     * initial and new plugins list */
+    pList.resize (pListCount);
+
+    if (pList.empty ())
+    {
+	screen->setOptionForPlugin ("core", "active_plugins", plugin);
+	return;
+    }
+
+    /* Must have core as first plugin */
+    pList.at (0) = "core";
+    j = 1;
+
+    /* Add initial plugins */
+    foreach (CompString &p, initialPlugins)
+    {
+	if (p == "core")
+	    continue;
+	pList.at (j).set (p);
+	j++;
+    }
+
+    /* Add plugins not in the initial list */
+    foreach (CompOption::Value &opt, list)
+    {
+	std::list <CompString>::iterator it = initialPlugins.begin ();
+	bool				 skip = false;
+	if (opt.s () == "core")
+	    continue;
+
+	for (; it != initialPlugins.end (); it++)
+	{
+	    if ((*it) == opt.s ())
+	    {
+		skip = true;
+		break;
+	    }
+	}
+
+	if (!skip)
+	    pList.at (j++).set (opt.s ());
+    }
+
+    assert (j == pList.size ());
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
-    for (j = 1; j < plugin.list ().size () &&
-	 i < list.size (); i++, j++)
+    for (i = j = 1; j < plugin.list ().size () && i < pList.size (); i++, j++)
     {
-	if (plugin.list ()[j].s () != list[i].s ())
+	if (plugin.list ().at (j).s () != pList.at (i).s ())
 	    break;
     }
 
     nPop = plugin.list ().size () - j;
 
-    for (j = 0; j < nPop; j++)
+    if (nPop)
     {
-	pop.push_back (CompPlugin::pop ());
-	plugin.list ().pop_back ();
+	for (j = 0; j < nPop; j++)
+	{
+	    pop.push_back (CompPlugin::pop ());
+	    plugin.list ().pop_back ();
+	}
     }
 
-    for (; i < list.size (); i++)
+    for (; i < pList.size (); i++)
     {
 	p = NULL;
 	failedPush = false;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (list[i]. s () == pp->vTable->name ())
+	    if (pList[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -930,7 +999,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0 && !failedPush)
 	{
-	    p = CompPlugin::load (list[i].s ().c_str ());
+	    p = CompPlugin::load (pList[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
@@ -4160,13 +4229,46 @@ CompScreen::screenInfo ()
     return priv->screenInfo;
 }
 
+bool
+PrivateScreen::createFailed ()
+{
+    return !screenInitalized;
+}
+
 CompScreen::CompScreen ():
     PluginClassStorage (screenPluginClassIndices),
     priv (NULL)
 {
+    CompPrivate p;
+    CompOption::Value::Vector vList;
+    CompPlugin  *corePlugin;
+
     priv = new PrivateScreen (this);
     assert (priv);
+
     screenInitalized = true;
+
+    corePlugin = CompPlugin::load ("core");
+    if (!corePlugin)
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't load core plugin");
+	screenInitalized = false;
+    }
+
+    if (!CompPlugin::push (corePlugin))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't activate core plugin");
+	screenInitalized = false;
+    }
+
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
+    vList.push_back ("core");
+
+    priv->plugin.set (CompOption::TypeString, vList);
 }
 
 bool
@@ -4194,31 +4296,6 @@ CompScreen::init (const char *name)
     unsigned int         nchildren;
     int                  nvisinfo;
     XSetWindowAttributes attrib;
-
-    CompOption::Value::Vector vList;
-
-    CompPlugin *corePlugin = CompPlugin::load ("core");
-    if (!corePlugin)
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't load core plugin");
-	return false;
-    }
-
-    if (!CompPlugin::push (corePlugin))
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't activate core plugin");
-	return false;
-    }
-
-    CompPrivate p;
-    p.uval = CORE_ABIVERSION;
-    storeValue ("core_ABI", p);
-
-    vList.push_back ("core");
-
-    priv->plugin.set (CompOption::TypeString, vList);
 
     dpy = priv->dpy = XOpenDisplay (name);
     if (!priv->dpy)
@@ -4363,6 +4440,8 @@ CompScreen::init (const char *name)
 	} while (event.type != DestroyNotify);
     }
 
+    modHandler->updateModifierMappings ();
+
     CompScreen::checkForError (dpy);
 
     XGrabServer (dpy);
@@ -4390,9 +4469,6 @@ CompScreen::init (const char *name)
 	XUngrabServer (dpy);
 	return false;
     }
-
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -4470,24 +4546,6 @@ CompScreen::init (const char *name)
 
     priv->getDesktopHints ();
 
-    /* TODO: bailout properly when objectInitPlugins fails */
-    assert (CompPlugin::screenInitPlugins (this));
-
-    XQueryTree (dpy, priv->root,
-		&rootReturn, &parentReturn,
-		&children, &nchildren);
-
-    for (unsigned int i = 0; i < nchildren; i++)
-	new CompWindow (children[i], i ? children[i - 1] : 0);
-
-    foreach (CompWindow *w, priv->windows)
-    {
-	if (w->isViewable ())
-	    w->priv->activeNum = priv->activeNum++;
-    }
-
-    XFree (children);
-
     attrib.override_redirect = 1;
     attrib.event_mask	     = PropertyChangeMask;
 
@@ -4535,6 +4593,47 @@ CompScreen::init (const char *name)
 
     priv->setAudibleBell (priv->optionGetAudibleBell ());
 
+    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
+			      priv->optionGetPingDelay () + 500);
+
+    priv->pingTimer.start ();
+
+    priv->addScreenActions ();
+
+    priv->initialized = true;
+
+    /* TODO: Bailout properly when screenInitPlugins fails
+     * TODO: It would be nicer if this line could mean
+     * "init all the screens", but unfortunately it only inits
+     * plugins loaded on the command line screen's and then
+     * we need to call updatePlugins () to init the remaining
+     * screens from option changes */
+    assert (CompPlugin::screenInitPlugins (this));
+
+    /* The active plugins list might have been changed - load any
+     * new plugins */
+
+    if (priv->dirtyPluginList)
+	priv->updatePlugins ();
+
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
+    XQueryTree (dpy, priv->root,
+		&rootReturn, &parentReturn,
+		&children, &nchildren);
+
+    for (unsigned int i = 0; i < nchildren; i++)
+	new CompWindow (children[i], i ? children[i - 1] : 0);
+
+    foreach (CompWindow *w, priv->windows)
+    {
+	if (w->isViewable ())
+	    w->priv->activeNum = priv->activeNum++;
+    }
+
+    XFree (children);
+
     XGetInputFocus (dpy, &focus, &revertTo);
 
     /* move input focus to root window so that we get a FocusIn event when
@@ -4555,14 +4654,6 @@ CompScreen::init (const char *name)
 	else
 	    focusDefaultWindow ();
     }
-
-    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
-			      priv->optionGetPingDelay () + 500);
-
-    priv->pingTimer.start ();
-
-    priv->initialized = true;
-    priv->addScreenActions ();
 
     return true;
 }

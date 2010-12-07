@@ -92,7 +92,7 @@ class PrivateScaleScreen :
 
 	void moveFocusWindow (int dx, int dy);
 
-	void windowRemove (Window id);
+	void windowRemove (CompWindow *);
 
 	bool hoverTimeout ();
 

@@ -39,6 +39,8 @@
 
 class CompScreen;
 class PrivateScreen;
+class CompManager;
+
 typedef std::list<CompWindow *> CompWindowList;
 typedef std::vector<CompWindow *> CompWindowVector;
 
@@ -400,6 +402,8 @@ class CompScreen :
 	friend class PrivateWindow;
 	friend class ModifierHandler;
 	friend class CompEventSource;
+	friend class CompManager;
+	friend class CompWatchFd;
 
     private:
 	PrivateScreen *priv;
@@ -467,8 +471,6 @@ class CompScreen :
 			   void           *userData);
 
 	static int checkForError (Display *dpy);
-
-    friend class CompWatchFd;
 };
 
 #endif

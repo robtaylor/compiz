@@ -805,7 +805,21 @@ DecorWindow::update (bool allowDecoration)
 	    window->saveWc ().y += moveDy;
 
 	if (mask)
-	    moveUpdate.start (boost::bind (decorOffsetMove, window, xwc, mask), 0);
+	{
+	    /* allowDecoration is only false in the case of
+	     * the destructor calling the update function so since it
+	     * is not safe to put the function in a timer (since
+	     * it will get unref'd on the vtable destruction) we
+	     * need to do it immediately
+	     *
+	     * FIXME: CompTimer should really be PIMPL and allow
+	     * refcounting in case we need to keep it alive
+	     */
+	    if (!allowDecoration)
+		decorOffsetMove (window, xwc, mask);
+	    else
+		moveUpdate.start (boost::bind (decorOffsetMove, window, xwc, mask), 0);
+	}
     }
 
     return true;

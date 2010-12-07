@@ -78,6 +78,8 @@ extern bool inHandleEvent;
 extern CompScreen *targetScreen;
 extern CompOutput *targetOutput;
 
+extern std::list <CompString> initialPlugins;
+
 
 typedef struct _CompDelayedEdgeSettings
 {
@@ -345,6 +347,9 @@ class PrivateScreen : public CoreOptions {
 	CompWindow *
 	focusTopMostWindow ();
 
+	bool
+	createFailed ();
+
     public:
 
 	PrivateScreen *priv;
@@ -483,6 +488,30 @@ class PrivateScreen : public CoreOptions {
 	int           desktopHintSize;
 
         bool initialized;
+};
+
+class CompManager
+{
+    public:
+
+	CompManager ();
+
+	bool init ();
+	void run ();
+	void fini ();
+
+	bool parseArguments (int, char **);
+	void usage ();
+
+	static bool initPlugin (CompPlugin *p);
+	static void finiPlugin (CompPlugin *p);
+
+    private:
+
+	std::list <CompString> plugins;
+	bool		       disableSm;
+	char		       *clientId;
+	char		       *displayName;
 };
 
 #endif

@@ -264,8 +264,8 @@ UnloadPluginProc loaderUnloadPlugin = dlloaderUnloadPlugin;
 ListPluginsProc  loaderListPlugins  = dlloaderListPlugins;
 
 
-static bool
-initPlugin (CompPlugin *p)
+bool
+CompManager::initPlugin (CompPlugin *p)
 {
 
     if (!p->vTable->init ())
@@ -275,7 +275,7 @@ initPlugin (CompPlugin *p)
 	return false;
     }
 
-    if (screen)
+    if (screen && screen->priv->initialized)
     {
 	if (!p->vTable->initScreen (screen))
 	{
@@ -294,8 +294,8 @@ initPlugin (CompPlugin *p)
     return true;
 }
 
-static void
-finiPlugin (CompPlugin *p)
+void
+CompManager::finiPlugin (CompPlugin *p)
 {
 
     if (screen)
@@ -351,18 +351,18 @@ CompScreen::finiPluginForScreen (CompPlugin *p)
 bool
 CompPlugin::screenInitPlugins (CompScreen *s)
 {
-    CompPlugin::List::reverse_iterator rit = plugins.rbegin ();
+    CompPlugin::List::iterator it = plugins.begin ();
 
     CompPlugin *p = NULL;
 
-    while (rit != plugins.rend ())
+    while (it != plugins.end ())
     {
-	p = (*rit);
+	p = (*it);
 
 	if (p->vTable->initScreen (s))
 	    s->initPluginForScreen (p);
 
-	rit++;
+	it++;
     }
 
     return true;
@@ -491,7 +491,7 @@ CompPlugin::push (CompPlugin *p)
 
     plugins.push_front (p);
 
-    if (!initPlugin (p))
+    if (!CompManager::initPlugin (p))
     {
 	compLogMessage ("core", CompLogLevelError,
 			"Couldn't activate plugin '%s'", name);
@@ -518,7 +518,7 @@ CompPlugin::pop (void)
 
     pluginsMap.erase (p->vTable->name ().c_str ());
 
-    finiPlugin (p);
+    CompManager::finiPlugin (p);
 
     plugins.pop_front ();
 

@@ -351,12 +351,17 @@ resizeInitiate (CompAction         *action,
 
 	    rs->isConstrained = sourceExternalApp;
 
+	    /* Update offWorkAreaConstrained and workArea at grab time */
+	    rs->offWorkAreaConstrained = false;
 	    if (sourceExternalApp)
 	    {
+		int output = w->outputDevice ();
 		/* Prevent resizing beyond work area edges when resize is
 		   initiated externally (e.g. with window frame or menu)
 		   and not with a key (e.g. alt+button) */
-
+		rs->offWorkAreaConstrained = true;
+		rs->grabWindowWorkArea =
+		    &screen->outputDevs ().at (output).workArea ();
 		rs->inRegionStatus   = false;
 		rs->lastGoodHotSpotY = -1;
 		rs->lastGoodSize     = w->serverSize ();
@@ -709,6 +714,45 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		getStretchRectangle (&box);
 
 	    damageRectangle (&box);
+	}
+
+	/* constrain to work area */
+	if (offWorkAreaConstrained)
+	{
+	    if (mask & ResizeUpMask)
+	    {
+		int decorTop = savedGeometry.y + savedGeometry.height -
+		    (che + w->input ().top);
+
+		if (grabWindowWorkArea->y () > decorTop)
+		    che -= grabWindowWorkArea->y () - decorTop;
+	    }
+	    if (mask & ResizeDownMask)
+	    {
+		int decorBottom = savedGeometry.y + che + w->input ().bottom;
+
+		if (decorBottom >
+		    grabWindowWorkArea->y () + grabWindowWorkArea->height ())
+		    che -= decorBottom - (grabWindowWorkArea->y () +
+					  grabWindowWorkArea->height ());
+	    }
+	    if (mask & ResizeLeftMask)
+	    {
+		int decorLeft = savedGeometry.x + savedGeometry.width -
+		    (cwi + w->input ().left);
+
+		if (grabWindowWorkArea->x () > decorLeft)
+		    cwi -= grabWindowWorkArea->x () - decorLeft;
+	    }
+	    if (mask & ResizeRightMask)
+	    {
+		int decorRight = savedGeometry.x + cwi + w->input ().right;
+
+		if (decorRight >
+		    grabWindowWorkArea->x () + grabWindowWorkArea->width ())
+		    cwi -= decorRight - (grabWindowWorkArea->x () +
+				         grabWindowWorkArea->width ());
+	    }
 	}
 
 	wi = cwi;
@@ -1478,7 +1522,8 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     stretchMask (0),
     centeredMask (0),
     releaseButton (0),
-    isConstrained (false)
+    isConstrained (false),
+    offWorkAreaConstrained (true)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();

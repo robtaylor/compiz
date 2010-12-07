@@ -1085,7 +1085,6 @@ CompScreen::handleEvent (XEvent *event)
 		    priv->setWmState (WithdrawnState, w->id ());
 
 		w->priv->placed = false;
-		w->priv->managed = false;
 		w->priv->unmanaging = true;
 		if (w->priv->frame)
 		{

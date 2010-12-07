@@ -79,9 +79,9 @@ SwitchScreen::updateWindowList (int count)
 
 	XWindowChanges xwc;
 	unsigned int valueMask = 0;
-	
+
 	valueMask |= (CWX | CWY | CWWidth | CWHeight);
-	
+
 	xwc.x = x - WINDOW_WIDTH (count) / 2;
 	xwc.y = y - WINDOW_HEIGHT / 2;
 	xwc.width = WINDOW_WIDTH (count);
@@ -207,7 +207,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 {
     int count;
 
-    if (screen->otherGrabExist ("switcher", "scale", "cube", NULL))
+    if (screen->otherGrabExist ("switcher", NULL))
 	return;
 
     this->selection      = selection;
@@ -380,11 +380,11 @@ switchTerminate (CompAction         *action,
 	{
 	    ss->selectedWindow = NULL;
 	    ss->zoomedWindow   = NULL;
-	    
+
 	    if (screen->activeWindow () != ss->lastActiveWindow)
 	    {
 		CompWindow *w = screen->findWindow (ss->lastActiveWindow);
-		
+
 		if (w)
 		    w->moveInputFocusTo ();
 	    }
@@ -950,6 +950,14 @@ SwitchWindow::updateIconPos (int   &wx,
     wy = y + SPACE + ((HEIGHT - (SPACE << 1)) - height) / 2;
 }
 
+
+/* Only for the popup window */
+bool
+SwitchWindow::managed ()
+{
+    return true;
+}
+
 bool
 SwitchWindow::glPaint (const GLWindowPaintAttrib &attrib,
 		       const GLMatrix            &transform,
@@ -1177,6 +1185,11 @@ SwitchWindow::SwitchWindow (CompWindow *window) :
 {
     GLWindowInterface::setHandler (gWindow, false);
     CompositeWindowInterface::setHandler (cWindow, false);
+
+    if (window->id () == sScreen->popupWindow)
+	WindowInterface::setHandler (window, true);
+    else
+	WindowInterface::setHandler (window, false);
 
     if (sScreen->popupWindow && sScreen->popupWindow == window->id ())
 	gWindow->glPaintSetEnabled (this, true);

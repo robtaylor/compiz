@@ -467,9 +467,9 @@ PlaceWindow::place (CompPoint &pos)
 	int x, y;
 
 	viewport.setX (MAX (MIN (viewport.x (),
-				 screen->vpSize ().width ()), 0));
+				 screen->vpSize ().width () - 1), 0));
 	viewport.setY (MAX (MIN (viewport.y (),
-				 screen->vpSize ().height ()), 0));
+				 screen->vpSize ().height () - 1), 0));
 
 	x = pos.x () % screen->width ();
 	if (x < 0)
@@ -889,8 +889,11 @@ PlaceWindow::placePointer (const CompRect &workArea,
 {
     if (PlaceScreen::get (screen)->getPointerPosition (pos))
     {
-	pos -= CompPoint (window->serverGeometry ().height () / 2,
-			  window->serverGeometry ().width () / 2);
+	unsigned int dx = (window->serverGeometry ().width () / 2) -
+			   window->serverGeometry ().border ();
+	unsigned int dy = (window->serverGeometry ().height () / 2) -
+			   window->serverGeometry ().border ();
+	pos -= CompPoint (dx, dy);
     }
     else
 	placeCentered (workArea, pos);

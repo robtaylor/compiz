@@ -1345,6 +1345,28 @@ CompWindow::unmap ()
     if (priv->unmapRefCnt > 0)
 	return;
 
+    if (priv->managed && !priv->placed)
+    {
+	XWindowChanges xwc;
+	unsigned int   xwcm;
+	int		   gravity = priv->sizeHints.win_gravity;
+
+	/* revert gravity adjustment made at MapNotify time */
+	xwc.x	= priv->serverGeometry.x ();
+	xwc.y	= priv->serverGeometry.y ();
+	xwc.width   = 0;
+	xwc.height  = 0;
+
+	xwcm = priv->adjustConfigureRequestForGravity (&xwc,
+						       CWX | CWY,
+						       gravity,
+						       -1);
+	if (xwcm)
+	    configureXWindow (xwcm, &xwc);
+
+	priv->managed = false;
+    }
+
     if (priv->struts)
 	screen->updateWorkarea ();
 
@@ -1750,7 +1772,64 @@ void
 CompWindow::validateResizeRequest (unsigned int   &mask,
 				   XWindowChanges *xwc,
 				   unsigned int   source)
+{
     WRAPABLE_HND_FUNC (5, validateResizeRequest, mask, xwc, source)
+
+    if (!(priv->type & (CompWindowTypeDockMask    |
+		     CompWindowTypeFullscreenMask |
+		     CompWindowTypeUnknownMask)))
+    {
+	if (mask & CWY)
+	{
+	    int min, max;
+
+	    min = screen->workArea ().y () + priv->input.top;
+	    max = screen->workArea ().bottom ();
+
+	    if (priv->state & CompWindowStateStickyMask &&
+	    	 (xwc->y < min || xwc->y > max))
+	    {
+		xwc->y = priv->serverGeometry.y ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().y () * screen->height ();
+		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
+			screen->height ();
+
+		if (xwc->y < min)
+		    xwc->y = min;
+		else if (xwc->y > max)
+		    xwc->y = max;
+	    }
+	}
+
+	if (mask & CWX)
+	{
+	    int min, max;
+
+	    min = screen->workArea ().x () + priv->input.left;
+	    max = screen->workArea ().right ();
+
+	    if (priv->state & CompWindowStateStickyMask &&
+		(xwc->x < min || xwc->x > max))
+	    {
+		xwc->x = priv->serverGeometry.x ();
+	    }
+	    else
+	    {
+		min -= screen->vp ().x () * screen->width ();
+		max += (screen->vpSize ().width () - screen->vp ().x () - 1) *
+			screen->width ();
+
+		if (xwc->x < min)
+		    xwc->x = min;
+		else if (xwc->x > max)
+		    xwc->x = max;
+	    }
+	}
+    }
+}
 
 void
 CompWindow::resizeNotify (int dx,
@@ -2741,7 +2820,8 @@ PrivateWindow::addWindowSizeChanges (XWindowChanges       *xwc,
 unsigned int
 PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						 unsigned int   xwcm,
-						 int            gravity)
+						 int            gravity,
+						 int		direction)
 {
     int          newX, newY;
     unsigned int mask = 0;
@@ -2756,26 +2836,26 @@ PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case WestGravity:
 	case SouthWestGravity:
 	    if (xwcm & CWX)
-		newX += priv->input.left;
+		newX += priv->input.left * direction;
 	    break;
 
 	case NorthGravity:
 	case CenterGravity:
 	case SouthGravity:
 	    if (xwcm & CWX)
-		newX -= xwc->width / 2 - priv->input.left +
-			(priv->input.left + priv->input.right) / 2;
+		newX -= (xwc->width / 2 - priv->input.left +
+			(priv->input.left + priv->input.right) / 2) * direction;
 	    else
-	        newX -= (xwc->width - priv->serverGeometry.width ());
+	        newX -= (xwc->width - priv->serverGeometry.width ()) * direction;
 	    break;
 
 	case NorthEastGravity:
 	case EastGravity:
 	case SouthEastGravity:
 	    if (xwcm & CWX)
-		newX -= xwc->width + priv->input.right;
+		newX -= xwc->width + priv->input.right * direction;
 	    else
-		newX -= xwc->width - priv->serverGeometry.width ();
+		newX -= (xwc->width - priv->serverGeometry.width ()) * direction;
 	    break;
 
 	case StaticGravity:
@@ -2791,26 +2871,26 @@ PrivateWindow::adjustConfigureRequestForGravity (XWindowChanges *xwc,
 	case NorthGravity:
 	case NorthEastGravity:
 	    if (xwcm & CWY)
-		newY = xwc->y + priv->input.top;
+		newY = xwc->y + priv->input.top * direction;
 	    break;
 
 	case WestGravity:
 	case CenterGravity:
 	case EastGravity:
 	    if (xwcm & CWY)
-		newY -= xwc->height / 2 - priv->input.top +
-			(priv->input.top + priv->input.bottom) / 2;
+		newY -= (xwc->height / 2 - priv->input.top +
+			(priv->input.top + priv->input.bottom) / 2) * direction;
 	    else
-		newY -= (xwc->height - priv->serverGeometry.height ()) / 2;
+		newY -= ((xwc->height - priv->serverGeometry.height ()) / 2) * direction;
 	    break;
 
 	case SouthWestGravity:
 	case SouthGravity:
 	case SouthEastGravity:
 	    if (xwcm & CWY)
-		newY -= xwc->height + priv->input.bottom;
+		newY -= xwc->height + priv->input.bottom * direction;
 	    else
-		newY -= xwc->height - priv->serverGeometry.height ();
+		newY -= (xwc->height - priv->serverGeometry.height ()) * direction;
 	    break;
 
 	case StaticGravity:
@@ -2877,62 +2957,7 @@ CompWindow::moveResize (XWindowChanges *xwc,
 	}
     }
 
-    xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity);
-
-    if (!(priv->type & (CompWindowTypeDockMask    |
-		     CompWindowTypeFullscreenMask |
-		     CompWindowTypeUnknownMask)))
-    {
-	if (xwcm & CWY)
-	{
-	    int min, max;
-
-	    min = screen->workArea ().y () + priv->input.top;
-	    max = screen->workArea ().bottom ();
-
-	    if (priv->state & CompWindowStateStickyMask &&
-	    	 (xwc->y < min || xwc->y > max))
-	    {
-		xwc->y = priv->serverGeometry.y ();
-	    }
-	    else
-	    {
-		min -= screen->vp ().y () * screen->height ();
-		max += (screen->vpSize ().height () - screen->vp ().y () - 1) *
-			screen->height ();
-
-		if (xwc->y < min)
-		    xwc->y = min;
-		else if (xwc->y > max)
-		    xwc->y = max;
-	    }
-	}
-
-	if (xwcm & CWX)
-	{
-	    int min, max;
-
-	    min = screen->workArea ().x () + priv->input.left;
-	    max = screen->workArea ().right ();
-
-	    if (priv->state & CompWindowStateStickyMask &&
-		(xwc->x < min || xwc->x > max))
-	    {
-		xwc->x = priv->serverGeometry.x ();
-	    }
-	    else
-	    {
-		min -= screen->vp ().x () * screen->width ();
-		max += (screen->vpSize ().width () - screen->vp ().x () - 1) *
-			screen->width ();
-
-		if (xwc->x < min)
-		    xwc->x = min;
-		else if (xwc->x > max)
-		    xwc->x = max;
-	    }
-	}
-    }
+    xwcm |= priv->adjustConfigureRequestForGravity (xwc, xwcm, gravity, 1);
 
     validateResizeRequest (xwcm, xwc, source);
 
@@ -3151,10 +3176,10 @@ CompWindow::lower ()
        the click-to-focus option is on */
     if ((screen->getOption ("click_to_focus")->value ().b ()))
     {
-	Window aboveId = next ? next->id () : None;
+	Window aboveWindowId = prev ? prev->id () : None;
 	screen->unhookWindow (this);
 	CompWindow *focusedWindow = screen->priv->focusTopMostWindow ();
-	screen->insertWindow (this , aboveId);
+	screen->insertWindow (this , aboveWindowId);
 
 	/* if the newly focused window is a desktop window,
 	   give the focus back to w */
@@ -3190,6 +3215,21 @@ PrivateWindow::findValidStackSiblingBelow (CompWindow *w,
 					   CompWindow *sibling)
 {
     CompWindow *lowest, *last, *p;
+
+    /* check whether we're allowed to stack under a sibling by finding
+     * the above 'sibling' and checking whether or not we're allowed
+     * to stack under that - if not, then there is no valid sibling
+     * underneath it */
+
+    for (p = sibling; p; p = p->next)
+    {
+	if (!avoidStackingRelativeTo (p))
+	{
+	    if (!validSiblingBelow (p, w))
+		return NULL;
+	    break;
+	}
+    }
 
     /* get lowest sibling we're allowed to stack above */
     lowest = last = findLowestSiblingBelow (w);
@@ -3289,14 +3329,19 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 		if (p->priv->id == screen->activeWindow ())
 		    break;
 
-	    /* window is above active window so we should lower it */
-	    if (p)
+	    /* window is above active window so we should lower it,
+	     * assuing that is allowed (if, for example, our window has
+	     * the "above" state, then lowering beneath the active
+	     * window may not be allowed). */
+	    if (p && PrivateWindow::validSiblingBelow (p, this))
+	    {
 		p = PrivateWindow::findValidStackSiblingBelow (sibling, p);
 
-	    /* if we found a valid sibling under the active window, it's
-	       our new sibling we want to stack above */
-	    if (p)
-		sibling = p;
+		/* if we found a valid sibling under the active window, it's
+		   our new sibling we want to stack above */
+		if (p)
+		    sibling = p;
+	    }
 	}
 
 	mask |= priv->addWindowStackChanges (&xwc, sibling);
@@ -4587,13 +4632,13 @@ PrivateWindow::processMap ()
 	XWindowChanges xwc;
 	unsigned int   xwcm;
 
-	/* adjust for gravity */
+	/* adjust for gravity, but only for frame size */
 	xwc.x      = priv->serverGeometry.x ();
 	xwc.y      = priv->serverGeometry.y ();
-	xwc.width  = priv->serverGeometry.width ();
-	xwc.height = priv->serverGeometry.height ();
+	xwc.width  = 0;
+	xwc.height = 0;
 
-	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity);
+	xwcm = adjustConfigureRequestForGravity (&xwc, CWX | CWY, gravity, 1);
 
 	window->validateResizeRequest (xwcm, &xwc, ClientTypeApplication);
 
