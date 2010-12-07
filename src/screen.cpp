@@ -841,6 +841,8 @@ PrivateScreen::updatePlugins ()
     /* Add initial plugins */
     foreach (CompString &p, initialPlugins)
     {
+	if (p == "core")
+	    continue;
 	pList.at (j).set (p);
 	j++;
     }
