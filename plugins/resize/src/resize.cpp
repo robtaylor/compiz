@@ -352,7 +352,7 @@ resizeInitiate (CompAction         *action,
 
 	    /* Update yConstrained and workArea at grab time */
 	    pMove = CompPlugin::find ("move");
-
+	    rs->yConstrained = false;
 	    if (pMove)
 	    {
 		CompOption::Vector &options = pMove->vTable->getOptions ();
