@@ -729,16 +729,50 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
-	if (mask & ResizeUpMask && yConstrained)
+	if (mask & ResizeUpMask)
 	{
 	    int decorTop = savedGeometry.y + savedGeometry.height -
-			   (he + w->input ().top);
+			   (che + w->input ().top);
 
-	    if (grabWindowWorkArea->y () > decorTop)
+	    if (yConstrained)
 	    {
-		/* constrain to workarea */
-		he -= grabWindowWorkArea->y () - decorTop;
+		if (grabWindowWorkArea->y () > decorTop)
+		{
+		    /* constrain to workarea */
+		    che -= grabWindowWorkArea->y () - decorTop;
+		}
 	    }
+	    else if (decorTop <  0)
+	    {
+		/* constrain to screen */
+		che += decorTop;
+	    }
+	}
+
+	/* constrain to screen */
+	if (mask & ResizeDownMask)
+	{
+	    int decorBottom = savedGeometry.y + che + w->input ().bottom;
+
+	    if (decorBottom > screen->height ())
+		che -= decorBottom = screen->height ();
+	}
+
+	if (mask & ResizeLeftMask)
+	{
+	    int decorLeft = savedGeometry.x + savedGeometry.width -
+			(cwi + w->input ().left);
+
+	    if (decorLeft < 0)
+		cwi += decorLeft;
+	}
+
+	if (mask & ResizeRightMask)
+	{
+	    int decorRight = savedGeometry.x + cwi + w->input ().right;
+
+	    if (decorRight > screen->width ())
+		w -= decorRight - screen->width ();
 	}
 
 	wi = cwi;
