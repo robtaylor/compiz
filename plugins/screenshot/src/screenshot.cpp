@@ -84,6 +84,9 @@ ShotScreen::terminate (CompAction            *action,
 
 	::screen->handleEventSetEnabled (this, false);
 
+	if (state & CompAction::StateCancel)
+	    mGrab = false;
+
 	if (mX1 != mX2 && mY1 != mY2)
 	{
 	    int x1 = MIN (mX1, mX2) - 1;
