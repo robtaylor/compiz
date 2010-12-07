@@ -3192,6 +3192,21 @@ PrivateWindow::findValidStackSiblingBelow (CompWindow *w,
 {
     CompWindow *lowest, *last, *p;
 
+    /* check whether we're allowed to stack under a sibling by finding
+     * the above 'sibling' and checking whether or not we're allowed
+     * to stack under that - if not, then there is no valid sibling
+     * underneath it */
+
+    for (p = sibling->next; p; p = p->next)
+    {
+	if (!avoidStackingRelativeTo (p))
+	{
+	    if (!validSiblingBelow (sibling, w))
+		return NULL;
+	    break;
+	}
+    }
+
     /* get lowest sibling we're allowed to stack above */
     lowest = last = findLowestSiblingBelow (w);
 
