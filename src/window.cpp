@@ -3329,14 +3329,19 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 		if (p->priv->id == screen->activeWindow ())
 		    break;
 
-	    /* window is above active window so we should lower it */
-	    if (p)
+	    /* window is above active window so we should lower it,
+	     * assuing that is allowed (if, for example, our window has
+	     * the "above" state, then lowering beneath the active
+	     * window may not be allowed). */
+	    if (p && PrivateWindow::validSiblingBelow (p, this))
+	    {
 		p = PrivateWindow::findValidStackSiblingBelow (sibling, p);
 
-	    /* if we found a valid sibling under the active window, it's
-	       our new sibling we want to stack above */
-	    if (p)
-		sibling = p;
+		/* if we found a valid sibling under the active window, it's
+		   our new sibling we want to stack above */
+		if (p)
+		    sibling = p;
+	    }
 	}
 
 	mask |= priv->addWindowStackChanges (&xwc, sibling);
