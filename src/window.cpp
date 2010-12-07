@@ -3197,11 +3197,11 @@ PrivateWindow::findValidStackSiblingBelow (CompWindow *w,
      * to stack under that - if not, then there is no valid sibling
      * underneath it */
 
-    for (p = sibling->next; p; p = p->next)
+    for (p = sibling; p; p = p->next)
     {
 	if (!avoidStackingRelativeTo (p))
 	{
-	    if (!validSiblingBelow (sibling, w))
+	    if (!validSiblingBelow (p, w))
 		return NULL;
 	    break;
 	}
