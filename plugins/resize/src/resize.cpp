@@ -258,22 +258,20 @@ getPointForTp (unsigned int tp, unsigned int output, int &op, int &wap)
  * */
 
 static int
-getOutputForEdge (int windowOutput, unsigned int touch)
+getOutputForEdge (int windowOutput, unsigned int touch, bool skipFirst)
 {
     int op, wap;
-    int ret = 0;
+    int ret = windowOutput;
 
     getPointForTp (touch, windowOutput, op, wap);
 
-    if (op == wap)
+    if ((op == wap) || skipFirst)
     {
 	int co = windowOutput;
 
 	do
 	{
 	    int oco = co;
-
-	    getPointForTp (touch, co, op, wap);
 
 	    co = findTouchingOutput (op, touch);
 
@@ -286,6 +284,8 @@ getOutputForEdge (int windowOutput, unsigned int touch)
 		break;
 	    }
 
+	    getPointForTp (touch, co, op, wap);
+
 	    /* There is something in the way here.... */
 	    if (op != wap)
 	    {
@@ -295,6 +295,8 @@ getOutputForEdge (int windowOutput, unsigned int touch)
 	}
         while (co != -1);
     }
+
+    fprintf (stderr, "constraining to %i\n", ret);
 
     return ret;
 }
@@ -473,6 +475,14 @@ resizeInitiate (CompAction         *action,
 	    {
 		int output = w->outputDevice ();
 		int lco, tco, bco, rco;
+		bool sl = screen->outputDevs ().at (output).workArea ().left () >
+			  w->serverGeometry ().left ();
+		bool sr = screen->outputDevs ().at (output).workArea ().right () <
+			  w->serverGeometry ().right ();
+		bool st = screen->outputDevs ().at (output).workArea ().top () >
+			  w->serverGeometry ().top ();
+		bool sb = screen->outputDevs ().at (output).workArea ().bottom () <
+			  w->serverGeometry ().bottom ();
 
 		lco = tco = bco = rco = output;
 
@@ -481,10 +491,10 @@ resizeInitiate (CompAction         *action,
 		   and not with a key (e.g. alt+button) */
 		rs->offWorkAreaConstrained = true;
 
-		tco = getOutputForEdge (output, TOUCH_BOTTOM);
-		bco = getOutputForEdge (output, TOUCH_TOP);
-		lco = getOutputForEdge (output, TOUCH_LEFT);
-		rco = getOutputForEdge (output, TOUCH_TOP);
+		lco = getOutputForEdge (output, TOUCH_RIGHT, sl);
+		rco = getOutputForEdge (output, TOUCH_LEFT, sr);
+		tco = getOutputForEdge (output, TOUCH_BOTTOM, st);
+		bco = getOutputForEdge (output, TOUCH_TOP, sb);
 
 		/* Now we need to form one big rect which describes
 		 * the available workarea */
