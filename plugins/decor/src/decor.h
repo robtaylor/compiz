@@ -228,6 +228,9 @@ class DecorWindow :
 
 	CompTimer resizeUpdate;
 	CompTimer moveUpdate;
+
+	bool	  unshading;
+	bool	  shading;
 };
 
 class DecorPluginVTable :

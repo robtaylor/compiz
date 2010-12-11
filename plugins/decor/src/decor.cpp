@@ -1247,10 +1247,28 @@ DecorWindow::updateWindowRegions ()
 void
 DecorWindow::windowNotify (CompWindowNotify n)
 {
-    if (n == CompWindowNotifyReparent)
+    switch (n)
     {
-	DecorWindow::get (window)->update (true);
-	window->windowNotifySetEnabled (this, false);
+	case CompWindowNotifyReparent:
+	    update (true);
+	/* We get the notification for shade before the window is
+	 * actually resized which means that calling update ->
+	 * damageOutputExtents here will not do anything useful for us
+	 * so we need to track when windows are (un)shading and then wait
+	 * for the following resize notification to actually
+	 * update their decoration (since at this point they would have
+	 * been resized)
+	 */
+	case CompWindowNotifyShade:
+	    shading = true;
+	    unshading = false;
+	    break;
+	case CompWindowNotifyUnshade:
+	    unshading = true;
+	    shading = false;
+	    break;
+	default:
+	    break;
     }
 
     window->windowNotify (n);
@@ -1625,6 +1643,13 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
 bool
 DecorWindow::resizeTimeout ()
 {
+    if (shading || unshading)
+    {
+	shading = false;
+	unshading = false;
+
+	updateDecoration ();
+    }
     update (true);
     return false;
 }
@@ -1778,7 +1803,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     outputFrame (None),
     pixmapFailed (false),
     regions (),
-    updateReg (true)
+    updateReg (true),
+    unshading (false)
 {
     WindowInterface::setHandler (window);
 
