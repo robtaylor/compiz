@@ -176,7 +176,9 @@ CompManager::parseArguments (int argc, char **argv)
 }
 
 CompManager::CompManager () :
-    disableSm (false)
+    disableSm (false),
+    clientId (NULL),
+    displayName (NULL)
 {
 }
 
