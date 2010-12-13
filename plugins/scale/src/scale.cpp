@@ -1418,7 +1418,7 @@ PrivateScaleScreen::hoverTimeout ()
 void
 PrivateScaleScreen::handleEvent (XEvent *event)
 {
-    CompWindow *w;
+    CompWindow *w = NULL;
 
     switch (event->type) {
 	case KeyPress:
@@ -1577,10 +1577,12 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 
     switch (event->type) {
 	case UnmapNotify:
-	    windowRemove (w);
+	    if (w)
+		windowRemove (w);
 	    break;
 	case DestroyNotify:
-	    windowRemove (w);
+	    if (w)
+		windowRemove (w);
 	    break;
     }
 }

@@ -1040,8 +1040,8 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    /* only constrain movement if previous position was valid */
 	    if (inRegionStatus)
 	    {
-		bool xStatus;
-		int yForXResize;
+		bool xStatus = false;
+		int yForXResize = y;
 		int nx = x;
 		int nw = wi;
 		int nh = he;
@@ -1636,7 +1636,7 @@ ResizeScreen::optionChanged (CompOption		    *option,
 			     ResizeOptions::Options num)
 {
     int *mask = NULL;
-    int valueMask;
+    int valueMask = 0;
 
     switch (num)
     {
