@@ -1254,6 +1254,7 @@ DecorWindow::windowNotify (CompWindowNotify n)
     {
 	case CompWindowNotifyReparent:
 	    update (true);
+	    break;
 	/* We get the notification for shade before the window is
 	 * actually resized which means that calling update ->
 	 * damageOutputExtents here will not do anything useful for us
