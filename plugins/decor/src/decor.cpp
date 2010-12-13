@@ -1255,15 +1255,15 @@ DecorWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyReparent:
 	    update (true);
 	    break;
-	/* We get the notification for shade before the window is
-	 * actually resized which means that calling update ->
-	 * damageOutputExtents here will not do anything useful for us
-	 * so we need to track when windows are (un)shading and then wait
-	 * for the following resize notification to actually
-	 * update their decoration (since at this point they would have
-	 * been resized)
-	 */
 	case CompWindowNotifyShade:
+	    /* We get the notification for shade before the window is
+	     * actually resized which means that calling update ->
+	     * damageOutputExtents here will not do anything useful for us
+	     * so we need to track when windows are (un)shading and then wait
+	     * for the following resize notification to actually
+	     * update their decoration (since at this point they would have
+	     * been resized)
+	     */
 	    shading = true;
 	    unshading = false;
 	    break;
