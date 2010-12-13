@@ -108,7 +108,9 @@ macro (_prepare_directories)
 	set (PLUGIN_PKGDIR    ${libdir}/pkgconfig)
 	set (PLUGIN_XMLDIR    ${datadir}/compiz)
 
-
+	if (NOT "${CMAKE_BUILD_TYPE}")
+	     set (CMAKE_BUILD_TYPE "RelWithDebInfo" CACHE STRING "Build type (Debug/Release/RelWithDebInfo/MinSizeRe)" FORCE)
+	endif (NOT "${CMAKE_BUILD_TYPE}")
     elseif ("${COMPIZ_PLUGIN_INSTALL_TYPE}" STREQUAL "compiz" OR
 	    "$ENV{BUILD_GLOBAL}" STREQUAL "true")
 	set (PLUGIN_BUILDTYPE global)
