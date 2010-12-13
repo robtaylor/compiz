@@ -647,7 +647,10 @@ DecorWindow::shiftY ()
 static bool
 decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 {
+    CompOption::Vector o;
+    o.resize (0);
     w->configureXWindow (mask, &xwc);
+    screen->handleCompizEvent ("decor", "window_decorated", o);
     return false;
 }
 
