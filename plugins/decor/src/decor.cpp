@@ -648,7 +648,11 @@ static bool
 decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 {
     CompOption::Vector o;
-    o.resize (0);
+    o.resize (1);
+
+    o.at (0).setName ("window", CompOption::TypeInt);
+    o.at (0).value ().set ((int) w->id ());
+
     w->configureXWindow (mask, &xwc);
     screen->handleCompizEvent ("decor", "window_decorated", o);
     return false;
