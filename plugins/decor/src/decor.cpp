@@ -647,7 +647,14 @@ DecorWindow::shiftY ()
 static bool
 decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 {
+    CompOption::Vector o;
+    o.resize (1);
+
+    o.at (0).setName ("window", CompOption::TypeInt);
+    o.at (0).value ().set ((int) w->id ());
+
     w->configureXWindow (mask, &xwc);
+    screen->handleCompizEvent ("decor", "window_decorated", o);
     return false;
 }
 
@@ -1251,15 +1258,16 @@ DecorWindow::windowNotify (CompWindowNotify n)
     {
 	case CompWindowNotifyReparent:
 	    update (true);
-	/* We get the notification for shade before the window is
-	 * actually resized which means that calling update ->
-	 * damageOutputExtents here will not do anything useful for us
-	 * so we need to track when windows are (un)shading and then wait
-	 * for the following resize notification to actually
-	 * update their decoration (since at this point they would have
-	 * been resized)
-	 */
+	    break;
 	case CompWindowNotifyShade:
+	    /* We get the notification for shade before the window is
+	     * actually resized which means that calling update ->
+	     * damageOutputExtents here will not do anything useful for us
+	     * so we need to track when windows are (un)shading and then wait
+	     * for the following resize notification to actually
+	     * update their decoration (since at this point they would have
+	     * been resized)
+	     */
 	    shading = true;
 	    unshading = false;
 	    break;
