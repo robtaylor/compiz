@@ -18,6 +18,7 @@ list (APPEND _PluginExtensionFiles
 
 if (USE_GCONF)
     list (APPEND _files CompizGconf.cmake)
+    list (APPEND _PluginExtensionFiles plugin_extensions/CompizGenGconf.cmake)
 endif (USE_GCONF)
 
 install (

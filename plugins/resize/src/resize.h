@@ -148,7 +148,7 @@ class ResizeScreen :
 	CompSize   lastGoodSize;
 
 	bool		 offWorkAreaConstrained;
-	const CompRect   *grabWindowWorkArea;
+	CompRect   *grabWindowWorkArea;
 };
 
 class ResizeWindow :
