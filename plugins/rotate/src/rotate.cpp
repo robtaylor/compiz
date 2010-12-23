@@ -196,6 +196,7 @@ RotateScreen::preparePaint (int msSinceLastPaint)
 
 		if (fabs (mYrot) < 0.1f)
 		{
+		    CompOption::Vector o (0);
 		    float xrot;
 		    int   tx;
 
@@ -237,6 +238,8 @@ RotateScreen::preparePaint (int msSinceLastPaint)
 			screen->focusDefaultWindow ();
 
 		    mMoveWindow = 0;
+
+		    screen->handleCompizEvent ("rotate", "end_viewport_switch", o);
 		}
 		break;
 	    }
@@ -386,6 +389,7 @@ RotateScreen::initiate (CompAction         *action,
 			CompAction::State  state,
 			CompOption::Vector &options)
 {
+    CompOption::Vector o (0);
 
     if (screen->vpSize ().width () < 2)
 	return false;
@@ -411,6 +415,8 @@ RotateScreen::initiate (CompAction         *action,
 	cubeScreen->rotationState (CubeScreen::RotationManual);
     else
 	cubeScreen->rotationState (CubeScreen::RotationChange);
+
+    screen->handleCompizEvent ("rotate", "start_viewport_switch", o);
 
     if (!mGrabIndex)
     {
