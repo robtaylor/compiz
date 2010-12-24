@@ -1036,18 +1036,19 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
     {
 	SCALE_SCREEN (::screen);
 
-	if (ss->priv->state != ScaleScreen::Wait &&
-	    ss->priv->state != ScaleScreen::Out)
-	{
-	    ss->priv->type = type;
-	    return ss->priv->scaleInitiateCommon (action, state, options);
-	}
-	else if (ss->priv->actionShouldToggle (action, state))
+	if (ss->priv->actionShouldToggle (action, state) &&
+	    (ss->priv->state == ScaleScreen::Wait ||
+	     ss->priv->state == ScaleScreen::Out))
 	{
 	    if (ss->priv->type == type)
 		return scaleTerminate (action,
 				       CompAction::StateCancel,
 				       options);
+	}
+	else
+	{
+	    ss->priv->type = type;
+	    return ss->priv->scaleInitiateCommon (action, state, options);
 	}
     }
 
