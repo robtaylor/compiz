@@ -1438,8 +1438,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ButtonPress:
-	    if (event->xbutton.button == Button1       &&
-		screen->root () == event->xbutton.root &&
+	    if (screen->root () == event->xbutton.root &&
 		grabIndex                              &&
 		state != ScaleScreen::In)
 	    {
@@ -1449,12 +1448,16 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		o.push_back (CompOption ("root", CompOption::TypeInt));
 		o[0].value ().set ((int) screen->root ());
 
-		if (selectWindowAt (button->x_root, button->y_root, true))
+		/* Button1 terminates scale mode, other buttons can select
+		 * windows */
+		if (selectWindowAt (button->x_root, button->y_root, true) &&
+		    event->xbutton.button == Button1)
 		{
 		    scaleTerminate (&optionGetInitiateEdge (), 0, o);
 		    scaleTerminate (&optionGetInitiateKey (), 0, o);
 		}
-		else if (optionGetShowDesktop ())
+		else if (optionGetShowDesktop () &&
+			 event->xbutton.button == Button1)
 		{
 		    CompPoint pointer (button->x_root, button->y_root);
 		    CompRect  workArea (screen->workArea ());

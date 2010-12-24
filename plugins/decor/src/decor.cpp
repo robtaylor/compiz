@@ -647,8 +647,7 @@ DecorWindow::shiftY ()
 static bool
 decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 {
-    CompOption::Vector o;
-    o.resize (1);
+    CompOption::Vector o (1);
 
     o.at (0).setName ("window", CompOption::TypeInt);
     o.at (0).value ().set ((int) w->id ());
