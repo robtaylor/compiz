@@ -127,6 +127,9 @@ moveInitiate (CompAction      *action,
 
 	    w->grabNotify (x, y, mods, grabMask);
 
+	    if (screen->getOption ("raise_on_click")->value ().b ())
+		w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
+
 	    if (state & CompAction::StateInitKey)
 	    {
 		int xRoot, yRoot;
