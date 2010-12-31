@@ -351,11 +351,12 @@ CompScreen::finiPluginForScreen (CompPlugin *p)
 bool
 CompPlugin::screenInitPlugins (CompScreen *s)
 {
-    CompPlugin::List::iterator it = plugins.begin ();
+    CompPlugin::List::reverse_iterator it = plugins.rbegin ();
 
     CompPlugin *p = NULL;
 
-    while (it != plugins.end ())
+    /* Plugins is a btf list, so iterate it in reverse */
+    while (it != plugins.rend ())
     {
 	p = (*it);
 
