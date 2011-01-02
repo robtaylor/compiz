@@ -1084,8 +1084,10 @@ CompScreen::handleEvent (XEvent *event)
 		if (!w->overrideRedirect ())
 		    priv->setWmState (WithdrawnState, w->id ());
 
-		w->priv->placed = false;
+		w->priv->placed     = false;
+		w->priv->managed    = false;
 		w->priv->unmanaging = true;
+
 		if (w->priv->frame)
 		{
 		    w->priv->unreparent ();
@@ -1397,36 +1399,38 @@ CompScreen::handleEvent (XEvent *event)
 		unsigned int   xwcm = 0;
 		XWindowChanges xwc;
 		int            gravity;
+		int	       value_mask;
 		unsigned int   source;
+
+		gravity = (event->xclient.data.l[0] & 0xFF);		
+		value_mask = (event->xclient.data.l[0] & 0xF00) >> 8;
+		source = (event->xclient.data.l[0] & 0xF000) >> 12;
 
 		memset (&xwc, 0, sizeof (xwc));
 
-		if (event->xclient.data.l[0] & (1 << 8))
+		if (value_mask & CWX)
 		{
 		    xwcm |= CWX;
 		    xwc.x = event->xclient.data.l[1];
 		}
 
-		if (event->xclient.data.l[0] & (1 << 9))
+		if (value_mask & CWY)
 		{
 		    xwcm |= CWY;
 		    xwc.y = event->xclient.data.l[2];
 		}
 
-		if (event->xclient.data.l[0] & (1 << 10))
+		if (value_mask & CWWidth)
 		{
 		    xwcm |= CWWidth;
 		    xwc.width = event->xclient.data.l[3];
 		}
 
-		if (event->xclient.data.l[0] & (1 << 11))
+		if (value_mask & CWHeight)
 		{
 		    xwcm |= CWHeight;
 		    xwc.height = event->xclient.data.l[4];
 		}
-
-		gravity = event->xclient.data.l[0] & 0xFF;
-		source  = (event->xclient.data.l[0] >> 12) & 0xF;
 
 		w->moveResize (&xwc, xwcm, gravity, source);
 	    }
