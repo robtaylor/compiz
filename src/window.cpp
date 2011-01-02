@@ -1345,7 +1345,7 @@ CompWindow::unmap ()
     if (priv->unmapRefCnt > 0)
 	return;
 
-    if (priv->managed && !priv->placed)
+    if (priv->unmanaging)
     {
 	XWindowChanges xwc;
 	unsigned int   xwcm;
@@ -1364,7 +1364,7 @@ CompWindow::unmap ()
 	if (xwcm)
 	    configureXWindow (xwcm, &xwc);
 
-	priv->managed = false;
+	priv->unmanaging = false;
     }
 
     if (priv->struts)

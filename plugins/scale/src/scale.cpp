@@ -908,9 +908,6 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 
     Window xid;
 
-    action->setState (action->state () & ~(CompAction::StateTermKey |
-					   CompAction::StateTermButton));
-
     if (ss->priv->actionShouldToggle (action, state))
 	return false;
 
@@ -966,6 +963,9 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 	ss->priv->state = ScaleScreen::In;
 	ss->priv->cScreen->damageScreen ();
     }
+
+    if (state & CompAction::StateInitKey)
+	action->setState (action->state () | CompAction::StateTermKey);
 
     ss->priv->lastActiveNum = 0;
 
@@ -1036,18 +1036,19 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
     {
 	SCALE_SCREEN (::screen);
 
-	if (ss->priv->state != ScaleScreen::Wait &&
-	    ss->priv->state != ScaleScreen::Out)
-	{
-	    ss->priv->type = type;
-	    return ss->priv->scaleInitiateCommon (action, state, options);
-	}
-	else if (ss->priv->actionShouldToggle (action, state))
+	if (ss->priv->actionShouldToggle (action, state) &&
+	    (ss->priv->state == ScaleScreen::Wait ||
+	     ss->priv->state == ScaleScreen::Out))
 	{
 	    if (ss->priv->type == type)
 		return scaleTerminate (action,
 				       CompAction::StateCancel,
 				       options);
+	}
+	else
+	{
+	    ss->priv->type = type;
+	    return ss->priv->scaleInitiateCommon (action, state, options);
 	}
     }
 

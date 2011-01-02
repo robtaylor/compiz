@@ -452,6 +452,9 @@ resizeInitiate (CompAction         *action,
 
 	    w->grabNotify (x, y, state, grabMask);
 
+	    if (screen->getOption ("raise_on_click")->value ().b ())
+		w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
+
 	    /* using the paint rectangle is enough here
 	       as we don't have any stretch yet */
 	    rs->getPaintRectangle (&box);
