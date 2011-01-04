@@ -245,10 +245,11 @@ CompScreen::getFileWatches () const
 CompTimeoutSource::CompTimeoutSource () :
     Glib::Source ()
 {
-    struct timeval tv;
+    struct timespec ts;
 
-    gettimeofday (&tv, 0);
-    mLastTimeout = tv;
+    clock_gettime (CLOCK_MONOTONIC, &ts);
+
+    mLastTimeout = ts;
 
     set_priority (G_PRIORITY_HIGH);
     attach (screen->priv->ctx);
@@ -276,9 +277,9 @@ CompTimeoutSource::create ()
 bool
 CompTimeoutSource::prepare (int &timeout)
 {
-    struct timeval tv;
+    struct timespec ts;
 
-    gettimeofday (&tv, 0);
+    clock_gettime (CLOCK_MONOTONIC, &ts);
 
     /* Determine time to wait */
 
@@ -311,12 +312,12 @@ CompTimeoutSource::prepare (int &timeout)
 	    it++;
 	}
 
-	mLastTimeout = tv;
+	mLastTimeout = ts;
 	return false;
     }
     else
     {
-	mLastTimeout = tv;
+	mLastTimeout = ts;
 	timeout = 0;
 	return true;
     }
@@ -325,11 +326,11 @@ CompTimeoutSource::prepare (int &timeout)
 bool
 CompTimeoutSource::check ()
 {
-    struct timeval tv;
-    int		   timeDiff;
+    struct timespec ts;
+    int		    timeDiff;
 
-    gettimeofday (&tv, 0);
-    timeDiff = TIMEVALDIFF (&tv, &mLastTimeout);
+    clock_gettime (CLOCK_MONOTONIC, &ts);
+    timeDiff = TIMESPECDIFF (&ts, &mLastTimeout);
 
     if (timeDiff < 0)
 	timeDiff = 0;
@@ -4827,7 +4828,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopHintSize (0),
     initialized (false)
 {
-    memset (history, 0, sizeof (history));
     gettimeofday (&lastTimeout, 0);
 
     pingTimer.setCallback (
