@@ -139,15 +139,3 @@ CompTimer::active ()
 {
     return mActive;
 }
-
-void
-CompTimer::tick ()
-{
-    gettimeofday (&tickStart, 0);
-}
-
-const struct timeval &
-CompTimer::tickInfo () const
-{
-    return tickStart;
-}

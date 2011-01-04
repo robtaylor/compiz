@@ -91,7 +91,6 @@ class CompTimeoutSource :
     private:
 
 	struct timeval mLastTimeout;
-	Glib::PollFD   pfd;
 
     friend class CompTimer;
     friend class PrivateScreen;

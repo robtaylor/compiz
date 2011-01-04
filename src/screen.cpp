@@ -250,9 +250,6 @@ CompTimeoutSource::CompTimeoutSource () :
     gettimeofday (&tv, 0);
     mLastTimeout = tv;
 
-    pfd.set_fd (ConnectionNumber (screen->dpy ()));
-    pfd.set_events (Glib::IO_IN);
-
     set_priority (G_PRIORITY_HIGH);
     attach (screen->priv->ctx);
     connect (sigc::mem_fun <bool, CompTimeoutSource> (this, &CompTimeoutSource::callback));
@@ -285,12 +282,16 @@ CompTimeoutSource::prepare (int &timeout)
 
     if (screen->priv->timers.empty ())
     {
-	add_poll (pfd);
-	timeout = -1;
-	return false;
+	/* This kind of sucks, but we have to do it, considering
+	 * that glib provides us no safe way to remove the source -
+	 * thankfully we shouldn't ever be hitting this case since
+	 * we create the source after we start pingTimer
+	 * and that doesn't stop until compiz does
+	 */
+
+	timeout = 0;
+	return true;
     }
-    else
-	remove_poll (pfd);
 
     if (screen->priv->timers.front ()->mMinLeft > 0)
     {
