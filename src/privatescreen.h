@@ -70,6 +70,33 @@ class CompWatchFd :
     friend class CompScreen;
 };
 
+class CompTimeoutSource :
+    public Glib::Source
+{
+    public:
+
+	static Glib::RefPtr <CompTimeoutSource> create  ();
+	sigc::connection connect (const sigc::slot <bool> &slot);
+
+    protected:
+
+	bool prepare (int &timeout);
+	bool check ();
+	bool dispatch (sigc::slot_base *slot);
+	bool callback ();
+
+	explicit CompTimeoutSource ();
+	virtual ~CompTimeoutSource ();
+
+    private:
+
+	struct timeval mLastTimeout;
+	Glib::PollFD   pfd;
+
+    friend class CompTimer;
+    friend class PrivateScreen;
+};
+
 extern CompWindow *lastFoundWindow;
 extern bool	  useDesktopHints;
 
@@ -356,13 +383,14 @@ class PrivateScreen : public CoreOptions {
 
 	Glib::RefPtr <Glib::MainLoop>  mainloop;
 	Glib::RefPtr <CompEventSource> source;
+	Glib::RefPtr <CompTimeoutSource> timeout;
 	Glib::RefPtr <Glib::MainContext> ctx;
 
 	CompFileWatchList   fileWatch;
 	CompFileWatchHandle lastFileWatchHandle;
 
-	std::list <int> 	     removedTimers;
-	struct timeval               lastTimeout;
+	std::list <CompTimer *> timers;
+	struct timeval         lastTimeout;
 
 	std::list<Glib::RefPtr <CompWatchFd> > watchFds;
 	CompWatchFdHandle        lastWatchFdHandle;

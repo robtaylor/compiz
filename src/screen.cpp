@@ -182,6 +182,7 @@ CompScreen::eventLoop ()
     priv->ctx = Glib::MainContext::get_default ();
     priv->mainloop = Glib::MainLoop::create (priv->ctx, false);
     priv->source = CompEventSource::create ();
+    priv->timeout = CompTimeoutSource::create ();
 
     priv->source->attach (priv->ctx);
 
@@ -190,7 +191,6 @@ CompScreen::eventLoop ()
 
     priv->mainloop->run ();
 }
-
 CompFileWatchHandle
 CompScreen::addFileWatch (const char        *path,
 			  int               mask,
@@ -242,87 +242,165 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
-/* TODO: move this code to timer.cpp */
+CompTimeoutSource::CompTimeoutSource () :
+    Glib::Source ()
+{
+    struct timeval tv;
+
+    gettimeofday (&tv, 0);
+    mLastTimeout = tv;
+
+    pfd.set_fd (ConnectionNumber (screen->dpy ()));
+    pfd.set_events (Glib::IO_IN);
+
+    set_priority (G_PRIORITY_HIGH);
+    attach (screen->priv->ctx);
+    connect (sigc::mem_fun <bool, CompTimeoutSource> (this, &CompTimeoutSource::callback));
+}
+
+CompTimeoutSource::~CompTimeoutSource ()
+{
+}
+
+sigc::connection
+CompTimeoutSource::connect (const sigc::slot <bool> &slot)
+{
+    return connect_generic (slot);
+}
+
+Glib::RefPtr <CompTimeoutSource>
+CompTimeoutSource::create ()
+{
+    return Glib::RefPtr <CompTimeoutSource> (new CompTimeoutSource ());
+}
 
 bool
-CompTimer::internalCallback (unsigned int id)
+CompTimeoutSource::prepare (int &timeout)
 {
-    bool result;
+    struct timeval tv;
 
-    /* Detect when the timer is still going and the internal
-     * object has been freed */
-    if (!screen->priv->removedTimers.empty ())
+    gettimeofday (&tv, 0);
+
+    /* Determine time to wait */
+
+    if (screen->priv->timers.empty ())
     {
-	if (std::find (screen->priv->removedTimers.begin (),
-		       screen->priv->removedTimers.end (),
-		       id) != screen->priv->removedTimers.end ())
-	{
-	    screen->priv->removedTimers.remove (id);
-	    return false;
-	}
-    }
-
-    if (!mActive)
-        return false;
-
-    mForceFail = false;
-    mExecuting = true;
-
-    result = mCallBack ();
-
-    mExecuting = false;
-
-    if (mForceFail)
+	add_poll (pfd);
+	timeout = -1;
 	return false;
+    }
+    else
+	remove_poll (pfd);
 
-    if (result)
+    if (screen->priv->timers.front ()->mMinLeft > 0)
     {
-        tick ();
-	return true;
+	std::list<CompTimer *>::iterator it = screen->priv->timers.begin ();
+
+	CompTimer *t = (*it);
+	timeout = t->mMaxLeft;
+	while (it != screen->priv->timers.end ())
+	{
+	    t = (*it);
+	    if (t->mMinLeft >= timeout)
+		break;
+	    if (t->mMaxLeft < timeout)
+		timeout = t->mMaxLeft;
+	    it++;
+	}
+
+	mLastTimeout = tv;
+	return false;
     }
     else
     {
-        if (mSource)
-	    mSource.reset ();
-	return false;
+	mLastTimeout = tv;
+	timeout = 0;
+	return true;
     }
+}
+
+bool
+CompTimeoutSource::check ()
+{
+    struct timeval tv;
+    int		   timeDiff;
+
+    gettimeofday (&tv, 0);
+    timeDiff = TIMEVALDIFF (&tv, &mLastTimeout);
+
+    if (timeDiff < 0)
+	timeDiff = 0;
+
+    foreach (CompTimer *t, screen->priv->timers)
+    {
+	t->mMinLeft -= timeDiff;
+	t->mMaxLeft -= timeDiff;
+    }
+
+    return screen->priv->timers.front ()->mMinLeft <= 0;
+}
+
+bool
+CompTimeoutSource::dispatch (sigc::slot_base *slot)
+{
+    (*static_cast <sigc::slot <bool> *> (slot)) ();
+
+    return true;
+}
+
+bool
+CompTimeoutSource::callback ()
+{
+    while (screen->priv->timers.begin () != screen->priv->timers.end () &&
+	   screen->priv->timers.front ()->mMinLeft <= 0)
+    {
+	CompTimer *t = screen->priv->timers.front ();
+	screen->priv->timers.pop_front ();
+
+	t->mActive = false;
+	if (t->mCallBack ())
+	{
+	    screen->priv->addTimer (t);
+	    t->mActive = true;
+	}
+    }
+
+    return !screen->priv->timers.empty ();
 }
 
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
-    unsigned int time = timer->mMinTime;
-    unsigned int id;
+    std::list<CompTimer *>::iterator it;
 
-    if (timer->mSource)
-        return;
+    it = std::find (timers.begin (), timers.end (), timer);
 
-    timer->mSource = Glib::TimeoutSource::create (time);
+    if (it != timers.end ())
+	return;
 
-    if (timer->mSource)
+    for (it = timers.begin (); it != timers.end (); it++)
     {
-	timer->mSource->attach (priv->ctx);
-	id = g_source_get_id (timer->mSource->gobj ());
-	removedTimers.remove (id);
-	timer->mSource->connect (sigc::bind <unsigned int>(sigc::mem_fun (timer, &CompTimer::internalCallback), id));
-	timer->tick ();
+	if ((int) timer->mMinTime < (*it)->mMinLeft)
+	    break;
     }
-    else
-	timer->mActive = false;
+
+    timer->mMinLeft = timer->mMinTime;
+    timer->mMaxLeft = timer->mMaxTime;
+
+    timers.insert (it, timer);
 }
 
 void
 PrivateScreen::removeTimer (CompTimer *timer)
 {
-    if (!timer->mSource)
-        return;
+    std::list<CompTimer *>::iterator it;
 
-    if (timer->mExecuting)
-	timer->mForceFail = true;
+    it = std::find (timers.begin (), timers.end (), timer);
 
-    removedTimers.push_back (g_source_get_id (timer->mSource->gobj ()));
+    if (it == timers.end ())
+	return;
 
-    timer->mSource.reset (); /* This will NULL the pointer */
+    timers.erase (it);
 }
 
 CompWatchFd::CompWatchFd (int		    fd,

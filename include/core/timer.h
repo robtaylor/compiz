@@ -29,9 +29,9 @@
 #include <boost/function.hpp>
 #include <sys/time.h>
 #include <core/core.h>
-
 #include <glibmm/main.h>
 
+class CompTimeoutSource;
 /**
  * A simple timer for use with invoking a CallBack during a timed duration.
  */
@@ -97,12 +97,9 @@ class CompTimer {
 	 */
 	void stop ();
 
-        void tick ();
-
-	const struct timeval & tickInfo () const;
-
 	friend class CompScreen;
 	friend class PrivateScreen;
+	friend class CompTimeoutSource;
 
     private:
 	bool         mActive;
@@ -112,13 +109,7 @@ class CompTimer {
 	int          mMaxLeft;
 
     private:
-	CallBack     mCallBack;
-	bool	     mForceFail;
-	bool	     mExecuting;
-	struct timeval tickStart;
-
-	bool 	     internalCallback (unsigned int);
-	Glib::RefPtr <Glib::TimeoutSource> mSource;
+	CallBack      mCallBack;
 
 };
 

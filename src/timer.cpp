@@ -33,17 +33,13 @@ CompTimer::CompTimer () :
     mMaxTime (0),
     mMinLeft (0),
     mMaxLeft (0),
-    mCallBack (NULL),
-    mForceFail (false),
-    mExecuting (false),
-    mSource (NULL)
+    mCallBack (NULL)
 {
 }
 
 CompTimer::~CompTimer ()
 {
-    if (mActive)
-	screen->priv->removeTimer (this);
+    screen->priv->removeTimer (this);
 }
 
 void
@@ -65,11 +61,13 @@ CompTimer::setCallback (CompTimer::CallBack callback)
     bool wasActive = mActive;
     if (mActive)
 	stop ();
+
     mCallBack = callback;
 
     if (wasActive)
 	start ();
 }
+
 
 void
 CompTimer::start ()
@@ -83,10 +81,8 @@ CompTimer::start ()
 	return;
     }
 
-    if (!mActive)
-	screen->priv->addTimer (this);
-
     mActive = true;
+    screen->priv->addTimer (this);
 }
 
 void
@@ -110,10 +106,8 @@ CompTimer::start (CompTimer::CallBack callback,
 void
 CompTimer::stop ()
 {
-    if (mActive)
-	screen->priv->removeTimer (this);
-
     mActive = false;
+    screen->priv->removeTimer (this);
 }
 
 unsigned int
@@ -131,25 +125,13 @@ CompTimer::maxTime ()
 unsigned int
 CompTimer::minLeft ()
 {
-    struct timeval current;
-    int left;
-
-    gettimeofday (&current, 0);
-    left = mMinTime - TIMEVALDIFF (&current, &tickStart);
-
-    return (left < 0)? 0 : (unsigned int) left;
+    return (mMinLeft < 0)? 0 : mMinLeft;
 }
 
 unsigned int
 CompTimer::maxLeft ()
 {
-    struct timeval current;
-    int left;
-
-    gettimeofday (&current, 0);
-    left = mMaxTime - TIMEVALDIFF (&current, &tickStart);
-
-    return (left < 0)? 0 : (unsigned int) left;
+    return (mMaxLeft < 0)? 0 : mMaxLeft;
 }
 
 bool
