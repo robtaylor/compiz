@@ -271,6 +271,8 @@ CompTimeoutSource::create ()
     return Glib::RefPtr <CompTimeoutSource> (new CompTimeoutSource ());
 }
 
+#define COMPIZ_TIMEOUT_WAIT 15
+
 bool
 CompTimeoutSource::prepare (int &timeout)
 {
@@ -289,7 +291,7 @@ CompTimeoutSource::prepare (int &timeout)
 	 * and that doesn't stop until compiz does
 	 */
 
-	timeout = 0;
+	timeout = COMPIZ_TIMEOUT_WAIT;
 	return true;
     }
 
