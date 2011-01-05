@@ -961,6 +961,7 @@ CompScreen::handleEvent (XEvent *event)
     WRAPABLE_HND_FUNC (6, handleEvent, event)
 
     CompWindow *w;
+    XWindowAttributes wa;
 
     switch (event->type) {
     case ButtonPress:
@@ -1020,13 +1021,21 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case CreateNotify:
+	XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa);
 	w = findTopLevelWindow (event->xcreatewindow.window, true);
 
-        if (event->xcreatewindow.parent == priv->root &&
+	if (event->xcreatewindow.parent == wa.root &&
 	    (!w || w->frame () != event->xcreatewindow.window))
 	{
-	    new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
-	}
+	    /* Track the window if it was created on this
+	     * screen, otherwise we still need to register
+	     * for FocusChangeMask */
+	    if (wa.root == priv->root)
+		new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
+	    else
+		XSelectInput (priv->dpy, event->xcreatewindow.window,
+		FocusChangeMask);
+	}   
 	break;
     case DestroyNotify:
 	w = findWindow (event->xdestroywindow.window);
@@ -1127,27 +1136,26 @@ CompScreen::handleEvent (XEvent *event)
 	    w->priv->circulate (&event->xcirculate);
 	break;
     case ButtonPress:
-	if (event->xbutton.root == priv->root)
+	if (event->xbutton.button == Button1 ||
+	    event->xbutton.button == Button2 ||
+	    event->xbutton.button == Button3)
 	{
-	    if (event->xbutton.button == Button1 ||
-		event->xbutton.button == Button2 ||
-		event->xbutton.button == Button3)
+	    w = findTopLevelWindow (event->xbutton.window);
+	    if (w)
 	    {
-		w = findTopLevelWindow (event->xbutton.window);
-		if (w)
-		{
-		    if (priv->optionGetRaiseOnClick ())
-			w->updateAttributes (
-					CompStackingUpdateModeAboveFullscreen);
+		if (priv->optionGetRaiseOnClick ())
+		w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
 
+	        if (w->id () != priv->activeWindow)
 		    if (!(w->type () & CompWindowTypeDockMask))
-			w->moveInputFocusTo ();
-		}
+			if (w->focus ())
+			    w->moveInputFocusTo ();
 	    }
-
-	    if (priv->grabs.empty ())
-		XAllowEvents (priv->dpy, ReplayPointer, event->xbutton.time);
 	}
+
+	if (priv->grabs.empty ())
+	    XAllowEvents (priv->dpy, ReplayPointer, event->xbutton.time);
+
 	break;
     case PropertyNotify:
 	if (event->xproperty.atom == Atoms::winType)
@@ -1640,37 +1648,48 @@ CompScreen::handleEvent (XEvent *event)
     case CirculateRequest:
 	break;
     case FocusIn:
-	if (event->xfocus.mode != NotifyGrab)
+	XGetWindowAttributes (priv->dpy, event->xfocus.window, &wa);
+
+	if (wa.root == priv->root)
 	{
-	    w = findTopLevelWindow (event->xfocus.window);
-	    if (w && w->managed ())
+	    if (event->xfocus.mode != NotifyGrab)
 	    {
-		unsigned int state = w->state ();
-
-		if (w->id () != priv->activeWindow)
+		w = findTopLevelWindow (event->xfocus.window);
+		if (w && w->managed ())
 		{
-		    w->windowNotify (CompWindowNotifyFocusChange);
+		    unsigned int state = w->state ();
 
-		    priv->activeWindow = w->id ();
-		    w->priv->activeNum = priv->activeNum++;
+		    if (w->id () != priv->activeWindow)
+		    {
+			w->windowNotify (CompWindowNotifyFocusChange);
 
-		    priv->addToCurrentActiveWindowHistory (w->id ());
+			priv->activeWindow = w->id ();
+			w->priv->activeNum = priv->activeNum++;
 
-		    XChangeProperty (priv->dpy , priv->root,
-				     Atoms::winActive,
-				     XA_WINDOW, 32, PropModeReplace,
-				     (unsigned char *) &priv->activeWindow, 1);
-		}
+			priv->addToCurrentActiveWindowHistory (w->id ());
 
-		state &= ~CompWindowStateDemandsAttentionMask;
-		w->changeState (state);
+			XChangeProperty (priv->dpy , priv->root,
+					 Atoms::winActive,
+					 XA_WINDOW, 32, PropModeReplace,
+					 (unsigned char *) &priv->activeWindow, 1);
+		    }
 
-		if (priv->nextActiveWindow == event->xfocus.window)
-		    priv->nextActiveWindow = None;
+		    state &= ~CompWindowStateDemandsAttentionMask;
+		    w->changeState (state);
+
+		    if (priv->nextActiveWindow == event->xfocus.window)
+			priv->nextActiveWindow = None;
+	        }
 	    }
+	    else
+		priv->grabbed = true;
 	}
 	else
-	    priv->grabbed = true;
+	{
+	    priv->nextActiveWindow = None;
+	    priv->activeWindow = None;
+	}
+
 	break;
     case FocusOut:
 	if (event->xfocus.mode == NotifyUngrab)

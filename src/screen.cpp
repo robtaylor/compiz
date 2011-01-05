@@ -4383,6 +4383,24 @@ CompScreen::init (const char *name)
 		  FocusChangeMask          |
 		  ExposureMask);
 
+    /* We need to register for EnterWindowMask |
+     * ButtonPressMask | FocusChangeMask on other
+     * root windows as well because focus happens
+     * on a display level and we need to check
+     * if the screen we are running on lost focus */
+
+    for (unsigned int i = 0; i <= ScreenCount (dpy) - 1; i++)
+    {
+	Window rt = XRootWindow (dpy, i);
+
+	if (rt == root)
+	    continue;
+
+	XSelectInput (dpy, rt,
+		      FocusChangeMask |
+		      SubstructureNotifyMask);
+    }
+
     if (CompScreen::checkForError (dpy))
     {
 	compLogMessage ("core", CompLogLevelError,
