@@ -551,6 +551,7 @@ class CompWindow :
 	friend class PrivateWindow;
 	friend class CompScreen;
 	friend class PrivateScreen;
+	friend class ModifierHandler;
 
     private:
 	PrivateWindow *priv;

@@ -191,6 +191,8 @@ class PrivateWindow {
 
 	void processMap ();
 
+	void updatePassiveButtonGrabs ();
+
 	void setFullscreenMonitors (CompFullscreenMonitorSet *monitors);
 
 	static unsigned int windowTypeFromString (const char *str);

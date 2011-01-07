@@ -1651,6 +1651,7 @@ void
 PrivateWindow::configureFrame (XConfigureEvent *ce)
 {
     int x, y, width, height;
+    CompWindow	     *above;
 
     if (!priv->frame)
 	return;
@@ -1674,7 +1675,13 @@ PrivateWindow::configureFrame (XConfigureEvent *ce)
 	window->resize (x, y, width, height, ce->border_width);
     }
 
-    priv->restack (ce->above);
+    if (priv->restack (ce->above))
+	priv->updatePassiveButtonGrabs ();
+
+    above = screen->findWindow (ce->above);
+
+    if (above)
+	above->priv->updatePassiveButtonGrabs ();
 }
 
 void
@@ -4680,6 +4687,108 @@ PrivateWindow::processMap ()
 	window->moveInputFocusTo ();
 }
 
+/*
+ * PrivateWindow::updatePassiveButtonGrabs
+ *
+ * Updates the passive button grabs for a window. When
+ * one of the specified button + modifier combinations
+ * for this window is activated, compiz will be given
+ * an active grab for the window (which we can turn off
+ * by calling XAllowEvents later in ::handleEvent)
+ *
+ * NOTE: ICCCM says that we are only allowed to grab
+ * windows that we actually own as a client, so only
+ * grab the frame window. Additionally, although there
+ * isn't anything in the ICCCM that says we cannot
+ * grab every button, some clients do not interpret
+ * EnterNotify and LeaveNotify events caused by the
+ * activation of the grab correctly, so ungrab button
+ * and modifier combinations that we do not need on
+ * active windows (but in reality we shouldn't be grabbing
+ * for buttons that we don't actually need at that point
+ * anyways)
+ */
+
+void
+PrivateWindow::updatePassiveButtonGrabs ()
+{
+    bool onlyActions = (priv->id == screen->priv->activeWindow ||
+			!screen->priv->optionGetClickToFocus ());
+
+    if (!priv->frame)
+	return;
+
+    /* Ungrab everything */
+    XUngrabButton (screen->priv->dpy, AnyButton, AnyModifier, frame);
+
+    /* We don't need the full grab in the following cases:
+     * - This window has the focus and either
+     *   - it is raised or
+     *   - we don't want click raise
+     */
+
+    if (onlyActions)
+    {
+	if (screen->priv->optionGetRaiseOnClick ())
+	{
+	    for (CompWindow *above = window->next;
+		above != NULL; above = above->next)
+	    {
+		if (above->priv->attrib.map_state != IsViewable)
+		    continue;
+
+		if (above->type () & CompWindowTypeDockMask)
+		    continue;
+
+		if (above->region ().intersects (region))
+		{
+		    onlyActions = false;
+		    break;
+		}
+	    }
+	}
+    }
+
+    if (onlyActions)
+    {
+	/* Grab only we have bindings on */
+	foreach (PrivateScreen::ButtonGrab &bind, screen->priv->buttonGrabs)
+	{
+	    for (unsigned int ignore = 0;
+		     ignore <= modHandler->ignoredModMask (); ignore++)
+	    {
+		if (ignore & ~modHandler->ignoredModMask ())
+		{
+		    XGrabButton (screen->priv->dpy,
+				bind.button,
+				bind.modifiers | ignore,
+				frame,
+				false,
+				ButtonPressMask | ButtonReleaseMask |
+				    ButtonMotionMask,
+				GrabModeSync,
+				GrabModeAsync,
+				None,
+				None);
+		}
+	    }
+	}
+    }
+    else
+    {
+	/* Grab everything */
+	XGrabButton (screen->priv->dpy,
+		     AnyButton,
+		     AnyModifier,
+		     frame, false,
+		     ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
+		     GrabModeSync,
+		     GrabModeAsync,
+		     None,
+		     None);
+    }
+}
+
 
 const CompRegion &
 CompWindow::region () const
@@ -5052,10 +5161,6 @@ CompWindow::CompWindow (Window id,
 		  FocusChangeMask);
 
     priv->id = id;
-
-    XGrabButton (screen->dpy (), AnyButton, AnyModifier, priv->id, true,
-		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-		 GrabModeSync, GrabModeSync, None, None);
 
     priv->alpha     = (depth () == 32);
     priv->lastPong  = screen->priv->lastPing;
@@ -5608,17 +5713,27 @@ PrivateWindow::reparent ()
 			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, visual, mask, &attr);
 
-    XGrabButton (dpy, AnyButton, AnyModifier, frame, true,
-		 ButtonPressMask | ButtonReleaseMask | ButtonMotionMask,
-		 GrabModeSync, GrabModeSync, None, None);
-
     XMapWindow (dpy, wrapper);
     XReparentWindow (dpy, id, wrapper, 0, 0);
 
     attr.event_mask = PropertyChangeMask | FocusChangeMask |
 		      EnterWindowMask | LeaveWindowMask;
-    attr.do_not_propagate_mask = ButtonPressMask | ButtonReleaseMask |
-				 ButtonMotionMask;
+
+    /* We don't care about client events on the frame, and listening for them
+     * will probably end up fighting the client anyways, so disable them */
+    attr.do_not_propagate_mask = KeyPressMask | KeyReleaseMask |
+				 ButtonPressMask | ButtonReleaseMask |
+				 EnterWindowMask | LeaveWindowMask |
+				 PointerMotionMask | PointerMotionHintMask |
+				 Button1MotionMask | Button2MotionMask |
+				 Button3MotionMask | Button4MotionMask |
+				 Button5MotionMask | ButtonMotionMask |
+				 KeymapStateMask | ExposureMask |
+				 VisibilityChangeMask | StructureNotifyMask |
+				 ResizeRedirectMask | SubstructureNotifyMask |
+				 SubstructureRedirectMask | FocusChangeMask |
+				 PropertyChangeMask | ColormapChangeMask |
+				 OwnerGrabButtonMask;
 
     XChangeWindowAttributes (dpy, id, CWEventMask | CWDontPropagate, &attr);
 

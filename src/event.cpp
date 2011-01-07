@@ -1144,7 +1144,7 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w)
 	    {
 		if (priv->optionGetRaiseOnClick ())
-		w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
+		    w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
 
 	        if (w->id () != priv->activeWindow)
 		    if (!(w->type () & CompWindowTypeDockMask))
@@ -1661,10 +1661,16 @@ CompScreen::handleEvent (XEvent *event)
 
 		    if (w->id () != priv->activeWindow)
 		    {
+			CompWindow *active = screen->findWindow (priv->activeWindow);
 			w->windowNotify (CompWindowNotifyFocusChange);
 
 			priv->activeWindow = w->id ();
 			w->priv->activeNum = priv->activeNum++;
+
+			if (active)
+			    active->priv->updatePassiveButtonGrabs ();
+
+			w->priv->updatePassiveButtonGrabs ();
 
 			priv->addToCurrentActiveWindowHistory (w->id ());
 
@@ -1686,8 +1692,15 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	else
 	{
+	    CompWindow *w;
+
+	    w = screen->findWindow (priv->activeWindow);
+
 	    priv->nextActiveWindow = None;
 	    priv->activeWindow = None;
+
+	    if (w)
+		w->priv->updatePassiveButtonGrabs ();
 	}
 
 	break;

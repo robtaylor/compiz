@@ -3039,6 +3039,9 @@ PrivateScreen::addPassiveButtonGrab (CompAction::ButtonBinding &button)
 
     buttonGrabs.push_back (newButtonGrab);
 
+    foreach (CompWindow *w, screen->windows ())
+	w->priv->updatePassiveButtonGrabs ();
+
     return true;
 }
 
@@ -3057,6 +3060,9 @@ PrivateScreen::removePassiveButtonGrab (CompAction::ButtonBinding &button)
 		return;
 
 	    it = buttonGrabs.erase (it);
+
+	    foreach (CompWindow *w, screen->windows ())
+		w->priv->updatePassiveButtonGrabs ();
 	}
     }
 }
