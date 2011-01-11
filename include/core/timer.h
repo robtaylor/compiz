@@ -29,7 +29,9 @@
 #include <boost/function.hpp>
 #include <sys/time.h>
 #include <core/core.h>
+#include <glibmm/main.h>
 
+class CompTimeoutSource;
 /**
  * A simple timer for use with invoking a CallBack during a timed duration.
  */
@@ -38,18 +40,18 @@ class CompTimer {
     public:
 
 	typedef boost::function<bool ()> CallBack;
-	
+
 	/**
 	 * Empty constructor setting everything to zero and NULL.
 	 */
 	CompTimer ();
-	
+
 	/**
 	 * Frees the private data for this timer and any information about it's
 	 * context.
 	 */
 	~CompTimer ();
-	
+
 	/**
 	 * Checks if this timer is active and will have it's CallBack invoked.
 	 */
@@ -58,50 +60,46 @@ class CompTimer {
 	unsigned int maxTime ();
 	unsigned int minLeft ();
 	unsigned int maxLeft ();
-	
+
 	/**
 	 * Sets the timing durations of this timer.
 	 */
 	void setTimes (unsigned int min, unsigned int max = 0);
-	
+
 	/**
 	 * Sets the callback function to invoke for this timer. This defaults
 	 * to NULL.
 	 */
 	void setCallback (CallBack callback);
-	
+
 	/**
 	 * Starts this timer without modifying any of it's parameters. The timer is
 	 * stop()'d before this occurs.
 	 */
 	void start ();
-	
+
 	/**
 	 * Starts this timer setting the paramters with setTimes(). The timer is stop()'d
 	 * before this occurs.
 	 */
 	void start (unsigned int min, unsigned int max = 0);
-	
+
 	/**
 	 * Starts this timer setting the parameters with setTimes() and setCallback(). The timer is
 	 * stop()'d before this occurs.
 	 */
 	void start (CallBack callback,
 		    unsigned int min, unsigned int max = 0);
-	
+
 	/**
 	 * Stops this timer. After this the timer should not be active() and it's CallBack shouldn't
 	 * be invoked.
 	 */
 	void stop ();
 
-        void tick ();
-	
-	const struct timeval & tickInfo () const;
-
 	friend class CompScreen;
 	friend class PrivateScreen;
-	friend gboolean onTimerTimeout (CompTimer *);
+	friend class CompTimeoutSource;
 
     private:
 	bool         mActive;
@@ -111,9 +109,7 @@ class CompTimer {
 	int          mMaxLeft;
 
     private:
-	CallBack     mCallBack;
-	unsigned int mId;
-	struct timeval tickStart;
+	CallBack      mCallBack;
 
 };
 

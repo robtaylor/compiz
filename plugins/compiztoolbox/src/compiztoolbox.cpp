@@ -397,7 +397,7 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 			      int                       height2)
 {
     if (!openGLAvailable)
-	return;    
+	return;
 
     GLWindowPaintAttrib  sAttrib (attrib);
     IconMode             iconMode;
@@ -687,7 +687,7 @@ BaseSwitchScreen::BaseSwitchScreen (CompScreen *screen) :
     selectWinAtom = PropertyWriter (CompString (DECOR_SWITCH_WINDOW_ATOM_NAME),
     				    atomTemplate);
 
-    selectFgColorAtom = 
+    selectFgColorAtom =
     	XInternAtom (::screen->dpy (),
     		     DECOR_SWITCH_FOREGROUND_COLOR_ATOM_NAME, 0);
 

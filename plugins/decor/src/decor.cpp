@@ -647,7 +647,13 @@ DecorWindow::shiftY ()
 static bool
 decorOffsetMove (CompWindow *w, XWindowChanges xwc, unsigned int mask)
 {
+    CompOption::Vector o (1);
+
+    o.at (0).setName ("window", CompOption::TypeInt);
+    o.at (0).value ().set ((int) w->id ());
+
     w->configureXWindow (mask, &xwc);
+    screen->handleCompizEvent ("decor", "window_decorated", o);
     return false;
 }
 
@@ -669,7 +675,7 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->managed ();
+		decorate = window->frame () ? true : false;
 	default:
 	    break;
     }
@@ -783,36 +789,11 @@ DecorWindow::update (bool allowDecoration)
     {
 	XWindowChanges xwc;
 	unsigned int   mask = CWX | CWY;
-	int	       out = screen->outputDeviceForGeometry (window->serverGeometry ());
-	const CompRect &workArea =
-	screen->outputDevs ().at (out).workArea ();
 
 	memset (&xwc, 0, sizeof (XWindowChanges));
 
 	xwc.x = window->serverGeometry ().x () + moveDx;
 	xwc.y = window->serverGeometry ().y () + moveDy;
-
-	/* Constrain to workArea */
-
-
-	if (!workArea.contains (CompRect (xwc.x - window->input ().left,
-					  xwc.y - window->input ().top,
-					  window->inputRect ().width (),
-					  window->inputRect ().height ())))
-	{
-	    int tx = MIN (0, xwc.x - window->input ().left - workArea.x ());
-	    int ty = MIN (0, xwc.y - window->input ().top - workArea.y ());
-
-	    if (!fabs (tx))
-		tx = MIN (0, workArea.x2 () -
-			  (xwc.x + window->width () + window->input ().right));
-	    if (!fabs (ty))
-		ty = MIN (0, workArea.y2 () -
-			  (xwc.y + window->height () + window->input ().bottom));
-
-	    xwc.x += tx;
-	    xwc.y += ty;
-	}
 
 	if (window->state () & CompWindowStateFullscreenMask)
 	    mask &= ~(CWX | CWY);
@@ -830,7 +811,21 @@ DecorWindow::update (bool allowDecoration)
 	    window->saveWc ().y += moveDy;
 
 	if (mask)
-	    moveUpdate.start (boost::bind (decorOffsetMove, window, xwc, mask), 0);
+	{
+	    /* allowDecoration is only false in the case of
+	     * the destructor calling the update function so since it
+	     * is not safe to put the function in a timer (since
+	     * it will get unref'd on the vtable destruction) we
+	     * need to do it immediately
+	     *
+	     * FIXME: CompTimer should really be PIMPL and allow
+	     * refcounting in case we need to keep it alive
+	     */
+	    if (!allowDecoration)
+		decorOffsetMove (window, xwc, mask);
+	    else
+		moveUpdate.start (boost::bind (decorOffsetMove, window, xwc, mask), 0);
+	}
     }
 
     return true;
@@ -1256,6 +1251,37 @@ DecorWindow::updateWindowRegions ()
 }
 
 void
+DecorWindow::windowNotify (CompWindowNotify n)
+{
+    switch (n)
+    {
+	case CompWindowNotifyReparent:
+	    update (true);
+	    break;
+	case CompWindowNotifyShade:
+	    /* We get the notification for shade before the window is
+	     * actually resized which means that calling update ->
+	     * damageOutputExtents here will not do anything useful for us
+	     * so we need to track when windows are (un)shading and then wait
+	     * for the following resize notification to actually
+	     * update their decoration (since at this point they would have
+	     * been resized)
+	     */
+	    shading = true;
+	    unshading = false;
+	    break;
+	case CompWindowNotifyUnshade:
+	    unshading = true;
+	    shading = false;
+	    break;
+	default:
+	    break;
+    }
+
+    window->windowNotify (n);
+}
+
+void
 DecorScreen::handleEvent (XEvent *event)
 {
     Window  activeWindow = screen->activeWindow ();
@@ -1269,11 +1295,6 @@ DecorScreen::handleEvent (XEvent *event)
 		if (w->id () == dmWin)
 		    checkForDm (true);
 	    }
-	    break;
-	case MapRequest:
-	    w = screen->findWindow (event->xdestroywindow.window);
-	    if (w)
-		DecorWindow::get (w)->update (true);
 	    break;
 	case ClientMessage:
 	    if (event->xclient.message_type == requestFrameExtentsAtom)
@@ -1629,6 +1650,13 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
 bool
 DecorWindow::resizeTimeout ()
 {
+    if (shading || unshading)
+    {
+	shading = false;
+	unshading = false;
+
+	updateDecoration ();
+    }
     update (true);
     return false;
 }
@@ -1782,7 +1810,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     outputFrame (None),
     pixmapFailed (false),
     regions (),
-    updateReg (true)
+    updateReg (true),
+    unshading (false)
 {
     WindowInterface::setHandler (window);
 

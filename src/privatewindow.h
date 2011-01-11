@@ -172,7 +172,8 @@ class PrivateWindow {
 
 	unsigned int adjustConfigureRequestForGravity (XWindowChanges *xwc,
 						       unsigned int   xwcm,
-						       int            gravity);
+						       int            gravity,
+						       int	      direction);
 
 	void updateSize ();
 
@@ -189,6 +190,8 @@ class PrivateWindow {
 	void updateStartupId ();
 
 	void processMap ();
+
+	void updatePassiveButtonGrabs ();
 
 	void setFullscreenMonitors (CompFullscreenMonitorSet *monitors);
 
@@ -239,6 +242,7 @@ class PrivateWindow {
 	bool         invisible;
 	bool         destroyed;
 	bool         managed;
+	bool	     unmanaging;
 
 	int destroyRefCnt;
 	int unmapRefCnt;

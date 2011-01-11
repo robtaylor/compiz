@@ -57,10 +57,12 @@ bool useDesktopHints = false;
 bool debugOutput = false;
 bool useCow = true;
 
+std::list <CompString> initialPlugins;
+
 unsigned int pluginClassHandlerIndex = 0;
 
-static void
-usage (void)
+void
+CompManager::usage ()
 {
     printf ("Usage: %s "
 	    "[--replace] "
@@ -99,35 +101,20 @@ signalHandler (int sig)
     }
 }
 
-int
-main (int argc, char **argv)
+bool
+CompManager::parseArguments (int argc, char **argv)
 {
-    char                    *displayName = 0;
-    std::vector<CompString> plugins;
-    int	                    i;
-    bool                    disableSm = false;
-    char                    *clientId = NULL;
-
-    programName = argv[0];
-    programArgc = argc;
-    programArgv = argv;
-
-    signal (SIGHUP, signalHandler);
-    signal (SIGCHLD, signalHandler);
-    signal (SIGINT, signalHandler);
-    signal (SIGTERM, signalHandler);
-
-    for (i = 1; i < argc; i++)
+    for (int i = 1; i < argc; i++)
     {
 	if (!strcmp (argv[i], "--help"))
 	{
 	    usage ();
-	    return 0;
+	    return false;
 	}
 	else if (!strcmp (argv[i], "--version"))
 	{
 	    printf (PACKAGE_STRING "\n");
-	    return 0;
+	    return false;
 	}
 	else if (!strcmp (argv[i], "--debug"))
 	{
@@ -183,14 +170,36 @@ main (int argc, char **argv)
 	}
     }
 
+    initialPlugins = plugins;
+
+    return true;
+}
+
+CompManager::CompManager () :
+    disableSm (false),
+    clientId (NULL),
+    displayName (NULL)
+{
+}
+
+bool
+CompManager::init ()
+{
     screen = new CompScreen ();
-    if (!screen)
-	return 1;
+
+    if (!screen || !screen->priv)
+	return false;
+
+    if (screen->priv->createFailed ())
+    {
+	delete screen;
+	return false;
+    }
 
     modHandler = new ModifierHandler ();
 
     if (!modHandler)
-	return 1;
+	return false;
 
     if (!plugins.empty ())
     {
@@ -210,21 +219,59 @@ main (int argc, char **argv)
 	    o->set (value);
     }
 
-    if (!screen->init (displayName))
-	return 1;
+    screen->priv->dirtyPluginList = true;
+    screen->priv->updatePlugins ();
 
-    modHandler->updateModifierMappings ();
+    if (!screen->init (displayName))
+	return false;
 
     if (!disableSm)
 	CompSession::init (clientId);
 
-    screen->eventLoop ();
+    return true;
+}
 
+void
+CompManager::run ()
+{
+    screen->eventLoop ();
+}
+
+void
+CompManager::fini ()
+{
     if (!disableSm)
 	CompSession::close ();
 
     delete screen;
     delete modHandler;
+}
+
+
+
+int
+main (int argc, char **argv)
+{
+    CompManager		    manager;
+
+    programName = argv[0];
+    programArgc = argc;
+    programArgv = argv;
+
+    signal (SIGHUP, signalHandler);
+    signal (SIGCHLD, signalHandler);
+    signal (SIGINT, signalHandler);
+    signal (SIGTERM, signalHandler);
+
+    if (!manager.parseArguments (argc, argv))
+	return 0;
+
+    if (!manager.init ())
+	return 1;
+
+    manager.run ();
+
+    manager.fini ();
 
     if (restartSignal)
     {

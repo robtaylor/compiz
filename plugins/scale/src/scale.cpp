@@ -908,9 +908,6 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 
     Window xid;
 
-    action->setState (action->state () & ~(CompAction::StateTermKey |
-					   CompAction::StateTermButton));
-
     if (ss->priv->actionShouldToggle (action, state))
 	return false;
 
@@ -966,6 +963,9 @@ PrivateScaleScreen::scaleTerminate (CompAction         *action,
 	ss->priv->state = ScaleScreen::In;
 	ss->priv->cScreen->damageScreen ();
     }
+
+    if (state & CompAction::StateInitKey)
+	action->setState (action->state () | CompAction::StateTermKey);
 
     ss->priv->lastActiveNum = 0;
 
@@ -1036,18 +1036,19 @@ PrivateScaleScreen::scaleInitiate (CompAction         *action,
     {
 	SCALE_SCREEN (::screen);
 
-	if (ss->priv->state != ScaleScreen::Wait &&
-	    ss->priv->state != ScaleScreen::Out)
-	{
-	    ss->priv->type = type;
-	    return ss->priv->scaleInitiateCommon (action, state, options);
-	}
-	else if (ss->priv->actionShouldToggle (action, state))
+	if (ss->priv->actionShouldToggle (action, state) &&
+	    (ss->priv->state == ScaleScreen::Wait ||
+	     ss->priv->state == ScaleScreen::Out))
 	{
 	    if (ss->priv->type == type)
 		return scaleTerminate (action,
 				       CompAction::StateCancel,
 				       options);
+	}
+	else
+	{
+	    ss->priv->type = type;
+	    return ss->priv->scaleInitiateCommon (action, state, options);
 	}
     }
 
@@ -1348,9 +1349,8 @@ ScaleScreen::relayoutSlots (const CompMatch& match)
 }
 
 void
-PrivateScaleScreen::windowRemove (Window id)
+PrivateScaleScreen::windowRemove (CompWindow *w)
 {
-    CompWindow *w = screen->findWindow (id);
     if (!w)
 	return;
 
@@ -1419,6 +1419,8 @@ PrivateScaleScreen::hoverTimeout ()
 void
 PrivateScaleScreen::handleEvent (XEvent *event)
 {
+    CompWindow *w = NULL;
+
     switch (event->type) {
 	case KeyPress:
 	    if (screen->root () == event->xkey.root)
@@ -1437,8 +1439,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    }
 	    break;
 	case ButtonPress:
-	    if (event->xbutton.button == Button1       &&
-		screen->root () == event->xbutton.root &&
+	    if (screen->root () == event->xbutton.root &&
 		grabIndex                              &&
 		state != ScaleScreen::In)
 	    {
@@ -1448,12 +1449,16 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 		o.push_back (CompOption ("root", CompOption::TypeInt));
 		o[0].value ().set ((int) screen->root ());
 
-		if (selectWindowAt (button->x_root, button->y_root, true))
+		/* Button1 terminates scale mode, other buttons can select
+		 * windows */
+		if (selectWindowAt (button->x_root, button->y_root, true) &&
+		    event->xbutton.button == Button1)
 		{
 		    scaleTerminate (&optionGetInitiateEdge (), 0, o);
 		    scaleTerminate (&optionGetInitiateKey (), 0, o);
 		}
-		else if (optionGetShowDesktop ())
+		else if (optionGetShowDesktop () &&
+			 event->xbutton.button == Button1)
 		{
 		    CompPoint pointer (button->x_root, button->y_root);
 		    CompRect  workArea (screen->workArea ());
@@ -1483,11 +1488,23 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 				focus);
 	    }
 	    break;
+	case DestroyNotify:
+
+	    /* We need to get the CompWindow * for event->xdestroywindow.window
+	     * here because in the ::handleEvent call below that CompWindow's
+	     * id will become "1" so CompScreen::findWindow won't
+	     * be able to find teh window after that
+	     */
+
+	    w = screen->findWindow (event->xdestroywindow.window);
+	    break;
+	case UnmapNotify:
+
+	     w = screen->findWindow (event->xunmap.window);
+	     break;
 	case ClientMessage:
 	    if (event->xclient.message_type == Atoms::xdndPosition)
 	    {
-		CompWindow *w;
-
 		w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
@@ -1536,7 +1553,7 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 	    else if (event->xclient.message_type == Atoms::xdndDrop ||
 		     event->xclient.message_type == Atoms::xdndLeave)
 	    {
-		CompWindow *w = screen->findWindow (event->xclient.window);
+		w = screen->findWindow (event->xclient.window);
 		if (w)
 		{
 		    if (grab			 &&
@@ -1558,12 +1575,18 @@ PrivateScaleScreen::handleEvent (XEvent *event)
 
     screen->handleEvent (event);
 
+    /* Only safe to remove the window after all events have been
+     * handled, so that we don't get race conditions on calls
+     * to scale functions */
+
     switch (event->type) {
 	case UnmapNotify:
-	    windowRemove (event->xunmap.window);
+	    if (w)
+		windowRemove (w);
 	    break;
 	case DestroyNotify:
-	    windowRemove (event->xdestroywindow.window);
+	    if (w)
+		windowRemove (w);
 	    break;
     }
 }

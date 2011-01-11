@@ -123,7 +123,7 @@ class DecorScreen :
 
 	void checkForDm (bool);
 	bool decoratorStartTimeout ();
-	
+
 	void updateDefaultShadowProperty ();
 
     public:
@@ -178,6 +178,8 @@ class DecorWindow :
 	bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 		     const CompRegion &, unsigned int);
 
+	void windowNotify (CompWindowNotify n);
+
 	void updateDecoration ();
 
 	void setDecorationMatrices ();
@@ -226,6 +228,9 @@ class DecorWindow :
 
 	CompTimer resizeUpdate;
 	CompTimer moveUpdate;
+
+	bool	  unshading;
+	bool	  shading;
 };
 
 class DecorPluginVTable :

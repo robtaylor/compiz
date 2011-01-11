@@ -34,8 +34,9 @@
 #include <core/point.h>
 #include <core/timer.h>
 #include <core/plugin.h>
+#include <time.h>
 
-#include <glib.h>
+#include <glibmm/main.h>
 
 #include "core_options.h"
 
@@ -44,11 +45,57 @@ CompPlugin::VTable * getCoreVTable ();
 extern bool shutDown;
 extern bool restartSignal;
 
-typedef struct _CompWatchFd {
-    int               fd;
-    FdWatchCallBack   callBack;
-    CompWatchFdHandle handle;
-} CompWatchFd;
+class CompWatchFd :
+    public Glib::IOSource
+{
+    public:
+
+	static
+	Glib::RefPtr <CompWatchFd> create (int,
+					   Glib::IOCondition,
+					   FdWatchCallBack);
+
+    protected:
+
+	explicit CompWatchFd (int, Glib::IOCondition, FdWatchCallBack);
+	bool		 internalCallback (Glib::IOCondition);
+
+    private:
+
+	int		  mFd;
+	FdWatchCallBack   mCallBack;
+	CompWatchFdHandle mHandle;
+	bool		  mForceFail;
+	bool		  mExecuting;
+
+    friend class CompScreen;
+};
+
+class CompTimeoutSource :
+    public Glib::Source
+{
+    public:
+
+	static Glib::RefPtr <CompTimeoutSource> create  ();
+	sigc::connection connect (const sigc::slot <bool> &slot);
+
+    protected:
+
+	bool prepare (int &timeout);
+	bool check ();
+	bool dispatch (sigc::slot_base *slot);
+	bool callback ();
+
+	explicit CompTimeoutSource ();
+	virtual ~CompTimeoutSource ();
+
+    private:
+
+	struct timespec mLastTimeout;
+
+    friend class CompTimer;
+    friend class PrivateScreen;
+};
 
 extern CompWindow *lastFoundWindow;
 extern bool	  useDesktopHints;
@@ -57,6 +104,8 @@ extern bool inHandleEvent;
 
 extern CompScreen *targetScreen;
 extern CompOutput *targetOutput;
+
+extern std::list <CompString> initialPlugins;
 
 
 typedef struct _CompDelayedEdgeSettings
@@ -81,13 +130,6 @@ typedef struct _CompDelayedEdgeSettings
 #define SCREEN_EDGE_BOTTOMRIGHT 7
 #define SCREEN_EDGE_NUM		8
 
-#define TIMEVALDIFF(tv1, tv2)						   \
-    ((tv1)->tv_sec == (tv2)->tv_sec || (tv1)->tv_usec >= (tv2)->tv_usec) ? \
-    ((((tv1)->tv_sec - (tv2)->tv_sec) * 1000000) +			   \
-     ((tv1)->tv_usec - (tv2)->tv_usec)) / 1000 :			   \
-    ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
-     (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
-
 struct CompScreenEdge {
     Window	 id;
     unsigned int count;
@@ -102,6 +144,33 @@ struct CompStartupSequence {
     SnStartupSequence		*sequence;
     unsigned int		viewportX;
     unsigned int		viewportY;
+};
+
+class CompEventSource:
+    public Glib::Source
+{
+    public:
+
+	static
+	Glib::RefPtr <CompEventSource> create ();
+
+	sigc::connection connect (const sigc::slot <bool> &slot);
+
+    protected:
+
+	bool prepare (int &timeout);
+	bool check ();
+	bool dispatch (sigc::slot_base *slot);
+	bool callback ();
+
+	explicit CompEventSource ();
+	virtual ~CompEventSource ();
+
+    private:
+
+	Display	      *mDpy;
+	Glib::PollFD  mPollFD;
+	int	      mConnectionFD;
 };
 
 class PrivateScreen : public CoreOptions {
@@ -141,8 +210,6 @@ class PrivateScreen : public CoreOptions {
 	void removeDestroyed ();
 
 	void updatePassiveGrabs ();
-
-	int doPoll (int timeout);
 
 	void handleTimers (struct timeval *tv);
 
@@ -300,22 +367,26 @@ class PrivateScreen : public CoreOptions {
 	CompWindow *
 	focusTopMostWindow ();
 
+	bool
+	createFailed ();
+
     public:
 
 	PrivateScreen *priv;
-	
-	GMainLoop *loop;
+
+	Glib::RefPtr <Glib::MainLoop>  mainloop;
+	Glib::RefPtr <CompEventSource> source;
+	Glib::RefPtr <CompTimeoutSource> timeout;
+	Glib::RefPtr <Glib::MainContext> ctx;
 
 	CompFileWatchList   fileWatch;
 	CompFileWatchHandle lastFileWatchHandle;
 
-	std::list<CompTimer *> timers;
-	struct timeval               lastTimeout;
+	std::list <CompTimer *> timers;
+	struct timeval         lastTimeout;
 
-	std::list<CompWatchFd *> watchFds;
+	std::list<Glib::RefPtr <CompWatchFd> > watchFds;
 	CompWatchFdHandle        lastWatchFdHandle;
-	struct pollfd            *watchPollFds;
-	int                      nWatchFds;
 
 	std::map<CompString, CompPrivate> valueMap;
 
@@ -345,6 +416,7 @@ class PrivateScreen : public CoreOptions {
 	CompTimer    pingTimer;
 
 	Window activeWindow;
+	Window nextActiveWindow;
 
 	Window below;
 	char   displayString[256];
@@ -437,6 +509,30 @@ class PrivateScreen : public CoreOptions {
 	int           desktopHintSize;
 
         bool initialized;
+};
+
+class CompManager
+{
+    public:
+
+	CompManager ();
+
+	bool init ();
+	void run ();
+	void fini ();
+
+	bool parseArguments (int, char **);
+	void usage ();
+
+	static bool initPlugin (CompPlugin *p);
+	static void finiPlugin (CompPlugin *p);
+
+    private:
+
+	std::list <CompString> plugins;
+	bool		       disableSm;
+	char		       *clientId;
+	char		       *displayName;
 };
 
 #endif

@@ -146,6 +146,9 @@ class ResizeScreen :
 	bool       inRegionStatus;
 	int        lastGoodHotSpotY;
 	CompSize   lastGoodSize;
+
+	bool		 offWorkAreaConstrained;
+	CompRect   *grabWindowWorkArea;
 };
 
 class ResizeWindow :

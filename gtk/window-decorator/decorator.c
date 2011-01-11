@@ -1,5 +1,11 @@
 #include "gtk-window-decorator.h"
 
+/*
+ * get_titlebar_font
+ *
+ * Returns: PangoFontDescription * or NULL if using system font
+ * Description: Helper function to get the font for the titlebar
+ */
 static const PangoFontDescription *
 get_titlebar_font (void)
 {
@@ -11,6 +17,13 @@ get_titlebar_font (void)
 	return titlebar_font;
 }
 
+/*
+ * update_titlebar_font
+ *
+ * Returns: void
+ * Description: updates the titlebar font from the pango context, should
+ * be called whenever the gtk style or font has changed
+ */
 void
 update_titlebar_font (void)
 {
@@ -38,6 +51,56 @@ update_titlebar_font (void)
     pango_font_metrics_unref (metrics);
 }
 
+/*
+ * update_event_windows
+ *
+ * Returns: void
+ * Description: creates small "event windows" for the buttons specified to be
+ * on the titlebar by wnck. Note here that for the pixmap mode we create actual
+ * X windows but in the reparenting mode this is not possible so we create event
+ * capture boxes on the window instead. The geometry of the decoration is retrieved
+ * with wnck_window_get_client_window_geometry and adjusted for shade. Also we
+ * need to query the theme for what window positions are appropriate here.
+ *
+ * This function works on the buttons and also the small event regions that we need
+ * in order to toggle certain actions on the window decoration (eg resize, move)
+ *
+ * So your window decoration might look something like this (not to scale):
+ *
+ * -----------------------------------------------------------
+ * | rtl |                   rt                        | rtr |
+ * | --- |---------------------------------------------| --- |
+ * |     | [i][s][m]         mv              [_][M][X] |     |
+ * |     |---------------------------------------------|     |
+ * |     |                                             |     |
+ * | rl  |             window contents                 | rr  |
+ * |     |                                             |     |
+ * |     |                                             |     |
+ * | --- |---------------------------------------------| --- |
+ * | rbl |                  rb                         | rbr |
+ * -----------------------------------------------------------
+ *
+ * Where:
+ * - rtl = resize top left
+ * - rtr = resize top right
+ * - rbl = resize bottom left
+ * - rbr = resize bottom right
+ * - rt = resize top
+ * - rb = resize bottom
+ * - rl = resize left
+ * - rr = resize right
+ * - mv = "grab move" area (eg titlebar)
+ * - i = icon
+ * - s = shade
+ * - m = menu
+ * - _ = minimize
+ * - M = maximize
+ * - X = close
+ *
+ * For the reparenting mode we use button_windows[i].pos and for the pixmap mode
+ * we use buttons_windows[i].window
+ *
+ */
 void
 update_event_windows (WnckWindow *win)
 {
@@ -49,8 +112,10 @@ update_event_windows (WnckWindow *win)
 
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
+    /* Get the geometry of the client */
     wnck_window_get_client_window_geometry (win, &x0, &y0, &width, &height);
 
+    /* Shaded windows have no height - also skip some event windows */
     if (d->state & WNCK_WINDOW_STATE_SHADED)
     {
 	height = 0;
@@ -64,6 +129,7 @@ update_event_windows (WnckWindow *win)
 
     gdk_error_trap_push ();
 
+    /* [rtl, ru, rtr], [rl, mv, rr], [rbl, rb, rbr] */
     for (i = 0; i < 3; i++)
     {
 	static guint event_window_actions[3][3] = {
@@ -91,6 +157,7 @@ update_event_windows (WnckWindow *win)
 		(*theme_get_event_window_position) (d, i, j, width, height,
 						    &x, &y, &w, &h);
 
+	    /* Reparenting mode - create boxes which we monitor motionnotify on */
 	    if (d->frame_window)
 	    {
 		BoxPtr box = &d->event_windows[i][j].pos;
@@ -99,12 +166,14 @@ update_event_windows (WnckWindow *win)
 		box->y1 = y;
 		box->y2 = y + h;
 	    }
+	    /* Pixmap mode with window geometry - create small event windows */
 	    else if (!d->frame_window && w != 0 && h != 0)
 	    {
 		XMapWindow (xdisplay, d->event_windows[i][j].window);
 		XMoveResizeWindow (xdisplay, d->event_windows[i][j].window,
 				   x, y, w, h);
 	    }
+	    /* No parent and no geometry - unmap all event windows */
 	    else if (!d->frame_window)
 	    {
 		XUnmapWindow (xdisplay, d->event_windows[i][j].window);
@@ -116,6 +185,7 @@ update_event_windows (WnckWindow *win)
     if (width < ICON_SPACE + d->button_width)
 	actions = 0;
 
+    /* Above, stick, unshade and unstick are only available in wnck => 2.18.1 */
     for (i = 0; i < BUTTON_NUM; i++)
     {
 	static guint button_actions[BUTTON_NUM] = {
@@ -141,11 +211,13 @@ update_event_windows (WnckWindow *win)
 
 	};
 
+	/* Reparenting mode - if a box was set and we no longer need it reset its geometry */
 	if (d->frame_window &&
 	    button_actions[i] && !(actions & button_actions[i]))
 	{
 	    memset (&d->button_windows[i].pos, 0, sizeof (Box));
 	}
+	/* Pixmap mode - if a box was set and we no longer need it unmap its window */
 	else if (!d->frame_window &&
 		 button_actions[i] && !(actions & button_actions[i]))
 	{
@@ -153,6 +225,8 @@ update_event_windows (WnckWindow *win)
 	    continue;
 	}
 
+	/* Reparenting mode - if there is a button position for this
+	 * button then set the geometry */
 	if (d->frame_window &&
 	    (*theme_get_button_position) (d, i, width, height, &x, &y, &w, &h))
 	{
@@ -162,6 +236,8 @@ update_event_windows (WnckWindow *win)
 	    box->x2 = x + w;
 	    box->y2 = y + h;
 	}
+	/* Pixmap mode - if there is a button position for this button then map the window
+	 * and resize it to this position */
 	else if (!d->frame_window &&
 		 (*theme_get_button_position) (d, i, width, height,
 					       &x, &y, &w, &h))
@@ -180,6 +256,14 @@ update_event_windows (WnckWindow *win)
     gdk_error_trap_pop ();
 }
 
+/*
+ * wnck_window_get_real_name
+ *
+ * Returns: const char * or NULL
+ * Description: Wrapper function to either get the name of the window or
+ * return NULL
+ */
+
 #ifdef HAVE_WNCK_WINDOW_HAS_NAME
 static const char *
 wnck_window_get_real_name (WnckWindow *win)
@@ -189,6 +273,14 @@ wnck_window_get_real_name (WnckWindow *win)
 #define wnck_window_get_name wnck_window_get_real_name
 #endif
 
+/*
+ * max_window_name_width
+ *
+ * Returns: gint
+ * Description: Calculate the width of the decoration required to display
+ * the window name using pango (with 6px padding)
+ * Returns zero if window has no name.
+ */
 gint
 max_window_name_width (WnckWindow *win)
 {
@@ -196,6 +288,7 @@ max_window_name_width (WnckWindow *win)
     const gchar *name;
     gint	w;
 
+    /* Ensure that a layout is created */
     if (!d->layout)
     {
 	d->layout = pango_layout_new (pango_context);
@@ -205,10 +298,12 @@ max_window_name_width (WnckWindow *win)
 	pango_layout_set_wrap (d->layout, PANGO_WRAP_CHAR);
     }
 
+    /* Return zero if window has no name */
     name = wnck_window_get_name (win);
     if (!name)
 	return 0;
 
+    /* Reset the width, set hte text and get the size required */
     pango_layout_set_auto_dir (d->layout, FALSE);
     pango_layout_set_width (d->layout, -1);
     pango_layout_set_text (d->layout, name, strlen (name));
@@ -220,6 +315,14 @@ max_window_name_width (WnckWindow *win)
     return w + 6;
 }
 
+/*
+ * update_window_decoration_name
+ *
+ * Returns: void
+ * Description: frees the last window name and gets the new one from
+ * wnck. Also checks to see if the name has a length (slight optimization)
+ * and re-creates the pango context to re-render the name
+ */
 void
 update_window_decoration_name (WnckWindow *win)
 {
@@ -234,15 +337,18 @@ update_window_decoration_name (WnckWindow *win)
 	d->name = NULL;
     }
 
+    /* Only operate if the window name has a length */
     name = wnck_window_get_name (win);
     if (name && (name_length = strlen (name)))
     {
 	gint w;
 
+	/* Cairo mode: w = SHRT_MAX */
 	if (theme_draw_window_decoration != draw_window_decoration)
 	{
 	    w = SHRT_MAX;
 	}
+	/* Need to get a minimum width for the name */
 	else
 	{
 	    gint width;
@@ -255,6 +361,9 @@ update_window_decoration_name (WnckWindow *win)
 		w = 1;
 	}
 
+	/* Set the maximum width for the layout (in case
+	 * decoration size < text width) since we
+	 * still need to show the buttons and the window name */
 	pango_layout_set_auto_dir (d->layout, FALSE);
 	pango_layout_set_width (d->layout, w * PANGO_SCALE);
 	pango_layout_set_text (d->layout, name, name_length);
@@ -276,15 +385,23 @@ update_window_decoration_name (WnckWindow *win)
 	else
 	    d->name = g_strndup (name, name_length);
 
+	/* Truncate the text */
 	pango_layout_set_text (d->layout, d->name, name_length);
     }
 }
 
+/*
+ * update_window_decoration_icon
+ *
+ * Updates the window icon (destroys the existing cairo pattern
+ * and creates a new one for the pixmap)
+ */
 void
 update_window_decoration_icon (WnckWindow *win)
 {
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
+    /* Destroy old stuff */
     if (d->icon)
     {
 	cairo_pattern_destroy (d->icon);
@@ -300,6 +417,7 @@ update_window_decoration_icon (WnckWindow *win)
     if (d->icon_pixbuf)
 	g_object_unref (G_OBJECT (d->icon_pixbuf));
 
+    /* Get the mini icon pixbuf from libwnck */
     d->icon_pixbuf = wnck_window_get_mini_icon (win);
     if (d->icon_pixbuf)
     {
@@ -307,6 +425,7 @@ update_window_decoration_icon (WnckWindow *win)
 
 	g_object_ref (G_OBJECT (d->icon_pixbuf));
 
+	/* 32 bit pixmap on pixmap mode, 24 for reparenting */
 	if (d->frame_window)
 	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
 						     24);
@@ -320,7 +439,16 @@ update_window_decoration_icon (WnckWindow *win)
 }
 
 
-
+/*
+ * update_window_decoration_size
+ * Returns: FALSE for failure, TRUE for success
+ * Description: Calculates the minimum size of the decoration that we need
+ * to render. This is mostly done by the theme but there is some work that
+ * we need to do here first, such as getting the client geometry, setting
+ * drawable depths, creating pixmaps, creating XRenderPictures and
+ * updating the window decoration name
+ */
+ 
 gboolean
 update_window_decoration_size (WnckWindow *win)
 {
@@ -335,10 +463,14 @@ update_window_decoration_size (WnckWindow *win)
 
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
+    /* Get the geometry of the window, we'll need it later */
     wnck_window_get_client_window_geometry (win, &x, &y, &w, &h);
 
+    /* Get the width of the name */
     name_width = max_window_name_width (win);
 
+    /* Ask the theme to tell us how much space it needs. If this is not successful
+     * update the decoration name and return false */
     if (!(*theme_calc_decoration_size) (d, w, h, name_width, &width, &height))
     {
 	update_window_decoration_name (win);
@@ -347,15 +479,19 @@ update_window_decoration_size (WnckWindow *win)
 
     gdk_error_trap_push ();
 
+    /* Get the correct depth for the frame window in reparenting mode, otherwise
+     * enforce 32 */
     if (d->frame_window)
 	depth = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
     else
 	depth = 32;
 
+    /* Create pixmap of decoration size */
     pixmap = create_pixmap (width, height, depth);
 
     gdk_flush ();
 
+    /* Handle failure */
     if (!pixmap || gdk_error_trap_pop ())
     {
 	memset (pixmap, 0, sizeof (pixmap));
@@ -364,10 +500,12 @@ update_window_decoration_size (WnckWindow *win)
 
     gdk_error_trap_push ();
 
+    /* Create backbuffer pixmap */
     buffer_pixmap = create_pixmap (width, height, depth);
 
     gdk_flush ();
 
+    /* Handle failure */
     if (!buffer_pixmap || gdk_error_trap_pop ())
     {
 	memset (buffer_pixmap, 0, sizeof (buffer_pixmap));
@@ -375,10 +513,12 @@ update_window_decoration_size (WnckWindow *win)
 	return FALSE;
     }
 
+    /* Create XRender context */
     format = get_format_for_drawable (d, GDK_DRAWABLE (buffer_pixmap));
     picture = XRenderCreatePicture (xdisplay, GDK_PIXMAP_XID (buffer_pixmap),
 				    format, 0, NULL);
 
+    /* Destroy the old pixmaps and pictures */
     if (d->pixmap)
 	g_object_unref (G_OBJECT (d->pixmap));
 
@@ -391,6 +531,7 @@ update_window_decoration_size (WnckWindow *win)
     if (d->cr)
 	cairo_destroy (d->cr);
 
+    /* Assign new pixmaps and pictures */
     d->pixmap	     = pixmap;
     d->buffer_pixmap = buffer_pixmap;
     d->cr	     = gdk_cairo_create (pixmap);
@@ -404,6 +545,7 @@ update_window_decoration_size (WnckWindow *win)
 
     update_window_decoration_name (win);
 
+    /* Redraw decoration on idle */
     queue_decor_draw (d);
 
     return TRUE;
@@ -412,6 +554,11 @@ update_window_decoration_size (WnckWindow *win)
 /* to save some memory, value is specific to current decorations */
 #define TRANSLUCENT_CORNER_SIZE 3
 
+/*
+ * draw_border_shape
+ * Returns: void
+ * Description: Draws a slight border around the decoration
+ */
 static void
 draw_border_shape (Display	   *xdisplay,
 		   Pixmap	   pixmap,
@@ -465,6 +612,22 @@ draw_border_shape (Display	   *xdisplay,
     g_object_unref (G_OBJECT (d.pixmap));
 }
 
+/*
+ * update_shadow
+ * Returns: 1 for success, 0 for failure
+ * Description: creates a libdecoration shadow context and updates
+ * the decoration context for the shadow for the properties that we
+ * have already read from the root window.
+ *
+ * For the pixmap mode we have opt_shadow which is passed to
+ * decor_shadow_create (which contains the shadow settings from
+ * the root window)
+ *
+ * For the reparenting mode we always enforce a zero-shadow in
+ * the opt_no_shadow passed to decor_shadow_create.
+ *
+ * We do something similar  for the maximimzed mode as well
+ */
 int
 update_shadow (void)
 {
@@ -474,6 +637,7 @@ update_shadow (void)
     GdkDisplay		   *display = gdk_display_get_default ();
     GdkScreen		   *screen = gdk_display_get_default_screen (display);
 
+    /* Pixmap mode non maximized window shadow */
     opt_shadow.shadow_radius  = shadow_radius;
     opt_shadow.shadow_opacity = shadow_opacity;
 
@@ -482,12 +646,14 @@ update_shadow (void)
     opt_shadow.shadow_offset_x = shadow_offset_x;
     opt_shadow.shadow_offset_y = shadow_offset_y;
 
+    /* Reparenting mode non maximized window shadow */
     opt_no_shadow.shadow_radius  = 0;
     opt_no_shadow.shadow_opacity = 0;
 
     opt_no_shadow.shadow_offset_x = 0;
     opt_no_shadow.shadow_offset_y = 0;
 
+    /* Create a special no_border_shadow for the pixmap mode in case we need it */
     if (no_border_shadow)
     {
 	decor_shadow_destroy (xdisplay, no_border_shadow);
@@ -507,6 +673,7 @@ update_shadow (void)
 					    decor_draw_simple,
 					    0);
 
+    /* Normal window shadow pixmap mode */
     if (border_shadow)
     {
 	decor_shadow_destroy (xdisplay, border_shadow);
@@ -533,6 +700,7 @@ update_shadow (void)
 					 draw_border_shape,
 					 0);
 
+    /* Enforced zero-shadow for reparenting mode for normal windows */
     if (border_no_shadow)
     {
 	decor_shadow_destroy (xdisplay, border_no_shadow);
@@ -561,7 +729,7 @@ update_shadow (void)
 
     decor_context_t *context = &window_context_no_shadow;
 
-
+    /* Maximized border shadow pixmap mode */
     if (max_border_shadow)
     {
 	decor_shadow_destroy (xdisplay, max_border_shadow);
@@ -586,6 +754,7 @@ update_shadow (void)
 			     draw_border_shape,
 			     (void *) 1);
 
+    /* Enforced maximize zero shadow reparenting mode */
     if (max_border_no_shadow)
     {
 	decor_shadow_destroy (xdisplay, max_border_shadow);
@@ -610,6 +779,7 @@ update_shadow (void)
 			     draw_border_shape,
 			     (void *) 1);
 
+    /* Special shadow for the switcher window */
     if (switcher_shadow)
     {
 	decor_shadow_destroy (xdisplay, switcher_shadow);
@@ -639,11 +809,19 @@ update_shadow (void)
     return 1;
 }
 
+/*
+ * update_window_decoration
+ *
+ * Returns: void
+ * Description: The master function to update the window decoration
+ * if the pixmap needs to be redrawn
+ */
 void
 update_window_decoration (WnckWindow *win)
 {
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
+    /* Handle normally decorated windows */
     if (d->decorated)
     {
 	/* force size update */
@@ -653,6 +831,7 @@ update_window_decoration (WnckWindow *win)
 	update_window_decoration_size (win);
 	update_event_windows (win);
     }
+    /* Handle switcher windows */
     else
     {
 	Window xid = wnck_window_get_xid (win);
@@ -670,6 +849,12 @@ update_window_decoration (WnckWindow *win)
     }
 }
 
+/*
+ * update_window_decoration_state
+ *
+ * Returns: void
+ * Description: helper function to update the state of the decor_t
+ */
 void
 update_window_decoration_state (WnckWindow *win)
 {
@@ -678,6 +863,12 @@ update_window_decoration_state (WnckWindow *win)
     d->state = wnck_window_get_state (win);
 }
 
+/*
+ * update_window_decoration_actions
+ *
+ * Returns: void
+ * Description: helper function to update the actions of the decor_t
+ */
 void
 update_window_decoration_actions (WnckWindow *win)
 {
@@ -686,6 +877,14 @@ update_window_decoration_actions (WnckWindow *win)
     d->actions = wnck_window_get_actions (win);
 }
 
+
+/*
+ * draw_decor_list
+ *
+ * Returns: bool
+ * Description: function to be called on g_idle_add to draw window
+ * decorations when we are not doing anything
+ */
 static gboolean
 draw_decor_list (void *data)
 {
@@ -706,6 +905,14 @@ draw_decor_list (void *data)
     return FALSE;
 }
 
+/*
+ * queue_decor_draw
+ *
+ * Description :queue a redraw request for this decoration. Since this function
+ * only gets called on idle, don't redraw window decorations multiple
+ * times if they are already waiting to be drawn (since the drawn copy
+ * will always be the most updated one)
+ */
 void
 queue_decor_draw (decor_t *d)
 {
@@ -718,6 +925,11 @@ queue_decor_draw (decor_t *d)
 	draw_idle_id = g_idle_add (draw_decor_list, NULL);
 }
 
+/*
+ * update_default_decorations
+ *
+ * Description: update the default decorations
+ */
 void
 update_default_decorations (GdkScreen *screen)
 {
@@ -860,6 +1072,11 @@ update_default_decorations (GdkScreen *screen)
 	g_object_unref (G_OBJECT (d.layout));
 }
 
+/*
+ * copy_to_front_buffer
+ *
+ * Description: Helper function to copy the buffer pixmap to a front buffer
+ */
 void
 copy_to_front_buffer (decor_t *d)
 {

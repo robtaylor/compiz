@@ -41,9 +41,6 @@
 #include <poll.h>
 #include <algorithm>
 
-#include <glib.h>
-#include <glib-object.h>
-
 #include <boost/bind.hpp>
 #include <boost/foreach.hpp>
 #define foreach BOOST_FOREACH
@@ -113,119 +110,20 @@ CompScreen::freePluginClassIndex (unsigned int index)
 	screen->pluginClasses.resize (screenPluginClassIndices.size ());
 }
 
-
-struct CompizEventQueue
-{
-    GSource source;
-
-    Display *display;
-    GPollFD pollFd;
-    int connectionFd;
-};
-
-/* XXX:
- * We should use GlibMM here and avoid mixing C and C++ linkage
- */
-
-extern "C"
-{
-    static gboolean
-    processCallback (CompScreen *screen)
-    {
-	return screen->processEvents ();
-    }
-}
-
-static gboolean
-gsourcePrepare (GSource *source, gint *timeout)
-{
-    CompizEventQueue *ceq = (CompizEventQueue *) source;
-
-    *timeout = -1;
-    return XPending (ceq->display);
-}
-
-static gboolean
-gsourceCheck (GSource  *source)
-{
-    CompizEventQueue *ceq;
-
-    ceq = (CompizEventQueue *) source;
-
-    if (ceq->pollFd.revents & G_IO_IN)
-	return XPending (ceq->display);
-    else
-	return false;
-}
-
-static gboolean
-gsourceDispatch (GSource *source, GSourceFunc callback, gpointer data)
-{
-    return callback (data);
-}
-
-static void
-gsourceDestroy (GSource *source)
-{
-}
-
-static GSourceFuncs gsourceFuncs = {
-    gsourcePrepare,
-    gsourceCheck,
-    gsourceDispatch,
-    gsourceDestroy
-};
-
-bool
-CompScreen::processEvents ()
-{
-    if (restartSignal || shutDown)
-    {
-	g_main_loop_quit (priv->loop);
-	return false;
-    }
-    else
-	priv->processEvents ();
-
-    return true;
-}
-
 void
 CompScreen::eventLoop ()
 {
-    int		     fd;
-    GSource	     *source;
-    GMainContext     *ctx;
-    CompizEventQueue *ceq;
+    priv->ctx = Glib::MainContext::get_default ();
+    priv->mainloop = Glib::MainLoop::create (priv->ctx, false);
+    priv->source = CompEventSource::create ();
+    priv->timeout = CompTimeoutSource::create ();
 
-    g_type_init ();
-
-    ctx = g_main_context_default ();
-
-    priv->loop = g_main_loop_new (ctx, false);
-
-    source = g_source_new (&gsourceFuncs, sizeof (CompizEventQueue));
-    ceq = (CompizEventQueue*) source;
-
-    fd = ConnectionNumber (priv->dpy);
-    ceq->connectionFd = fd;
-    ceq->pollFd.fd = fd;
-    ceq->pollFd.events = G_IO_IN;
-    ceq->display = priv->dpy;
-
-    g_source_set_priority (source, G_PRIORITY_DEFAULT);
-    g_source_add_poll (source, &ceq->pollFd);
-    g_source_set_can_recurse (source, TRUE);
-
-    g_source_set_callback (source, (GSourceFunc) processCallback, this, NULL);
-
-    g_source_attach (source, NULL);
-    g_source_unref (source);
+    priv->source->attach (priv->ctx);
 
     /* Kick the event loop */
-    g_main_context_iteration (ctx, false);
+    priv->ctx->iteration (false);
 
-    g_main_loop_run (priv->loop);
+    priv->mainloop->run ();
 }
 
 CompFileWatchHandle
@@ -279,61 +177,60 @@ CompScreen::getFileWatches () const
     return priv->fileWatch;
 }
 
-static unsigned int executingId = 0;
-static bool forceFail = false;
-
-gboolean
-onTimerTimeout (CompTimer *timer)
-{
-    bool result;
-
-    if (!timer->active ())
-        return true;
-
-    forceFail = false;
-    executingId = timer->mId;
-
-    result = timer->mCallBack ();
-
-    if (forceFail)
-	return false;
-
-    if (result)
-    {
-        timer->tick ();
-	return true;
-    }
-    else
-    {
-        timer->mId = 0;
-	return false;
-    }
-}
-
 void
 PrivateScreen::addTimer (CompTimer *timer)
 {
-    if (timer->mId != 0)
-        return;
+    std::list<CompTimer *>::iterator it;
 
-    unsigned int time = timer->mMinTime;
+    it = std::find (timers.begin (), timers.end (), timer);
 
-    timer->mId = g_timeout_add (time, (GSourceFunc) onTimerTimeout, timer);
+    if (it != timers.end ())
+	return;
 
-    timer->tick ();
+    for (it = timers.begin (); it != timers.end (); it++)
+    {
+	if ((int) timer->mMinTime < (*it)->mMinLeft)
+	    break;
+    }
+
+    timer->mMinLeft = timer->mMinTime;
+    timer->mMaxLeft = timer->mMaxTime;
+
+    timers.insert (it, timer);
 }
 
 void
 PrivateScreen::removeTimer (CompTimer *timer)
 {
-    if (timer->mId == 0)
-        return;
+    std::list<CompTimer *>::iterator it;
 
-    if (executingId == timer->mId)
-      forceFail = true;
+    it = std::find (timers.begin (), timers.end (), timer);
 
-    g_source_remove (timer->mId);
-    timer->mId = 0;
+    if (it == timers.end ())
+	return;
+
+    timers.erase (it);
+}
+
+CompWatchFd::CompWatchFd (int		    fd,
+			  Glib::IOCondition events,
+			  FdWatchCallBack   callback) :
+    Glib::IOSource (fd, events),
+    mFd (fd),
+    mCallBack (callback),
+    mForceFail (false),
+    mExecuting (false)
+{
+    connect (sigc::mem_fun <Glib::IOCondition, bool>
+	     (this, &CompWatchFd::internalCallback));
+}
+
+Glib::RefPtr <CompWatchFd>
+CompWatchFd::create (int               fd,
+		     Glib::IOCondition events,
+		     FdWatchCallBack   callback)
+{
+    return Glib::RefPtr <CompWatchFd> (new CompWatchFd (fd, events, callback));
 }
 
 CompWatchFdHandle
@@ -341,42 +238,47 @@ CompScreen::addWatchFd (int             fd,
 			short int       events,
 			FdWatchCallBack callBack)
 {
-    CompWatchFd *watchFd = new CompWatchFd ();
+    Glib::IOCondition gEvents;
+    
+    memset (&gEvents, 0, sizeof (Glib::IOCondition));
+
+    if (events & POLLIN)
+	gEvents |= Glib::IO_IN;
+    if (events & POLLOUT)
+	gEvents |= Glib::IO_OUT;
+    if (events & POLLPRI)
+	gEvents |= Glib::IO_PRI;
+    if (events & POLLERR)
+	gEvents |= Glib::IO_ERR;
+    if (events & POLLHUP)
+	gEvents |= Glib::IO_HUP;
+
+    Glib::RefPtr <CompWatchFd> watchFd = CompWatchFd::create (fd, gEvents, callBack);
+
+    watchFd->attach (priv->ctx);
 
     if (!watchFd)
 	return 0;
-
-    watchFd->fd	      = fd;
-    watchFd->callBack = callBack;
-    watchFd->handle   = priv->lastWatchFdHandle++;
+    watchFd->mHandle   = priv->lastWatchFdHandle++;
 
     if (priv->lastWatchFdHandle == MAXSHORT)
 	priv->lastWatchFdHandle = 1;
 
     priv->watchFds.push_front (watchFd);
 
-    priv->nWatchFds++;
-
-    priv->watchPollFds = (struct pollfd *) realloc (priv->watchPollFds,
-			  priv->nWatchFds * sizeof (struct pollfd));
-
-    priv->watchPollFds[priv->nWatchFds - 1].fd     = fd;
-    priv->watchPollFds[priv->nWatchFds - 1].events = events;
-
-    return watchFd->handle;
+    return watchFd->mHandle;
 }
 
 void
 CompScreen::removeWatchFd (CompWatchFdHandle handle)
 {
-    std::list<CompWatchFd *>::iterator it;
-    CompWatchFd                        *w;
-    int                                i;
+    std::list<Glib::RefPtr <CompWatchFd> >::iterator it;
+    Glib::RefPtr <CompWatchFd>	       w;
 
-    for (it = priv->watchFds.begin(), i = priv->nWatchFds - 1;
-	 it != priv->watchFds.end (); it++, i--)
+    for (it = priv->watchFds.begin();
+	 it != priv->watchFds.end (); it++)
     {
-	if ((*it)->handle == handle)
+	if ((*it)->mHandle == handle)
 	    break;
     }
 
@@ -384,15 +286,15 @@ CompScreen::removeWatchFd (CompWatchFdHandle handle)
 	return;
 
     w = (*it);
+
+    if (w->mExecuting)
+    {
+	w->mForceFail = true;
+	return;
+    }
+
+    w.reset ();
     priv->watchFds.erase (it);
-
-    priv->nWatchFds--;
-
-    if (i < priv->nWatchFds)
-	memmove (&priv->watchPollFds[i], &priv->watchPollFds[i + 1],
-		 (priv->nWatchFds - i) * sizeof (struct pollfd));
-
-    delete w;
 }
 
 void
@@ -437,6 +339,39 @@ CompScreen::getValue (CompString key)
     }
 }
 
+bool
+CompWatchFd::internalCallback (Glib::IOCondition events)
+{
+    short int revents = 0;
+
+    if (events & Glib::IO_IN)
+	revents |= POLLIN;
+    if (events & Glib::IO_OUT)
+	revents |= POLLOUT;
+    if (events & Glib::IO_PRI)
+	revents |= POLLPRI;
+    if (events & Glib::IO_ERR)
+	revents |= POLLERR;
+    if (events & Glib::IO_HUP)
+	revents |= POLLHUP;
+    if (events & Glib::IO_NVAL)
+	return false;
+
+    mExecuting = true;
+    mCallBack (revents);
+    mExecuting = false;
+
+    if (mForceFail)
+    {
+	/* FIXME: Need to find a way to properly remove the watchFd
+	 * from the internal list in core */
+	//screen->priv->watchFds.remove (this);
+	return false;
+    }
+    
+    return true;
+}    
+
 void
 CompScreen::eraseValue (CompString key)
 {
@@ -447,28 +382,6 @@ CompScreen::eraseValue (CompString key)
     {
 	priv->valueMap.erase (key);
     }
-}
-
-int
-PrivateScreen::doPoll (int timeout)
-{
-    int rv;
-
-    rv = poll (watchPollFds, nWatchFds, timeout);
-    if (rv)
-    {
-	std::list<CompWatchFd *>::iterator it;
-	int                                i;
-
-	for (it = watchFds.begin (), i = nWatchFds - 1; it != watchFds.end ();
-	    it++, i--)
-	{
-	    if (watchPollFds[i].revents != 0 && (*it)->callBack)
-		(*it)->callBack (watchPollFds[i].revents);
-	}
-    }
-
-    return rv;
 }
 
 void
@@ -839,48 +752,117 @@ PrivateScreen::processEvents ()
 void
 PrivateScreen::updatePlugins ()
 {
-    CompPlugin        *p;
-    unsigned int      nPop, i, j;
-    CompPlugin::List  pop;
-    bool              failedPush;
+    CompPlugin                *p;
+    unsigned int              nPop, i, j, pListCount = 1;
+    CompOption::Value::Vector pList;
+    CompPlugin::List          pop;
+    bool                      failedPush;
 
 
     dirtyPluginList = false;
 
     CompOption::Value::Vector &list = optionGetActivePlugins ();
 
-    /* The old plugin list always begins with the core plugin. To make sure
-       we don't unnecessarily unload plugins if the new plugin list does not
-       contain the core plugin, we have to use an offset */
+    /* Determine the number of plugins, which is core +
+     * initial plugins + plugins in option list in addition
+     * to initial plugins */
+    foreach (CompString &pn, initialPlugins)
+    {
+	if (pn != "core")
+	    pListCount++;
+    }
 
-    if (list.size () > 0 && list[0].s () != "core")
-	i = 0;
-    else
-	i = 1;
+    foreach (CompOption::Value &lp, list)
+    {
+	bool skip = false;
+	if (lp.s () == "core")
+	    continue;
+
+	foreach (CompString &p, initialPlugins)
+	{
+	    if (p == lp.s ())
+	    {
+		skip = true;
+		break;
+	    }
+	}
+
+	/* plugin not in initial list */
+	if (!skip)
+	    pListCount++;
+    }
+
+    /* dupPluginCount is now the number of plugisn contained in both the
+     * initial and new plugins list */
+    pList.resize (pListCount);
+
+    if (pList.empty ())
+    {
+	screen->setOptionForPlugin ("core", "active_plugins", plugin);
+	return;
+    }
+
+    /* Must have core as first plugin */
+    pList.at (0) = "core";
+    j = 1;
+
+    /* Add initial plugins */
+    foreach (CompString &p, initialPlugins)
+    {
+	if (p == "core")
+	    continue;
+	pList.at (j).set (p);
+	j++;
+    }
+
+    /* Add plugins not in the initial list */
+    foreach (CompOption::Value &opt, list)
+    {
+	std::list <CompString>::iterator it = initialPlugins.begin ();
+	bool				 skip = false;
+	if (opt.s () == "core")
+	    continue;
+
+	for (; it != initialPlugins.end (); it++)
+	{
+	    if ((*it) == opt.s ())
+	    {
+		skip = true;
+		break;
+	    }
+	}
+
+	if (!skip)
+	    pList.at (j++).set (opt.s ());
+    }
+
+    assert (j == pList.size ());
 
     /* j is initialized to 1 to make sure we never pop the core plugin */
-    for (j = 1; j < plugin.list ().size () &&
-	 i < list.size (); i++, j++)
+    for (i = j = 1; j < plugin.list ().size () && i < pList.size (); i++, j++)
     {
-	if (plugin.list ()[j].s () != list[i].s ())
+	if (plugin.list ().at (j).s () != pList.at (i).s ())
 	    break;
     }
 
     nPop = plugin.list ().size () - j;
 
-    for (j = 0; j < nPop; j++)
+    if (nPop)
     {
-	pop.push_back (CompPlugin::pop ());
-	plugin.list ().pop_back ();
+	for (j = 0; j < nPop; j++)
+	{
+	    pop.push_back (CompPlugin::pop ());
+	    plugin.list ().pop_back ();
+	}
     }
 
-    for (; i < list.size (); i++)
+    for (; i < pList.size (); i++)
     {
 	p = NULL;
 	failedPush = false;
 	foreach (CompPlugin *pp, pop)
 	{
-	    if (list[i]. s () == pp->vTable->name ())
+	    if (pList[i]. s () == pp->vTable->name ())
 	    {
 		if (CompPlugin::push (pp))
 		{
@@ -901,7 +883,7 @@ PrivateScreen::updatePlugins ()
 
 	if (p == 0 && !failedPush)
 	{
-	    p = CompPlugin::load (list[i].s ().c_str ());
+	    p = CompPlugin::load (pList[i].s ().c_str ());
 	    if (p)
 	    {
 		if (!CompPlugin::push (p))
@@ -3018,6 +3000,9 @@ PrivateScreen::addPassiveButtonGrab (CompAction::ButtonBinding &button)
 
     buttonGrabs.push_back (newButtonGrab);
 
+    foreach (CompWindow *w, screen->windows ())
+	w->priv->updatePassiveButtonGrabs ();
+
     return true;
 }
 
@@ -3036,6 +3021,9 @@ PrivateScreen::removePassiveButtonGrab (CompAction::ButtonBinding &button)
 		return;
 
 	    it = buttonGrabs.erase (it);
+
+	    foreach (CompWindow *w, screen->windows ())
+		w->priv->updatePassiveButtonGrabs ();
 	}
     }
 }
@@ -4131,13 +4119,46 @@ CompScreen::screenInfo ()
     return priv->screenInfo;
 }
 
+bool
+PrivateScreen::createFailed ()
+{
+    return !screenInitalized;
+}
+
 CompScreen::CompScreen ():
     PluginClassStorage (screenPluginClassIndices),
     priv (NULL)
 {
+    CompPrivate p;
+    CompOption::Value::Vector vList;
+    CompPlugin  *corePlugin;
+
     priv = new PrivateScreen (this);
     assert (priv);
+
     screenInitalized = true;
+
+    corePlugin = CompPlugin::load ("core");
+    if (!corePlugin)
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't load core plugin");
+	screenInitalized = false;
+    }
+
+    if (!CompPlugin::push (corePlugin))
+    {
+	compLogMessage ("core", CompLogLevelFatal,
+			"Couldn't activate core plugin");
+	screenInitalized = false;
+    }
+
+    p.uval = CORE_ABIVERSION;
+    storeValue ("core_ABI", p);
+
+    vList.push_back ("core");
+
+    priv->plugin.set (CompOption::TypeString, vList);
 }
 
 bool
@@ -4165,31 +4186,6 @@ CompScreen::init (const char *name)
     unsigned int         nchildren;
     int                  nvisinfo;
     XSetWindowAttributes attrib;
-
-    CompOption::Value::Vector vList;
-
-    CompPlugin *corePlugin = CompPlugin::load ("core");
-    if (!corePlugin)
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't load core plugin");
-	return false;
-    }
-
-    if (!CompPlugin::push (corePlugin))
-    {
-	compLogMessage ("core", CompLogLevelFatal,
-			"Couldn't activate core plugin");
-	return false;
-    }
-
-    CompPrivate p;
-    p.uval = CORE_ABIVERSION;
-    storeValue ("core_ABI", p);
-
-    vList.push_back ("core");
-
-    priv->plugin.set (CompOption::TypeString, vList);
 
     dpy = priv->dpy = XOpenDisplay (name);
     if (!priv->dpy)
@@ -4334,6 +4330,8 @@ CompScreen::init (const char *name)
 	} while (event.type != DestroyNotify);
     }
 
+    modHandler->updateModifierMappings ();
+
     CompScreen::checkForError (dpy);
 
     XGrabServer (dpy);
@@ -4352,6 +4350,24 @@ CompScreen::init (const char *name)
 		  FocusChangeMask          |
 		  ExposureMask);
 
+    /* We need to register for EnterWindowMask |
+     * ButtonPressMask | FocusChangeMask on other
+     * root windows as well because focus happens
+     * on a display level and we need to check
+     * if the screen we are running on lost focus */
+
+    for (unsigned int i = 0; i <= ScreenCount (dpy) - 1; i++)
+    {
+	Window rt = XRootWindow (dpy, i);
+
+	if (rt == root)
+	    continue;
+
+	XSelectInput (dpy, rt,
+		      FocusChangeMask |
+		      SubstructureNotifyMask);
+    }
+
     if (CompScreen::checkForError (dpy))
     {
 	compLogMessage ("core", CompLogLevelError,
@@ -4361,9 +4377,6 @@ CompScreen::init (const char *name)
 	XUngrabServer (dpy);
 	return false;
     }
-
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -4441,24 +4454,6 @@ CompScreen::init (const char *name)
 
     priv->getDesktopHints ();
 
-    /* TODO: bailout properly when objectInitPlugins fails */
-    assert (CompPlugin::screenInitPlugins (this));
-
-    XQueryTree (dpy, priv->root,
-		&rootReturn, &parentReturn,
-		&children, &nchildren);
-
-    for (unsigned int i = 0; i < nchildren; i++)
-	new CompWindow (children[i], i ? children[i - 1] : 0);
-
-    foreach (CompWindow *w, priv->windows)
-    {
-	if (w->isViewable ())
-	    w->priv->activeNum = priv->activeNum++;
-    }
-
-    XFree (children);
-
     attrib.override_redirect = 1;
     attrib.event_mask	     = PropertyChangeMask;
 
@@ -4506,6 +4501,47 @@ CompScreen::init (const char *name)
 
     priv->setAudibleBell (priv->optionGetAudibleBell ());
 
+    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
+			      priv->optionGetPingDelay () + 500);
+
+    priv->pingTimer.start ();
+
+    priv->addScreenActions ();
+
+    priv->initialized = true;
+
+    /* TODO: Bailout properly when screenInitPlugins fails
+     * TODO: It would be nicer if this line could mean
+     * "init all the screens", but unfortunately it only inits
+     * plugins loaded on the command line screen's and then
+     * we need to call updatePlugins () to init the remaining
+     * screens from option changes */
+    assert (CompPlugin::screenInitPlugins (this));
+
+    /* The active plugins list might have been changed - load any
+     * new plugins */
+
+    if (priv->dirtyPluginList)
+	priv->updatePlugins ();
+
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
+    XQueryTree (dpy, priv->root,
+		&rootReturn, &parentReturn,
+		&children, &nchildren);
+
+    for (unsigned int i = 0; i < nchildren; i++)
+	new CompWindow (children[i], i ? children[i - 1] : 0);
+
+    foreach (CompWindow *w, priv->windows)
+    {
+	if (w->isViewable ())
+	    w->priv->activeNum = priv->activeNum++;
+    }
+
+    XFree (children);
+
     XGetInputFocus (dpy, &focus, &revertTo);
 
     /* move input focus to root window so that we get a FocusIn event when
@@ -4526,14 +4562,6 @@ CompScreen::init (const char *name)
 	else
 	    focusDefaultWindow ();
     }
-
-    priv->pingTimer.setTimes (priv->optionGetPingDelay (),
-			      priv->optionGetPingDelay () + 500);
-
-    priv->pingTimer.start ();
-
-    priv->initialized = true;
-    priv->addScreenActions ();
 
     return true;
 }
@@ -4573,9 +4601,6 @@ CompScreen::~CompScreen ()
     if (priv->snDisplay)
 	sn_display_unref (priv->snDisplay);
 
-    if (priv->watchPollFds)
-	free (priv->watchPollFds);
-
     XSync (priv->dpy, False);
     XCloseDisplay (priv->dpy);
 
@@ -4588,11 +4613,8 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     priv (this),
     fileWatch (0),
     lastFileWatchHandle (1),
-    timers (0),
     watchFds (0),
     lastWatchFdHandle (1),
-    watchPollFds (0),
-    nWatchFds (0),
     valueMap (),
     screenInfo (0),
     activeWindow (0),
@@ -4632,7 +4654,6 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     desktopHintSize (0),
     initialized (false)
 {
-    memset (history, 0, sizeof (history));
     gettimeofday (&lastTimeout, 0);
 
     pingTimer.setCallback (

@@ -47,6 +47,13 @@
     ((((tv1)->tv_sec - 1 - (tv2)->tv_sec) * 1000000) +			   \
      (1000000 + (tv1)->tv_usec - (tv2)->tv_usec)) / 1000
 
+#define TIMESPECDIFF(ts1, ts2)						   \
+    ((ts1)->tv_sec == (ts2)->tv_sec || (ts1)->tv_nsec >= (ts2)->tv_nsec) ? \
+    ((((ts1)->tv_sec - (ts2)->tv_sec) * 1000000) +			   \
+     ((ts1)->tv_nsec - (ts2)->tv_nsec)) / 1000000 :			   \
+    ((((ts1)->tv_sec - 1 - (ts2)->tv_sec) * 1000000) +			   \
+     (1000000 + (ts1)->tv_nsec - (ts2)->tv_nsec)) / 1000000
+
 #define MULTIPLY_USHORT(us1, us2)		 \
     (((GLuint) (us1) * (GLuint) (us2)) / 0xffff)
 

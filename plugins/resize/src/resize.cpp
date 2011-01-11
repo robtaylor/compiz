@@ -183,6 +183,124 @@ ResizeScreen::finishResizing ()
     w = NULL;
 }
 
+#define TOUCH_LEFT 1
+#define TOUCH_RIGHT 2
+#define TOUCH_TOP 3
+#define TOUCH_BOTTOM 4
+
+static unsigned int
+findTouchingOutput (int touchPoint, unsigned int side)
+{
+    for (unsigned int i = 0; i < screen->outputDevs ().size (); i++)
+    {
+	CompOutput &o = screen->outputDevs ().at (i);
+	if (side == TOUCH_LEFT)
+	{
+	    if (o.left () == touchPoint)
+		return  i;
+	}
+	if (side == TOUCH_RIGHT)
+	{
+	    if (o.right () == touchPoint)
+		return  i;
+	}
+	if (side == TOUCH_TOP)
+	{
+	    if (o.top () == touchPoint)
+		return  i;
+	}
+	if (side == TOUCH_BOTTOM)
+	{
+	    if (o.bottom () == touchPoint)
+		return  i;
+	}
+    }
+
+    return -1;
+}
+
+static void
+getPointForTp (unsigned int tp, unsigned int output, int &op, int &wap)
+{
+    CompRect og = CompRect (screen->outputDevs ().at (output));
+    CompRect wag = screen->outputDevs ().at (output).workArea ();
+
+    switch (tp)
+    {
+	case TOUCH_LEFT:
+	    op = og.right ();
+	    wap = wag.right ();
+	    break;
+	case TOUCH_RIGHT:
+	    op = og.left ();
+	    wap = wag.left ();
+	    break;
+	case TOUCH_TOP:
+	    op = og.bottom ();
+	    wap = wag.bottom ();
+	    break;
+	case TOUCH_BOTTOM:
+	    op = og.top ();
+	    wap = wag.top ();
+	    break;
+	default:
+	    return;
+    }
+}
+
+/* Be a little bit intelligent about how we calculate
+ * the workarea. Basically we want to be enclosed in
+ * any area that is obstructed by panels, but not
+ * where two outputs meet
+ *
+ * Also, it does not make sense to resize over
+ * non-touching outputs, so detect that case too
+ * */
+
+static int
+getOutputForEdge (int windowOutput, unsigned int touch, bool skipFirst)
+{
+    int op, wap;
+    int ret = windowOutput;
+
+    getPointForTp (touch, windowOutput, op, wap);
+
+    if ((op == wap) || skipFirst)
+    {
+	int co = windowOutput;
+
+	do
+	{
+	    int oco = co;
+
+	    co = findTouchingOutput (op, touch);
+
+	    /* Could not find a leftmost output from here
+	     * so we must have hit the edge of the universe */
+	    if (co == -1)
+	    {
+		ret = oco;
+		co = -1;
+		break;
+	    }
+
+	    getPointForTp (touch, co, op, wap);
+
+	    /* There is something in the way here.... */
+	    if (op != wap)
+	    {
+		ret = co;
+		co = -1;
+	    }
+	}
+        while (co != -1);
+    }
+
+    fprintf (stderr, "constraining to %i\n", ret);
+
+    return ret;
+}
+
 static bool
 resizeInitiate (CompAction         *action,
 	        CompAction::State  state,
@@ -334,6 +452,9 @@ resizeInitiate (CompAction         *action,
 
 	    w->grabNotify (x, y, state, grabMask);
 
+	    if (screen->getOption ("raise_on_click")->value ().b ())
+		w->updateAttributes (CompStackingUpdateModeAboveFullscreen);
+
 	    /* using the paint rectangle is enough here
 	       as we don't have any stretch yet */
 	    rs->getPaintRectangle (&box);
@@ -351,11 +472,50 @@ resizeInitiate (CompAction         *action,
 
 	    rs->isConstrained = sourceExternalApp;
 
+	    /* Update offWorkAreaConstrained and workArea at grab time */
+	    rs->offWorkAreaConstrained = false;
 	    if (sourceExternalApp)
 	    {
+		int output = w->outputDevice ();
+		int lco, tco, bco, rco;
+		bool sl = screen->outputDevs ().at (output).workArea ().left () >
+			  w->serverGeometry ().left ();
+		bool sr = screen->outputDevs ().at (output).workArea ().right () <
+			  w->serverGeometry ().right ();
+		bool st = screen->outputDevs ().at (output).workArea ().top () >
+			  w->serverGeometry ().top ();
+		bool sb = screen->outputDevs ().at (output).workArea ().bottom () <
+			  w->serverGeometry ().bottom ();
+
+		lco = tco = bco = rco = output;
+
 		/* Prevent resizing beyond work area edges when resize is
 		   initiated externally (e.g. with window frame or menu)
 		   and not with a key (e.g. alt+button) */
+		rs->offWorkAreaConstrained = true;
+
+		lco = getOutputForEdge (output, TOUCH_RIGHT, sl);
+		rco = getOutputForEdge (output, TOUCH_LEFT, sr);
+		tco = getOutputForEdge (output, TOUCH_BOTTOM, st);
+		bco = getOutputForEdge (output, TOUCH_TOP, sb);
+
+		/* Now we need to form one big rect which describes
+		 * the available workarea */
+
+		int left = screen->outputDevs ().at (lco).workArea ().left ();
+		int right = screen->outputDevs ().at (rco).workArea ().right ();
+		int top = screen->outputDevs ().at (tco).workArea ().top ();
+		int bottom = screen->outputDevs ().at (bco).workArea ().bottom ();
+
+		if (rs->grabWindowWorkArea)
+		    delete rs->grabWindowWorkArea;
+
+		rs->grabWindowWorkArea = new CompRect (0, 0, 0, 0);
+		rs->grabWindowWorkArea->setLeft (left);
+		rs->grabWindowWorkArea->setRight (right);
+		rs->grabWindowWorkArea->setTop (top);
+		rs->grabWindowWorkArea->setBottom (bottom);
+
 
 		rs->inRegionStatus   = false;
 		rs->lastGoodHotSpotY = -1;
@@ -711,6 +871,45 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    damageRectangle (&box);
 	}
 
+	/* constrain to work area */
+	if (offWorkAreaConstrained)
+	{
+	    if (mask & ResizeUpMask)
+	    {
+		int decorTop = savedGeometry.y + savedGeometry.height -
+		    (che + w->input ().top);
+
+		if (grabWindowWorkArea->y () > decorTop)
+		    che -= grabWindowWorkArea->y () - decorTop;
+	    }
+	    if (mask & ResizeDownMask)
+	    {
+		int decorBottom = savedGeometry.y + che + w->input ().bottom;
+
+		if (decorBottom >
+		    grabWindowWorkArea->y () + grabWindowWorkArea->height ())
+		    che -= decorBottom - (grabWindowWorkArea->y () +
+					  grabWindowWorkArea->height ());
+	    }
+	    if (mask & ResizeLeftMask)
+	    {
+		int decorLeft = savedGeometry.x + savedGeometry.width -
+		    (cwi + w->input ().left);
+
+		if (grabWindowWorkArea->x () > decorLeft)
+		    cwi -= grabWindowWorkArea->x () - decorLeft;
+	    }
+	    if (mask & ResizeRightMask)
+	    {
+		int decorRight = savedGeometry.x + cwi + w->input ().right;
+
+		if (decorRight >
+		    grabWindowWorkArea->x () + grabWindowWorkArea->width ())
+		    cwi -= decorRight - (grabWindowWorkArea->x () +
+				         grabWindowWorkArea->width ());
+	    }
+	}
+
 	wi = cwi;
 	he = che;
 
@@ -844,8 +1043,8 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    /* only constrain movement if previous position was valid */
 	    if (inRegionStatus)
 	    {
-		bool xStatus;
-		int yForXResize;
+		bool xStatus = false;
+		int yForXResize = y;
 		int nx = x;
 		int nw = wi;
 		int nh = he;
@@ -1440,7 +1639,7 @@ ResizeScreen::optionChanged (CompOption		    *option,
 			     ResizeOptions::Options num)
 {
     int *mask = NULL;
-    int valueMask;
+    int valueMask = 0;
 
     switch (num)
     {
@@ -1478,7 +1677,9 @@ ResizeScreen::ResizeScreen (CompScreen *s) :
     stretchMask (0),
     centeredMask (0),
     releaseButton (0),
-    isConstrained (false)
+    isConstrained (false),
+    offWorkAreaConstrained (true),
+    grabWindowWorkArea (NULL)
 {
     CompOption::Vector atomTemplate;
     Display *dpy = s->dpy ();
