@@ -243,6 +243,7 @@ class PrivateWindow {
 	bool         destroyed;
 	bool         managed;
 	bool	     unmanaging;
+	bool	     managing;
 
 	int destroyRefCnt;
 	int unmapRefCnt;
