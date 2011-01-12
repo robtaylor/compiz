@@ -399,6 +399,7 @@ class CompScreen :
 	friend class CompTimer;
 	friend class CompWindow;
 	friend class PrivateWindow;
+	friend class CoreWindow;
 	friend class ModifierHandler;
 	friend class CompManager;
 

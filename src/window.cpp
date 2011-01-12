@@ -5116,13 +5116,28 @@ CompWindow::syncAlarm ()
     return priv->syncAlarm;
 }
 
+CompWindow *
+CoreWindow::manage (Window aboveId)
+{
+    screen->priv->createdWindows.remove (this);
+    return new CompWindow (aboveId, priv);
+}
 
-CompWindow::CompWindow (Window id,
-			Window aboveId) :
-   PluginClassStorage (windowPluginClassIndices)
+/*
+ * On CreateNotify we only want to do some very basic
+ * initialization on the windows, and we need to be
+ * tracking things like eg override-redirect windows
+ * for compositing, although only on MapRequest do
+ * we actually care about them (and let the plugins
+ * care about them too)
+ */
+
+CoreWindow::CoreWindow (Window id)
 {
     priv = new PrivateWindow (this);
     assert (priv);
+
+    screen->priv->createdWindows.push_back (this);
 
     /* Failure means that window has been destroyed. We still have to add the
        window to the window list as we might get configure requests which
@@ -5158,15 +5173,13 @@ CompWindow::CompWindow (Window id,
 
     priv->id = id;
 
-    priv->alpha     = (depth () == 32);
+    priv->alpha     = (priv->attrib.depth == 32);
     priv->lastPong  = screen->priv->lastPing;
 
     if (screen->XShape ())
 	XShapeSelectInput (screen->dpy (), id, ShapeNotifyMask);
 
-    screen->insertWindow (this, aboveId);
-
-    if (windowClass () != InputOnly)
+    if (priv->attrib.c_class != InputOnly)
     {
 	priv->region = CompRegion (priv->attrib.x, priv->attrib.y,
 				   priv->width, priv->height);
@@ -5181,6 +5194,17 @@ CompWindow::CompWindow (Window id,
     {
 	priv->attrib.map_state = IsUnmapped;
     }
+}
+
+CompWindow::CompWindow (Window aboveId, PrivateWindow *priv) :
+   PluginClassStorage (windowPluginClassIndices),
+   priv (priv)
+{
+    // TODO: Reparent first!
+
+    priv->window = this;
+
+    screen->insertWindow (this, aboveId);
 
     priv->wmType    = screen->priv->getWindowType (priv->id);
     priv->protocols = screen->priv->getProtocols (priv->id);
@@ -5221,6 +5245,7 @@ CompWindow::CompWindow (Window id,
 
 	if (!overrideRedirect ())
 	{
+	    // needs to happen right after maprequest
 	    if (!priv->frame)
 		priv->reparent ();
 	    priv->managed = true;
@@ -5276,6 +5301,7 @@ CompWindow::CompWindow (Window id,
     {
 	if (screen->priv->getWmState (priv->id) == IconicState)
 	{
+	    // before everything else in maprequest
 	    if (!priv->frame)
 		priv->reparent ();
 	    priv->managed = true;
@@ -5359,9 +5385,8 @@ CompWindow::~CompWindow ()
     delete priv;
 }
 
-PrivateWindow::PrivateWindow (CompWindow *window) :
+PrivateWindow::PrivateWindow (CoreWindow *window) :
     priv (this),
-    window (window),
     refcnt (1),
     id (None),
     frame (None),

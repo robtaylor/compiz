@@ -39,6 +39,8 @@
 
 CompPlugin::VTable * getCoreVTable ();
 
+class CoreWindow;
+
 extern bool shutDown;
 extern bool restartSignal;
 
@@ -358,6 +360,7 @@ class PrivateScreen : public CoreOptions {
 
 	CompScreen  *screen;
 
+	std::list <CoreWindow *> createdWindows;
 	CompWindowList windows;
 	CompWindow::Map windowsMap;
 

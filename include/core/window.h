@@ -294,8 +294,6 @@ class CompWindow :
 	CompWindow *prev;
 
     public:
-	CompWindow (Window     id,
-	            Window     aboveId);
 	~CompWindow ();
 
 	/**
@@ -552,8 +550,12 @@ class CompWindow :
 	friend class CompScreen;
 	friend class PrivateScreen;
 	friend class ModifierHandler;
+	friend class CoreWindow;
 
     private:
+	CompWindow (Window	  aboveId,
+		    PrivateWindow *priv);
+
 	PrivateWindow *priv;
 };
 

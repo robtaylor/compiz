@@ -1029,13 +1029,15 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    /* Track the window if it was created on this
 	     * screen, otherwise we still need to register
-	     * for FocusChangeMask */
+	     * for FocusChangeMask. Also, we don't want to
+	     * manage it straight away - in reality we want
+	     * that to wait until the map request */
 	    if (wa.root == priv->root)
-		new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
+		new CoreWindow (event->xcreatewindow.window);
 	    else
 		XSelectInput (priv->dpy, event->xcreatewindow.window,
-		FocusChangeMask);
-	}   
+			      FocusChangeMask);
+	}
 	break;
     case DestroyNotify:
 	w = findWindow (event->xdestroywindow.window);
@@ -1051,8 +1053,8 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (w->priv->pendingMaps)
 	    {
-		if (!w->priv->frame)
-		    w->priv->reparent ();
+		//if (!w->priv->frame)
+		    //w->priv->reparent ();
 		w->priv->managed = true;
 	    }
 
@@ -1113,7 +1115,13 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xreparent.window);
 	if (!w && event->xreparent.parent == priv->root)
 	{
-	    new CompWindow (event->xreparent.window, priv->getTopWindow ());
+	    CoreWindow *cw = new CoreWindow (event->xreparent.window);
+
+	    if (cw)
+	    {
+		cw->manage (priv->getTopWindow ());
+		delete cw;
+	    }
 	}
 	else if (w && !(event->xreparent.parent == w->priv->wrapper ||
 		 event->xreparent.parent == priv->root))
@@ -1540,7 +1548,19 @@ CompScreen::handleEvent (XEvent *event)
 	modHandler->updateModifierMappings ();
 	break;
     case MapRequest:
-	w = findWindow (event->xmaprequest.window);
+	/* Create the CompWindow structure here */
+	w = NULL;
+
+	foreach (CoreWindow *cw, priv->createdWindows)
+	{
+	    if (cw->priv->id == event->xmaprequest.window)
+	    {
+		w = cw->manage (priv->getTopWindow ());
+		delete cw;
+		break;
+	    }
+	}
+
 	if (w)
 	{
 	    XWindowAttributes attr;
