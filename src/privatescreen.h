@@ -196,6 +196,7 @@ class PrivateScreen : public CoreOptions {
 	    public:
 
 		friend class CompScreen;
+		friend class SpewScreen;
 	    private:
 		Cursor     cursor;
 		const char *name;

@@ -555,6 +555,8 @@ class CompWindow :
 	friend class PrivateScreen;
 	friend class ModifierHandler;
 	friend class CoreWindow;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	CompWindow (Window	      aboveId,

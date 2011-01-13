@@ -1,0 +1,24 @@
+<compiz>
+    <plugin name="debugspew" useBcop="true">
+    <_short>Debug Spewer</_short>
+    <_long>Spew debugging information about the current state to a file</_long>
+    <deps>
+      <requirement>
+        <plugin>composite</plugin>
+        <plugin>opengl</plugin>
+      </requirement>
+    </deps>
+    <options>
+	<option name="spew_key" type="key">
+	<_short>Spew Key</_short>
+	<_long>Keybinding to spew the current compiz state</_long>
+	<default></default>
+	</option>
+	<option name="spew_on_fatal" type="bool">
+	<_short>Spew on Fatal errors</_short>
+	<_long>Spew when a plugin indicates that something is going wrong</_long>
+	<default>True</default>
+	</option>
+    </options>
+    </plugin>
+</compiz>

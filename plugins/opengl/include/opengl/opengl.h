@@ -398,6 +398,8 @@ class GLScreen :
 	WRAPABLE_HND (4, GLScreenInterface, void, glDisableOutputClipping);
 
 	friend class GLTexture;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	PrivateGLScreen *priv;
@@ -582,6 +584,8 @@ class GLWindow :
 
 	friend class GLScreen;
 	friend class PrivateGLScreen;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	PrivateGLWindow *priv;
