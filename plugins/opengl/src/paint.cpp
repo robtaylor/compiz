@@ -480,7 +480,18 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	    return false;
 	}
 
-	/* fall through and redraw region */
+	setLighting (false);
+
+	sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
+
+	glPushMatrix ();
+	glLoadMatrixf (sTransform.getMatrix ());
+
+	priv->paintOutputRegion (sTransform, region, output, mask);
+
+	glPopMatrix ();
+
+	return true;
     }
     else if (mask & PAINT_SCREEN_FULL_MASK)
     {
@@ -490,20 +501,9 @@ GLScreen::glPaintOutput (const GLScreenPaintAttrib &sAttrib,
 	return true;
     }
     else
+    {
 	return false;
-
-    setLighting (false);
-
-    sTransform.toScreenSpace (output, -DEFAULT_Z_CAMERA);
-
-    glPushMatrix ();
-    glLoadMatrixf (sTransform.getMatrix ());
-
-    priv->paintOutputRegion (sTransform, region, output, mask);
-
-    glPopMatrix ();
-
-    return true;
+    }
 }
 
 #define ADD_RECT(data, m, n, x1, y1, x2, y2)	   \
