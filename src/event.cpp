@@ -1033,7 +1033,22 @@ CompScreen::handleEvent (XEvent *event)
 	     * manage it straight away - in reality we want
 	     * that to wait until the map request */
 	    if (wa.root == priv->root)
-		new CoreWindow (event->xcreatewindow.window);
+	    {
+		/* Our SubstructurRedirectMask doesn't work on OverrideRedirect
+		 * windows so we need to track them directly here */
+		if (!event->xcreatewindow.override_redirect)
+		    new CoreWindow (event->xcreatewindow.window);
+		else
+		{
+		    CoreWindow *cw = new CoreWindow (event->xcreatewindow.window);
+		    
+		    if (cw)
+		    {
+			CompWindow *w = cw->manage (priv->getTopWindow ());
+			delete cw;
+		    }
+		}
+	    }
 	    else
 		XSelectInput (priv->dpy, event->xcreatewindow.window,
 			      FocusChangeMask);
@@ -1053,8 +1068,15 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (w->priv->pendingMaps)
 	    {
-		//if (!w->priv->frame)
-		    //w->priv->reparent ();
+		/* XXX: This shouldn't really happen - 
+		 * the only time we should ever reparent
+		 * a window is on MapRequest or MapNotify
+		 * for override-redirect windows, but in
+		 * some cases the window might not have 
+		 * a frame or something */
+
+		if (!w->priv->frame)
+		    w->priv->reparent ();
 		w->priv->managed = true;
 	    }
 
