@@ -1068,12 +1068,10 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (w->priv->pendingMaps)
 	    {
-		/* XXX: This shouldn't really happen - 
-		 * the only time we should ever reparent
-		 * a window is on MapRequest or MapNotify
-		 * for override-redirect windows, but in
-		 * some cases the window might not have 
-		 * a frame or something */
+		/* The only case where this happens
+		 * is where the window unmaps itself
+		 * but doesn't get destroyed so when
+		 * it re-maps we need to reparent it */
 
 		if (!w->priv->frame)
 		    w->priv->reparent ();
@@ -1582,6 +1580,9 @@ CompScreen::handleEvent (XEvent *event)
 		break;
 	    }
 	}
+
+	if (!w)
+	    w = screen->findWindow (event->xmaprequest.window);
 
 	if (w)
 	{
