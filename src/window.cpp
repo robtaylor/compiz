@@ -5790,6 +5790,8 @@ PrivateWindow::reparent ()
 
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
+    updatePassiveButtonGrabs ();
+
     /* Try to use a relative window as a stacking anchor point */
     if (sibling)
     {
