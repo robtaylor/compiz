@@ -2148,7 +2148,7 @@ PrivateWindow::avoidStackingRelativeTo (CompWindow *w)
 
     if (!w->priv->shaded && !w->priv->pendingMaps)
     {
-	if (!w->priv->managing && (!w->isViewable () || !w->isMapped ()))
+	if (!w->isViewable () || !w->isMapped ())
 	    return true;
     }
 
@@ -2324,7 +2324,9 @@ PrivateWindow::validSiblingBelow (CompWindow *w,
 		return true;
 	}
 	else
+	{
 	    return true;
+	}
 	break;
     default:
 	/* fullscreen and normal layer */
@@ -3229,9 +3231,11 @@ PrivateWindow::findValidStackSiblingBelow (CompWindow *w,
     for (p = sibling; p; p = p->next)
     {
 	if (!avoidStackingRelativeTo (p))
+	{
 	    if (!validSiblingBelow (p, w))
 		return NULL;
 	    break;
+	}
     }
 
     /* get lowest sibling we're allowed to stack above */
@@ -3338,7 +3342,7 @@ CompWindow::updateAttributes (CompStackingUpdateMode stackingMode)
 	     * window may not be allowed). */
 	    if (p && PrivateWindow::validSiblingBelow (p, this))
 	    {
-		p = PrivateWindow::findValidStackSiblingBelow (this, sibling);
+		p = PrivateWindow::findValidStackSiblingBelow (sibling, p);
 
 		/* if we found a valid sibling under the active window, it's
 		   our new sibling we want to stack above */
@@ -5412,7 +5416,6 @@ PrivateWindow::PrivateWindow (CoreWindow *window) :
     destroyed (false),
     managed (false),
     unmanaging (false),
-    managing (false),
     destroyRefCnt (1),
     unmapRefCnt (1),
 

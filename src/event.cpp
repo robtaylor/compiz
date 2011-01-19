@@ -1586,8 +1586,7 @@ CompScreen::handleEvent (XEvent *event)
 	if (w)
 	{
 	    XWindowAttributes attr;
-
-	    w->priv->managing = true;
+	    bool              doMapProcessing = true;
 
 	    /* We should check the override_redirect flag here, because the
 	       client might have changed it while being unmapped. */
@@ -1596,13 +1595,12 @@ CompScreen::handleEvent (XEvent *event)
 
 	    if (w->state () & CompWindowStateHiddenMask)
 		if (!w->minimized () && !w->inShowDesktopMode ())
-		    w->priv->managing = false;
+		    doMapProcessing = false;
 
-	    if (w->priv->managing)
+	    if (doMapProcessing)
 		w->priv->processMap ();
 
 	    w->priv->managed = true;
-	    w->priv->managing = false;
 
 	    setWindowProp (w->id (), Atoms::winDesktop, w->desktop ());
 	}
