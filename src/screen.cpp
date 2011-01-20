@@ -4532,7 +4532,15 @@ CompScreen::init (const char *name)
 		&children, &nchildren);
 
     for (unsigned int i = 0; i < nchildren; i++)
-	new CompWindow (children[i], i ? children[i - 1] : 0);
+    {
+	CoreWindow *cw = new CoreWindow (children[i]);
+
+	if (cw)
+	{
+	    cw->manage (i ? children[i - 1] : 0);
+	    delete cw;
+	}
+    }
 
     foreach (CompWindow *w, priv->windows)
     {

@@ -1029,13 +1029,30 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    /* Track the window if it was created on this
 	     * screen, otherwise we still need to register
-	     * for FocusChangeMask */
+	     * for FocusChangeMask. Also, we don't want to
+	     * manage it straight away - in reality we want
+	     * that to wait until the map request */
 	    if (wa.root == priv->root)
-		new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
+	    {
+		/* Our SubstructurRedirectMask doesn't work on OverrideRedirect
+		 * windows so we need to track them directly here */
+		if (!event->xcreatewindow.override_redirect)
+		    new CoreWindow (event->xcreatewindow.window);
+		else
+		{
+		    CoreWindow *cw = new CoreWindow (event->xcreatewindow.window);
+		    
+		    if (cw)
+		    {
+			CompWindow *w = cw->manage (priv->getTopWindow ());
+			delete cw;
+		    }
+		}
+	    }
 	    else
 		XSelectInput (priv->dpy, event->xcreatewindow.window,
-		FocusChangeMask);
-	}   
+			      FocusChangeMask);
+	}
 	break;
     case DestroyNotify:
 	w = findWindow (event->xdestroywindow.window);
@@ -1051,6 +1068,11 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (w->priv->pendingMaps)
 	    {
+		/* The only case where this happens
+		 * is where the window unmaps itself
+		 * but doesn't get destroyed so when
+		 * it re-maps we need to reparent it */
+
 		if (!w->priv->frame)
 		    w->priv->reparent ();
 		w->priv->managed = true;
@@ -1113,7 +1135,13 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xreparent.window);
 	if (!w && event->xreparent.parent == priv->root)
 	{
-	    new CompWindow (event->xreparent.window, priv->getTopWindow ());
+	    CoreWindow *cw = new CoreWindow (event->xreparent.window);
+
+	    if (cw)
+	    {
+		cw->manage (priv->getTopWindow ());
+		delete cw;
+	    }
 	}
 	else if (w && !(event->xreparent.parent == w->priv->wrapper ||
 		 event->xreparent.parent == priv->root))
@@ -1540,7 +1568,22 @@ CompScreen::handleEvent (XEvent *event)
 	modHandler->updateModifierMappings ();
 	break;
     case MapRequest:
-	w = findWindow (event->xmaprequest.window);
+	/* Create the CompWindow structure here */
+	w = NULL;
+
+	foreach (CoreWindow *cw, priv->createdWindows)
+	{
+	    if (cw->priv->id == event->xmaprequest.window)
+	    {
+		w = cw->manage (priv->getTopWindow ());
+		delete cw;
+		break;
+	    }
+	}
+
+	if (!w)
+	    w = screen->findWindow (event->xmaprequest.window);
+
 	if (w)
 	{
 	    XWindowAttributes attr;
