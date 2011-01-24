@@ -950,6 +950,34 @@ PrivateScreen::handleActionEvent (XEvent *event)
 }
 
 void
+PrivateScreen::setDefaultWindowAttributes (XWindowAttributes *wa)
+{
+    wa->x		      = 0;
+    wa->y		      = 0;
+    wa->width		      = 1;
+    wa->height		      = 1;
+    wa->border_width	      = 0;
+    wa->depth		      = 0;
+    wa->visual		      = NULL;
+    wa->root		      = None;
+    wa->c_class		      = InputOnly;
+    wa->bit_gravity	      = NorthWestGravity;
+    wa->win_gravity	      = NorthWestGravity;
+    wa->backing_store	      = NotUseful;
+    wa->backing_planes	      = 0;
+    wa->backing_pixel	      = 0;
+    wa->save_under	      = false;
+    wa->colormap	      = None;
+    wa->map_installed	      = false;
+    wa->map_state	      = IsUnviewable;
+    wa->all_event_masks	      = 0;
+    wa->your_event_mask	      = 0;
+    wa->do_not_propagate_mask = 0;
+    wa->override_redirect     = true;
+    wa->screen		      = NULL;
+}
+
+void
 CompScreen::handleCompizEvent (const char         *plugin,
 			       const char         *event,
 			       CompOption::Vector &options)
@@ -960,7 +988,7 @@ CompScreen::handleEvent (XEvent *event)
 {
     WRAPABLE_HND_FUNC (6, handleEvent, event)
 
-    CompWindow *w;
+    CompWindow *w = NULL;
     XWindowAttributes wa;
 
     switch (event->type) {
@@ -1021,22 +1049,50 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case CreateNotify:
-	XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa);
+    {
+	bool failure = false;
+
+	/* Failure means that window has been destroyed. We still have to add 
+	 * the window to the window list as we might get configure requests
+	 * which require us to stack other windows relative to it. Setting
+	 * some default values if this is the case. */
+	if (failure = !XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa))
+	    priv->setDefaultWindowAttributes (&wa);
+
 	w = findTopLevelWindow (event->xcreatewindow.window, true);
 
-	if (event->xcreatewindow.parent == wa.root &&
+	if ((event->xcreatewindow.parent == wa.root || failure) &&
 	    (!w || w->frame () != event->xcreatewindow.window))
 	{
 	    /* Track the window if it was created on this
 	     * screen, otherwise we still need to register
-	     * for FocusChangeMask */
-	    if (wa.root == priv->root)
-		new CompWindow (event->xcreatewindow.window, priv->getTopWindow ());
+	     * for FocusChangeMask. Also, we don't want to
+	     * manage it straight away - in reality we want
+	     * that to wait until the map request */
+	    if (failure || (wa.root == priv->root))
+	    {
+		/* Our SubstructureRedirectMask doesn't work on OverrideRedirect
+		 * windows so we need to track them directly here */
+		if (!event->xcreatewindow.override_redirect)
+		    new CoreWindow (event->xcreatewindow.window, wa);
+		else
+		{
+		    CoreWindow *cw = 
+			new CoreWindow (event->xcreatewindow.window, wa);
+		    
+		    if (cw)
+		    {
+			w = cw->manage (priv->getTopWindow ());
+			delete cw;
+		    }
+		}
+	    }
 	    else
 		XSelectInput (priv->dpy, event->xcreatewindow.window,
-		FocusChangeMask);
-	}   
+			      FocusChangeMask);
+	}
 	break;
+    }
     case DestroyNotify:
 	w = findWindow (event->xdestroywindow.window);
 	if (w)
@@ -1046,11 +1102,40 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	break;
     case MapNotify:
-	w = findWindow (event->xmap.window);
+
+	/* Some broken applications and toolkits (eg QT) will lie to
+	 * us about their override-redirect mask - not setting it on
+	 * the initial CreateNotify and then setting it later on
+	 * just after creation. Unfortunately, this means that QT
+	 * has successfully bypassed both of our window tracking
+	 * mechanisms (eg, not override-redirect at CreateNotify time
+	 * and then bypassing MapRequest because it *is* override-redirect
+	 * at XMapWindow time, so we need to catch this case and make
+	 * sure that windows are tracked here */
+	
+	foreach (CoreWindow *cw, priv->createdWindows)
+	{
+	    if (cw->priv->id == event->xmap.window)
+	    {
+		w = cw->manage (priv->getTopWindow ());
+		delete cw;
+		break;
+	    }
+	}
+
+	/* Search in already-created windows for this window */
+	if (!w)
+	    w = findWindow (event->xmap.window);
+
 	if (w)
 	{
 	    if (w->priv->pendingMaps)
 	    {
+		/* The only case where this happens
+		 * is where the window unmaps itself
+		 * but doesn't get destroyed so when
+		 * it re-maps we need to reparent it */
+
 		if (!w->priv->frame)
 		    w->priv->reparent ();
 		w->priv->managed = true;
@@ -1065,6 +1150,7 @@ CompScreen::handleEvent (XEvent *event)
 
 	    w->map ();
 	}
+
 	break;
     case UnmapNotify:
 	w = findWindow (event->xunmap.window);
@@ -1113,7 +1199,20 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (event->xreparent.window);
 	if (!w && event->xreparent.parent == priv->root)
 	{
-	    new CompWindow (event->xreparent.window, priv->getTopWindow ());
+	    /* Failure means that window has been destroyed. We still have to add 
+	     * the window to the window list as we might get configure requests
+	     * which require us to stack other windows relative to it. Setting
+	     * some default values if this is the case. */
+	    if (!XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa))
+		priv->setDefaultWindowAttributes (&wa);
+
+	    CoreWindow *cw = new CoreWindow (event->xreparent.window, wa);
+
+	    if (cw)
+	    {
+		cw->manage (priv->getTopWindow ());
+		delete cw;
+	    }
 	}
 	else if (w && !(event->xreparent.parent == w->priv->wrapper ||
 		 event->xreparent.parent == priv->root))
@@ -1540,7 +1639,22 @@ CompScreen::handleEvent (XEvent *event)
 	modHandler->updateModifierMappings ();
 	break;
     case MapRequest:
-	w = findWindow (event->xmaprequest.window);
+	/* Create the CompWindow structure here */
+	w = NULL;
+
+	foreach (CoreWindow *cw, priv->createdWindows)
+	{
+	    if (cw->priv->id == event->xmaprequest.window)
+	    {
+		w = cw->manage (priv->getTopWindow ());
+		delete cw;
+		break;
+	    }
+	}
+
+	if (!w)
+	    w = screen->findWindow (event->xmaprequest.window);
+
 	if (w)
 	{
 	    XWindowAttributes attr;

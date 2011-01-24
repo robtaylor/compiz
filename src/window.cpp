@@ -1158,34 +1158,6 @@ CompWindow::updateStruts ()
     return false;
 }
 
-static void
-setDefaultWindowAttributes (XWindowAttributes *wa)
-{
-    wa->x		      = 0;
-    wa->y		      = 0;
-    wa->width		      = 1;
-    wa->height		      = 1;
-    wa->border_width	      = 0;
-    wa->depth		      = 0;
-    wa->visual		      = NULL;
-    wa->root		      = None;
-    wa->c_class		      = InputOnly;
-    wa->bit_gravity	      = NorthWestGravity;
-    wa->win_gravity	      = NorthWestGravity;
-    wa->backing_store	      = NotUseful;
-    wa->backing_planes	      = 0;
-    wa->backing_pixel	      = 0;
-    wa->save_under	      = false;
-    wa->colormap	      = None;
-    wa->map_installed	      = false;
-    wa->map_state	      = IsUnviewable;
-    wa->all_event_masks	      = 0;
-    wa->your_event_mask	      = 0;
-    wa->do_not_propagate_mask = 0;
-    wa->override_redirect     = true;
-    wa->screen		      = NULL;
-}
-
 void
 CompWindow::incrementDestroyReference ()
 {
@@ -5120,20 +5092,30 @@ CompWindow::syncAlarm ()
     return priv->syncAlarm;
 }
 
+CompWindow *
+CoreWindow::manage (Window aboveId)
+{
+    screen->priv->createdWindows.remove (this);
+    return new CompWindow (aboveId, priv);
+}
 
-CompWindow::CompWindow (Window id,
-			Window aboveId) :
-   PluginClassStorage (windowPluginClassIndices)
+/*
+ * On CreateNotify we only want to do some very basic
+ * initialization on the windows, and we need to be
+ * tracking things like eg override-redirect windows
+ * for compositing, although only on MapRequest do
+ * we actually care about them (and let the plugins
+ * care about them too)
+ */
+
+CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
 {
     priv = new PrivateWindow (this);
     assert (priv);
 
-    /* Failure means that window has been destroyed. We still have to add the
-       window to the window list as we might get configure requests which
-       require us to stack other windows relative to it. Setting some default
-       values if this is the case. */
-    if (!XGetWindowAttributes (screen->dpy (), id, &priv->attrib))
-	setDefaultWindowAttributes (&priv->attrib);
+    screen->priv->createdWindows.push_back (this);
+
+    priv->attrib = wa;
 
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
@@ -5162,15 +5144,13 @@ CompWindow::CompWindow (Window id,
 
     priv->id = id;
 
-    priv->alpha     = (depth () == 32);
+    priv->alpha     = (priv->attrib.depth == 32);
     priv->lastPong  = screen->priv->lastPing;
 
     if (screen->XShape ())
 	XShapeSelectInput (screen->dpy (), id, ShapeNotifyMask);
 
-    screen->insertWindow (this, aboveId);
-
-    if (windowClass () != InputOnly)
+    if (priv->attrib.c_class != InputOnly)
     {
 	priv->region = CompRegion (priv->attrib.x, priv->attrib.y,
 				   priv->width, priv->height);
@@ -5185,6 +5165,17 @@ CompWindow::CompWindow (Window id,
     {
 	priv->attrib.map_state = IsUnmapped;
     }
+}
+
+CompWindow::CompWindow (Window aboveId, PrivateWindow *priv) :
+   PluginClassStorage (windowPluginClassIndices),
+   priv (priv)
+{
+    // TODO: Reparent first!
+
+    priv->window = this;
+
+    screen->insertWindow (this, aboveId);
 
     priv->wmType    = screen->priv->getWindowType (priv->id);
     priv->protocols = screen->priv->getProtocols (priv->id);
@@ -5225,6 +5216,7 @@ CompWindow::CompWindow (Window id,
 
 	if (!overrideRedirect ())
 	{
+	    // needs to happen right after maprequest
 	    if (!priv->frame)
 		priv->reparent ();
 	    priv->managed = true;
@@ -5280,6 +5272,7 @@ CompWindow::CompWindow (Window id,
     {
 	if (screen->priv->getWmState (priv->id) == IconicState)
 	{
+	    // before everything else in maprequest
 	    if (!priv->frame)
 		priv->reparent ();
 	    priv->managed = true;
@@ -5363,9 +5356,8 @@ CompWindow::~CompWindow ()
     delete priv;
 }
 
-PrivateWindow::PrivateWindow (CompWindow *window) :
+PrivateWindow::PrivateWindow (CoreWindow *window) :
     priv (this),
-    window (window),
     refcnt (1),
     id (None),
     frame (None),
@@ -5764,6 +5756,8 @@ PrivateWindow::reparent ()
     XUngrabServer (dpy);
 
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
+
+    updatePassiveButtonGrabs ();
 
     /* Try to use a relative window as a stacking anchor point */
     if (sibling)
