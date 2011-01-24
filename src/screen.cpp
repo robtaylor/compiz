@@ -4395,7 +4395,7 @@ CompScreen::init (const char *name)
      * on a display level and we need to check
      * if the screen we are running on lost focus */
 
-    for (unsigned int i = 0; i <= ScreenCount (dpy) - 1; i++)
+    for (int i = 0; i <= ScreenCount (dpy) - 1; i++)
     {
 	Window rt = XRootWindow (dpy, i);
 
@@ -4572,7 +4572,20 @@ CompScreen::init (const char *name)
 
     for (unsigned int i = 0; i < nchildren; i++)
     {
-	CoreWindow *cw = new CoreWindow (children[i]);
+	XWindowAttributes attrib;
+
+	/* Failure means the window has been destroyed, but
+	 * still add it to the window list anyways since we
+	 * will soon handle the DestroyNotify event for it
+	 * and in between CreateNotify time and DestroyNotify
+	 * time there might be ConfigureRequests asking us
+	 * to stack windows relative to it
+	 */
+
+	if (!XGetWindowAttributes (screen->dpy (), children[i], &attrib))
+	    priv->setDefaultWindowAttributes (&attrib);
+
+	CoreWindow *cw = new CoreWindow (children[i], attrib);
 
 	if (cw)
 	{

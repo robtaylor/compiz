@@ -1158,34 +1158,6 @@ CompWindow::updateStruts ()
     return false;
 }
 
-static void
-setDefaultWindowAttributes (XWindowAttributes *wa)
-{
-    wa->x		      = 0;
-    wa->y		      = 0;
-    wa->width		      = 1;
-    wa->height		      = 1;
-    wa->border_width	      = 0;
-    wa->depth		      = 0;
-    wa->visual		      = NULL;
-    wa->root		      = None;
-    wa->c_class		      = InputOnly;
-    wa->bit_gravity	      = NorthWestGravity;
-    wa->win_gravity	      = NorthWestGravity;
-    wa->backing_store	      = NotUseful;
-    wa->backing_planes	      = 0;
-    wa->backing_pixel	      = 0;
-    wa->save_under	      = false;
-    wa->colormap	      = None;
-    wa->map_installed	      = false;
-    wa->map_state	      = IsUnviewable;
-    wa->all_event_masks	      = 0;
-    wa->your_event_mask	      = 0;
-    wa->do_not_propagate_mask = 0;
-    wa->override_redirect     = true;
-    wa->screen		      = NULL;
-}
-
 void
 CompWindow::incrementDestroyReference ()
 {
@@ -5136,19 +5108,14 @@ CoreWindow::manage (Window aboveId)
  * care about them too)
  */
 
-CoreWindow::CoreWindow (Window id)
+CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
 {
     priv = new PrivateWindow (this);
     assert (priv);
 
     screen->priv->createdWindows.push_back (this);
 
-    /* Failure means that window has been destroyed. We still have to add the
-       window to the window list as we might get configure requests which
-       require us to stack other windows relative to it. Setting some default
-       values if this is the case. */
-    if (!XGetWindowAttributes (screen->dpy (), id, &priv->attrib))
-	setDefaultWindowAttributes (&priv->attrib);
+    priv->attrib = wa;
 
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
