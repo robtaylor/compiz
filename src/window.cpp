@@ -5652,11 +5652,8 @@ PrivateWindow::reparent ()
     XWindowAttributes    wa;
     XWindowChanges       xwc;
     int                  mask;
-    CompWindow::Geometry sg = serverGeometry;
+    CompWindow::Geometry &sg = serverGeometry;
     Display              *dpy = screen->dpy ();
-    Window		 root_ret;
-    unsigned int	 uidummy;
-    int			 idummy;
     Visual		 *visual = DefaultVisual (screen->dpy (),
 						  screen->screenNum ());
     Colormap		 cmap = DefaultColormap (screen->dpy (),
@@ -5668,8 +5665,7 @@ PrivateWindow::reparent ()
     XSync (dpy, false);
     XGrabServer (dpy);
 
-    if (!XGetGeometry (screen->dpy (), id, &root_ret, &idummy, &idummy, &uidummy, &uidummy, &uidummy, &uidummy) ||
-	!XGetWindowAttributes (dpy, id, &wa))
+    if (!XGetWindowAttributes (dpy, id, &wa))
     {
 	XUngrabServer (dpy);
 	XSync (dpy, false);
