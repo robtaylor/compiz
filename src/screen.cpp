@@ -4597,6 +4597,9 @@ CompScreen::init (const char *name)
 	}
     }
 
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
     /* enforce restack on all windows */
     for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
 	 rit != priv->windows.rend (); rit++)
@@ -4611,9 +4614,6 @@ CompScreen::init (const char *name)
 	if (w->isViewable ())
 	    w->priv->activeNum = priv->activeNum++;
     }
-
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     XGetInputFocus (dpy, &focus, &revertTo);
 
