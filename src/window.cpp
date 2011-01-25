@@ -1158,34 +1158,6 @@ CompWindow::updateStruts ()
     return false;
 }
 
-static void
-setDefaultWindowAttributes (XWindowAttributes *wa)
-{
-    wa->x		      = 0;
-    wa->y		      = 0;
-    wa->width		      = 1;
-    wa->height		      = 1;
-    wa->border_width	      = 0;
-    wa->depth		      = 0;
-    wa->visual		      = NULL;
-    wa->root		      = None;
-    wa->c_class		      = InputOnly;
-    wa->bit_gravity	      = NorthWestGravity;
-    wa->win_gravity	      = NorthWestGravity;
-    wa->backing_store	      = NotUseful;
-    wa->backing_planes	      = 0;
-    wa->backing_pixel	      = 0;
-    wa->save_under	      = false;
-    wa->colormap	      = None;
-    wa->map_installed	      = false;
-    wa->map_state	      = IsUnviewable;
-    wa->all_event_masks	      = 0;
-    wa->your_event_mask	      = 0;
-    wa->do_not_propagate_mask = 0;
-    wa->override_redirect     = true;
-    wa->screen		      = NULL;
-}
-
 void
 CompWindow::incrementDestroyReference ()
 {
@@ -5136,19 +5108,14 @@ CoreWindow::manage (Window aboveId)
  * care about them too)
  */
 
-CoreWindow::CoreWindow (Window id)
+CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
 {
     priv = new PrivateWindow (this);
     assert (priv);
 
     screen->priv->createdWindows.push_back (this);
 
-    /* Failure means that window has been destroyed. We still have to add the
-       window to the window list as we might get configure requests which
-       require us to stack other windows relative to it. Setting some default
-       values if this is the case. */
-    if (!XGetWindowAttributes (screen->dpy (), id, &priv->attrib))
-	setDefaultWindowAttributes (&priv->attrib);
+    priv->attrib = wa;
 
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
@@ -5685,13 +5652,8 @@ PrivateWindow::reparent ()
     XWindowAttributes    wa;
     XWindowChanges       xwc;
     int                  mask;
-    CompWindow::Geometry sg = serverGeometry;
+    CompWindow::Geometry &sg = serverGeometry;
     Display              *dpy = screen->dpy ();
-    CompWindow		 *sibling = window->next ? window->next : window->prev;
-    bool		 above = window->next ? false : true;
-    Window		 root_ret;
-    unsigned int	 uidummy;
-    int			 idummy;
     Visual		 *visual = DefaultVisual (screen->dpy (),
 						  screen->screenNum ());
     Colormap		 cmap = DefaultColormap (screen->dpy (),
@@ -5703,8 +5665,7 @@ PrivateWindow::reparent ()
     XSync (dpy, false);
     XGrabServer (dpy);
 
-    if (!XGetGeometry (screen->dpy (), id, &root_ret, &idummy, &idummy, &uidummy, &uidummy, &uidummy, &uidummy) ||
-	!XGetWindowAttributes (dpy, id, &wa))
+    if (!XGetWindowAttributes (dpy, id, &wa))
     {
 	XUngrabServer (dpy);
 	XSync (dpy, false);
@@ -5738,7 +5699,19 @@ PrivateWindow::reparent ()
 			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, visual, mask, &attr);
 
+    xwc.stack_mode = Below;
+    xwc.sibling = id;
+
+    /* Make sure the frame is underneath the client */
+    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
+
+    /* Wait for the restacking to finish */
+    XSync (dpy, false);
+
+    /* Always need to have the wrapper window mapped */
     XMapWindow (dpy, wrapper);
+
+    /* Reparent the client into the wrapper window */
     XReparentWindow (dpy, id, wrapper, 0, 0);
 
     attr.event_mask = PropertyChangeMask | FocusChangeMask |
@@ -5791,15 +5764,6 @@ PrivateWindow::reparent ()
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
     updatePassiveButtonGrabs ();
-
-    /* Try to use a relative window as a stacking anchor point */
-    if (sibling)
-    {
-	if (above)
-	    window->restackAbove (sibling);
-	else
-	    priv->restack (sibling->id ());
-    }
 
     window->windowNotify (CompWindowNotifyReparent);
 

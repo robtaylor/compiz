@@ -371,6 +371,8 @@ class PrivateScreen : public CoreOptions {
 
 	bool
 	createFailed ();
+	
+	void setDefaultWindowAttributes (XWindowAttributes *);
 
     public:
 

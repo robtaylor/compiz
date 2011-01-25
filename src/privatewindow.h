@@ -308,7 +308,7 @@ class CoreWindow
 {
     public:
 
-	CoreWindow (Window id);
+	CoreWindow (Window id, XWindowAttributes &wa);
 
 	CompWindow * manage (Window id);
 

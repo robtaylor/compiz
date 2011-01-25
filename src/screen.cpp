@@ -4356,7 +4356,7 @@ CompScreen::init (const char *name)
      * on a display level and we need to check
      * if the screen we are running on lost focus */
 
-    for (unsigned int i = 0; i <= ScreenCount (dpy) - 1; i++)
+    for (int i = 0; i <= ScreenCount (dpy) - 1; i++)
     {
 	Window rt = XRootWindow (dpy, i);
 
@@ -4377,6 +4377,14 @@ CompScreen::init (const char *name)
 	XUngrabServer (dpy);
 	return false;
     }
+
+    /* We only care about windows we're not going to
+     * get a CreateNotify for later, so query the tree
+     * here, init plugin screens, and then init windows */
+
+    XQueryTree (dpy, root,
+		&rootReturn, &parentReturn,
+		&children, &nchildren);
 
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
@@ -4524,16 +4532,24 @@ CompScreen::init (const char *name)
     if (priv->dirtyPluginList)
 	priv->updatePlugins ();
 
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
-
-    XQueryTree (dpy, priv->root,
-		&rootReturn, &parentReturn,
-		&children, &nchildren);
+    /* Start initializing windows here */
 
     for (unsigned int i = 0; i < nchildren; i++)
     {
-	CoreWindow *cw = new CoreWindow (children[i]);
+	XWindowAttributes attrib;
+
+	/* Failure means the window has been destroyed, but
+	 * still add it to the window list anyways since we
+	 * will soon handle the DestroyNotify event for it
+	 * and in between CreateNotify time and DestroyNotify
+	 * time there might be ConfigureRequests asking us
+	 * to stack windows relative to it
+	 */
+
+	if (!XGetWindowAttributes (screen->dpy (), children[i], &attrib))
+	    priv->setDefaultWindowAttributes (&attrib);
+
+	CoreWindow *cw = new CoreWindow (children[i], attrib);
 
 	if (cw)
 	{
@@ -4542,13 +4558,23 @@ CompScreen::init (const char *name)
 	}
     }
 
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
+    /* enforce restack on all windows */
+    for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	 rit != priv->windows.rend (); rit++)
+	children[i] = (*rit)->id ();
+
+    XRestackWindows (dpy, children, i);
+
+    XFree (children);
+
     foreach (CompWindow *w, priv->windows)
     {
 	if (w->isViewable ())
 	    w->priv->activeNum = priv->activeNum++;
     }
-
-    XFree (children);
 
     XGetInputFocus (dpy, &focus, &revertTo);
 
