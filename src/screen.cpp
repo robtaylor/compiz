@@ -4417,6 +4417,14 @@ CompScreen::init (const char *name)
 	return false;
     }
 
+    /* We only care about windows we're not going to
+     * get a CreateNotify for later, so query the tree
+     * here, init plugin screens, and then init windows */
+
+    XQueryTree (dpy, root,
+		&rootReturn, &parentReturn,
+		&children, &nchildren);
+
     for (i = 0; i < SCREEN_EDGE_NUM; i++)
     {
 	priv->screenEdge[i].id    = None;
@@ -4563,12 +4571,7 @@ CompScreen::init (const char *name)
     if (priv->dirtyPluginList)
 	priv->updatePlugins ();
 
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
-
-    XQueryTree (dpy, priv->root,
-		&rootReturn, &parentReturn,
-		&children, &nchildren);
+    /* Start initializing windows here */
 
     for (unsigned int i = 0; i < nchildren; i++)
     {
@@ -4594,13 +4597,23 @@ CompScreen::init (const char *name)
 	}
     }
 
+    /* enforce restack on all windows */
+    for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
+	 rit != priv->windows.rend (); rit++)
+	children[i] = (*rit)->id ();
+
+    XRestackWindows (dpy, children, i);
+
+    XFree (children);
+
     foreach (CompWindow *w, priv->windows)
     {
 	if (w->isViewable ())
 	    w->priv->activeNum = priv->activeNum++;
     }
 
-    XFree (children);
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     XGetInputFocus (dpy, &focus, &revertTo);
 

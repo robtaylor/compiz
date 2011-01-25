@@ -5654,8 +5654,6 @@ PrivateWindow::reparent ()
     int                  mask;
     CompWindow::Geometry sg = serverGeometry;
     Display              *dpy = screen->dpy ();
-    CompWindow		 *sibling = window->next ? window->next : window->prev;
-    bool		 above = window->next ? false : true;
     Window		 root_ret;
     unsigned int	 uidummy;
     int			 idummy;
@@ -5705,7 +5703,19 @@ PrivateWindow::reparent ()
 			    sg.width (), sg.height (), 0, attrib.depth,
 			    InputOutput, visual, mask, &attr);
 
+    xwc.stack_mode = Below;
+    xwc.sibling = id;
+
+    /* Make sure the frame is underneath the client */
+    XConfigureWindow (dpy, frame, CWSibling | CWStackMode, &xwc);
+
+    /* Wait for the restacking to finish */
+    XSync (dpy, false);
+
+    /* Always need to have the wrapper window mapped */
     XMapWindow (dpy, wrapper);
+
+    /* Reparent the client into the wrapper window */
     XReparentWindow (dpy, id, wrapper, 0, 0);
 
     attr.event_mask = PropertyChangeMask | FocusChangeMask |
@@ -5758,15 +5768,6 @@ PrivateWindow::reparent ()
     XMoveResizeWindow (dpy, frame, sg.x (), sg.y (), sg.width (), sg.height ());
 
     updatePassiveButtonGrabs ();
-
-    /* Try to use a relative window as a stacking anchor point */
-    if (sibling)
-    {
-	if (above)
-	    window->restackAbove (sibling);
-	else
-	    priv->restack (sibling->id ());
-    }
 
     window->windowNotify (CompWindowNotifyReparent);
 
