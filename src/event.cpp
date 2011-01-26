@@ -1057,7 +1057,7 @@ CompScreen::handleEvent (XEvent *event)
 	 * the window to the window list as we might get configure requests
 	 * which require us to stack other windows relative to it. Setting
 	 * some default values if this is the case. */
-	if (failure = !XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa))
+	if ((failure = !XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa)))
 	    priv->setDefaultWindowAttributes (&wa);
 
 	w = findTopLevelWindow (event->xcreatewindow.window, true);
