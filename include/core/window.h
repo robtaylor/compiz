@@ -369,8 +369,6 @@ class CompWindow :
 
 	int mapNum () const;
 
-	CompStruts * struts ();
-
 	int & saveMask ();
 
 	XWindowChanges & saveWc ();
@@ -513,6 +511,7 @@ class CompWindow :
 	static void freePluginClassIndex (unsigned int index);
 
 	bool updateStruts ();
+	CompStruts *struts ();
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents&);

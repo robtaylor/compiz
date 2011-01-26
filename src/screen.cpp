@@ -71,8 +71,10 @@ CompOutput *targetOutput;
 
 int lastPointerX = 0;
 int lastPointerY = 0;
+unsigned int lastPointerMods = 0;
 int pointerX     = 0;
 int pointerY     = 0;
+unsigned int pointerMods = 0;
 
 #define MwmHintsFunctions   (1L << 0)
 #define MwmHintsDecorations (1L << 1)
@@ -752,27 +754,49 @@ PrivateScreen::processEvents ()
 	case ButtonRelease:
 	    pointerX = event.xbutton.x_root;
 	    pointerY = event.xbutton.y_root;
+	    pointerMods = event.xbutton.state;
 	    break;
 	case KeyPress:
 	case KeyRelease:
 	    pointerX = event.xkey.x_root;
 	    pointerY = event.xkey.y_root;
+	    pointerMods = event.xbutton.state;
 	    break;
 	case MotionNotify:
 	    pointerX = event.xmotion.x_root;
 	    pointerY = event.xmotion.y_root;
+	    pointerMods = event.xbutton.state;
 	    break;
 	case EnterNotify:
 	case LeaveNotify:
 	    pointerX = event.xcrossing.x_root;
 	    pointerY = event.xcrossing.y_root;
+	    pointerMods = event.xbutton.state;
 	    break;
 	case ClientMessage:
 	    if (event.xclient.message_type == Atoms::xdndPosition)
 	    {
 		pointerX = event.xclient.data.l[2] >> 16;
 		pointerY = event.xclient.data.l[2] & 0xffff;
+		/* FIXME: Xdnd provides us no way of getting the pointer mods
+		 * without doing XQueryPointer, which is a round-trip */
+		pointerMods = 0;
 	    }
+	    else if (event.xclient.message_type == Atoms::wmMoveResize)
+	    {
+		int i;
+		Window child, root;
+		/* _NET_WM_MOVERESIZE is most often sent by clients who provide
+		 * a special "grab space" on a window for the user to initiate
+		 * adjustment by the window manager. Since we don't have a
+		 * passive grab on Button1 for active and raised windows, we
+		 * need to update the pointer buffer here */
+
+		XQueryPointer (screen->dpy (), screen->root (),
+			       &root, &child, &pointerX, &pointerY,
+			       &i, &i, &pointerMods);
+	    }
+	    break;
 	default:
 	    break;
         }
@@ -785,6 +809,7 @@ PrivateScreen::processEvents ()
 
 	lastPointerX = pointerX;
 	lastPointerY = pointerY;
+	lastPointerMods = pointerMods;
     }
 }
 

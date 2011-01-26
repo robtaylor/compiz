@@ -1008,6 +1008,7 @@ CompScreen::handleEvent (XEvent *event)
 	w = findWindow (priv->activeWindow);
 	if (w)
 	    priv->setCurrentOutput (w->outputDevice ());
+	break;
     default:
 	break;
     }

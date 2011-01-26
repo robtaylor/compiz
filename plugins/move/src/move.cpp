@@ -568,7 +568,6 @@ MoveScreen::handleEvent (XEvent *event)
 		    if (w)
 		    {
 			CompOption::Vector o;
-			int	       xRoot, yRoot;
 
 			o.push_back (CompOption ("window", CompOption::TypeInt));
 			o[0].value ().set ((int) event->xclient.window);
@@ -584,19 +583,12 @@ MoveScreen::handleEvent (XEvent *event)
 			}
 			else
 			{
-			    unsigned int mods;
-			    Window	     root, child;
-			    int	     i;
-
-			    XQueryPointer (screen->dpy (), screen->root (),
-					   &root, &child, &xRoot, &yRoot,
-					   &i, &i, &mods);
 
 			    /* TODO: not only button 1 */
-			    if (mods & Button1Mask)
+			    if (pointerMods & Button1Mask)
 			    {
 				o.push_back (CompOption ("modifiers", CompOption::TypeInt));
-				o[2].value ().set ((int) mods);
+				o[2].value ().set ((int) pointerMods);
 
 				o.push_back (CompOption ("x", CompOption::TypeInt));
 				o[3].value ().set ((int) event->xclient.data.l[0]);
@@ -611,7 +603,7 @@ MoveScreen::handleEvent (XEvent *event)
 				moveInitiate (&optionGetInitiateButton (),
 					      CompAction::StateInitButton, o);
 
-				moveHandleMotionEvent (screen, xRoot, yRoot);
+				moveHandleMotionEvent (screen, pointerX, pointerY);
 			    }
 			}
 		    }
