@@ -5796,6 +5796,7 @@ PrivateWindow::unreparent ()
 
         XChangeSaveSet (dpy, id, SetModeDelete);
         XSelectInput (dpy, frame, NoEventMask);
+	XSelectInput (dpy, wrapper, NoEventMask);
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
         XReparentWindow (dpy, id, screen->root (), 0, 0);
