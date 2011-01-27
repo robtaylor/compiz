@@ -4613,11 +4613,11 @@ CompScreen::init (const char *name)
 	if (!XGetWindowAttributes (screen->dpy (), children[i], &attrib))
 	    priv->setDefaultWindowAttributes (&attrib);
 
-	CoreWindow *cw = new CoreWindow (children[i], attrib);
+	CoreWindow *cw = new CoreWindow (children[i]);
 
 	if (cw)
 	{
-	    cw->manage (i ? children[i - 1] : 0);
+	    cw->manage (i ? children[i - 1] : 0, attrib);
 	    delete cw;
 	}
     }

@@ -1075,15 +1075,15 @@ CompScreen::handleEvent (XEvent *event)
 		/* Our SubstructureRedirectMask doesn't work on OverrideRedirect
 		 * windows so we need to track them directly here */
 		if (!event->xcreatewindow.override_redirect)
-		    new CoreWindow (event->xcreatewindow.window, wa);
+		    new CoreWindow (event->xcreatewindow.window);
 		else
 		{
 		    CoreWindow *cw = 
-			new CoreWindow (event->xcreatewindow.window, wa);
+			new CoreWindow (event->xcreatewindow.window);
 		    
 		    if (cw)
 		    {
-			w = cw->manage (priv->getTopWindow ());
+			w = cw->manage (priv->getTopWindow (), wa);
 			delete cw;
 		    }
 		}
@@ -1118,7 +1118,17 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (cw->priv->id == event->xmap.window)
 	    {
-		w = cw->manage (priv->getTopWindow ());
+		/* Failure means the window has been destroyed, but
+		 * still add it to the window list anyways since we
+		 * will soon handle the DestroyNotify event for it
+		 * and in between CreateNotify time and DestroyNotify
+		 * time there might be ConfigureRequests asking us
+		 * to stack windows relative to it
+		 */
+		if (!XGetWindowAttributes (screen->dpy (), cw->priv->id, &wa))
+		    priv->setDefaultWindowAttributes (&wa);
+
+		w = cw->manage (priv->getTopWindow (), wa);
 		delete cw;
 		break;
 	    }
@@ -1207,11 +1217,11 @@ CompScreen::handleEvent (XEvent *event)
 	    if (!XGetWindowAttributes (priv->dpy, event->xcreatewindow.window, &wa))
 		priv->setDefaultWindowAttributes (&wa);
 
-	    CoreWindow *cw = new CoreWindow (event->xreparent.window, wa);
+	    CoreWindow *cw = new CoreWindow (event->xreparent.window);
 
 	    if (cw)
 	    {
-		cw->manage (priv->getTopWindow ());
+		cw->manage (priv->getTopWindow (), wa);
 		delete cw;
 	    }
 	}
@@ -1647,7 +1657,17 @@ CompScreen::handleEvent (XEvent *event)
 	{
 	    if (cw->priv->id == event->xmaprequest.window)
 	    {
-		w = cw->manage (priv->getTopWindow ());
+		/* Failure means the window has been destroyed, but
+		 * still add it to the window list anyways since we
+		 * will soon handle the DestroyNotify event for it
+		 * and in between CreateNotify time and DestroyNotify
+		 * time there might be ConfigureRequests asking us
+		 * to stack windows relative to it
+		 */
+		if (!XGetWindowAttributes (screen->dpy (), cw->priv->id, &wa))
+		    priv->setDefaultWindowAttributes (&wa);
+
+		w = cw->manage (priv->getTopWindow (), wa);
 		delete cw;
 		break;
 	    }

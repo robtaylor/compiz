@@ -5093,10 +5093,10 @@ CompWindow::syncAlarm ()
 }
 
 CompWindow *
-CoreWindow::manage (Window aboveId)
+CoreWindow::manage (Window aboveId, XWindowAttributes &wa)
 {
     screen->priv->createdWindows.remove (this);
-    return new CompWindow (aboveId, priv);
+    return new CompWindow (aboveId, wa, priv);
 }
 
 /*
@@ -5108,15 +5108,29 @@ CoreWindow::manage (Window aboveId)
  * care about them too)
  */
 
-CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
+CoreWindow::CoreWindow (Window id)
 {
     priv = new PrivateWindow (this);
     assert (priv);
 
     screen->priv->createdWindows.push_back (this);
 
-    priv->attrib = wa;
+    priv->id = id;
+}
 
+CompWindow::CompWindow (Window aboveId,
+			XWindowAttributes &wa,
+			PrivateWindow *priv) :
+    PluginClassStorage (windowPluginClassIndices),
+    priv (priv)
+{
+    // TODO: Reparent first!
+
+    priv->window = this;
+
+    screen->insertWindow (this, aboveId);
+
+    priv->attrib = wa;
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
 			      priv->attrib.border_width);
@@ -5137,18 +5151,16 @@ CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
     priv->transientFor = None;
     priv->clientLeader = None;
 
-    XSelectInput (screen->dpy (), id,
+    XSelectInput (screen->dpy (), priv->id,
 		  PropertyChangeMask |
 		  EnterWindowMask    |
 		  FocusChangeMask);
-
-    priv->id = id;
 
     priv->alpha     = (priv->attrib.depth == 32);
     priv->lastPong  = screen->priv->lastPing;
 
     if (screen->XShape ())
-	XShapeSelectInput (screen->dpy (), id, ShapeNotifyMask);
+	XShapeSelectInput (screen->dpy (), priv->id, ShapeNotifyMask);
 
     if (priv->attrib.c_class != InputOnly)
     {
@@ -5165,17 +5177,6 @@ CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
     {
 	priv->attrib.map_state = IsUnmapped;
     }
-}
-
-CompWindow::CompWindow (Window aboveId, PrivateWindow *priv) :
-   PluginClassStorage (windowPluginClassIndices),
-   priv (priv)
-{
-    // TODO: Reparent first!
-
-    priv->window = this;
-
-    screen->insertWindow (this, aboveId);
 
     priv->wmType    = screen->priv->getWindowType (priv->id);
     priv->protocols = screen->priv->getProtocols (priv->id);
