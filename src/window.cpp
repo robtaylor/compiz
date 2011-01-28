@@ -5801,9 +5801,15 @@ PrivateWindow::unreparent ()
 	XSelectInput (dpy, screen->root (), NoEventMask);
         XReparentWindow (dpy, id, screen->root (), 0, 0);
 
+	/* Wait for the reparent to finish */
+	XSync (dpy, false);
+
 	xwc.stack_mode = Below;
 	xwc.sibling    = frame;
 	XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
+
+	/* Wait for the window to be restacked */
+	XSync (dpy, false);
 
         XUnmapWindow (dpy, frame);
 
