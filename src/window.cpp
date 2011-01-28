@@ -5795,11 +5795,11 @@ PrivateWindow::unreparent ()
 	XGrabServer (dpy);
 
         XChangeSaveSet (dpy, id, SetModeDelete);
-        XSelectInput (dpy, frame, NoEventMask);
+	XSelectInput (dpy, frame, NoEventMask);
 	XSelectInput (dpy, wrapper, NoEventMask);
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
-        XReparentWindow (dpy, id, screen->root (), 0, 0);
+	XReparentWindow (dpy, id, screen->root (), 0, 0);
 
 	/* Wait for the reparent to finish */
 	XSync (dpy, false);
