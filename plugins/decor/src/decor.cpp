@@ -1253,8 +1253,34 @@ DecorWindow::updateWindowRegions ()
 void
 DecorWindow::windowNotify (CompWindowNotify n)
 {
+    DECOR_SCREEN (screen);
+
     switch (n)
     {
+	case CompWindowNotifyUnreparent:
+	    /* We don't get a DestroyNotify when the wrapper window
+	     * or frame window gets destroyed, which destroys our
+	     * window too, so we need to manually
+	     * remove our input frame window and property here
+	     * FIXME: the decoration manager might not like this -
+	     * maybe add a CompWindowNotifyBeforeUnreparent so that we
+	     * can tell it that the window is about to go away
+	     */
+	    if (inputFrame)
+	    {
+		inputFrame = None;
+		XDeleteProperty (screen->dpy (), window->id (),
+				 ds->inputFrameAtom);
+	    }
+	    else if (outputFrame)
+	    {
+		outputFrame = None;
+		XDeleteProperty (screen->dpy (), window->id (),
+				 ds->outputFrameAtom);
+	    }
+	    
+	    break;
+	    
 	case CompWindowNotifyReparent:
 	    update (true);
 	    break;
@@ -1407,6 +1433,7 @@ DecorScreen::handleEvent (XEvent *event)
 	    }
 	    break;
 	case DestroyNotify:
+	    /* Only for when the client window gets destroyed */
 	    w = screen->findTopLevelWindow (event->xproperty.window);
 	    if (w)
 	    {
