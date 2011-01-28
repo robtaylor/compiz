@@ -5811,7 +5811,7 @@ PrivateWindow::unreparent ()
 	/* Wait for the window to be restacked */
 	XSync (dpy, false);
 
-        XUnmapWindow (dpy, frame);
+	XUnmapWindow (dpy, frame);
 
 	XSelectInput (dpy, id, PropertyChangeMask | EnterWindowMask |
 		      FocusChangeMask);
