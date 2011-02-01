@@ -343,7 +343,8 @@ class CompWindow :
 	const CompRegion & frameRegion () const;
 
 	void updateFrameRegion ();
-	void setWindowFrameExtents (CompWindowExtents *input);
+	void setWindowFrameExtents (CompWindowExtents *border,
+				    CompWindowExtents *frame = NULL);
 
 	unsigned int & wmType ();
 

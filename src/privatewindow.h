@@ -277,6 +277,7 @@ class PrivateWindow {
 	bool         alive;
 
 	CompWindowExtents input;
+	CompWindowExtents border;
 	CompWindowExtents output;
 
 	CompStruts *struts;

@@ -5006,7 +5006,7 @@ CompWindow::shaded ()
 CompWindowExtents &
 CompWindow::input () const
 {
-    return priv->input;
+    return priv->border;
 }
 
 CompWindowExtents &
@@ -5609,19 +5609,26 @@ CompWindow::updateFrameRegion ()
 }
 
 void
-CompWindow::setWindowFrameExtents (CompWindowExtents *i)
+CompWindow::setWindowFrameExtents (CompWindowExtents *b,
+				   CompWindowExtents *i)
 {
-    if (priv->input.left   != i->left  ||
+    /* Input extents are used for frame size,
+     * Border extents used for placement.
+     */
+
+    if (!i)
+	i = b;
+  
+    if (priv->input.left   != i->left ||
 	priv->input.right  != i->right ||
-	priv->input.top    != i->top   ||
+	priv->input.top    != i->top ||
 	priv->input.bottom != i->bottom)
     {
 	unsigned long data[4];
 
 	priv->input = *i;
+	priv->border = *b;
 
-	priv->updateFrameWindow ();
-	priv->updateSize ();
 	recalcActions ();
 
 	data[0] = i->left;
@@ -5633,6 +5640,8 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 			 Atoms::frameExtents,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) data, 4);
+	priv->updateSize ();
+	priv->updateFrameWindow ();
     }
 }
 

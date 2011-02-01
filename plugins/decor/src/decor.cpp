@@ -286,9 +286,12 @@ Decoration::create (Window id,
     int		    result, format;
     unsigned long   n, nleft;
     unsigned char   *data;
+    unsigned char   *data_orig;
     long	    *prop;
     Pixmap	    pixmap = None;
+    decor_extents_t border;
     decor_extents_t input;
+    decor_extents_t maxBorder;
     decor_extents_t maxInput;
     decor_quad_t    *quad = NULL;
     int		    nQuad = 0;
@@ -327,7 +330,6 @@ Decoration::create (Window id,
 
     if (type == WINDOW_DECORATION_TYPE_PIXMAP)
     {
-
 	nQuad = (n - BASE_PROP_SIZE) / QUAD_PROP_SIZE;
 
 	quad = new decor_quad_t [nQuad];
@@ -338,8 +340,8 @@ Decoration::create (Window id,
 	}
 
 	nQuad = decor_pixmap_property_to_quads (prop, n, &pixmap, &input,
-						&maxInput, &minWidth,
-						&minHeight, quad);
+						&border, &maxInput,
+						&maxBorder, &minWidth, &minHeight, quad);
 
 	XFree (data);
 
@@ -357,6 +359,10 @@ Decoration::create (Window id,
 	    XFree (data);
 	    return NULL;
 	}
+
+	border = input;
+	maxBorder = maxInput;
+	
 	XFree (data);
     }
     else
@@ -423,15 +429,33 @@ Decoration::create (Window id,
 	decoration->output.bottom = MAX (input.bottom, maxInput.bottom);
     }
 
+    /* Extents of actual frame window */
+
     decoration->input.left   = input.left;
     decoration->input.right  = input.right;
     decoration->input.top    = input.top;
     decoration->input.bottom = input.bottom;
 
+    /* Border extents */
+
+    decoration->border.left   = border.left;
+    decoration->border.right  = border.right;
+    decoration->border.top    = border.top;
+    decoration->border.bottom = border.bottom;
+
+    /* Extents of actual frame window */
+
     decoration->maxInput.left   = maxInput.left;
     decoration->maxInput.right  = maxInput.right;
     decoration->maxInput.top    = maxInput.top;
     decoration->maxInput.bottom = maxInput.bottom;
+
+    /* Border extents */
+
+    decoration->maxBorder.left   = maxBorder.left;
+    decoration->maxBorder.right  = maxBorder.right;
+    decoration->maxBorder.top    = maxBorder.top;
+    decoration->maxBorder.bottom = maxBorder.bottom;
 
     decoration->refCount = 1;
     decoration->type = type;
@@ -756,9 +780,11 @@ DecorWindow::update (bool allowDecoration)
 	    return false;
 
 	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
-	    window->setWindowFrameExtents (&wd->decor->maxInput);
+	    window->setWindowFrameExtents (&wd->decor->maxBorder,
+					   &wd->decor->maxInput);
 	else if (!window->hasUnmapReference ())
-	    window->setWindowFrameExtents (&wd->decor->input);
+	    window->setWindowFrameExtents (&wd->decor->border,
+					   &wd->decor->input);
 
 	moveDx = shiftX () - oldShiftX;
 	moveDy = shiftY () - oldShiftY;
@@ -778,7 +804,7 @@ DecorWindow::update (bool allowDecoration)
 
 	memset (&emptyExtents, 0, sizeof (CompWindowExtents));
 
-	window->setWindowFrameExtents (&emptyExtents);
+	window->setWindowFrameExtents (&emptyExtents, &emptyExtents);
 
 	moveDx = -oldShiftX;
 	moveDy = -oldShiftY;
@@ -834,8 +860,10 @@ DecorWindow::update (bool allowDecoration)
 void
 DecorWindow::updateFrame ()
 {
-    if (!wd || !(window->input ().left || window->input ().right ||
-	window->input ().top || window->input ().bottom) ||
+    if (!wd || !(wd->decor->input.left || wd->decor->input.left ||
+	wd->decor->input.left || wd->decor->input.bottom) ||
+	!(wd->decor->maxInput.left || wd->decor->maxInput.left ||
+	wd->decor->maxInput.left || wd->decor->maxInput.bottom) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP && outputFrame) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW && inputFrame))
     {
@@ -869,8 +897,10 @@ DecorWindow::updateFrame ()
 	    oldHeight = 0;
 	}
     }
-    if (wd && (window->input ().left || window->input ().right ||
-	window->input ().top || window->input ().bottom))
+    if (wd && (wd->decor->input.left || wd->decor->input.left ||
+	wd->decor->input.left || wd->decor->input.bottom ||
+	wd->decor->maxInput.left || wd->decor->maxInput.left ||
+	wd->decor->maxInput.left || wd->decor->maxInput.bottom))
     {
 	if (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
 	    updateInputFrame ();
@@ -886,15 +916,22 @@ DecorWindow::updateInputFrame ()
     int                  x, y, width, height;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
-    CompWindowExtents    input;
+    CompWindowExtents	 input;
+    CompWindowExtents    border;
 
     if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
+    {
+	border = wd->decor->maxBorder;
 	input = wd->decor->maxInput;
+    }
     else
+    {
+	border = wd->decor->border;
 	input = wd->decor->input;
+    }
 
-    x      = window->input ().left - input.left;
-    y      = window->input ().top - input.top;
+    x      = window->input ().left - border.left;
+    y      = window->input ().top - border.top;
     width  = server.width () + input.left + input.right + bw;
     height = server.height ()+ input.top  + input.bottom + bw;
 
@@ -998,7 +1035,7 @@ DecorWindow::updateOutputFrame ()
     int                  x, y, width, height;
     CompWindow::Geometry server = window->serverGeometry ();
     int                  bw = server.border () * 2;
-    CompWindowExtents    input;
+    CompWindowExtents	 input;
 
     if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
 	input = wd->decor->maxInput;
@@ -1222,8 +1259,8 @@ DecorWindow::updateFrameRegion (CompRegion &region)
 	    x = window->geometry (). x ();
 	    y = window->geometry (). y ();
 
-	    region += frameRegion.translated (x - window->input ().left,
-					      y - window->input ().top);
+	    region += frameRegion.translated (x - wd->decor->input.left,
+					      y - wd->decor->input.top);
 	}
 	else
 	{
@@ -1713,9 +1750,11 @@ DecorWindow::stateChangeNotify (unsigned int lastState)
 	if (wd && wd->decor)
 	{
 	    if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
-		window->setWindowFrameExtents (&wd->decor->maxInput);
+		window->setWindowFrameExtents (&wd->decor->maxBorder,
+					       &wd->decor->maxInput);
 	    else
-		window->setWindowFrameExtents (&wd->decor->input);
+		window->setWindowFrameExtents (&wd->decor->border,
+					       &wd->decor->input);
 
 	    updateFrame ();
 	}
@@ -1838,7 +1877,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     pixmapFailed (false),
     regions (),
     updateReg (true),
-    unshading (false)
+    unshading (false),
+    shading (false)
 {
     WindowInterface::setHandler (window);
 

@@ -277,7 +277,7 @@ KWD::Decorator::updateShadow (void)
 	nQuad = decor_set_lSrStSbS_window_quads (quads, &context, &layout);
 
 	decor_quads_to_property (data, mNoBorderShadow->pixmap,
-				 &extents, &extents,
+				 &extents, &extents, &extents, &extents,
 				 0, 0, quads, nQuad);
 
 	KWD::trapXError ();

@@ -1237,7 +1237,8 @@ KWD::Window::updateProperty (void)
 	  
 	  q += n; nQuad += n;
       }
-      decor_quads_to_property (data, mPixmap, &mBorder, &maxExtents,
+      decor_quads_to_property (data, mPixmap, &mBorder, &mBorder,
+			       &maxExtents, &maxExtents,
 			       1, 0, quads, nQuad);
     }
     else
