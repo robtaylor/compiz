@@ -74,8 +74,10 @@ class Decoration {
 	int                       refCount;
 	DecorTexture              *texture;
 	CompWindowExtents         output;
-	CompWindowExtents         input;
-	CompWindowExtents         maxInput;
+	CompWindowExtents         border;
+	CompWindowExtents	  input;
+	CompWindowExtents         maxBorder;
+	CompWindowExtents	  maxInput;
 	int                       minWidth;
 	int                       minHeight;
 	decor_quad_t              *quad;

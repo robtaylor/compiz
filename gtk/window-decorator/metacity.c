@@ -69,7 +69,8 @@ decor_update_meta_window_property (decor_t	  *d,
 	decor_gen_window_property (data, &extents, &max_extents, 20, 20);
     else
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
-				 &extents, &max_extents,
+				 &extents, &extents,
+				 &max_extents, &max_extents,
 				 ICON_SPACE + d->button_width,
 				 0,
 				 quads, nQuad);

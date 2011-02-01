@@ -343,7 +343,8 @@ class CompWindow :
 	const CompRegion & frameRegion () const;
 
 	void updateFrameRegion ();
-	void setWindowFrameExtents (CompWindowExtents *input);
+	void setWindowFrameExtents (CompWindowExtents *border,
+				    CompWindowExtents *frame = NULL);
 
 	unsigned int & wmType ();
 
@@ -368,8 +369,6 @@ class CompWindow :
 	unsigned int activeNum ();
 
 	int mapNum () const;
-
-	CompStruts * struts ();
 
 	int & saveMask ();
 
@@ -513,6 +512,7 @@ class CompWindow :
 	static void freePluginClassIndex (unsigned int index);
 
 	bool updateStruts ();
+	CompStruts *struts ();
 
 	WRAPABLE_HND (0, WindowInterface, void, getOutputExtents,
 		      CompWindowExtents&);
@@ -553,8 +553,9 @@ class CompWindow :
 	friend class CoreWindow;
 
     private:
-	CompWindow (Window	  aboveId,
-		    PrivateWindow *priv);
+	CompWindow (Window	      aboveId,
+		    XWindowAttributes &wa,
+		    PrivateWindow     *priv);
 
 	PrivateWindow *priv;
 };

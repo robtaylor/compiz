@@ -296,8 +296,6 @@ getOutputForEdge (int windowOutput, unsigned int touch, bool skipFirst)
         while (co != -1);
     }
 
-    fprintf (stderr, "constraining to %i\n", ret);
-
     return ret;
 }
 
@@ -1279,17 +1277,9 @@ ResizeScreen::handleEvent (XEvent *event)
 				ResizeDownMask | ResizeLeftMask,
 				ResizeLeftMask,
 			    };
-			    unsigned int mods;
-			    Window	     root, child;
-			    int	     xRoot, yRoot, i;
-
-			    XQueryPointer (screen->dpy (),
-					   screen->root (),
-					   &root, &child, &xRoot, &yRoot,
-					   &i, &i, &mods);
 
 			    /* TODO: not only button 1 */
-			    if (mods & Button1Mask)
+			    if (pointerMods & Button1Mask)
 			    {
 				o.push_back (CompOption ("modifiers",
 					     CompOption::TypeInt));
@@ -1302,7 +1292,7 @@ ResizeScreen::handleEvent (XEvent *event)
 				o.push_back (CompOption ("button",
 					     CompOption::TypeInt));
 
-				o[2].value ().set ((int) mods);
+				o[2].value ().set ((int) pointerMods);
 				o[3].value ().set
 				    ((int) event->xclient.data.l[0]);
 				o[4].value ().set
@@ -1318,7 +1308,7 @@ ResizeScreen::handleEvent (XEvent *event)
 				    CompAction::StateInitButton, o);
 
 				ResizeScreen::get (screen)->
-				    handleMotionEvent (xRoot, yRoot);
+				    handleMotionEvent (pointerX, pointerY);
 			    }
 			}
 		    }

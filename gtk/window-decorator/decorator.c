@@ -960,6 +960,7 @@ update_default_decorations (GdkScreen *screen)
 
 	decor_quads_to_property (data, no_border_shadow->pixmap,
 				 &_shadow_extents, &_shadow_extents,
+				 &_shadow_extents, &_shadow_extents,
 				 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,
@@ -1032,6 +1033,7 @@ update_default_decorations (GdkScreen *screen)
 	XRenderFreePicture (xdisplay, d.picture);
 
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d.pixmap),
+				 &extents, &extents,
 				 &extents, &extents, 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,
@@ -1059,6 +1061,7 @@ update_default_decorations (GdkScreen *screen)
 	XRenderFreePicture (xdisplay, d.picture);
 
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d.pixmap),
+				 &extents, &extents,
 				 &extents, &extents, 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,

@@ -5006,7 +5006,7 @@ CompWindow::shaded ()
 CompWindowExtents &
 CompWindow::input () const
 {
-    return priv->input;
+    return priv->border;
 }
 
 CompWindowExtents &
@@ -5093,10 +5093,10 @@ CompWindow::syncAlarm ()
 }
 
 CompWindow *
-CoreWindow::manage (Window aboveId)
+CoreWindow::manage (Window aboveId, XWindowAttributes &wa)
 {
     screen->priv->createdWindows.remove (this);
-    return new CompWindow (aboveId, priv);
+    return new CompWindow (aboveId, wa, priv);
 }
 
 /*
@@ -5108,15 +5108,29 @@ CoreWindow::manage (Window aboveId)
  * care about them too)
  */
 
-CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
+CoreWindow::CoreWindow (Window id)
 {
     priv = new PrivateWindow (this);
     assert (priv);
 
     screen->priv->createdWindows.push_back (this);
 
-    priv->attrib = wa;
+    priv->id = id;
+}
 
+CompWindow::CompWindow (Window aboveId,
+			XWindowAttributes &wa,
+			PrivateWindow *priv) :
+    PluginClassStorage (windowPluginClassIndices),
+    priv (priv)
+{
+    // TODO: Reparent first!
+
+    priv->window = this;
+
+    screen->insertWindow (this, aboveId);
+
+    priv->attrib = wa;
     priv->serverGeometry.set (priv->attrib.x, priv->attrib.y,
 			      priv->attrib.width, priv->attrib.height,
 			      priv->attrib.border_width);
@@ -5137,18 +5151,16 @@ CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
     priv->transientFor = None;
     priv->clientLeader = None;
 
-    XSelectInput (screen->dpy (), id,
-	              EnterWindowMask   |
-     	 	      PropertyChangeMask |
-		      FocusChangeMask);
-
-    priv->id = id;
+    XSelectInput (screen->dpy (), priv->id,
+		  PropertyChangeMask |
+		  EnterWindowMask    |
+		  FocusChangeMask);
 
     priv->alpha     = (priv->attrib.depth == 32);
     priv->lastPong  = screen->priv->lastPing;
 
     if (screen->XShape ())
-	XShapeSelectInput (screen->dpy (), id, ShapeNotifyMask);
+	XShapeSelectInput (screen->dpy (), priv->id, ShapeNotifyMask);
 
     if (priv->attrib.c_class != InputOnly)
     {
@@ -5165,17 +5177,6 @@ CoreWindow::CoreWindow (Window id, XWindowAttributes &wa)
     {
 	priv->attrib.map_state = IsUnmapped;
     }
-}
-
-CompWindow::CompWindow (Window aboveId, PrivateWindow *priv) :
-   PluginClassStorage (windowPluginClassIndices),
-   priv (priv)
-{
-    // TODO: Reparent first!
-
-    priv->window = this;
-
-    screen->insertWindow (this, aboveId);
 
     priv->wmType    = screen->priv->getWindowType (priv->id);
     priv->protocols = screen->priv->getProtocols (priv->id);
@@ -5608,19 +5609,26 @@ CompWindow::updateFrameRegion ()
 }
 
 void
-CompWindow::setWindowFrameExtents (CompWindowExtents *i)
+CompWindow::setWindowFrameExtents (CompWindowExtents *b,
+				   CompWindowExtents *i)
 {
-    if (priv->input.left   != i->left  ||
+    /* Input extents are used for frame size,
+     * Border extents used for placement.
+     */
+
+    if (!i)
+	i = b;
+  
+    if (priv->input.left   != i->left ||
 	priv->input.right  != i->right ||
-	priv->input.top    != i->top   ||
+	priv->input.top    != i->top ||
 	priv->input.bottom != i->bottom)
     {
 	unsigned long data[4];
 
 	priv->input = *i;
+	priv->border = *b;
 
-	priv->updateFrameWindow ();
-	priv->updateSize ();
 	recalcActions ();
 
 	data[0] = i->left;
@@ -5632,6 +5640,8 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *i)
 			 Atoms::frameExtents,
 			 XA_CARDINAL, 32, PropModeReplace,
 			 (unsigned char *) data, 4);
+	priv->updateSize ();
+	priv->updateFrameWindow ();
     }
 }
 
@@ -5794,16 +5804,23 @@ PrivateWindow::unreparent ()
 	XGrabServer (dpy);
 
         XChangeSaveSet (dpy, id, SetModeDelete);
-        XSelectInput (dpy, frame, NoEventMask);
+	XSelectInput (dpy, frame, NoEventMask);
+	XSelectInput (dpy, wrapper, NoEventMask);
 	XSelectInput (dpy, id, NoEventMask);
 	XSelectInput (dpy, screen->root (), NoEventMask);
-        XReparentWindow (dpy, id, screen->root (), 0, 0);
+	XReparentWindow (dpy, id, screen->root (), 0, 0);
+
+	/* Wait for the reparent to finish */
+	XSync (dpy, false);
 
 	xwc.stack_mode = Below;
 	xwc.sibling    = frame;
 	XConfigureWindow (dpy, id, CWSibling | CWStackMode, &xwc);
 
-        XUnmapWindow (dpy, frame);
+	/* Wait for the window to be restacked */
+	XSync (dpy, false);
+
+	XUnmapWindow (dpy, frame);
 
 	XSelectInput (dpy, id, PropertyChangeMask | EnterWindowMask |
 		      FocusChangeMask);

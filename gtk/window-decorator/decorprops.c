@@ -36,7 +36,7 @@ decor_update_window_property (decor_t *d)
     else
     {
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
-			     &extents, &extents,
+			     &extents, &extents, &extents, &extents,
 			     ICON_SPACE + d->button_width,
 			     0,
 			     quads, nQuad);
@@ -110,6 +110,7 @@ decor_update_switcher_property (decor_t *d)
 						     32);
     
     decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
+			     &_switcher_extents, &_switcher_extents,
 			     &_switcher_extents, &_switcher_extents,
 			     0, 0, quads, nQuad);
     

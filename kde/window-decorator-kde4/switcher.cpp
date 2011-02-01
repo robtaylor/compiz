@@ -232,12 +232,12 @@ KWD::Switcher::updateWindowProperties ()
 					     lh / 2, rh / 2, w, w / 2);
 #ifdef QT_45
     decor_quads_to_property (data, mX11Pixmap,
-			     &mBorder, &mBorder,
+			     &mBorder, &mBorder, &mBorder, &mBorder,
 			     0, 0,
 			     quads, nQuad);
 #else
     decor_quads_to_property (data, mPixmap.handle (),
-			     &mBorder, &mBorder,
+			     &mBorder, &mBorder, &mBorder, &mBorder,
 			     0, 0,
 			     quads, nQuad);
 #endif

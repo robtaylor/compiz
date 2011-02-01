@@ -26,7 +26,8 @@
 #ifndef _COMPIZ_CORE_H
 #define _COMPIZ_CORE_H
 
-#define CORE_ABIVERSION 20110113
+
+#define CORE_ABIVERSION 20110131
 
 #include <stdio.h>
 #include <assert.h>

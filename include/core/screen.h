@@ -55,8 +55,10 @@ extern ModifierHandler *modHandler;
 
 extern int lastPointerX;
 extern int lastPointerY;
+extern unsigned int lastPointerMods;
 extern int pointerX;
 extern int pointerY;
+extern unsigned int pointerMods;
 
 #define NOTIFY_CREATE_MASK (1 << 0)
 #define NOTIFY_DELETE_MASK (1 << 1)

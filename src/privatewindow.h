@@ -277,6 +277,7 @@ class PrivateWindow {
 	bool         alive;
 
 	CompWindowExtents input;
+	CompWindowExtents border;
 	CompWindowExtents output;
 
 	CompStruts *struts;
@@ -308,9 +309,9 @@ class CoreWindow
 {
     public:
 
-	CoreWindow (Window id, XWindowAttributes &wa);
+	CoreWindow (Window id);
 
-	CompWindow * manage (Window id);
+	CompWindow * manage (Window above, XWindowAttributes &wa);
 
 	friend class PrivateWindow;
 	friend class PrivateScreen;
