@@ -5434,6 +5434,11 @@ PrivateWindow::PrivateWindow (CoreWindow *window) :
     input.top    = 0;
     input.bottom = 0;
 
+    border.top    = 0;
+    border.bottom = 0;
+    border.left   = 0;
+    border.right  = 0;
+
     output.left   = 0;
     output.right  = 0;
     output.top    = 0;
