@@ -3153,7 +3153,7 @@ CompWindow::lower ()
 
     /* when lowering a window, focus the topmost window if
        the click-to-focus option is on */
-    if ((screen->getOption ("click_to_focus")->value ().b ()))
+    if ((screen->priv->optionGetClickToFocus ()))
     {
 	Window aboveWindowId = prev ? prev->id () : None;
 	screen->unhookWindow (this);
@@ -3468,7 +3468,7 @@ CompWindow::constrainNewWindowSize (int        width,
     long	     flags = hints->flags;
     long	     resizeIncFlags = (flags & PResizeInc) ? ~0 : 0;
 
-    if (screen->getOption ("ignore_hints_when_maximized")->value ().b ())
+    if (screen->priv->optionGetIgnoreHintsWhenMaximized ())
     {
 	if (priv->state & MAXIMIZE_STATE)
 	{
@@ -3886,7 +3886,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     int          level;
     CompPoint    dvp;
 
-    level = s->getOption ("focus_prevention_level")->value ().i ();
+    level = s->priv->optionGetFocusPreventionLevel ();
 
     if (level == CoreOptions::FocusPreventionLevelOff)
 	return true;
@@ -3921,8 +3921,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* allow focus for excluded windows */
-    CompMatch &match =
-	s->getOption ("focus_prevention_match")->value ().match ();
+    CompMatch &match = s->priv->optionGetFocusPreventionMatch ();
     if (!match.evaluate (window))
 	return true;
 
