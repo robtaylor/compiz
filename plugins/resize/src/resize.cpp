@@ -841,20 +841,31 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	     * in the opposite direction. (So the apparant x / y
 	     * mixup here is intentional)
 	     */
-	    
-	    if (mask == ResizeLeftMask &&
-		xRoot == grabWindowWorkArea->left ())
-		pointerDx += abs (yRoot - lastPointerY) * -1;
-	    else if (mask == ResizeRightMask &&
-		     xRoot == grabWindowWorkArea->right ())
-		pointerDx +=  abs (yRoot - lastPointerY);
-	    else if (mask == ResizeUpMask &&
-		     yRoot == grabWindowWorkArea->top ())
-		pointerDy +=  abs (xRoot - lastPointerX);
-	    else if (mask == ResizeUpMask &&
-		     yRoot == grabWindowWorkArea->bottom ())
-		pointerDy +=  abs (xRoot - lastPointerX) * -1;
-		
+
+	    if (mask == ResizeLeftMask)
+	    {
+		if (xRoot == 0 &&
+		    geometry.x - w->input ().left > grabWindowWorkArea->left ())
+		    pointerDx += abs (yRoot - lastPointerY) * -1;
+	    }
+	    else if (mask == ResizeRightMask)
+	    {
+		if (xRoot == screen->width () -1 &&
+		    geometry.x + geometry.width + w->input ().right < grabWindowWorkArea->right ())
+		    pointerDx += abs (yRoot - lastPointerY);
+	    }
+	    if (mask == ResizeUpMask)
+	    {
+		if (yRoot == 0 &&
+		    geometry.y - w->input ().top > grabWindowWorkArea->top ())
+		    pointerDy += abs (xRoot - lastPointerX) * -1;
+	    }
+	    else if (mask == ResizeDownMask)
+	    {
+		if (yRoot == screen->height () -1 &&
+		    geometry.y + geometry.height + w->input ().bottom < grabWindowWorkArea->bottom ())
+		    pointerDx += abs (yRoot - lastPointerY);
+	    }
 	}
 
 	if (mask & ResizeLeftMask)
