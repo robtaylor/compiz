@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include <gdk/gdk.h>
 
 #ifdef USE_GCONF
 #include <gconf/gconf-client.h>
