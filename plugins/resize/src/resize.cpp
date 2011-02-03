@@ -834,6 +834,27 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		pointerDx += xRoot - lastPointerX;
 		pointerDy += yRoot - lastPointerY;
 	    }
+	    
+	    /* If we hit the edge of the screen while resizing
+	     * the window and the adjacent window edge has not hit
+	     * the edge of the screen, then accumulate pointer motion
+	     * in the opposite direction. (So the apparant x / y
+	     * mixup here is intentional)
+	     */
+	    
+	    if (mask == ResizeLeftMask &&
+		xRoot == grabWindowWorkArea->left ())
+		pointerDx += abs (yRoot - lastPointerY) * -1;
+	    else if (mask == ResizeRightMask &&
+		     xRoot == grabWindowWorkArea->right ())
+		pointerDx +=  abs (yRoot - lastPointerY);
+	    else if (mask == ResizeUpMask &&
+		     yRoot == grabWindowWorkArea->top ())
+		pointerDy +=  abs (xRoot - lastPointerX);
+	    else if (mask == ResizeUpMask &&
+		     yRoot == grabWindowWorkArea->bottom ())
+		pointerDy +=  abs (xRoot - lastPointerX) * -1;
+		
 	}
 
 	if (mask & ResizeLeftMask)
