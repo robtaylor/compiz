@@ -859,11 +859,33 @@ event_filter_func (GdkXEvent *gdkxevent,
     GdkDisplay *gdkdisplay;
     XEvent     *xevent = gdkxevent;
     gulong     xid = 0;
+    Window     select = 0;
 
     gdkdisplay = gdk_display_get_default ();
     xdisplay   = GDK_DISPLAY_XDISPLAY (gdkdisplay);
 
     switch (xevent->type) {
+    case CreateNotify:
+	{
+	    if (!wnck_window_get (xevent->xcreatewindow.window))
+	    {
+		GdkWindow *toplevel = gdk_window_foreign_new_for_display (gdkdisplay,
+								      	  xevent->xcreatewindow.window);
+
+		if (toplevel)
+		{
+		    gdk_window_set_events (toplevel,
+					   gdk_window_get_events (toplevel) |
+					   GDK_PROPERTY_CHANGE_MASK);
+
+		    /* check if the window is a switcher and update accordingly */
+
+		    if (get_window_prop (xevent->xcreatewindow.window, select_window_atom, &select))
+			update_switcher_window (xevent->xcreatewindow.window, select);
+		}
+	    }
+	}
+	break;
     case ButtonPress:
     case ButtonRelease:
 	xid = (gulong)
@@ -891,9 +913,9 @@ event_filter_func (GdkXEvent *gdkxevent,
 	    win = wnck_window_get (xid);
 	    if (win)
 	    {
-		Window frame, window;
+		Window frame;
 
-		if (!get_window_prop (xid, select_window_atom, &window))
+		if (!get_window_prop (xid, select_window_atom, &select))
 		{
 		    if (get_window_prop (xid, frame_input_window_atom, &frame))
 			add_frame_window (win, frame, FALSE);
@@ -911,9 +933,9 @@ event_filter_func (GdkXEvent *gdkxevent,
 	    win = wnck_window_get (xid);
 	    if (win)
 	    {
-		Window frame, window;
+		Window frame;
 
-		if (!get_window_prop (xid, select_window_atom, &window))
+		if (!get_window_prop (xid, select_window_atom, &select))
 		{
 		    if (get_window_prop (xid, frame_output_window_atom, &frame))
 			add_frame_window (win, frame, TRUE);
@@ -974,18 +996,10 @@ event_filter_func (GdkXEvent *gdkxevent,
 	}
 	else if (xevent->xproperty.atom == select_window_atom)
 	{
-	    WnckWindow *win;
+	    Window select;
 
-	    xid = xevent->xproperty.window;
-
-	    win = wnck_window_get (xid);
-	    if (win)
-	    {
-		Window select;
-
-		if (get_window_prop (xid, select_window_atom, &select))
-		    update_switcher_window (win, select);
-	    }
+	    if (get_window_prop (xevent->xproperty.window, select_window_atom, &select))
+		update_switcher_window (xevent->xproperty.window, select);
 	}
 	break;
     case DestroyNotify:

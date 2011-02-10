@@ -286,7 +286,6 @@ Decoration::create (Window id,
     int		    result, format;
     unsigned long   n, nleft;
     unsigned char   *data;
-    unsigned char   *data_orig;
     long	    *prop;
     Pixmap	    pixmap = None;
     decor_extents_t border;
@@ -699,12 +698,12 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->frame () ? true : false;
+		decorate = window->frame ()? true : false;
 	default:
 	    break;
     }
 
-    if (window->overrideRedirect ())
+    if (window->overrideRedirect () && !isSwitcher)
 	decorate = false;
 
     if (window->wmType () & (CompWindowTypeDockMask | CompWindowTypeDesktopMask))
@@ -715,6 +714,9 @@ DecorWindow::update (bool allowDecoration)
 	if (!dScreen->optionGetDecorationMatch ().evaluate (window))
 	    decorate = false;
     }
+
+    if (isSwitcher)
+	decorate = true;
 
     if (decorate)
     {
@@ -918,6 +920,12 @@ DecorWindow::updateInputFrame ()
     int                  bw = server.border () * 2;
     CompWindowExtents	 input;
     CompWindowExtents    border;
+    Window		 parent;
+
+    if (isSwitcher)
+	parent = screen->root ();
+    else
+	parent = window->frame ();
 
     if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
     {
@@ -935,6 +943,12 @@ DecorWindow::updateInputFrame ()
     width  = server.width () + input.left + input.right + bw;
     height = server.height ()+ input.top  + input.bottom + bw;
 
+    if (isSwitcher)
+    {
+	x += window->x ();
+	y += window->y ();
+    }
+
     if (window->shaded ())
 	height = input.top + input.bottom;
 
@@ -947,7 +961,7 @@ DecorWindow::updateInputFrame ()
 	attr.event_mask	   = StructureNotifyMask;
 	attr.override_redirect = true;
 
-	inputFrame = XCreateWindow (screen->dpy (), window->frame (),
+	inputFrame = XCreateWindow (screen->dpy (), parent,
 				    x, y, width, height, 0, CopyFromParent,
 				    InputOnly, CopyFromParent,
 				    CWOverrideRedirect | CWEventMask,
@@ -1345,6 +1359,31 @@ DecorWindow::windowNotify (CompWindowNotify n)
 }
 
 void
+DecorWindow::updateSwitcher ()
+{
+    Atom	  actualType;
+    int	      	  actualFmt;
+    unsigned long nitems, nleft;
+    unsigned long *data;
+
+    DECOR_SCREEN (screen);
+
+    if (XGetWindowProperty (screen->dpy (), window->id (),
+		    	    ds->decorSwitchWindowAtom, 0L, 1024L,
+		    	    false, XA_WINDOW, &actualType, &actualFmt,
+		    	    &nitems, &nleft, (unsigned char **) &data) == Success)
+    {
+	if (nitems == 1)
+	{
+	    isSwitcher = true;
+	    return;
+	}
+    }
+
+    isSwitcher = false;
+}
+
+void
 DecorScreen::handleEvent (XEvent *event)
 {
     Window  activeWindow = screen->activeWindow ();
@@ -1411,7 +1450,16 @@ DecorScreen::handleEvent (XEvent *event)
 
     switch (event->type) {
 	case PropertyNotify:
-	    if (event->xproperty.atom == winDecorAtom)
+	    if (event->xproperty.atom == decorSwitchWindowAtom)
+	    {
+		CompWindow    *w = screen->findWindow (event->xproperty.window);
+
+		DECOR_WINDOW (w);
+
+		if (dw->isSwitcher && !event->xproperty.state == PropertyDelete)
+		    dw->updateSwitcher ();
+	    }
+	    else if (event->xproperty.atom == winDecorAtom)
 	    {
 		w = screen->findWindow (event->xproperty.window);
 		if (w)
@@ -1816,6 +1864,8 @@ DecorScreen::DecorScreen (CompScreen *s) :
 	XInternAtom (s->dpy (), DECOR_TYPE_PIXMAP_ATOM_NAME, 0);
     decorTypeWindowAtom =
 	XInternAtom (s->dpy (), DECOR_TYPE_WINDOW_ATOM_NAME, 0);
+    decorSwitchWindowAtom =
+	XInternAtom (s->dpy (), DECOR_SWITCH_WINDOW_ATOM_NAME, 0);
     requestFrameExtentsAtom =
         XInternAtom (s->dpy (), "_NET_REQUEST_FRAME_EXTENTS", 0);
     shadowColorAtom =
@@ -1878,7 +1928,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
     regions (),
     updateReg (true),
     unshading (false),
-    shading (false)
+    shading (false),
+    isSwitcher (false)
 {
     WindowInterface::setHandler (window);
 
@@ -1890,7 +1941,9 @@ DecorWindow::DecorWindow (CompWindow *w) :
 	GLWindowInterface::setHandler (gWindow);
     }
 
-    if (!w->overrideRedirect ())
+    updateSwitcher ();
+
+    if (!w->overrideRedirect () || isSwitcher)
 	updateDecoration ();
 
     if (w->shaded () || w->isViewable ())

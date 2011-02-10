@@ -254,6 +254,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	attr.border_pixel     = 0;
 	attr.colormap	      = XCreateColormap (dpy, screen->root (), visual,
 						 AllocNone);
+	attr.override_redirect = true;
 
 	popupWindow =
 	    XCreateWindow (dpy, screen->root (),
@@ -261,7 +262,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 			   screen->height () / 2 - xsh.height / 2,
 			   (unsigned) xsh.width, (unsigned) xsh.height, 0,
 			   32, InputOutput, visual,
-			   CWBackPixel | CWBorderPixel | CWColormap, &attr);
+			   CWBackPixel | CWBorderPixel | CWColormap | CWOverrideRedirect, &attr);
 
 	XSetWMProperties (dpy, popupWindow, NULL, NULL,
 			  programArgv, programArgc,

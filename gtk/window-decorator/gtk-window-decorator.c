@@ -172,6 +172,7 @@ GdkPixmap *switcher_buffer_pixmap = NULL;
 gint      switcher_width;
 gint      switcher_height;
 Window    switcher_selected_window = None;
+decor_t   *switcher_window = NULL;
 
 XRenderPictFormat *xformat_rgba;
 XRenderPictFormat *xformat_rgb;
@@ -185,6 +186,9 @@ main (int argc, char *argv[])
     WnckScreen *screen;
     gint       i, j, status;
     gboolean   replace = FALSE;
+    unsigned int nchildren;
+    Window     root_ret, parent_ret;
+    Window     *children = NULL;
 
 #ifdef USE_METACITY
     char       *meta_theme = NULL;
@@ -380,13 +384,38 @@ main (int argc, char *argv[])
 			   selection_event_filter_func,
 			   NULL);
 
-    if (!minimal)
-    {
-	gdk_window_add_filter (NULL,
-			       event_filter_func,
-			       NULL);
+     if (!minimal)
+     {
+	GdkWindow *root = gdk_window_foreign_new_for_display (gdkdisplay,
+							      gdk_x11_get_default_root_xwindow ());
 
-	connect_screen (screen);
+ 	gdk_window_add_filter (NULL,
+ 			       event_filter_func,
+ 			       NULL);
+			       
+	XQueryTree (xdisplay, gdk_x11_get_default_root_xwindow (),
+		    &root_ret, &parent_ret, &children, &nchildren);
+
+	for (i = 0; i < nchildren; i++)
+	{
+	    GdkWindow *toplevel = gdk_window_foreign_new_for_display (gdkdisplay,
+								      children[i]);
+
+	    /* Need property notify on all windows */
+
+	    gdk_window_set_events (toplevel,
+				   gdk_window_get_events (toplevel) |
+				   GDK_PROPERTY_CHANGE_MASK);
+	}
+
+	/* Need MapNotify on new windows */
+	gdk_window_set_events (root, gdk_window_get_events (root) |
+			       GDK_STRUCTURE_MASK |
+			       GDK_PROPERTY_CHANGE_MASK |
+			       GDK_VISIBILITY_NOTIFY_MASK |
+			       GDK_SUBSTRUCTURE_MASK);
+ 
+ 	connect_screen (screen);
     }
 
     if (!init_settings (screen))

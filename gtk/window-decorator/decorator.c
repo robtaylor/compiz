@@ -653,21 +653,6 @@ update_window_decoration (WnckWindow *win)
 	update_window_decoration_size (win);
 	update_event_windows (win);
     }
-    else
-    {
-	Window xid = wnck_window_get_xid (win);
-	Window select;
-
-	if (get_window_prop (xid, select_window_atom, &select))
-	{
-	    /* force size update */
-	    d->context = NULL;
-	    d->width = d->height = 0;
-	    switcher_width = switcher_height = 0;
-
-	    update_switcher_window (win, select);
-	}
-    }
 }
 
 void

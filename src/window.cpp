@@ -5733,6 +5733,7 @@ PrivateWindow::reparent ()
 
     /* We don't care about client events on the frame, and listening for them
      * will probably end up fighting the client anyways, so disable them */
+
     attr.do_not_propagate_mask = KeyPressMask | KeyReleaseMask |
 				 ButtonPressMask | ButtonReleaseMask |
 				 EnterWindowMask | LeaveWindowMask |

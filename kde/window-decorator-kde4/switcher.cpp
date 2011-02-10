@@ -147,6 +147,12 @@ KWD::Switcher::updateGeometry ()
     updateWindowProperties ();
 }
 
+const QRect &
+KWD::Switcher::geometry ()
+{
+    return mGeometry;
+}
+
 void
 KWD::Switcher::redrawPixmap ()
 {

@@ -50,6 +50,8 @@ class Switcher
 	void update ();
 	void updateGeometry ();
 
+	const QRect & geometry ();
+
 	WId xid () const
 	{
 	    return mId;
