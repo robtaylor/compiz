@@ -4725,23 +4725,28 @@ PrivateWindow::updatePassiveButtonGrabs ()
 	/* Grab only we have bindings on */
 	foreach (PrivateScreen::ButtonGrab &bind, screen->priv->buttonGrabs)
 	{
+	    unsigned int mods = modHandler->virtualToRealModMask (bind.modifiers);
+
+	    if (mods & CompNoMask)
+		continue;
+
 	    for (unsigned int ignore = 0;
 		     ignore <= modHandler->ignoredModMask (); ignore++)
 	    {
 		if (ignore & ~modHandler->ignoredModMask ())
-		{
-		    XGrabButton (screen->priv->dpy,
-				bind.button,
-				bind.modifiers | ignore,
-				frame,
-				false,
-				ButtonPressMask | ButtonReleaseMask |
-				    ButtonMotionMask,
-				GrabModeSync,
-				GrabModeAsync,
-				None,
-				None);
-		}
+		    continue;
+
+		XGrabButton (screen->priv->dpy,
+			     bind.button,
+			     mods | ignore,
+			     frame,
+			     false,
+			     ButtonPressMask | ButtonReleaseMask |
+				ButtonMotionMask,
+			     GrabModeSync,
+			     GrabModeAsync,
+			     None,
+			     None);
 	    }
 	}
     }
