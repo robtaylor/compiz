@@ -145,6 +145,7 @@ class DecorScreen :
 	Atom requestFrameExtentsAtom;
 	Atom shadowColorAtom;
 	Atom shadowInfoAtom;
+	Atom decorSwitchWindowAtom;
 
 	Window dmWin;
 	int    dmSupports;
@@ -202,6 +203,8 @@ class DecorWindow :
 
 	bool resizeTimeout ();
 
+	void updateSwitcher ();
+
     public:
 
 	CompWindow      *window;
@@ -233,6 +236,7 @@ class DecorWindow :
 
 	bool	  unshading;
 	bool	  shading;
+	bool	  isSwitcher;
 };
 
 class DecorPluginVTable :

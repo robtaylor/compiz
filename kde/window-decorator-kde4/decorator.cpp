@@ -174,6 +174,10 @@ bool
 KWD::Decorator::enableDecorations (Time timestamp)
 {
     QList <WId>::ConstIterator it;
+    unsigned int nchildren;
+    WId       *children;
+    WId       root, parent;
+    long int  select;
 
     mDmSnTimestamp = timestamp;
 
@@ -210,12 +214,33 @@ KWD::Decorator::enableDecorations (Time timestamp)
     foreach (WId id, KWindowSystem::windows ())
 	handleWindowAdded (id);
 
+    /* Find the switcher and add it too
+     * FIXME: Doing XQueryTree and then
+     * XGetWindowProperty on every window
+     * like this is really expensive, surely
+     * there is a better way to do this */
+
+    XQueryTree (QX11Info::display (), QX11Info::appRootWindow (),
+                &root, &parent, &children, &nchildren);
+
+    for (unsigned int i = 0; i < nchildren; i++)
+    {
+        if (KWD::readWindowProperty (children[i],
+                                     Atoms::switchSelectWindow, &select))
+        {
+            handleWindowAdded(children[i]);
+            break;
+        }
+    }
+
     connect (Plasma::Theme::defaultTheme (), SIGNAL (themeChanged ()),
 	     SLOT (plasmaThemeChanged ()));
 
     // select for client messages
     XSelectInput (QX11Info::display (), QX11Info::appRootWindow (),
-		  StructureNotifyMask | PropertyChangeMask);
+                  SubstructureNotifyMask |
+                  StructureNotifyMask |
+                  PropertyChangeMask);
 
     return true;
 }
@@ -361,7 +386,24 @@ KWD::Decorator::x11EventFilter (XEvent *xevent)
 	if (status == DECOR_SELECTION_GIVE_UP)
 	    KApplication::exit (0);
 
-	break;
+        break;
+    case CreateNotify:
+        /* We only care about windows that aren't managed here */
+        if (!KWindowSystem::hasWId (xevent->xcreatewindow.window))
+        {
+            WId select;
+
+            KWD::trapXError ();
+            XSelectInput (QX11Info::display (), xevent->xcreatewindow.window,
+                          StructureNotifyMask | PropertyChangeMask);
+            KWD::popXError ();
+
+            if (KWD::readWindowProperty (xevent->xcreatewindow.window,
+                                         Atoms::switchSelectWindow,
+                                         (long *) &select))
+                handleWindowAdded (xevent->xcreatewindow.window);
+        }
+
     case PropertyNotify:
 	if (xevent->xproperty.atom == Atoms::netInputFrameWindow)
 	{
@@ -600,25 +642,13 @@ KWD::Decorator::handleWindowAdded (WId id)
     WId					     oframe = 0, iframe = 0;
     KWD::Window::Type			     type = KWD::Window::Normal;
     QWidgetList				     widgets;
+    QRect                                    geometry;
 
     /* avoid adding any of our own top level windows */
     foreach (QWidget *widget, QApplication::topLevelWidgets ()) {
         if (widget->winId () == id)
 	    return;
     }
-
-    KWD::trapXError ();
-    KWindowInfo wInfo = KWindowSystem::windowInfo (id, NET::WMGeometry);
-    if (KWD::popXError ())
-	return;
-
-    if (!wInfo.valid ())
-	return;
-
-    QRect geometry = wInfo.geometry ();
-
-    KWD::readWindowProperty (id, Atoms::netInputFrameWindow, (long *) &iframe);
-    KWD::readWindowProperty (id, Atoms::netOutputFrameWindow, (long *) &oframe);
 
     if (KWD::readWindowProperty (id, Atoms::switchSelectWindow,
 				 (long *) &select))
@@ -630,11 +660,28 @@ KWD::Decorator::handleWindowAdded (WId id)
             delete mSwitcher;
             mSwitcher = new Switcher (mCompositeWindow, id);
         }
+
+	geometry = mSwitcher->geometry ();
 	frame = None;
     }
     else
     {
-	KWindowInfo wInfo = KWindowSystem::windowInfo (id, NET::WMWindowType, 0);
+        KWindowInfo wInfo;
+
+        KWD::trapXError ();
+        wInfo = KWindowSystem::windowInfo (id, NET::WMGeometry);
+        if (KWD::popXError ())
+            return;
+
+        if (!wInfo.valid ())
+            return;
+
+        KWD::readWindowProperty (id, Atoms::netInputFrameWindow, (long *) &iframe);
+        KWD::readWindowProperty (id, Atoms::netOutputFrameWindow, (long *) &oframe);
+
+        geometry = wInfo.geometry ();
+
+        wInfo = KWindowSystem::windowInfo (id, NET::WMWindowType, 0);
 
 	switch (wInfo.windowType (~0)) {
 	case NET::Normal:

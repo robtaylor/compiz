@@ -1101,6 +1101,17 @@ CompScreen::handleEvent (XEvent *event)
 	    w->moveInputFocusToOtherWindow ();
 	    w->destroy ();
 	}
+	else
+	{
+	    foreach (CoreWindow *cw, priv->createdWindows)
+	    {
+		if (cw->priv->id == event->xdestroywindow.window)
+		{
+		    priv->createdWindows.remove (cw);
+		    break;
+		}
+	    }
+	}
 	break;
     case MapNotify:
 

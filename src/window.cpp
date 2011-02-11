@@ -3153,7 +3153,7 @@ CompWindow::lower ()
 
     /* when lowering a window, focus the topmost window if
        the click-to-focus option is on */
-    if ((screen->getOption ("click_to_focus")->value ().b ()))
+    if ((screen->priv->optionGetClickToFocus ()))
     {
 	Window aboveWindowId = prev ? prev->id () : None;
 	screen->unhookWindow (this);
@@ -3468,7 +3468,7 @@ CompWindow::constrainNewWindowSize (int        width,
     long	     flags = hints->flags;
     long	     resizeIncFlags = (flags & PResizeInc) ? ~0 : 0;
 
-    if (screen->getOption ("ignore_hints_when_maximized")->value ().b ())
+    if (screen->priv->optionGetIgnoreHintsWhenMaximized ())
     {
 	if (priv->state & MAXIMIZE_STATE)
 	{
@@ -3886,7 +3886,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     int          level;
     CompPoint    dvp;
 
-    level = s->getOption ("focus_prevention_level")->value ().i ();
+    level = s->priv->optionGetFocusPreventionLevel ();
 
     if (level == CoreOptions::FocusPreventionLevelOff)
 	return true;
@@ -3921,8 +3921,7 @@ PrivateWindow::isWindowFocusAllowed (Time timestamp)
     }
 
     /* allow focus for excluded windows */
-    CompMatch &match =
-	s->getOption ("focus_prevention_match")->value ().match ();
+    CompMatch &match = s->priv->optionGetFocusPreventionMatch ();
     if (!match.evaluate (window))
 	return true;
 
@@ -4726,23 +4725,28 @@ PrivateWindow::updatePassiveButtonGrabs ()
 	/* Grab only we have bindings on */
 	foreach (PrivateScreen::ButtonGrab &bind, screen->priv->buttonGrabs)
 	{
+	    unsigned int mods = modHandler->virtualToRealModMask (bind.modifiers);
+
+	    if (mods & CompNoMask)
+		continue;
+
 	    for (unsigned int ignore = 0;
 		     ignore <= modHandler->ignoredModMask (); ignore++)
 	    {
 		if (ignore & ~modHandler->ignoredModMask ())
-		{
-		    XGrabButton (screen->priv->dpy,
-				bind.button,
-				bind.modifiers | ignore,
-				frame,
-				false,
-				ButtonPressMask | ButtonReleaseMask |
-				    ButtonMotionMask,
-				GrabModeSync,
-				GrabModeAsync,
-				None,
-				None);
-		}
+		    continue;
+
+		XGrabButton (screen->priv->dpy,
+			     bind.button,
+			     mods | ignore,
+			     frame,
+			     false,
+			     ButtonPressMask | ButtonReleaseMask |
+				ButtonMotionMask,
+			     GrabModeSync,
+			     GrabModeAsync,
+			     None,
+			     None);
 	    }
 	}
     }
@@ -5434,6 +5438,11 @@ PrivateWindow::PrivateWindow (CoreWindow *window) :
     input.top    = 0;
     input.bottom = 0;
 
+    border.top    = 0;
+    border.bottom = 0;
+    border.left   = 0;
+    border.right  = 0;
+
     output.left   = 0;
     output.right  = 0;
     output.top    = 0;
@@ -5729,6 +5738,7 @@ PrivateWindow::reparent ()
 
     /* We don't care about client events on the frame, and listening for them
      * will probably end up fighting the client anyways, so disable them */
+
     attr.do_not_propagate_mask = KeyPressMask | KeyReleaseMask |
 				 ButtonPressMask | ButtonReleaseMask |
 				 EnterWindowMask | LeaveWindowMask |

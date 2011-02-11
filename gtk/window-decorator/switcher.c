@@ -257,20 +257,49 @@ draw_switcher_decoration (decor_t *d)
     draw_switcher_foreground (d);
 }
 
+void
+switcher_window_closed ()
+{
+    g_free (switcher_window);
+    switcher_window = NULL;
+}
+
+/* Switcher is override-redirect now, we need to track
+ * it separately */
+decor_t *
+switcher_window_opened (Window popup, Window window)
+{
+    decor_t      *d;
+
+    d = switcher_window = calloc (1, sizeof (decor_t));
+    if (!d)
+	return NULL;
+
+    return d;
+}
+
+
 gboolean
-update_switcher_window (WnckWindow *win,
+update_switcher_window (Window     popup,
 			Window     selected)
 {
-    decor_t           *d = g_object_get_data (G_OBJECT (win), "decor");
+    decor_t           *d = switcher_window;
     GdkPixmap         *pixmap, *buffer_pixmap = NULL;
-    gint              height, width = 0;
+    unsigned int      height, width = 0, border, depth;
+    int		      x, y;
+    Window	      root_return;
     WnckWindow        *selected_win;
     Display           *xdisplay;
     XRenderPictFormat *format;
 
+    if (!d)
+	d = switcher_window_opened (popup, selected);
+
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
-    wnck_window_get_client_window_geometry (win, NULL, NULL, &width, NULL);
+    /* FIXME: Thats a round-trip */
+    XGetGeometry (gdk_x11_get_default_xdisplay (), popup, &root_return,
+		  &x, &y, &width, &height, &border, &depth);
 
     decor_get_default_layout (&switcher_context, width, 1, &d->border_layout);
 
@@ -419,7 +448,7 @@ update_switcher_window (WnckWindow *win,
     d->width  = width;
     d->height = height;
 
-    d->prop_xid = wnck_window_get_xid (win);
+    d->prop_xid = popup;
 
     queue_decor_draw (d);
 

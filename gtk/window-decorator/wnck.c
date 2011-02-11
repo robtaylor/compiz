@@ -83,6 +83,7 @@ decorations_changed (WnckScreen *screen)
     GdkDisplay *gdkdisplay;
     GdkScreen  *gdkscreen;
     GList      *windows;
+    Window     select;
 
     gdkdisplay = gdk_display_get_default ();
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
@@ -95,6 +96,8 @@ decorations_changed (WnckScreen *screen)
 
     if (minimal)
 	return;
+
+    /* Update all normal windows */
 
     windows = wnck_screen_get_windows (screen);
     while (windows != NULL)
@@ -114,6 +117,21 @@ decorations_changed (WnckScreen *screen)
 
 	update_window_decoration (WNCK_WINDOW (windows->data));
 	windows = windows->next;
+    }
+
+    /* Update switcher window */
+
+    if (switcher_window &&
+	get_window_prop (switcher_window->prop_xid,
+			 select_window_atom, &select))
+    {
+	decor_t *d = switcher_window;
+	/* force size update */
+	d->context = NULL;
+	d->width = d->height = 0;
+	switcher_width = switcher_height = 0;
+
+	update_switcher_window (d->prop_xid, select);
     }
 }
 
@@ -438,7 +456,7 @@ remove_frame_window (WnckWindow *win)
     draw_list = g_slist_remove (draw_list, d);
 }
 
-static void
+void
 connect_window (WnckWindow *win)
 {
     g_signal_connect_object (win, "name_changed",
@@ -543,12 +561,7 @@ window_opened (WnckScreen *screen,
 
     xid = wnck_window_get_xid (win);
 
-    if (get_window_prop (xid, select_window_atom, &window))
-    {
-	d->prop_xid = wnck_window_get_xid (win);
-	update_switcher_window (win, window);
-    }
-    else if (get_window_prop (xid, frame_input_window_atom, &window))
+    if (get_window_prop (xid, frame_input_window_atom, &window))
     {
 	add_frame_window (win, window, FALSE);
     }

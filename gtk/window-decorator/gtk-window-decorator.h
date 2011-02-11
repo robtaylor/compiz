@@ -22,6 +22,7 @@
 
 #include <gtk/gtk.h>
 #include <gdk/gdkx.h>
+#include <gdk/gdk.h>
 
 #ifdef USE_GCONF
 #include <gconf/gconf-client.h>
@@ -449,6 +450,7 @@ extern GdkPixmap *switcher_buffer_pixmap;
 extern gint      switcher_width;
 extern gint      switcher_height;
 extern Window    switcher_selected_window;
+extern decor_t   *switcher_window;
 
 extern XRenderPictFormat *xformat_rgba;
 extern XRenderPictFormat *xformat_rgb;
@@ -530,6 +532,9 @@ remove_frame_window (WnckWindow *win);
 void
 restack_window (WnckWindow *win,
 		int	   stack_mode);
+
+void
+connect_window (WnckWindow *win);
 
 
 /* blur.c */
@@ -717,8 +722,14 @@ void
 draw_switcher_decoration (decor_t *d);
 
 gboolean
-update_switcher_window (WnckWindow *win,
+update_switcher_window (Window     popup,
 			Window     selected);
+
+decor_t *
+switcher_window_opened (Window popup, Window selected);
+
+void
+switcher_window_closed ();
 
 /* events.c */
 

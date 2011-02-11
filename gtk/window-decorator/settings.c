@@ -54,7 +54,7 @@ shadow_property_changed (WnckScreen *s)
 
     result = XGetTextProperty (xdisplay, root, &shadow_color_xtp,
 			       compiz_shadow_color_atom);
-    
+
     if (shadow_color_xtp.value)
     {
 	int  ret_count = 0;
@@ -84,7 +84,7 @@ shadow_property_changed (WnckScreen *s)
     if (changed)
 	decorations_changed (s);
 }
-    
+
 #ifdef USE_GCONF
 static gboolean
 blur_settings_changed (GConfClient *client)
