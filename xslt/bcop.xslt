@@ -430,7 +430,7 @@ inline void
         </xsl:choose>
         <xsl:text>    color[2] = </xsl:text>
 	<xsl:choose>
-            <xsl:when test="./default/blue/text()">
+            <xsl:when test="./blue/text()">
                 <xsl:text>MAX (0, MIN (0xffff, </xsl:text>
                 <xsl:value-of select="./blue/text()"/>
                 <xsl:text>));
@@ -443,7 +443,7 @@ inline void
         </xsl:choose>
         <xsl:text>    color[3] = </xsl:text>
 	<xsl:choose>
-            <xsl:when test="./default/alpha/text()">
+            <xsl:when test="./alpha/text()">
                 <xsl:text>MAX (0, MIN (0xffff, </xsl:text>
                 <xsl:value-of select="./alpha/text()"/>
                 <xsl:text>));
