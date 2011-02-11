@@ -4587,9 +4587,10 @@ CompScreen::init (const char *name)
     priv->vpSize.setHeight (priv->optionGetVsize ());
 
     /* enforce restack on all windows */
+    i = 0;
     for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
 	 rit != priv->windows.rend (); rit++)
-	children[i] = (*rit)->id ();
+	children[i++] = (*rit)->id ();
 
     XRestackWindows (dpy, children, i);
 
