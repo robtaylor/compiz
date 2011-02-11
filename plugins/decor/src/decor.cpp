@@ -42,6 +42,128 @@
 
 COMPIZ_PLUGIN_20090315 (decor, DecorPluginVTable)
 
+/* From core */
+
+bool
+isAncestorTo (CompWindow *window,
+              CompWindow *candidate)
+{
+    if (window->transientFor ())
+    {
+        if (window->transientFor () == candidate->id ())
+            return true;
+
+	window = screen->findWindow (window->transientFor ());
+	if (window)
+	    return isAncestorTo (window, candidate);
+    }
+
+    return false;
+}
+
+
+/* Make shadows look nice, don't paint shadows on top of
+ * things they don't make sense on top of, eg, menus
+ * need shadows but they don't need to be painted when
+ * another menu is adjacent and covering the shadow
+ * region. Also panel shadows are nice, but not
+ * when they obscure client window shadows
+ */
+CompRegion
+DecorWindow::computeClipRegion ()
+{
+    CompRegion reg (window->outputRect ());
+
+    if (window->type () == CompWindowTypeDockMask)
+    {
+        /* windows above this one in the stack should
+         * clip the shadow */
+
+        CompWindowList::iterator it = std::find (screen->windows ().begin (),
+                                                 screen->windows ().end (),
+                                                 window);
+
+        for (it--; it != screen->windows ().end (); it--)
+        {
+            CompRegion inter;
+
+            if (!(*it)->isViewable ())
+                continue;
+
+            if ((*it)->type () & CompWindowTypeDesktopMask)
+                continue;
+
+            inter = reg.intersected ((*it)->inputRect ());
+
+            if (!inter.isEmpty ())
+                reg = reg.subtracted (inter);
+
+        }
+    }
+    else if (window->type () == CompWindowTypeDropdownMenuMask ||
+             window->type () == CompWindowTypePopupMenuMask)
+    {
+        /* Other transient menus should clip
+         * this menu's shadows, also the panel
+         * which is a transient parent should
+         * too */
+
+        CompWindowList::iterator it = std::find (screen->windows ().begin (),
+                                                 screen->windows ().end (),
+                                                 window);
+
+        for (it--; it != screen->windows ().end (); it--)
+        {
+            CompRegion inter;
+
+            if (!(*it)->isViewable ())
+                continue;
+
+            if (!((*it)->type () == CompWindowTypeDropdownMenuMask ||
+                  (*it)->type () == CompWindowTypePopupMenuMask ||
+                  (*it)->type () == CompWindowTypeDockMask))
+                continue;
+
+            fprintf (stderr, "window id 0x%x is dock or menu\n", (*it)->id ());
+
+            /* window needs to be a transient parent */
+            if (!isAncestorTo (window, (*it)))
+                continue;
+
+            inter = reg.intersected ((*it)->inputRect ());
+
+            if (!inter.isEmpty ())
+                reg = reg.subtracted (inter);
+        }
+
+        /* If the region didn't change, then it is safe to
+         * say that that this window was probably the first
+         * menu in the "chain" of dropdown menus that comes
+         * from a menu-bar - in that case there isn't any
+         * window that the shadow would necessarily occlude
+         * here so clip the shadow to the top of the input
+         * rect.
+         *
+         * FIXME: We need a better way to detect exactly
+         * where the menubar is for the dropdown menu,
+         * that will look a lot better.
+         */
+        if (window->type () == CompWindowTypeDropdownMenuMask &&
+            reg == CompRegion (window->outputRect ()))
+        {
+            CompRect area (window->outputRect ().x1 (),
+                           window->outputRect ().y1 (),
+                           window->outputRect ().width (),
+                           window->inputRect ().y1 () -
+                           window->outputRect ().y1 ());
+
+            reg = reg.subtracted (area);
+        }
+    }
+
+    return reg;
+}
+
 bool
 DecorWindow::glDraw (const GLMatrix     &transform,
 		     GLFragment::Attrib &attrib,
@@ -53,7 +175,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     status = gWindow->glDraw (transform, attrib, region, mask);
 
     const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
-	                   infiniteRegion : region;
+                           infiniteRegion : computeClipRegion ();
 
     if (wd && !reg.isEmpty () &&
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
