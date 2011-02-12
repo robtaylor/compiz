@@ -75,12 +75,10 @@ isAncestorTo (CompWindow *window,
  * region that core already reduced by doing
  * occlusion detection
  */
-CompRegion
-DecorWindow::computeClipRegion (const CompRegion &clip)
+void
+DecorWindow::computeShadowRegion ()
 {
-    CompRegion reg;
-
-    reg = CompRegion (window->outputRect ()).intersected (clip);
+    shadowRegion = CompRegion (window->outputRect ());
 
     if (window->type () == CompWindowTypeDockMask)
     {
@@ -101,10 +99,10 @@ DecorWindow::computeClipRegion (const CompRegion &clip)
             if ((*it)->type () & CompWindowTypeDesktopMask)
                 continue;
 
-            inter = reg.intersected ((*it)->inputRect ());
+	    inter = shadowRegion.intersected ((*it)->inputRect ());
 
             if (!inter.isEmpty ())
-                reg = reg.subtracted (inter);
+		shadowRegion = shadowRegion.subtracted (inter);
 
         }
     }
@@ -132,16 +130,16 @@ DecorWindow::computeClipRegion (const CompRegion &clip)
                   (*it)->type () == CompWindowTypeDockMask))
                 continue;
 
-            fprintf (stderr, "window id 0x%x is dock or menu\n", (*it)->id ());
+	    fprintf (stderr, "window id 0x%x is dock or menu\n", (*it)->id ());
 
             /* window needs to be a transient parent */
             if (!isAncestorTo (window, (*it)))
                 continue;
 
-            inter = reg.intersected ((*it)->inputRect ());
+	    inter = shadowRegion.intersected ((*it)->inputRect ());
 
             if (!inter.isEmpty ())
-                reg = reg.subtracted (inter);
+		shadowRegion = shadowRegion.subtracted (inter);
         }
 
         /* If the region didn't change, then it is safe to
@@ -157,7 +155,7 @@ DecorWindow::computeClipRegion (const CompRegion &clip)
          * that will look a lot better.
          */
         if (window->type () == CompWindowTypeDropdownMenuMask &&
-            reg == CompRegion (window->outputRect ()))
+	    shadowRegion == CompRegion (window->outputRect ()))
         {
             CompRect area (window->outputRect ().x1 (),
                            window->outputRect ().y1 (),
@@ -165,11 +163,9 @@ DecorWindow::computeClipRegion (const CompRegion &clip)
                            window->inputRect ().y1 () -
                            window->outputRect ().y1 ());
 
-            reg = reg.subtracted (area);
+	    shadowRegion = shadowRegion.subtracted (area);
         }
     }
-
-    return reg;
 }
 
 bool
@@ -183,7 +179,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     status = gWindow->glDraw (transform, attrib, region, mask);
 
     const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
-                           infiniteRegion : computeClipRegion (region);
+			   infiniteRegion : shadowRegion.intersected (region);
 
     if (wd && !reg.isEmpty () &&
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
@@ -893,7 +889,10 @@ DecorWindow::update (bool allowDecoration)
 	return false;
 
     if (dScreen->cmActive)
+    {
 	cWindow->damageOutputExtents ();
+	computeShadowRegion ();
+    }
 
     if (old)
     {
@@ -1438,6 +1437,13 @@ DecorWindow::windowNotify (CompWindowNotify n)
 
     switch (n)
     {
+	case CompWindowNotifyMap:
+	case CompWindowNotifyUnmap:
+	    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	    {
+		DecorWindow::get (cw)->computeShadowRegion ();
+	    }
+	    break;
 	case CompWindowNotifyUnreparent:
 	    /* We don't get a DestroyNotify when the wrapper window
 	     * or frame window gets destroyed, which destroys our
@@ -1604,6 +1610,13 @@ DecorScreen::handleEvent (XEvent *event)
 		w = screen->findWindow (event->xproperty.window);
 		if (w)
 		    DecorWindow::get (w)->update (true);
+	    }
+	    else if (event->xproperty.atom == XA_WM_TRANSIENT_FOR)
+	    {
+		foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+		{
+		    DecorWindow::get (cw)->computeShadowRegion ();
+		}
 	    }
 	    else
 	    {
@@ -1886,6 +1899,11 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
     }
     updateReg = true;
 
+    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+    {
+	DecorWindow::get (cw)->computeShadowRegion ();
+    }
+
     window->moveNotify (dx, dy, immediate);
 }
 
@@ -1916,6 +1934,11 @@ DecorWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     resizeUpdate.start (boost::bind (&DecorWindow::resizeTimeout, this), 0);
     updateDecorationScale ();
     updateReg = true;
+
+    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+    {
+	DecorWindow::get (cw)->computeShadowRegion ();
+    }
 
     window->resizeNotify (dx, dy, dwidth, dheight);
 }
