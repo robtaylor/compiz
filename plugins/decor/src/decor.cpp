@@ -68,11 +68,19 @@ isAncestorTo (CompWindow *window,
  * another menu is adjacent and covering the shadow
  * region. Also panel shadows are nice, but not
  * when they obscure client window shadows
+ *
+ * We need to use the current clip region here
+ * and take an intersection of that to ensure
+ * that we don't unintentionally expand the clip
+ * region that core already reduced by doing
+ * occlusion detection
  */
 CompRegion
-DecorWindow::computeClipRegion ()
+DecorWindow::computeClipRegion (const CompRegion &clip)
 {
-    CompRegion reg (window->outputRect ());
+    CompRegion reg;
+
+    reg = CompRegion (window->outputRect ()).intersected (clip);
 
     if (window->type () == CompWindowTypeDockMask)
     {
@@ -175,7 +183,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     status = gWindow->glDraw (transform, attrib, region, mask);
 
     const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
-                           infiniteRegion : computeClipRegion ();
+                           infiniteRegion : computeClipRegion (region);
 
     if (wd && !reg.isEmpty () &&
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)

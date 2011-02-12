@@ -178,7 +178,7 @@ class DecorWindow :
 
 	bool damageRect (bool, const CompRect &);
 
-	CompRegion computeClipRegion ();
+	CompRegion computeClipRegion (const CompRegion &);
 
 	bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 		     const CompRegion &, unsigned int);
