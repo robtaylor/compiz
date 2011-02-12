@@ -128,9 +128,7 @@ DecorWindow::computeShadowRegion ()
             if (!((*it)->type () == CompWindowTypeDropdownMenuMask ||
                   (*it)->type () == CompWindowTypePopupMenuMask ||
                   (*it)->type () == CompWindowTypeDockMask))
-                continue;
-
-	    fprintf (stderr, "window id 0x%x is dock or menu\n", (*it)->id ());
+		continue;
 
             /* window needs to be a transient parent */
             if (!isAncestorTo (window, (*it)))
