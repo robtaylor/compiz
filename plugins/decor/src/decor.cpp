@@ -2084,6 +2084,17 @@ DecorWindow::DecorWindow (CompWindow *w) :
 {
     WindowInterface::setHandler (window);
 
+    /* FIXME :DecorWindow::update can call updateWindowOutputExtents
+     * which will call a zero-diff resizeNotify. Since this window
+     * might be part of a startup procedure, we can't assume that
+     * all other windows in the list are necessarily safe to use
+     * (since DecorWindow::DecorWindow might not have been called
+     * for them) so we need to turn off resize notifications
+     * and turn them back on once we're done updating the decoration
+     */
+
+    window->resizeNotifySetEnabled (this, false);
+
     if (dScreen->cmActive)
     {
 	gWindow = GLWindow::get (w);
@@ -2099,6 +2110,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
 
     if (w->shaded () || w->isViewable ())
 	update (true);
+
+    window->resizeNotifySetEnabled (this, true);
 }
 
 
