@@ -662,6 +662,10 @@ pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth);
 
 /* metacity.c */
 #ifdef USE_METACITY
+
+MetaFrameType
+meta_get_frame_type_for_win_type (WnckWindow *win);
+
 void
 meta_draw_window_decoration (decor_t *d);
 
@@ -671,6 +675,7 @@ meta_get_decoration_geometry (decor_t		*d,
 			      MetaFrameFlags    *flags,
 			      MetaFrameGeometry *fgeom,
 			      MetaButtonLayout  *button_layout,
+			      MetaFrameType	frame_type,
 			      GdkRectangle      *clip);
 
 void

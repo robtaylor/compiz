@@ -407,6 +407,7 @@ meta_get_decoration_geometry (decor_t		*d,
 			      MetaFrameFlags    *flags,
 			      MetaFrameGeometry *fgeom,
 			      MetaButtonLayout  *button_layout,
+			      MetaFrameType	frame_type,
 			      GdkRectangle      *clip)
 {
     gint left_width, right_width, top_height, bottom_height;
@@ -483,7 +484,7 @@ meta_get_decoration_geometry (decor_t		*d,
 #endif
 
     meta_theme_get_frame_borders (theme,
-				  META_FRAME_TYPE_NORMAL,
+				  frame_type,
 				  text_height,
 				  *flags,
 				  &top_height,
@@ -503,7 +504,7 @@ meta_get_decoration_geometry (decor_t		*d,
 	clip->height = d->border_layout.left.y2 - d->border_layout.left.y1;
 
     meta_theme_calc_geometry (theme,
-			      META_FRAME_TYPE_NORMAL,
+			      frame_type,
 			      text_height,
 			      *flags,
 			      clip->width,
@@ -513,6 +514,12 @@ meta_get_decoration_geometry (decor_t		*d,
 
     clip->width  += left_width + right_width;
     clip->height += top_height + bottom_height;
+}
+
+MetaFrameType
+meta_get_frame_type_for_win_type (WnckWindow *win)
+{
+    return META_FRAME_TYPE_NORMAL;
 }
 
 void
@@ -526,6 +533,7 @@ meta_draw_window_decoration (decor_t *d)
     MetaButtonLayout  button_layout;
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
+    MetaFrameType     frame_type;
     MetaTheme	      *theme;
     GtkStyle	      *style;
     cairo_t	      *cr;
@@ -577,9 +585,10 @@ meta_draw_window_decoration (decor_t *d)
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
     theme = meta_theme_get_current ();
+    frame_type = meta_get_frame_type_for_win_type (d->win);
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
-				  &clip);
+				  frame_type, &clip);
 
     /* we only have to redraw the shadow background when decoration
        changed size */
@@ -590,7 +599,7 @@ meta_draw_window_decoration (decor_t *d)
 	button_states[i] = meta_button_state_for_button_type (d, i);
 
     frame_style = meta_theme_get_frame_style (theme,
-					      META_FRAME_TYPE_NORMAL,
+					      frame_type,
 					      flags);
 
     bg_color = style->bg[GTK_STATE_NORMAL];
@@ -651,7 +660,7 @@ meta_draw_window_decoration (decor_t *d)
 				   pixmap,
 				   &rect,
 				   0, 0,
-				   META_FRAME_TYPE_NORMAL,
+				   frame_type,
 				   flags,
 				   clip.width - fgeom.left_width -
 				   fgeom.right_width,
@@ -691,7 +700,7 @@ meta_draw_window_decoration (decor_t *d)
 				   &rect,
 				   0,
 				   -(clip.height - fgeom.bottom_height),
-				   META_FRAME_TYPE_NORMAL,
+				   frame_type,
 				   flags,
 				   clip.width - fgeom.left_width -
 				   fgeom.right_width,
@@ -768,7 +777,7 @@ meta_draw_window_decoration (decor_t *d)
 				   &rect,
 				   0,
 				   -fgeom.top_height,
-				   META_FRAME_TYPE_NORMAL,
+				   frame_type,
 				   flags,
 				   clip.width - fgeom.left_width -
 				   fgeom.right_width,
@@ -808,7 +817,7 @@ meta_draw_window_decoration (decor_t *d)
 				   &rect,
 				   -(clip.width - fgeom.right_width),
 				   -fgeom.top_height,
-				   META_FRAME_TYPE_NORMAL,
+				   frame_type,
 				   flags,
 				   clip.width - fgeom.left_width -
 				   fgeom.right_width,
@@ -935,18 +944,19 @@ meta_calc_button_size (decor_t *d)
 }
 
 gboolean
-meta_get_button_position (decor_t *d,
-			  gint    i,
-			  gint	  width,
-			  gint	  height,
-			  gint    *x,
-			  gint    *y,
-			  gint    *w,
-			  gint    *h)
+meta_get_button_position (decor_t	 *d,
+			  gint		i,
+			  gint		width,
+			  gint		height,
+			  gint		*x,
+			  gint		*y,
+			  gint		*w,
+			  gint		*h)
 {
     MetaButtonLayout  button_layout;
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
+    MetaFrameType     frame_type;
     MetaTheme	      *theme;
     GdkRectangle      clip;
 
@@ -963,9 +973,10 @@ meta_get_button_position (decor_t *d,
     }
 
     theme = meta_theme_get_current ();
+    frame_type = meta_get_frame_type_for_win_type (d->win);
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
-				  &clip);
+				  frame_type, &clip);
 
     switch (i) {
     case BUTTON_MENU:
@@ -1183,12 +1194,14 @@ meta_get_event_window_position (decor_t *d,
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
     MetaTheme	      *theme;
+    MetaFrameType     frame_type;
     GdkRectangle      clip;
 
     theme = meta_theme_get_current ();
 
+    frame_type = meta_get_frame_type_for_win_type (d->win);
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
-				  &clip);
+				  frame_type, &clip);
 
     width  += fgeom.right_width + fgeom.left_width;
     height += fgeom.top_height  + fgeom.bottom_height;
