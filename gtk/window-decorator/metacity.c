@@ -519,7 +519,28 @@ meta_get_decoration_geometry (decor_t		*d,
 MetaFrameType
 meta_get_frame_type_for_win_type (WnckWindow *win)
 {
-    return META_FRAME_TYPE_NORMAL;
+    MetaFrameType type;
+
+    switch (wnck_window_get_window_type (win))
+    {
+	case WNCK_WINDOW_NORMAL:
+	    type = META_FRAME_TYPE_NORMAL;
+	    break;
+	case WNCK_WINDOW_DIALOG:
+	    type = META_FRAME_TYPE_DIALOG;
+	    break;
+	case WNCK_WINDOW_MENU:
+	    type = META_FRAME_TYPE_MENU;
+	    break;
+	case WNCK_WINDOW_UTILITY:
+	    type = META_FRAME_TYPE_UTILITY;
+	    break;
+	default:
+	    type = META_FRAME_TYPE_LAST;
+	    break;
+    }
+
+    return type;
 }
 
 void
