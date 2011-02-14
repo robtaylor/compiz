@@ -1,5 +1,32 @@
 #include "gtk-window-decorator.h"
 
+decor_frame_type
+get_frame_type (WnckWindowType wnck_type)
+{
+    decor_frame_type frame_type;
+
+    switch (wnck_type)
+    {
+	case WNCK_WINDOW_NORMAL:
+	    frame_type = DECOR_FRAME_TYPE_NORMAL;
+	    break;
+	case WNCK_WINDOW_DIALOG:
+	    frame_type = DECOR_FRAME_TYPE_DIALOG;
+	    break;
+	case WNCK_WINDOW_MENU:
+	    frame_type = DECOR_FRAME_TYPE_MENU;
+	    break;
+	case WNCK_WINDOW_UTILITY:
+	    frame_type = DECOR_FRAME_TYPE_UTILITY;
+	    break;
+	default:
+	    frame_type = DECOR_FRAME_TYPE_UNDECORATED;
+	    break;
+    }
+
+    return frame_type;
+}
+
 static void
 window_name_changed (WnckWindow *win)
 {

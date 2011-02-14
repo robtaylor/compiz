@@ -27,38 +27,15 @@ double decoration_alpha = 0.5;
 
 #define SWITCHER_SPACE 40
 
+decor_frame_t decor_frames[5];
+decor_frame_t _default_decoration;
+
 decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
-decor_extents_t _win_extents         = { 6, 6, 6, 6 };
-decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
 decor_extents_t _default_win_extents = { 6, 6, 6, 6 };
 decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
 
-int titlebar_height = 17;
-int max_titlebar_height = 17;
-
-decor_context_t window_context = {
-    { 0, 0, 0, 0 },
-    6, 6, 4, 6,
-    0, 0, 0, 0
-};
-
-decor_context_t max_window_context = {
-    { 0, 0, 0, 0 },
-    6, 6, 4, 6,
-    0, 0, 0, 0
-};
-
-decor_context_t window_context_no_shadow = {
-    { 0, 0, 0, 0 },
-    6, 6, 4, 6,
-    0, 0, 0, 0
-};
-
-decor_context_t max_window_context_no_shadow = {
-    { 0, 0, 0, 0 },
-    6, 6, 4, 6,
-    0, 0, 0, 0
-};
+decor_shadow_t *switcher_shadow = NULL;
+decor_shadow_t *no_border_shadow = NULL;
 
 decor_context_t switcher_context = {
     { 0, 0, 0, 0 },
@@ -83,13 +60,6 @@ gint    shadow_offset_x = SHADOW_OFFSET_X;
 gint    shadow_offset_y = SHADOW_OFFSET_Y;
 
 guint cmdline_options = 0;
-
-decor_shadow_t *no_border_shadow = NULL;
-decor_shadow_t *border_shadow = NULL;
-decor_shadow_t *max_border_shadow = NULL;
-decor_shadow_t *border_no_shadow = NULL;
-decor_shadow_t *max_border_no_shadow = NULL;
-decor_shadow_t *switcher_shadow = NULL;
 
 GdkPixmap *decor_normal_pixmap = NULL;
 GdkPixmap *decor_active_pixmap = NULL;
@@ -176,6 +146,72 @@ decor_t   *switcher_window = NULL;
 
 XRenderPictFormat *xformat_rgba;
 XRenderPictFormat *xformat_rgb;
+
+void
+initialize_decorations ()
+{
+    decor_extents_t _win_extents         = { 6, 6, 6, 6 };
+    decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
+    decor_context_t _window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+    WnckWindowType win_types[] = {
+	WNCK_WINDOW_NORMAL, WNCK_WINDOW_DIALOG, WNCK_WINDOW_MENU,
+	WNCK_WINDOW_UTILITY, WNCK_WINDOW_SPLASHSCREEN
+    };
+
+    unsigned int i;
+
+    for (i = 0; i < 5; i++)
+    {
+	fprintf (stderr, "i is %i\n", i);
+	decor_frames[i].win_extents = _win_extents;
+	decor_frames[i].max_win_extents = _max_win_extents;
+	decor_frames[i].titlebar_height = 17;
+	decor_frames[i].max_titlebar_height = 17;
+	decor_frames[i].window_context = _window_context;
+	decor_frames[i].window_context_no_shadow = _window_context_no_shadow;
+	decor_frames[i].max_window_context = _max_window_context;
+	decor_frames[i].max_window_context_no_shadow = _max_window_context_no_shadow;
+	decor_frames[i].border_shadow = NULL;
+	decor_frames[i].border_no_shadow = NULL;
+	decor_frames[i].max_border_no_shadow = NULL;
+	decor_frames[i].max_border_shadow = NULL;
+    }
+
+    _default_decoration.win_extents = _win_extents;
+    _default_decoration.max_win_extents = _max_win_extents;
+    _default_decoration.titlebar_height = 17;
+    _default_decoration.max_titlebar_height = 17;
+    _default_decoration.window_context = _window_context;
+    _default_decoration.window_context_no_shadow = _window_context_no_shadow;
+    _default_decoration.max_window_context = _max_window_context;
+    _default_decoration.max_window_context_no_shadow = _max_window_context_no_shadow;
+    _default_decoration.border_shadow = NULL;
+    _default_decoration.border_no_shadow = NULL;
+    _default_decoration.max_border_no_shadow = NULL;
+    _default_decoration.max_border_shadow = NULL;
+}
 
 int
 main (int argc, char *argv[])
@@ -417,6 +453,8 @@ main (int argc, char *argv[])
  
  	connect_screen (screen);
     }
+
+    initialize_decorations ();
 
     if (!init_settings (screen))
     {

@@ -14,6 +14,8 @@ position_action_menu (GtkMenu  *menu,
 		      gpointer user_data)
 {
     WnckWindow *win = (WnckWindow *) user_data;
+    WnckWindowType win_type = wnck_window_get_window_type (win);
+    decor_frame_t  *frame = &decor_frames[get_frame_type (win_type)];
     decor_t    *d = g_object_get_data (G_OBJECT (win), "decor");
     gint       bx, by, width, height;
 
@@ -21,7 +23,7 @@ position_action_menu (GtkMenu  *menu,
 
     if ((*theme_get_button_position) (d, BUTTON_MENU, width, height,
 				      &bx, &by, &width, &height))
-	*x = *x - _win_extents.left + bx;
+	*x = *x - frame->win_extents.left + bx;
 
     if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
     {

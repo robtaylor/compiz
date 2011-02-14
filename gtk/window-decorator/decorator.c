@@ -473,6 +473,7 @@ update_shadow (void)
     Display		   *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     GdkDisplay		   *display = gdk_display_get_default ();
     GdkScreen		   *screen = gdk_display_get_default_screen (display);
+    unsigned int	   i;
 
     opt_shadow.shadow_radius  = shadow_radius;
     opt_shadow.shadow_opacity = shadow_opacity;
@@ -507,108 +508,110 @@ update_shadow (void)
 					    decor_draw_simple,
 					    0);
 
-    if (border_shadow)
+    for (i = 0; i < 5; i++)
     {
-	decor_shadow_destroy (xdisplay, border_shadow);
-	border_shadow = NULL;
+	decor_frame_t *frame = &decor_frames[i];
+
+	if (frame->border_shadow)
+	{
+	    decor_shadow_destroy (xdisplay, frame->border_shadow);
+	    frame->border_shadow = NULL;
+	}
+
+	frame->border_shadow = decor_shadow_create (xdisplay,
+						     gdk_x11_screen_get_xscreen (screen),
+						     1, 1,
+						     frame->win_extents.left,
+						     frame->win_extents.right,
+						     frame->win_extents.top + frame->titlebar_height,
+						     frame->win_extents.bottom,
+						     frame->win_extents.left -
+						     TRANSLUCENT_CORNER_SIZE,
+						     frame->win_extents.right -
+						     TRANSLUCENT_CORNER_SIZE,
+						     frame->win_extents.top + frame->titlebar_height -
+						     TRANSLUCENT_CORNER_SIZE,
+						     frame->win_extents.bottom -
+						     TRANSLUCENT_CORNER_SIZE,
+						     &opt_shadow,
+						     &frame->window_context,
+						     draw_border_shape,
+						     0);
+
+	if (frame->border_no_shadow)
+	{
+	    decor_shadow_destroy (xdisplay, frame->border_no_shadow);
+	    frame->border_no_shadow = NULL;
+	}
+
+	frame->border_no_shadow = decor_shadow_create (xdisplay,
+					     gdk_x11_screen_get_xscreen (screen),
+					     1, 1,
+					     frame->win_extents.left,
+					     frame->win_extents.right,
+					     frame->win_extents.top + frame->titlebar_height,
+					     frame->win_extents.bottom,
+					     frame->win_extents.left -
+					     TRANSLUCENT_CORNER_SIZE,
+					     frame->win_extents.right -
+					     TRANSLUCENT_CORNER_SIZE,
+					     frame->win_extents.top + frame->titlebar_height -
+					     TRANSLUCENT_CORNER_SIZE,
+					     frame->win_extents.bottom -
+					     TRANSLUCENT_CORNER_SIZE,
+					     &opt_no_shadow,
+					     &frame->window_context_no_shadow,
+					     draw_border_shape,
+					     0);
+
+	if (frame->max_border_shadow)
+	{
+	    decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	    frame->max_border_shadow = NULL;
+	}
+
+	frame->max_border_shadow =
+	    decor_shadow_create (xdisplay,
+				 gdk_x11_screen_get_xscreen (screen),
+				 1, 1,
+				 frame->max_win_extents.left,
+				 frame->max_win_extents.right,
+				 frame->max_win_extents.top + frame->max_titlebar_height,
+				 frame->max_win_extents.bottom,
+				 frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.top + frame->max_titlebar_height -
+				 TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+				 &opt_shadow,
+				 &frame->max_window_context,
+				 draw_border_shape,
+				 (void *) 1);
+
+	if (frame->max_border_no_shadow)
+	{
+	    decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	    frame->max_border_shadow = NULL;
+	}
+
+	frame->max_border_no_shadow =
+	    decor_shadow_create (xdisplay,
+				 gdk_x11_screen_get_xscreen (screen),
+				 1, 1,
+				 frame->max_win_extents.left,
+				 frame->max_win_extents.right,
+				 frame->max_win_extents.top + frame->max_titlebar_height,
+				 frame->max_win_extents.bottom,
+				 frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.top + frame->max_titlebar_height -
+				 TRANSLUCENT_CORNER_SIZE,
+				 frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+				 &opt_no_shadow,
+				 &frame->max_window_context_no_shadow,
+				 draw_border_shape,
+				 (void *) 1);
     }
-
-    border_shadow = decor_shadow_create (xdisplay,
-					 gdk_x11_screen_get_xscreen (screen),
-					 1, 1,
-					 _win_extents.left,
-					 _win_extents.right,
-					 _win_extents.top + titlebar_height,
-					 _win_extents.bottom,
-					 _win_extents.left -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.right -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.top + titlebar_height -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.bottom -
-					 TRANSLUCENT_CORNER_SIZE,
-					 &opt_shadow,
-					 &window_context,
-					 draw_border_shape,
-					 0);
-
-    if (border_no_shadow)
-    {
-	decor_shadow_destroy (xdisplay, border_no_shadow);
-	border_no_shadow = NULL;
-    }
-
-    border_no_shadow = decor_shadow_create (xdisplay,
-					 gdk_x11_screen_get_xscreen (screen),
-					 1, 1,
-					 _win_extents.left,
-					 _win_extents.right,
-					 _win_extents.top + titlebar_height,
-					 _win_extents.bottom,
-					 _win_extents.left -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.right -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.top + titlebar_height -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.bottom -
-					 TRANSLUCENT_CORNER_SIZE,
-					 &opt_no_shadow,
-					 &window_context_no_shadow,
-					 draw_border_shape,
-					 0);
-
-    decor_context_t *context = &window_context_no_shadow;
-
-
-    if (max_border_shadow)
-    {
-	decor_shadow_destroy (xdisplay, max_border_shadow);
-	max_border_shadow = NULL;
-    }
-
-    max_border_shadow =
-	decor_shadow_create (xdisplay,
-			     gdk_x11_screen_get_xscreen (screen),
-			     1, 1,
-			     _max_win_extents.left,
-			     _max_win_extents.right,
-			     _max_win_extents.top + max_titlebar_height,
-			     _max_win_extents.bottom,
-			     _max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.top + max_titlebar_height -
-			     TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-			     &opt_shadow,
-			     &max_window_context,
-			     draw_border_shape,
-			     (void *) 1);
-
-    if (max_border_no_shadow)
-    {
-	decor_shadow_destroy (xdisplay, max_border_shadow);
-	max_border_shadow = NULL;
-    }
-
-    max_border_no_shadow =
-	decor_shadow_create (xdisplay,
-			     gdk_x11_screen_get_xscreen (screen),
-			     1, 1,
-			     _max_win_extents.left,
-			     _max_win_extents.right,
-			     _max_win_extents.top + max_titlebar_height,
-			     _max_win_extents.bottom,
-			     _max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.top + max_titlebar_height -
-			     TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-			     &opt_no_shadow,
-			     &max_window_context_no_shadow,
-			     draw_border_shape,
-			     (void *) 1);
 
     if (switcher_shadow)
     {
@@ -714,7 +717,7 @@ update_default_decorations (GdkScreen *screen)
     decor_t	    d;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
-    decor_extents_t extents = _win_extents;
+    decor_extents_t extents = _default_decoration.win_extents;
 
     xroot = RootWindowOfScreen (gdk_x11_screen_get_xscreen (screen));
 
@@ -772,8 +775,8 @@ update_default_decorations (GdkScreen *screen)
 
     memset (&d, 0, sizeof (d));
 
-    d.context = &window_context;
-    d.shadow  = border_shadow;
+    d.context = &_default_decoration.window_context;
+    d.shadow  = _default_decoration.border_shadow;
     d.layout  = pango_layout_new (pango_context);
 
     decor_get_default_layout (d.context, 1, 1, &d.border_layout);
@@ -781,7 +784,7 @@ update_default_decorations (GdkScreen *screen)
     d.width  = d.border_layout.width;
     d.height = d.border_layout.height;
 
-    extents.top += titlebar_height;
+    extents.top += _default_decoration.titlebar_height;
 
     d.draw = theme_draw_window_decoration;
 

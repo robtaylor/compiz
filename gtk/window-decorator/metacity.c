@@ -23,7 +23,10 @@ decor_update_meta_window_property (decor_t	  *d,
     Display	    *xdisplay =
 	GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     gint	    nQuad;
-    decor_extents_t extents, max_extents;
+    WnckWindowType  win_type = wnck_window_get_window_type (d->win);
+    decor_frame_t   *frame = &decor_frames[get_frame_type (win_type)];
+    decor_extents_t win_extents = frame->win_extents;
+    decor_extents_t max_win_extents = frame->max_win_extents;
     decor_quad_t    quads[N_QUADS_MAX];
     gint            w, lh, rh;
     gint	    top_stretch_offset;
@@ -59,18 +62,15 @@ decor_update_meta_window_property (decor_t	  *d,
 					     top_stretch_offset,
 					     bottom_stretch_offset);
 
-    extents = _win_extents;
-    max_extents = _max_win_extents;
-
-    extents.top += titlebar_height;
-    max_extents.top += max_titlebar_height;
+    win_extents.top += frame->titlebar_height;
+    max_win_extents.top += frame->max_titlebar_height;
 
     if (d->frame_window)
-	decor_gen_window_property (data, &extents, &max_extents, 20, 20);
+	decor_gen_window_property (data, &win_extents, &max_win_extents, 20, 20);
     else
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
-				 &extents, &extents,
-				 &max_extents, &max_extents,
+				 &win_extents, &win_extents,
+				 &max_win_extents, &max_win_extents,
 				 ICON_SPACE + d->button_width,
 				 0,
 				 quads, nQuad);
@@ -517,22 +517,22 @@ meta_get_decoration_geometry (decor_t		*d,
 }
 
 MetaFrameType
-meta_get_frame_type_for_win_type (WnckWindow *win)
+meta_get_frame_type_for_decor_type (decor_frame_type frame_type)
 {
     MetaFrameType type;
 
-    switch (wnck_window_get_window_type (win))
+    switch (frame_type)
     {
-	case WNCK_WINDOW_NORMAL:
+	case DECOR_FRAME_TYPE_NORMAL:
 	    type = META_FRAME_TYPE_NORMAL;
 	    break;
-	case WNCK_WINDOW_DIALOG:
+	case DECOR_FRAME_TYPE_DIALOG:
 	    type = META_FRAME_TYPE_DIALOG;
 	    break;
-	case WNCK_WINDOW_MENU:
+	case DECOR_FRAME_TYPE_MENU:
 	    type = META_FRAME_TYPE_MENU;
 	    break;
-	case WNCK_WINDOW_UTILITY:
+	case DECOR_FRAME_TYPE_UTILITY:
 	    type = META_FRAME_TYPE_UTILITY;
 	    break;
 	default:
@@ -554,6 +554,7 @@ meta_draw_window_decoration (decor_t *d)
     MetaButtonLayout  button_layout;
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
+    WnckWindowType    win_type;
     MetaFrameType     frame_type;
     MetaTheme	      *theme;
     GtkStyle	      *style;
@@ -606,7 +607,13 @@ meta_draw_window_decoration (decor_t *d)
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
     theme = meta_theme_get_current ();
-    frame_type = meta_get_frame_type_for_win_type (d->win);
+    if (d->win)
+    {
+	win_type = wnck_window_get_window_type (d->win);
+	frame_type = meta_get_frame_type_for_decor_type (get_frame_type (win_type));
+    }
+    else
+	frame_type = META_FRAME_TYPE_NORMAL;
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
 				  frame_type, &clip);
@@ -878,20 +885,6 @@ meta_draw_window_decoration (decor_t *d)
     if (d->frame_window)
     {
 	GdkWindow *gdk_frame_window = gtk_widget_get_window (d->decor_window);
-	decor_extents_t extents;
-
-	if (d->state & (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
-			WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY))
-	{
-	    extents.left = 0;
-	    extents.right = 0;
-	    extents.top = 10;
-	    extents.bottom = 0;
-	}
-	else
-	{
-	    extents = _win_extents;
-	}
 
 	/*
 	 * FIXME: What is '4' supposed to be for here...
@@ -977,6 +970,7 @@ meta_get_button_position (decor_t	 *d,
     MetaButtonLayout  button_layout;
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
+    decor_frame_type  d_frame_type;
     MetaFrameType     frame_type;
     MetaTheme	      *theme;
     GdkRectangle      clip;
@@ -994,7 +988,8 @@ meta_get_button_position (decor_t	 *d,
     }
 
     theme = meta_theme_get_current ();
-    frame_type = meta_get_frame_type_for_win_type (d->win);
+    d_frame_type = get_frame_type (wnck_window_get_window_type (d->win));
+    frame_type = meta_get_frame_type_for_decor_type (d_frame_type);
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
 				  frame_type, &clip);
@@ -1090,8 +1085,9 @@ meta_get_button_position (decor_t	 *d,
 
     if (d->frame_window)
     {
-	*x += _win_extents.left + 4;
-	*y += _win_extents.top + 2;
+	decor_frame_t *frame = &decor_frames[d_frame_type];
+	*x += frame.win_extents.left + 4;
+	*y += frame.win_extents.top + 2;
     }
 
     return TRUE;
@@ -1106,33 +1102,38 @@ meta_calc_decoration_size (decor_t *d,
 			   gint    *height)
 {
     decor_layout_t  layout;
+    decor_frame_t   *frame;
     decor_context_t *context;
     decor_shadow_t  *shadow;
+    WnckWindowType  win_type;
+
+    win_type = wnck_window_get_window_type (d->win);
+    frame = &decor_frames[get_frame_type (win_type)];
 
     if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
     {
 	if (!d->frame_window)
 	{
-	    context = &max_window_context;
-	    shadow  = max_border_shadow;
+	    context = &frame->max_window_context;
+	    shadow  = frame->max_border_shadow;
 	}
 	else
 	{
-	    context = &max_window_context_no_shadow;
-	    shadow  = max_border_no_shadow;
+	    context = &frame->max_window_context_no_shadow;
+	    shadow  = frame->max_border_no_shadow;
 	}
     }
     else
     {
 	if (!d->frame_window)
 	{
-	    context = &window_context;
-	    shadow  = border_shadow;
+	    context = &frame->window_context;
+	    shadow  = frame->border_shadow;
 	}
 	else
 	{
-	    context = &window_context_no_shadow;
-	    shadow  = border_no_shadow;
+	    context = &frame->window_context_no_shadow;
+	    shadow  = frame->border_no_shadow;
 	}
     }
 
@@ -1159,7 +1160,7 @@ meta_calc_decoration_size (decor_t *d,
     {
 	if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
 	    decor_get_default_layout (context, d->client_width,
-				      d->client_height - titlebar_height,
+				      d->client_height - frame->titlebar_height,
 				      &layout);
 	else
 	    decor_get_default_layout (context, d->client_width,
@@ -1169,7 +1170,7 @@ meta_calc_decoration_size (decor_t *d,
 	*height = layout.height;
 
 	d->border_layout = layout;
-	d->shadow	 = no_border_shadow;
+	d->shadow	 = shadow;
 	d->context       = context;
 
 	meta_calc_button_size (d);
@@ -1216,11 +1217,17 @@ meta_get_event_window_position (decor_t *d,
     MetaFrameFlags    flags;
     MetaTheme	      *theme;
     MetaFrameType     frame_type;
+    decor_frame_type  d_frame_type;
+    decor_frame_t     *frame;
+    WnckWindowType    win_type;
     GdkRectangle      clip;
 
     theme = meta_theme_get_current ();
 
-    frame_type = meta_get_frame_type_for_win_type (d->win);
+    win_type = wnck_window_get_window_type (d->win);
+    d_frame_type = get_frame_type (win_type);
+    frame_type = meta_get_frame_type_for_decor_type (d_frame_type);
+    frame = &decor_frames[frame_type];
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
 				  frame_type, &clip);
 
@@ -1234,9 +1241,9 @@ meta_get_event_window_position (decor_t *d,
 	    if (d->frame_window)
 	    {
 		*x = width - fgeom.right_width - RESIZE_EXTENDS +
-		     _win_extents.left + 2;
+		     frame->win_extents.left + 2;
 		*y = height - fgeom.bottom_height - RESIZE_EXTENDS +
-		     _win_extents.top + 2;
+		     frame->win_extents.top + 2;
 	    }
 	    else
 	    {
@@ -1250,7 +1257,7 @@ meta_get_event_window_position (decor_t *d,
 	    *x = fgeom.left_width + RESIZE_EXTENDS;
 	    *y = height - fgeom.bottom_height;
 	    if (d->frame_window)
-		*y += _win_extents.top + 2;
+		*y += frame->win_extents.top + 2;
 	    *w = width - fgeom.left_width - fgeom.right_width -
 		 (2 * RESIZE_EXTENDS);
 	    *h = fgeom.bottom_height;
@@ -1261,8 +1268,8 @@ meta_get_event_window_position (decor_t *d,
 	    *y = height - fgeom.bottom_height - RESIZE_EXTENDS;
 	    if (d->frame_window)
 	    {
-		*x += _win_extents.left + 4;
-		*y += _win_extents.bottom + 2;
+		*x += frame->win_extents.left + 4;
+		*y += frame->win_extents.bottom + 2;
 	    }
 	    *w = fgeom.left_width + RESIZE_EXTENDS;
 	    *h = fgeom.bottom_height + RESIZE_EXTENDS;
@@ -1274,7 +1281,7 @@ meta_get_event_window_position (decor_t *d,
 	case 2: /* right */
 	    *x = width - fgeom.right_width;
 	    if (d->frame_window)
-		*x += _win_extents.left + 2;
+		*x += frame->win_extents.left + 2;
 	    *w = fgeom.right_width;
 	    *h = height - fgeom.top_height - fgeom.bottom_height -
 		 (2 * RESIZE_EXTENDS);
@@ -1289,7 +1296,7 @@ meta_get_event_window_position (decor_t *d,
 	default:
 	    *x = 0;
 	    if (d->frame_window)
-		*x += _win_extents.left + 4;
+		*x += frame->win_extents.left + 4;
 	    *y = fgeom.top_height + RESIZE_EXTENDS;
 	    *w = fgeom.left_width;
 	    *h = height - fgeom.top_height - fgeom.bottom_height -
@@ -1305,8 +1312,8 @@ meta_get_event_window_position (decor_t *d,
 	    *y = 0;
 	    if (d->frame_window)
 	    {
-		*x += _win_extents.left + 2;
-		*y += _win_extents.top + 2 - fgeom.title_rect.height;
+		*x += frame->win_extents.left + 2;
+		*y += frame->win_extents.top + 2 - fgeom.title_rect.height;
 	    }
 	    *w = fgeom.right_width + RESIZE_EXTENDS;
 	    *h = fgeom.top_height + RESIZE_EXTENDS;
@@ -1315,7 +1322,7 @@ meta_get_event_window_position (decor_t *d,
 	    *x = fgeom.left_width + RESIZE_EXTENDS;
 	    *y = 0;
 	    if (d->frame_window)
-		*y += _win_extents.top + 2;
+		*y += frame->win_extents.top + 2;
 	    *w = width - fgeom.left_width - fgeom.right_width -
 		 (2 * RESIZE_EXTENDS);
 	    *h = fgeom.title_rect.y + TOP_RESIZE_HEIGHT;
@@ -1326,8 +1333,8 @@ meta_get_event_window_position (decor_t *d,
 	    *y = 0;
 	    if (d->frame_window)
 	    {
-		*x += _win_extents.left + 4;
-		*y += _win_extents.top + 2 - fgeom.title_rect.height;
+		*x += frame->win_extents.left + 4;
+		*y += frame->win_extents.top + 2 - fgeom.title_rect.height;
 	    }
 	    *w = fgeom.left_width + RESIZE_EXTENDS;
 	    *h = fgeom.top_height + RESIZE_EXTENDS;
@@ -1588,39 +1595,58 @@ void
 meta_update_border_extents (gint text_height)
 {
     MetaTheme *theme;
+    MetaFrameType frame_type;
+    decor_frame_type d_frame_type;
+
+    WnckWindowType win_types[] = { WNCK_WINDOW_NORMAL, WNCK_WINDOW_DIALOG,
+				   WNCK_WINDOW_MENU, WNCK_WINDOW_UTILITY,
+				   WNCK_WINDOW_SPLASHSCREEN };
+
     gint      top_height, bottom_height, left_width, right_width;
+    unsigned int i;
 
     theme = meta_theme_get_current ();
 
-    meta_theme_get_frame_borders (theme,
-				  META_FRAME_TYPE_NORMAL,
-				  text_height, 0,
-				  &top_height,
-				  &bottom_height,
-				  &left_width,
-				  &right_width);
+    for (i = 0; i < 5; i++)
+    {
+	d_frame_type = get_frame_type (win_types[i]);
 
-    _win_extents.top    = _default_win_extents.top;
-    _win_extents.bottom = bottom_height;
-    _win_extents.left   = left_width;
-    _win_extents.right  = right_width;
+	if (d_frame_type == DECOR_FRAME_TYPE_UNDECORATED)
+	    continue;
 
-    titlebar_height = top_height - _win_extents.top;
+	frame_type = meta_get_frame_type_for_decor_type (d_frame_type);
 
-    meta_theme_get_frame_borders (theme,
-				  META_FRAME_TYPE_NORMAL,
-				  text_height, META_FRAME_MAXIMIZED,
-				  &top_height,
-				  &bottom_height,
-				  &left_width,
-				  &right_width);
+	meta_theme_get_frame_borders (theme,
+				      frame_type,
+				      text_height, 0,
+				      &top_height,
+				      &bottom_height,
+				      &left_width,
+				      &right_width);
 
-    _max_win_extents.top    = _default_win_extents.top;
-    _max_win_extents.bottom = bottom_height;
-    _max_win_extents.left   = left_width;
-    _max_win_extents.right  = right_width;
+	decor_frames[d_frame_type].win_extents.top    = _default_decoration.win_extents.top;
+	decor_frames[d_frame_type].win_extents.bottom = bottom_height;
+	decor_frames[d_frame_type].win_extents.left   = left_width;
+	decor_frames[d_frame_type].win_extents.right  = right_width;
 
-    max_titlebar_height = top_height - _max_win_extents.top;
+	decor_frames[d_frame_type].titlebar_height = top_height - decor_frames[d_frame_type].win_extents.top;
+
+	meta_theme_get_frame_borders (theme,
+				      frame_type,
+				      text_height, META_FRAME_MAXIMIZED,
+				      &top_height,
+				      &bottom_height,
+				      &left_width,
+				      &right_width);
+
+	decor_frames[d_frame_type].max_win_extents.top    = _default_decoration.win_extents.top;
+	decor_frames[d_frame_type].max_win_extents.bottom = bottom_height;
+	decor_frames[d_frame_type].max_win_extents.left   = left_width;
+	decor_frames[d_frame_type].max_win_extents.right  = right_width;
+
+	decor_frames[d_frame_type].max_titlebar_height = top_height - decor_frames[d_frame_type].max_win_extents.top;
+
+    }
 }
 
 #endif

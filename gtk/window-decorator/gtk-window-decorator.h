@@ -226,18 +226,8 @@ extern double decoration_alpha;
 #define SWITCHER_SPACE 40
 
 extern decor_extents_t _shadow_extents;
-extern decor_extents_t _win_extents;
-extern decor_extents_t _max_win_extents;
-extern decor_extents_t _default_win_extents;
 extern decor_extents_t _switcher_extents;
 
-extern int titlebar_height;
-extern int max_titlebar_height;
-
-extern decor_context_t window_context;
-extern decor_context_t window_context_no_shadow;
-extern decor_context_t max_window_context;
-extern decor_context_t max_window_context_no_shadow;
 extern decor_context_t switcher_context;
 extern decor_context_t shadow_context;
 
@@ -260,10 +250,6 @@ extern MetaButtonLayout meta_button_layout;
 extern guint cmdline_options;
 
 extern decor_shadow_t *no_border_shadow;
-extern decor_shadow_t *border_shadow;
-extern decor_shadow_t *border_no_shadow;
-extern decor_shadow_t *max_border_shadow;
-extern decor_shadow_t *max_border_no_shadow;
 extern decor_shadow_t *switcher_shadow;
 
 extern GdkPixmap *decor_normal_pixmap;
@@ -350,6 +336,29 @@ typedef struct {
     Box            pos;
     event_callback callback;
 } event_window;
+
+typedef enum _decor_frame_type {
+    DECOR_FRAME_TYPE_NORMAL,
+    DECOR_FRAME_TYPE_DIALOG,
+    DECOR_FRAME_TYPE_MENU,
+    DECOR_FRAME_TYPE_UTILITY,
+    DECOR_FRAME_TYPE_UNDECORATED
+} decor_frame_type;
+
+typedef struct _decor_frame {
+    decor_extents_t win_extents;
+    decor_extents_t max_win_extents;
+    int		    titlebar_height;
+    int		    max_titlebar_height;
+    decor_shadow_t *border_shadow;
+    decor_shadow_t *border_no_shadow;
+    decor_shadow_t *max_border_shadow;
+    decor_shadow_t *max_border_no_shadow;
+    decor_context_t window_context;
+    decor_context_t window_context_no_shadow;
+    decor_context_t max_window_context;
+    decor_context_t max_window_context_no_shadow;
+} decor_frame_t;
 
 typedef struct _decor {
     WnckWindow	      *win;
@@ -458,6 +467,9 @@ extern XRenderPictFormat *xformat_rgb;
 extern Atom compiz_shadow_info_atom;
 extern Atom compiz_shadow_color_atom;
 
+extern decor_frame_t decor_frames[5];
+extern decor_frame_t _default_decoration;
+
 /* gtk-window-decorator.c */
 
 double
@@ -511,9 +523,10 @@ queue_decor_draw (decor_t *d);
 void
 copy_to_front_buffer (decor_t *d);
 
-	
-
 /* wnck.c*/
+
+decor_frame_type
+get_frame_type (WnckWindowType type);
 
 void
 decorations_changed (WnckScreen *screen);
@@ -664,7 +677,7 @@ pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth);
 #ifdef USE_METACITY
 
 MetaFrameType
-meta_get_frame_type_for_win_type (WnckWindow *win);
+meta_get_frame_type_for_decor_type (decor_frame_type frame_type);
 
 void
 meta_draw_window_decoration (decor_t *d);
