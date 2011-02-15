@@ -651,7 +651,7 @@ get_event_window_position (decor_t *d,
 			   gint    *h);
 
 gfloat
-get_title_scale (decor_frame_t *);
+get_title_scale (decor_frame_t *frame);
 
 /* gdk.c */
 

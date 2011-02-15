@@ -395,6 +395,7 @@ main (int argc, char *argv[])
     theme_update_border_extents	    = update_border_extents;
     theme_get_event_window_position = get_event_window_position;
     theme_get_button_position       = get_button_position;
+    theme_get_title_scale	    = get_title_scale;
 
 #ifdef USE_METACITY
     if (meta_theme)
@@ -407,6 +408,7 @@ main (int argc, char *argv[])
 	    theme_update_border_extents	    = meta_update_border_extents;
 	    theme_get_event_window_position = meta_get_event_window_position;
 	    theme_get_button_position	    = meta_get_button_position;
+	    theme_get_title_scale	    = meta_get_title_scale;
 	}
     }
 #endif

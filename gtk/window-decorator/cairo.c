@@ -271,8 +271,6 @@ draw_window_decoration (decor_t *d)
     GtkStyle	  *style;
     GdkDrawable   *drawable;
     decor_color_t color;
-    WnckWindowType win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t *frame = &decor_frames[get_frame_type (win_type)];
     double        alpha;
     double        x1, y1, x2, y2, x, y, h;
     int		  corners = SHADE_LEFT | SHADE_RIGHT | SHADE_TOP | SHADE_BOTTOM;
@@ -281,6 +279,7 @@ draw_window_decoration (decor_t *d)
 
     if (!d->pixmap)
 	return;
+
 
     style = gtk_widget_get_style (d->frame->style_window_rgba);
 
@@ -312,12 +311,12 @@ draw_window_decoration (decor_t *d)
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    top = frame->win_extents.top + frame->titlebar_height;
+    top = d->frame->win_extents.top + d->frame->titlebar_height;
 
-    x1 = d->context->left_space - frame->win_extents.left;
-    y1 = d->context->top_space - frame->win_extents.top - frame->titlebar_height;
-    x2 = d->width - d->context->right_space + frame->win_extents.right;
-    y2 = d->height - d->context->bottom_space + frame->win_extents.bottom;
+    x1 = d->context->left_space - d->frame->win_extents.left;
+    y1 = d->context->top_space - d->frame->win_extents.top - d->frame->titlebar_height;
+    x2 = d->width - d->context->right_space + d->frame->win_extents.right;
+    y2 = d->height - d->context->bottom_space + d->frame->win_extents.bottom;
 
     h = d->height - d->context->top_space - d->context->bottom_space;
 
@@ -335,26 +334,26 @@ draw_window_decoration (decor_t *d)
 	fill_rounded_rectangle (cr,
 				x1 + 0.5,
 				y1 + 0.5,
-				frame->win_extents.left - 0.5,
+				d->frame->win_extents.left - 0.5,
 				top - 0.5,
 				5.0, CORNER_TOPLEFT & corners,
 				&title_color[0], 1.0, &title_color[1], alpha,
 				SHADE_TOP | SHADE_LEFT);
 
 	fill_rounded_rectangle (cr,
-				x1 + frame->win_extents.left,
+				x1 + d->frame->win_extents.left,
 				y1 + 0.5,
-				x2 - x1 - frame->win_extents.left -
-				frame->win_extents.right,
+				x2 - x1 - d->frame->win_extents.left -
+				d->frame->win_extents.right,
 				top - 0.5,
 				5.0, 0,
 				&title_color[0], 1.0, &title_color[1], alpha,
 				SHADE_TOP);
 
 	fill_rounded_rectangle (cr,
-				x2 - frame->win_extents.right,
+				x2 - d->frame->win_extents.right,
 				y1 + 0.5,
-				frame->win_extents.right - 0.5,
+				d->frame->win_extents.right - 0.5,
 				top - 0.5,
 				5.0, CORNER_TOPRIGHT & corners,
 				&title_color[0], 1.0, &title_color[1], alpha,
@@ -367,26 +366,26 @@ draw_window_decoration (decor_t *d)
 	fill_rounded_rectangle (cr,
 				x1 + 0.5,
 				y1 + 0.5,
-				frame->win_extents.left - 0.5,
+				d->frame->win_extents.left - 0.5,
 				top - 0.5,
 				5.0, CORNER_TOPLEFT & corners,
 				&color, 1.0, &color, alpha,
 				SHADE_TOP | SHADE_LEFT);
 
 	fill_rounded_rectangle (cr,
-				x1 + frame->win_extents.left,
+				x1 + d->frame->win_extents.left,
 				y1 + 0.5,
-				x2 - x1 - frame->win_extents.left -
-				frame->win_extents.right,
+				x2 - x1 - d->frame->win_extents.left -
+				d->frame->win_extents.right,
 				top - 0.5,
 				5.0, 0,
 				&color, 1.0, &color, alpha,
 				SHADE_TOP);
 
 	fill_rounded_rectangle (cr,
-				x2 - frame->win_extents.right,
+				x2 - d->frame->win_extents.right,
 				y1 + 0.5,
-				frame->win_extents.right - 0.5,
+				d->frame->win_extents.right - 0.5,
 				top - 0.5,
 				5.0, CORNER_TOPRIGHT & corners,
 				&color, 1.0, &color, alpha,
@@ -396,16 +395,16 @@ draw_window_decoration (decor_t *d)
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
 			    y1 + top,
-			    frame->win_extents.left - 0.5,
+			    d->frame->win_extents.left - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, 1.0, &color, alpha,
 			    SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x2 - frame->win_extents.right,
+			    x2 - d->frame->win_extents.right,
 			    y1 + top,
-			    frame->win_extents.right - 0.5,
+			    d->frame->win_extents.right - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, 1.0, &color, alpha,
@@ -414,28 +413,28 @@ draw_window_decoration (decor_t *d)
 
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
-			    y2 - frame->win_extents.bottom,
-			    frame->win_extents.left - 0.5,
-			    frame->win_extents.bottom - 0.5,
+			    y2 - d->frame->win_extents.bottom,
+			    d->frame->win_extents.left - 0.5,
+			    d->frame->win_extents.bottom - 0.5,
 			    5.0, CORNER_BOTTOMLEFT & corners,
 			    &color, 1.0, &color, alpha,
 			    SHADE_BOTTOM | SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x1 + frame->win_extents.left,
-			    y2 - frame->win_extents.bottom,
-			    x2 - x1 - frame->win_extents.left -
-			    frame->win_extents.right,
-			    frame->win_extents.bottom - 0.5,
+			    x1 + d->frame->win_extents.left,
+			    y2 - d->frame->win_extents.bottom,
+			    x2 - x1 - d->frame->win_extents.left -
+			    d->frame->win_extents.right,
+			    d->frame->win_extents.bottom - 0.5,
 			    5.0, 0,
 			    &color, 1.0, &color, alpha,
 			    SHADE_BOTTOM);
 
     fill_rounded_rectangle (cr,
-			    x2 - frame->win_extents.right,
-			    y2 - frame->win_extents.bottom,
-			    frame->win_extents.right - 0.5,
-			    frame->win_extents.bottom - 0.5,
+			    x2 - d->frame->win_extents.right,
+			    y2 - d->frame->win_extents.bottom,
+			    d->frame->win_extents.right - 0.5,
+			    d->frame->win_extents.bottom - 0.5,
 			    5.0, CORNER_BOTTOMRIGHT & corners,
 			    &color, 1.0, &color, alpha,
 			    SHADE_BOTTOM | SHADE_RIGHT);
@@ -522,7 +521,7 @@ draw_window_decoration (decor_t *d)
     if (d->actions & WNCK_WINDOW_ACTION_CLOSE)
     {
 	button_state_offsets (button_x,
-			      y1 - 3.0 + frame->titlebar_height / 2,
+			      y1 - 3.0 + d->frame->titlebar_height / 2,
 			      d->button_states[BUTTON_CLOSE], &x, &y);
 
 	button_x -= 17;
@@ -549,7 +548,7 @@ draw_window_decoration (decor_t *d)
     if (d->actions & WNCK_WINDOW_ACTION_MAXIMIZE)
     {
 	button_state_offsets (button_x,
-			      y1 - 3.0 + frame->titlebar_height / 2,
+			      y1 - 3.0 + d->frame->titlebar_height / 2,
 			      d->button_states[BUTTON_MAX], &x, &y);
 
 	button_x -= 17;
@@ -594,7 +593,7 @@ draw_window_decoration (decor_t *d)
     if (d->actions & WNCK_WINDOW_ACTION_MINIMIZE)
     {
 	button_state_offsets (button_x,
-			      y1 - 3.0 + frame->titlebar_height / 2,
+			      y1 - 3.0 + d->frame->titlebar_height / 2,
 			      d->button_states[BUTTON_MIN], &x, &y);
 
 	button_x -= 17;
@@ -629,7 +628,7 @@ draw_window_decoration (decor_t *d)
 	{
 	    cairo_move_to (cr,
 			   d->context->left_space + 21.0,
-			   y1 + 2.0 + (frame->titlebar_height - frame->text_height) / 2.0);
+			   y1 + 2.0 + (d->frame->titlebar_height - d->frame->text_height) / 2.0);
 
 	    gdk_cairo_set_source_color_alpha (cr,
 					      &style->fg[GTK_STATE_NORMAL],
@@ -649,7 +648,7 @@ draw_window_decoration (decor_t *d)
 
 	cairo_move_to (cr,
 		       d->context->left_space + 21.0,
-		       y1 + 2.0 + (frame->titlebar_height - frame->text_height) / 2.0);
+		       y1 + 2.0 + (d->frame->titlebar_height - d->frame->text_height) / 2.0);
 
 	pango_cairo_show_layout (cr, d->layout);
     }
@@ -657,7 +656,7 @@ draw_window_decoration (decor_t *d)
     if (d->icon)
     {
 	cairo_translate (cr, d->context->left_space + 1,
-			 y1 - 5.0 + frame->titlebar_height / 2);
+			 y1 - 5.0 + d->frame->titlebar_height / 2);
 	cairo_set_source (cr, d->icon);
 	cairo_rectangle (cr, 0.0, 0.0, 16.0, 16.0);
 	cairo_clip (cr);
@@ -724,8 +723,6 @@ calc_decoration_size (decor_t *d,
 		      gint    *height)
 {
     decor_layout_t layout;
-    WnckWindowType win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t  *frame = &decor_frames[get_frame_type (win_type)];
     int		   top_width;
 
     /* To avoid wasting texture memory, we only calculate the minimal
@@ -744,7 +741,7 @@ calc_decoration_size (decor_t *d,
 	if (w < top_width)
 	    top_width = MAX (ICON_SPACE + d->button_width, w);
 
-	decor_get_default_layout (&frame->window_context, top_width, 1, &layout);
+	decor_get_default_layout (&d->frame->window_context, top_width, 1, &layout);
 
 	if (!d->context || memcmp (&layout, &d->border_layout, sizeof (layout)))
 	{
@@ -752,8 +749,8 @@ calc_decoration_size (decor_t *d,
 	    *height = layout.height;
 
 	    d->border_layout = layout;
-	    d->context       = &frame->window_context;
-	    d->shadow        = frame->border_shadow;
+	    d->context       = &d->frame->window_context;
+	    d->shadow        = d->frame->border_shadow;
 
 	    return TRUE;
 	}
@@ -768,15 +765,15 @@ calc_decoration_size (decor_t *d,
 	if (w < top_width)
 	    top_width = MAX (ICON_SPACE + d->button_width, w);
 
-	decor_get_default_layout (&frame->window_context_no_shadow,
+	decor_get_default_layout (&d->frame->window_context_no_shadow,
 				  d->client_width, d->client_height, &layout);
 
 	*width = layout.width;
 	*height = layout.height;
 
 	d->border_layout = layout;
-	d->context = &frame->window_context_no_shadow;
-	d->shadow = frame->border_no_shadow;
+	d->context = &d->frame->window_context_no_shadow;
+	d->shadow = d->frame->border_no_shadow;
 
 	return TRUE;
     }
@@ -794,28 +791,25 @@ get_button_position (decor_t *d,
 		     gint    *w,
 		     gint    *h)
 {
-    WnckWindowType win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t *frame = &decor_frames[get_frame_type (win_type)];
-
     if (i > BUTTON_MENU)
 	return FALSE;
 
     if (d->frame_window)
     {
-	*x = bpos[i].x + bpos[i].xw * width + frame->win_extents.left + 4;
+	*x = bpos[i].x + bpos[i].xw * width + d->frame->win_extents.left + 4;
 	*y = bpos[i].y + bpos[i].yh * height + bpos[i].yth *
-	    (frame->titlebar_height - 17) + frame->win_extents.top + 2;
+	    (d->frame->titlebar_height - 17) + d->frame->win_extents.top + 2;
     }
     else
     {
 	*x = bpos[i].x + bpos[i].xw * width;
 	*y = bpos[i].y + bpos[i].yh * height + bpos[i].yth *
-	    (frame->titlebar_height - 17);
+	    (d->frame->titlebar_height - 17);
     }
 
     *w = bpos[i].w + bpos[i].ww * width;
     *h = bpos[i].h + bpos[i].hh * height + bpos[i].hth +
-	(frame->titlebar_height - 17);
+	(d->frame->titlebar_height - 17);
 
     /* hack to position multiple buttons on the right */
     if (i != BUTTON_MENU)
@@ -840,18 +834,18 @@ get_event_window_position (decor_t *d,
 
     if (d->frame_window)
     {
-	*x = pos[i][j].x + pos[i][j].xw * width + frame->win_extents.left;
-	*y = pos[i][j].y + frame->win_extents.top +
-	     pos[i][j].yh * height + pos[i][j].yth * (frame->titlebar_height - 17);
+	*x = pos[i][j].x + pos[i][j].xw * width + d->frame->win_extents.left;
+	*y = pos[i][j].y + d->frame->win_extents.top +
+	     pos[i][j].yh * height + pos[i][j].yth * (d->frame->titlebar_height - 17);
 
 	if (i == 0 && (j == 0 || j == 2))
-	    *y -= frame->titlebar_height;
+	    *y -= d->frame->titlebar_height;
     }
     else
     {
 	*x = pos[i][j].x + pos[i][j].xw * width;
 	*y = pos[i][j].y +
-	     pos[i][j].yh * height + pos[i][j].yth * (frame->titlebar_height - 17);
+	     pos[i][j].yh * height + pos[i][j].yth * (d->frame->titlebar_height - 17);
     }
 
     if ((d->state & WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY) &&
@@ -872,7 +866,7 @@ get_event_window_position (decor_t *d,
     else
     {
 	*h = pos[i][j].h +
-	     pos[i][j].hh * height + pos[i][j].hth * (frame->titlebar_height - 17);
+	     pos[i][j].hh * height + pos[i][j].hth * (d->frame->titlebar_height - 17);
     }
 }
 
