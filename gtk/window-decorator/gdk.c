@@ -1,7 +1,7 @@
 #include "gtk-window-decorator.h"
 
 GdkPixmap *
-pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth)
+pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, GtkWidget *parent)
 {
     GdkPixmap *pixmap;
     guint     width, height;
@@ -10,7 +10,7 @@ pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth)
     width  = gdk_pixbuf_get_width (pixbuf);
     height = gdk_pixbuf_get_height (pixbuf);
 
-    pixmap = create_pixmap (width, height, depth);
+    pixmap = create_pixmap (width, height, parent);
     if (!pixmap)
 	return NULL;
 
@@ -71,17 +71,15 @@ get_format_for_drawable (decor_t *d, GdkDrawable *drawable)
 }
 
 GdkPixmap *
-create_pixmap (int w,
-	       int h,
-	       int depth)
+create_pixmap (int	  w,
+	       int	  h,
+	       GtkWidget *parent_style_window)
 {
-    GtkWidget *widget;
     GdkWindow *window;
 
     if (w == 0 || h == 0)
 	abort ();
 
-    widget = (depth > 24) ? style_window_rgba : style_window_rgb;
-    window = gtk_widget_get_window (widget);
-    return gdk_pixmap_new (GDK_DRAWABLE (window), w, h, depth);
+    window = gtk_widget_get_window (parent_style_window);
+    return gdk_pixmap_new (GDK_DRAWABLE (window), w, h, -1 /* CopyFromParent */);
 }

@@ -23,7 +23,8 @@ update_style (GtkWidget *widget)
 }
 
 void
-style_changed (GtkWidget *widget)
+style_changed (PangoContext *context,
+	       GtkWidget *widget)
 {
     GdkDisplay *gdkdisplay;
     GdkScreen  *gdkscreen;
@@ -35,7 +36,7 @@ style_changed (GtkWidget *widget)
 
     update_style (widget);
 
-    pango_cairo_context_set_resolution (pango_context,
+    pango_cairo_context_set_resolution (context,
 					gdk_screen_get_resolution (gdkscreen));
 
     decorations_changed (screen);

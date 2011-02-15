@@ -112,15 +112,15 @@ struct _pos pos[3][3] = {
 
 char *program_name;
 
-GtkWidget     *style_window_rgba;
-GtkWidget     *style_window_rgb;
+GtkWidget     *switcher_style_window_rgba;
+GtkWidget     *switcher_style_window_rgb;
 GtkWidget     *switcher_label;
 
 GHashTable    *frame_table;
 GtkWidget     *action_menu = NULL;
 gboolean      action_menu_mapped = FALSE;
 decor_color_t _title_color[2];
-PangoContext  *pango_context;
+PangoContext  *switcher_pango_context;
 gint	     double_click_timeout = 250;
 
 GtkWidget     *tip_window;
@@ -131,9 +131,7 @@ gint	     tooltip_timer_tag = 0;
 GSList *draw_list = NULL;
 guint  draw_idle_id = 0;
 
-PangoFontDescription *titlebar_font = NULL;
 gboolean		    use_system_font = FALSE;
-gint		    text_height;
 
 gint blur_type = BLUR_TYPE_NONE;
 
@@ -150,6 +148,8 @@ XRenderPictFormat *xformat_rgb;
 void
 initialize_decorations ()
 {
+    GdkScreen *gdkscreen = gdk_screen_get_default ();
+    GdkColormap *colormap;
     decor_extents_t _win_extents         = { 6, 6, 6, 6 };
     decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
     decor_context_t _window_context = {
@@ -175,16 +175,11 @@ initialize_decorations ()
 	6, 6, 4, 6,
 	0, 0, 0, 0
     };
-    WnckWindowType win_types[] = {
-	WNCK_WINDOW_NORMAL, WNCK_WINDOW_DIALOG, WNCK_WINDOW_MENU,
-	WNCK_WINDOW_UTILITY, WNCK_WINDOW_SPLASHSCREEN
-    };
 
     unsigned int i;
 
     for (i = 0; i < 5; i++)
     {
-	fprintf (stderr, "i is %i\n", i);
 	decor_frames[i].win_extents = _win_extents;
 	decor_frames[i].max_win_extents = _max_win_extents;
 	decor_frames[i].titlebar_height = 17;
@@ -197,6 +192,45 @@ initialize_decorations ()
 	decor_frames[i].border_no_shadow = NULL;
 	decor_frames[i].max_border_no_shadow = NULL;
 	decor_frames[i].max_border_shadow = NULL;
+	decor_frames[i].titlebar_font = NULL;
+	decor_frames[i].type = i;
+
+	decor_frames[i].style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
+
+	colormap = gdk_screen_get_rgba_colormap (gdkscreen);
+	if (colormap)
+	    gtk_widget_set_colormap (decor_frames[i].style_window_rgba, colormap);
+
+	gtk_widget_realize (decor_frames[i].style_window_rgba);
+
+	gtk_widget_set_size_request (decor_frames[i].style_window_rgba, 0, 0);
+	gtk_window_move (GTK_WINDOW (decor_frames[i].style_window_rgba), -100, -100);
+	gtk_widget_show_all (decor_frames[i].style_window_rgba);
+
+	g_signal_connect_object (decor_frames[i].style_window_rgba, "style-set",
+				 G_CALLBACK (style_changed),
+				 0, 0);
+
+	decor_frames[i].pango_context = gtk_widget_create_pango_context (decor_frames[i].style_window_rgba);
+
+	decor_frames[i].style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
+
+	colormap = gdk_screen_get_rgb_colormap (gdkscreen);
+	if (colormap)
+	    gtk_widget_set_colormap (decor_frames[i].style_window_rgb, colormap);
+
+	gtk_widget_realize (decor_frames[i].style_window_rgb);
+
+	gtk_widget_set_size_request (decor_frames[i].style_window_rgb, 0, 0);
+	gtk_window_move (GTK_WINDOW (decor_frames[i].style_window_rgb), -100, -100);
+	gtk_widget_show_all (decor_frames[i].style_window_rgb);
+
+	g_signal_connect_object (decor_frames[i].style_window_rgb, "style-set",
+				 G_CALLBACK (style_changed),
+				 0, 0);
+
+	update_style (decor_frames[i].style_window_rgba);
+	update_style (decor_frames[i].style_window_rgb);
     }
 
     _default_decoration.win_extents = _win_extents;
@@ -211,6 +245,48 @@ initialize_decorations ()
     _default_decoration.border_no_shadow = NULL;
     _default_decoration.max_border_no_shadow = NULL;
     _default_decoration.max_border_shadow = NULL;
+    _default_decoration.titlebar_font = NULL;
+    _default_decoration.style_window_rgba = NULL;
+    _default_decoration.style_window_rgb = NULL;
+    _default_decoration.pango_context = NULL;
+    _default_decoration.type = 0;
+
+    _default_decoration.style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
+
+    colormap = gdk_screen_get_rgba_colormap (gdkscreen);
+    if (colormap)
+	gtk_widget_set_colormap (_default_decoration.style_window_rgba, colormap);
+
+    gtk_widget_realize (_default_decoration.style_window_rgba);
+
+    gtk_widget_set_size_request (_default_decoration.style_window_rgba, 0, 0);
+    gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgba), -100, -100);
+    gtk_widget_show_all (_default_decoration.style_window_rgba);
+
+    g_signal_connect_object (_default_decoration.style_window_rgba, "style-set",
+			     G_CALLBACK (style_changed),
+			     0, 0);
+
+    _default_decoration.pango_context = gtk_widget_create_pango_context (_default_decoration.style_window_rgba);
+
+    _default_decoration.style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
+
+    colormap = gdk_screen_get_rgb_colormap (gdkscreen);
+    if (colormap)
+	gtk_widget_set_colormap (_default_decoration.style_window_rgb, colormap);
+
+    gtk_widget_realize (_default_decoration.style_window_rgb);
+
+    gtk_widget_set_size_request (_default_decoration.style_window_rgb, 0, 0);
+    gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgb), -100, -100);
+    gtk_widget_show_all (_default_decoration.style_window_rgb);
+
+    g_signal_connect_object (_default_decoration.style_window_rgb, "style-set",
+			     G_CALLBACK (style_changed),
+			     0, 0);
+
+    update_style (_default_decoration.style_window_rgba);
+    update_style (_default_decoration.style_window_rgb);
 }
 
 int

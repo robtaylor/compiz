@@ -485,7 +485,7 @@ meta_get_decoration_geometry (decor_t		*d,
 
     meta_theme_get_frame_borders (theme,
 				  frame_type,
-				  text_height,
+				  d->frame->text_height,
 				  *flags,
 				  &top_height,
 				  &bottom_height,
@@ -505,7 +505,7 @@ meta_get_decoration_geometry (decor_t		*d,
 
     meta_theme_calc_geometry (theme,
 			      frame_type,
-			      text_height,
+			      d->frame->text_height,
 			      *flags,
 			      clip->width,
 			      clip->height,
@@ -591,13 +591,13 @@ meta_draw_window_decoration (decor_t *d)
 
     if (gdk_drawable_get_depth (GDK_DRAWABLE (d->pixmap)) == 32)
     {
-	style = gtk_widget_get_style (style_window_rgba);
-	style_window = style_window_rgba;
+	style = gtk_widget_get_style (d->frame->style_window_rgba);
+	style_window = d->frame->style_window_rgba;
     }
     else
     {
-	style = gtk_widget_get_style (style_window_rgb);
-	style_window = style_window_rgb;
+	style = gtk_widget_get_style (d->frame->style_window_rgb);
+	style_window = d->frame->style_window_rgb;
     }
 
     drawable = d->buffer_pixmap ? d->buffer_pixmap : d->pixmap;
@@ -607,6 +607,7 @@ meta_draw_window_decoration (decor_t *d)
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
     theme = meta_theme_get_current ();
+
     if (d->win)
     {
 	win_type = wnck_window_get_window_type (d->win);
@@ -663,11 +664,11 @@ meta_draw_window_decoration (decor_t *d)
 
 	    cmap   = get_colormap_for_drawable (GDK_DRAWABLE (d->pixmap));
 	    depth  = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
-	    pixmap = create_pixmap (rect.width, size, depth);
+	    pixmap = create_pixmap (rect.width, size, d->frame->style_window_rgb);
 	    gdk_drawable_set_colormap (GDK_DRAWABLE (pixmap), cmap);
 	}
 	else
-	    pixmap = create_pixmap (rect.width, size, 32);
+	    pixmap = create_pixmap (rect.width, size, d->frame->style_window_rgba);
 
 	cr = gdk_cairo_create (GDK_DRAWABLE (pixmap));
 	gdk_cairo_set_source_color_alpha (cr, &bg_color, bg_alpha);
@@ -695,7 +696,7 @@ meta_draw_window_decoration (decor_t *d)
 				   clip.height - fgeom.top_height -
 				   fgeom.bottom_height,
 				   d->layout,
-				   text_height,
+				   d->frame->text_height,
 				   &button_layout,
 				   button_states,
 				   d->icon_pixbuf,
@@ -735,7 +736,7 @@ meta_draw_window_decoration (decor_t *d)
 				   clip.height - fgeom.top_height -
 				   fgeom.bottom_height,
 				   d->layout,
-				   text_height,
+				   d->frame->text_height,
 				   &button_layout,
 				   button_states,
 				   d->icon_pixbuf,
@@ -779,11 +780,11 @@ meta_draw_window_decoration (decor_t *d)
 
 	    cmap   = get_colormap_for_drawable (GDK_DRAWABLE (d->pixmap));
 	    depth  = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
-	    pixmap = create_pixmap (size, rect.height, depth);
+	    pixmap = create_pixmap (size, rect.height, d->frame->style_window_rgb);
 	    gdk_drawable_set_colormap (GDK_DRAWABLE (pixmap), cmap);
 	}
 	else
-	    pixmap = create_pixmap (size, rect.height, 32);
+	    pixmap = create_pixmap (size, rect.height, d->frame->style_window_rgba);
 
 	cr = gdk_cairo_create (GDK_DRAWABLE (pixmap));
 	gdk_cairo_set_source_color_alpha (cr, &bg_color, bg_alpha);
@@ -812,7 +813,7 @@ meta_draw_window_decoration (decor_t *d)
 				   clip.height - fgeom.top_height -
 				   fgeom.bottom_height,
 				   d->layout,
-				   text_height,
+				   d->frame->text_height,
 				   &button_layout,
 				   button_states,
 				   d->icon_pixbuf,
@@ -852,7 +853,7 @@ meta_draw_window_decoration (decor_t *d)
 				   clip.height - fgeom.top_height -
 				   fgeom.bottom_height,
 				   d->layout,
-				   text_height,
+				   d->frame->text_height,
 				   &button_layout,
 				   button_states,
 				   d->icon_pixbuf,
@@ -1086,11 +1087,28 @@ meta_get_button_position (decor_t	 *d,
     if (d->frame_window)
     {
 	decor_frame_t *frame = &decor_frames[d_frame_type];
-	*x += frame.win_extents.left + 4;
-	*y += frame.win_extents.top + 2;
+	*x += frame->win_extents.left + 4;
+	*y += frame->win_extents.top + 2;
     }
 
     return TRUE;
+}
+
+gfloat
+meta_get_title_scale (decor_frame_t *frame)
+{
+    MetaTheme	   *theme = meta_theme_get_current ();
+    MetaFrameType  type;
+    MetaFrameFlags flags = 0xc33;
+
+    if (frame->type == DECOR_FRAME_TYPE_UNDECORATED)
+	return 1.0f;
+
+    type = meta_get_frame_type_for_decor_type (frame->type);
+
+    gfloat scale = meta_theme_get_title_scale (theme, type, flags);
+
+    return scale;
 }
 
 gboolean
@@ -1592,7 +1610,7 @@ meta_update_button_layout (const char *value)
 }
 
 void
-meta_update_border_extents (gint text_height)
+meta_update_border_extents ()
 {
     MetaTheme *theme;
     MetaFrameType frame_type;
@@ -1618,7 +1636,8 @@ meta_update_border_extents (gint text_height)
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      text_height, 0,
+				      decor_frames[d_frame_type].text_height,
+				      0,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,
@@ -1633,7 +1652,8 @@ meta_update_border_extents (gint text_height)
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      text_height, META_FRAME_MAXIMIZED,
+				      decor_frames[d_frame_type].text_height,
+				      META_FRAME_MAXIMIZED,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,

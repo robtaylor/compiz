@@ -282,7 +282,7 @@ draw_window_decoration (decor_t *d)
     if (!d->pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
 
     if (d->state & (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
 		    WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY))
@@ -629,7 +629,7 @@ draw_window_decoration (decor_t *d)
 	{
 	    cairo_move_to (cr,
 			   d->context->left_space + 21.0,
-			   y1 + 2.0 + (frame->titlebar_height - text_height) / 2.0);
+			   y1 + 2.0 + (frame->titlebar_height - frame->text_height) / 2.0);
 
 	    gdk_cairo_set_source_color_alpha (cr,
 					      &style->fg[GTK_STATE_NORMAL],
@@ -649,7 +649,7 @@ draw_window_decoration (decor_t *d)
 
 	cairo_move_to (cr,
 		       d->context->left_space + 21.0,
-		       y1 + 2.0 + (frame->titlebar_height - text_height) / 2.0);
+		       y1 + 2.0 + (frame->titlebar_height - frame->text_height) / 2.0);
 
 	pango_cairo_show_layout (cr, d->layout);
     }
@@ -876,8 +876,14 @@ get_event_window_position (decor_t *d,
     }
 }
 
+gfloat
+get_title_scale (decor_frame_t *frame)
+{
+    return 1.0f;
+}
+
 void
-update_border_extents (gint text_height)
+update_border_extents ()
 {
     unsigned int i;
 
@@ -888,6 +894,6 @@ update_border_extents (gint text_height)
 	frame->win_extents = _default_decoration.win_extents;
 	frame->max_win_extents = _default_decoration.win_extents;
 	frame->titlebar_height = frame->max_titlebar_height =
-		(text_height < 17) ? 17 : text_height;
+		(frame->text_height < 17) ? 17 : frame->text_height;
     }
 }

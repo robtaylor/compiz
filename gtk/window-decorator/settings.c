@@ -163,6 +163,7 @@ theme_changed (GConfClient *client)
 	theme_update_border_extents	= meta_update_border_extents;
 	theme_get_event_window_position = meta_get_event_window_position;
 	theme_get_button_position	= meta_get_button_position;
+	theme_get_title_scale	    	= meta_get_title_scale;
     }
     else
     {
@@ -171,6 +172,7 @@ theme_changed (GConfClient *client)
 	theme_update_border_extents	= update_border_extents;
 	theme_get_event_window_position = get_event_window_position;
 	theme_get_button_position	= get_button_position;
+	theme_get_title_scale	    	= get_title_scale;
     }
 
     return TRUE;
@@ -180,6 +182,7 @@ theme_changed (GConfClient *client)
     theme_update_border_extents	    = update_border_extents;
     theme_get_event_window_position = get_event_window_position;
     theme_get_button_position	    = get_button_position;
+    theme_get_title_scale	    = get_title_scale;
 
     return FALSE;
 #endif
@@ -288,6 +291,7 @@ static void
 titlebar_font_changed (GConfClient *client)
 {
     gchar *str;
+    gint  i;
 
     str = gconf_client_get_string (client,
 				   COMPIZ_TITLEBAR_FONT_KEY,
@@ -295,10 +299,20 @@ titlebar_font_changed (GConfClient *client)
     if (!str)
 	str = g_strdup ("Sans Bold 12");
 
-    if (titlebar_font)
-	pango_font_description_free (titlebar_font);
+    for (i = 0; i < 5; i++)
+    {
+	decor_frame_t *frame = &decor_frames[i];
+	gfloat	      scale = 1.0f;
+	if (frame->titlebar_font)
+	    pango_font_description_free (frame->titlebar_font);
 
-    titlebar_font = pango_font_description_from_string (str);
+	frame->titlebar_font = pango_font_description_from_string (str);
+
+	scale = (*theme_get_title_scale) (frame);
+
+	pango_font_description_set_size (frame->titlebar_font,
+					 MAX (pango_font_description_get_size (frame->titlebar_font) * scale, 1));
+    }
 
     g_free (str);
 }
@@ -458,63 +472,34 @@ init_settings (WnckScreen *screen)
 		      screen);
 #endif
 
-    style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
+    switcher_style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
 
     gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
     colormap = gdk_screen_get_rgba_colormap (gdkscreen);
     if (colormap)
-	gtk_widget_set_colormap (style_window_rgba, colormap);
+	gtk_widget_set_colormap (switcher_style_window_rgba, colormap);
 
-    gtk_widget_realize (style_window_rgba);
-
-    switcher_label = gtk_label_new ("");
-    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
-    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window_rgba), switcher_label);
-
-    gtk_widget_set_size_request (style_window_rgba, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window_rgba), -100, -100);
-    gtk_widget_show_all (style_window_rgba);
-
-    g_signal_connect_object (style_window_rgba, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
-
-    settings = gtk_widget_get_settings (style_window_rgba);
-
-    g_object_get (G_OBJECT (settings), "gtk-double-click-time",
-		  &double_click_timeout, NULL);
-
-    pango_context = gtk_widget_create_pango_context (style_window_rgba);
-
-    style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
-
-    gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
-    colormap = gdk_screen_get_rgb_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (style_window_rgb, colormap);
-
-    gtk_widget_realize (style_window_rgb);
+    gtk_widget_realize (switcher_style_window_rgba);
 
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window_rgb), switcher_label);
+    gtk_container_add (GTK_CONTAINER (switcher_style_window_rgba), switcher_label);
 
-    gtk_widget_set_size_request (style_window_rgb, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window_rgb), -100, -100);
-    gtk_widget_show_all (style_window_rgb);
+    gtk_widget_set_size_request (switcher_style_window_rgba, 0, 0);
+    gtk_window_move (GTK_WINDOW (switcher_style_window_rgba), -100, -100);
+    gtk_widget_show_all (switcher_style_window_rgba);
 
-    g_signal_connect_object (style_window_rgb, "style-set",
+    g_signal_connect_object (switcher_style_window_rgba, "style-set",
 			     G_CALLBACK (style_changed),
 			     0, 0);
 
-    settings = gtk_widget_get_settings (style_window_rgb);
+    settings = gtk_widget_get_settings (switcher_style_window_rgba);
 
     g_object_get (G_OBJECT (settings), "gtk-double-click-time",
 		  &double_click_timeout, NULL);
 
-    pango_context = gtk_widget_create_pango_context (style_window_rgb);
+    switcher_pango_context = gtk_widget_create_pango_context (switcher_style_window_rgba);
 
 #ifdef USE_GCONF
     use_system_font = gconf_client_get_bool (gconf,
@@ -525,8 +510,7 @@ init_settings (WnckScreen *screen)
     button_layout_changed (gconf);
 #endif
 
-    update_style (style_window_rgba);
-    update_style (style_window_rgb);
+    update_style (switcher_style_window_rgba);
 #ifdef USE_GCONF
     titlebar_font_changed (gconf);
 #endif
@@ -550,7 +534,7 @@ init_settings (WnckScreen *screen)
     blur_settings_changed (gconf);
 #endif
 
-    (*theme_update_border_extents) (text_height);
+    (*theme_update_border_extents) ();
     
     shadow_property_changed (screen);
 

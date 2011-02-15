@@ -1,41 +1,47 @@
 #include "gtk-window-decorator.h"
 
 static const PangoFontDescription *
-get_titlebar_font (void)
+get_titlebar_font (decor_frame_t *frame)
 {
     if (use_system_font)
     {
 	return NULL;
     }
     else
-	return titlebar_font;
+	return frame->titlebar_font;
 }
 
 void
-update_titlebar_font (void)
+update_titlebar_font ()
 {
     const PangoFontDescription *font_desc;
     PangoFontMetrics	       *metrics;
     PangoLanguage	       *lang;
+    unsigned int	       i = 0;
 
-    font_desc = get_titlebar_font ();
-    if (!font_desc)
+    for (i = 0; i < 5; i++)
     {
-	GtkStyle *default_style;
+	decor_frame_t *frame = &decor_frames[i];
+	font_desc = get_titlebar_font (frame);
+	if (!font_desc)
+	{
+	    GtkStyle *default_style;
 
-	default_style = gtk_widget_get_default_style ();
-	font_desc = default_style->font_desc;
+	    default_style = gtk_widget_get_default_style ();
+	    font_desc = default_style->font_desc;
+	}
+
+	pango_context_set_font_description (frame->pango_context, font_desc);
+
+	lang    = pango_context_get_language (frame->pango_context);
+	metrics = pango_context_get_metrics (frame->pango_context, font_desc, lang);
+
+	frame->text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
+				    pango_font_metrics_get_descent (metrics));
+
+	pango_font_metrics_unref (metrics);
     }
 
-    pango_context_set_font_description (pango_context, font_desc);
-
-    lang    = pango_context_get_language (pango_context);
-    metrics = pango_context_get_metrics (pango_context, font_desc, lang);
-
-    text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
-				pango_font_metrics_get_descent (metrics));
-
-    pango_font_metrics_unref (metrics);
 }
 
 void
@@ -198,7 +204,7 @@ max_window_name_width (WnckWindow *win)
 
     if (!d->layout)
     {
-	d->layout = pango_layout_new (pango_context);
+	d->layout = pango_layout_new (d->frame->pango_context);
 	if (!d->layout)
 	    return 0;
 
@@ -309,10 +315,10 @@ update_window_decoration_icon (WnckWindow *win)
 
 	if (d->frame_window)
 	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						     24);
+						     d->frame->style_window_rgba);
 	else
 	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						     32);
+						     d->frame->style_window_rgb);
 	cr = gdk_cairo_create (GDK_DRAWABLE (d->icon_pixmap));
 	d->icon = cairo_pattern_create_for_surface (cairo_get_target (cr));
 	cairo_destroy (cr);
@@ -331,7 +337,6 @@ update_window_decoration_size (WnckWindow *win)
     gint              x, y, w, h, name_width;
     Display           *xdisplay;
     XRenderPictFormat *format;
-    int               depth;
 
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
@@ -348,11 +353,9 @@ update_window_decoration_size (WnckWindow *win)
     gdk_error_trap_push ();
 
     if (d->frame_window)
-	depth = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
+	pixmap = create_pixmap (width, height, d->frame->style_window_rgb);
     else
-	depth = 32;
-
-    pixmap = create_pixmap (width, height, depth);
+	pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
 
     gdk_flush ();
 
@@ -364,7 +367,10 @@ update_window_decoration_size (WnckWindow *win)
 
     gdk_error_trap_push ();
 
-    buffer_pixmap = create_pixmap (width, height, depth);
+    if (d->frame_window)
+	buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgb);
+    else
+	buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
 
     gdk_flush ();
 
@@ -428,6 +434,7 @@ draw_border_shape (Display	   *xdisplay,
 
     memset (&d, 0, sizeof (d));
 
+    d.frame = &_default_decoration;
     d.pixmap  = gdk_pixmap_foreign_new_for_display (gdk_display_get_default (),
 						    pixmap);
     d.width   = width;
@@ -777,12 +784,14 @@ update_default_decorations (GdkScreen *screen)
 
     d.context = &_default_decoration.window_context;
     d.shadow  = _default_decoration.border_shadow;
-    d.layout  = pango_layout_new (pango_context);
+    d.layout  = pango_layout_new (_default_decoration.pango_context); /* FIXME */
 
     decor_get_default_layout (d.context, 1, 1, &d.border_layout);
 
     d.width  = d.border_layout.width;
     d.height = d.border_layout.height;
+
+    d.frame = &_default_decoration;
 
     extents.top += _default_decoration.titlebar_height;
 
@@ -794,7 +803,7 @@ update_default_decorations (GdkScreen *screen)
     nQuad = decor_set_lSrStSbS_window_quads (quads, d.context,
 					     &d.border_layout);
 
-    decor_normal_pixmap = create_pixmap (d.width, d.height, 32);
+    decor_normal_pixmap = create_pixmap (d.width, d.height, _default_decoration.style_window_rgba); /* FIXME */
 
     if (decor_normal_pixmap)
     {
@@ -822,7 +831,7 @@ update_default_decorations (GdkScreen *screen)
     if (decor_active_pixmap)
 	g_object_unref (G_OBJECT (decor_active_pixmap));
 
-    decor_active_pixmap = create_pixmap (d.width, d.height, 32);
+    decor_active_pixmap = create_pixmap (d.width, d.height, _default_decoration.style_window_rgba); /* FIXME */
 
     if (decor_active_pixmap)
     {

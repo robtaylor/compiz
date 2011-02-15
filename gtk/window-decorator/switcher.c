@@ -16,7 +16,7 @@ draw_switcher_background (decor_t *d)
     if (!d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window_rgba);
+    style = gtk_widget_get_style (switcher_style_window_rgba);
 
     color.r = style->bg[GTK_STATE_NORMAL].red   / 65535.0;
     color.g = style->bg[GTK_STATE_NORMAL].green / 65535.0;
@@ -207,7 +207,7 @@ draw_switcher_foreground (decor_t *d)
     if (!d->pixmap || !d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window_rgba);
+    style = gtk_widget_get_style (switcher_style_window_rgba);
 
     cr = gdk_cairo_create (GDK_DRAWABLE (d->buffer_pixmap));
 
@@ -238,7 +238,7 @@ draw_switcher_foreground (decor_t *d)
 
 	cairo_move_to (cr, d->width / 2 - w / 2,
 		       d->height - switcher_context.bottom_space +
-		       SWITCHER_SPACE / 2 - text_height / 2);
+		       SWITCHER_SPACE / 2 - d->frame->text_height / 2);
 
 	pango_cairo_show_layout (cr, d->layout);
     }
@@ -346,7 +346,7 @@ update_switcher_window (Window     popup,
 	{
 	    if (!d->layout)
 	    {
-		d->layout = pango_layout_new (pango_context);
+		d->layout = pango_layout_new (switcher_pango_context);
 		if (d->layout)
 		    pango_layout_set_wrap (d->layout, PANGO_WRAP_CHAR);
 	    }
@@ -399,11 +399,11 @@ update_switcher_window (Window     popup,
 	switcher_selected_window = selected;
     }
 
-    pixmap = create_pixmap (width, height, 32);
+    pixmap = create_pixmap (width, height, switcher_style_window_rgba);
     if (!pixmap)
 	return FALSE;
 
-    buffer_pixmap = create_pixmap (width, height, 32);
+    buffer_pixmap = create_pixmap (width, height, switcher_style_window_rgb);
     if (!buffer_pixmap)
     {
 	g_object_unref (G_OBJECT (pixmap));

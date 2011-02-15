@@ -338,11 +338,11 @@ typedef struct {
 } event_window;
 
 typedef enum _decor_frame_type {
-    DECOR_FRAME_TYPE_NORMAL,
-    DECOR_FRAME_TYPE_DIALOG,
-    DECOR_FRAME_TYPE_MENU,
-    DECOR_FRAME_TYPE_UTILITY,
-    DECOR_FRAME_TYPE_UNDECORATED
+    DECOR_FRAME_TYPE_NORMAL = 0,
+    DECOR_FRAME_TYPE_DIALOG = 1,
+    DECOR_FRAME_TYPE_MENU = 2,
+    DECOR_FRAME_TYPE_UTILITY = 3,
+    DECOR_FRAME_TYPE_UNDECORATED = 4
 } decor_frame_type;
 
 typedef struct _decor_frame {
@@ -358,10 +358,17 @@ typedef struct _decor_frame {
     decor_context_t window_context_no_shadow;
     decor_context_t max_window_context;
     decor_context_t max_window_context_no_shadow;
+    PangoFontDescription *titlebar_font;
+    PangoContext	 *pango_context;
+    GtkWidget	         *style_window_rgba;
+    GtkWidget		 *style_window_rgb;
+    gint		 text_height;
+    decor_frame_type     type;
 } decor_frame_t;
 
 typedef struct _decor {
     WnckWindow	      *win;
+    decor_frame_t     *frame;
     event_window      event_windows[3][3];
     event_window      button_windows[BUTTON_NUM];
     Box		      *last_pos_entered;
@@ -404,7 +411,7 @@ gboolean (*theme_calc_decoration_size)      (decor_t *d,
 					     int     text_width,
 					     int     *width,
 					     int     *height);
-void     (*theme_update_border_extents)     (gint    text_height);
+void     (*theme_update_border_extents)     ();
 void     (*theme_get_event_window_position) (decor_t *d,
 					     gint    i,
 					     gint    j,
@@ -422,18 +429,19 @@ gboolean (*theme_get_button_position)       (decor_t *d,
 					     gint    *y,
 					     gint    *w,
 					     gint    *h);
+gfloat (*theme_get_title_scale)		    (decor_frame_t *frame);
 
 extern char *program_name;
 
-extern GtkWidget     *style_window_rgba;
-extern GtkWidget     *style_window_rgb;
+extern GtkWidget     *switcher_style_window_rgba;
+extern GtkWidget     *switcher_style_window_rgb;
+extern PangoContext  *switcher_pango_context;
 extern GtkWidget     *switcher_label;
 
 extern GHashTable    *frame_table;
 extern GtkWidget     *action_menu;
 extern gboolean      action_menu_mapped;
 extern decor_color_t _title_color[2];
-extern PangoContext  *pango_context;
 extern gint	     double_click_timeout;
 
 extern GtkWidget     *tip_window;
@@ -444,9 +452,7 @@ extern gint	     tooltip_timer_tag;
 extern GSList *draw_list;
 extern guint  draw_idle_id;
 
-extern PangoFontDescription *titlebar_font;
 extern gboolean		    use_system_font;
-extern gint		    text_height;
 
 #define BLUR_TYPE_NONE     0
 #define BLUR_TYPE_TITLEBAR 1
@@ -509,7 +515,7 @@ void
 shadow_property_changed (WnckScreen *screen);
 
 void
-update_titlebar_font (void);
+update_titlebar_font ();
 
 void
 update_window_decoration_name (WnckWindow *win);
@@ -626,7 +632,7 @@ calc_decoration_size (decor_t *d,
 		      gint    *height);
 
 void
-update_border_extents (gint text_height);
+update_border_extents ();
 
 gboolean
 get_button_position (decor_t *d,
@@ -649,6 +655,9 @@ get_event_window_position (decor_t *d,
 			   gint    *w,
 			   gint    *h);
 
+gfloat
+get_title_scale (decor_frame_t *);
+
 /* gdk.c */
 
 void
@@ -666,12 +675,12 @@ XRenderPictFormat *
 get_format_for_drawable (decor_t *d, GdkDrawable *drawable);
 
 GdkPixmap *
-create_pixmap (int w,
-	       int h,
-	       int depth);
+create_pixmap (int	 w,
+	       int	 h,
+	       GtkWidget *parent_style_window);
 
 GdkPixmap *
-pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth);
+pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, GtkWidget *parent);
 
 /* metacity.c */
 #ifdef USE_METACITY
@@ -726,8 +735,12 @@ meta_get_event_window_position (decor_t *d,
 				gint    *y,
 				gint    *w,
 				gint    *h);
+
+gfloat
+meta_get_title_scale (decor_frame_t *);
+
 void
-meta_update_border_extents (gint text_height);
+meta_update_border_extents ();
 
 void
 meta_update_button_layout (const char *value);
@@ -968,7 +981,7 @@ void
 update_style (GtkWidget *widget);
 
 void
-style_changed (GtkWidget *widget);
+style_changed (PangoContext *context, GtkWidget *widget);
 
 /* settings.c */
 

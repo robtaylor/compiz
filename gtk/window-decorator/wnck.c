@@ -116,7 +116,7 @@ decorations_changed (WnckScreen *screen)
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
 
     update_titlebar_font ();
-    (*theme_update_border_extents) (text_height);
+    (*theme_update_border_extents) ();
     update_shadow ();
 
     update_default_decorations (gdkscreen);
@@ -237,6 +237,7 @@ add_frame_window (WnckWindow *win,
 
     d->active = wnck_window_is_active (win);
     d->win = win;
+    d->frame = &decor_frames[get_frame_type (wnck_window_get_window_type (win))];
     d->last_pos_entered = NULL;
 
     attr.event_mask = ButtonPressMask | EnterWindowMask |
