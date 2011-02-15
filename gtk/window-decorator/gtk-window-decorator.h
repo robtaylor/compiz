@@ -976,7 +976,7 @@ void
 update_style (GtkWidget *widget);
 
 void
-style_changed (PangoContext *context, GtkWidget *widget);
+style_changed (GtkWidget *widget, void *user_data /* PangoContext */);
 
 /* settings.c */
 

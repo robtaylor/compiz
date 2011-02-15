@@ -23,12 +23,14 @@ update_style (GtkWidget *widget)
 }
 
 void
-style_changed (PangoContext *context,
-	       GtkWidget *widget)
+style_changed (GtkWidget *widget,
+	       void      *user_data)
 {
     GdkDisplay *gdkdisplay;
     GdkScreen  *gdkscreen;
     WnckScreen *screen;
+
+    PangoContext *context = (PangoContext *) user_data;
 
     gdkdisplay = gdk_display_get_default ();
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);

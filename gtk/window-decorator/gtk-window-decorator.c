@@ -208,11 +208,11 @@ initialize_decorations ()
 	gtk_window_move (GTK_WINDOW (decor_frames[i].style_window_rgba), -100, -100);
 	gtk_widget_show_all (decor_frames[i].style_window_rgba);
 
-	g_signal_connect_object (decor_frames[i].style_window_rgba, "style-set",
-				 G_CALLBACK (style_changed),
-				 0, 0);
-
 	decor_frames[i].pango_context = gtk_widget_create_pango_context (decor_frames[i].style_window_rgba);
+
+	g_signal_connect_data (decor_frames[i].style_window_rgba, "style-set",
+			       G_CALLBACK (style_changed),
+			       (gpointer) decor_frames[i].pango_context, 0, 0);
 
 	decor_frames[i].style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
 
@@ -226,9 +226,9 @@ initialize_decorations ()
 	gtk_window_move (GTK_WINDOW (decor_frames[i].style_window_rgb), -100, -100);
 	gtk_widget_show_all (decor_frames[i].style_window_rgb);
 
-	g_signal_connect_object (decor_frames[i].style_window_rgb, "style-set",
-				 G_CALLBACK (style_changed),
-				 0, 0);
+	g_signal_connect_data (decor_frames[i].style_window_rgb, "style-set",
+			       G_CALLBACK (style_changed),
+			       (gpointer) decor_frames[i].pango_context, 0, 0);
 
 	update_style (decor_frames[i].style_window_rgba);
 	update_style (decor_frames[i].style_window_rgb);
@@ -264,11 +264,11 @@ initialize_decorations ()
     gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgba), -100, -100);
     gtk_widget_show_all (_default_decoration.style_window_rgba);
 
-    g_signal_connect_object (_default_decoration.style_window_rgba, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
-
     _default_decoration.pango_context = gtk_widget_create_pango_context (_default_decoration.style_window_rgba);
+
+    g_signal_connect_data (_default_decoration.style_window_rgba, "style-set",
+			   G_CALLBACK (style_changed),
+			   (gpointer) _default_decoration.pango_context, 0, 0);
 
     _default_decoration.style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
 
@@ -282,9 +282,9 @@ initialize_decorations ()
     gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgb), -100, -100);
     gtk_widget_show_all (_default_decoration.style_window_rgb);
 
-    g_signal_connect_object (_default_decoration.style_window_rgb, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
+    g_signal_connect_data (_default_decoration.style_window_rgb, "style-set",
+			   G_CALLBACK (style_changed),
+			   (gpointer) _default_decoration.pango_context, 0, 0);
 
     update_style (_default_decoration.style_window_rgba);
     update_style (_default_decoration.style_window_rgb);

@@ -301,7 +301,6 @@ titlebar_font_changed (GConfClient *client)
 
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
-	fprintf (stderr, "i is %i\n", i);
 	decor_frame_t *frame = &decor_frames[i];
 	gfloat	      scale = 1.0f;
 	if (frame->titlebar_font)
