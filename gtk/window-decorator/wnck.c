@@ -156,7 +156,6 @@ decorations_changed (WnckScreen *screen)
 	/* force size update */
 	d->context = NULL;
 	d->width = d->height = 0;
-	switcher_width = switcher_height = 0;
 
 	update_switcher_window (d->prop_xid, select);
     }

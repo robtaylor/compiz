@@ -1101,7 +1101,7 @@ meta_get_title_scale (decor_frame_t *frame)
     MetaFrameType  type;
     MetaFrameFlags flags = 0xc33;
 
-    if (frame->type == DECOR_FRAME_TYPE_UNDECORATED)
+    if (frame->type >= DECOR_FRAME_TYPE_SWITCHER)
 	return 1.0f;
 
     type = meta_get_frame_type_for_decor_type (frame->type);
@@ -1618,14 +1618,14 @@ meta_update_border_extents ()
 
     WnckWindowType win_types[] = { WNCK_WINDOW_NORMAL, WNCK_WINDOW_DIALOG,
 				   WNCK_WINDOW_MENU, WNCK_WINDOW_UTILITY,
-				   WNCK_WINDOW_SPLASHSCREEN };
+				   WNCK_WINDOW_SPLASHSCREEN, WNCK_WINDOW_SPLASHSCREEN };
 
     gint      top_height, bottom_height, left_width, right_width;
     unsigned int i;
 
     theme = meta_theme_get_current ();
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	d_frame_type = get_frame_type (win_types[i]);
 

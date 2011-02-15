@@ -116,7 +116,7 @@ decor_update_switcher_property (decor_t *d)
 			     &_switcher_extents, &_switcher_extents,
 			     0, 0, quads, nQuad);
     
-    style = gtk_widget_get_style (switcher_style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
     
     fgColor[0] = style->fg[GTK_STATE_NORMAL].red;
     fgColor[1] = style->fg[GTK_STATE_NORMAL].green;

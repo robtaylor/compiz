@@ -26,8 +26,9 @@ gboolean minimal = FALSE;
 double decoration_alpha = 0.5;
 
 #define SWITCHER_SPACE 40
+#define DECOR_FRAMES_NUM 6
 
-decor_frame_t decor_frames[5];
+decor_frame_t decor_frames[DECOR_FRAMES_NUM];
 decor_frame_t _default_decoration;
 
 decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
@@ -178,7 +179,7 @@ initialize_decorations ()
 
     unsigned int i;
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	decor_frames[i].win_extents = _win_extents;
 	decor_frames[i].max_win_extents = _max_win_extents;

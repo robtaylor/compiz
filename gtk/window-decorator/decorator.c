@@ -19,7 +19,7 @@ update_titlebar_font ()
     PangoLanguage	       *lang;
     unsigned int	       i = 0;
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	decor_frame_t *frame = &decor_frames[i];
 	font_desc = get_titlebar_font (frame);
@@ -515,7 +515,7 @@ update_shadow (void)
 					    decor_draw_simple,
 					    0);
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	decor_frame_t *frame = &decor_frames[i];
 

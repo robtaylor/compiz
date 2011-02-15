@@ -299,8 +299,9 @@ titlebar_font_changed (GConfClient *client)
     if (!str)
 	str = g_strdup ("Sans Bold 12");
 
-    for (i = 0; i < 5; i++)
+    for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
+	fprintf (stderr, "i is %i\n", i);
 	decor_frame_t *frame = &decor_frames[i];
 	gfloat	      scale = 1.0f;
 	if (frame->titlebar_font)
@@ -472,34 +473,10 @@ init_settings (WnckScreen *screen)
 		      screen);
 #endif
 
-    switcher_style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
-
-    gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
-    colormap = gdk_screen_get_rgba_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (switcher_style_window_rgba, colormap);
-
-    gtk_widget_realize (switcher_style_window_rgba);
-
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (switcher_style_window_rgba), switcher_label);
-
-    gtk_widget_set_size_request (switcher_style_window_rgba, 0, 0);
-    gtk_window_move (GTK_WINDOW (switcher_style_window_rgba), -100, -100);
-    gtk_widget_show_all (switcher_style_window_rgba);
-
-    g_signal_connect_object (switcher_style_window_rgba, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
-
-    settings = gtk_widget_get_settings (switcher_style_window_rgba);
-
-    g_object_get (G_OBJECT (settings), "gtk-double-click-time",
-		  &double_click_timeout, NULL);
-
-    switcher_pango_context = gtk_widget_create_pango_context (switcher_style_window_rgba);
+    gtk_container_add (GTK_CONTAINER (decor_frames[DECOR_FRAME_TYPE_SWITCHER].style_window_rgba), switcher_label);
 
 #ifdef USE_GCONF
     use_system_font = gconf_client_get_bool (gconf,
@@ -510,7 +487,7 @@ init_settings (WnckScreen *screen)
     button_layout_changed (gconf);
 #endif
 
-    update_style (switcher_style_window_rgba);
+    update_style (decor_frames[DECOR_FRAME_TYPE_SWITCHER].style_window_rgba);
 #ifdef USE_GCONF
     titlebar_font_changed (gconf);
 #endif

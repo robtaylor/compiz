@@ -16,7 +16,7 @@ draw_switcher_background (decor_t *d)
     if (!d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (switcher_style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
 
     color.r = style->bg[GTK_STATE_NORMAL].red   / 65535.0;
     color.g = style->bg[GTK_STATE_NORMAL].green / 65535.0;
@@ -207,7 +207,7 @@ draw_switcher_foreground (decor_t *d)
     if (!d->pixmap || !d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (switcher_style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
 
     cr = gdk_cairo_create (GDK_DRAWABLE (d->buffer_pixmap));
 
@@ -308,25 +308,7 @@ update_switcher_window (Window     popup,
 
     d->decorated = FALSE;
     d->draw	 = draw_switcher_decoration;
-
-    if (!d->pixmap && switcher_pixmap)
-    {
-	g_object_ref (G_OBJECT (switcher_pixmap));
-
-	d->pixmap = switcher_pixmap;
-    }
-
-    if (!d->buffer_pixmap && switcher_buffer_pixmap)
-    {
-	g_object_ref (G_OBJECT (switcher_buffer_pixmap));
-	d->buffer_pixmap = switcher_buffer_pixmap;
-    }
-
-    if (!d->width)
-	d->width = switcher_width;
-
-    if (!d->height)
-	d->height = switcher_height;
+    d->frame     = &decor_frames[DECOR_FRAME_TYPE_SWITCHER];
 
     selected_win = wnck_window_get (selected);
     if (selected_win)
@@ -346,7 +328,7 @@ update_switcher_window (Window     popup,
 	{
 	    if (!d->layout)
 	    {
-		d->layout = pango_layout_new (switcher_pango_context);
+		d->layout = pango_layout_new (d->frame->pango_context);
 		if (d->layout)
 		    pango_layout_set_wrap (d->layout, PANGO_WRAP_CHAR);
 	    }
@@ -399,22 +381,16 @@ update_switcher_window (Window     popup,
 	switcher_selected_window = selected;
     }
 
-    pixmap = create_pixmap (width, height, switcher_style_window_rgba);
+    pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
     if (!pixmap)
 	return FALSE;
 
-    buffer_pixmap = create_pixmap (width, height, switcher_style_window_rgb);
+    buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
     if (!buffer_pixmap)
     {
 	g_object_unref (G_OBJECT (pixmap));
 	return FALSE;
     }
-
-    if (switcher_pixmap)
-	g_object_unref (G_OBJECT (switcher_pixmap));
-
-    if (switcher_buffer_pixmap)
-	g_object_unref (G_OBJECT (switcher_buffer_pixmap));
 
     if (d->pixmap)
 	g_object_unref (G_OBJECT (d->pixmap));
@@ -427,12 +403,6 @@ update_switcher_window (Window     popup,
 
     if (d->picture)
 	XRenderFreePicture (xdisplay, d->picture);
-
-    switcher_pixmap	   = pixmap;
-    switcher_buffer_pixmap = buffer_pixmap;
-
-    switcher_width  = width;
-    switcher_height = height;
 
     g_object_ref (G_OBJECT (pixmap));
     g_object_ref (G_OBJECT (buffer_pixmap));

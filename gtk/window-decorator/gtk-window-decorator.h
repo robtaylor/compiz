@@ -342,7 +342,8 @@ typedef enum _decor_frame_type {
     DECOR_FRAME_TYPE_DIALOG = 1,
     DECOR_FRAME_TYPE_MENU = 2,
     DECOR_FRAME_TYPE_UTILITY = 3,
-    DECOR_FRAME_TYPE_UNDECORATED = 4
+    DECOR_FRAME_TYPE_SWITCHER = 4,
+    DECOR_FRAME_TYPE_UNDECORATED = 5
 } decor_frame_type;
 
 typedef struct _decor_frame {
@@ -433,11 +434,6 @@ gfloat (*theme_get_title_scale)		    (decor_frame_t *frame);
 
 extern char *program_name;
 
-extern GtkWidget     *switcher_style_window_rgba;
-extern GtkWidget     *switcher_style_window_rgb;
-extern PangoContext  *switcher_pango_context;
-extern GtkWidget     *switcher_label;
-
 extern GHashTable    *frame_table;
 extern GtkWidget     *action_menu;
 extern gboolean      action_menu_mapped;
@@ -460,12 +456,9 @@ extern gboolean		    use_system_font;
 
 extern gint blur_type;
 
-extern GdkPixmap *switcher_pixmap;
-extern GdkPixmap *switcher_buffer_pixmap;
-extern gint      switcher_width;
-extern gint      switcher_height;
-extern Window    switcher_selected_window;
-extern decor_t   *switcher_window;
+extern Window     switcher_selected_window;
+extern GtkWidget  *switcher_label;
+extern decor_t    *switcher_window;
 
 extern XRenderPictFormat *xformat_rgba;
 extern XRenderPictFormat *xformat_rgb;
@@ -473,7 +466,9 @@ extern XRenderPictFormat *xformat_rgb;
 extern Atom compiz_shadow_info_atom;
 extern Atom compiz_shadow_color_atom;
 
-extern decor_frame_t decor_frames[5];
+#define NUM_DECOR_FRAMES 6
+
+extern decor_frame_t decor_frames[NUM_DECOR_FRAMES];
 extern decor_frame_t _default_decoration;
 
 /* gtk-window-decorator.c */
