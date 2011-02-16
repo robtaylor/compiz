@@ -343,7 +343,8 @@ typedef enum _decor_frame_type {
     DECOR_FRAME_TYPE_MENU = 2,
     DECOR_FRAME_TYPE_UTILITY = 3,
     DECOR_FRAME_TYPE_SWITCHER = 4,
-    DECOR_FRAME_TYPE_UNDECORATED = 5
+    DECOR_FRAME_TYPE_UNDECORATED = 5,
+    DECOR_FRAME_TYPE_DEFAULT = 6
 } decor_frame_type;
 
 typedef struct _decor_frame {
@@ -466,10 +467,9 @@ extern XRenderPictFormat *xformat_rgb;
 extern Atom compiz_shadow_info_atom;
 extern Atom compiz_shadow_color_atom;
 
-#define NUM_DECOR_FRAMES 6
+#define NUM_DECOR_FRAMES 7
 
 extern decor_frame_t decor_frames[NUM_DECOR_FRAMES];
-extern decor_frame_t _default_decoration;
 
 /* gtk-window-decorator.c */
 

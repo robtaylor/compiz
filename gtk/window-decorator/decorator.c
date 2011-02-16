@@ -444,7 +444,7 @@ draw_border_shape (Display	   *xdisplay,
     if (info)
 	d.frame = info->frame;
     else
-	d.frame = &_default_decoration;
+	d.frame = &decor_frames[DECOR_FRAME_TYPE_DEFAULT];
 
     d.pixmap  = gdk_pixmap_foreign_new_for_display (gdk_display_get_default (),
 						    pixmap);
@@ -747,7 +747,7 @@ update_default_decorations (GdkScreen *screen)
     decor_t	    d;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
-    decor_extents_t extents = _default_decoration.win_extents;
+    decor_extents_t extents = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents;
 
     xroot = RootWindowOfScreen (gdk_x11_screen_get_xscreen (screen));
 
@@ -805,18 +805,18 @@ update_default_decorations (GdkScreen *screen)
 
     memset (&d, 0, sizeof (d));
 
-    d.context = &_default_decoration.window_context;
-    d.shadow  = _default_decoration.border_shadow;
-    d.layout  = pango_layout_new (_default_decoration.pango_context); /* FIXME */
+    d.context = &decor_frames[DECOR_FRAME_TYPE_DEFAULT].window_context;
+    d.shadow  = decor_frames[DECOR_FRAME_TYPE_DEFAULT].border_shadow;
+    d.layout  = pango_layout_new (decor_frames[DECOR_FRAME_TYPE_DEFAULT].pango_context);
 
     decor_get_default_layout (d.context, 1, 1, &d.border_layout);
 
     d.width  = d.border_layout.width;
     d.height = d.border_layout.height;
 
-    d.frame = &_default_decoration;
+    d.frame = &decor_frames[DECOR_FRAME_TYPE_DEFAULT];
 
-    extents.top += _default_decoration.titlebar_height;
+    extents.top += decor_frames[DECOR_FRAME_TYPE_DEFAULT].titlebar_height;
 
     d.draw = theme_draw_window_decoration;
 
@@ -826,7 +826,7 @@ update_default_decorations (GdkScreen *screen)
     nQuad = decor_set_lSrStSbS_window_quads (quads, d.context,
 					     &d.border_layout);
 
-    decor_normal_pixmap = create_pixmap (d.width, d.height, _default_decoration.style_window_rgba); /* FIXME */
+    decor_normal_pixmap = create_pixmap (d.width, d.height, decor_frames[DECOR_FRAME_TYPE_DEFAULT].style_window_rgba);
 
     if (decor_normal_pixmap)
     {
@@ -854,7 +854,7 @@ update_default_decorations (GdkScreen *screen)
     if (decor_active_pixmap)
 	g_object_unref (G_OBJECT (decor_active_pixmap));
 
-    decor_active_pixmap = create_pixmap (d.width, d.height, _default_decoration.style_window_rgba); /* FIXME */
+    decor_active_pixmap = create_pixmap (d.width, d.height, decor_frames[DECOR_FRAME_TYPE_DEFAULT].style_window_rgba);
 
     if (decor_active_pixmap)
     {

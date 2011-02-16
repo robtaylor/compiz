@@ -26,10 +26,9 @@ gboolean minimal = FALSE;
 double decoration_alpha = 0.5;
 
 #define SWITCHER_SPACE 40
-#define DECOR_FRAMES_NUM 6
+#define DECOR_FRAMES_NUM 7
 
 decor_frame_t decor_frames[DECOR_FRAMES_NUM];
-decor_frame_t _default_decoration;
 
 decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
 decor_extents_t _default_win_extents = { 6, 6, 6, 6 };
@@ -233,61 +232,6 @@ initialize_decorations ()
 	update_style (decor_frames[i].style_window_rgba);
 	update_style (decor_frames[i].style_window_rgb);
     }
-
-    _default_decoration.win_extents = _win_extents;
-    _default_decoration.max_win_extents = _max_win_extents;
-    _default_decoration.titlebar_height = 17;
-    _default_decoration.max_titlebar_height = 17;
-    _default_decoration.window_context = _window_context;
-    _default_decoration.window_context_no_shadow = _window_context_no_shadow;
-    _default_decoration.max_window_context = _max_window_context;
-    _default_decoration.max_window_context_no_shadow = _max_window_context_no_shadow;
-    _default_decoration.border_shadow = NULL;
-    _default_decoration.border_no_shadow = NULL;
-    _default_decoration.max_border_no_shadow = NULL;
-    _default_decoration.max_border_shadow = NULL;
-    _default_decoration.titlebar_font = NULL;
-    _default_decoration.style_window_rgba = NULL;
-    _default_decoration.style_window_rgb = NULL;
-    _default_decoration.pango_context = NULL;
-    _default_decoration.type = 0;
-
-    _default_decoration.style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
-
-    colormap = gdk_screen_get_rgba_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (_default_decoration.style_window_rgba, colormap);
-
-    gtk_widget_realize (_default_decoration.style_window_rgba);
-
-    gtk_widget_set_size_request (_default_decoration.style_window_rgba, 0, 0);
-    gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgba), -100, -100);
-    gtk_widget_show_all (_default_decoration.style_window_rgba);
-
-    _default_decoration.pango_context = gtk_widget_create_pango_context (_default_decoration.style_window_rgba);
-
-    g_signal_connect_data (_default_decoration.style_window_rgba, "style-set",
-			   G_CALLBACK (style_changed),
-			   (gpointer) _default_decoration.pango_context, 0, 0);
-
-    _default_decoration.style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
-
-    colormap = gdk_screen_get_rgb_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (_default_decoration.style_window_rgb, colormap);
-
-    gtk_widget_realize (_default_decoration.style_window_rgb);
-
-    gtk_widget_set_size_request (_default_decoration.style_window_rgb, 0, 0);
-    gtk_window_move (GTK_WINDOW (_default_decoration.style_window_rgb), -100, -100);
-    gtk_widget_show_all (_default_decoration.style_window_rgb);
-
-    g_signal_connect_data (_default_decoration.style_window_rgb, "style-set",
-			   G_CALLBACK (style_changed),
-			   (gpointer) _default_decoration.pango_context, 0, 0);
-
-    update_style (_default_decoration.style_window_rgba);
-    update_style (_default_decoration.style_window_rgb);
 }
 
 int

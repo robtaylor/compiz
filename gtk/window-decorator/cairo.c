@@ -881,12 +881,12 @@ update_border_extents ()
 {
     unsigned int i;
 
-    for (i = 0; i < DECOR_FRAME_TYPE_UNDECORATED; i++)
+    for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
     {
 	decor_frame_t *frame = &decor_frames[i];
 
-	frame->win_extents = _default_decoration.win_extents;
-	frame->max_win_extents = _default_decoration.win_extents;
+	frame->win_extents = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents;
+	frame->max_win_extents = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents;
 	frame->titlebar_height = frame->max_titlebar_height =
 		(frame->text_height < 17) ? 17 : frame->text_height;
     }

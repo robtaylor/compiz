@@ -1640,7 +1640,7 @@ meta_update_border_extents ()
 				      &left_width,
 				      &right_width);
 
-	decor_frames[d_frame_type].win_extents.top    = _default_decoration.win_extents.top;
+	decor_frames[d_frame_type].win_extents.top    = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents.top;
 	decor_frames[d_frame_type].win_extents.bottom = bottom_height;
 	decor_frames[d_frame_type].win_extents.left   = left_width;
 	decor_frames[d_frame_type].win_extents.right  = right_width;
@@ -1656,7 +1656,7 @@ meta_update_border_extents ()
 				      &left_width,
 				      &right_width);
 
-	decor_frames[d_frame_type].max_win_extents.top    = _default_decoration.win_extents.top;
+	decor_frames[d_frame_type].max_win_extents.top    = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents.top;
 	decor_frames[d_frame_type].max_win_extents.bottom = bottom_height;
 	decor_frames[d_frame_type].max_win_extents.left   = left_width;
 	decor_frames[d_frame_type].max_win_extents.right  = right_width;
