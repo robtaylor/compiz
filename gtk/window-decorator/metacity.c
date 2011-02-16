@@ -608,11 +608,8 @@ meta_draw_window_decoration (decor_t *d)
 
     theme = meta_theme_get_current ();
 
-    if (d->win)
-    {
-	win_type = wnck_window_get_window_type (d->win);
-	frame_type = meta_get_frame_type_for_decor_type (get_frame_type (win_type));
-    }
+    if (d->frame->type < DECOR_FRAME_TYPE_SWITCHER)
+	frame_type = meta_get_frame_type_for_decor_type (d->frame->type);
     else
 	frame_type = META_FRAME_TYPE_NORMAL;
 

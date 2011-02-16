@@ -1,5 +1,11 @@
 #include "gtk-window-decorator.h"
 
+typedef struct _decor_shadow_info
+{
+    decor_frame_t *frame;
+    unsigned int  state;
+} decor_shadow_info_t;
+
 static const PangoFontDescription *
 get_titlebar_font (decor_frame_t *frame)
 {
@@ -430,11 +436,16 @@ draw_border_shape (Display	   *xdisplay,
     static XRenderColor white = { 0xffff, 0xffff, 0xffff, 0xffff };
     GdkColormap		*colormap;
     decor_t		d;
+    decor_shadow_info_t *info = (decor_shadow_info_t *) closure;
     double		save_decoration_alpha;
 
     memset (&d, 0, sizeof (d));
 
-    d.frame = &_default_decoration;
+    if (info)
+	d.frame = info->frame;
+    else
+	d.frame = &_default_decoration;
+
     d.pixmap  = gdk_pixmap_foreign_new_for_display (gdk_display_get_default (),
 						    pixmap);
     d.width   = width;
@@ -445,10 +456,10 @@ draw_border_shape (Display	   *xdisplay,
     d.context = c;
 
     /* we use closure argument if maximized */
-    if (closure)
-	d.state |=
-	    WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
-	    WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY;
+    if (info)
+	d.state = info->state;
+    else
+	d.state = 0;
 
     decor_get_default_layout (c, 1, 1, &d.border_layout);
 
@@ -513,11 +524,18 @@ update_shadow (void)
 					    &opt_shadow,
 					    &shadow_context,
 					    decor_draw_simple,
-					    0);
+					    NULL);
 
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	decor_frame_t *frame = &decor_frames[i];
+	decor_shadow_info_t *info = malloc (sizeof (decor_shadow_info_t));
+
+	if (!info)
+	    return;
+
+	info->frame = frame;
+	info->state = 0;
 
 	if (frame->border_shadow)
 	{
@@ -543,8 +561,7 @@ update_shadow (void)
 						     &opt_shadow,
 						     &frame->window_context,
 						     draw_border_shape,
-						     0);
-
+						     (void *) info);
 	if (frame->border_no_shadow)
 	{
 	    decor_shadow_destroy (xdisplay, frame->border_no_shadow);
@@ -569,13 +586,16 @@ update_shadow (void)
 					     &opt_no_shadow,
 					     &frame->window_context_no_shadow,
 					     draw_border_shape,
-					     0);
+					     (void *) info);
 
 	if (frame->max_border_shadow)
 	{
 	    decor_shadow_destroy (xdisplay, frame->max_border_shadow);
 	    frame->max_border_shadow = NULL;
 	}
+
+	info->state = (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
+		       WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY);
 
 	frame->max_border_shadow =
 	    decor_shadow_create (xdisplay,
@@ -593,7 +613,7 @@ update_shadow (void)
 				 &opt_shadow,
 				 &frame->max_window_context,
 				 draw_border_shape,
-				 (void *) 1);
+				 (void *) info);
 
 	if (frame->max_border_no_shadow)
 	{
@@ -617,7 +637,10 @@ update_shadow (void)
 				 &opt_no_shadow,
 				 &frame->max_window_context_no_shadow,
 				 draw_border_shape,
-				 (void *) 1);
+				 (void *) info);
+
+	free (info);
+	info = NULL;
     }
 
     if (switcher_shadow)
@@ -644,7 +667,7 @@ update_shadow (void)
 					   &opt_shadow,
 					   &switcher_context,
 					   decor_draw_simple,
-					   0);
+					   NULL);
 
     return 1;
 }
