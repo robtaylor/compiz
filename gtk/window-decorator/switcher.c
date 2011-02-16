@@ -26,44 +26,44 @@ draw_switcher_background (decor_t *d)
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    top = _switcher_extents.top;
+    top = d->frame->win_extents.top;
 
-    x1 = switcher_context.left_space - _switcher_extents.left;
-    y1 = switcher_context.top_space - _switcher_extents.top;
-    x2 = d->width - switcher_context.right_space + _switcher_extents.right;
-    y2 = d->height - switcher_context.bottom_space + _switcher_extents.bottom;
+    x1 = d->frame->window_context.left_space - d->frame->win_extents.left;
+    y1 = d->frame->window_context.top_space - d->frame->win_extents.top;
+    x2 = d->width - d->frame->window_context.right_space + d->frame->win_extents.right;
+    y2 = d->height - d->frame->window_context.bottom_space + d->frame->win_extents.bottom;
 
-    h = y2 - y1 - _switcher_extents.top - _switcher_extents.top;
+    h = y2 - y1 - d->frame->win_extents.top - d->frame->win_extents.top;
 
     cairo_set_line_width (cr, 1.0);
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    draw_shadow_background (d, cr, switcher_shadow, &switcher_context);
+    draw_shadow_background (d, cr, d->frame->border_shadow, &d->frame->window_context);
 
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
 			    y1 + 0.5,
-			    _switcher_extents.left - 0.5,
+			    d->frame->win_extents.left - 0.5,
 			    top - 0.5,
 			    5.0, CORNER_TOPLEFT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_TOP | SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x1 + _switcher_extents.left,
+			    x1 + d->frame->win_extents.left,
 			    y1 + 0.5,
-			    x2 - x1 - _switcher_extents.left -
-			    _switcher_extents.right,
+			    x2 - x1 - d->frame->win_extents.left -
+			    d->frame->win_extents.right,
 			    top - 0.5,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_TOP);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
+			    x2 - d->frame->win_extents.right,
 			    y1 + 0.5,
-			    _switcher_extents.right - 0.5,
+			    d->frame->win_extents.right - 0.5,
 			    top - 0.5,
 			    5.0, CORNER_TOPRIGHT,
 			    &color, alpha, &color, alpha * 0.75,
@@ -72,16 +72,16 @@ draw_switcher_background (decor_t *d)
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
 			    y1 + top,
-			    _switcher_extents.left - 0.5,
+			    d->frame->win_extents.left - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
+			    x2 - d->frame->win_extents.right,
 			    y1 + top,
-			    _switcher_extents.right - 0.5,
+			    d->frame->win_extents.right - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
@@ -89,35 +89,35 @@ draw_switcher_background (decor_t *d)
 
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
-			    y2 - _switcher_extents.top,
-			    _switcher_extents.left - 0.5,
-			    _switcher_extents.top - 0.5,
+			    y2 - d->frame->win_extents.top,
+			    d->frame->win_extents.left - 0.5,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, CORNER_BOTTOMLEFT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM | SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x1 + _switcher_extents.left,
-			    y2 - _switcher_extents.top,
-			    x2 - x1 - _switcher_extents.left -
-			    _switcher_extents.right,
-			    _switcher_extents.top - 0.5,
+			    x1 + d->frame->win_extents.left,
+			    y2 - d->frame->win_extents.top,
+			    x2 - x1 - d->frame->win_extents.left -
+			    d->frame->win_extents.right,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
-			    y2 - _switcher_extents.top,
-			    _switcher_extents.right - 0.5,
-			    _switcher_extents.top - 0.5,
+			    x2 - d->frame->win_extents.right,
+			    y2 - d->frame->win_extents.top,
+			    d->frame->win_extents.right - 0.5,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, CORNER_BOTTOMRIGHT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM | SHADE_RIGHT);
 
-    cairo_rectangle (cr, x1 + _switcher_extents.left,
+    cairo_rectangle (cr, x1 + d->frame->win_extents.left,
 		     y1 + top,
-		     x2 - x1 - _switcher_extents.left - _switcher_extents.right,
+		     x2 - x1 - d->frame->win_extents.left - d->frame->win_extents.right,
 		     h);
     gdk_cairo_set_source_color_alpha (cr,
 				      &style->bg[GTK_STATE_NORMAL],
@@ -178,6 +178,10 @@ draw_switcher_background (decor_t *d)
 
     cairo_destroy (cr);
 
+    GdkPixbuf *buf = gdk_pixbuf_get_from_drawable (NULL, d->buffer_pixmap, NULL, 0, 0, 0, 0, d->width, d->height);
+
+    gdk_pixbuf_save (buf, "/home/smspillaz/rendered_switcher.png", "png", NULL, NULL);
+
     copy_to_front_buffer (d);
 
     pixel = ((((a * style->bg[GTK_STATE_NORMAL].blue ) >> 24) & 0x0000ff) |
@@ -213,10 +217,10 @@ draw_switcher_foreground (decor_t *d)
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    cairo_rectangle (cr, switcher_context.left_space,
-		     d->height - switcher_context.bottom_space,
-		     d->width - switcher_context.left_space -
-		     switcher_context.right_space,
+    cairo_rectangle (cr, d->frame->window_context.left_space,
+		     d->height - d->frame->window_context.bottom_space,
+		     d->width - d->frame->window_context.left_space -
+		     d->frame->window_context.right_space,
 		     SWITCHER_SPACE);
 
     gdk_cairo_set_source_color_alpha (cr,
@@ -237,7 +241,7 @@ draw_switcher_foreground (decor_t *d)
 	pango_layout_get_pixel_size (d->layout, &w, NULL);
 
 	cairo_move_to (cr, d->width / 2 - w / 2,
-		       d->height - switcher_context.bottom_space +
+		       d->height - d->frame->window_context.bottom_space +
 		       SWITCHER_SPACE / 2 - d->frame->text_height / 2);
 
 	pango_cairo_show_layout (cr, d->layout);
@@ -301,14 +305,16 @@ update_switcher_window (Window     popup,
     XGetGeometry (gdk_x11_get_default_xdisplay (), popup, &root_return,
 		  &x, &y, &width, &height, &border, &depth);
 
-    decor_get_default_layout (&switcher_context, width, 1, &d->border_layout);
-
-    width  = d->border_layout.width;
-    height = d->border_layout.height;
-
     d->decorated = FALSE;
     d->draw	 = draw_switcher_decoration;
     d->frame     = &decor_frames[DECOR_FRAME_TYPE_SWITCHER];
+
+    fprintf (stderr, "Getting switcher default layout\n");
+
+    decor_get_default_layout (&d->frame->window_context, width, 1, &d->border_layout);
+
+    width  = d->border_layout.width;
+    height = d->border_layout.height;
 
     selected_win = wnck_window_get (selected);
     if (selected_win)
@@ -337,8 +343,8 @@ update_switcher_window (Window     popup,
 	    {
 		int tw;
 
-		tw = width - switcher_context.left_space -
-		    switcher_context.right_space - 64;
+		tw = width - d->frame->window_context.left_space -
+		    d->frame->window_context.right_space - 64;
 		pango_layout_set_auto_dir (d->layout, FALSE);
 		pango_layout_set_width (d->layout, tw * PANGO_SCALE);
 		pango_layout_set_text (d->layout, name, name_length);

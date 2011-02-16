@@ -96,6 +96,12 @@ decor_update_window_property (decor_t *d)
 void
 decor_update_switcher_property (decor_t *d)
 {
+    decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
+    decor_context_t switcher_context = {
+    	{ 0, 0, 0, 0 },
+    	6, 6, 6, 6 + SWITCHER_SPACE,
+    	0, 0, 0, 0
+	};
     long	 data[256];
     Display	 *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     gint	 nQuad;
@@ -103,17 +109,17 @@ decor_update_switcher_property (decor_t *d)
     GtkStyle     *style;
     long         fgColor[4];
     
-    nQuad = decor_set_lSrStSbX_window_quads (quads, &switcher_context,
+    nQuad = decor_set_lSrStSbX_window_quads (quads, &d->frame->window_context,
 					     &d->border_layout,
 					     d->border_layout.top.x2 -
 					     d->border_layout.top.x1 -
-					     switcher_context.extents.left -
-						 switcher_context.extents.right -
+					     d->frame->window_context.extents.left -
+						 d->frame->window_context.extents.right -
 						     32);
     
     decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
-			     &_switcher_extents, &_switcher_extents,
-			     &_switcher_extents, &_switcher_extents,
+			     &d->frame->win_extents, &d->frame->win_extents,
+			     &d->frame->win_extents, &d->frame->win_extents,
 			     0, 0, quads, nQuad);
     
     style = gtk_widget_get_style (d->frame->style_window_rgba);

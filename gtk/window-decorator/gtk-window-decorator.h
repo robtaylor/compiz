@@ -226,9 +226,6 @@ extern double decoration_alpha;
 #define SWITCHER_SPACE 40
 
 extern decor_extents_t _shadow_extents;
-extern decor_extents_t _switcher_extents;
-
-extern decor_context_t switcher_context;
 extern decor_context_t shadow_context;
 
 extern gdouble shadow_radius;
@@ -250,7 +247,6 @@ extern MetaButtonLayout meta_button_layout;
 extern guint cmdline_options;
 
 extern decor_shadow_t *no_border_shadow;
-extern decor_shadow_t *switcher_shadow;
 
 extern GdkPixmap *decor_normal_pixmap;
 extern GdkPixmap *decor_active_pixmap;
@@ -347,7 +343,33 @@ typedef enum _decor_frame_type {
     DECOR_FRAME_TYPE_DEFAULT = 6
 } decor_frame_type;
 
-typedef struct _decor_frame {
+typedef struct _decor_frame decor_frame_t;
+typedef struct _decor_shadow_info decor_shadow_info_t;
+
+void
+switcher_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow);
+
+void
+decor_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow);
+
+typedef void (*frame_update_shadow_proc) (Display		 *display,
+					  Screen		 *screen,
+					  decor_frame_t		 *frame,
+					  decor_shadow_info_t    *info,
+					  decor_shadow_options_t *opt_shadow,
+					  decor_shadow_options_t *opt_no_shadow);
+
+struct _decor_frame {
     decor_extents_t win_extents;
     decor_extents_t max_win_extents;
     int		    titlebar_height;
@@ -366,7 +388,9 @@ typedef struct _decor_frame {
     GtkWidget		 *style_window_rgb;
     gint		 text_height;
     decor_frame_type     type;
-} decor_frame_t;
+
+    frame_update_shadow_proc update_shadow;
+};
 
 typedef struct _decor {
     WnckWindow	      *win;

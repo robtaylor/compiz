@@ -32,16 +32,8 @@ decor_frame_t decor_frames[DECOR_FRAMES_NUM];
 
 decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
 decor_extents_t _default_win_extents = { 6, 6, 6, 6 };
-decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
 
-decor_shadow_t *switcher_shadow = NULL;
 decor_shadow_t *no_border_shadow = NULL;
-
-decor_context_t switcher_context = {
-    { 0, 0, 0, 0 },
-    6, 6, 6, 6 + SWITCHER_SPACE,
-    0, 0, 0, 0
-};
 
 decor_context_t shadow_context = {
     { 0, 0, 0, 0 },
@@ -135,10 +127,6 @@ gboolean		    use_system_font = FALSE;
 
 gint blur_type = BLUR_TYPE_NONE;
 
-GdkPixmap *switcher_pixmap = NULL;
-GdkPixmap *switcher_buffer_pixmap = NULL;
-gint      switcher_width;
-gint      switcher_height;
 Window    switcher_selected_window = None;
 decor_t   *switcher_window = NULL;
 
@@ -152,6 +140,7 @@ initialize_decorations ()
     GdkColormap *colormap;
     decor_extents_t _win_extents         = { 6, 6, 6, 6 };
     decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
+    decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
     decor_context_t _window_context = {
 	{ 0, 0, 0, 0 },
 	6, 6, 4, 6,
@@ -176,18 +165,44 @@ initialize_decorations ()
 	0, 0, 0, 0
     };
 
+    decor_context_t _switcher_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 6, 6 + SWITCHER_SPACE,
+	0, 0, 0, 0
+    };
+
     unsigned int i;
 
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
-	decor_frames[i].win_extents = _win_extents;
-	decor_frames[i].max_win_extents = _max_win_extents;
+	if (i == DECOR_FRAME_TYPE_SWITCHER)
+	{
+	    decor_frames[i].win_extents = _switcher_extents;
+	    decor_frames[i].max_win_extents = _switcher_extents;
+	    decor_frames[i].win_extents = _switcher_extents;
+	    decor_frames[i].window_context = _switcher_context;
+	    decor_frames[i].window_context_no_shadow = _switcher_context;
+	    decor_frames[i].max_window_context = _switcher_context;
+	    decor_frames[i].max_window_context_no_shadow = _switcher_context;
+	    decor_frames[i].update_shadow = switcher_frame_update_shadow;
+
+	    decor_context_t *c = &decor_frames[i].window_context;
+
+	    fprintf (stderr, "init decor get default layout, context is space %i %i %i %i c space %i %i %i %i extents %i %i %i %i\n", c->left_space, c->right_space, c->top_space, c->bottom_space, c->left_corner_space, c->right_corner_space, c->top_corner_space, c->bottom_corner_space, c->extents.left, c->extents.right, c->extents.bottom, c->extents.top);
+	}
+	else
+	{
+	    decor_frames[i].win_extents = _win_extents;
+	    decor_frames[i].max_win_extents = _max_win_extents;
+	    decor_frames[i].update_shadow = decor_frame_update_shadow;
+	    decor_frames[i].window_context = _window_context;
+	    decor_frames[i].window_context_no_shadow = _window_context_no_shadow;
+	    decor_frames[i].max_window_context = _max_window_context;
+	    decor_frames[i].max_window_context_no_shadow = _max_window_context_no_shadow;
+	}
+
 	decor_frames[i].titlebar_height = 17;
 	decor_frames[i].max_titlebar_height = 17;
-	decor_frames[i].window_context = _window_context;
-	decor_frames[i].window_context_no_shadow = _window_context_no_shadow;
-	decor_frames[i].max_window_context = _max_window_context;
-	decor_frames[i].max_window_context_no_shadow = _max_window_context_no_shadow;
 	decor_frames[i].border_shadow = NULL;
 	decor_frames[i].border_no_shadow = NULL;
 	decor_frames[i].max_border_no_shadow = NULL;

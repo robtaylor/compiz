@@ -1,10 +1,10 @@
 #include "gtk-window-decorator.h"
 
-typedef struct _decor_shadow_info
+struct _decor_shadow_info
 {
     decor_frame_t *frame;
     unsigned int  state;
-} decor_shadow_info_t;
+};
 
 static const PangoFontDescription *
 get_titlebar_font (decor_frame_t *frame)
@@ -483,6 +483,152 @@ draw_border_shape (Display	   *xdisplay,
     g_object_unref (G_OBJECT (d.pixmap));
 }
 
+void
+switcher_frame_update_shadow (Display		  *xdisplay,
+			      Screen		  *screen,
+			      decor_frame_t	  *frame,
+			      decor_shadow_info_t    *info,
+			      decor_shadow_options_t *opt_shadow,
+			      decor_shadow_options_t *opt_no_shadow)
+{
+    if (frame->border_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
+    }
+
+    frame->border_shadow = decor_shadow_create (xdisplay,
+						screen,
+						1, 1,
+						frame->win_extents.left,
+						frame->win_extents.right,
+						frame->win_extents.top,
+						frame->win_extents.bottom,
+						frame->win_extents.left -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.right -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.top -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.bottom -
+						TRANSLUCENT_CORNER_SIZE,
+						opt_shadow,
+						&frame->window_context,
+						decor_draw_simple,
+						NULL);
+}
+
+void
+decor_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow)
+{
+    if (frame->border_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
+    }
+
+    frame->border_shadow = decor_shadow_create (xdisplay,
+						 screen,
+						 1, 1,
+						 frame->win_extents.left,
+						 frame->win_extents.right,
+						 frame->win_extents.top + frame->titlebar_height,
+						 frame->win_extents.bottom,
+						 frame->win_extents.left -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.right -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.top + frame->titlebar_height -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.bottom -
+						 TRANSLUCENT_CORNER_SIZE,
+						 opt_shadow,
+						 &frame->window_context,
+						 draw_border_shape,
+						 (void *) info);
+    if (frame->border_no_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->border_no_shadow);
+	frame->border_no_shadow = NULL;
+    }
+
+    frame->border_no_shadow = decor_shadow_create (xdisplay,
+					 screen,
+					 1, 1,
+					 frame->win_extents.left,
+					 frame->win_extents.right,
+					 frame->win_extents.top + frame->titlebar_height,
+					 frame->win_extents.bottom,
+					 frame->win_extents.left -
+					 TRANSLUCENT_CORNER_SIZE,
+					 frame->win_extents.right -
+					 TRANSLUCENT_CORNER_SIZE,
+					 frame->win_extents.top + frame->titlebar_height -
+					 TRANSLUCENT_CORNER_SIZE,
+					 frame->win_extents.bottom -
+					 TRANSLUCENT_CORNER_SIZE,
+					 opt_no_shadow,
+					 &frame->window_context_no_shadow,
+					 draw_border_shape,
+					 (void *) info);
+
+    if (frame->max_border_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	frame->max_border_shadow = NULL;
+    }
+
+    info->state = (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
+		   WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY);
+
+    frame->max_border_shadow =
+	decor_shadow_create (xdisplay,
+			     screen,
+			     1, 1,
+			     frame->max_win_extents.left,
+			     frame->max_win_extents.right,
+			     frame->max_win_extents.top + frame->max_titlebar_height,
+			     frame->max_win_extents.bottom,
+			     frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.top + frame->max_titlebar_height -
+			     TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+			     opt_shadow,
+			     &frame->max_window_context,
+			     draw_border_shape,
+			     (void *) info);
+
+    if (frame->max_border_no_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	frame->max_border_shadow = NULL;
+    }
+
+    frame->max_border_no_shadow =
+	decor_shadow_create (xdisplay,
+			     screen,
+			     1, 1,
+			     frame->max_win_extents.left,
+			     frame->max_win_extents.right,
+			     frame->max_win_extents.top + frame->max_titlebar_height,
+			     frame->max_win_extents.bottom,
+			     frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.top + frame->max_titlebar_height -
+			     TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+			     opt_no_shadow,
+			     &frame->max_window_context_no_shadow,
+			     draw_border_shape,
+			     (void *) info);
+}
+
 int
 update_shadow (void)
 {
@@ -532,142 +678,17 @@ update_shadow (void)
 	decor_shadow_info_t *info = malloc (sizeof (decor_shadow_info_t));
 
 	if (!info)
-	    return;
+	    return 0;
 
 	info->frame = frame;
 	info->state = 0;
 
-	if (frame->border_shadow)
-	{
-	    decor_shadow_destroy (xdisplay, frame->border_shadow);
-	    frame->border_shadow = NULL;
-	}
-
-	frame->border_shadow = decor_shadow_create (xdisplay,
-						     gdk_x11_screen_get_xscreen (screen),
-						     1, 1,
-						     frame->win_extents.left,
-						     frame->win_extents.right,
-						     frame->win_extents.top + frame->titlebar_height,
-						     frame->win_extents.bottom,
-						     frame->win_extents.left -
-						     TRANSLUCENT_CORNER_SIZE,
-						     frame->win_extents.right -
-						     TRANSLUCENT_CORNER_SIZE,
-						     frame->win_extents.top + frame->titlebar_height -
-						     TRANSLUCENT_CORNER_SIZE,
-						     frame->win_extents.bottom -
-						     TRANSLUCENT_CORNER_SIZE,
-						     &opt_shadow,
-						     &frame->window_context,
-						     draw_border_shape,
-						     (void *) info);
-	if (frame->border_no_shadow)
-	{
-	    decor_shadow_destroy (xdisplay, frame->border_no_shadow);
-	    frame->border_no_shadow = NULL;
-	}
-
-	frame->border_no_shadow = decor_shadow_create (xdisplay,
-					     gdk_x11_screen_get_xscreen (screen),
-					     1, 1,
-					     frame->win_extents.left,
-					     frame->win_extents.right,
-					     frame->win_extents.top + frame->titlebar_height,
-					     frame->win_extents.bottom,
-					     frame->win_extents.left -
-					     TRANSLUCENT_CORNER_SIZE,
-					     frame->win_extents.right -
-					     TRANSLUCENT_CORNER_SIZE,
-					     frame->win_extents.top + frame->titlebar_height -
-					     TRANSLUCENT_CORNER_SIZE,
-					     frame->win_extents.bottom -
-					     TRANSLUCENT_CORNER_SIZE,
-					     &opt_no_shadow,
-					     &frame->window_context_no_shadow,
-					     draw_border_shape,
-					     (void *) info);
-
-	if (frame->max_border_shadow)
-	{
-	    decor_shadow_destroy (xdisplay, frame->max_border_shadow);
-	    frame->max_border_shadow = NULL;
-	}
-
-	info->state = (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
-		       WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY);
-
-	frame->max_border_shadow =
-	    decor_shadow_create (xdisplay,
-				 gdk_x11_screen_get_xscreen (screen),
-				 1, 1,
-				 frame->max_win_extents.left,
-				 frame->max_win_extents.right,
-				 frame->max_win_extents.top + frame->max_titlebar_height,
-				 frame->max_win_extents.bottom,
-				 frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.top + frame->max_titlebar_height -
-				 TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-				 &opt_shadow,
-				 &frame->max_window_context,
-				 draw_border_shape,
-				 (void *) info);
-
-	if (frame->max_border_no_shadow)
-	{
-	    decor_shadow_destroy (xdisplay, frame->max_border_shadow);
-	    frame->max_border_shadow = NULL;
-	}
-
-	frame->max_border_no_shadow =
-	    decor_shadow_create (xdisplay,
-				 gdk_x11_screen_get_xscreen (screen),
-				 1, 1,
-				 frame->max_win_extents.left,
-				 frame->max_win_extents.right,
-				 frame->max_win_extents.top + frame->max_titlebar_height,
-				 frame->max_win_extents.bottom,
-				 frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.top + frame->max_titlebar_height -
-				 TRANSLUCENT_CORNER_SIZE,
-				 frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-				 &opt_no_shadow,
-				 &frame->max_window_context_no_shadow,
-				 draw_border_shape,
-				 (void *) info);
+	(*frame->update_shadow) (xdisplay, gdk_x11_screen_get_xscreen (screen),
+				 frame, info, &opt_shadow, &opt_no_shadow);
 
 	free (info);
 	info = NULL;
     }
-
-    if (switcher_shadow)
-    {
-	decor_shadow_destroy (xdisplay, switcher_shadow);
-	switcher_shadow = NULL;
-    }
-
-    switcher_shadow = decor_shadow_create (xdisplay,
-					   gdk_x11_screen_get_xscreen (screen),
-					   1, 1,
-					   _switcher_extents.left,
-					   _switcher_extents.right,
-					   _switcher_extents.top,
-					   _switcher_extents.bottom,
-					   _switcher_extents.left -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.right -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.top -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.bottom -
-					   TRANSLUCENT_CORNER_SIZE,
-					   &opt_shadow,
-					   &switcher_context,
-					   decor_draw_simple,
-					   NULL);
 
     return 1;
 }
