@@ -236,7 +236,7 @@ add_frame_window (WnckWindow *win,
 
     d->active = wnck_window_is_active (win);
     d->win = win;
-    d->frame = &decor_frames[get_frame_type (wnck_window_get_window_type (win))];
+    d->frame = gwd_get_decor_frame (get_frame_type (wnck_window_get_window_type (win)));
     d->last_pos_entered = NULL;
 
     attr.event_mask = ButtonPressMask | EnterWindowMask |

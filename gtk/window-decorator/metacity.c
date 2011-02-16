@@ -24,7 +24,7 @@ decor_update_meta_window_property (decor_t	  *d,
 	GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     gint	    nQuad;
     WnckWindowType  win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t   *frame = &decor_frames[get_frame_type (win_type)];
+    decor_frame_t   *frame = gwd_get_decor_frame (get_frame_type (win_type));
     decor_extents_t win_extents = frame->win_extents;
     decor_extents_t max_win_extents = frame->max_win_extents;
     decor_quad_t    quads[N_QUADS_MAX];
@@ -1083,7 +1083,7 @@ meta_get_button_position (decor_t	 *d,
 
     if (d->frame_window)
     {
-	decor_frame_t *frame = &decor_frames[d_frame_type];
+	decor_frame_t *frame = gwd_get_decor_frame (d_frame_type);
 	*x += frame->win_extents.left + 4;
 	*y += frame->win_extents.top + 2;
     }
@@ -1123,7 +1123,7 @@ meta_calc_decoration_size (decor_t *d,
     WnckWindowType  win_type;
 
     win_type = wnck_window_get_window_type (d->win);
-    frame = &decor_frames[get_frame_type (win_type)];
+    frame = gwd_get_decor_frame (get_frame_type (win_type));
 
     if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
     {
@@ -1242,7 +1242,7 @@ meta_get_event_window_position (decor_t *d,
     win_type = wnck_window_get_window_type (d->win);
     d_frame_type = get_frame_type (win_type);
     frame_type = meta_get_frame_type_for_decor_type (d_frame_type);
-    frame = &decor_frames[frame_type];
+    frame = gwd_get_decor_frame (frame_type);
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
 				  frame_type, &clip);
 
@@ -1633,35 +1633,35 @@ meta_update_border_extents ()
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      decor_frames[d_frame_type].text_height,
+				      gwd_get_decor_frame (d_frame_type)->text_height,
 				      0,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,
 				      &right_width);
 
-	decor_frames[d_frame_type].win_extents.top    = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents.top;
-	decor_frames[d_frame_type].win_extents.bottom = bottom_height;
-	decor_frames[d_frame_type].win_extents.left   = left_width;
-	decor_frames[d_frame_type].win_extents.right  = right_width;
+	gwd_get_decor_frame (d_frame_type)->win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	gwd_get_decor_frame (d_frame_type)->win_extents.bottom = bottom_height;
+	gwd_get_decor_frame (d_frame_type)->win_extents.left   = left_width;
+	gwd_get_decor_frame (d_frame_type)->win_extents.right  = right_width;
 
-	decor_frames[d_frame_type].titlebar_height = top_height - decor_frames[d_frame_type].win_extents.top;
+	gwd_get_decor_frame (d_frame_type)->titlebar_height = top_height - gwd_get_decor_frame (d_frame_type)->win_extents.top;
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      decor_frames[d_frame_type].text_height,
+				      gwd_get_decor_frame (d_frame_type)->text_height,
 				      META_FRAME_MAXIMIZED,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,
 				      &right_width);
 
-	decor_frames[d_frame_type].max_win_extents.top    = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents.top;
-	decor_frames[d_frame_type].max_win_extents.bottom = bottom_height;
-	decor_frames[d_frame_type].max_win_extents.left   = left_width;
-	decor_frames[d_frame_type].max_win_extents.right  = right_width;
+	gwd_get_decor_frame (d_frame_type)->max_win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	gwd_get_decor_frame (d_frame_type)->max_win_extents.bottom = bottom_height;
+	gwd_get_decor_frame (d_frame_type)->max_win_extents.left   = left_width;
+	gwd_get_decor_frame (d_frame_type)->max_win_extents.right  = right_width;
 
-	decor_frames[d_frame_type].max_titlebar_height = top_height - decor_frames[d_frame_type].max_win_extents.top;
+	gwd_get_decor_frame (d_frame_type)->max_titlebar_height = top_height - gwd_get_decor_frame (d_frame_type)->max_win_extents.top;
 
     }
 }

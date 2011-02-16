@@ -830,7 +830,7 @@ get_event_window_position (decor_t *d,
 			   gint    *h)
 {
     WnckWindowType win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t *frame = &decor_frames[get_frame_type (win_type)];
+    decor_frame_t *frame = gwd_get_decor_frame (get_frame_type (win_type));
 
     if (d->frame_window)
     {
@@ -883,10 +883,10 @@ update_border_extents ()
 
     for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
     {
-	decor_frame_t *frame = &decor_frames[i];
+	decor_frame_t *frame = gwd_get_decor_frame (i);
 
-	frame->win_extents = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents;
-	frame->max_win_extents = decor_frames[DECOR_FRAME_TYPE_DEFAULT].win_extents;
+	frame->win_extents = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents;
+	frame->max_win_extents = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents;
 	frame->titlebar_height = frame->max_titlebar_height =
 		(frame->text_height < 17) ? 17 : frame->text_height;
     }

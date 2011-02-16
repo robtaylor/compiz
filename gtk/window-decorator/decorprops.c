@@ -7,7 +7,7 @@ decor_update_window_property (decor_t *d)
     Display	    *xdisplay =
 	GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     WnckWindowType  win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t   frame = decor_frames[get_frame_type (win_type)];
+    decor_extents_t extents = gwd_get_decor_frame (get_frame_type (win_type))->win_extents;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
     int		    w, h;
@@ -28,17 +28,17 @@ decor_update_window_property (decor_t *d)
 					     &d->border_layout,
 					     stretch_offset);
 
-    frame.win_extents.top += frame.titlebar_height;
+    extents.top += gwd_get_decor_frame (get_frame_type (win_type))->titlebar_height;
 
     if (d->frame_window)
     {
-	decor_gen_window_property (data, &frame.win_extents, &frame.win_extents, 20, 20);
+	decor_gen_window_property (data, &extents, &extents, 20, 20);
     }
     else
     {
 	decor_quads_to_property (data, GDK_PIXMAP_XID (d->pixmap),
-			     &frame.win_extents, &frame.win_extents,
-			     &frame.win_extents, &frame.win_extents,
+			     &extents, &extents,
+			     &extents, &extents,
 			     ICON_SPACE + d->button_width,
 			     0,
 			     quads, nQuad);
@@ -56,23 +56,23 @@ decor_update_window_property (decor_t *d)
     top.rects = &top.extents;
     top.numRects = top.size = 1;
 
-    top.extents.x1 = -frame.win_extents.left;
-    top.extents.y1 = -frame.win_extents.top;
-    top.extents.x2 = w + frame.win_extents.right;
+    top.extents.x1 = -extents.left;
+    top.extents.y1 = -extents.top;
+    top.extents.x2 = w + extents.right;
     top.extents.y2 = 0;
 
     bottom.rects = &bottom.extents;
     bottom.numRects = bottom.size = 1;
 
-    bottom.extents.x1 = -frame.win_extents.left;
+    bottom.extents.x1 = -extents.left;
     bottom.extents.y1 = 0;
-    bottom.extents.x2 = w + frame.win_extents.right;
-    bottom.extents.y2 = frame.win_extents.bottom;
+    bottom.extents.x2 = w + extents.right;
+    bottom.extents.y2 = extents.bottom;
 
     left.rects = &left.extents;
     left.numRects = left.size = 1;
 
-    left.extents.x1 = -frame.win_extents.left;
+    left.extents.x1 = -extents.left;
     left.extents.y1 = 0;
     left.extents.x2 = 0;
     left.extents.y2 = h;
@@ -82,7 +82,7 @@ decor_update_window_property (decor_t *d)
 
     right.extents.x1 = 0;
     right.extents.y1 = 0;
-    right.extents.x2 = frame.win_extents.right;
+    right.extents.x2 = extents.right;
     right.extents.y2 = h;
 
     decor_update_blur_property (d,

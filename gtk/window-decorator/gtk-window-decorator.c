@@ -183,10 +183,6 @@ initialize_decorations ()
 	    decor_frames[i].max_window_context = _switcher_context;
 	    decor_frames[i].max_window_context_no_shadow = _switcher_context;
 	    decor_frames[i].update_shadow = switcher_frame_update_shadow;
-
-	    decor_context_t *c = &decor_frames[i].window_context;
-
-	    fprintf (stderr, "init decor get default layout, context is space %i %i %i %i c space %i %i %i %i extents %i %i %i %i\n", c->left_space, c->right_space, c->top_space, c->bottom_space, c->left_corner_space, c->right_corner_space, c->top_corner_space, c->bottom_corner_space, c->extents.left, c->extents.right, c->extents.bottom, c->extents.top);
 	}
 	else if (i == DECOR_FRAME_TYPE_BARE)
 	{

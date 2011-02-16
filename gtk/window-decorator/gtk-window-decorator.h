@@ -378,6 +378,9 @@ typedef void (*frame_update_shadow_proc) (Display		 *display,
 					  decor_shadow_options_t *opt_shadow,
 					  decor_shadow_options_t *opt_no_shadow);
 
+decor_frame_t *
+gwd_get_decor_frame (decor_frame_type type);
+
 struct _decor_frame {
     decor_extents_t win_extents;
     decor_extents_t max_win_extents;
@@ -399,6 +402,7 @@ struct _decor_frame {
     decor_frame_type     type;
 
     frame_update_shadow_proc update_shadow;
+    gint		refcount;
 };
 
 typedef struct _decor {
@@ -501,8 +505,6 @@ extern Atom compiz_shadow_info_atom;
 extern Atom compiz_shadow_color_atom;
 
 #define NUM_DECOR_FRAMES 8
-
-extern decor_frame_t decor_frames[NUM_DECOR_FRAMES];
 
 /* gtk-window-decorator.c */
 

@@ -37,6 +37,7 @@ if (USE_GTK)
 	blurprops.c
 	decorprops.c
 	cairo.c
+	frames.c
 	gdk.c
 	switcher.c
 	metacity.c

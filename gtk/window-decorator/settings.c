@@ -301,7 +301,7 @@ titlebar_font_changed (GConfClient *client)
 
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
-	decor_frame_t *frame = &decor_frames[i];
+	decor_frame_t *frame = gwd_get_decor_frame (i);
 	gfloat	      scale = 1.0f;
 	if (frame->titlebar_font)
 	    pango_font_description_free (frame->titlebar_font);
@@ -475,7 +475,7 @@ init_settings (WnckScreen *screen)
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (decor_frames[DECOR_FRAME_TYPE_SWITCHER].style_window_rgba), switcher_label);
+    gtk_container_add (GTK_CONTAINER (gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER)->style_window_rgba), switcher_label);
 
 #ifdef USE_GCONF
     use_system_font = gconf_client_get_bool (gconf,
@@ -486,7 +486,7 @@ init_settings (WnckScreen *screen)
     button_layout_changed (gconf);
 #endif
 
-    update_style (decor_frames[DECOR_FRAME_TYPE_SWITCHER].style_window_rgba);
+    update_style (gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER)->style_window_rgba);
 #ifdef USE_GCONF
     titlebar_font_changed (gconf);
 #endif
