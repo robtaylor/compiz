@@ -309,8 +309,6 @@ update_switcher_window (Window     popup,
     d->draw	 = draw_switcher_decoration;
     d->frame     = &decor_frames[DECOR_FRAME_TYPE_SWITCHER];
 
-    fprintf (stderr, "Getting switcher default layout\n");
-
     decor_get_default_layout (&d->frame->window_context, width, 1, &d->border_layout);
 
     width  = d->border_layout.width;

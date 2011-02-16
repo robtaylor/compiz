@@ -484,6 +484,34 @@ draw_border_shape (Display	   *xdisplay,
 }
 
 void
+bare_frame_update_shadow (Display		  *xdisplay,
+			  Screen		  *screen,
+			  decor_frame_t		 *frame,
+			  decor_shadow_info_t    *info,
+			  decor_shadow_options_t *opt_shadow,
+			  decor_shadow_options_t *opt_no_shadow)
+{
+    if (frame->border_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
+    }
+
+    frame->border_shadow = decor_shadow_create (xdisplay,
+					    screen,
+					    1, 1,
+					    0,
+					    0,
+					    0,
+					    0,
+					    0, 0, 0, 0,
+					    opt_shadow,
+					    &frame->window_context,
+					    decor_draw_simple,
+					    NULL);
+}
+
+void
 switcher_frame_update_shadow (Display		  *xdisplay,
 			      Screen		  *screen,
 			      decor_frame_t	  *frame,
@@ -653,25 +681,6 @@ update_shadow (void)
     opt_no_shadow.shadow_offset_x = 0;
     opt_no_shadow.shadow_offset_y = 0;
 
-    if (no_border_shadow)
-    {
-	decor_shadow_destroy (xdisplay, no_border_shadow);
-	no_border_shadow = NULL;
-    }
-
-    no_border_shadow = decor_shadow_create (xdisplay,
-					    gdk_x11_screen_get_xscreen (screen),
-					    1, 1,
-					    0,
-					    0,
-					    0,
-					    0,
-					    0, 0, 0, 0,
-					    &opt_shadow,
-					    &shadow_context,
-					    decor_draw_simple,
-					    NULL);
-
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
     {
 	decor_frame_t *frame = &decor_frames[i];
@@ -776,18 +785,18 @@ update_default_decorations (GdkScreen *screen)
     normalAtom = XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, FALSE);
     activeAtom = XInternAtom (xdisplay, DECOR_ACTIVE_ATOM_NAME, FALSE);
 
-    if (no_border_shadow)
+    if (decor_frames[DECOR_FRAME_TYPE_BARE].border_shadow)
     {
 	decor_layout_t layout;
 
-	decor_get_default_layout (&shadow_context, 1, 1, &layout);
+	decor_get_default_layout (&decor_frames[DECOR_FRAME_TYPE_BARE].window_context, 1, 1, &layout);
 
-	nQuad = decor_set_lSrStSbS_window_quads (quads, &shadow_context,
+	nQuad = decor_set_lSrStSbS_window_quads (quads, &decor_frames[DECOR_FRAME_TYPE_BARE].window_context,
 						 &layout);
 
-	decor_quads_to_property (data, no_border_shadow->pixmap,
-				 &_shadow_extents, &_shadow_extents,
-				 &_shadow_extents, &_shadow_extents,
+	decor_quads_to_property (data, decor_frames[DECOR_FRAME_TYPE_BARE].border_shadow->pixmap,
+				 &decor_frames[DECOR_FRAME_TYPE_BARE].win_extents, &decor_frames[DECOR_FRAME_TYPE_BARE].win_extents,
+				 &decor_frames[DECOR_FRAME_TYPE_BARE].win_extents, &decor_frames[DECOR_FRAME_TYPE_BARE].win_extents,
 				 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,

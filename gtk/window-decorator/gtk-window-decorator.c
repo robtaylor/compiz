@@ -26,18 +26,10 @@ gboolean minimal = FALSE;
 double decoration_alpha = 0.5;
 
 #define SWITCHER_SPACE 40
-#define DECOR_FRAMES_NUM 7
 
-decor_frame_t decor_frames[DECOR_FRAMES_NUM];
+decor_frame_t decor_frames[NUM_DECOR_FRAMES];
 
-decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
-decor_shadow_t *no_border_shadow = NULL;
 
-decor_context_t shadow_context = {
-    { 0, 0, 0, 0 },
-    0, 0, 0, 0,
-    0, 0, 0, 0,
-};
 
 gdouble shadow_radius   = SHADOW_RADIUS;
 gdouble shadow_opacity  = SHADOW_OPACITY;
@@ -169,6 +161,14 @@ initialize_decorations ()
 	0, 0, 0, 0
     };
 
+    decor_context_t _shadow_context = {
+	{ 0, 0, 0, 0 },
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+    };
+
+    decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
+
     unsigned int i;
 
     for (i = 0; i < NUM_DECOR_FRAMES; i++)
@@ -187,6 +187,17 @@ initialize_decorations ()
 	    decor_context_t *c = &decor_frames[i].window_context;
 
 	    fprintf (stderr, "init decor get default layout, context is space %i %i %i %i c space %i %i %i %i extents %i %i %i %i\n", c->left_space, c->right_space, c->top_space, c->bottom_space, c->left_corner_space, c->right_corner_space, c->top_corner_space, c->bottom_corner_space, c->extents.left, c->extents.right, c->extents.bottom, c->extents.top);
+	}
+	else if (i == DECOR_FRAME_TYPE_BARE)
+	{
+	    decor_frames[i].win_extents = _shadow_extents;
+	    decor_frames[i].max_win_extents = _shadow_extents;
+	    decor_frames[i].win_extents = _shadow_extents;
+	    decor_frames[i].window_context = _shadow_context;
+	    decor_frames[i].window_context_no_shadow = _shadow_context;
+	    decor_frames[i].max_window_context = _shadow_context;
+	    decor_frames[i].max_window_context_no_shadow = _shadow_context;
+	    decor_frames[i].update_shadow = bare_frame_update_shadow;
 	}
 	else
 	{
