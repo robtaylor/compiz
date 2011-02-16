@@ -31,8 +31,6 @@ double decoration_alpha = 0.5;
 decor_frame_t decor_frames[DECOR_FRAMES_NUM];
 
 decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
-decor_extents_t _default_win_extents = { 6, 6, 6, 6 };
-
 decor_shadow_t *no_border_shadow = NULL;
 
 decor_context_t shadow_context = {
