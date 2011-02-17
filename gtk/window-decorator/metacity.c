@@ -1594,57 +1594,50 @@ meta_update_border_extents ()
 {
     MetaTheme *theme;
     MetaFrameType frame_type;
+    decor_frame_t    *frame;
     decor_frame_type d_frame_type;
-
-    WnckWindowType win_types[] = { WNCK_WINDOW_NORMAL, WNCK_WINDOW_DIALOG,
-				   WNCK_WINDOW_MENU, WNCK_WINDOW_UTILITY,
-				   WNCK_WINDOW_SPLASHSCREEN, WNCK_WINDOW_SPLASHSCREEN };
 
     gint      top_height, bottom_height, left_width, right_width;
     unsigned int i;
 
     theme = meta_theme_get_current ();
 
-    for (i = 0; i < NUM_DECOR_FRAMES; i++)
+    for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
     {
-	d_frame_type = get_frame_type (win_types[i]);
-
-	if (d_frame_type == DECOR_FRAME_TYPE_UNDECORATED)
-	    continue;
-
-	frame_type = meta_get_frame_type_for_decor_type (d_frame_type);
+	frame = gwd_get_decor_frame (i);
+	frame_type = meta_get_frame_type_for_decor_type (i);
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      gwd_get_decor_frame (d_frame_type)->text_height,
+				      frame->text_height,
 				      0,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,
 				      &right_width);
 
-	gwd_get_decor_frame (d_frame_type)->win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
-	gwd_get_decor_frame (d_frame_type)->win_extents.bottom = bottom_height;
-	gwd_get_decor_frame (d_frame_type)->win_extents.left   = left_width;
-	gwd_get_decor_frame (d_frame_type)->win_extents.right  = right_width;
+	frame->win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	frame->win_extents.bottom = bottom_height;
+	frame->win_extents.left   = left_width;
+	frame->win_extents.right  = right_width;
 
-	gwd_get_decor_frame (d_frame_type)->titlebar_height = top_height - gwd_get_decor_frame (d_frame_type)->win_extents.top;
+	frame->titlebar_height = top_height - frame->win_extents.top;
 
 	meta_theme_get_frame_borders (theme,
 				      frame_type,
-				      gwd_get_decor_frame (d_frame_type)->text_height,
+				      frame->text_height,
 				      META_FRAME_MAXIMIZED,
 				      &top_height,
 				      &bottom_height,
 				      &left_width,
 				      &right_width);
 
-	gwd_get_decor_frame (d_frame_type)->max_win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
-	gwd_get_decor_frame (d_frame_type)->max_win_extents.bottom = bottom_height;
-	gwd_get_decor_frame (d_frame_type)->max_win_extents.left   = left_width;
-	gwd_get_decor_frame (d_frame_type)->max_win_extents.right  = right_width;
+	frame->max_win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	frame->max_win_extents.bottom = bottom_height;
+	frame->max_win_extents.left   = left_width;
+	frame->max_win_extents.right  = right_width;
 
-	gwd_get_decor_frame (d_frame_type)->max_titlebar_height = top_height - gwd_get_decor_frame (d_frame_type)->max_win_extents.top;
+	frame->max_titlebar_height = top_height - frame->max_win_extents.top;
 
     }
 }
