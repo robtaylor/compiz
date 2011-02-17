@@ -25,6 +25,8 @@ position_action_menu (GtkMenu  *menu,
 				      &bx, &by, &width, &height))
 	*x = *x - frame->win_extents.left + bx;
 
+    gwd_decor_frame_unref (frame);
+
     if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
     {
 	GtkRequisition req;

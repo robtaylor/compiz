@@ -312,6 +312,8 @@ titlebar_font_changed (GConfClient *client)
 
 	pango_font_description_set_size (frame->titlebar_font,
 					 MAX (pango_font_description_get_size (frame->titlebar_font) * scale, 1));
+
+	gwd_decor_frame_unref (frame);
     }
 
     g_free (str);
@@ -447,6 +449,7 @@ gboolean
 init_settings (WnckScreen *screen)
 {
     AtkObject	   *switcher_label_obj;
+    decor_frame_t  *switcher_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER);
 
 #ifdef USE_GCONF
     GConfClient	   *gconf;
@@ -472,7 +475,7 @@ init_settings (WnckScreen *screen)
     switcher_label = gtk_label_new ("");
     switcher_label_obj = gtk_widget_get_accessible (switcher_label);
     atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER)->style_window_rgba), switcher_label);
+    gtk_container_add (GTK_CONTAINER (switcher_frame->style_window_rgba), switcher_label);
 
 #ifdef USE_GCONF
     use_system_font = gconf_client_get_bool (gconf,
@@ -483,7 +486,7 @@ init_settings (WnckScreen *screen)
     button_layout_changed (gconf);
 #endif
 
-    update_style (gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER)->style_window_rgba);
+    update_style (switcher_frame->style_window_rgba);
 #ifdef USE_GCONF
     titlebar_font_changed (gconf);
 #endif
@@ -512,6 +515,8 @@ init_settings (WnckScreen *screen)
     shadow_property_changed (screen);
 
     update_shadow ();
+
+    gwd_decor_frame_unref (switcher_frame);
 
     return TRUE;
 }

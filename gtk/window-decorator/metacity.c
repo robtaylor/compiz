@@ -1594,8 +1594,7 @@ meta_update_border_extents ()
 {
     MetaTheme *theme;
     MetaFrameType frame_type;
-    decor_frame_t    *frame;
-    decor_frame_type d_frame_type;
+    decor_frame_t    *frame, *default_frame;
 
     gint      top_height, bottom_height, left_width, right_width;
     unsigned int i;
@@ -1605,6 +1604,7 @@ meta_update_border_extents ()
     for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
     {
 	frame = gwd_get_decor_frame (i);
+	default_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
 	frame_type = meta_get_frame_type_for_decor_type (i);
 
 	meta_theme_get_frame_borders (theme,
@@ -1616,7 +1616,7 @@ meta_update_border_extents ()
 				      &left_width,
 				      &right_width);
 
-	frame->win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	frame->win_extents.top    = default_frame->win_extents.top;
 	frame->win_extents.bottom = bottom_height;
 	frame->win_extents.left   = left_width;
 	frame->win_extents.right  = right_width;
@@ -1632,12 +1632,15 @@ meta_update_border_extents ()
 				      &left_width,
 				      &right_width);
 
-	frame->max_win_extents.top    = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents.top;
+	frame->max_win_extents.top    = default_frame->win_extents.top;
 	frame->max_win_extents.bottom = bottom_height;
 	frame->max_win_extents.left   = left_width;
 	frame->max_win_extents.right  = right_width;
 
 	frame->max_titlebar_height = top_height - frame->max_win_extents.top;
+
+	gwd_decor_frame_unref (frame);
+	gwd_decor_frame_unref (default_frame);
 
     }
 }

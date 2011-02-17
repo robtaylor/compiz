@@ -881,10 +881,14 @@ update_border_extents ()
     for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
     {
 	decor_frame_t *frame = gwd_get_decor_frame (i);
+	decor_frame_t *default_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
 
-	frame->win_extents = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents;
-	frame->max_win_extents = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents;
+	frame->win_extents = default_frame->win_extents;
+	frame->max_win_extents = default_frame->win_extents;
 	frame->titlebar_height = frame->max_titlebar_height =
 		(frame->text_height < 17) ? 17 : frame->text_height;
+
+	gwd_decor_frame_unref (frame);
+	gwd_decor_frame_unref (default_frame);
     }
 }

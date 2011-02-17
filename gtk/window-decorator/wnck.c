@@ -469,6 +469,12 @@ remove_frame_window (WnckWindow *win)
 	d->decor_window = NULL;
     }
 
+    if (d->frame)
+    {
+	gwd_decor_frame_unref (d->frame);
+	d->frame = NULL;
+    }
+
     d->width  = 0;
     d->height = 0;
 

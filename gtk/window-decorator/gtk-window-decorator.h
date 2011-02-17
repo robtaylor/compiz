@@ -333,6 +333,8 @@ typedef struct {
     event_callback callback;
 } event_window;
 
+#define NUM_DECOR_FRAMES 8
+
 typedef enum _decor_frame_type {
     DECOR_FRAME_TYPE_NORMAL = 0,
     DECOR_FRAME_TYPE_DIALOG = 1,
@@ -380,6 +382,12 @@ typedef void (*frame_update_shadow_proc) (Display		 *display,
 
 decor_frame_t *
 gwd_get_decor_frame (decor_frame_type type);
+
+decor_frame_t *
+gwd_decor_frame_ref (decor_frame_t *);
+
+decor_frame_t *
+gwd_decor_frame_unref (decor_frame_t *);
 
 struct _decor_frame {
     decor_extents_t win_extents;
@@ -503,8 +511,6 @@ extern XRenderPictFormat *xformat_rgb;
 
 extern Atom compiz_shadow_info_atom;
 extern Atom compiz_shadow_color_atom;
-
-#define NUM_DECOR_FRAMES 8
 
 /* gtk-window-decorator.c */
 

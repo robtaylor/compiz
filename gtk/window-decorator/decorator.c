@@ -45,6 +45,8 @@ update_titlebar_font ()
 	frame->text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
 				    pango_font_metrics_get_descent (metrics));
 
+	gwd_decor_frame_unref (frame);
+
 	pango_font_metrics_unref (metrics);
     }
 
@@ -480,6 +482,9 @@ draw_border_shape (Display	   *xdisplay,
 			  width - c->left_space - c->right_space,
 			  height - c->top_space - c->bottom_space);
 
+    if (!info)
+	gwd_decor_frame_unref (d.frame);
+
     g_object_unref (G_OBJECT (d.pixmap));
 }
 
@@ -695,6 +700,8 @@ update_shadow (void)
 	(*frame->update_shadow) (xdisplay, gdk_x11_screen_get_xscreen (screen),
 				 frame, info, &opt_shadow, &opt_no_shadow);
 
+	gwd_decor_frame_unref (frame);
+
 	free (info);
 	info = NULL;
     }
@@ -777,7 +784,9 @@ update_default_decorations (GdkScreen *screen)
     decor_t	    d;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
-    decor_extents_t extents = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->win_extents;
+    decor_frame_t   *frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
+    decor_frame_t   *bare_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE);
+    decor_extents_t extents = frame->win_extents;
 
     xroot = RootWindowOfScreen (gdk_x11_screen_get_xscreen (screen));
 
@@ -785,18 +794,18 @@ update_default_decorations (GdkScreen *screen)
     normalAtom = XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, FALSE);
     activeAtom = XInternAtom (xdisplay, DECOR_ACTIVE_ATOM_NAME, FALSE);
 
-    if (gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->border_shadow)
+    if (bare_frame->border_shadow)
     {
 	decor_layout_t layout;
 
-	decor_get_default_layout (&gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->window_context, 1, 1, &layout);
+	decor_get_default_layout (&bare_frame->window_context, 1, 1, &layout);
 
-	nQuad = decor_set_lSrStSbS_window_quads (quads, &gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->window_context,
+	nQuad = decor_set_lSrStSbS_window_quads (quads, &bare_frame->window_context,
 						 &layout);
 
-	decor_quads_to_property (data, gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->border_shadow->pixmap,
-				 &gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->win_extents, &gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->win_extents,
-				 &gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->win_extents, &gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE)->win_extents,
+	decor_quads_to_property (data, bare_frame->border_shadow->pixmap,
+				 &bare_frame->win_extents, &bare_frame->win_extents,
+				 &bare_frame->win_extents, &bare_frame->win_extents,
 				 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,
@@ -831,22 +840,26 @@ update_default_decorations (GdkScreen *screen)
     }
 
     if (minimal)
+    {
+	gwd_decor_frame_unref (frame);
+	gwd_decor_frame_unref (bare_frame);
 	return;
+    }
 
     memset (&d, 0, sizeof (d));
 
-    d.context = &gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->window_context;
-    d.shadow  = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->border_shadow;
-    d.layout  = pango_layout_new (gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->pango_context);
+    d.context = &frame->window_context;
+    d.shadow  = frame->border_shadow;
+    d.layout  = pango_layout_new (frame->pango_context);
 
     decor_get_default_layout (d.context, 1, 1, &d.border_layout);
 
     d.width  = d.border_layout.width;
     d.height = d.border_layout.height;
 
-    d.frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
+    d.frame = frame;
 
-    extents.top += gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->titlebar_height;
+    extents.top += frame->titlebar_height;
 
     d.draw = theme_draw_window_decoration;
 
@@ -856,7 +869,7 @@ update_default_decorations (GdkScreen *screen)
     nQuad = decor_set_lSrStSbS_window_quads (quads, d.context,
 					     &d.border_layout);
 
-    decor_normal_pixmap = create_pixmap (d.width, d.height, gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->style_window_rgba);
+    decor_normal_pixmap = create_pixmap (d.width, d.height, frame->style_window_rgba);
 
     if (decor_normal_pixmap)
     {
@@ -884,7 +897,7 @@ update_default_decorations (GdkScreen *screen)
     if (decor_active_pixmap)
 	g_object_unref (G_OBJECT (decor_active_pixmap));
 
-    decor_active_pixmap = create_pixmap (d.width, d.height, gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT)->style_window_rgba);
+    decor_active_pixmap = create_pixmap (d.width, d.height, frame->style_window_rgba);
 
     if (decor_active_pixmap)
     {
@@ -908,6 +921,9 @@ update_default_decorations (GdkScreen *screen)
 			 32, PropModeReplace, (guchar *) data,
 			 BASE_PROP_SIZE + QUAD_PROP_SIZE * nQuad);
     }
+
+    gwd_decor_frame_unref (frame);
+    gwd_decor_frame_unref (bare_frame);
 
     if (d.layout)
 	g_object_unref (G_OBJECT (d.layout));

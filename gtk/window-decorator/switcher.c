@@ -264,6 +264,7 @@ draw_switcher_decoration (decor_t *d)
 void
 switcher_window_closed ()
 {
+    gwd_decor_frame_unref (switcher_window->frame);
     g_free (switcher_window);
     switcher_window = NULL;
 }
