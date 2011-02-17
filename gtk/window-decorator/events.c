@@ -1138,14 +1138,7 @@ selection_event_filter_func (GdkXEvent *gdkxevent,
     case SelectionClear:
 	status = decor_handle_selection_clear (xdisplay, xevent, 0);
 	if (status == DECOR_SELECTION_GIVE_UP)
-	{
-	    unsigned int i = 0;
-	    for (i = 0; i < NUM_DECOR_FRAMES; i++)
-	    {
-		fprintf (stderr, "rcount for %i is %i\n", i, decor_frames[i].refcount);
-	    }
 	    exit (0);
-	}
     default:
 	break;
     }

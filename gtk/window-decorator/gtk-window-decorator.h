@@ -380,6 +380,9 @@ typedef void (*frame_update_shadow_proc) (Display		 *display,
 					  decor_shadow_options_t *opt_shadow,
 					  decor_shadow_options_t *opt_no_shadow);
 
+typedef decor_frame_t (*create_frame_proc) ();
+typedef void (*destroy_frame_proc) (decor_frame_t *);
+
 decor_frame_t *
 gwd_get_decor_frame (decor_frame_type type);
 
@@ -517,6 +520,11 @@ extern Atom compiz_shadow_color_atom;
 double
 dist (double x1, double y1,
       double x2, double y2);
+
+/* frames.c */
+
+void
+initialize_decorations ();
 
 /* decorator.c */
 
