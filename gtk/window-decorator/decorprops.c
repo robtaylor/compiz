@@ -6,8 +6,7 @@ decor_update_window_property (decor_t *d)
     long	    data[256];
     Display	    *xdisplay =
 	GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
-    WnckWindowType  win_type = wnck_window_get_window_type (d->win);
-    decor_extents_t extents = gwd_get_decor_frame (get_frame_type (win_type))->win_extents;
+    decor_extents_t extents = d->frame->win_extents;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
     int		    w, h;
@@ -28,7 +27,7 @@ decor_update_window_property (decor_t *d)
 					     &d->border_layout,
 					     stretch_offset);
 
-    extents.top += gwd_get_decor_frame (get_frame_type (win_type))->titlebar_height;
+    extents.top += d->frame->titlebar_height;
 
     if (d->frame_window)
     {
@@ -96,12 +95,6 @@ decor_update_window_property (decor_t *d)
 void
 decor_update_switcher_property (decor_t *d)
 {
-    decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
-    decor_context_t switcher_context = {
-    	{ 0, 0, 0, 0 },
-    	6, 6, 6, 6 + SWITCHER_SPACE,
-    	0, 0, 0, 0
-	};
     long	 data[256];
     Display	 *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     gint	 nQuad;

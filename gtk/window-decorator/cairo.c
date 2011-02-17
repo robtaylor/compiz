@@ -829,9 +829,6 @@ get_event_window_position (decor_t *d,
 			   gint    *w,
 			   gint    *h)
 {
-    WnckWindowType win_type = wnck_window_get_window_type (d->win);
-    decor_frame_t *frame = gwd_get_decor_frame (get_frame_type (win_type));
-
     if (d->frame_window)
     {
 	*x = pos[i][j].x + pos[i][j].xw * width + d->frame->win_extents.left;

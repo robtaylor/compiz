@@ -727,7 +727,7 @@ meta_get_decoration_geometry (decor_t		*d,
 			      MetaFrameFlags    *flags,
 			      MetaFrameGeometry *fgeom,
 			      MetaButtonLayout  *button_layout,
-			      MetaFrameType	frame_type,
+			      MetaFrameType     frame_type,
 			      GdkRectangle      *clip);
 
 void

@@ -446,9 +446,6 @@ value_changed (GConfClient *client,
 gboolean
 init_settings (WnckScreen *screen)
 {
-    GtkSettings	   *settings;
-    GdkScreen	   *gdkscreen;
-    GdkColormap	   *colormap;
     AtkObject	   *switcher_label_obj;
 
 #ifdef USE_GCONF
