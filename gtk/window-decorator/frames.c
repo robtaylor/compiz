@@ -10,6 +10,70 @@ decor_frame_t decor_frames[NUM_DECOR_FRAMES];
 GHashTable    *frame_info_table;
 GHashTable    *frames_table;
 
+void
+decor_frame_refresh (decor_frame_t *frame)
+{
+    decor_shadow_options_t opt_shadow;
+    decor_shadow_options_t opt_no_shadow;
+    decor_shadow_info_t *info;
+
+    update_style (frame->style_window_rgba);
+    update_style (frame->style_window_rgb);
+
+    /* Should really read gconf for that */
+
+    gchar *str = NULL;
+
+#ifdef USE_GCONF
+
+    GConfClient *client = gconf_client_get_default ();
+
+    str = gconf_client_get_string (client,
+				   COMPIZ_TITLEBAR_FONT_KEY,
+				   NULL);
+#endif
+    if (!str)
+	str = g_strdup ("Sans Bold 12");
+
+    set_frame_scale (frame, str);
+
+    str = NULL;
+
+    frame_update_titlebar_font (frame);
+
+    /* FIXME */
+    if (strcmp (frame->type, "bare") &&
+	strcmp (frame->type, "switcher"))
+	(*theme_update_border_extents) (frame);
+
+    opt_shadow.shadow_radius  = shadow_radius;
+    opt_shadow.shadow_opacity = shadow_opacity;
+
+    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
+
+    opt_shadow.shadow_offset_x = shadow_offset_x;
+    opt_shadow.shadow_offset_y = shadow_offset_y;
+
+    opt_no_shadow.shadow_radius  = 0;
+    opt_no_shadow.shadow_opacity = 0;
+
+    opt_no_shadow.shadow_offset_x = 0;
+    opt_no_shadow.shadow_offset_y = 0;
+
+    info = malloc (sizeof (decor_shadow_info_t));
+
+    if (!info)
+	return;
+
+    info->frame = frame;
+    info->state = 0;
+
+    frame_update_shadow (frame, info, &opt_shadow, &opt_no_shadow);
+
+    free (info);
+    info = NULL;
+}
+
 decor_frame_t *
 gwd_get_decor_frame (const gchar *frame_name)
 {
@@ -57,7 +121,6 @@ gwd_decor_frame_unref (decor_frame_t *frame)
     if (frame->refcount == 0)
     {
 	decor_frame_type_info_t *info = g_hash_table_lookup (frame_info_table, frame->type);
-	GList	*list;
 
 	if (!info)
 	    g_critical ("Couldn't find %s in frame info table", frame->type);
@@ -132,70 +195,6 @@ destroy_frame_type (gpointer data)
     }
 
     free (info);
-}
-
-void
-decor_frame_refresh (decor_frame_t *frame)
-{
-    decor_shadow_options_t opt_shadow;
-    decor_shadow_options_t opt_no_shadow;
-    decor_shadow_info_t *info;
-
-    update_style (frame->style_window_rgba);
-    update_style (frame->style_window_rgb);
-
-    /* Should really read gconf for that */
-
-    gchar *str = NULL;
-
-#ifdef USE_GCONF
-
-    GConfClient *client = gconf_client_get_default ();
-
-    str = gconf_client_get_string (client,
-				   COMPIZ_TITLEBAR_FONT_KEY,
-				   NULL);
-#endif
-    if (!str)
-	str = g_strdup ("Sans Bold 12");
-
-    set_frame_scale (frame, str);
-
-    str = NULL;
-
-    frame_update_titlebar_font (frame);
-
-    /* FIXME */
-    if (strcmp (frame->type, "bare") &&
-	strcmp (frame->type, "switcher"))
-	(*theme_update_border_extents) (frame);
-
-    opt_shadow.shadow_radius  = shadow_radius;
-    opt_shadow.shadow_opacity = shadow_opacity;
-
-    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
-
-    opt_shadow.shadow_offset_x = shadow_offset_x;
-    opt_shadow.shadow_offset_y = shadow_offset_y;
-
-    opt_no_shadow.shadow_radius  = 0;
-    opt_no_shadow.shadow_opacity = 0;
-
-    opt_no_shadow.shadow_offset_x = 0;
-    opt_no_shadow.shadow_offset_y = 0;
-
-    info = malloc (sizeof (decor_shadow_info_t));
-
-    if (!info)
-	return;
-
-    info->frame = frame;
-    info->state = 0;
-
-    frame_update_shadow (frame, info, &opt_shadow, &opt_no_shadow);
-
-    free (info);
-    info = NULL;
 }
 
 decor_frame_t *

@@ -55,10 +55,8 @@ Atom restack_window_atom;
 Atom select_window_atom;
 Atom mwm_hints_atom;
 Atom switcher_fg_atom;
-
 Atom compiz_shadow_info_atom;
 Atom compiz_shadow_color_atom;
-
 Atom toolkit_action_atom;
 Atom toolkit_action_window_menu_atom;
 Atom toolkit_action_force_quit_dialog_atom;
@@ -98,15 +96,12 @@ const gchar * window_type_frames[WINDOW_TYPE_FRAMES_NUM] = {
 
 char *program_name;
 
-GtkWidget     *switcher_style_window_rgba;
-GtkWidget     *switcher_style_window_rgb;
 GtkWidget     *switcher_label;
 
 GHashTable    *frame_table;
 GtkWidget     *action_menu = NULL;
 gboolean      action_menu_mapped = FALSE;
 decor_color_t _title_color[2];
-PangoContext  *switcher_pango_context;
 gint	     double_click_timeout = 250;
 
 GtkWidget     *tip_window;
