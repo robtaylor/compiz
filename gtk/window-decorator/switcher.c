@@ -3,6 +3,7 @@
 decor_frame_t *
 create_switcher_frame (const gchar *type)
 {
+    AtkObject	   *switcher_label_obj;
     decor_frame_t *frame = decor_frame_new (type);
     decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
 
@@ -25,6 +26,11 @@ create_switcher_frame (const gchar *type)
      * contents */
 
     gwd_decor_frame_ref (frame);
+
+    switcher_label = gtk_label_new ("");
+    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
+    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
+    gtk_container_add (GTK_CONTAINER (frame->style_window_rgba), switcher_label);
 
     return frame;
 }

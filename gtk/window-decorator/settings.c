@@ -468,9 +468,6 @@ value_changed (GConfClient *client,
 gboolean
 init_settings (WnckScreen *screen)
 {
-    AtkObject	   *switcher_label_obj;
-    decor_frame_t  *switcher_frame = gwd_get_decor_frame ("switcher");
-
 #ifdef USE_GCONF
     GConfClient	   *gconf;
 
@@ -490,31 +487,13 @@ init_settings (WnckScreen *screen)
 		      "value_changed",
 		      G_CALLBACK (value_changed),
 		      screen);
-#endif
-
-    switcher_label = gtk_label_new ("");
-    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
-    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (switcher_frame->style_window_rgba), switcher_label);
-
-#ifdef USE_GCONF
     settings->use_system_font = gconf_client_get_bool (gconf,
 						       COMPIZ_USE_SYSTEM_FONT_KEY,
 						       NULL);
     theme_changed (gconf);
     theme_opacity_changed (gconf);
     button_layout_changed (gconf);
-#endif
-
-    update_style (switcher_frame->style_window_rgba);
-#ifdef USE_GCONF
-    titlebar_font_changed (gconf);
-#endif
-
-    update_titlebar_font ();
-
-#ifdef USE_GCONF
-    titlebar_click_action_changed (gconf,
+    titlebar_font_changed (gconf);    titlebar_click_action_changed (gconf,
 				   COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY,
 				   &settings->double_click_action,
 				   DOUBLE_CLICK_ACTION_DEFAULT);
@@ -530,6 +509,8 @@ init_settings (WnckScreen *screen)
     blur_settings_changed (gconf);
 #endif
 
+    update_titlebar_font ();
+
     gwd_process_frames (update_frames_border_extents,
 			window_type_frames,
 			WINDOW_TYPE_FRAMES_NUM,
@@ -538,8 +519,6 @@ init_settings (WnckScreen *screen)
     shadow_property_changed (screen);
 
     update_shadow ();
-
-    gwd_decor_frame_unref (switcher_frame);
 
     return TRUE;
 }
