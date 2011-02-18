@@ -2,14 +2,6 @@
 
 #ifdef USE_METACITY
 
-double   meta_opacity              = META_OPACITY;
-gboolean meta_shade_opacity        = META_SHADE_OPACITY;
-double   meta_active_opacity       = META_ACTIVE_OPACITY;
-gboolean meta_active_shade_opacity = META_ACTIVE_SHADE_OPACITY;
-
-gboolean         meta_button_layout_set = FALSE;
-MetaButtonLayout meta_button_layout;
-
 static void
 decor_update_meta_window_property (decor_t	  *d,
 				   MetaTheme	  *theme,
@@ -347,22 +339,22 @@ meta_button_state_for_button_type (decor_t	  *d,
 {
     switch (type) {
     case META_BUTTON_TYPE_LEFT_LEFT_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.left_buttons[0]);
+	type = meta_function_to_type (settings->meta_button_layout.left_buttons[0]);
 	break;
     case META_BUTTON_TYPE_LEFT_MIDDLE_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.left_buttons[1]);
+	type = meta_function_to_type (settings->meta_button_layout.left_buttons[1]);
 	break;
     case META_BUTTON_TYPE_LEFT_RIGHT_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.left_buttons[2]);
+	type = meta_function_to_type (settings->meta_button_layout.left_buttons[2]);
 	break;
     case META_BUTTON_TYPE_RIGHT_LEFT_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.right_buttons[0]);
+	type = meta_function_to_type (settings->meta_button_layout.right_buttons[0]);
 	break;
     case META_BUTTON_TYPE_RIGHT_MIDDLE_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.right_buttons[1]);
+	type = meta_function_to_type (settings->meta_button_layout.right_buttons[1]);
 	break;
     case META_BUTTON_TYPE_RIGHT_RIGHT_BACKGROUND:
-	type = meta_function_to_type (meta_button_layout.right_buttons[2]);
+	type = meta_function_to_type (settings->meta_button_layout.right_buttons[2]);
     default:
 	break;
     }
@@ -413,9 +405,9 @@ meta_get_decoration_geometry (decor_t		*d,
     if (!(frame_type < META_FRAME_TYPE_LAST))
 	frame_type = META_FRAME_TYPE_NORMAL;
 
-    if (meta_button_layout_set)
+    if (settings->meta_button_layout_set)
     {
-	*button_layout = meta_button_layout;
+	*button_layout = settings->meta_button_layout;
     }
     else
     {
@@ -524,7 +516,7 @@ meta_draw_window_decoration (decor_t *d)
 	GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     GdkPixmap	      *pixmap;
     Picture	      src;
-    MetaButtonState   button_states[META_BUTTON_TYPE_LAST];
+    MetaButtonState   button_states [META_BUTTON_TYPE_LAST];
     MetaButtonLayout  button_layout;
     MetaFrameGeometry fgeom;
     MetaFrameFlags    flags;
@@ -539,9 +531,9 @@ meta_draw_window_decoration (decor_t *d)
     Region	      bottom_region = NULL;
     Region	      left_region = NULL;
     Region	      right_region = NULL;
-    double	      alpha = (d->active) ? meta_active_opacity : meta_opacity;
-    gboolean	      shade_alpha = (d->active) ? meta_active_shade_opacity :
-						  meta_shade_opacity;
+    double	      alpha = (d->active) ? settings->meta_active_opacity : settings->meta_opacity;
+    gboolean	      shade_alpha = (d->active) ? settings->meta_active_shade_opacity :
+						  settings->meta_shade_opacity;
     MetaFrameStyle    *frame_style;
     GtkWidget	      *style_window;
     GdkColor	      bg_color;
@@ -559,7 +551,7 @@ meta_draw_window_decoration (decor_t *d)
 	gdk_drawable_set_colormap (GDK_DRAWABLE (d->buffer_pixmap), cmap);
     }
 
-    if (decoration_alpha == 1.0)
+    if (settings->decoration_alpha == 1.0)
 	alpha = 1.0;
 
     if (gdk_drawable_get_depth (GDK_DRAWABLE (d->pixmap)) == 32)
@@ -1562,7 +1554,7 @@ meta_update_button_layout (const char *value)
 	new_layout = rtl_layout;
     }
 
-    meta_button_layout = new_layout;
+    settings->meta_button_layout = new_layout;
 }
 
 void

@@ -82,7 +82,7 @@ destroy_bare_frame (decor_frame_t *frame)
 static const PangoFontDescription *
 get_titlebar_font (decor_frame_t *frame)
 {
-    if (use_system_font)
+    if (settings->use_system_font)
 	return NULL;
     else
 	return frame->titlebar_font;
@@ -549,13 +549,15 @@ draw_border_shape (Display	   *xdisplay,
     colormap = get_colormap_for_drawable (GDK_DRAWABLE (d.pixmap));
     gdk_drawable_set_colormap (d.pixmap, colormap);
 
-    /* create shadow from opaque decoration */
-    save_decoration_alpha = decoration_alpha;
-    decoration_alpha = 1.0;
+    /* create shadow from opaque decoration
+     * FIXME: Should not modify settings value
+     * like this */
+    save_decoration_alpha = settings->decoration_alpha;
+    settings->decoration_alpha = 1.0;
 
     (*d.draw) (&d);
 
-    decoration_alpha = save_decoration_alpha;
+    settings->decoration_alpha = save_decoration_alpha;
 
     XRenderFillRectangle (xdisplay, PictOpSrc, picture, &white,
 			  c->left_space,
@@ -803,13 +805,13 @@ update_shadow (void)
     if (!opts)
 	return 0;
 
-    opt_shadow.shadow_radius  = shadow_radius;
-    opt_shadow.shadow_opacity = shadow_opacity;
+    opt_shadow.shadow_radius  = settings->shadow_radius;
+    opt_shadow.shadow_opacity = settings->shadow_opacity;
 
-    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
+    memcpy (opt_shadow.shadow_color, settings->shadow_color, sizeof (settings->shadow_color));
 
-    opt_shadow.shadow_offset_x = shadow_offset_x;
-    opt_shadow.shadow_offset_y = shadow_offset_y;
+    opt_shadow.shadow_offset_x = settings->shadow_offset_x;
+    opt_shadow.shadow_offset_y = settings->shadow_offset_y;
 
     opt_no_shadow.shadow_radius  = 0;
     opt_no_shadow.shadow_opacity = 0;

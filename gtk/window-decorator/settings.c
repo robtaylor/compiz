@@ -39,15 +39,15 @@ shadow_property_changed (WnckScreen *s)
 	radius /= 1000;
 	opacity /= 1000;
 
-	changed = radius != shadow_radius   ||
-		  opacity != shadow_opacity ||
-		  x_off != shadow_offset_x  ||
-		  y_off != shadow_offset_y;
+	changed = radius != settings->shadow_radius   ||
+		  opacity != settings->shadow_opacity ||
+		  x_off != settings->shadow_offset_x  ||
+		  y_off != settings->shadow_offset_y;
 
-	shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
-	shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
-	shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
-	shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
+	settings->shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
+	settings->shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
+	settings->shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
+	settings->shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
     }
 
     XFree (prop_data);
@@ -69,9 +69,9 @@ shadow_property_changed (WnckScreen *s)
 	    if (sscanf (t_data[0], "#%2x%2x%2x%2x",
 			&c[0], &c[1], &c[2], &c[3]) == 4)
 	    {
-		shadow_color[0] = c[0] << 8 | c[0];
-		shadow_color[1] = c[1] << 8 | c[1];
-		shadow_color[2] = c[2] << 8 | c[2];
+		settings->shadow_color[0] = c[0] << 8 | c[0];
+		settings->shadow_color[1] = c[1] << 8 | c[1];
+		settings->shadow_color[2] = c[2] << 8 | c[2];
 		changed = TRUE;
 	    }
 	}
@@ -90,7 +90,7 @@ static gboolean
 blur_settings_changed (GConfClient *client)
 {
     gchar *type;
-    int   new_type = blur_type;
+    int   new_type = settings->blur_type;
 
     if (cmdline_options & CMDLINE_BLUR)
 	return FALSE;
@@ -111,9 +111,9 @@ blur_settings_changed (GConfClient *client)
 	g_free (type);
     }
 
-    if (new_type != blur_type)
+    if (new_type != settings->blur_type)
     {
-	blur_type = new_type;
+	settings->blur_type = new_type;
 	return TRUE;
     }
 
@@ -202,9 +202,9 @@ theme_opacity_changed (GConfClient *client)
 				      NULL);
 
     if (!(cmdline_options & CMDLINE_OPACITY) &&
-	opacity != meta_opacity)
+	opacity != settings->meta_opacity)
     {
-	meta_opacity = opacity;
+	settings->meta_opacity = opacity;
 	changed = TRUE;
     }
 
@@ -215,9 +215,9 @@ theme_opacity_changed (GConfClient *client)
 					       NULL);
 
 	if (!(cmdline_options & CMDLINE_OPACITY_SHADE) &&
-	    shade_opacity != meta_shade_opacity)
+	    shade_opacity != settings->meta_shade_opacity)
 	{
-	    meta_shade_opacity = shade_opacity;
+	    settings->meta_shade_opacity = shade_opacity;
 	    changed = TRUE;
 	}
     }
@@ -227,9 +227,9 @@ theme_opacity_changed (GConfClient *client)
 				      NULL);
 
     if (!(cmdline_options & CMDLINE_ACTIVE_OPACITY) &&
-	opacity != meta_active_opacity)
+	opacity != settings->meta_active_opacity)
     {
-	meta_active_opacity = opacity;
+	settings->meta_active_opacity = opacity;
 	changed = TRUE;
     }
 
@@ -241,9 +241,9 @@ theme_opacity_changed (GConfClient *client)
 				   NULL);
 
 	if (!(cmdline_options & CMDLINE_ACTIVE_OPACITY_SHADE) &&
-	    shade_opacity != meta_active_shade_opacity)
+	    shade_opacity != settings->meta_active_shade_opacity)
 	{
-	    meta_active_shade_opacity = shade_opacity;
+	    settings->meta_active_shade_opacity = shade_opacity;
 	    changed = TRUE;
 	}
     }
@@ -270,16 +270,16 @@ button_layout_changed (GConfClient *client)
     {
 	meta_update_button_layout (button_layout);
 
-	meta_button_layout_set = TRUE;
+	settings->meta_button_layout_set = TRUE;
 
 	g_free (button_layout);
 
 	return TRUE;
     }
 
-    if (meta_button_layout_set)
+    if (settings->meta_button_layout_set)
     {
-	meta_button_layout_set = FALSE;
+	settings->meta_button_layout_set = FALSE;
 	return TRUE;
     }
 #endif
@@ -376,15 +376,15 @@ wheel_action_changed (GConfClient *client)
 {
     gchar *action;
 
-    wheel_action = WHEEL_ACTION_DEFAULT;
+    settings->wheel_action = WHEEL_ACTION_DEFAULT;
 
     action = gconf_client_get_string (client, WHEEL_ACTION_KEY, NULL);
     if (action)
     {
 	if (strcmp (action, "shade") == 0)
-	    wheel_action = WHEEL_ACTION_SHADE;
+	    settings->wheel_action = WHEEL_ACTION_SHADE;
 	else if (strcmp (action, "none") == 0)
-	    wheel_action = WHEEL_ACTION_NONE;
+	    settings->wheel_action = WHEEL_ACTION_NONE;
 
 	g_free (action);
     }
@@ -402,33 +402,33 @@ value_changed (GConfClient *client,
     {
 	if (gconf_client_get_bool (client,
 				   COMPIZ_USE_SYSTEM_FONT_KEY,
-				   NULL) != use_system_font)
+				   NULL) != settings->use_system_font)
 	{
-	    use_system_font = !use_system_font;
+	    settings->use_system_font = !settings->use_system_font;
 	    changed = TRUE;
 	}
     }
     else if (strcmp (key, COMPIZ_TITLEBAR_FONT_KEY) == 0)
     {
 	titlebar_font_changed (client);
-	changed = !use_system_font;
+	changed = !settings->use_system_font;
     }
     else if (strcmp (key, COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &double_click_action,
+				       &settings->double_click_action,
 				       DOUBLE_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, COMPIZ_MIDDLE_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &middle_click_action,
+				       &settings->middle_click_action,
 				       MIDDLE_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, COMPIZ_RIGHT_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &right_click_action,
+				       &settings->right_click_action,
 				       RIGHT_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, WHEEL_ACTION_KEY) == 0)
@@ -498,9 +498,9 @@ init_settings (WnckScreen *screen)
     gtk_container_add (GTK_CONTAINER (switcher_frame->style_window_rgba), switcher_label);
 
 #ifdef USE_GCONF
-    use_system_font = gconf_client_get_bool (gconf,
-					     COMPIZ_USE_SYSTEM_FONT_KEY,
-					     NULL);
+    settings->use_system_font = gconf_client_get_bool (gconf,
+						       COMPIZ_USE_SYSTEM_FONT_KEY,
+						       NULL);
     theme_changed (gconf);
     theme_opacity_changed (gconf);
     button_layout_changed (gconf);
@@ -516,15 +516,15 @@ init_settings (WnckScreen *screen)
 #ifdef USE_GCONF
     titlebar_click_action_changed (gconf,
 				   COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY,
-				   &double_click_action,
+				   &settings->double_click_action,
 				   DOUBLE_CLICK_ACTION_DEFAULT);
     titlebar_click_action_changed (gconf,
 				   COMPIZ_MIDDLE_CLICK_TITLEBAR_KEY,
-				   &middle_click_action,
+				   &settings->middle_click_action,
 				   MIDDLE_CLICK_ACTION_DEFAULT);
     titlebar_click_action_changed (gconf,
 				   COMPIZ_RIGHT_CLICK_TITLEBAR_KEY,
-				   &right_click_action,
+				   &settings->right_click_action,
 				   RIGHT_CLICK_ACTION_DEFAULT);
     wheel_action_changed (gconf);
     blur_settings_changed (gconf);

@@ -17,13 +17,13 @@ decor_update_blur_property (decor_t *d,
     long    *data = NULL;
     int     size = 0;
     
-    if (blur_type != BLUR_TYPE_ALL)
+    if (settings->blur_type != BLUR_TYPE_ALL)
     {
 	bottom_region = NULL;
 	left_region   = NULL;
 	right_region  = NULL;
 	
-	if (blur_type != BLUR_TYPE_TITLEBAR)
+	if (settings->blur_type != BLUR_TYPE_TITLEBAR)
 	    top_region = NULL;
     }
 

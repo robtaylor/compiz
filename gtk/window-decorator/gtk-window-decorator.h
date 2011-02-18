@@ -210,36 +210,40 @@ enum {
     WHEEL_ACTION_SHADE
 };
 
+typedef struct _decor_settings {
+    int double_click_action;
+    int middle_click_action;
+    int right_click_action;
+    int wheel_action;
+    gdouble shadow_radius;
+    gdouble shadow_opacity;
+    gushort shadow_color[3];
+    gint    shadow_offset_x;
+    gint    shadow_offset_y;
+#ifdef USE_METACITY
+    double   meta_opacity;
+    gboolean meta_shade_opacity;
+    double   meta_active_opacity;
+    gboolean meta_active_shade_opacity;
+
+    gboolean         meta_button_layout_set;
+    MetaButtonLayout meta_button_layout;
+#endif
+    double		    decoration_alpha;
+    gboolean		    use_system_font;
+    gint		    blur_type;
+} decor_settings_t;
+
 #define DOUBLE_CLICK_ACTION_DEFAULT CLICK_ACTION_MAXIMIZE
 #define MIDDLE_CLICK_ACTION_DEFAULT CLICK_ACTION_LOWER
 #define RIGHT_CLICK_ACTION_DEFAULT  CLICK_ACTION_MENU
 #define WHEEL_ACTION_DEFAULT        WHEEL_ACTION_NONE
 
-int double_click_action;
-int middle_click_action;
-int right_click_action;
-int wheel_action;
-
 extern gboolean minimal;
-extern double decoration_alpha;
+extern decor_settings_t *settings;
+
 
 #define SWITCHER_SPACE 40
-
-extern gdouble shadow_radius;
-extern gdouble shadow_opacity;
-extern gushort shadow_color[3];
-extern gint    shadow_offset_x;
-extern gint    shadow_offset_y;
-
-#ifdef USE_METACITY
-extern double   meta_opacity;
-extern gboolean meta_shade_opacity;
-extern double   meta_active_opacity;
-extern gboolean meta_active_shade_opacity;
-
-extern gboolean         meta_button_layout_set;
-extern MetaButtonLayout meta_button_layout;
-#endif
 
 extern guint cmdline_options;
 
@@ -475,13 +479,9 @@ extern gint	     tooltip_timer_tag;
 extern GSList *draw_list;
 extern guint  draw_idle_id;
 
-extern gboolean		    use_system_font;
-
 #define BLUR_TYPE_NONE     0
 #define BLUR_TYPE_TITLEBAR 1
 #define BLUR_TYPE_ALL      2
-
-extern gint blur_type;
 
 /* switcher */
 extern Window     switcher_selected_window;

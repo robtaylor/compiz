@@ -46,13 +46,13 @@ decor_frame_refresh (decor_frame_t *frame)
 	strcmp (frame->type, "switcher"))
 	(*theme_update_border_extents) (frame);
 
-    opt_shadow.shadow_radius  = shadow_radius;
-    opt_shadow.shadow_opacity = shadow_opacity;
+    opt_shadow.shadow_radius  = settings->shadow_radius;
+    opt_shadow.shadow_opacity = settings->shadow_opacity;
 
-    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
+    memcpy (opt_shadow.shadow_color, settings->shadow_color, sizeof (settings->shadow_color));
 
-    opt_shadow.shadow_offset_x = shadow_offset_x;
-    opt_shadow.shadow_offset_y = shadow_offset_y;
+    opt_shadow.shadow_offset_x = settings->shadow_offset_x;
+    opt_shadow.shadow_offset_y = settings->shadow_offset_y;
 
     opt_no_shadow.shadow_radius  = 0;
     opt_no_shadow.shadow_opacity = 0;

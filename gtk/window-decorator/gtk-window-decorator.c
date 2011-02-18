@@ -23,23 +23,9 @@
 
 gboolean minimal = FALSE;
 
-double decoration_alpha = 0.5;
-
 #define SWITCHER_SPACE 40
 
 decor_frame_t decor_frames[NUM_DECOR_FRAMES];
-
-
-
-gdouble shadow_radius   = SHADOW_RADIUS;
-gdouble shadow_opacity  = SHADOW_OPACITY;
-gushort shadow_color[3] = {
-  SHADOW_COLOR_RED,
-  SHADOW_COLOR_GREEN,
-  SHADOW_COLOR_BLUE
-};
-gint    shadow_offset_x = SHADOW_OFFSET_X;
-gint    shadow_offset_y = SHADOW_OFFSET_Y;
 
 guint cmdline_options = 0;
 
@@ -112,15 +98,13 @@ gint	     tooltip_timer_tag = 0;
 GSList *draw_list = NULL;
 guint  draw_idle_id = 0;
 
-gboolean		    use_system_font = FALSE;
-
-gint blur_type = BLUR_TYPE_NONE;
-
 Window    switcher_selected_window = None;
 decor_t   *switcher_window = NULL;
 
 XRenderPictFormat *xformat_rgba;
 XRenderPictFormat *xformat_rgb;
+
+decor_settings_t *settings;
 
 int
 main (int argc, char *argv[])
@@ -141,11 +125,39 @@ main (int argc, char *argv[])
 
     program_name = argv[0];
 
+    settings = malloc (sizeof (decor_settings_t));
+
+    if (!settings)
+	return 1;
+
     gtk_init (&argc, &argv);
 
     bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
     bind_textdomain_codeset (GETTEXT_PACKAGE, "UTF-8");
     textdomain (GETTEXT_PACKAGE);
+
+    settings->blur_type = BLUR_TYPE_NONE;
+    settings->use_system_font = FALSE;
+
+    settings->shadow_radius   = SHADOW_RADIUS;
+    settings->shadow_opacity  = SHADOW_OPACITY;
+    settings->shadow_color[0] = SHADOW_COLOR_RED;
+    settings->shadow_color[1] = SHADOW_COLOR_GREEN;
+    settings->shadow_color[2] = SHADOW_COLOR_BLUE;
+    settings->shadow_offset_x = SHADOW_OFFSET_X;
+    settings->shadow_offset_y = SHADOW_OFFSET_Y;
+    settings->decoration_alpha = 0.5;
+
+#ifdef USE_METACITY
+
+    settings->meta_opacity              = META_OPACITY;
+    settings->meta_shade_opacity        = META_SHADE_OPACITY;
+    settings->meta_active_opacity       = META_ACTIVE_OPACITY;
+    settings->meta_active_shade_opacity = META_ACTIVE_SHADE_OPACITY;
+
+    settings->meta_button_layout_set = FALSE;
+#endif
+
 
     for (i = 0; i < argc; i++)
     {
@@ -162,9 +174,9 @@ main (int argc, char *argv[])
 	    if (argc > ++i)
 	    {
 		if (strcmp (argv[i], "titlebar") == 0)
-		    blur_type = BLUR_TYPE_TITLEBAR;
+		    settings->blur_type = BLUR_TYPE_TITLEBAR;
 		else if (strcmp (argv[i], "all") == 0)
-		    blur_type = BLUR_TYPE_ALL;
+		    settings->blur_type = BLUR_TYPE_ALL;
 	    }
 	    cmdline_options |= CMDLINE_BLUR;
 	}
@@ -173,23 +185,23 @@ main (int argc, char *argv[])
 	else if (strcmp (argv[i], "--opacity") == 0)
 	{
 	    if (argc > ++i)
-		meta_opacity = atof (argv[i]);
+		settings->meta_opacity = atof (argv[i]);
 	    cmdline_options |= CMDLINE_OPACITY;
 	}
 	else if (strcmp (argv[i], "--no-opacity-shade") == 0)
 	{
-	    meta_shade_opacity = FALSE;
+	    settings->meta_shade_opacity = FALSE;
 	    cmdline_options |= CMDLINE_OPACITY_SHADE;
 	}
 	else if (strcmp (argv[i], "--active-opacity") == 0)
 	{
 	    if (argc > ++i)
-		meta_active_opacity = atof (argv[i]);
+		settings->meta_active_opacity = atof (argv[i]);
 	    cmdline_options |= CMDLINE_ACTIVE_OPACITY;
 	}
 	else if (strcmp (argv[i], "--no-active-opacity-shade") == 0)
 	{
-	    meta_active_shade_opacity = FALSE;
+	    settings->meta_active_shade_opacity = FALSE;
 	    cmdline_options |= CMDLINE_ACTIVE_OPACITY_SHADE;
 	}
 	else if (strcmp (argv[i], "--metacity-theme") == 0)
@@ -320,6 +332,7 @@ main (int argc, char *argv[])
 
     if (!create_tooltip_window ())
     {
+	free (settings);
 	fprintf (stderr, "%s, Couldn't create tooltip window\n", argv[0]);
 	return 1;
     }
@@ -369,6 +382,7 @@ main (int argc, char *argv[])
 
     if (!init_settings (screen))
     {
+	free (settings);
 	fprintf (stderr, "%s: Failed to get necessary gtk settings\n", argv[0]);
 	return 1;
     }
@@ -380,6 +394,8 @@ main (int argc, char *argv[])
     update_default_decorations (gdkscreen);
 
     gtk_main ();
+
+    free (settings);
 
     return 0;
 }

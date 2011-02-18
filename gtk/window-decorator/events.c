@@ -387,7 +387,7 @@ void
 handle_mouse_wheel_title_event (WnckWindow   *win,
 				unsigned int button)
 {
-    switch (wheel_action) {
+    switch (settings->wheel_action) {
     case WHEEL_ACTION_SHADE:
 	if (button == 4)
 	{
@@ -436,7 +436,7 @@ title_event (WnckWindow       *win,
 	    dist (gtkwd_event->x, gtkwd_event->y,
 		  last_button_x, last_button_y) < DOUBLE_CLICK_DISTANCE)
 	{
-	    handle_title_button_event (win, double_click_action,
+	    handle_title_button_event (win, settings->double_click_action,
 				       gtkwd_event);
 
 	    last_button_num	= 0;
@@ -460,12 +460,12 @@ title_event (WnckWindow       *win,
     }
     else if (gtkwd_event->button == 2)
     {
-	handle_title_button_event (win, middle_click_action,
+	handle_title_button_event (win, settings->middle_click_action,
 				   gtkwd_event);
     }
     else if (gtkwd_event->button == 3)
     {
-	handle_title_button_event (win, right_click_action,
+	handle_title_button_event (win, settings->right_click_action,
 				   gtkwd_event);
     }
     else if (gtkwd_event->button == 4 ||
@@ -534,11 +534,11 @@ frame_common_event (WnckWindow       *win,
 	restack_window (win, Above);
 	break;
     case 2:
-	handle_title_button_event (win, middle_click_action,
+	handle_title_button_event (win, settings->middle_click_action,
 				   gtkwd_event);
 	break;
     case 3:
-	handle_title_button_event (win, right_click_action,
+	handle_title_button_event (win, settings->right_click_action,
 				   gtkwd_event);
 	break;
     }
