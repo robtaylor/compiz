@@ -349,6 +349,12 @@ typedef enum _decor_frame_type {
 typedef struct _decor_frame decor_frame_t;
 typedef struct _decor_shadow_info decor_shadow_info_t;
 
+struct _decor_shadow_info
+{
+    decor_frame_t *frame;
+    unsigned int  state;
+};
+
 void
 switcher_frame_update_shadow (Display		  *xdisplay,
 			   Screen		  *screen,
@@ -380,17 +386,54 @@ typedef void (*frame_update_shadow_proc) (Display		 *display,
 					  decor_shadow_options_t *opt_shadow,
 					  decor_shadow_options_t *opt_no_shadow);
 
-typedef decor_frame_t (*create_frame_proc) ();
+typedef decor_frame_t * (*create_frame_proc) (const gchar *);
 typedef void (*destroy_frame_proc) (decor_frame_t *);
 
+#define WINDOW_TYPE_FRAMES_NUM 4
+const gchar * window_type_frames[WINDOW_TYPE_FRAMES_NUM];
+
+void
+frame_update_titlebar_font (decor_frame_t *frame);
+
+void
+set_frame_scale (decor_frame_t *frame,
+		 gchar	       *font_str);
+
+void
+frame_update_shadow (decor_frame_t	    *frame,
+		     decor_shadow_info_t    *info,
+		     decor_shadow_options_t *opt_shadow,
+		     decor_shadow_options_t *opt_no_shadow);
+
+void
+update_frames_border_extents (gpointer key,
+			      gpointer value,
+			      gpointer user_data);
+
 decor_frame_t *
-gwd_get_decor_frame (decor_frame_type type);
+gwd_get_decor_frame (const gchar *);
 
 decor_frame_t *
 gwd_decor_frame_ref (decor_frame_t *);
 
 decor_frame_t *
 gwd_decor_frame_unref (decor_frame_t *);
+
+void
+gwd_frames_foreach (GHFunc   foreach_func,
+		    gpointer user_data);
+
+void
+gwd_process_frames (GHFunc	foreach_func,
+		    const gchar	*frame_keys[],
+		    gint	frame_keys_num,
+		    gpointer	user_data);
+
+decor_frame_t *
+decor_frame_new (const gchar *type);
+
+void
+decor_frame_destroy (decor_frame_t *);
 
 struct _decor_frame {
     decor_extents_t win_extents;
@@ -410,7 +453,7 @@ struct _decor_frame {
     GtkWidget	         *style_window_rgba;
     GtkWidget		 *style_window_rgb;
     gint		 text_height;
-    decor_frame_type     type;
+    gchar		 *type;
 
     frame_update_shadow_proc update_shadow;
     gint		refcount;
@@ -461,7 +504,7 @@ gboolean (*theme_calc_decoration_size)      (decor_t *d,
 					     int     text_width,
 					     int     *width,
 					     int     *height);
-void     (*theme_update_border_extents)     ();
+void     (*theme_update_border_extents)     (decor_frame_t *frame);
 void     (*theme_get_event_window_position) (decor_t *d,
 					     gint    i,
 					     gint    j,
@@ -528,6 +571,18 @@ initialize_decorations ();
 
 /* decorator.c */
 
+decor_frame_t *
+create_normal_frame (const gchar *type);
+
+void
+destroy_normal_frame ();
+
+decor_frame_t *
+create_bare_frame (const gchar *type);
+
+void
+destroy_bare_frame ();
+
 gboolean
 update_window_decoration_size (WnckWindow *win);
 
@@ -575,7 +630,7 @@ copy_to_front_buffer (decor_t *d);
 
 /* wnck.c*/
 
-decor_frame_type
+const gchar *
 get_frame_type (WnckWindowType type);
 
 void
@@ -730,7 +785,7 @@ pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, GtkWidget *parent);
 #ifdef USE_METACITY
 
 MetaFrameType
-meta_get_frame_type_for_decor_type (decor_frame_type frame_type);
+meta_get_frame_type_for_decor_type (const gchar *frame_type);
 
 void
 meta_draw_window_decoration (decor_t *d);
@@ -792,6 +847,12 @@ meta_update_button_layout (const char *value);
 /* switcher.c */
 
 #define SWITCHER_ALPHA 0xa0a0
+
+decor_frame_t *
+create_switcher_frame (const gchar *);
+
+void
+destroy_switcher_frame ();
 
 void
 draw_switcher_decoration (decor_t *d);

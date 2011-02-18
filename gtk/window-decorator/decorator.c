@@ -1,55 +1,136 @@
 #include "gtk-window-decorator.h"
 
-struct _decor_shadow_info
+decor_frame_t *
+create_normal_frame (const gchar *type)
 {
-    decor_frame_t *frame;
-    unsigned int  state;
-};
+    decor_frame_t *frame = decor_frame_new (type);
+
+    decor_context_t _window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_extents_t _win_extents         = { 6, 6, 6, 6 };
+    decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
+
+    frame->win_extents = _win_extents;
+    frame->max_win_extents = _max_win_extents;
+    frame->update_shadow = decor_frame_update_shadow;
+    frame->window_context = _window_context;
+    frame->window_context_no_shadow = _window_context_no_shadow;
+    frame->max_window_context = _max_window_context;
+    frame->max_window_context_no_shadow = _max_window_context_no_shadow;
+
+    return frame;
+}
+
+void
+destroy_normal_frame (decor_frame_t *frame)
+{
+    decor_frame_destroy (frame);
+}
+
+decor_frame_t *
+create_bare_frame (const gchar *type)
+{
+    decor_frame_t *frame = decor_frame_new (type);
+    decor_context_t _shadow_context = {
+	{ 0, 0, 0, 0 },
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+    };
+
+    decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
+
+    frame->win_extents = _shadow_extents;
+    frame->max_win_extents = _shadow_extents;
+    frame->win_extents = _shadow_extents;
+    frame->window_context = _shadow_context;
+    frame->window_context_no_shadow = _shadow_context;
+    frame->max_window_context = _shadow_context;
+    frame->max_window_context_no_shadow = _shadow_context;
+    frame->update_shadow = bare_frame_update_shadow;
+
+    return frame;
+}
+
+void
+destroy_bare_frame (decor_frame_t *frame)
+{
+    decor_frame_destroy (frame);
+}
 
 static const PangoFontDescription *
 get_titlebar_font (decor_frame_t *frame)
 {
     if (use_system_font)
-    {
 	return NULL;
-    }
     else
 	return frame->titlebar_font;
 }
 
 void
-update_titlebar_font ()
+frame_update_titlebar_font (decor_frame_t *frame)
 {
     const PangoFontDescription *font_desc;
     PangoFontMetrics	       *metrics;
     PangoLanguage	       *lang;
-    unsigned int	       i = 0;
 
-    for (i = 0; i < NUM_DECOR_FRAMES; i++)
+    frame = gwd_decor_frame_ref (frame);
+
+    font_desc = get_titlebar_font (frame);
+    if (!font_desc)
     {
-	decor_frame_t *frame = gwd_get_decor_frame (i);
-	font_desc = get_titlebar_font (frame);
-	if (!font_desc)
-	{
-	    GtkStyle *default_style;
+	GtkStyle *default_style;
 
-	    default_style = gtk_widget_get_default_style ();
-	    font_desc = default_style->font_desc;
-	}
-
-	pango_context_set_font_description (frame->pango_context, font_desc);
-
-	lang    = pango_context_get_language (frame->pango_context);
-	metrics = pango_context_get_metrics (frame->pango_context, font_desc, lang);
-
-	frame->text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
-				    pango_font_metrics_get_descent (metrics));
-
-	gwd_decor_frame_unref (frame);
-
-	pango_font_metrics_unref (metrics);
+	default_style = gtk_widget_get_default_style ();
+	font_desc = default_style->font_desc;
     }
 
+    pango_context_set_font_description (frame->pango_context, font_desc);
+
+    lang    = pango_context_get_language (frame->pango_context);
+    metrics = pango_context_get_metrics (frame->pango_context, font_desc, lang);
+
+    frame->text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
+				pango_font_metrics_get_descent (metrics));
+
+    gwd_decor_frame_unref (frame);
+
+    pango_font_metrics_unref (metrics);
+}
+
+void
+update_frames_titlebar_fonts (gpointer key,
+			      gpointer value,
+			      gpointer user_data)
+{
+    frame_update_titlebar_font ((decor_frame_t *) value);
+}
+
+void
+update_titlebar_font ()
+{
+    gwd_frames_foreach (update_frames_titlebar_fonts, NULL);
 }
 
 void
@@ -446,7 +527,7 @@ draw_border_shape (Display	   *xdisplay,
     if (info)
 	d.frame = info->frame;
     else
-	d.frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
+	d.frame = gwd_get_decor_frame ("default");
 
     d.pixmap  = gdk_pixmap_foreign_new_for_display (gdk_display_get_default (),
 						    pixmap);
@@ -662,15 +743,65 @@ decor_frame_update_shadow (Display		  *xdisplay,
 			     (void *) info);
 }
 
+typedef struct _tdtd_shadow_options
+{
+    decor_shadow_options_t *shadow;
+    decor_shadow_options_t *no_shadow;
+} tdtd_shadow_options_t;
+
+void
+frame_update_shadow (decor_frame_t	    *frame,
+		     decor_shadow_info_t    *info,
+		     decor_shadow_options_t *opt_shadow,
+		     decor_shadow_options_t *opt_no_shadow)
+{
+    gwd_decor_frame_ref (frame);
+
+    (*frame->update_shadow) (gdk_x11_get_default_xdisplay (),
+			     gdk_x11_screen_get_xscreen (gdk_screen_get_default ()),
+			     frame, info, opt_shadow, opt_no_shadow);
+
+    gwd_decor_frame_unref (frame);
+}
+
+void
+update_frames_shadows (gpointer key,
+		       gpointer value,
+		       gpointer user_data)
+{
+    decor_frame_t	  *frame = (decor_frame_t *) value;
+    tdtd_shadow_options_t *opts =  (tdtd_shadow_options_t *) user_data;
+
+    gwd_decor_frame_ref (frame);
+
+    decor_shadow_info_t *info = malloc (sizeof (decor_shadow_info_t));
+
+    if (!info)
+	return;
+
+    info->frame = frame;
+    info->state = 0;
+
+    frame_update_shadow (frame, info, opts->shadow, opts->no_shadow);
+
+    gwd_decor_frame_unref (frame);
+
+    free (info);
+    info = NULL;
+
+}
+
 int
 update_shadow (void)
 {
     decor_shadow_options_t opt_shadow;
     decor_shadow_options_t opt_no_shadow;
-    Display		   *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
-    GdkDisplay		   *display = gdk_display_get_default ();
-    GdkScreen		   *screen = gdk_display_get_default_screen (display);
-    unsigned int	   i;
+    tdtd_shadow_options_t  *opts;
+
+    opts = malloc (sizeof (tdtd_shadow_options_t));
+
+    if (!opts)
+	return 0;
 
     opt_shadow.shadow_radius  = shadow_radius;
     opt_shadow.shadow_opacity = shadow_opacity;
@@ -686,25 +817,13 @@ update_shadow (void)
     opt_no_shadow.shadow_offset_x = 0;
     opt_no_shadow.shadow_offset_y = 0;
 
-    for (i = 0; i < NUM_DECOR_FRAMES; i++)
-    {
-	decor_frame_t *frame = gwd_get_decor_frame (i);
-	decor_shadow_info_t *info = malloc (sizeof (decor_shadow_info_t));
+    opts->shadow = &opt_shadow;
+    opts->no_shadow = &opt_no_shadow;
 
-	if (!info)
-	    return 0;
+    gwd_frames_foreach (update_frames_shadows, (gpointer ) opts);
 
-	info->frame = frame;
-	info->state = 0;
-
-	(*frame->update_shadow) (xdisplay, gdk_x11_screen_get_xscreen (screen),
-				 frame, info, &opt_shadow, &opt_no_shadow);
-
-	gwd_decor_frame_unref (frame);
-
-	free (info);
-	info = NULL;
-    }
+    if (opts)
+	free (opts);
 
     return 1;
 }
@@ -784,9 +903,9 @@ update_default_decorations (GdkScreen *screen)
     decor_t	    d;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
-    decor_frame_t   *frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
-    decor_frame_t   *bare_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_BARE);
-    decor_extents_t extents = frame->win_extents;
+    decor_frame_t   *frame;
+    decor_frame_t   *bare_frame = gwd_get_decor_frame ("bare");
+    decor_extents_t extents;
 
     xroot = RootWindowOfScreen (gdk_x11_screen_get_xscreen (screen));
 
@@ -841,12 +960,14 @@ update_default_decorations (GdkScreen *screen)
 
     if (minimal)
     {
-	gwd_decor_frame_unref (frame);
 	gwd_decor_frame_unref (bare_frame);
 	return;
     }
 
     memset (&d, 0, sizeof (d));
+
+    frame = gwd_get_decor_frame ("default");
+    extents = frame->win_extents;
 
     d.context = &frame->window_context;
     d.shadow  = frame->border_shadow;

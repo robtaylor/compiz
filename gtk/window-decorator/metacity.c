@@ -410,6 +410,9 @@ meta_get_decoration_geometry (decor_t		*d,
 {
     gint left_width, right_width, top_height, bottom_height;
 
+    if (!(frame_type < META_FRAME_TYPE_LAST))
+	frame_type = META_FRAME_TYPE_NORMAL;
+
     if (meta_button_layout_set)
     {
 	*button_layout = meta_button_layout;
@@ -514,33 +517,6 @@ meta_get_decoration_geometry (decor_t		*d,
     clip->height += top_height + bottom_height;
 }
 
-MetaFrameType
-meta_get_frame_type_for_decor_type (decor_frame_type frame_type)
-{
-    MetaFrameType type;
-
-    switch (frame_type)
-    {
-	case DECOR_FRAME_TYPE_NORMAL:
-	    type = META_FRAME_TYPE_NORMAL;
-	    break;
-	case DECOR_FRAME_TYPE_DIALOG:
-	    type = META_FRAME_TYPE_DIALOG;
-	    break;
-	case DECOR_FRAME_TYPE_MENU:
-	    type = META_FRAME_TYPE_MENU;
-	    break;
-	case DECOR_FRAME_TYPE_UTILITY:
-	    type = META_FRAME_TYPE_UTILITY;
-	    break;
-	default:
-	    type = META_FRAME_TYPE_LAST;
-	    break;
-    }
-
-    return type;
-}
-
 void
 meta_draw_window_decoration (decor_t *d)
 {
@@ -605,9 +581,9 @@ meta_draw_window_decoration (decor_t *d)
 
     theme = meta_theme_get_current ();
 
-    if (d->frame->type < DECOR_FRAME_TYPE_SWITCHER)
-	frame_type = meta_get_frame_type_for_decor_type (d->frame->type);
-    else
+    frame_type = meta_frame_type_from_string (d->frame->type);
+
+    if (frame_type == META_FRAME_TYPE_LAST)
 	frame_type = META_FRAME_TYPE_NORMAL;
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
@@ -983,7 +959,7 @@ meta_get_button_position (decor_t	 *d,
     theme = meta_theme_get_current ();
 
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
-				  meta_get_frame_type_for_decor_type (d->frame->type),
+				  meta_frame_type_from_string (d->frame->type),
 				  &clip);
 
     switch (i) {
@@ -1089,12 +1065,12 @@ meta_get_title_scale (decor_frame_t *frame)
 {
     MetaTheme	   *theme = meta_theme_get_current ();
     MetaFrameType  type;
-    MetaFrameFlags flags = 0xc33;
+    MetaFrameFlags flags = 0xc33; /* fixme */
 
-    if (frame->type >= DECOR_FRAME_TYPE_SWITCHER)
+    type = meta_frame_type_from_string (frame->type);
+
+    if (type == META_FRAME_TYPE_LAST)
 	return 1.0f;
-
-    type = meta_get_frame_type_for_decor_type (frame->type);
 
     gfloat scale = meta_theme_get_title_scale (theme, type, flags);
 
@@ -1226,7 +1202,7 @@ meta_get_event_window_position (decor_t *d,
 
     win_type = wnck_window_get_window_type (d->win);
     meta_get_decoration_geometry (d, theme, &flags, &fgeom, &button_layout,
-				  meta_get_frame_type_for_decor_type (d->frame->type),
+				  meta_frame_type_from_string (d->frame->type),
 				  &clip);
 
     width  += fgeom.right_width + fgeom.left_width;
@@ -1590,59 +1566,52 @@ meta_update_button_layout (const char *value)
 }
 
 void
-meta_update_border_extents ()
+meta_update_border_extents (decor_frame_t *frame)
 {
-    MetaTheme *theme;
-    MetaFrameType frame_type;
-    decor_frame_t    *frame, *default_frame;
+    MetaTheme *theme = meta_theme_get_current ();
 
-    gint      top_height, bottom_height, left_width, right_width;
-    unsigned int i;
+    gwd_decor_frame_ref (frame);
+    decor_frame_t *default_frame = gwd_get_decor_frame ("default");
+    MetaFrameType frame_type = meta_frame_type_from_string (frame->type);
+    gint          top_height, bottom_height, left_width, right_width;
 
-    theme = meta_theme_get_current ();
+    if (!(frame_type < META_FRAME_TYPE_LAST))
+	frame_type = META_FRAME_TYPE_NORMAL;
 
-    for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
-    {
-	frame = gwd_get_decor_frame (i);
-	default_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
-	frame_type = meta_get_frame_type_for_decor_type (i);
+    meta_theme_get_frame_borders (theme,
+				  frame_type,
+				  frame->text_height,
+				  0,
+				  &top_height,
+				  &bottom_height,
+				  &left_width,
+				  &right_width);
 
-	meta_theme_get_frame_borders (theme,
-				      frame_type,
-				      frame->text_height,
-				      0,
-				      &top_height,
-				      &bottom_height,
-				      &left_width,
-				      &right_width);
+    frame->win_extents.top    = default_frame->win_extents.top;
+    frame->win_extents.bottom = bottom_height;
+    frame->win_extents.left   = left_width;
+    frame->win_extents.right  = right_width;
 
-	frame->win_extents.top    = default_frame->win_extents.top;
-	frame->win_extents.bottom = bottom_height;
-	frame->win_extents.left   = left_width;
-	frame->win_extents.right  = right_width;
+    frame->titlebar_height = top_height - frame->win_extents.top;
 
-	frame->titlebar_height = top_height - frame->win_extents.top;
+    meta_theme_get_frame_borders (theme,
+				  frame_type,
+				  frame->text_height,
+				  META_FRAME_MAXIMIZED,
+				  &top_height,
+				  &bottom_height,
+				  &left_width,
+				  &right_width);
 
-	meta_theme_get_frame_borders (theme,
-				      frame_type,
-				      frame->text_height,
-				      META_FRAME_MAXIMIZED,
-				      &top_height,
-				      &bottom_height,
-				      &left_width,
-				      &right_width);
+    frame->max_win_extents.top    = default_frame->win_extents.top;
+    frame->max_win_extents.bottom = bottom_height;
+    frame->max_win_extents.left   = left_width;
+    frame->max_win_extents.right  = right_width;
 
-	frame->max_win_extents.top    = default_frame->win_extents.top;
-	frame->max_win_extents.bottom = bottom_height;
-	frame->max_win_extents.left   = left_width;
-	frame->max_win_extents.right  = right_width;
+    frame->max_titlebar_height = top_height - frame->max_win_extents.top;
 
-	frame->max_titlebar_height = top_height - frame->max_win_extents.top;
-
-	gwd_decor_frame_unref (frame);
-	gwd_decor_frame_unref (default_frame);
-
-    }
+    gwd_decor_frame_unref (frame);
+    gwd_decor_frame_unref (default_frame);
 }
 
 #endif

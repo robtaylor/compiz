@@ -92,6 +92,10 @@ struct _pos pos[3][3] = {
     { 6, 2, 16, 16,   0, 0, 0, 0, 0, 0 }
 };
 
+const gchar * window_type_frames[WINDOW_TYPE_FRAMES_NUM] = {
+    "normal", "dialog", "menu", "utility"
+};
+
 char *program_name;
 
 GtkWidget     *switcher_style_window_rgba;

@@ -1,30 +1,23 @@
 #include "gtk-window-decorator.h"
 
-decor_frame_type
+const gchar *
 get_frame_type (WnckWindowType wnck_type)
 {
-    decor_frame_type frame_type;
-
     switch (wnck_type)
     {
 	case WNCK_WINDOW_NORMAL:
-	    frame_type = DECOR_FRAME_TYPE_NORMAL;
-	    break;
+	    return "normal";
 	case WNCK_WINDOW_DIALOG:
-	    frame_type = DECOR_FRAME_TYPE_DIALOG;
-	    break;
+	    return "dialog";
 	case WNCK_WINDOW_MENU:
-	    frame_type = DECOR_FRAME_TYPE_MENU;
-	    break;
+	    return "menu";
 	case WNCK_WINDOW_UTILITY:
-	    frame_type = DECOR_FRAME_TYPE_UTILITY;
-	    break;
+	    return "utility";
 	default:
-	    frame_type = DECOR_FRAME_TYPE_UNDECORATED;
-	    break;
+	    return "bare";
     }
 
-    return frame_type;
+    return "normal";
 }
 
 static void
@@ -105,6 +98,16 @@ window_actions_changed (WnckWindow *win)
 }
 
 void
+update_frames_border_extents (gpointer key,
+			      gpointer value,
+			      gpointer user_data)
+{
+    decor_frame_t *frame = (decor_frame_t *) value;
+
+    (*theme_update_border_extents) (frame);
+}
+
+void
 decorations_changed (WnckScreen *screen)
 {
     GdkDisplay *gdkdisplay;
@@ -116,7 +119,10 @@ decorations_changed (WnckScreen *screen)
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
 
     update_titlebar_font ();
-    (*theme_update_border_extents) ();
+    gwd_process_frames (update_frames_border_extents,
+			window_type_frames,
+			WINDOW_TYPE_FRAMES_NUM,
+			NULL);
     update_shadow ();
 
     update_default_decorations (gdkscreen);

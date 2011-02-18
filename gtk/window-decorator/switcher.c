@@ -1,5 +1,40 @@
 #include "gtk-window-decorator.h"
 
+decor_frame_t *
+create_switcher_frame (const gchar *type)
+{
+    decor_frame_t *frame = decor_frame_new (type);
+    decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
+
+    decor_context_t _switcher_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 6, 6 + SWITCHER_SPACE,
+	0, 0, 0, 0
+    };
+
+    frame->win_extents = _switcher_extents;
+    frame->max_win_extents = _switcher_extents;
+    frame->win_extents = _switcher_extents;
+    frame->window_context = _switcher_context;
+    frame->window_context_no_shadow = _switcher_context;
+    frame->max_window_context = _switcher_context;
+    frame->max_window_context_no_shadow = _switcher_context;
+    frame->update_shadow = switcher_frame_update_shadow;
+
+    /* keep the switcher frame around since we need to keep its
+     * contents */
+
+    gwd_decor_frame_ref (frame);
+
+    return frame;
+}
+
+void
+destroy_switcher_frame (decor_frame_t *frame)
+{
+    decor_frame_destroy (frame);
+}
+
 static void
 draw_switcher_background (decor_t *d)
 {
@@ -308,7 +343,7 @@ update_switcher_window (Window     popup,
 
     d->decorated = FALSE;
     d->draw	 = draw_switcher_decoration;
-    d->frame     = gwd_get_decor_frame (DECOR_FRAME_TYPE_SWITCHER);
+    d->frame     = gwd_get_decor_frame ("switcher");
 
     decor_get_default_layout (&d->frame->window_context, width, 1, &d->border_layout);
 

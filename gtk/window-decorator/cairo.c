@@ -874,21 +874,17 @@ get_title_scale (decor_frame_t *frame)
 }
 
 void
-update_border_extents ()
+update_border_extents (decor_frame_t *frame)
 {
-    unsigned int i;
+    decor_frame_t *default_frame = gwd_get_decor_frame ("default");
 
-    for (i = 0; i < DECOR_FRAME_TYPE_SWITCHER; i++)
-    {
-	decor_frame_t *frame = gwd_get_decor_frame (i);
-	decor_frame_t *default_frame = gwd_get_decor_frame (DECOR_FRAME_TYPE_DEFAULT);
+    frame = gwd_decor_frame_ref (frame);
 
-	frame->win_extents = default_frame->win_extents;
-	frame->max_win_extents = default_frame->win_extents;
-	frame->titlebar_height = frame->max_titlebar_height =
-		(frame->text_height < 17) ? 17 : frame->text_height;
+    frame->win_extents = default_frame->win_extents;
+    frame->max_win_extents = default_frame->win_extents;
+    frame->titlebar_height = frame->max_titlebar_height =
+	    (frame->text_height < 17) ? 17 : frame->text_height;
 
-	gwd_decor_frame_unref (frame);
-	gwd_decor_frame_unref (default_frame);
-    }
+    gwd_decor_frame_unref (frame);
+    gwd_decor_frame_unref (default_frame);
 }
