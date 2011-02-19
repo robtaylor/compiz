@@ -4570,6 +4570,7 @@ CompScreen::init (const char *name)
     XDefineCursor (dpy, priv->root, priv->normalCursor);
 
     XUngrabServer (dpy);
+    XSync (dpy, FALSE);
 
     priv->setAudibleBell (priv->optionGetAudibleBell ());
 
