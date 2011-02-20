@@ -989,10 +989,8 @@ DecorWindow::update (bool allowDecoration)
 void
 DecorWindow::updateFrame ()
 {
-    if (!wd || !(wd->decor->input.left || wd->decor->input.left ||
-	wd->decor->input.left || wd->decor->input.bottom) ||
-	!(wd->decor->maxInput.left || wd->decor->maxInput.left ||
-	wd->decor->maxInput.left || wd->decor->maxInput.bottom) ||
+    if (!wd || !(window->input ().left || window->input ().right ||
+		 window->input ().top || window->input ().bottom) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP && outputFrame) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW && inputFrame))
     {
@@ -1001,6 +999,7 @@ DecorWindow::updateFrame ()
 	    XDeleteProperty (screen->dpy (), window->id (),
 			     dScreen->inputFrameAtom);
 	    XDestroyWindow (screen->dpy (), inputFrame);
+
 	    inputFrame = None;
 	    frameRegion = CompRegion ();
 
@@ -1026,10 +1025,8 @@ DecorWindow::updateFrame ()
 	    oldHeight = 0;
 	}
     }
-    if (wd && (wd->decor->input.left || wd->decor->input.left ||
-	wd->decor->input.left || wd->decor->input.bottom ||
-	wd->decor->maxInput.left || wd->decor->maxInput.left ||
-	wd->decor->maxInput.left || wd->decor->maxInput.bottom))
+    if (wd && (window->input ().left || window->input ().right ||
+	       window->input ().top || window->input ().bottom))
     {
 	if (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
 	    updateInputFrame ();
