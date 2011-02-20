@@ -4581,6 +4581,13 @@ CompScreen::init (const char *name)
 
     priv->addScreenActions ();
 
+    /* Need to set a default here so that the value isn't uninitialized
+     * when loading plugins FIXME: Should find a way to initialize options
+     * first and then set this value, or better yet, tie this value directly
+     * to the option */
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
+
     priv->initialized = true;
 
     /* TODO: Bailout properly when screenInitPlugins fails
@@ -4593,6 +4600,9 @@ CompScreen::init (const char *name)
 
     /* The active plugins list might have been changed - load any
      * new plugins */
+
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     if (priv->dirtyPluginList)
 	priv->updatePlugins ();
@@ -4622,9 +4632,6 @@ CompScreen::init (const char *name)
 	    delete cw;
 	}
     }
-
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     /* enforce restack on all windows */
     for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
