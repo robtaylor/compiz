@@ -1,4 +1,4 @@
-/*
+ /*
  * Copyright © 2005 Novell, Inc.
  *
  * Permission to use, copy, modify, distribute, and sell this software
@@ -1678,6 +1678,7 @@ PrivateCubeScreen::PrivateCubeScreen (CompScreen *s) :
     mRotationState = CubeScreen::RotationNone;
 
     mDesktopOpacity = OPAQUE;
+    mPaintOrder = BTF;
 
     mLastOpacityIndex = CubeOptions::InactiveOpacity;
 
