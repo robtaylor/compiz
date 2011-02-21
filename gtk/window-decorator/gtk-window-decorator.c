@@ -118,6 +118,7 @@ main (int argc, char *argv[])
     unsigned int nchildren;
     Window     root_ret, parent_ret;
     Window     *children = NULL;
+    decor_t    *default_p, *bare_p, *switcher_p;
 
 #ifdef USE_METACITY
     char       *meta_theme = NULL;
@@ -380,6 +381,10 @@ main (int argc, char *argv[])
 
     initialize_decorations ();
 
+    default_p = gwd_get_decor_frame ("default");
+    bare_p = gwd_get_decor_frame ("bare");
+    switcher_p = gwd_get_decor_frame ("switcher");
+
     if (!init_settings (screen))
     {
 	free (settings);
@@ -390,6 +395,9 @@ main (int argc, char *argv[])
     decor_set_dm_check_hint (xdisplay, gdk_screen_get_number (gdkscreen),
 			     WINDOW_DECORATION_TYPE_PIXMAP |
 			     WINDOW_DECORATION_TYPE_WINDOW);
+
+    /* Keep the default, bare and switcher decorations around
+     * since otherwise they will be spuriously recreated */
 
     update_default_decorations (gdkscreen);
 
