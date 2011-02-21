@@ -4633,10 +4633,12 @@ CompScreen::init (const char *name)
 	}
     }
 
+    i = 0;
+
     /* enforce restack on all windows */
     for (CompWindowList::reverse_iterator rit = priv->windows.rbegin ();
 	 rit != priv->windows.rend (); rit++)
-	children[i] = (*rit)->id ();
+	children[i++] = (*rit)->id ();
 
     XRestackWindows (dpy, children, i);
 
