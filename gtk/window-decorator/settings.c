@@ -1,3 +1,24 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ */
+
 #include "gtk-window-decorator.h"
 
 /* TODO: Trash all of this and use a window property
@@ -334,7 +355,13 @@ titlebar_font_changed (GConfClient *client)
     if (!str)
 	str = g_strdup ("Sans Bold 12");
 
-    gwd_frames_foreach (set_frames_scales, (gpointer) str);
+    if (settings->font)
+    {
+	g_free (settings->font);
+	settings->font = g_strdup (str);
+    }
+
+    gwd_frames_foreach (set_frames_scales, (gpointer) settings->font);
 
     g_free (str);
 }
@@ -493,7 +520,9 @@ init_settings (WnckScreen *screen)
     theme_changed (gconf);
     theme_opacity_changed (gconf);
     button_layout_changed (gconf);
-    titlebar_font_changed (gconf);    titlebar_click_action_changed (gconf,
+    titlebar_font_changed (gconf);
+
+    titlebar_click_action_changed (gconf,
 				   COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY,
 				   &settings->double_click_action,
 				   DOUBLE_CLICK_ACTION_DEFAULT);
@@ -507,6 +536,8 @@ init_settings (WnckScreen *screen)
 				   RIGHT_CLICK_ACTION_DEFAULT);
     wheel_action_changed (gconf);
     blur_settings_changed (gconf);
+
+    g_object_unref (gconf);
 #endif
 
     update_titlebar_font ();

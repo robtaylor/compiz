@@ -17,6 +17,10 @@
  * Boston, MA 02111-1307, USA.
  *
  * Author: David Reveman <davidr@novell.com>
+ *
+ * 2D Mode: Copyright © 2009 Sam Spilsbury <smspillaz@gmail.com>
+ * Frames Management: Copright © 2010 Canonical Ltd.
+ *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
  */
 
 #include "gtk-window-decorator.h"
