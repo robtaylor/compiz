@@ -109,16 +109,16 @@ decor_settings_t *settings;
 int
 main (int argc, char *argv[])
 {
-    GdkDisplay *gdkdisplay;
-    Display    *xdisplay;
-    GdkScreen  *gdkscreen;
-    WnckScreen *screen;
-    gint       i, j, status;
-    gboolean   replace = FALSE;
-    unsigned int nchildren;
-    Window     root_ret, parent_ret;
-    Window     *children = NULL;
-    decor_t    *default_p, *bare_p, *switcher_p;
+    GdkDisplay    *gdkdisplay;
+    Display       *xdisplay;
+    GdkScreen     *gdkscreen;
+    WnckScreen    *screen;
+    gint          i, j, status;
+    gboolean      replace = FALSE;
+    unsigned int  nchildren;
+    Window        root_ret, parent_ret;
+    Window        *children = NULL;
+    decor_frame_t *default_p, *bare_p, *switcher_p;
 
 #ifdef USE_METACITY
     char       *meta_theme = NULL;
@@ -381,6 +381,9 @@ main (int argc, char *argv[])
 
     initialize_decorations ();
 
+    /* Keep the default, bare and switcher decorations around
+     * since otherwise they will be spuriously recreated */
+
     default_p = gwd_get_decor_frame ("default");
     bare_p = gwd_get_decor_frame ("bare");
     switcher_p = gwd_get_decor_frame ("switcher");
@@ -396,12 +399,13 @@ main (int argc, char *argv[])
 			     WINDOW_DECORATION_TYPE_PIXMAP |
 			     WINDOW_DECORATION_TYPE_WINDOW);
 
-    /* Keep the default, bare and switcher decorations around
-     * since otherwise they will be spuriously recreated */
-
     update_default_decorations (gdkscreen);
 
     gtk_main ();
+
+    gwd_decor_frame_unref (default_p);
+    gwd_decor_frame_unref (bare_p);
+    gwd_decor_frame_unref (switcher_p);
 
     free (settings);
 
