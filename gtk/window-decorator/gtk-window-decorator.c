@@ -29,8 +29,6 @@ gboolean minimal = FALSE;
 
 #define SWITCHER_SPACE 40
 
-decor_frame_t decor_frames[NUM_DECOR_FRAMES];
-
 guint cmdline_options = 0;
 
 GdkPixmap *decor_normal_pixmap = NULL;

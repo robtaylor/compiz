@@ -28,7 +28,6 @@ typedef struct _decor_frame_type_info
     destroy_frame_proc destroy_func;
 } decor_frame_type_info_t;
 
-decor_frame_t decor_frames[NUM_DECOR_FRAMES];
 GHashTable    *frame_info_table;
 GHashTable    *frames_table;
 

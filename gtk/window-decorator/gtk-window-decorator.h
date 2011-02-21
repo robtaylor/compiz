@@ -360,19 +360,6 @@ typedef struct {
     event_callback callback;
 } event_window;
 
-#define NUM_DECOR_FRAMES 8
-
-typedef enum _decor_frame_type {
-    DECOR_FRAME_TYPE_NORMAL = 0,
-    DECOR_FRAME_TYPE_DIALOG = 1,
-    DECOR_FRAME_TYPE_MENU = 2,
-    DECOR_FRAME_TYPE_UTILITY = 3,
-    DECOR_FRAME_TYPE_SWITCHER = 4,
-    DECOR_FRAME_TYPE_UNDECORATED = 5,
-    DECOR_FRAME_TYPE_DEFAULT = 6,
-    DECOR_FRAME_TYPE_BARE = 7
-} decor_frame_type;
-
 typedef struct _decor_frame decor_frame_t;
 typedef struct _decor_shadow_info decor_shadow_info_t;
 
