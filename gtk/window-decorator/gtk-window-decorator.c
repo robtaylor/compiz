@@ -159,6 +159,7 @@ main (int argc, char *argv[])
     settings->meta_button_layout_set = FALSE;
 #endif
 
+    settings->font = strdup ("Sans Bold 12");
 
     for (i = 0; i < argc; i++)
     {
@@ -406,6 +407,8 @@ main (int argc, char *argv[])
     gwd_decor_frame_unref (default_p);
     gwd_decor_frame_unref (bare_p);
     gwd_decor_frame_unref (switcher_p);
+
+    g_free (settings->font);
 
     free (settings);
 

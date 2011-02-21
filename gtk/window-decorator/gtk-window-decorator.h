@@ -232,6 +232,7 @@ typedef struct _decor_settings {
     double		    decoration_alpha;
     gboolean		    use_system_font;
     gint		    blur_type;
+    gchar		    *font;
 } decor_settings_t;
 
 #define DOUBLE_CLICK_ACTION_DEFAULT CLICK_ACTION_MAXIMIZE
@@ -1089,6 +1090,11 @@ style_changed (GtkWidget *widget, void *user_data /* PangoContext */);
 void
 set_frame_scale (decor_frame_t *frame,
 		 gchar	       *font_str);
+
+void
+set_frames_scales (gpointer key,
+		   gpointer value,
+		   gpointer user_data);
 
 gboolean
 init_settings (WnckScreen *screen);
