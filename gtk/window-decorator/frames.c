@@ -43,18 +43,7 @@ decor_frame_refresh (decor_frame_t *frame)
 
     /* Should really read gconf for that */
 
-    gchar *str = NULL;
-
-#ifdef USE_GCONF
-
-    GConfClient *client = gconf_client_get_default ();
-
-    str = gconf_client_get_string (client,
-				   COMPIZ_TITLEBAR_FONT_KEY,
-				   NULL);
-#endif
-    if (!str)
-	str = g_strdup ("Sans Bold 12");
+    gchar *str = settings->font;
 
     set_frame_scale (frame, str);
 
@@ -281,6 +270,32 @@ decor_frame_new (const gchar *type)
 void
 decor_frame_destroy (decor_frame_t *frame)
 {
+    Display *xdisplay = gdk_x11_get_default_xdisplay ();
+
+    if (frame->border_shadow)
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+
+    if (frame->border_no_shadow)
+	decor_shadow_destroy (xdisplay, frame->border_no_shadow);
+
+    if (frame->max_border_shadow)
+	decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+
+    if (frame->max_border_no_shadow)
+	decor_shadow_destroy (xdisplay, frame->max_border_no_shadow);
+
+    if (frame->style_window_rgba)
+	gtk_widget_destroy (GTK_WIDGET (frame->style_window_rgba));
+
+    if (frame->style_window_rgb)
+	gtk_widget_destroy (GTK_WIDGET (frame->style_window_rgb));
+
+    if (frame->pango_context)
+	g_object_unref (G_OBJECT (frame->pango_context));
+
+    if (frame->titlebar_font)
+	pango_font_description_free (frame->titlebar_font);
+
     if (frame)
 	free (frame->type);
 

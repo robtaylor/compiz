@@ -571,7 +571,7 @@ active_window_changed (WnckScreen *screen)
     }
 }
 
-static void
+void
 window_opened (WnckScreen *screen,
 	       WnckWindow *win)
 {
@@ -637,7 +637,7 @@ window_opened (WnckScreen *screen,
     }
 }
 
-static void
+void
 window_closed (WnckScreen *screen,
 	       WnckWindow *win)
 {

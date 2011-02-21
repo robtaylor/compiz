@@ -641,6 +641,14 @@ void
 connect_screen (WnckScreen *screen);
 
 void
+window_opened (WnckScreen *screen,
+	       WnckWindow *window);
+
+void
+window_closed (WnckScreen *screen,
+	       WnckWindow *window);
+
+void
 add_frame_window (WnckWindow *win,
 		  Window     frame,
 		  Bool	     mode);

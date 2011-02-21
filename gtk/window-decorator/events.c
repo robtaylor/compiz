@@ -1163,7 +1163,7 @@ selection_event_filter_func (GdkXEvent *gdkxevent,
     case SelectionClear:
 	status = decor_handle_selection_clear (xdisplay, xevent, 0);
 	if (status == DECOR_SELECTION_GIVE_UP)
-	    exit (0);
+	    gtk_main_quit ();
     default:
 	break;
     }

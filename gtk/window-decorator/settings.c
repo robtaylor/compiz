@@ -363,7 +363,8 @@ titlebar_font_changed (GConfClient *client)
 
     gwd_frames_foreach (set_frames_scales, (gpointer) settings->font);
 
-    g_free (str);
+    if (str)
+	g_free (str);
 }
 
 static void

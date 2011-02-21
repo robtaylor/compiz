@@ -120,6 +120,7 @@ main (int argc, char *argv[])
     unsigned int  nchildren;
     Window        root_ret, parent_ret;
     Window        *children = NULL;
+    GList	  *windows, *win;
     decor_frame_t *default_p, *bare_p, *switcher_p;
 
 #ifdef USE_METACITY
@@ -405,6 +406,26 @@ main (int argc, char *argv[])
     update_default_decorations (gdkscreen);
 
     gtk_main ();
+
+    win = windows = wnck_screen_get_windows (screen);
+
+    while (win != NULL)
+    {
+	WnckWindow *w = (WnckWindow *) win->data;
+
+	window_closed (screen, w);
+    }
+
+    g_list_free (windows);
+
+    if (screen)
+	g_object_unref (screen);
+
+    if (tip_window)
+	gtk_widget_destroy (GTK_WIDGET (tip_window));
+
+    if (tip_label)
+	gtk_widget_destroy (GTK_WIDGET (tip_label));
 
     gwd_decor_frame_unref (default_p);
     gwd_decor_frame_unref (bare_p);

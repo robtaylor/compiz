@@ -63,6 +63,7 @@ create_switcher_frame (const gchar *type)
 void
 destroy_switcher_frame (decor_frame_t *frame)
 {
+    gtk_widget_destroy (switcher_label);
     decor_frame_destroy (frame);
 }
 
@@ -244,10 +245,6 @@ draw_switcher_background (decor_t *d)
 
     cairo_destroy (cr);
 
-    GdkPixbuf *buf = gdk_pixbuf_get_from_drawable (NULL, d->buffer_pixmap, NULL, 0, 0, 0, 0, d->width, d->height);
-
-    gdk_pixbuf_save (buf, "/home/smspillaz/rendered_switcher.png", "png", NULL, NULL);
-
     copy_to_front_buffer (d);
 
     pixel = ((((a * style->bg[GTK_STATE_NORMAL].blue ) >> 24) & 0x0000ff) |
@@ -330,6 +327,27 @@ draw_switcher_decoration (decor_t *d)
 void
 switcher_window_closed ()
 {
+    decor_t *d = switcher_window;
+    Display *xdisplay = gdk_x11_get_default_xdisplay ();
+
+    if (d->layout)
+	g_object_unref (G_OBJECT (d->layout));
+
+    if (d->name)
+	g_free (d->name);
+
+    if (d->pixmap)
+	g_object_unref (G_OBJECT (d->pixmap));
+
+    if (d->buffer_pixmap)
+	g_object_unref (G_OBJECT (d->buffer_pixmap));
+
+    if (d->cr)
+	cairo_destroy (d->cr);
+
+    if (d->picture)
+	XRenderFreePicture (xdisplay, d->picture);
+
     gwd_decor_frame_unref (switcher_window->frame);
     g_free (switcher_window);
     switcher_window = NULL;
