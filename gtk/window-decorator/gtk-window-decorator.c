@@ -125,6 +125,7 @@ main (int argc, char *argv[])
 
 #ifdef USE_METACITY
     char       *meta_theme = NULL;
+    MetaTheme  *theme = NULL;
 #endif
 
     program_name = argv[0];
@@ -239,29 +240,6 @@ main (int argc, char *argv[])
 	}
     }
 
-    theme_draw_window_decoration    = draw_window_decoration;
-    theme_calc_decoration_size	    = calc_decoration_size;
-    theme_update_border_extents	    = update_border_extents;
-    theme_get_event_window_position = get_event_window_position;
-    theme_get_button_position       = get_button_position;
-    theme_get_title_scale	    = get_title_scale;
-
-#ifdef USE_METACITY
-    if (meta_theme)
-    {
-	meta_theme_set_current (meta_theme, TRUE);
-	if (meta_theme_get_current ())
-	{
-	    theme_draw_window_decoration    = meta_draw_window_decoration;
-	    theme_calc_decoration_size	    = meta_calc_decoration_size;
-	    theme_update_border_extents	    = meta_update_border_extents;
-	    theme_get_event_window_position = meta_get_event_window_position;
-	    theme_get_button_position	    = meta_get_button_position;
-	    theme_get_title_scale	    = meta_get_title_scale;
-	}
-    }
-#endif
-
     gdkdisplay = gdk_display_get_default ();
     xdisplay   = gdk_x11_display_get_xdisplay (gdkdisplay);
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
@@ -320,6 +298,49 @@ main (int argc, char *argv[])
 	return 1;
     }
 
+    screen = wnck_screen_get_default ();
+
+    initialize_decorations ();
+
+    if (!init_settings (screen))
+    {
+	free (settings);
+	fprintf (stderr, "%s: Failed to get necessary gtk settings\n", argv[0]);
+	return 1;
+    }
+
+    theme_draw_window_decoration    = draw_window_decoration;
+    theme_calc_decoration_size	    = calc_decoration_size;
+    theme_update_border_extents	    = update_border_extents;
+    theme_get_event_window_position = get_event_window_position;
+    theme_get_button_position       = get_button_position;
+    theme_get_title_scale	    = get_title_scale;
+
+#ifdef USE_METACITY
+    if (meta_theme)
+    {
+	meta_theme_set_current (meta_theme, TRUE);
+
+	theme = meta_theme_get_current ();
+
+	if (!theme)
+	    g_warning ("specified a theme that does not exist! falling back to cairo decoration\n");
+    }
+    else
+	theme = meta_theme_get_current ();
+
+    if (theme)
+    {
+	fprintf (stderr, "setting procs\n");
+	theme_draw_window_decoration    = meta_draw_window_decoration;
+	theme_calc_decoration_size	    = meta_calc_decoration_size;
+	theme_update_border_extents	    = meta_update_border_extents;
+	theme_get_event_window_position = meta_get_event_window_position;
+	theme_get_button_position	    = meta_get_button_position;
+	theme_get_title_scale	    = meta_get_title_scale;
+    }
+#endif
+
     for (i = 0; i < 3; i++)
     {
 	for (j = 0; j < 3; j++)
@@ -342,15 +363,14 @@ main (int argc, char *argv[])
 	return 1;
     }
 
-    screen = wnck_screen_get_default ();
     wnck_set_client_type (WNCK_CLIENT_TYPE_PAGER);
 
     gdk_window_add_filter (NULL,
 			   selection_event_filter_func,
 			   NULL);
 
-     if (!minimal)
-     {
+    if (!minimal)
+    {
 	GdkWindow *root = gdk_window_foreign_new_for_display (gdkdisplay,
 							      gdk_x11_get_default_root_xwindow ());
 
@@ -383,21 +403,12 @@ main (int argc, char *argv[])
  	connect_screen (screen);
     }
 
-    initialize_decorations ();
-
     /* Keep the default, bare and switcher decorations around
      * since otherwise they will be spuriously recreated */
 
     default_p = gwd_get_decor_frame ("default");
     bare_p = gwd_get_decor_frame ("bare");
     switcher_p = gwd_get_decor_frame ("switcher");
-
-    if (!init_settings (screen))
-    {
-	free (settings);
-	fprintf (stderr, "%s: Failed to get necessary gtk settings\n", argv[0]);
-	return 1;
-    }
 
     decor_set_dm_check_hint (xdisplay, gdk_screen_get_number (gdkscreen),
 			     WINDOW_DECORATION_TYPE_PIXMAP |

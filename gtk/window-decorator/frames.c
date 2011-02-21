@@ -41,8 +41,6 @@ decor_frame_refresh (decor_frame_t *frame)
     update_style (frame->style_window_rgba);
     update_style (frame->style_window_rgb);
 
-    /* Should really read gconf for that */
-
     gchar *str = settings->font;
 
     set_frame_scale (frame, str);
@@ -51,9 +49,8 @@ decor_frame_refresh (decor_frame_t *frame)
 
     frame_update_titlebar_font (frame);
 
-    /* FIXME */
-    if (strcmp (frame->type, "bare") &&
-	strcmp (frame->type, "switcher"))
+    if (strcmp (frame->type, "switcher") != 0 &&
+	strcmp (frame->type, "bare") != 0)
 	(*theme_update_border_extents) (frame);
 
     opt_shadow.shadow_radius  = settings->shadow_radius;

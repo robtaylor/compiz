@@ -25,7 +25,7 @@
  * instead - much much cleaner!
  */
 
-void
+gboolean
 shadow_property_changed (WnckScreen *s)
 {
     GdkDisplay *display = gdk_display_get_default ();
@@ -44,7 +44,7 @@ shadow_property_changed (WnckScreen *s)
 				 &format, &n, &left, &prop_data);
 
     if (result != Success)
-	return;
+	return FALSE;
 
     if (n == 4)
     {
@@ -102,8 +102,7 @@ shadow_property_changed (WnckScreen *s)
 	    XFreeStringList (t_data);
     }
 
-    if (changed)
-	decorations_changed (s);
+    return changed;
 }
 
 #ifdef USE_GCONF
@@ -540,17 +539,8 @@ init_settings (WnckScreen *screen)
 
     g_object_unref (gconf);
 #endif
-
-    update_titlebar_font ();
-
-    gwd_process_frames (update_frames_border_extents,
-			window_type_frames,
-			WINDOW_TYPE_FRAMES_NUM,
-			NULL);
     
     shadow_property_changed (screen);
-
-    update_shadow ();
 
     return TRUE;
 }

@@ -611,7 +611,7 @@ update_event_windows (WnckWindow *win);
 int
 update_shadow (void);
 
-void
+gboolean
 shadow_property_changed (WnckScreen *screen);
 
 void

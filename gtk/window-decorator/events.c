@@ -980,7 +980,8 @@ event_filter_func (GdkXEvent *gdkxevent,
 	    
 	    if (screen)
 	    {
-		shadow_property_changed (screen);
+		if (shadow_property_changed (screen))
+		    decorations_changed (screen);
 	    }
 	}
 	else if (xevent->xproperty.atom == mwm_hints_atom)
