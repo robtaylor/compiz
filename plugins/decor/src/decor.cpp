@@ -845,9 +845,7 @@ DecorWindow::update (bool allowDecoration)
     if (decorate)
     {
 	if (decor && checkSize (decor))
-	{
 	    decoration = decor;
-	}
 	else
 	{
 
@@ -1434,9 +1432,12 @@ DecorWindow::windowNotify (CompWindowNotify n)
     {
 	case CompWindowNotifyMap:
 	case CompWindowNotifyUnmap:
-	    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	    if (dScreen->cmActive)
 	    {
-		DecorWindow::get (cw)->computeShadowRegion ();
+		foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+		{
+		    DecorWindow::get (cw)->computeShadowRegion ();
+		}
 	    }
 	    break;
 	case CompWindowNotifyUnreparent:
@@ -1608,9 +1609,12 @@ DecorScreen::handleEvent (XEvent *event)
 	    }
 	    else if (event->xproperty.atom == XA_WM_TRANSIENT_FOR)
 	    {
-		foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+		if (cmActive)
 		{
-		    DecorWindow::get (cw)->computeShadowRegion ();
+		    foreach (CompWindow *cw, cScreen->getWindowPaintList ())
+		    {
+			DecorWindow::get (cw)->computeShadowRegion ();
+		    }
 		}
 	    }
 	    else
@@ -1894,9 +1898,13 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
     }
     updateReg = true;
 
-    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+    if (dScreen->cmActive)
     {
-	DecorWindow::get (cw)->computeShadowRegion ();
+	foreach (CompWindow *cw,
+		 DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	{
+	    DecorWindow::get (cw)->computeShadowRegion ();
+	}
     }
 
     window->moveNotify (dx, dy, immediate);
@@ -1930,9 +1938,13 @@ DecorWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     updateDecorationScale ();
     updateReg = true;
 
-    foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+    if (dScreen->cmActive)
     {
-	DecorWindow::get (cw)->computeShadowRegion ();
+	foreach (CompWindow *cw,
+		 DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	{
+	    DecorWindow::get (cw)->computeShadowRegion ();
+	}
     }
 
     window->resizeNotify (dx, dy, dwidth, dheight);
@@ -2033,7 +2045,10 @@ DecorScreen::DecorScreen (CompScreen *s) :
     windowDefault.input.top    = 1;
     windowDefault.input.bottom = 0;
 
-    windowDefault.maxInput = windowDefault.output = windowDefault.input;
+    windowDefault.border = windowDefault.maxBorder =
+	windowDefault.maxInput = windowDefault.output =
+	    windowDefault.input;
+
     windowDefault.refCount = 1;
 
     cmActive = (cScreen) ? cScreen->compositingActive () &&
