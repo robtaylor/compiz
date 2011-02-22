@@ -50,12 +50,6 @@
 
 #define TINDEX(ws, i) (((ws)->tIndex + (i)) % TEXTURE_NUM)
 
-#define CLAMPW(v, min, max) \
-    if ((v) > (max))	   \
-	(v) = (max);	   \
-    else if ((v) < (min))  \
-	(v) = (min)
-
 #define WATER_INITIATE_MODIFIERS_DEFAULT (ControlMask | CompSuperMask)
 
 struct WaterFunction {

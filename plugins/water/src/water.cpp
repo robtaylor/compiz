@@ -460,7 +460,7 @@ WaterScreen::softwareUpdate (float dt, float fade)
 
 	    value = (2.0f * D (d11, j) - D (d01, j) + accel) * fade;
 
-	    CLAMPW (value, 0.0f, 1.0f);
+	    value = CLAMP (value, 0.0f, 1.0f);
 
 	    D (d01, j) = value;
 	}
