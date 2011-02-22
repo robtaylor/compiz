@@ -62,7 +62,8 @@ create_gdk_window (Window xframe)
 {
     GdkDisplay  *display = gdk_display_get_default ();
     GdkScreen   *screen  = gdk_display_get_default_screen (display);
-    GdkWindow   *window  = gdk_window_foreign_new (xframe);
+    GdkWindow   *window  = gdk_x11_window_foreign_new_for_display (display,
+                                                                   xframe);
     GdkColormap *cmap    = gdk_screen_get_rgb_colormap (screen);
 
     gdk_drawable_set_colormap (GDK_DRAWABLE (window), cmap);

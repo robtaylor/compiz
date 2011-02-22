@@ -370,8 +370,8 @@ main (int argc, char *argv[])
 
     if (!minimal)
     {
-	GdkWindow *root = gdk_window_foreign_new_for_display (gdkdisplay,
-							      gdk_x11_get_default_root_xwindow ());
+	GdkWindow *root = gdk_x11_window_foreign_new_for_display (gdkdisplay,
+								  gdk_x11_get_default_root_xwindow ());
 
  	gdk_window_add_filter (NULL,
  			       event_filter_func,
@@ -382,8 +382,8 @@ main (int argc, char *argv[])
 
 	for (i = 0; i < nchildren; i++)
 	{
-	    GdkWindow *toplevel = gdk_window_foreign_new_for_display (gdkdisplay,
-								      children[i]);
+	    GdkWindow *toplevel = gdk_x11_window_foreign_new_for_display (gdkdisplay,
+									  children[i]);
 
 	    /* Need property notify on all windows */
 
