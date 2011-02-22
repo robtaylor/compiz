@@ -63,7 +63,7 @@ endfunction ()
 find_program (XSLTPROC_EXECUTABLE xsltproc)
 mark_as_advanced (FORCE XSLTPROC_EXECUTABLE)
 
-if (XSLTPROC_EXECUTABLE AND NOT COMPIZ_DISABLE_SCHEMAS_INSTALL)
+if (XSLTPROC_EXECUTABLE)
     compiz_gconf_prepare_install_dirs ()
     add_custom_command (
 	OUTPUT "${CMAKE_BINARY_DIR}/generated/compiz-${COMPIZ_CURRENT_PLUGIN}.schemas"
