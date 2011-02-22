@@ -424,18 +424,17 @@ main (int argc, char *argv[])
 	WnckWindow *w = (WnckWindow *) win->data;
 
 	window_closed (screen, w);
+
+	win = g_list_next (win);
     }
 
     g_list_free (windows);
 
-    if (screen)
-	g_object_unref (screen);
+    if (tip_label)
+	gtk_widget_destroy (GTK_WIDGET (tip_label));
 
     if (tip_window)
 	gtk_widget_destroy (GTK_WIDGET (tip_window));
-
-    if (tip_label)
-	gtk_widget_destroy (GTK_WIDGET (tip_label));
 
     gwd_decor_frame_unref (default_p);
     gwd_decor_frame_unref (bare_p);

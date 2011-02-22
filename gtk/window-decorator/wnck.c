@@ -508,6 +508,11 @@ remove_frame_window (WnckWindow *win)
 	d->frame = NULL;
     }
 
+    gdk_error_trap_push ();
+    XDeleteProperty (xdisplay, wnck_window_get_xid (win), win_decor_atom);
+    gdk_display_sync (gdk_display_get_default ());
+    gdk_error_trap_pop ();
+
     d->width  = 0;
     d->height = 0;
 
@@ -644,16 +649,12 @@ window_closed (WnckScreen *screen,
     Display *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
-    remove_frame_window (win);
-
-    g_object_set_data (G_OBJECT (win), "decor", NULL);
-
-    gdk_error_trap_push ();
-    XDeleteProperty (xdisplay, wnck_window_get_xid (win), win_decor_atom);
-    gdk_display_sync (gdk_display_get_default ());
-    gdk_error_trap_pop ();
-
-    g_free (d);
+    if (d)
+    {
+	remove_frame_window (win);
+	g_object_set_data (G_OBJECT (win), "decor", NULL);
+	g_free (d);
+    }
 }
 
 void
