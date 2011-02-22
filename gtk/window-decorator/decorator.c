@@ -1,4 +1,109 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ *
+ * 2D Mode: Copyright © 2010 Sam Spilsbury <smspillaz@gmail.com>
+ * Frames Management: Copright © 2011 Canonical Ltd.
+ *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
+ */
+
 #include "gtk-window-decorator.h"
+
+decor_frame_t *
+create_normal_frame (const gchar *type)
+{
+    decor_frame_t *frame = decor_frame_new (type);
+
+    decor_context_t _window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_context_t _max_window_context_no_shadow = {
+	{ 0, 0, 0, 0 },
+	6, 6, 4, 6,
+	0, 0, 0, 0
+    };
+
+    decor_extents_t _win_extents         = { 6, 6, 6, 6 };
+    decor_extents_t _max_win_extents     = { 6, 6, 4, 6 };
+
+    frame->win_extents = _win_extents;
+    frame->max_win_extents = _max_win_extents;
+    frame->update_shadow = decor_frame_update_shadow;
+    frame->window_context = _window_context;
+    frame->window_context_no_shadow = _window_context_no_shadow;
+    frame->max_window_context = _max_window_context;
+    frame->max_window_context_no_shadow = _max_window_context_no_shadow;
+
+    return frame;
+}
+
+void
+destroy_normal_frame (decor_frame_t *frame)
+{
+    decor_frame_destroy (frame);
+}
+
+decor_frame_t *
+create_bare_frame (const gchar *type)
+{
+    decor_frame_t *frame = decor_frame_new (type);
+    decor_context_t _shadow_context = {
+	{ 0, 0, 0, 0 },
+	0, 0, 0, 0,
+	0, 0, 0, 0,
+    };
+
+    decor_extents_t _shadow_extents      = { 0, 0, 0, 0 };
+
+    frame->win_extents = _shadow_extents;
+    frame->max_win_extents = _shadow_extents;
+    frame->win_extents = _shadow_extents;
+    frame->window_context = _shadow_context;
+    frame->window_context_no_shadow = _shadow_context;
+    frame->max_window_context = _shadow_context;
+    frame->max_window_context_no_shadow = _shadow_context;
+    frame->update_shadow = bare_frame_update_shadow;
+
+    return frame;
+}
+
+void
+destroy_bare_frame (decor_frame_t *frame)
+{
+    decor_frame_destroy (frame);
+}
+
 
 /*
  * get_titlebar_font
@@ -7,31 +112,31 @@
  * Description: Helper function to get the font for the titlebar
  */
 static const PangoFontDescription *
-get_titlebar_font (void)
+get_titlebar_font (decor_frame_t *frame)
 {
-    if (use_system_font)
-    {
+    if (settings->use_system_font)
 	return NULL;
-    }
     else
-	return titlebar_font;
+	return frame->titlebar_font;
 }
 
 /*
- * update_titlebar_font
+ * frame_update_titlebar_font
  *
  * Returns: void
  * Description: updates the titlebar font from the pango context, should
  * be called whenever the gtk style or font has changed
  */
 void
-update_titlebar_font (void)
+frame_update_titlebar_font (decor_frame_t *frame)
 {
     const PangoFontDescription *font_desc;
     PangoFontMetrics	       *metrics;
     PangoLanguage	       *lang;
 
-    font_desc = get_titlebar_font ();
+    frame = gwd_decor_frame_ref (frame);
+
+    font_desc = get_titlebar_font (frame);
     if (!font_desc)
     {
 	GtkStyle *default_style;
@@ -40,16 +145,33 @@ update_titlebar_font (void)
 	font_desc = default_style->font_desc;
     }
 
-    pango_context_set_font_description (pango_context, font_desc);
+    pango_context_set_font_description (frame->pango_context, font_desc);
 
-    lang    = pango_context_get_language (pango_context);
-    metrics = pango_context_get_metrics (pango_context, font_desc, lang);
+    lang    = pango_context_get_language (frame->pango_context);
+    metrics = pango_context_get_metrics (frame->pango_context, font_desc, lang);
 
-    text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
+    frame->text_height = PANGO_PIXELS (pango_font_metrics_get_ascent (metrics) +
 				pango_font_metrics_get_descent (metrics));
+
+    gwd_decor_frame_unref (frame);
 
     pango_font_metrics_unref (metrics);
 }
+
+void
+update_frames_titlebar_fonts (gpointer key,
+			      gpointer value,
+			      gpointer user_data)
+{
+    frame_update_titlebar_font ((decor_frame_t *) value);
+}
+
+void
+update_titlebar_font ()
+{
+    gwd_frames_foreach (update_frames_titlebar_fonts, NULL);
+}
+
 
 /*
  * update_event_windows
@@ -291,7 +413,7 @@ max_window_name_width (WnckWindow *win)
     /* Ensure that a layout is created */
     if (!d->layout)
     {
-	d->layout = pango_layout_new (pango_context);
+	d->layout = pango_layout_new (d->frame->pango_context);
 	if (!d->layout)
 	    return 0;
 
@@ -428,10 +550,10 @@ update_window_decoration_icon (WnckWindow *win)
 	/* 32 bit pixmap on pixmap mode, 24 for reparenting */
 	if (d->frame_window)
 	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						     24);
+						     d->frame->style_window_rgba);
 	else
 	    d->icon_pixmap = pixmap_new_from_pixbuf (d->icon_pixbuf,
-						     32);
+						     d->frame->style_window_rgb);
 	cr = gdk_cairo_create (GDK_DRAWABLE (d->icon_pixmap));
 	d->icon = cairo_pattern_create_for_surface (cairo_get_target (cr));
 	cairo_destroy (cr);
@@ -459,7 +581,6 @@ update_window_decoration_size (WnckWindow *win)
     gint              x, y, w, h, name_width;
     Display           *xdisplay;
     XRenderPictFormat *format;
-    int               depth;
 
     xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
 
@@ -482,12 +603,9 @@ update_window_decoration_size (WnckWindow *win)
     /* Get the correct depth for the frame window in reparenting mode, otherwise
      * enforce 32 */
     if (d->frame_window)
-	depth = gdk_drawable_get_depth (GDK_DRAWABLE (d->frame_window));
+	pixmap = create_pixmap (width, height, d->frame->style_window_rgb);
     else
-	depth = 32;
-
-    /* Create pixmap of decoration size */
-    pixmap = create_pixmap (width, height, depth);
+	pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
 
     gdk_flush ();
 
@@ -500,8 +618,10 @@ update_window_decoration_size (WnckWindow *win)
 
     gdk_error_trap_push ();
 
-    /* Create backbuffer pixmap */
-    buffer_pixmap = create_pixmap (width, height, depth);
+    if (d->frame_window)
+	buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgb);
+    else
+	buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
 
     gdk_flush ();
 
@@ -571,9 +691,15 @@ draw_border_shape (Display	   *xdisplay,
     static XRenderColor white = { 0xffff, 0xffff, 0xffff, 0xffff };
     GdkColormap		*colormap;
     decor_t		d;
+    decor_shadow_info_t *info = (decor_shadow_info_t *) closure;
     double		save_decoration_alpha;
 
     memset (&d, 0, sizeof (d));
+
+    if (info)
+	d.frame = info->frame;
+    else
+	d.frame = gwd_get_decor_frame ("default");
 
     d.pixmap  = gdk_pixmap_foreign_new_for_display (gdk_display_get_default (),
 						    pixmap);
@@ -585,23 +711,25 @@ draw_border_shape (Display	   *xdisplay,
     d.context = c;
 
     /* we use closure argument if maximized */
-    if (closure)
-	d.state |=
-	    WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
-	    WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY;
+    if (info)
+	d.state = info->state;
+    else
+	d.state = 0;
 
     decor_get_default_layout (c, 1, 1, &d.border_layout);
 
     colormap = get_colormap_for_drawable (GDK_DRAWABLE (d.pixmap));
     gdk_drawable_set_colormap (d.pixmap, colormap);
 
-    /* create shadow from opaque decoration */
-    save_decoration_alpha = decoration_alpha;
-    decoration_alpha = 1.0;
+    /* create shadow from opaque decoration
+     * FIXME: Should not modify settings value
+     * like this */
+    save_decoration_alpha = settings->decoration_alpha;
+    settings->decoration_alpha = 1.0;
 
     (*d.draw) (&d);
 
-    decoration_alpha = save_decoration_alpha;
+    settings->decoration_alpha = save_decoration_alpha;
 
     XRenderFillRectangle (xdisplay, PictOpSrc, picture, &white,
 			  c->left_space,
@@ -609,8 +737,12 @@ draw_border_shape (Display	   *xdisplay,
 			  width - c->left_space - c->right_space,
 			  height - c->top_space - c->bottom_space);
 
+    if (!info)
+	gwd_decor_frame_unref (d.frame);
+
     g_object_unref (G_OBJECT (d.pixmap));
 }
+
 
 /*
  * update_shadow
@@ -628,183 +760,264 @@ draw_border_shape (Display	   *xdisplay,
  *
  * We do something similar  for the maximimzed mode as well
  */
-int
-update_shadow (void)
+void
+bare_frame_update_shadow (Display		  *xdisplay,
+			  Screen		  *screen,
+			  decor_frame_t		 *frame,
+			  decor_shadow_info_t    *info,
+			  decor_shadow_options_t *opt_shadow,
+			  decor_shadow_options_t *opt_no_shadow)
 {
-    decor_shadow_options_t opt_shadow;
-    decor_shadow_options_t opt_no_shadow;
-    Display		   *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
-    GdkDisplay		   *display = gdk_display_get_default ();
-    GdkScreen		   *screen = gdk_display_get_default_screen (display);
-
-    /* Pixmap mode non maximized window shadow */
-    opt_shadow.shadow_radius  = shadow_radius;
-    opt_shadow.shadow_opacity = shadow_opacity;
-
-    memcpy (opt_shadow.shadow_color, shadow_color, sizeof (shadow_color));
-
-    opt_shadow.shadow_offset_x = shadow_offset_x;
-    opt_shadow.shadow_offset_y = shadow_offset_y;
-
-    /* Reparenting mode non maximized window shadow */
-    opt_no_shadow.shadow_radius  = 0;
-    opt_no_shadow.shadow_opacity = 0;
-
-    opt_no_shadow.shadow_offset_x = 0;
-    opt_no_shadow.shadow_offset_y = 0;
-
-    /* Create a special no_border_shadow for the pixmap mode in case we need it */
-    if (no_border_shadow)
+    if (frame->border_shadow)
     {
-	decor_shadow_destroy (xdisplay, no_border_shadow);
-	no_border_shadow = NULL;
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
     }
 
-    no_border_shadow = decor_shadow_create (xdisplay,
-					    gdk_x11_screen_get_xscreen (screen),
+    frame->border_shadow = decor_shadow_create (xdisplay,
+					    screen,
 					    1, 1,
 					    0,
 					    0,
 					    0,
 					    0,
 					    0, 0, 0, 0,
-					    &opt_shadow,
-					    &shadow_context,
+					    opt_shadow,
+					    &frame->window_context,
 					    decor_draw_simple,
-					    0);
+					    NULL);
+}
 
-    /* Normal window shadow pixmap mode */
-    if (border_shadow)
+void
+switcher_frame_update_shadow (Display		  *xdisplay,
+			      Screen		  *screen,
+			      decor_frame_t	  *frame,
+			      decor_shadow_info_t    *info,
+			      decor_shadow_options_t *opt_shadow,
+			      decor_shadow_options_t *opt_no_shadow)
+{
+    if (frame->border_shadow)
     {
-	decor_shadow_destroy (xdisplay, border_shadow);
-	border_shadow = NULL;
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
     }
 
-    border_shadow = decor_shadow_create (xdisplay,
-					 gdk_x11_screen_get_xscreen (screen),
-					 1, 1,
-					 _win_extents.left,
-					 _win_extents.right,
-					 _win_extents.top + titlebar_height,
-					 _win_extents.bottom,
-					 _win_extents.left -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.right -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.top + titlebar_height -
-					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.bottom -
-					 TRANSLUCENT_CORNER_SIZE,
-					 &opt_shadow,
-					 &window_context,
-					 draw_border_shape,
-					 0);
+    frame->border_shadow = decor_shadow_create (xdisplay,
+						screen,
+						1, 1,
+						frame->win_extents.left,
+						frame->win_extents.right,
+						frame->win_extents.top,
+						frame->win_extents.bottom,
+						frame->win_extents.left -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.right -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.top -
+						TRANSLUCENT_CORNER_SIZE,
+						frame->win_extents.bottom -
+						TRANSLUCENT_CORNER_SIZE,
+						opt_shadow,
+						&frame->window_context,
+						decor_draw_simple,
+						NULL);
+}
 
-    /* Enforced zero-shadow for reparenting mode for normal windows */
-    if (border_no_shadow)
+void
+decor_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow)
+{
+    if (frame->border_shadow)
     {
-	decor_shadow_destroy (xdisplay, border_no_shadow);
-	border_no_shadow = NULL;
+	decor_shadow_destroy (xdisplay, frame->border_shadow);
+	frame->border_shadow = NULL;
     }
 
-    border_no_shadow = decor_shadow_create (xdisplay,
-					 gdk_x11_screen_get_xscreen (screen),
+    frame->border_shadow = decor_shadow_create (xdisplay,
+						 screen,
+						 1, 1,
+						 frame->win_extents.left,
+						 frame->win_extents.right,
+						 frame->win_extents.top + frame->titlebar_height,
+						 frame->win_extents.bottom,
+						 frame->win_extents.left -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.right -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.top + frame->titlebar_height -
+						 TRANSLUCENT_CORNER_SIZE,
+						 frame->win_extents.bottom -
+						 TRANSLUCENT_CORNER_SIZE,
+						 opt_shadow,
+						 &frame->window_context,
+						 draw_border_shape,
+						 (void *) info);
+    if (frame->border_no_shadow)
+    {
+	decor_shadow_destroy (xdisplay, frame->border_no_shadow);
+	frame->border_no_shadow = NULL;
+    }
+
+    frame->border_no_shadow = decor_shadow_create (xdisplay,
+					 screen,
 					 1, 1,
-					 _win_extents.left,
-					 _win_extents.right,
-					 _win_extents.top + titlebar_height,
-					 _win_extents.bottom,
-					 _win_extents.left -
+					 frame->win_extents.left,
+					 frame->win_extents.right,
+					 frame->win_extents.top + frame->titlebar_height,
+					 frame->win_extents.bottom,
+					 frame->win_extents.left -
 					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.right -
+					 frame->win_extents.right -
 					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.top + titlebar_height -
+					 frame->win_extents.top + frame->titlebar_height -
 					 TRANSLUCENT_CORNER_SIZE,
-					 _win_extents.bottom -
+					 frame->win_extents.bottom -
 					 TRANSLUCENT_CORNER_SIZE,
-					 &opt_no_shadow,
-					 &window_context_no_shadow,
+					 opt_no_shadow,
+					 &frame->window_context_no_shadow,
 					 draw_border_shape,
 					 0);
-
-    decor_context_t *context = &window_context_no_shadow;
 
     /* Maximized border shadow pixmap mode */
-    if (max_border_shadow)
+    if (frame->max_border_shadow)
     {
-	decor_shadow_destroy (xdisplay, max_border_shadow);
-	max_border_shadow = NULL;
+	decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	frame->max_border_shadow = NULL;
     }
 
-    max_border_shadow =
+    info->state = (WNCK_WINDOW_STATE_MAXIMIZED_HORIZONTALLY |
+		   WNCK_WINDOW_STATE_MAXIMIZED_VERTICALLY);
+
+    frame->max_border_shadow =
 	decor_shadow_create (xdisplay,
-			     gdk_x11_screen_get_xscreen (screen),
+			     screen,
 			     1, 1,
-			     _max_win_extents.left,
-			     _max_win_extents.right,
-			     _max_win_extents.top + max_titlebar_height,
-			     _max_win_extents.bottom,
-			     _max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.top + max_titlebar_height -
+			     frame->max_win_extents.left,
+			     frame->max_win_extents.right,
+			     frame->max_win_extents.top + frame->max_titlebar_height,
+			     frame->max_win_extents.bottom,
+			     frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.top + frame->max_titlebar_height -
 			     TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-			     &opt_shadow,
-			     &max_window_context,
+			     frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+			     opt_shadow,
+			     &frame->max_window_context,
 			     draw_border_shape,
-			     (void *) 1);
+			     (void *) info);
 
     /* Enforced maximize zero shadow reparenting mode */
-    if (max_border_no_shadow)
+    if (frame->max_border_no_shadow)
     {
-	decor_shadow_destroy (xdisplay, max_border_shadow);
-	max_border_shadow = NULL;
+	decor_shadow_destroy (xdisplay, frame->max_border_shadow);
+	frame->max_border_shadow = NULL;
     }
 
-    max_border_no_shadow =
+    frame->max_border_no_shadow =
 	decor_shadow_create (xdisplay,
-			     gdk_x11_screen_get_xscreen (screen),
+			     screen,
 			     1, 1,
-			     _max_win_extents.left,
-			     _max_win_extents.right,
-			     _max_win_extents.top + max_titlebar_height,
-			     _max_win_extents.bottom,
-			     _max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.top + max_titlebar_height -
+			     frame->max_win_extents.left,
+			     frame->max_win_extents.right,
+			     frame->max_win_extents.top + frame->max_titlebar_height,
+			     frame->max_win_extents.bottom,
+			     frame->max_win_extents.left - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.right - TRANSLUCENT_CORNER_SIZE,
+			     frame->max_win_extents.top + frame->max_titlebar_height -
 			     TRANSLUCENT_CORNER_SIZE,
-			     _max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
-			     &opt_no_shadow,
-			     &max_window_context_no_shadow,
+			     frame->max_win_extents.bottom - TRANSLUCENT_CORNER_SIZE,
+			     opt_no_shadow,
+			     &frame->max_window_context_no_shadow,
 			     draw_border_shape,
-			     (void *) 1);
+			     (void *) info);
+}
 
-    /* Special shadow for the switcher window */
-    if (switcher_shadow)
-    {
-	decor_shadow_destroy (xdisplay, switcher_shadow);
-	switcher_shadow = NULL;
-    }
 
-    switcher_shadow = decor_shadow_create (xdisplay,
-					   gdk_x11_screen_get_xscreen (screen),
-					   1, 1,
-					   _switcher_extents.left,
-					   _switcher_extents.right,
-					   _switcher_extents.top,
-					   _switcher_extents.bottom,
-					   _switcher_extents.left -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.right -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.top -
-					   TRANSLUCENT_CORNER_SIZE,
-					   _switcher_extents.bottom -
-					   TRANSLUCENT_CORNER_SIZE,
-					   &opt_shadow,
-					   &switcher_context,
-					   decor_draw_simple,
-					   0);
+typedef struct _tdtd_shadow_options
+{
+    decor_shadow_options_t *shadow;
+    decor_shadow_options_t *no_shadow;
+} tdtd_shadow_options_t;
+
+void
+frame_update_shadow (decor_frame_t	    *frame,
+		     decor_shadow_info_t    *info,
+		     decor_shadow_options_t *opt_shadow,
+		     decor_shadow_options_t *opt_no_shadow)
+{
+    gwd_decor_frame_ref (frame);
+
+    (*frame->update_shadow) (gdk_x11_get_default_xdisplay (),
+			     gdk_x11_screen_get_xscreen (gdk_screen_get_default ()),
+			     frame, info, opt_shadow, opt_no_shadow);
+
+    gwd_decor_frame_unref (frame);
+}
+
+void
+update_frames_shadows (gpointer key,
+		       gpointer value,
+		       gpointer user_data)
+{
+    decor_frame_t	  *frame = (decor_frame_t *) value;
+    tdtd_shadow_options_t *opts =  (tdtd_shadow_options_t *) user_data;
+
+    gwd_decor_frame_ref (frame);
+
+    decor_shadow_info_t *info = malloc (sizeof (decor_shadow_info_t));
+
+    if (!info)
+	return;
+
+    info->frame = frame;
+    info->state = 0;
+
+    frame_update_shadow (frame, info, opts->shadow, opts->no_shadow);
+
+    gwd_decor_frame_unref (frame);
+
+    free (info);
+    info = NULL;
+
+}
+
+int
+update_shadow (void)
+{
+    decor_shadow_options_t opt_shadow;
+    decor_shadow_options_t opt_no_shadow;
+    tdtd_shadow_options_t  *opts;
+
+    opts = malloc (sizeof (tdtd_shadow_options_t));
+
+    if (!opts)
+	return 0;
+
+    opt_shadow.shadow_radius  = settings->shadow_radius;
+    opt_shadow.shadow_opacity = settings->shadow_opacity;
+
+    memcpy (opt_shadow.shadow_color, settings->shadow_color, sizeof (settings->shadow_color));
+
+    opt_shadow.shadow_offset_x = settings->shadow_offset_x;
+    opt_shadow.shadow_offset_y = settings->shadow_offset_y;
+
+    opt_no_shadow.shadow_radius  = 0;
+    opt_no_shadow.shadow_opacity = 0;
+
+    opt_no_shadow.shadow_offset_x = 0;
+    opt_no_shadow.shadow_offset_y = 0;
+
+    opts->shadow = &opt_shadow;
+    opts->no_shadow = &opt_no_shadow;
+
+    gwd_frames_foreach (update_frames_shadows, (gpointer ) opts);
+
+    if (opts)
+	free (opts);
 
     return 1;
 }
@@ -821,7 +1034,6 @@ update_window_decoration (WnckWindow *win)
 {
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
-    /* Handle normally decorated windows */
     if (d->decorated)
     {
 	/* force size update */
@@ -830,22 +1042,6 @@ update_window_decoration (WnckWindow *win)
 
 	update_window_decoration_size (win);
 	update_event_windows (win);
-    }
-    /* Handle switcher windows */
-    else
-    {
-	Window xid = wnck_window_get_xid (win);
-	Window select;
-
-	if (get_window_prop (xid, select_window_atom, &select))
-	{
-	    /* force size update */
-	    d->context = NULL;
-	    d->width = d->height = 0;
-	    switcher_width = switcher_height = 0;
-
-	    update_switcher_window (win, select);
-	}
     }
 }
 
@@ -941,7 +1137,9 @@ update_default_decorations (GdkScreen *screen)
     decor_t	    d;
     gint	    nQuad;
     decor_quad_t    quads[N_QUADS_MAX];
-    decor_extents_t extents = _win_extents;
+    decor_frame_t   *frame;
+    decor_frame_t   *bare_frame = gwd_get_decor_frame ("bare");
+    decor_extents_t extents;
 
     xroot = RootWindowOfScreen (gdk_x11_screen_get_xscreen (screen));
 
@@ -949,18 +1147,18 @@ update_default_decorations (GdkScreen *screen)
     normalAtom = XInternAtom (xdisplay, DECOR_NORMAL_ATOM_NAME, FALSE);
     activeAtom = XInternAtom (xdisplay, DECOR_ACTIVE_ATOM_NAME, FALSE);
 
-    if (no_border_shadow)
+    if (bare_frame->border_shadow)
     {
 	decor_layout_t layout;
 
-	decor_get_default_layout (&shadow_context, 1, 1, &layout);
+	decor_get_default_layout (&bare_frame->window_context, 1, 1, &layout);
 
-	nQuad = decor_set_lSrStSbS_window_quads (quads, &shadow_context,
+	nQuad = decor_set_lSrStSbS_window_quads (quads, &bare_frame->window_context,
 						 &layout);
 
-	decor_quads_to_property (data, no_border_shadow->pixmap,
-				 &_shadow_extents, &_shadow_extents,
-				 &_shadow_extents, &_shadow_extents,
+	decor_quads_to_property (data, bare_frame->border_shadow->pixmap,
+				 &bare_frame->win_extents, &bare_frame->win_extents,
+				 &bare_frame->win_extents, &bare_frame->win_extents,
 				 0, 0, quads, nQuad);
 
 	XChangeProperty (xdisplay, xroot,
@@ -995,20 +1193,28 @@ update_default_decorations (GdkScreen *screen)
     }
 
     if (minimal)
+    {
+	gwd_decor_frame_unref (bare_frame);
 	return;
+    }
 
     memset (&d, 0, sizeof (d));
 
-    d.context = &window_context;
-    d.shadow  = border_shadow;
-    d.layout  = pango_layout_new (pango_context);
+    frame = gwd_get_decor_frame ("default");
+    extents = frame->win_extents;
+
+    d.context = &frame->window_context;
+    d.shadow  = frame->border_shadow;
+    d.layout  = pango_layout_new (frame->pango_context);
 
     decor_get_default_layout (d.context, 1, 1, &d.border_layout);
 
     d.width  = d.border_layout.width;
     d.height = d.border_layout.height;
 
-    extents.top += titlebar_height;
+    d.frame = frame;
+
+    extents.top += frame->titlebar_height;
 
     d.draw = theme_draw_window_decoration;
 
@@ -1018,7 +1224,7 @@ update_default_decorations (GdkScreen *screen)
     nQuad = decor_set_lSrStSbS_window_quads (quads, d.context,
 					     &d.border_layout);
 
-    decor_normal_pixmap = create_pixmap (d.width, d.height, 32);
+    decor_normal_pixmap = create_pixmap (d.width, d.height, frame->style_window_rgba);
 
     if (decor_normal_pixmap)
     {
@@ -1046,7 +1252,7 @@ update_default_decorations (GdkScreen *screen)
     if (decor_active_pixmap)
 	g_object_unref (G_OBJECT (decor_active_pixmap));
 
-    decor_active_pixmap = create_pixmap (d.width, d.height, 32);
+    decor_active_pixmap = create_pixmap (d.width, d.height, frame->style_window_rgba);
 
     if (decor_active_pixmap)
     {
@@ -1070,6 +1276,9 @@ update_default_decorations (GdkScreen *screen)
 			 32, PropModeReplace, (guchar *) data,
 			 BASE_PROP_SIZE + QUAD_PROP_SIZE * nQuad);
     }
+
+    gwd_decor_frame_unref (frame);
+    gwd_decor_frame_unref (bare_frame);
 
     if (d.layout)
 	g_object_unref (G_OBJECT (d.layout));

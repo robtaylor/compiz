@@ -4531,6 +4531,7 @@ CompScreen::init (const char *name)
     XDefineCursor (dpy, priv->root, priv->normalCursor);
 
     XUngrabServer (dpy);
+    XSync (dpy, FALSE);
 
     priv->setAudibleBell (priv->optionGetAudibleBell ());
 
@@ -4540,6 +4541,13 @@ CompScreen::init (const char *name)
     priv->pingTimer.start ();
 
     priv->addScreenActions ();
+
+    /* Need to set a default here so that the value isn't uninitialized
+     * when loading plugins FIXME: Should find a way to initialize options
+     * first and then set this value, or better yet, tie this value directly
+     * to the option */
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     priv->initialized = true;
 
@@ -4553,6 +4561,9 @@ CompScreen::init (const char *name)
 
     /* The active plugins list might have been changed - load any
      * new plugins */
+
+    priv->vpSize.setWidth (priv->optionGetHsize ());
+    priv->vpSize.setHeight (priv->optionGetVsize ());
 
     if (priv->dirtyPluginList)
 	priv->updatePlugins ();
@@ -4583,8 +4594,7 @@ CompScreen::init (const char *name)
 	}
     }
 
-    priv->vpSize.setWidth (priv->optionGetHsize ());
-    priv->vpSize.setHeight (priv->optionGetVsize ());
+    i = 0;
 
     /* enforce restack on all windows */
     i = 0;

@@ -1,3 +1,24 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ */
+
 #include "gtk-window-decorator.h"
 
 static void
@@ -14,6 +35,8 @@ position_action_menu (GtkMenu  *menu,
 		      gpointer user_data)
 {
     WnckWindow *win = (WnckWindow *) user_data;
+    WnckWindowType win_type = wnck_window_get_window_type (win);
+    decor_frame_t  *frame = gwd_get_decor_frame (get_frame_type (win_type));
     decor_t    *d = g_object_get_data (G_OBJECT (win), "decor");
     gint       bx, by, width, height;
 
@@ -21,7 +44,9 @@ position_action_menu (GtkMenu  *menu,
 
     if ((*theme_get_button_position) (d, BUTTON_MENU, width, height,
 				      &bx, &by, &width, &height))
-	*x = *x - _win_extents.left + bx;
+	*x = *x - frame->win_extents.left + bx;
+
+    gwd_decor_frame_unref (frame);
 
     if (gtk_widget_get_default_direction () == GTK_TEXT_DIR_RTL)
     {

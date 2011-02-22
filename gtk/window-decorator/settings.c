@@ -1,10 +1,31 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ */
+
 #include "gtk-window-decorator.h"
 
 /* TODO: Trash all of this and use a window property
  * instead - much much cleaner!
  */
 
-void
+gboolean
 shadow_property_changed (WnckScreen *s)
 {
     GdkDisplay *display = gdk_display_get_default ();
@@ -23,7 +44,7 @@ shadow_property_changed (WnckScreen *s)
 				 &format, &n, &left, &prop_data);
 
     if (result != Success)
-	return;
+	return FALSE;
 
     if (n == 4)
     {
@@ -39,15 +60,15 @@ shadow_property_changed (WnckScreen *s)
 	radius /= 1000;
 	opacity /= 1000;
 
-	changed = radius != shadow_radius   ||
-		  opacity != shadow_opacity ||
-		  x_off != shadow_offset_x  ||
-		  y_off != shadow_offset_y;
+	changed = radius != settings->shadow_radius   ||
+		  opacity != settings->shadow_opacity ||
+		  x_off != settings->shadow_offset_x  ||
+		  y_off != settings->shadow_offset_y;
 
-	shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
-	shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
-	shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
-	shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
+	settings->shadow_radius = (gdouble) MAX (0.0, MIN (radius, 48.0));
+	settings->shadow_opacity = (gdouble) MAX (0.0, MIN (opacity, 6.0));
+	settings->shadow_offset_x = (gint) MAX (-16, MIN (x_off, 16));
+	settings->shadow_offset_y = (gint) MAX (-16, MIN (y_off, 16));
     }
 
     XFree (prop_data);
@@ -69,9 +90,9 @@ shadow_property_changed (WnckScreen *s)
 	    if (sscanf (t_data[0], "#%2x%2x%2x%2x",
 			&c[0], &c[1], &c[2], &c[3]) == 4)
 	    {
-		shadow_color[0] = c[0] << 8 | c[0];
-		shadow_color[1] = c[1] << 8 | c[1];
-		shadow_color[2] = c[2] << 8 | c[2];
+		settings->shadow_color[0] = c[0] << 8 | c[0];
+		settings->shadow_color[1] = c[1] << 8 | c[1];
+		settings->shadow_color[2] = c[2] << 8 | c[2];
 		changed = TRUE;
 	    }
 	}
@@ -81,8 +102,7 @@ shadow_property_changed (WnckScreen *s)
 	    XFreeStringList (t_data);
     }
 
-    if (changed)
-	decorations_changed (s);
+    return changed;
 }
 
 #ifdef USE_GCONF
@@ -90,7 +110,7 @@ static gboolean
 blur_settings_changed (GConfClient *client)
 {
     gchar *type;
-    int   new_type = blur_type;
+    int   new_type = settings->blur_type;
 
     if (cmdline_options & CMDLINE_BLUR)
 	return FALSE;
@@ -111,9 +131,9 @@ blur_settings_changed (GConfClient *client)
 	g_free (type);
     }
 
-    if (new_type != blur_type)
+    if (new_type != settings->blur_type)
     {
-	blur_type = new_type;
+	settings->blur_type = new_type;
 	return TRUE;
     }
 
@@ -163,6 +183,7 @@ theme_changed (GConfClient *client)
 	theme_update_border_extents	= meta_update_border_extents;
 	theme_get_event_window_position = meta_get_event_window_position;
 	theme_get_button_position	= meta_get_button_position;
+	theme_get_title_scale	    	= meta_get_title_scale;
     }
     else
     {
@@ -171,6 +192,7 @@ theme_changed (GConfClient *client)
 	theme_update_border_extents	= update_border_extents;
 	theme_get_event_window_position = get_event_window_position;
 	theme_get_button_position	= get_button_position;
+	theme_get_title_scale	    	= get_title_scale;
     }
 
     return TRUE;
@@ -180,6 +202,7 @@ theme_changed (GConfClient *client)
     theme_update_border_extents	    = update_border_extents;
     theme_get_event_window_position = get_event_window_position;
     theme_get_button_position	    = get_button_position;
+    theme_get_title_scale	    = get_title_scale;
 
     return FALSE;
 #endif
@@ -199,9 +222,9 @@ theme_opacity_changed (GConfClient *client)
 				      NULL);
 
     if (!(cmdline_options & CMDLINE_OPACITY) &&
-	opacity != meta_opacity)
+	opacity != settings->meta_opacity)
     {
-	meta_opacity = opacity;
+	settings->meta_opacity = opacity;
 	changed = TRUE;
     }
 
@@ -212,9 +235,9 @@ theme_opacity_changed (GConfClient *client)
 					       NULL);
 
 	if (!(cmdline_options & CMDLINE_OPACITY_SHADE) &&
-	    shade_opacity != meta_shade_opacity)
+	    shade_opacity != settings->meta_shade_opacity)
 	{
-	    meta_shade_opacity = shade_opacity;
+	    settings->meta_shade_opacity = shade_opacity;
 	    changed = TRUE;
 	}
     }
@@ -224,9 +247,9 @@ theme_opacity_changed (GConfClient *client)
 				      NULL);
 
     if (!(cmdline_options & CMDLINE_ACTIVE_OPACITY) &&
-	opacity != meta_active_opacity)
+	opacity != settings->meta_active_opacity)
     {
-	meta_active_opacity = opacity;
+	settings->meta_active_opacity = opacity;
 	changed = TRUE;
     }
 
@@ -238,9 +261,9 @@ theme_opacity_changed (GConfClient *client)
 				   NULL);
 
 	if (!(cmdline_options & CMDLINE_ACTIVE_OPACITY_SHADE) &&
-	    shade_opacity != meta_active_shade_opacity)
+	    shade_opacity != settings->meta_active_shade_opacity)
 	{
-	    meta_active_shade_opacity = shade_opacity;
+	    settings->meta_active_shade_opacity = shade_opacity;
 	    changed = TRUE;
 	}
     }
@@ -267,21 +290,57 @@ button_layout_changed (GConfClient *client)
     {
 	meta_update_button_layout (button_layout);
 
-	meta_button_layout_set = TRUE;
+	settings->meta_button_layout_set = TRUE;
 
 	g_free (button_layout);
 
 	return TRUE;
     }
 
-    if (meta_button_layout_set)
+    if (settings->meta_button_layout_set)
     {
-	meta_button_layout_set = FALSE;
+	settings->meta_button_layout_set = FALSE;
 	return TRUE;
     }
 #endif
 
     return FALSE;
+}
+
+void
+set_frame_scale (decor_frame_t *frame,
+		 gchar	       *font_str)
+{
+    gfloat	  scale = 1.0f;
+
+    gwd_decor_frame_ref (frame);
+
+    if (frame->titlebar_font)
+	pango_font_description_free (frame->titlebar_font);
+
+    frame->titlebar_font = pango_font_description_from_string (font_str);
+
+    scale = (*theme_get_title_scale) (frame);
+
+    pango_font_description_set_size (frame->titlebar_font,
+				     MAX (pango_font_description_get_size (frame->titlebar_font) * scale, 1));
+
+    gwd_decor_frame_unref (frame);
+}
+
+void
+set_frames_scales (gpointer key,
+		   gpointer value,
+		   gpointer user_data)
+{
+    decor_frame_t *frame = (decor_frame_t *) value;
+    gchar	  *font_str = (gchar *) user_data;
+
+    gwd_decor_frame_ref (frame);
+
+    set_frame_scale (frame, font_str);
+
+    gwd_decor_frame_unref (frame);
 }
 
 static void
@@ -295,12 +354,16 @@ titlebar_font_changed (GConfClient *client)
     if (!str)
 	str = g_strdup ("Sans Bold 12");
 
-    if (titlebar_font)
-	pango_font_description_free (titlebar_font);
+    if (settings->font)
+    {
+	g_free (settings->font);
+	settings->font = g_strdup (str);
+    }
 
-    titlebar_font = pango_font_description_from_string (str);
+    gwd_frames_foreach (set_frames_scales, (gpointer) settings->font);
 
-    g_free (str);
+    if (str)
+	g_free (str);
 }
 
 static void
@@ -340,15 +403,15 @@ wheel_action_changed (GConfClient *client)
 {
     gchar *action;
 
-    wheel_action = WHEEL_ACTION_DEFAULT;
+    settings->wheel_action = WHEEL_ACTION_DEFAULT;
 
     action = gconf_client_get_string (client, WHEEL_ACTION_KEY, NULL);
     if (action)
     {
 	if (strcmp (action, "shade") == 0)
-	    wheel_action = WHEEL_ACTION_SHADE;
+	    settings->wheel_action = WHEEL_ACTION_SHADE;
 	else if (strcmp (action, "none") == 0)
-	    wheel_action = WHEEL_ACTION_NONE;
+	    settings->wheel_action = WHEEL_ACTION_NONE;
 
 	g_free (action);
     }
@@ -366,33 +429,33 @@ value_changed (GConfClient *client,
     {
 	if (gconf_client_get_bool (client,
 				   COMPIZ_USE_SYSTEM_FONT_KEY,
-				   NULL) != use_system_font)
+				   NULL) != settings->use_system_font)
 	{
-	    use_system_font = !use_system_font;
+	    settings->use_system_font = !settings->use_system_font;
 	    changed = TRUE;
 	}
     }
     else if (strcmp (key, COMPIZ_TITLEBAR_FONT_KEY) == 0)
     {
 	titlebar_font_changed (client);
-	changed = !use_system_font;
+	changed = !settings->use_system_font;
     }
     else if (strcmp (key, COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &double_click_action,
+				       &settings->double_click_action,
 				       DOUBLE_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, COMPIZ_MIDDLE_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &middle_click_action,
+				       &settings->middle_click_action,
 				       MIDDLE_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, COMPIZ_RIGHT_CLICK_TITLEBAR_KEY) == 0)
     {
 	titlebar_click_action_changed (client, key,
-				       &right_click_action,
+				       &settings->right_click_action,
 				       RIGHT_CLICK_ACTION_DEFAULT);
     }
     else if (strcmp (key, WHEEL_ACTION_KEY) == 0)
@@ -432,11 +495,6 @@ value_changed (GConfClient *client,
 gboolean
 init_settings (WnckScreen *screen)
 {
-    GtkSettings	   *settings;
-    GdkScreen	   *gdkscreen;
-    GdkColormap	   *colormap;
-    AtkObject	   *switcher_label_obj;
-
 #ifdef USE_GCONF
     GConfClient	   *gconf;
 
@@ -456,105 +514,33 @@ init_settings (WnckScreen *screen)
 		      "value_changed",
 		      G_CALLBACK (value_changed),
 		      screen);
-#endif
-
-    style_window_rgba = gtk_window_new (GTK_WINDOW_POPUP);
-
-    gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
-    colormap = gdk_screen_get_rgba_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (style_window_rgba, colormap);
-
-    gtk_widget_realize (style_window_rgba);
-
-    switcher_label = gtk_label_new ("");
-    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
-    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window_rgba), switcher_label);
-
-    gtk_widget_set_size_request (style_window_rgba, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window_rgba), -100, -100);
-    gtk_widget_show_all (style_window_rgba);
-
-    g_signal_connect_object (style_window_rgba, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
-
-    settings = gtk_widget_get_settings (style_window_rgba);
-
-    g_object_get (G_OBJECT (settings), "gtk-double-click-time",
-		  &double_click_timeout, NULL);
-
-    pango_context = gtk_widget_create_pango_context (style_window_rgba);
-
-    style_window_rgb = gtk_window_new (GTK_WINDOW_POPUP);
-
-    gdkscreen = gdk_display_get_default_screen (gdk_display_get_default ());
-    colormap = gdk_screen_get_rgb_colormap (gdkscreen);
-    if (colormap)
-	gtk_widget_set_colormap (style_window_rgb, colormap);
-
-    gtk_widget_realize (style_window_rgb);
-
-    switcher_label = gtk_label_new ("");
-    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
-    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
-    gtk_container_add (GTK_CONTAINER (style_window_rgb), switcher_label);
-
-    gtk_widget_set_size_request (style_window_rgb, 0, 0);
-    gtk_window_move (GTK_WINDOW (style_window_rgb), -100, -100);
-    gtk_widget_show_all (style_window_rgb);
-
-    g_signal_connect_object (style_window_rgb, "style-set",
-			     G_CALLBACK (style_changed),
-			     0, 0);
-
-    settings = gtk_widget_get_settings (style_window_rgb);
-
-    g_object_get (G_OBJECT (settings), "gtk-double-click-time",
-		  &double_click_timeout, NULL);
-
-    pango_context = gtk_widget_create_pango_context (style_window_rgb);
-
-#ifdef USE_GCONF
-    use_system_font = gconf_client_get_bool (gconf,
-					     COMPIZ_USE_SYSTEM_FONT_KEY,
-					     NULL);
+    settings->use_system_font = gconf_client_get_bool (gconf,
+						       COMPIZ_USE_SYSTEM_FONT_KEY,
+						       NULL);
     theme_changed (gconf);
     theme_opacity_changed (gconf);
     button_layout_changed (gconf);
-#endif
-
-    update_style (style_window_rgba);
-    update_style (style_window_rgb);
-#ifdef USE_GCONF
     titlebar_font_changed (gconf);
-#endif
 
-    update_titlebar_font ();
-
-#ifdef USE_GCONF
     titlebar_click_action_changed (gconf,
 				   COMPIZ_DOUBLE_CLICK_TITLEBAR_KEY,
-				   &double_click_action,
+				   &settings->double_click_action,
 				   DOUBLE_CLICK_ACTION_DEFAULT);
     titlebar_click_action_changed (gconf,
 				   COMPIZ_MIDDLE_CLICK_TITLEBAR_KEY,
-				   &middle_click_action,
+				   &settings->middle_click_action,
 				   MIDDLE_CLICK_ACTION_DEFAULT);
     titlebar_click_action_changed (gconf,
 				   COMPIZ_RIGHT_CLICK_TITLEBAR_KEY,
-				   &right_click_action,
+				   &settings->right_click_action,
 				   RIGHT_CLICK_ACTION_DEFAULT);
     wheel_action_changed (gconf);
     blur_settings_changed (gconf);
-#endif
 
-    (*theme_update_border_extents) (text_height);
+    g_object_unref (gconf);
+#endif
     
     shadow_property_changed (screen);
-
-    update_shadow ();
 
     return TRUE;
 }

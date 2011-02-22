@@ -1,4 +1,71 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ *
+ * 2D Mode: Copyright © 2010 Sam Spilsbury <smspillaz@gmail.com>
+ * Frames Management: Copright © 2011 Canonical Ltd.
+ *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
+ */
+
 #include "gtk-window-decorator.h"
+
+decor_frame_t *
+create_switcher_frame (const gchar *type)
+{
+    AtkObject	   *switcher_label_obj;
+    decor_frame_t *frame = decor_frame_new (type);
+    decor_extents_t _switcher_extents    = { 6, 6, 6, 6 + SWITCHER_SPACE };
+
+    decor_context_t _switcher_context = {
+	{ 0, 0, 0, 0 },
+	6, 6, 6, 6 + SWITCHER_SPACE,
+	0, 0, 0, 0
+    };
+
+    frame->win_extents = _switcher_extents;
+    frame->max_win_extents = _switcher_extents;
+    frame->win_extents = _switcher_extents;
+    frame->window_context = _switcher_context;
+    frame->window_context_no_shadow = _switcher_context;
+    frame->max_window_context = _switcher_context;
+    frame->max_window_context_no_shadow = _switcher_context;
+    frame->update_shadow = switcher_frame_update_shadow;
+
+    /* keep the switcher frame around since we need to keep its
+     * contents */
+
+    gwd_decor_frame_ref (frame);
+
+    switcher_label = gtk_label_new ("");
+    switcher_label_obj = gtk_widget_get_accessible (switcher_label);
+    atk_object_set_role (switcher_label_obj, ATK_ROLE_STATUSBAR);
+    gtk_container_add (GTK_CONTAINER (frame->style_window_rgba), switcher_label);
+
+    return frame;
+}
+
+void
+destroy_switcher_frame (decor_frame_t *frame)
+{
+    gtk_widget_destroy (switcher_label);
+    decor_frame_destroy (frame);
+}
 
 static void
 draw_switcher_background (decor_t *d)
@@ -16,7 +83,7 @@ draw_switcher_background (decor_t *d)
     if (!d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
 
     color.r = style->bg[GTK_STATE_NORMAL].red   / 65535.0;
     color.g = style->bg[GTK_STATE_NORMAL].green / 65535.0;
@@ -26,44 +93,44 @@ draw_switcher_background (decor_t *d)
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    top = _switcher_extents.top;
+    top = d->frame->win_extents.top;
 
-    x1 = switcher_context.left_space - _switcher_extents.left;
-    y1 = switcher_context.top_space - _switcher_extents.top;
-    x2 = d->width - switcher_context.right_space + _switcher_extents.right;
-    y2 = d->height - switcher_context.bottom_space + _switcher_extents.bottom;
+    x1 = d->frame->window_context.left_space - d->frame->win_extents.left;
+    y1 = d->frame->window_context.top_space - d->frame->win_extents.top;
+    x2 = d->width - d->frame->window_context.right_space + d->frame->win_extents.right;
+    y2 = d->height - d->frame->window_context.bottom_space + d->frame->win_extents.bottom;
 
-    h = y2 - y1 - _switcher_extents.top - _switcher_extents.top;
+    h = y2 - y1 - d->frame->win_extents.top - d->frame->win_extents.top;
 
     cairo_set_line_width (cr, 1.0);
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    draw_shadow_background (d, cr, switcher_shadow, &switcher_context);
+    draw_shadow_background (d, cr, d->frame->border_shadow, &d->frame->window_context);
 
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
 			    y1 + 0.5,
-			    _switcher_extents.left - 0.5,
+			    d->frame->win_extents.left - 0.5,
 			    top - 0.5,
 			    5.0, CORNER_TOPLEFT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_TOP | SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x1 + _switcher_extents.left,
+			    x1 + d->frame->win_extents.left,
 			    y1 + 0.5,
-			    x2 - x1 - _switcher_extents.left -
-			    _switcher_extents.right,
+			    x2 - x1 - d->frame->win_extents.left -
+			    d->frame->win_extents.right,
 			    top - 0.5,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_TOP);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
+			    x2 - d->frame->win_extents.right,
 			    y1 + 0.5,
-			    _switcher_extents.right - 0.5,
+			    d->frame->win_extents.right - 0.5,
 			    top - 0.5,
 			    5.0, CORNER_TOPRIGHT,
 			    &color, alpha, &color, alpha * 0.75,
@@ -72,16 +139,16 @@ draw_switcher_background (decor_t *d)
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
 			    y1 + top,
-			    _switcher_extents.left - 0.5,
+			    d->frame->win_extents.left - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
+			    x2 - d->frame->win_extents.right,
 			    y1 + top,
-			    _switcher_extents.right - 0.5,
+			    d->frame->win_extents.right - 0.5,
 			    h,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
@@ -89,35 +156,35 @@ draw_switcher_background (decor_t *d)
 
     fill_rounded_rectangle (cr,
 			    x1 + 0.5,
-			    y2 - _switcher_extents.top,
-			    _switcher_extents.left - 0.5,
-			    _switcher_extents.top - 0.5,
+			    y2 - d->frame->win_extents.top,
+			    d->frame->win_extents.left - 0.5,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, CORNER_BOTTOMLEFT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM | SHADE_LEFT);
 
     fill_rounded_rectangle (cr,
-			    x1 + _switcher_extents.left,
-			    y2 - _switcher_extents.top,
-			    x2 - x1 - _switcher_extents.left -
-			    _switcher_extents.right,
-			    _switcher_extents.top - 0.5,
+			    x1 + d->frame->win_extents.left,
+			    y2 - d->frame->win_extents.top,
+			    x2 - x1 - d->frame->win_extents.left -
+			    d->frame->win_extents.right,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, 0,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM);
 
     fill_rounded_rectangle (cr,
-			    x2 - _switcher_extents.right,
-			    y2 - _switcher_extents.top,
-			    _switcher_extents.right - 0.5,
-			    _switcher_extents.top - 0.5,
+			    x2 - d->frame->win_extents.right,
+			    y2 - d->frame->win_extents.top,
+			    d->frame->win_extents.right - 0.5,
+			    d->frame->win_extents.top - 0.5,
 			    5.0, CORNER_BOTTOMRIGHT,
 			    &color, alpha, &color, alpha * 0.75,
 			    SHADE_BOTTOM | SHADE_RIGHT);
 
-    cairo_rectangle (cr, x1 + _switcher_extents.left,
+    cairo_rectangle (cr, x1 + d->frame->win_extents.left,
 		     y1 + top,
-		     x2 - x1 - _switcher_extents.left - _switcher_extents.right,
+		     x2 - x1 - d->frame->win_extents.left - d->frame->win_extents.right,
 		     h);
     gdk_cairo_set_source_color_alpha (cr,
 				      &style->bg[GTK_STATE_NORMAL],
@@ -207,16 +274,16 @@ draw_switcher_foreground (decor_t *d)
     if (!d->pixmap || !d->buffer_pixmap)
 	return;
 
-    style = gtk_widget_get_style (style_window_rgba);
+    style = gtk_widget_get_style (d->frame->style_window_rgba);
 
     cr = gdk_cairo_create (GDK_DRAWABLE (d->buffer_pixmap));
 
     cairo_set_operator (cr, CAIRO_OPERATOR_SOURCE);
 
-    cairo_rectangle (cr, switcher_context.left_space,
-		     d->height - switcher_context.bottom_space,
-		     d->width - switcher_context.left_space -
-		     switcher_context.right_space,
+    cairo_rectangle (cr, d->frame->window_context.left_space,
+		     d->height - d->frame->window_context.bottom_space,
+		     d->width - d->frame->window_context.left_space -
+		     d->frame->window_context.right_space,
 		     SWITCHER_SPACE);
 
     gdk_cairo_set_source_color_alpha (cr,
@@ -237,8 +304,8 @@ draw_switcher_foreground (decor_t *d)
 	pango_layout_get_pixel_size (d->layout, &w, NULL);
 
 	cairo_move_to (cr, d->width / 2 - w / 2,
-		       d->height - switcher_context.bottom_space +
-		       SWITCHER_SPACE / 2 - text_height / 2);
+		       d->height - d->frame->window_context.bottom_space +
+		       SWITCHER_SPACE / 2 - d->frame->text_height / 2);
 
 	pango_cairo_show_layout (cr, d->layout);
     }
@@ -260,6 +327,28 @@ draw_switcher_decoration (decor_t *d)
 void
 switcher_window_closed ()
 {
+    decor_t *d = switcher_window;
+    Display *xdisplay = gdk_x11_get_default_xdisplay ();
+
+    if (d->layout)
+	g_object_unref (G_OBJECT (d->layout));
+
+    if (d->name)
+	g_free (d->name);
+
+    if (d->pixmap)
+	g_object_unref (G_OBJECT (d->pixmap));
+
+    if (d->buffer_pixmap)
+	g_object_unref (G_OBJECT (d->buffer_pixmap));
+
+    if (d->cr)
+	cairo_destroy (d->cr);
+
+    if (d->picture)
+	XRenderFreePicture (xdisplay, d->picture);
+
+    gwd_decor_frame_unref (switcher_window->frame);
     g_free (switcher_window);
     switcher_window = NULL;
 }
@@ -301,32 +390,14 @@ update_switcher_window (Window     popup,
     XGetGeometry (gdk_x11_get_default_xdisplay (), popup, &root_return,
 		  &x, &y, &width, &height, &border, &depth);
 
-    decor_get_default_layout (&switcher_context, width, 1, &d->border_layout);
+    d->decorated = FALSE;
+    d->draw	 = draw_switcher_decoration;
+    d->frame     = gwd_get_decor_frame ("switcher");
+
+    decor_get_default_layout (&d->frame->window_context, width, 1, &d->border_layout);
 
     width  = d->border_layout.width;
     height = d->border_layout.height;
-
-    d->decorated = FALSE;
-    d->draw	 = draw_switcher_decoration;
-
-    if (!d->pixmap && switcher_pixmap)
-    {
-	g_object_ref (G_OBJECT (switcher_pixmap));
-
-	d->pixmap = switcher_pixmap;
-    }
-
-    if (!d->buffer_pixmap && switcher_buffer_pixmap)
-    {
-	g_object_ref (G_OBJECT (switcher_buffer_pixmap));
-	d->buffer_pixmap = switcher_buffer_pixmap;
-    }
-
-    if (!d->width)
-	d->width = switcher_width;
-
-    if (!d->height)
-	d->height = switcher_height;
 
     selected_win = wnck_window_get (selected);
     if (selected_win)
@@ -346,7 +417,7 @@ update_switcher_window (Window     popup,
 	{
 	    if (!d->layout)
 	    {
-		d->layout = pango_layout_new (pango_context);
+		d->layout = pango_layout_new (d->frame->pango_context);
 		if (d->layout)
 		    pango_layout_set_wrap (d->layout, PANGO_WRAP_CHAR);
 	    }
@@ -355,8 +426,8 @@ update_switcher_window (Window     popup,
 	    {
 		int tw;
 
-		tw = width - switcher_context.left_space -
-		    switcher_context.right_space - 64;
+		tw = width - d->frame->window_context.left_space -
+		    d->frame->window_context.right_space - 64;
 		pango_layout_set_auto_dir (d->layout, FALSE);
 		pango_layout_set_width (d->layout, tw * PANGO_SCALE);
 		pango_layout_set_text (d->layout, name, name_length);
@@ -399,22 +470,16 @@ update_switcher_window (Window     popup,
 	switcher_selected_window = selected;
     }
 
-    pixmap = create_pixmap (width, height, 32);
+    pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
     if (!pixmap)
 	return FALSE;
 
-    buffer_pixmap = create_pixmap (width, height, 32);
+    buffer_pixmap = create_pixmap (width, height, d->frame->style_window_rgba);
     if (!buffer_pixmap)
     {
 	g_object_unref (G_OBJECT (pixmap));
 	return FALSE;
     }
-
-    if (switcher_pixmap)
-	g_object_unref (G_OBJECT (switcher_pixmap));
-
-    if (switcher_buffer_pixmap)
-	g_object_unref (G_OBJECT (switcher_buffer_pixmap));
 
     if (d->pixmap)
 	g_object_unref (G_OBJECT (d->pixmap));
@@ -427,12 +492,6 @@ update_switcher_window (Window     popup,
 
     if (d->picture)
 	XRenderFreePicture (xdisplay, d->picture);
-
-    switcher_pixmap	   = pixmap;
-    switcher_buffer_pixmap = buffer_pixmap;
-
-    switcher_width  = width;
-    switcher_height = height;
 
     g_object_ref (G_OBJECT (pixmap));
     g_object_ref (G_OBJECT (buffer_pixmap));

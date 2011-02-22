@@ -178,6 +178,8 @@ class DecorWindow :
 
 	bool damageRect (bool, const CompRect &);
 
+	void computeShadowRegion ();
+
 	bool glDraw (const GLMatrix &, GLFragment::Attrib &,
 		     const CompRegion &, unsigned int);
 
@@ -216,6 +218,7 @@ class DecorWindow :
 	Decoration	 *decor;
 
 	CompRegion frameRegion;
+	CompRegion shadowRegion;
 
 	Window inputFrame;
 	Window outputFrame;

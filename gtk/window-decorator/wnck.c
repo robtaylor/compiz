@@ -1,4 +1,49 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ *
+ * 2D Mode: Copyright © 2010 Sam Spilsbury <smspillaz@gmail.com>
+ * Frames Management: Copright © 2011 Canonical Ltd.
+ *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
+ */
+
 #include "gtk-window-decorator.h"
+
+const gchar *
+get_frame_type (WnckWindowType wnck_type)
+{
+    switch (wnck_type)
+    {
+	case WNCK_WINDOW_NORMAL:
+	    return "normal";
+	case WNCK_WINDOW_DIALOG:
+	    return "dialog";
+	case WNCK_WINDOW_MENU:
+	    return "menu";
+	case WNCK_WINDOW_UTILITY:
+	    return "utility";
+	default:
+	    return "bare";
+    }
+
+    return "normal";
+}
 
 static void
 window_name_changed (WnckWindow *win)
@@ -78,6 +123,16 @@ window_actions_changed (WnckWindow *win)
 }
 
 void
+update_frames_border_extents (gpointer key,
+			      gpointer value,
+			      gpointer user_data)
+{
+    decor_frame_t *frame = (decor_frame_t *) value;
+
+    (*theme_update_border_extents) (frame);
+}
+
+void
 decorations_changed (WnckScreen *screen)
 {
     GdkDisplay *gdkdisplay;
@@ -88,8 +143,13 @@ decorations_changed (WnckScreen *screen)
     gdkdisplay = gdk_display_get_default ();
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
 
+    gwd_frames_foreach (set_frames_scales, (gpointer) settings->font);
+
     update_titlebar_font ();
-    (*theme_update_border_extents) (text_height);
+    gwd_process_frames (update_frames_border_extents,
+			window_type_frames,
+			WINDOW_TYPE_FRAMES_NUM,
+			NULL);
     update_shadow ();
 
     update_default_decorations (gdkscreen);
@@ -129,7 +189,6 @@ decorations_changed (WnckScreen *screen)
 	/* force size update */
 	d->context = NULL;
 	d->width = d->height = 0;
-	switcher_width = switcher_height = 0;
 
 	update_switcher_window (d->prop_xid, select);
     }
@@ -210,6 +269,7 @@ add_frame_window (WnckWindow *win,
 
     d->active = wnck_window_is_active (win);
     d->win = win;
+    d->frame = gwd_get_decor_frame (get_frame_type (wnck_window_get_window_type (win)));
     d->last_pos_entered = NULL;
 
     attr.event_mask = ButtonPressMask | EnterWindowMask |
@@ -442,6 +502,12 @@ remove_frame_window (WnckWindow *win)
 	d->decor_window = NULL;
     }
 
+    if (d->frame)
+    {
+	gwd_decor_frame_unref (d->frame);
+	d->frame = NULL;
+    }
+
     d->width  = 0;
     d->height = 0;
 
@@ -505,7 +571,7 @@ active_window_changed (WnckScreen *screen)
     }
 }
 
-static void
+void
 window_opened (WnckScreen *screen,
 	       WnckWindow *win)
 {
@@ -571,7 +637,7 @@ window_opened (WnckScreen *screen,
     }
 }
 
-static void
+void
 window_closed (WnckScreen *screen,
 	       WnckWindow *win)
 {

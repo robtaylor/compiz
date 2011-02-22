@@ -303,13 +303,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	    if (popupWindow && showPopup)
 	    {
-		CompWindow *w;
-
-		w = screen->findWindow (popupWindow);
-		if (w && (w->state () & CompWindowStateHiddenMask))
-		    w->show ();
-		else
-		    XMapWindow (screen->dpy (), popupWindow);
+		XMapWindow (screen->dpy (), popupWindow);
 
 		setSelectedWindowHint ();
 	    }
@@ -357,22 +351,11 @@ switchTerminate (CompAction         *action,
 
     SWITCH_SCREEN (screen);
 
-
     if (ss->grabIndex)
     {
-	CompWindow *w;
-
 	if (ss->popupWindow)
 	{
-	    w = screen->findWindow (ss->popupWindow);
-	    if (w && w->managed () && w->mapNum ())
-	    {
-		w->hide ();
-	    }
-	    else
-	    {
-		XUnmapWindow (screen->dpy (), ss->popupWindow);
-	    }
+	    XUnmapWindow (screen->dpy (), ss->popupWindow);
 	}
 
 	ss->switching = false;

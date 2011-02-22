@@ -42,6 +42,130 @@
 
 COMPIZ_PLUGIN_20090315 (decor, DecorPluginVTable)
 
+/* From core */
+
+bool
+isAncestorTo (CompWindow *window,
+              CompWindow *candidate)
+{
+    if (window->transientFor ())
+    {
+        if (window->transientFor () == candidate->id ())
+            return true;
+
+	window = screen->findWindow (window->transientFor ());
+	if (window)
+	    return isAncestorTo (window, candidate);
+    }
+
+    return false;
+}
+
+
+/* Make shadows look nice, don't paint shadows on top of
+ * things they don't make sense on top of, eg, menus
+ * need shadows but they don't need to be painted when
+ * another menu is adjacent and covering the shadow
+ * region. Also panel shadows are nice, but not
+ * when they obscure client window shadows
+ *
+ * We need to use the current clip region here
+ * and take an intersection of that to ensure
+ * that we don't unintentionally expand the clip
+ * region that core already reduced by doing
+ * occlusion detection
+ */
+void
+DecorWindow::computeShadowRegion ()
+{
+    shadowRegion = CompRegion (window->outputRect ());
+
+    if (window->type () == CompWindowTypeDockMask)
+    {
+        /* windows above this one in the stack should
+         * clip the shadow */
+
+        CompWindowList::iterator it = std::find (screen->windows ().begin (),
+                                                 screen->windows ().end (),
+                                                 window);
+
+        for (it--; it != screen->windows ().end (); it--)
+        {
+            CompRegion inter;
+
+            if (!(*it)->isViewable ())
+                continue;
+
+            if ((*it)->type () & CompWindowTypeDesktopMask)
+                continue;
+
+	    inter = shadowRegion.intersected ((*it)->inputRect ());
+
+            if (!inter.isEmpty ())
+		shadowRegion = shadowRegion.subtracted (inter);
+
+        }
+    }
+    else if (window->type () == CompWindowTypeDropdownMenuMask ||
+             window->type () == CompWindowTypePopupMenuMask)
+    {
+        /* Other transient menus should clip
+         * this menu's shadows, also the panel
+         * which is a transient parent should
+         * too */
+
+        CompWindowList::iterator it = std::find (screen->windows ().begin (),
+                                                 screen->windows ().end (),
+                                                 window);
+
+        for (it--; it != screen->windows ().end (); it--)
+        {
+            CompRegion inter;
+
+            if (!(*it)->isViewable ())
+                continue;
+
+            if (!((*it)->type () == CompWindowTypeDropdownMenuMask ||
+                  (*it)->type () == CompWindowTypePopupMenuMask ||
+                  (*it)->type () == CompWindowTypeDockMask))
+		continue;
+
+            /* window needs to be a transient parent */
+            if (!isAncestorTo (window, (*it)))
+                continue;
+
+	    inter = shadowRegion.intersected ((*it)->inputRect ());
+
+            if (!inter.isEmpty ())
+		shadowRegion = shadowRegion.subtracted (inter);
+        }
+
+        /* If the region didn't change, then it is safe to
+         * say that that this window was probably the first
+         * menu in the "chain" of dropdown menus that comes
+         * from a menu-bar - in that case there isn't any
+         * window that the shadow would necessarily occlude
+         * here so clip the shadow to the top of the input
+         * rect.
+         *
+         * FIXME: We need a better way to detect exactly
+         * where the menubar is for the dropdown menu,
+         * that will look a lot better.
+         */
+        if (window->type () == CompWindowTypeDropdownMenuMask &&
+	    shadowRegion == CompRegion (window->outputRect ()))
+        {
+            CompRect area (window->outputRect ().x1 (),
+                           window->outputRect ().y1 (),
+                           window->outputRect ().width (),
+                           window->inputRect ().y1 () -
+                           window->outputRect ().y1 ());
+
+	    shadowRegion = shadowRegion.subtracted (area);
+        }
+    }
+}
+
 bool
 DecorWindow::glDraw (const GLMatrix     &transform,
 		     GLFragment::Attrib &attrib,
@@ -53,7 +177,7 @@ DecorWindow::glDraw (const GLMatrix     &transform,
     status = gWindow->glDraw (transform, attrib, region, mask);
 
     const CompRegion reg = (mask & PAINT_WINDOW_TRANSFORMED_MASK) ?
-	                   infiniteRegion : region;
+			   infiniteRegion : shadowRegion.intersected (region);
 
     if (wd && !reg.isEmpty () &&
 	wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
@@ -721,9 +845,7 @@ DecorWindow::update (bool allowDecoration)
     if (decorate)
     {
 	if (decor && checkSize (decor))
-	{
 	    decoration = decor;
-	}
 	else
 	{
 
@@ -763,7 +885,10 @@ DecorWindow::update (bool allowDecoration)
 	return false;
 
     if (dScreen->cmActive)
+    {
 	cWindow->damageOutputExtents ();
+	computeShadowRegion ();
+    }
 
     if (old)
     {
@@ -862,10 +987,8 @@ DecorWindow::update (bool allowDecoration)
 void
 DecorWindow::updateFrame ()
 {
-    if (!wd || !(wd->decor->input.left || wd->decor->input.left ||
-	wd->decor->input.left || wd->decor->input.bottom) ||
-	!(wd->decor->maxInput.left || wd->decor->maxInput.left ||
-	wd->decor->maxInput.left || wd->decor->maxInput.bottom) ||
+    if (!wd || !(window->input ().left || window->input ().right ||
+		 window->input ().top || window->input ().bottom) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP && outputFrame) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW && inputFrame))
     {
@@ -874,6 +997,7 @@ DecorWindow::updateFrame ()
 	    XDeleteProperty (screen->dpy (), window->id (),
 			     dScreen->inputFrameAtom);
 	    XDestroyWindow (screen->dpy (), inputFrame);
+
 	    inputFrame = None;
 	    frameRegion = CompRegion ();
 
@@ -899,10 +1023,8 @@ DecorWindow::updateFrame ()
 	    oldHeight = 0;
 	}
     }
-    if (wd && (wd->decor->input.left || wd->decor->input.left ||
-	wd->decor->input.left || wd->decor->input.bottom ||
-	wd->decor->maxInput.left || wd->decor->maxInput.left ||
-	wd->decor->maxInput.left || wd->decor->maxInput.bottom))
+    if (wd && (window->input ().left || window->input ().right ||
+	       window->input ().top || window->input ().bottom))
     {
 	if (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
 	    updateInputFrame ();
@@ -1308,6 +1430,16 @@ DecorWindow::windowNotify (CompWindowNotify n)
 
     switch (n)
     {
+	case CompWindowNotifyMap:
+	case CompWindowNotifyUnmap:
+	    if (dScreen->cmActive)
+	    {
+		foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+		{
+		    DecorWindow::get (cw)->computeShadowRegion ();
+		}
+	    }
+	    break;
 	case CompWindowNotifyUnreparent:
 	    /* We don't get a DestroyNotify when the wrapper window
 	     * or frame window gets destroyed, which destroys our
@@ -1474,6 +1606,16 @@ DecorScreen::handleEvent (XEvent *event)
 		w = screen->findWindow (event->xproperty.window);
 		if (w)
 		    DecorWindow::get (w)->update (true);
+	    }
+	    else if (event->xproperty.atom == XA_WM_TRANSIENT_FOR)
+	    {
+		if (cmActive)
+		{
+		    foreach (CompWindow *cw, cScreen->getWindowPaintList ())
+		    {
+			DecorWindow::get (cw)->computeShadowRegion ();
+		    }
+		}
 	    }
 	    else
 	    {
@@ -1756,6 +1898,15 @@ DecorWindow::moveNotify (int dx, int dy, bool immediate)
     }
     updateReg = true;
 
+    if (dScreen->cmActive)
+    {
+	foreach (CompWindow *cw,
+		 DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	{
+	    DecorWindow::get (cw)->computeShadowRegion ();
+	}
+    }
+
     window->moveNotify (dx, dy, immediate);
 }
 
@@ -1786,6 +1937,15 @@ DecorWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     resizeUpdate.start (boost::bind (&DecorWindow::resizeTimeout, this), 0);
     updateDecorationScale ();
     updateReg = true;
+
+    if (dScreen->cmActive)
+    {
+	foreach (CompWindow *cw,
+		 DecorScreen::get (screen)->cScreen->getWindowPaintList ())
+	{
+	    DecorWindow::get (cw)->computeShadowRegion ();
+	}
+    }
 
     window->resizeNotify (dx, dy, dwidth, dheight);
 }
@@ -1885,7 +2045,10 @@ DecorScreen::DecorScreen (CompScreen *s) :
     windowDefault.input.top    = 1;
     windowDefault.input.bottom = 0;
 
-    windowDefault.maxInput = windowDefault.output = windowDefault.input;
+    windowDefault.border = windowDefault.maxBorder =
+	windowDefault.maxInput = windowDefault.output =
+	    windowDefault.input;
+
     windowDefault.refCount = 1;
 
     cmActive = (cScreen) ? cScreen->compositingActive () &&
@@ -1933,6 +2096,17 @@ DecorWindow::DecorWindow (CompWindow *w) :
 {
     WindowInterface::setHandler (window);
 
+    /* FIXME :DecorWindow::update can call updateWindowOutputExtents
+     * which will call a zero-diff resizeNotify. Since this window
+     * might be part of a startup procedure, we can't assume that
+     * all other windows in the list are necessarily safe to use
+     * (since DecorWindow::DecorWindow might not have been called
+     * for them) so we need to turn off resize notifications
+     * and turn them back on once we're done updating the decoration
+     */
+
+    window->resizeNotifySetEnabled (this, false);
+
     if (dScreen->cmActive)
     {
 	gWindow = GLWindow::get (w);
@@ -1948,6 +2122,8 @@ DecorWindow::DecorWindow (CompWindow *w) :
 
     if (w->shaded () || w->isViewable ())
 	update (true);
+
+    window->resizeNotifySetEnabled (this, true);
 }
 
 

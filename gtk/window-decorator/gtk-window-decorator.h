@@ -1,3 +1,28 @@
+/*
+ * Copyright © 2006 Novell, Inc.
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library; if not, write to the
+ * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
+ * Boston, MA 02111-1307, USA.
+ *
+ * Author: David Reveman <davidr@novell.com>
+ *
+ * 2D Mode: Copyright © 2010 Sam Spilsbury <smspillaz@gmail.com>
+ * Frames Management: Copright © 2011 Canonical Ltd.
+ *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
+ */
+
 #ifndef _GTK_WINDOW_DECORATOR_H
 #define _GTK_WINDOW_DECORATOR_H
 #ifdef HAVE_CONFIG_H
@@ -210,62 +235,45 @@ enum {
     WHEEL_ACTION_SHADE
 };
 
+typedef struct _decor_settings {
+    int double_click_action;
+    int middle_click_action;
+    int right_click_action;
+    int wheel_action;
+    gdouble shadow_radius;
+    gdouble shadow_opacity;
+    gushort shadow_color[3];
+    gint    shadow_offset_x;
+    gint    shadow_offset_y;
+#ifdef USE_METACITY
+    double   meta_opacity;
+    gboolean meta_shade_opacity;
+    double   meta_active_opacity;
+    gboolean meta_active_shade_opacity;
+
+    gboolean         meta_button_layout_set;
+    MetaButtonLayout meta_button_layout;
+#endif
+    double		    decoration_alpha;
+    gboolean		    use_system_font;
+    gint		    blur_type;
+    gchar		    *font;
+} decor_settings_t;
+
 #define DOUBLE_CLICK_ACTION_DEFAULT CLICK_ACTION_MAXIMIZE
 #define MIDDLE_CLICK_ACTION_DEFAULT CLICK_ACTION_LOWER
 #define RIGHT_CLICK_ACTION_DEFAULT  CLICK_ACTION_MENU
 #define WHEEL_ACTION_DEFAULT        WHEEL_ACTION_NONE
 
-int double_click_action;
-int middle_click_action;
-int right_click_action;
-int wheel_action;
-
 extern gboolean minimal;
-extern double decoration_alpha;
+extern decor_settings_t *settings;
+
 
 #define SWITCHER_SPACE 40
 
-extern decor_extents_t _shadow_extents;
-extern decor_extents_t _win_extents;
-extern decor_extents_t _max_win_extents;
-extern decor_extents_t _default_win_extents;
-extern decor_extents_t _switcher_extents;
-
-extern int titlebar_height;
-extern int max_titlebar_height;
-
-extern decor_context_t window_context;
-extern decor_context_t window_context_no_shadow;
-extern decor_context_t max_window_context;
-extern decor_context_t max_window_context_no_shadow;
-extern decor_context_t switcher_context;
-extern decor_context_t shadow_context;
-
-extern gdouble shadow_radius;
-extern gdouble shadow_opacity;
-extern gushort shadow_color[3];
-extern gint    shadow_offset_x;
-extern gint    shadow_offset_y;
-
-#ifdef USE_METACITY
-extern double   meta_opacity;
-extern gboolean meta_shade_opacity;
-extern double   meta_active_opacity;
-extern gboolean meta_active_shade_opacity;
-
-extern gboolean         meta_button_layout_set;
-extern MetaButtonLayout meta_button_layout;
-#endif
-
 extern guint cmdline_options;
 
-extern decor_shadow_t *no_border_shadow;
-extern decor_shadow_t *border_shadow;
-extern decor_shadow_t *border_no_shadow;
-extern decor_shadow_t *max_border_shadow;
-extern decor_shadow_t *max_border_no_shadow;
-extern decor_shadow_t *switcher_shadow;
-
+/* default pixmaps FIXME: remove */
 extern GdkPixmap *decor_normal_pixmap;
 extern GdkPixmap *decor_active_pixmap;
 
@@ -278,7 +286,8 @@ extern Atom restack_window_atom;
 extern Atom select_window_atom;
 extern Atom mwm_hints_atom;
 extern Atom switcher_fg_atom;
-
+extern Atom compiz_shadow_info_atom;
+extern Atom compiz_shadow_color_atom;
 extern Atom toolkit_action_atom;
 extern Atom toolkit_action_window_menu_atom;
 extern Atom toolkit_action_force_quit_dialog_atom;
@@ -351,8 +360,52 @@ typedef struct {
     event_callback callback;
 } event_window;
 
+typedef struct _decor_frame decor_frame_t;
+typedef struct _decor_shadow_info decor_shadow_info_t;
+
+struct _decor_shadow_info
+{
+    decor_frame_t *frame;
+    unsigned int  state;
+};
+
+typedef void (*frame_update_shadow_proc) (Display		 *display,
+					  Screen		 *screen,
+					  decor_frame_t		 *frame,
+					  decor_shadow_info_t    *info,
+					  decor_shadow_options_t *opt_shadow,
+					  decor_shadow_options_t *opt_no_shadow);
+
+typedef decor_frame_t * (*create_frame_proc) (const gchar *);
+typedef void (*destroy_frame_proc) (decor_frame_t *);
+
+struct _decor_frame {
+    decor_extents_t win_extents;
+    decor_extents_t max_win_extents;
+    int		    titlebar_height;
+    int		    max_titlebar_height;
+    decor_shadow_t *border_shadow;
+    decor_shadow_t *border_no_shadow;
+    decor_shadow_t *max_border_shadow;
+    decor_shadow_t *max_border_no_shadow;
+    decor_context_t window_context;
+    decor_context_t window_context_no_shadow;
+    decor_context_t max_window_context;
+    decor_context_t max_window_context_no_shadow;
+    PangoFontDescription *titlebar_font;
+    PangoContext	 *pango_context;
+    GtkWidget	         *style_window_rgba;
+    GtkWidget		 *style_window_rgb;
+    gint		 text_height;
+    gchar		 *type;
+
+    frame_update_shadow_proc update_shadow;
+    gint		refcount;
+};
+
 typedef struct _decor {
     WnckWindow	      *win;
+    decor_frame_t     *frame;
     event_window      event_windows[3][3];
     event_window      button_windows[BUTTON_NUM];
     Box		      *last_pos_entered;
@@ -395,7 +448,7 @@ gboolean (*theme_calc_decoration_size)      (decor_t *d,
 					     int     text_width,
 					     int     *width,
 					     int     *height);
-void     (*theme_update_border_extents)     (gint    text_height);
+void     (*theme_update_border_extents)     (decor_frame_t *frame);
 void     (*theme_get_event_window_position) (decor_t *d,
 					     gint    i,
 					     gint    j,
@@ -413,20 +466,24 @@ gboolean (*theme_get_button_position)       (decor_t *d,
 					     gint    *y,
 					     gint    *w,
 					     gint    *h);
+gfloat (*theme_get_title_scale)		    (decor_frame_t *frame);
 
 extern char *program_name;
 
-extern GtkWidget     *style_window_rgba;
-extern GtkWidget     *style_window_rgb;
-extern GtkWidget     *switcher_label;
-
+/* list of all decorations */
 extern GHashTable    *frame_table;
+
+#define WINDOW_TYPE_FRAMES_NUM 4
+const gchar * window_type_frames[WINDOW_TYPE_FRAMES_NUM];
+
+/* action menu */
 extern GtkWidget     *action_menu;
 extern gboolean      action_menu_mapped;
 extern decor_color_t _title_color[2];
-extern PangoContext  *pango_context;
 extern gint	     double_click_timeout;
 
+
+/* tooltip */
 extern GtkWidget     *tip_window;
 extern GtkWidget     *tip_label;
 extern GTimeVal	     tooltip_last_popdown;
@@ -435,28 +492,17 @@ extern gint	     tooltip_timer_tag;
 extern GSList *draw_list;
 extern guint  draw_idle_id;
 
-extern PangoFontDescription *titlebar_font;
-extern gboolean		    use_system_font;
-extern gint		    text_height;
-
 #define BLUR_TYPE_NONE     0
 #define BLUR_TYPE_TITLEBAR 1
 #define BLUR_TYPE_ALL      2
 
-extern gint blur_type;
-
-extern GdkPixmap *switcher_pixmap;
-extern GdkPixmap *switcher_buffer_pixmap;
-extern gint      switcher_width;
-extern gint      switcher_height;
-extern Window    switcher_selected_window;
-extern decor_t   *switcher_window;
+/* switcher */
+extern Window     switcher_selected_window;
+extern GtkWidget  *switcher_label;
+extern decor_t    *switcher_window;
 
 extern XRenderPictFormat *xformat_rgba;
 extern XRenderPictFormat *xformat_rgb;
-
-extern Atom compiz_shadow_info_atom;
-extern Atom compiz_shadow_color_atom;
 
 /* gtk-window-decorator.c */
 
@@ -464,7 +510,79 @@ double
 dist (double x1, double y1,
       double x2, double y2);
 
+/* frames.c */
+
+void
+initialize_decorations ();
+
+void
+update_frames_border_extents (gpointer key,
+			      gpointer value,
+			      gpointer user_data);
+
+decor_frame_t *
+gwd_get_decor_frame (const gchar *);
+
+decor_frame_t *
+gwd_decor_frame_ref (decor_frame_t *);
+
+decor_frame_t *
+gwd_decor_frame_unref (decor_frame_t *);
+
+void
+gwd_frames_foreach (GHFunc   foreach_func,
+		    gpointer user_data);
+
+void
+gwd_process_frames (GHFunc	foreach_func,
+		    const gchar	*frame_keys[],
+		    gint	frame_keys_num,
+		    gpointer	user_data);
+
+decor_frame_t *
+decor_frame_new (const gchar *type);
+
+void
+decor_frame_destroy (decor_frame_t *);
+
 /* decorator.c */
+
+void
+frame_update_shadow (decor_frame_t	    *frame,
+		     decor_shadow_info_t    *info,
+		     decor_shadow_options_t *opt_shadow,
+		     decor_shadow_options_t *opt_no_shadow);
+
+void
+frame_update_titlebar_font (decor_frame_t *frame);
+
+void
+bare_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow);
+
+void
+decor_frame_update_shadow (Display		  *xdisplay,
+			   Screen		  *screen,
+			   decor_frame_t	  *frame,
+			   decor_shadow_info_t    *info,
+			   decor_shadow_options_t *opt_shadow,
+			   decor_shadow_options_t *opt_no_shadow);
+
+decor_frame_t *
+create_normal_frame (const gchar *type);
+
+void
+destroy_normal_frame ();
+
+decor_frame_t *
+create_bare_frame (const gchar *type);
+
+void
+destroy_bare_frame ();
 
 gboolean
 update_window_decoration_size (WnckWindow *win);
@@ -493,11 +611,11 @@ update_event_windows (WnckWindow *win);
 int
 update_shadow (void);
 
-void
+gboolean
 shadow_property_changed (WnckScreen *screen);
 
 void
-update_titlebar_font (void);
+update_titlebar_font ();
 
 void
 update_window_decoration_name (WnckWindow *win);
@@ -511,15 +629,24 @@ queue_decor_draw (decor_t *d);
 void
 copy_to_front_buffer (decor_t *d);
 
-	
-
 /* wnck.c*/
+
+const gchar *
+get_frame_type (WnckWindowType type);
 
 void
 decorations_changed (WnckScreen *screen);
 
 void
 connect_screen (WnckScreen *screen);
+
+void
+window_opened (WnckScreen *screen,
+	       WnckWindow *window);
+
+void
+window_closed (WnckScreen *screen,
+	       WnckWindow *window);
 
 void
 add_frame_window (WnckWindow *win,
@@ -613,7 +740,7 @@ calc_decoration_size (decor_t *d,
 		      gint    *height);
 
 void
-update_border_extents (gint text_height);
+update_border_extents ();
 
 gboolean
 get_button_position (decor_t *d,
@@ -636,6 +763,9 @@ get_event_window_position (decor_t *d,
 			   gint    *w,
 			   gint    *h);
 
+gfloat
+get_title_scale (decor_frame_t *frame);
+
 /* gdk.c */
 
 void
@@ -653,15 +783,19 @@ XRenderPictFormat *
 get_format_for_drawable (decor_t *d, GdkDrawable *drawable);
 
 GdkPixmap *
-create_pixmap (int w,
-	       int h,
-	       int depth);
+create_pixmap (int	 w,
+	       int	 h,
+	       GtkWidget *parent_style_window);
 
 GdkPixmap *
-pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, int depth);
+pixmap_new_from_pixbuf (GdkPixbuf *pixbuf, GtkWidget *parent);
 
 /* metacity.c */
 #ifdef USE_METACITY
+
+MetaFrameType
+meta_get_frame_type_for_decor_type (const gchar *frame_type);
+
 void
 meta_draw_window_decoration (decor_t *d);
 
@@ -671,6 +805,7 @@ meta_get_decoration_geometry (decor_t		*d,
 			      MetaFrameFlags    *flags,
 			      MetaFrameGeometry *fgeom,
 			      MetaButtonLayout  *button_layout,
+			      MetaFrameType     frame_type,
 			      GdkRectangle      *clip);
 
 void
@@ -708,8 +843,12 @@ meta_get_event_window_position (decor_t *d,
 				gint    *y,
 				gint    *w,
 				gint    *h);
+
+gfloat
+meta_get_title_scale (decor_frame_t *);
+
 void
-meta_update_border_extents (gint text_height);
+meta_update_border_extents ();
 
 void
 meta_update_button_layout (const char *value);
@@ -717,6 +856,20 @@ meta_update_button_layout (const char *value);
 /* switcher.c */
 
 #define SWITCHER_ALPHA 0xa0a0
+
+void
+switcher_frame_update_shadow (Display		  *xdisplay,
+			      Screen		  *screen,
+			      decor_frame_t	  *frame,
+			      decor_shadow_info_t    *info,
+			      decor_shadow_options_t *opt_shadow,
+			      decor_shadow_options_t *opt_no_shadow);
+
+decor_frame_t *
+create_switcher_frame (const gchar *);
+
+void
+destroy_switcher_frame ();
 
 void
 draw_switcher_decoration (decor_t *d);
@@ -950,9 +1103,18 @@ void
 update_style (GtkWidget *widget);
 
 void
-style_changed (GtkWidget *widget);
+style_changed (GtkWidget *widget, void *user_data /* PangoContext */);
 
 /* settings.c */
+
+void
+set_frame_scale (decor_frame_t *frame,
+		 gchar	       *font_str);
+
+void
+set_frames_scales (gpointer key,
+		   gpointer value,
+		   gpointer user_data);
 
 gboolean
 init_settings (WnckScreen *screen);
