@@ -331,7 +331,6 @@ main (int argc, char *argv[])
 
     if (theme)
     {
-	fprintf (stderr, "setting procs\n");
 	theme_draw_window_decoration    = meta_draw_window_decoration;
 	theme_calc_decoration_size	    = meta_calc_decoration_size;
 	theme_update_border_extents	    = meta_update_border_extents;
