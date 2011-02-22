@@ -50,7 +50,7 @@
 
 #define TINDEX(ws, i) (((ws)->tIndex + (i)) % TEXTURE_NUM)
 
-#define CLAMP(v, min, max) \
+#define CLAMPW(v, min, max) \
     if ((v) > (max))	   \
 	(v) = (max);	   \
     else if ((v) < (min))  \
