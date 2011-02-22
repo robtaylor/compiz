@@ -42,11 +42,11 @@ set (
 option (COMPIZ_SIGN_WARNINGS "Should compiz use -Wsign-conversion during compilation." OFF)
 
 if (COMPIZ_SIGN_WARNINGS)
-    set (CMAKE_CXX_FLAGS "-Wall -Wsign-conversion")
-    set (CMAKE_C_FLAGS "-Wall -Wsign-conversion")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wsign-conversion")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wsign-conversion")
 else ()
-    set (CMAKE_CXX_FLAGS "-Wall")
-    set (CMAKE_C_FLAGS "-Wall")
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall")
+    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 endif ()
 
 function (compiz_ensure_linkage)
