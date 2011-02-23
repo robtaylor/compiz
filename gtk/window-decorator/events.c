@@ -894,8 +894,7 @@ event_filter_func (GdkXEvent *gdkxevent,
 	{
 	    if (!wnck_window_get (xevent->xcreatewindow.window))
 	    {
-		GdkWindow *toplevel = gdk_x11_window_foreign_new_for_display (gdkdisplay,
-								      	      xevent->xcreatewindow.window);
+		GdkWindow *toplevel = create_foreign_window (xevent->xcreatewindow.window);
 
 		if (toplevel)
 		{
