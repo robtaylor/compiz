@@ -37,8 +37,24 @@
 #include <X11/extensions/Xrender.h>
 #include <X11/Xregion.h>
 
+#ifdef HAVE_GTK_2_24
+
 #ifndef GDK_DISABLE_DEPRECATED
 #define GDK_DISABLE_DEPRECATED
+#endif
+
+#define create_foreign_window(xid)						       \
+    gdk_x11_window_foreign_new_for_display (gdk_display_get_default (),	       \
+					    xid)
+#else
+
+#define create_foreign_window(xid)						       \
+    gdk_window_foreign_new (xid)
+
+#ifdef GDK_DISABLE_DEPRECATED
+#undef GDK_DISABLE_DEPRECATED
+#endif
+
 #endif
 
 #ifndef GTK_DISABLE_DEPRECATED

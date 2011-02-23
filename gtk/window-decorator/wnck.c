@@ -646,7 +646,6 @@ void
 window_closed (WnckScreen *screen,
 	       WnckWindow *win)
 {
-    Display *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
     if (d)
