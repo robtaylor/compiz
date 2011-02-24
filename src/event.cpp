@@ -1794,9 +1794,18 @@ CompScreen::handleEvent (XEvent *event)
     case CirculateRequest:
 	break;
     case FocusIn:
-	XGetWindowAttributes (priv->dpy, event->xfocus.window, &wa);
+    {
+        bool success = XGetWindowAttributes (priv->dpy, event->xfocus.window, &wa);
 
-	if (wa.root == priv->root)
+        /* If the call to XGetWindowAttributes failed it means
+         * the window was destroyed, so track the focus change
+         * anyways since we need to increment activeNum
+         * and the passive button grabs and then we will
+         * get the DestroyNotify later and change the focus
+         * there
+         */
+
+        if (!success || wa.root == priv->root)
 	{
 	    if (event->xfocus.mode != NotifyGrab)
 	    {
