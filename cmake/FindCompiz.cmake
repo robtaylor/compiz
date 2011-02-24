@@ -59,7 +59,6 @@ if (NOT _COMPIZ_INTERNAL)
 	set (PKGCONFIG_REGEX ".*${PKGCONFIG_REGEX}/lib/pkgconfig:${PKGCONFIG_REGEX}/share/pkgconfig.*")
 
 	if (NOT CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-		message ("cmake install prefix initialized to default")
 
 	    if (NOT "$ENV{PKG_CONFIG_PATH}" MATCHES "${PKGCONFIG_REGEX}")
 		if ("" STREQUAL "$ENV{PKG_CONFIG_PATH}")
