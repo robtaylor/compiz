@@ -75,7 +75,7 @@ isAncestorTo (CompWindow *window,
  * occlusion detection
  */
 void
-DecorWindow::computeShadowRegion (bool transformedWindows)
+DecorWindow::computeShadowRegion ()
 {
     shadowRegion = CompRegion (window->outputRect ());
 
