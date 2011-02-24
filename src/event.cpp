@@ -1857,8 +1857,8 @@ CompScreen::handleEvent (XEvent *event)
 	    if (w)
 		w->priv->updatePassiveButtonGrabs ();
 	}
-
-	break;
+    }
+    break;
     case FocusOut:
 	if (event->xfocus.mode == NotifyUngrab)
 	    priv->grabbed = false;
