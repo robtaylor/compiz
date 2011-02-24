@@ -368,11 +368,12 @@ GLTexture::imageDataToTexture (const char *image,
 
 GLTexture::List
 GLTexture::readImageToTexture (CompString &imageFileName,
+			       CompString &pluginName,
 			       CompSize   &size)
 {
     void *image = NULL;
 
-    if (!screen->readImageFromFile (imageFileName, size, image) || !image)
+    if (!screen->readImageFromFile (imageFileName, pluginName, size, image) || !image)
 	return GLTexture::List ();
 
     GLTexture::List rv =

@@ -35,7 +35,7 @@
 #include <opengl/texture.h>
 #include <opengl/fragment.h>
 
-#define COMPIZ_OPENGL_ABI 2
+#define COMPIZ_OPENGL_ABI 3
 
 #include <core/pluginclasshandler.h>
 

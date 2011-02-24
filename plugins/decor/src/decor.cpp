@@ -61,7 +61,6 @@ isAncestorTo (CompWindow *window,
     return false;
 }
 
-
 /* Make shadows look nice, don't paint shadows on top of
  * things they don't make sense on top of, eg, menus
  * need shadows but they don't need to be painted when
@@ -76,7 +75,7 @@ isAncestorTo (CompWindow *window,
  * occlusion detection
  */
 void
-DecorWindow::computeShadowRegion ()
+DecorWindow::computeShadowRegion (bool transformedWindows)
 {
     shadowRegion = CompRegion (window->outputRect ());
 

@@ -211,6 +211,7 @@ class CompScreen :
 					 bool   override_redirect = false);
 
 	bool readImageFromFile (CompString &name,
+				CompString &pname,
 				CompSize   &size,
 				void       *&data);
 

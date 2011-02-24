@@ -815,8 +815,9 @@ PrivateGLScreen::updateScreenBackground ()
     {
 	CompSize   size;
 	CompString fileName (backgroundImage);
+	CompString pname ("");
 
-	backgroundTextures = GLTexture::readImageToTexture (fileName, size);
+	backgroundTextures = GLTexture::readImageToTexture (fileName, pname, size);
     }
 
     if (!backgroundTextures.empty ())

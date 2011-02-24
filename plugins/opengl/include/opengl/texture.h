@@ -200,9 +200,12 @@ class GLTexture : public CompRect {
 	 * return a GLTexture::List with its contents
 	 *
 	 * @param imageFileName The filename of the image
+	 * @param pluginName	The name of the plugin, used to find
+	 *			the default image path
 	 * @param size		The size of this new texture
 	 */
 	static List readImageToTexture (CompString &imageFileName,
+					CompString &pluginName,
 					CompSize   &size);
 
 	friend class PrivateTexture;

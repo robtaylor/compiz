@@ -1065,6 +1065,7 @@ PrivateScreen::handleSelectionClear (XEvent *event)
 
 bool
 CompScreen::readImageFromFile (CompString &name,
+			       CompString &pname,
 			       CompSize   &size,
 			       void       *&data)
 {
@@ -1082,6 +1083,8 @@ CompScreen::readImageFromFile (CompString &name,
 	    path += "/";
 	    path += HOME_IMAGEDIR;
 	    path += "/";
+	    path += pname;
+	    path += "/";
 	    path += name;
 
 	    status = fileToImage (path, size, stride, data);
@@ -1091,6 +1094,8 @@ CompScreen::readImageFromFile (CompString &name,
 	}
 
 	path = IMAGEDIR;
+	path += "/";
+	path += pname;
 	path += "/";
 	path += name;
 	status = fileToImage (path, size, stride, data);
@@ -3857,6 +3862,7 @@ bool
 CompScreen::updateDefaultIcon ()
 {
     CompString file = priv->optionGetDefaultIcon ();
+    CompString pname = "";
     void       *data;
     CompSize   size;
 
@@ -3866,7 +3872,7 @@ CompScreen::updateDefaultIcon ()
 	priv->defaultIcon = NULL;
     }
 
-    if (!readImageFromFile (file, size, data))
+    if (!readImageFromFile (file, pname, size, data))
 	return false;
 
     priv->defaultIcon = new CompIcon (screen, size.width (), size.height ());

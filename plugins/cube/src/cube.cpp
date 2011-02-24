@@ -388,9 +388,10 @@ PrivateCubeScreen::updateSkydomeTexture ()
 	return;
 
     CompString imgName = optionGetSkydomeImage ();
+    CompString pname = "cube";
 
     if (optionGetSkydomeImage ().empty () ||
-	(mSky = GLTexture::readImageToTexture (imgName, mSkySize)).empty ())
+	(mSky = GLTexture::readImageToTexture (imgName, pname, mSkySize)).empty ())
     {
 	GLfloat aaafTextureData[128][128][3];
 	GLfloat fRStart = (GLfloat) optionGetSkydomeGradientStartColorRed () / 0xffff;
