@@ -838,7 +838,7 @@ PrivateWindow::updateFrameWindow ()
 void
 CompWindow::updateWindowOutputExtents ()
 {
-    CompWindowExtents output;
+    CompWindowExtents output (priv->output);
 
     getOutputExtents (output);
 
