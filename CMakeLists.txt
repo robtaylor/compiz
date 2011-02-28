@@ -40,7 +40,7 @@ else (COMPIZ_PACKAGING_ENABLED)
 endif (COMPIZ_PACKAGING_ENABLED)
 
 set (compiz_plugindir ${libdir}/compiz)
-set (compiz_imagedir ${datadir}/compiz/images)
+set (compiz_sharedir ${datadir}/compiz/)
 set (compiz_metadatadir ${datadir}/compiz)
 set (COMPIZ_I18N_DIR ${CMAKE_SOURCE_DIR}/po)
 

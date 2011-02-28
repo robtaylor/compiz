@@ -1061,7 +1061,8 @@ PrivateScreen::handleSelectionClear (XEvent *event)
     shutDown = true;
 }
 
-#define HOME_IMAGEDIR ".compiz-1/images"
+#define IMAGEDIR "images"
+#define HOMECOMPIZDIR ".compiz-1"
 
 bool
 CompScreen::readImageFromFile (CompString &name,
@@ -1081,9 +1082,11 @@ CompScreen::readImageFromFile (CompString &name,
 	{
 	    path =  home;
 	    path += "/";
-	    path += HOME_IMAGEDIR;
+	    path += HOMECOMPIZDIR;
 	    path += "/";
 	    path += pname;
+	    path += "/";
+	    path += IMAGEDIR;
 	    path += "/";
 	    path += name;
 
@@ -1093,9 +1096,11 @@ CompScreen::readImageFromFile (CompString &name,
 		return true;
 	}
 
-	path = IMAGEDIR;
+	path = SHAREDIR;
 	path += "/";
 	path += pname;
+	path += "/";
+	path += IMAGEDIR;
 	path += "/";
 	path += name;
 	status = fileToImage (path, size, stride, data);
@@ -3862,7 +3867,7 @@ bool
 CompScreen::updateDefaultIcon ()
 {
     CompString file = priv->optionGetDefaultIcon ();
-    CompString pname = "";
+    CompString pname = "core/";
     void       *data;
     CompSize   size;
 
