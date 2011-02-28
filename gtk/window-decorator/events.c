@@ -1006,11 +1006,16 @@ event_filter_func (GdkXEvent *gdkxevent,
 			d->context = NULL;
 			d->width = d->height = 0;
 
+			d->frame = gwd_get_decor_frame (get_frame_type (win));
+
 			update_window_decoration_size (win);
 			update_event_windows (win);
 		    }
 		    else
 		    {
+			gwd_decor_frame_unref (d->frame);
+			d->frame = NULL;
+
 			gdk_error_trap_push ();
 			XDeleteProperty (xdisplay, xid, win_decor_atom);
 			gdk_display_sync (gdk_display_get_default ());

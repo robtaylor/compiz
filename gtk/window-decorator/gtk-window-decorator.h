@@ -307,6 +307,8 @@ extern Atom compiz_shadow_color_atom;
 extern Atom toolkit_action_atom;
 extern Atom toolkit_action_window_menu_atom;
 extern Atom toolkit_action_force_quit_dialog_atom;
+extern Atom net_wm_state_atom;
+extern Atom net_wm_state_modal_atom;
 
 extern Time dm_sn_timestamp;
 
@@ -648,7 +650,7 @@ copy_to_front_buffer (decor_t *d);
 /* wnck.c*/
 
 const gchar *
-get_frame_type (WnckWindowType type);
+get_frame_type (WnckWindow *win);
 
 void
 decorations_changed (WnckScreen *screen);

@@ -26,14 +26,43 @@
 #include "gtk-window-decorator.h"
 
 const gchar *
-get_frame_type (WnckWindowType wnck_type)
+get_frame_type (WnckWindow *win)
 {
+    WnckWindowType wnck_type = wnck_window_get_window_type (win);
+
     switch (wnck_type)
     {
 	case WNCK_WINDOW_NORMAL:
 	    return "normal";
 	case WNCK_WINDOW_DIALOG:
+	{
+	    Atom	  actual;
+	    int		  result, format;
+	    unsigned long n, left;
+	    unsigned char *data;
+	    unsigned int  state = 0;
+
+	    result = XGetWindowProperty (gdk_x11_get_default_xdisplay (), wnck_window_get_xid (win),
+					 net_wm_state_atom,
+					 0L, 1024L, FALSE, XA_ATOM, &actual, &format,
+					 &n, &left, &data);
+
+	    if (result == Success && data)
+	    {
+		Atom *a = (Atom *) data;
+
+		while (n--)
+		    if (*a++ == net_wm_state_modal_atom)
+		    {
+			XFree ((void *) data);
+			return "modal_dialog";
+		    }
+
+
+	    }
+
 	    return "dialog";
+	}
 	case WNCK_WINDOW_MENU:
 	    return "menu";
 	case WNCK_WINDOW_UTILITY:
@@ -269,7 +298,7 @@ add_frame_window (WnckWindow *win,
 
     d->active = wnck_window_is_active (win);
     d->win = win;
-    d->frame = gwd_get_decor_frame (get_frame_type (wnck_window_get_window_type (win)));
+    d->frame = gwd_get_decor_frame (get_frame_type (win));
     d->last_pos_entered = NULL;
 
     attr.event_mask = ButtonPressMask | EnterWindowMask |

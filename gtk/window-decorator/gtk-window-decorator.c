@@ -49,6 +49,10 @@ Atom toolkit_action_atom;
 Atom toolkit_action_window_menu_atom;
 Atom toolkit_action_force_quit_dialog_atom;
 
+Atom net_wm_state_atom;
+Atom net_wm_state_modal_atom;
+
+
 Time dm_sn_timestamp;
 
 struct _cursor cursor[3][3] = {
@@ -270,6 +274,9 @@ main (int argc, char *argv[])
     toolkit_action_force_quit_dialog_atom =
 	XInternAtom (xdisplay, "_COMPIZ_TOOLKIT_ACTION_FORCE_QUIT_DIALOG",
 		     FALSE);
+
+    net_wm_state_atom = XInternAtom (xdisplay,"_NET_WM_STATE", 0);
+    net_wm_state_modal_atom = XInternAtom (xdisplay, "_NET_MW_STATE_MODAL", 0);
 
     status = decor_acquire_dm_session (xdisplay,
 				       gdk_screen_get_number (gdkscreen),
