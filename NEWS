@@ -1,3 +1,24 @@
+Release 0.9.4 (2010-02-24 Sam Spilsbury <sam.spilsbury@canonical.com>)
+========================================================================
+Development Release.
+
+Main loop implementation now replaced by the GLib main loop, use custom
+event sources and event dispatch synchronisation. Allows better integration
+with plugins that require tight timing with GLib timers
+
+Moved image and data generation into buildsystem extensions, and installation
+of such data into namespaced areas on the filesystem so plugins can't
+overwrite other plugin's data
+
+Intelligently clip window shadows in decor
+
+Fixed a number of 2D decoration issues
+
+Fixed a number of reparenting, stacking and focus issues
+
+Support different frame types in gtk-window-decorator
+
+
 Release 0.9.2.1 (2010-11-06 Sam Spilsbury <sam.spilsbury@canonical.com>)
 ========================================================================
 Bugfix release.
