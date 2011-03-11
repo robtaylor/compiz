@@ -821,7 +821,7 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->frame ()? true : false;
+		decorate = window->frame () ? true : false;
 	default:
 	    break;
     }
@@ -908,7 +908,7 @@ DecorWindow::update (bool allowDecoration)
 	if ((window->state () & MAXIMIZE_STATE) == MAXIMIZE_STATE)
 	    window->setWindowFrameExtents (&wd->decor->maxBorder,
 					   &wd->decor->maxInput);
-	else if (!window->hasUnmapReference ())
+	else
 	    window->setWindowFrameExtents (&wd->decor->border,
 					   &wd->decor->input);
 
@@ -1571,7 +1571,7 @@ DecorScreen::handleEvent (XEvent *event)
     if (screen->activeWindow () != activeWindow)
     {
 	w = screen->findWindow (activeWindow);
-	if (w && !w->hasUnmapReference ())
+	if (w)
 	    DecorWindow::get (w)->update (true);
 
 	w = screen->findWindow (screen->activeWindow ());
@@ -1611,9 +1611,7 @@ DecorScreen::handleEvent (XEvent *event)
 		if (cmActive)
 		{
 		    foreach (CompWindow *cw, cScreen->getWindowPaintList ())
-		    {
 			DecorWindow::get (cw)->computeShadowRegion ();
-		    }
 		}
 	    }
 	    else
@@ -1755,7 +1753,9 @@ bool
 DecorWindow::damageRect (bool initial, const CompRect &rect)
 {
     if (initial)
+    {
 	update (true);
+    }
 
     return cWindow->damageRect (initial, rect);
 }
