@@ -593,8 +593,8 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	}
     }
 
-    if (!window->mapNum () && window->hasUnmapReference () &&
-        window->isViewable ())
+    if (((!window->mapNum () && window->isViewable ()) ||
+	   window->state () & CompWindowStateHiddenMask) && window->hasUnmapReference ())
     {
        /* keep old pixmap for windows that are unmapped on the client side,
 	* but not yet on our side as it's pretty likely that plugins are
