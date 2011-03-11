@@ -185,7 +185,8 @@ PrivateGLWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     window->resizeNotify (dx, dy, dwidth, dheight);
     setWindowMatrix ();
     updateReg = true;
-    gWindow->release ();
+    if (!window->hasUnmapReference ())
+	gWindow->release ();
 }
 
 void
@@ -205,7 +206,8 @@ PrivateGLWindow::windowNotify (CompWindowNotify n)
 	case CompWindowNotifyReparent:
 	case CompWindowNotifyUnreparent:
 	case CompWindowNotifyFrameUpdate:
-	    gWindow->release ();
+	    if (!window->hasUnmapReference ())
+		gWindow->release ();
 	    break;
 	default:
 	    break;
