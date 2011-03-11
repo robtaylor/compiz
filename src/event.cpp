@@ -1204,11 +1204,6 @@ CompScreen::handleEvent (XEvent *event)
 		w->priv->placed     = false;
 		w->priv->managed    = false;
 		w->priv->unmanaging = true;
-
-		if (w->priv->frame)
-		{
-		    w->priv->unreparent ();
-		}
 	    }
 
 	    w->unmap ();

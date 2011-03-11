@@ -136,6 +136,7 @@ class PrivateCompositeWindow : WindowInterface
 	CompositeScreen *cScreen;
 
 	Pixmap	      pixmap;
+	CompSize      size;
 
 	Damage	      damage;
 

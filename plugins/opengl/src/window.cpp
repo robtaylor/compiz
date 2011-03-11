@@ -92,16 +92,13 @@ PrivateGLWindow::setWindowMatrix ()
 bool
 GLWindow::bind ()
 {
-    const CompRect	&input = priv->window->inputRect ();
-    const CompWindow::Geometry &wg = priv->window->geometry ();
-
     if ((!priv->cWindow->pixmap () && !priv->cWindow->bind ()))
 	return false;
 
     priv->textures =
 	GLTexture::bindPixmapToTexture (priv->cWindow->pixmap (),
-					input.width () + wg.border () * 2,
-					input.height () + wg.border () * 2,
+					priv->cWindow->size ().width (),
+					priv->cWindow->size ().height (),
 					priv->window->depth ());
     if (priv->textures.empty ())
     {

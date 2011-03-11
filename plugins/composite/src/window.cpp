@@ -139,7 +139,8 @@ CompositeWindow::bind ()
 
 	priv->pixmap = XCompositeNameWindowPixmap
 	    (screen->dpy (), ROOTPARENT (priv->window));
-
+	priv->size = CompSize (attr.border_width * 2 + attr.width,
+			       attr.border_width * 2 + attr.height);
 	XUngrabServer (screen->dpy ());
     }
     return true;
@@ -152,6 +153,7 @@ CompositeWindow::release ()
     {
 	XFreePixmap (screen->dpy (), priv->pixmap);
 	priv->pixmap = None;
+	priv->size = CompSize ();
     }
 }
 
@@ -159,6 +161,12 @@ Pixmap
 CompositeWindow::pixmap ()
 {
     return priv->pixmap;
+}
+
+const CompSize &
+CompositeWindow::size ()
+{
+    return priv->size;
 }
 
 void
@@ -546,6 +554,7 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     window->resizeNotify (dx, dy, dwidth, dheight);
 
     Pixmap pixmap = None;
+    CompSize size = CompSize ();
 
 
     if (window->shaded () || (window->isViewable () && damaged))
@@ -572,10 +581,10 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
 	Status	     result;
 	int	     i;
 
-	pixmap = XCompositeNameWindowPixmap (screen->dpy (), window->id ());
+	pixmap = XCompositeNameWindowPixmap (screen->dpy (), ROOTPARENT (window));
 	result = XGetGeometry (screen->dpy (), pixmap, &root, &i, &i,
 			       &actualWidth, &actualHeight, &ui, &ui);
-
+	size = CompSize (actualWidth, actualHeight);
 	if (!result || actualWidth != (unsigned int) window->size ().width () ||
 	    actualHeight != (unsigned int) window->size ().height ())
 	{
@@ -596,6 +605,7 @@ PrivateCompositeWindow::resizeNotify (int dx, int dy, int dwidth, int dheight)
     {
 	cWindow->release ();
 	this->pixmap = pixmap;
+	this->size = size;
     }
 
     cWindow->addDamage ();

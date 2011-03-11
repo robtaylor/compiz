@@ -1323,6 +1323,9 @@ CompWindow::unmap ()
 	unsigned int   xwcm;
 	int		   gravity = priv->sizeHints.win_gravity;
 
+	if (priv->frame)
+	    priv->unreparent ();
+
 	/* revert gravity adjustment made at MapNotify time */
 	xwc.x	= priv->serverGeometry.x ();
 	xwc.y	= priv->serverGeometry.y ();

@@ -1476,10 +1476,8 @@ DecorWindow::windowNotify (CompWindowNotify n)
 	    break;
 	}
 	case CompWindowNotifyReparent:
-	{
 	    update (true);
 	    break;
-	}
 	case CompWindowNotifyShade:
 	    /* We get the notification for shade before the window is
 	     * actually resized which means that calling update ->

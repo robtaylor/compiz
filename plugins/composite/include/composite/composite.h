@@ -30,7 +30,7 @@
 
 #include <X11/extensions/Xcomposite.h>
 
-#define COMPIZ_COMPOSITE_ABI 1
+#define COMPIZ_COMPOSITE_ABI 2
 
 #include <core/pluginclasshandler.h>
 #include <core/timer.h>
@@ -321,6 +321,12 @@ class CompositeWindow :
 	 * Returns the window pixmap
 	 */
 	Pixmap pixmap ();
+
+	/**
+	 * Pixmap size at the time the pixmap was last bound
+	 */
+
+	const CompSize & size ();
 
 	/**
 	 * Forces this window to be composited so that the X Server
