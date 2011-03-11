@@ -814,6 +814,15 @@ DecorWindow::update (bool allowDecoration)
 
     old = (wd) ? wd->decor : NULL;
 
+    /* Only want to decorate windows which have a frame or are in the process
+     * of waiting for an animation to be unmapped (in which case we can give
+     * them a new pixmap type frame since we don't actually need an input
+     * window to go along with that
+     *
+     * FIXME: That's not going to play nice with reparented decorations in core
+     * since the window gets reparented right away before plugins are done
+     * with it */
+
     switch (window->type ()) {
 	case CompWindowTypeDialogMask:
 	case CompWindowTypeModalDialogMask:
@@ -821,7 +830,8 @@ DecorWindow::update (bool allowDecoration)
 	case CompWindowTypeMenuMask:
 	case CompWindowTypeNormalMask:
 	    if (window->mwmDecor () & (MwmDecorAll | MwmDecorTitle))
-		decorate = window->frame ()? true : false;
+		decorate = (window->frame () ||
+			    window->hasUnmapReference ()) ? true : false;
 	default:
 	    break;
     }
@@ -995,7 +1005,9 @@ DecorWindow::updateFrame ()
 	{
 	    XDeleteProperty (screen->dpy (), window->id (),
 			     dScreen->inputFrameAtom);
-	    XDestroyWindow (screen->dpy (), inputFrame);
+
+	    if (window->frame ())
+		XDestroyWindow (screen->dpy (), inputFrame);
 
 	    inputFrame = None;
 	    frameRegion = CompRegion ();
@@ -1010,7 +1022,9 @@ DecorWindow::updateFrame ()
 	    XDamageDestroy (screen->dpy (), frameDamage);
 	    XDeleteProperty (screen->dpy (), window->id (),
 			     dScreen->outputFrameAtom);
-	    XDestroyWindow (screen->dpy (), outputFrame);
+
+	    if (window->frame ())
+		XDestroyWindow (screen->dpy (), outputFrame);
 	    dScreen->frames.erase (outputFrame);
 
 	    outputFrame = None;
@@ -1431,6 +1445,8 @@ DecorWindow::windowNotify (CompWindowNotify n)
     {
 	case CompWindowNotifyMap:
 	case CompWindowNotifyUnmap:
+
+	    update (true);
 	    if (dScreen->cmActive)
 	    {
 		foreach (CompWindow *cw, DecorScreen::get (screen)->cScreen->getWindowPaintList ())
@@ -1440,32 +1456,30 @@ DecorWindow::windowNotify (CompWindowNotify n)
 	    }
 	    break;
 	case CompWindowNotifyUnreparent:
-	    /* We don't get a DestroyNotify when the wrapper window
-	     * or frame window gets destroyed, which destroys our
-	     * window too, so we need to manually
-	     * remove our input frame window and property here
-	     * FIXME: the decoration manager might not like this -
-	     * maybe add a CompWindowNotifyBeforeUnreparent so that we
-	     * can tell it that the window is about to go away
-	     */
-	    if (inputFrame)
-	    {
-		inputFrame = None;
-		XDeleteProperty (screen->dpy (), window->id (),
-				 ds->inputFrameAtom);
-	    }
-	    else if (outputFrame)
-	    {
-		outputFrame = None;
-		XDeleteProperty (screen->dpy (), window->id (),
-				 ds->outputFrameAtom);
-	    }
+	{
+	    CompWindowExtents emptyExtents;
+
+	    /* The frame window was destroyed, so ensure that there aren't
+	     * any traces of our internal windows left either, however
+	     * keep the properties around for the decorators so that they
+	     * don't revert to using the default decorations for windows
+	     * where the decorations changes after unreparent
+	     * (those properties will be cleared on the CompWindowNotify
+	     *  for unmap) */
+
+	    memset (&emptyExtents, 0, sizeof (CompWindowExtents));
+
+	    window->setWindowFrameExtents (&emptyExtents, &emptyExtents);
+	    inputFrame = None;
+	    outputFrame = None;
 	    
 	    break;
-	    
+	}
 	case CompWindowNotifyReparent:
+	{
 	    update (true);
 	    break;
+	}
 	case CompWindowNotifyShade:
 	    /* We get the notification for shade before the window is
 	     * actually resized which means that calling update ->
@@ -1597,6 +1611,7 @@ DecorScreen::handleEvent (XEvent *event)
 		{
 		    DECOR_WINDOW (w);
 		    dw->updateDecoration ();
+
 		    dw->update (true);
 		}
 	    }
@@ -1652,10 +1667,8 @@ DecorScreen::handleEvent (XEvent *event)
 	    if (w)
 	    {
 		DECOR_WINDOW (w);
-		if (dw->decor)
-		{
+		if (!w->hasUnmapReference () && dw->decor)
 		    dw->updateFrame ();
-		}
 	    }
 	    break;
 	case DestroyNotify:
@@ -1919,7 +1932,9 @@ DecorWindow::resizeTimeout ()
 
 	updateDecoration ();
     }
-    update (true);
+
+    if (!window->hasUnmapReference ())
+	update (true);
     return false;
 }
 
