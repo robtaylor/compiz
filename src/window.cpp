@@ -1441,19 +1441,8 @@ CompWindow::resize (CompWindow::Geometry gm)
 			    priv->attrib.width, priv->attrib.height,
 			    priv->attrib.border_width);
 
-	if (!priv->mapNum && priv->unmapRefCnt > 0 &&
-	     priv->attrib.map_state == IsViewable)
-	{
-	    /* keep old pixmap for windows that are unmapped on the client side,
-	     * but not yet on our side as it's pretty likely that plugins are
-	     * currently using it for animations
-	     */
-	}
-	else
-	{
-	    priv->width = pw;
-	    priv->height = ph;
-	}
+	priv->width = pw;
+	priv->height = ph;
 
 	if (priv->mapNum)
 	    priv->updateRegion ();
