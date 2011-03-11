@@ -123,13 +123,13 @@ getXDGUserDir (XDGUserDir userDir)
 
 
 void
-BaseSwitchScreen::setSelectedWindowHint ()
+BaseSwitchScreen::setSelectedWindowHint (bool focus)
 {
     Window selectedWindowId = None;
     CompOption::Vector opts;
     CompOption::Value  v;
 
-    if (selectedWindow && !selectedWindow->destroyed ())
+    if (focus && selectedWindow && !selectedWindow->destroyed ())
     {
 	selectedWindowId = selectedWindow->id ();
 	selectedWindow->moveInputFocusTo ();
@@ -249,7 +249,8 @@ BaseSwitchScreen::compareWindows (CompWindow *w1,
 
 CompWindow *
 BaseSwitchScreen::switchToWindow (bool toNext,
-				  bool autoChangeVPOption)
+				  bool autoChangeVPOption,
+				  bool focus)
 {
     CompWindow               *w = NULL;
     CompWindowList::iterator it;
@@ -328,7 +329,7 @@ BaseSwitchScreen::switchToWindow (bool toNext,
 	    if (popup)
 		CompositeWindow::get (popup)->addDamage ();
 
-	    setSelectedWindowHint ();
+	    setSelectedWindowHint (focus);
 	}
 
 	doWindowDamage (w);

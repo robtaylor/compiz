@@ -157,7 +157,7 @@ void
 SwitchScreen::switchToWindow (bool toNext)
 {
     CompWindow *w =
-	BaseSwitchScreen::switchToWindow (toNext, optionGetAutoRotate ());
+	BaseSwitchScreen::switchToWindow (toNext, optionGetAutoRotate (), optionGetFocusOnSwitch ());
     if (w)
     {
 	if (!zoomedWindow)
@@ -285,7 +285,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 
 	screen->setWindowProp (popupWindow, Atoms::winDesktop, 0xffffffff);
 
-	setSelectedWindowHint ();
+	setSelectedWindowHint (false);
     }
 
     if (!grabIndex)
@@ -305,7 +305,7 @@ SwitchScreen::initiate (SwitchWindowSelection selection,
 	    {
 		XMapWindow (screen->dpy (), popupWindow);
 
-		setSelectedWindowHint ();
+		setSelectedWindowHint (optionGetFocusOnSwitch ());
 	    }
 
 	    lastActiveWindow = screen->activeWindow ();
@@ -396,7 +396,7 @@ switchTerminate (CompAction         *action,
 	}
 
 	ss->selectedWindow = NULL;
-	ss->setSelectedWindowHint ();
+	ss->setSelectedWindowHint (false);
 
 	ss->lastActiveNum = 0;
 
@@ -538,7 +538,7 @@ SwitchScreen::windowRemove (CompWindow *w)
 	    if (popup)
 		CompositeWindow::get (popup)->addDamage ();
 
-	    setSelectedWindowHint ();
+	    setSelectedWindowHint (optionGetFocusOnSwitch ());
 	}
 
 	if (old != selectedWindow)
