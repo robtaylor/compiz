@@ -3994,11 +3994,44 @@ CompScreen::warpPointer (int dx,
 
     XSync (priv->dpy, false);
 
+    /* XWarpPointer will generate Leave, Enter and PointerMotion
+     * events as if the user had instantaneously moved the cursor
+     * from one position to another. Because most of this is
+     * useless to process, we just throw out the events and update
+     * the pointer position. However, we do need to process some
+     * crossing events since they tell us which edge windows are
+     * hovered. Note that we don't actually trigger the bindings
+     * in the case where we warped from one edge window to
+     * another.
+     *
+     * FIXME: Probably don't need to process *all* the crossing
+     * events here ... maybe there is a way to check only the last
+     * event in the output buffer without roundtripping a lot */
     while (XCheckMaskEvent (priv->dpy,
 			    LeaveWindowMask |
 			    EnterWindowMask |
 			    PointerMotionMask,
-			    &event));
+			    &event))
+    {
+	if (event.type == EnterNotify)
+	{
+	    if (event.xcrossing.mode != NotifyGrab ||
+		event.xcrossing.mode != NotifyUngrab ||
+		event.xcrossing.mode != NotifyInferior)
+	    {
+		priv->edgeWindow = 0;
+
+		for (unsigned int i = 0; i < SCREEN_EDGE_NUM; i++)
+		{
+		    if (event.xcrossing.window == priv->screenEdge[i].id)
+		    {
+			priv->edgeWindow = 1 << i;
+			break;
+		    }
+		}
+	    }
+	}
+    }
 
     if (!inHandleEvent)
     {
@@ -4733,6 +4766,8 @@ PrivateScreen::PrivateScreen (CompScreen *screen) :
     showingDesktopMask (0),
     desktopHintData (0),
     desktopHintSize (0),
+    edgeWindow (None),
+    xdndWindow (None),
     initialized (false)
 {
     gettimeofday (&lastTimeout, 0);

@@ -41,11 +41,6 @@
 #include "privatescreen.h"
 #include "privatewindow.h"
 
-static Window xdndWindow = None;
-static Window edgeWindow = None;
-
-
-
 bool
 PrivateWindow::handleSyncAlarm ()
 {
@@ -151,14 +146,14 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
     unsigned int      bindMods;
     unsigned int      edge = 0;
 
-    if (edgeWindow)
+    if (priv->edgeWindow)
     {
 	unsigned int i;
 
 	if (event->root != root)
 	    return false;
 
-	if (event->window != edgeWindow)
+	if (event->window != priv->edgeWindow)
 	{
 	    if (grabs.empty () || event->window != root)
 		return false;
@@ -166,7 +161,7 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 
 	for (i = 0; i < SCREEN_EDGE_NUM; i++)
 	{
-	    if (edgeWindow == screenEdge[i].id)
+	    if (priv->edgeWindow == screenEdge[i].id)
 	    {
 		edge = 1 << i;
 		arguments[1].value ().set ((int) activeWindow);
@@ -186,8 +181,10 @@ PrivateScreen::triggerButtonPressBindings (CompOption::Vector &options,
 		    action->button ().modifiers ());
 
 		if ((bindMods & modMask) == (event->state & modMask))
+		{
 		    if (action->initiate () (action, state, arguments))
 			return true;
+		}
 	    }
 	}
 
@@ -740,21 +737,21 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	    if (edgeDelayTimer.active ())
 		edgeDelayTimer.stop ();
 
-	    if (edgeWindow && edgeWindow != event->xcrossing.window)
+	    if (priv->edgeWindow && priv->edgeWindow != event->xcrossing.window)
 	    {
 		state = CompAction::StateTermEdge;
 		edge  = 0;
 
 		for (i = 0; i < SCREEN_EDGE_NUM; i++)
 		{
-		    if (edgeWindow == screenEdge[i].id)
+		    if (priv->edgeWindow == screenEdge[i].id)
 		    {
 			edge = 1 << i;
 			break;
 		    }
 		}
 
-		edgeWindow = None;
+		priv->edgeWindow = None;
 
 		o[0].value ().set ((int) event->xcrossing.window);
 		o[1].value ().set ((int) activeWindow);
@@ -789,7 +786,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	    {
 		state = CompAction::StateInitEdge;
 
-		edgeWindow = event->xcrossing.window;
+		priv->edgeWindow = event->xcrossing.window;
 
 		o[0].value ().set ((int) event->xcrossing.window);
 		o[1].value ().set ((int) activeWindow);
@@ -809,14 +806,14 @@ PrivateScreen::handleActionEvent (XEvent *event)
     case ClientMessage:
 	if (event->xclient.message_type == Atoms::xdndEnter)
 	{
-	    xdndWindow = event->xclient.window;
+	    priv->xdndWindow = event->xclient.window;
 	}
 	else if (event->xclient.message_type == Atoms::xdndLeave)
 	{
 	    unsigned int      edge = 0;
 	    CompAction::State state;
 
-	    if (!xdndWindow)
+	    if (!priv->xdndWindow)
 	    {
 		CompWindow *w;
 
@@ -860,7 +857,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 	    unsigned int      edge = 0;
 	    CompAction::State state;
 
-	    if (xdndWindow == event->xclient.window)
+	    if (priv->xdndWindow == event->xclient.window)
 	    {
 		CompWindow *w;
 
@@ -871,7 +868,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 
 		    for (i = 0; i < SCREEN_EDGE_NUM; i++)
 		    {
-			if (xdndWindow == screenEdge[i].id)
+			if (priv->xdndWindow == screenEdge[i].id)
 			{
 			    edge = 1 << i;
 			    break;
@@ -895,7 +892,7 @@ PrivateScreen::handleActionEvent (XEvent *event)
 		    return true;
 	    }
 
-	    xdndWindow = None;
+	    priv->xdndWindow = None;
 	}
 	break;
     default:

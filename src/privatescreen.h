@@ -513,6 +513,9 @@ class PrivateScreen : public CoreOptions {
 	unsigned long *desktopHintData;
 	int           desktopHintSize;
 
+	Window	      edgeWindow;
+	Window	      xdndWindow;
+
         bool initialized;
 };
 
