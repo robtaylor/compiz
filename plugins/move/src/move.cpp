@@ -339,7 +339,7 @@ moveHandleMotionEvent (CompScreen *s,
 		if (!ms->region)
 		    ms->region = moveGetYConstrainRegion (s);
 
-		/* make sure that the top frame extents or the top row of
+		/* make sure that the top border extents or the top row of
 		   pixels are within what is currently our valid screen
 		   region */
 		if (ms->region)
@@ -347,10 +347,10 @@ moveHandleMotionEvent (CompScreen *s,
 		    int x, y, width, height;
 		    int status;
 
-		    x	   = wX + dx - w->input ().left;
-		    y	   = wY + dy - w->input ().top;
-		    width  = wWidth + w->input ().left + w->input ().right;
-		    height = w->input ().top ? w->input ().top : 1;
+		    x	   = wX + dx - w->border ().left;
+		    y	   = wY + dy - w->border ().top;
+		    width  = wWidth + w->border ().left + w->border ().right;
+		    height = w->border ().top ? w->border ().top : 1;
 
 		    status = XRectInRegion (ms->region, x, y,
 					    (unsigned int) width,
@@ -371,7 +371,7 @@ moveHandleMotionEvent (CompScreen *s,
 			    if (xStatus != RectangleIn)
 				dx += (dx < 0) ? 1 : -1;
 
-			    x = wX + dx - w->input ().left;
+			    x = wX + dx - w->border ().left;
 			}
 
 			while (dy && status != RectangleIn)
@@ -384,7 +384,7 @@ moveHandleMotionEvent (CompScreen *s,
 			    if (status != RectangleIn)
 				dy += (dy < 0) ? 1 : -1;
 
-			    y = wY + dy - w->input ().top;
+			    y = wY + dy - w->border ().top;
 			}
 		    }
 		    else
@@ -410,7 +410,7 @@ moveHandleMotionEvent (CompScreen *s,
 				width = w->saveWc ().width;
 
 			    w->saveWc ().x = xRoot - (width >> 1);
-			    w->saveWc ().y = yRoot + (w->input ().top >> 1);
+			    w->saveWc ().y = yRoot + (w->border ().top >> 1);
 
 			    ms->x = ms->y = 0;
 
@@ -437,7 +437,7 @@ moveHandleMotionEvent (CompScreen *s,
 
 			    w->maximize (ms->origState);
 
-			    wy  = workArea.y () + (w->input ().top >> 1);
+			    wy  = workArea.y () + (w->border ().top >> 1);
 			    wy += w->sizeHints ().height_inc >> 1;
 
 			    s->warpPointer (0, wy - pointerY);
@@ -450,8 +450,8 @@ moveHandleMotionEvent (CompScreen *s,
 
 	    if (w->state () & CompWindowStateMaximizedVertMask)
 	    {
-		min = workArea.y () + w->input ().top;
-		max = workArea.bottom () - w->input ().bottom - wHeight;
+		min = workArea.y () + w->border ().top;
+		max = workArea.bottom () - w->border ().bottom - wHeight;
 
 		if (wY + dy < min)
 		    dy = min - wY;
@@ -468,8 +468,8 @@ moveHandleMotionEvent (CompScreen *s,
 		if (wX + wWidth < 0)
 		    return;
 
-		min = workArea.x () + w->input ().left;
-		max = workArea.right () - w->input ().right - wWidth;
+		min = workArea.x () + w->border ().left;
+		max = workArea.right () - w->border ().right - wWidth;
 
 		if (wX + dx < min)
 		    dx = min - wX;

@@ -276,18 +276,18 @@ PlaceScreen::doHandleScreenSizeChange (bool firstPass,
 		if (w->state () & CompWindowStateMaximizedHorzMask)
 		{
 		    mask |= CWX | CWWidth;
-		    xwc.x = vpX * screen->width () + workArea.x () + w->input ().left;
+		    xwc.x = vpX * screen->width () + workArea.x () + w->border ().left;
 		    xwc.width = workArea.width () -
 			(2 * w->serverGeometry ().border () +
-			 w->input ().left + w->input ().right);
+			 w->border ().left + w->border ().right);
 		}
 		if (w->state () & CompWindowStateMaximizedVertMask)
 		{
 		    mask |= CWY | CWHeight;
-		    xwc.y = vpY * screen->height () + workArea.y () + w->input ().top;
+		    xwc.y = vpY * screen->height () + workArea.y () + w->border ().top;
 		    xwc.height = workArea.height () -
 			(2 * w->serverGeometry ().border () +
-			 w->input ().top + w->input ().bottom);
+			 w->border ().top + w->border ().bottom);
 		}
 	    }
 	}
@@ -400,8 +400,8 @@ compareLeftmost (CompWindow *a,
 {
     int ax, bx;
 
-    ax = a->serverX () - a->input ().left;
-    bx = b->serverX () - b->input ().left;
+    ax = a->serverX () - a->border ().left;
+    bx = b->serverX () - b->border ().left;
 
     return (ax <= bx);
 }
@@ -412,8 +412,8 @@ compareTopmost (CompWindow *a,
 {
     int ay, by;
 
-    ay = a->serverY () - a->input ().top;
-    by = b->serverY () - b->input ().top;
+    ay = a->serverY () - a->border ().top;
+    by = b->serverY () - b->border ().top;
 
     return (ay <= by);
 }
@@ -426,11 +426,11 @@ compareNorthWestCorner (CompWindow *a,
     int fromOriginB;
     int ax, ay, bx, by;
 
-    ax = a->serverX () - a->input ().left;
-    ay = a->serverY () - a->input ().top;
+    ax = a->serverX () - a->border ().left;
+    ay = a->serverY () - a->border ().top;
 
-    bx = b->serverX () - b->input ().left;
-    by = b->serverY () - b->input ().top;
+    bx = b->serverX () - b->border ().left;
+    by = b->serverY () - b->border ().top;
 
     /* probably there's a fast good-enough-guess we could use here. */
     fromOriginA = sqrt (ax * ax + ay * ay);
@@ -517,14 +517,14 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
 	y = xwc->y;
     }
 
-    left   = x - window->input ().left;
-    right  = left + xwc->width +  (window->input ().left +
-    				   window->input ().right +
-				   2 * window->serverGeometry ().border ());;
-    top    = y - window->input ().top;
-    bottom = top + xwc->height + (window->input ().top +
-    				  window->input ().bottom +
-				  2 * window->serverGeometry ().border ());;
+    left   = x - window->border ().left;
+    right  = left + xwc->width +  (window->border ().left +
+				   window->border ().right +
+				   2 * window->serverGeometry ().border ());
+    top    = y - window->border ().top;
+    bottom = top + xwc->height + (window->border ().top +
+				  window->border ().bottom +
+				  2 * window->serverGeometry ().border ());
 
     geom.set (xwc->x, xwc->y, xwc->width, xwc->height,
 	      window->serverGeometry ().border ());
@@ -584,10 +584,10 @@ PlaceWindow::doValidateResizeRequest (unsigned int &mask,
     }
 
     /* bring left/right/top/bottom to actual window coordinates */
-    left   += window->input ().left;
-    right  -= window->input ().right + 2 * window->serverGeometry ().border ();
-    top    += window->input ().top;
-    bottom -= window->input ().bottom + 2 * window->serverGeometry ().border ();
+    left   += window->border ().left;
+    right  -= window->border ().right + 2 * window->serverGeometry ().border ();
+    top    += window->border ().top;
+    bottom -= window->border ().bottom + 2 * window->serverGeometry ().border ();
 
     /* always validate position if the applicaiton changed only its size,
      * as it might become partially offscreen because of that */
@@ -964,13 +964,13 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 		if (!windowIsPlaceRelevant (w))
 		    continue;
 
-		xl = w->serverX () - w->input ().left;
-		yt = w->serverY () - w->input ().top;
+		xl = w->serverX () - w->border ().left;
+		yt = w->serverY () - w->border ().top;
 		xr = w->serverX () + w->serverWidth () +
-		     w->input ().right +
+		     w->border ().right +
 		     w->serverGeometry ().border () * 2;
 		yb = w->serverY () + w->serverHeight () +
-		     w->input ().bottom +
+		     w->border ().bottom +
 		     w->serverGeometry ().border () * 2;
 
 		/* if windows overlap, calc the overall overlapping */
@@ -1026,13 +1026,13 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 		if (!windowIsPlaceRelevant (w))
 		    continue;
 
-		xl = w->serverX () - w->input ().left;
-		yt = w->serverY () - w->input ().top;
+		xl = w->serverX () - w->border ().left;
+		yt = w->serverY () - w->border ().top;
 		xr = w->serverX () + w->serverWidth () +
-		     w->input ().right +
+		     w->border ().right +
 		     w->serverGeometry ().border () * 2;
 		yb = w->serverY () + w->serverHeight () +
-		     w->input ().bottom +
+		     w->border ().bottom +
 		     w->serverGeometry ().border () * 2;
 
 		/* if not enough room above or under the current
@@ -1065,13 +1065,13 @@ PlaceWindow::placeSmart (const CompRect &workArea,
 		if (!windowIsPlaceRelevant (w))
 		    continue;
 
-		xl = w->serverX () - w->input ().left;
-		yt = w->serverY () - w->input ().top;
+		xl = w->serverX () - w->border ().left;
+		yt = w->serverY () - w->border ().top;
 		xr = w->serverX () + w->serverWidth () +
-		     w->input ().right +
+		     w->border ().right +
 		     w->serverGeometry ().border () * 2;
 		yb = w->serverY () + w->serverHeight () +
-		     w->input ().bottom +
+		     w->border ().bottom +
 		     w->serverGeometry ().border () * 2;
 
 		/* if not enough room to the left or right of the current
@@ -1092,8 +1092,8 @@ PlaceWindow::placeSmart (const CompRect &workArea,
     if (ch >= workArea.height ())
 	yOptimal = workArea.y ();
 
-    pos.setX (xOptimal + window->input ().left);
-    pos.setY (yOptimal + window->input ().top);
+    pos.setX (xOptimal + window->border ().left);
+    pos.setY (yOptimal + window->border ().top);
 }
 
 static void
@@ -1138,7 +1138,7 @@ rectOverlapsWindow (const CompRect       &rect,
 	case CompWindowTypeUtilMask:
 	case CompWindowTypeToolbarMask:
 	case CompWindowTypeMenuMask:
-	    intersect = rect & other->serverInputRect ();
+	    intersect = rect & other->serverBorderRect ();
 	    if (!intersect.isEmpty ())
 		return true;
 	    break;
@@ -1182,13 +1182,13 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
     rightSorted.sort (compareTopmost);
     rightSorted.sort (compareLeftmost);
 
-    rect = window->serverInputRect ();
+    rect = window->serverBorderRect ();
     centerTileRectInArea (rect, workArea);
 
     if (workArea.contains (rect) && !rectOverlapsWindow (rect, windows))
     {
-	pos.setX (rect.x () + window->input ().left);
-	pos.setY (rect.y () + window->input ().top);
+	pos.setX (rect.x () + window->border ().left);
+	pos.setY (rect.y () + window->border ().top);
 	retval = true;
     }
 
@@ -1202,7 +1202,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (retval)
 		break;
 
-	    outerRect = w->serverInputRect ();
+	    outerRect = w->serverBorderRect ();
 
 	    rect.setX (outerRect.x ());
 	    rect.setY (outerRect.bottom ());
@@ -1210,8 +1210,8 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (workArea.contains (rect) &&
 		!rectOverlapsWindow (rect, belowSorted))
 	    {
-		pos.setX (rect.x () + window->input ().left);
-		pos.setY (rect.y () + window->input ().top);
+		pos.setX (rect.x () + window->border ().left);
+		pos.setY (rect.y () + window->border ().top);
 		retval = true;
 	    }
 	}
@@ -1227,7 +1227,7 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (retval)
 		break;
 
-	    outerRect = w->serverInputRect ();
+	    outerRect = w->serverBorderRect ();
 
 	    rect.setX (outerRect.right ());
 	    rect.setY (outerRect.y ());
@@ -1235,8 +1235,8 @@ PlaceWindow::cascadeFindFirstFit (const CompWindowList &windows,
 	    if (workArea.contains (rect) &&
 		!rectOverlapsWindow (rect, rightSorted))
 	    {
-		pos.setX (rect.x () + w->input ().left);
-		pos.setY (rect.y () + w->input ().top);
+		pos.setX (rect.x () + w->border ().left);
+		pos.setY (rect.y () + w->border ().top);
 		retval = true;
 	    }
 	}
@@ -1271,8 +1271,8 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
      */
 #define CASCADE_FUZZ 15
 
-    xThreshold = MAX (window->input ().left, CASCADE_FUZZ);
-    yThreshold = MAX (window->input ().top, CASCADE_FUZZ);
+    xThreshold = MAX (window->border ().left, CASCADE_FUZZ);
+    yThreshold = MAX (window->border ().top, CASCADE_FUZZ);
 
     /* Find furthest-SE origin of all workspaces.
      * cascade_x, cascade_y are the target position
@@ -1294,8 +1294,8 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
 	int        wx, wy;
 
 	/* we want frame position, not window position */
-	wx = w->serverX () - w->input ().left;
-	wy = w->serverY () - w->input ().top;
+	wx = w->serverX () - w->border ().left;
+	wy = w->serverY () - w->border ().top;
 
 	if (abs (wx - cascadeX) < xThreshold &&
 	    abs (wy - cascadeY) < yThreshold)
@@ -1346,8 +1346,8 @@ PlaceWindow::cascadeFindNext (const CompWindowList &windows,
      */
 
     /* Convert coords to position of window, not position of frame. */
-    pos.setX (cascadeX + window->input ().left);
-    pos.setY (cascadeY + window->input ().top);
+    pos.setX (cascadeX + window->border ().left);
+    pos.setY (cascadeY + window->border ().top);
 }
 
 bool
@@ -1524,15 +1524,15 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
     CompWindowExtents extents;
     int               delta;
 
-    extents.left   = pos.x () - window->input ().left;
-    extents.top    = pos.y () - window->input ().top;
+    extents.left   = pos.x () - window->border ().left;
+    extents.top    = pos.y () - window->border ().top;
     extents.right  = extents.left + window->serverWidth () +
-		     (window->input ().left +
-		      window->input ().right +
+		     (window->border ().left +
+		      window->border ().right +
 		      2 * window->serverGeometry ().border ());
     extents.bottom = extents.top + window->serverHeight () +
-		     (window->input ().top +
-		      window->input ().bottom +
+		     (window->border ().top +
+		      window->border ().bottom +
 		      2 * window->serverGeometry ().border ());
 
     delta = workArea.right () - extents.right;
@@ -1551,8 +1551,8 @@ PlaceWindow::constrainToWorkarea (const CompRect &workArea,
     if (delta > 0)
 	extents.top += delta;
 
-    pos.setX (extents.left + window->input ().left);
-    pos.setY (extents.top  + window->input ().top);
+    pos.setX (extents.left + window->border ().left);
+    pos.setY (extents.top  + window->border ().top);
 
 }
 

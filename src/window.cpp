@@ -4999,9 +4999,15 @@ CompWindow::shaded ()
 }
 
 CompWindowExtents &
-CompWindow::input () const
+CompWindow::border () const
 {
     return priv->border;
+}
+
+CompWindowExtents &
+CompWindow::input () const
+{
+    return priv->input;
 }
 
 CompWindowExtents &
@@ -5631,10 +5637,15 @@ CompWindow::setWindowFrameExtents (CompWindowExtents *b,
 
 	recalcActions ();
 
-	data[0] = i->left;
-	data[1] = i->right;
-	data[2] = i->top;
-	data[3] = i->bottom;
+	/* Use b for _NET_WM_FRAME_EXTENTS here because
+	 * that is the representation of the actual decoration
+	 * around the window that the user sees and should
+	 * be used for placement and such */
+
+	data[0] = b->left;
+	data[1] = b->right;
+	data[2] = b->top;
+	data[3] = b->bottom;
 
 	XChangeProperty (screen->dpy (), priv->id,
 			 Atoms::frameExtents,

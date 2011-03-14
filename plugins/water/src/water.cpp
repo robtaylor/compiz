@@ -1148,10 +1148,10 @@ waterTitleWave (CompAction         *action,
 	CompWindow::Geometry &g = w->geometry ();
 	XPoint p[2];
 
-	p[0].x = g.x () - w->input ().left;
-	p[0].y = g.y () - w->input ().top / 2;
+	p[0].x = g.x () - w->border ().left;
+	p[0].y = g.y () - w->border ().top / 2;
 
-	p[1].x = g.x () + g.width () + w->input ().right;
+	p[1].x = g.x () + g.width () + w->border ().right;
 	p[1].y = p[0].y;
 
 	ws->waterVertices (GL_LINES, p, 2, 0.15f);

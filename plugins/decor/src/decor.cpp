@@ -98,7 +98,7 @@ DecorWindow::computeShadowRegion ()
             if ((*it)->type () & CompWindowTypeDesktopMask)
                 continue;
 
-	    inter = shadowRegion.intersected ((*it)->inputRect ());
+	    inter = shadowRegion.intersected ((*it)->borderRect ());
 
             if (!inter.isEmpty ())
 		shadowRegion = shadowRegion.subtracted (inter);
@@ -133,7 +133,7 @@ DecorWindow::computeShadowRegion ()
             if (!isAncestorTo (window, (*it)))
                 continue;
 
-	    inter = shadowRegion.intersected ((*it)->inputRect ());
+	    inter = shadowRegion.intersected ((*it)->borderRect ());
 
             if (!inter.isEmpty ())
 		shadowRegion = shadowRegion.subtracted (inter);
@@ -157,7 +157,7 @@ DecorWindow::computeShadowRegion ()
             CompRect area (window->outputRect ().x1 (),
                            window->outputRect ().y1 (),
                            window->outputRect ().width (),
-                           window->inputRect ().y1 () -
+			   window->inputRect ().y1 () -
                            window->outputRect ().y1 ());
 
 	    shadowRegion = shadowRegion.subtracted (area);
@@ -763,11 +763,11 @@ DecorWindow::shiftX ()
 	case WestGravity:
 	case NorthWestGravity:
 	case SouthWestGravity:
-	    return window->input ().left;
+	    return window->border ().left;
 	case EastGravity:
 	case NorthEastGravity:
 	case SouthEastGravity:
-	    return -window->input ().right;
+	    return -window->border ().right;
     }
 
     return 0;
@@ -780,11 +780,11 @@ DecorWindow::shiftY ()
 	case NorthGravity:
 	case NorthWestGravity:
 	case NorthEastGravity:
-	    return window->input ().top;
+	    return window->border ().top;
 	case SouthGravity:
 	case SouthWestGravity:
 	case SouthEastGravity:
-	    return -window->input ().bottom;
+	    return -window->border ().bottom;
     }
 
     return 0;
@@ -996,8 +996,8 @@ DecorWindow::update (bool allowDecoration)
 void
 DecorWindow::updateFrame ()
 {
-    if (!wd || !(window->input ().left || window->input ().right ||
-		 window->input ().top || window->input ().bottom) ||
+    if (!wd || !(window->border ().left || window->border ().right ||
+		 window->border ().top || window->border ().bottom) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP && outputFrame) ||
         (wd->decor->type == WINDOW_DECORATION_TYPE_WINDOW && inputFrame))
     {
@@ -1036,8 +1036,8 @@ DecorWindow::updateFrame ()
 	    oldHeight = 0;
 	}
     }
-    if (wd && (window->input ().left || window->input ().right ||
-	       window->input ().top || window->input ().bottom))
+    if (wd && (window->border ().left || window->border ().right ||
+	       window->border ().top || window->border ().bottom))
     {
 	if (wd->decor->type == WINDOW_DECORATION_TYPE_PIXMAP)
 	    updateInputFrame ();
@@ -1073,8 +1073,8 @@ DecorWindow::updateInputFrame ()
 	input = wd->decor->input;
     }
 
-    x      = window->input ().left - border.left;
-    y      = window->input ().top - border.top;
+    x      = window->border ().left - border.left;
+    y      = window->border ().top - border.top;
     width  = server.width () + input.left + input.right + bw;
     height = server.height ()+ input.top  + input.bottom + bw;
 
@@ -1422,7 +1422,7 @@ DecorWindow::updateFrameRegion (CompRegion &region)
 void
 DecorWindow::updateWindowRegions ()
 {
-    CompRect input (window->inputRect ());
+    const CompRect &input (window->inputRect ());
 
     if (regions.size () != gWindow->textures ().size ())
 	regions.resize (gWindow->textures ().size ());

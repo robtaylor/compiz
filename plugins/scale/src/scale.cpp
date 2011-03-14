@@ -572,6 +572,9 @@ PrivateScaleScreen::fillInWindows ()
 
 	    sw->priv->slot = &slots[sw->priv->sid];
 
+	    /* Auxilary items reparented into windows are clickable so we want to care about
+	     * them when calculating the slot size */
+
 	    width  = w->width ()  + w->input ().left + w->input ().right;
 	    height = w->height () + w->input ().top  + w->input ().bottom;
 

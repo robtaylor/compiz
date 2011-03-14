@@ -40,22 +40,22 @@ COMPIZ_PLUGIN_20090315 (resize, ResizePluginVTable)
 void
 ResizeScreen::getPaintRectangle (BoxPtr pBox)
 {
-    pBox->x1 = geometry.x - w->input ().left;
-    pBox->y1 = geometry.y - w->input ().top;
+    pBox->x1 = geometry.x - w->border ().left;
+    pBox->y1 = geometry.y - w->border ().top;
     pBox->x2 = geometry.x + geometry.width +
-	       w->serverGeometry ().border () * 2 + w->input ().right;
+	       w->serverGeometry ().border () * 2 + w->border ().right;
 
     if (w->shaded ())
-	pBox->y2 = geometry.y + w->size ().height () + w->input ().bottom;
+	pBox->y2 = geometry.y + w->size ().height () + w->border ().bottom;
     else
 	pBox->y2 = geometry.y + geometry.height +
-	           w->serverGeometry ().border () * 2 + w->input ().bottom;
+		   w->serverGeometry ().border () * 2 + w->border ().bottom;
 }
 
 void
 ResizeWindow::getStretchScale (BoxPtr pBox, float *xScale, float *yScale)
 {
-    CompRect rect (window->inputRect ());
+    CompRect rect (window->borderRect ());
 
     *xScale = (rect.width ())  ? (pBox->x2 - pBox->x1) /
 				 (float) rect.width () : 1.0f;
@@ -72,8 +72,8 @@ ResizeScreen::getStretchRectangle (BoxPtr pBox)
     getPaintRectangle (&box);
     ResizeWindow::get (w)->getStretchScale (&box, &xScale, &yScale);
 
-    pBox->x1 = (int) (box.x1 - (w->output ().left - w->input ().left) * xScale);
-    pBox->y1 = (int) (box.y1 - (w->output ().top - w->input ().top) * yScale);
+    pBox->x1 = (int) (box.x1 - (w->output ().left - w->border ().left) * xScale);
+    pBox->y1 = (int) (box.y1 - (w->output ().top - w->border ().top) * yScale);
     pBox->x2 = (int) (box.x2 + w->output ().right * xScale);
     pBox->y2 = (int) (box.y2 + w->output ().bottom * yScale);
 }
@@ -712,12 +712,12 @@ ResizeScreen::handleKeyEvent (KeyCode keycode)
 		int x, y, left, top, width, height;
 
 		CompWindow::Geometry server = w->serverGeometry ();
-		CompWindowExtents    input  = w->input ();
+		const CompWindowExtents    &border  = w->border ();
 
-		left   = server.x () - input.left;
-		top    = server.y () - input.top;
-		width  = input.left + server.width () + input.right;
-		height = input.top  + server.height () + input.bottom;
+		left   = server.x () - border.left;
+		top    = server.y () - border.top;
+		width  = border.left + server.width () + border.right;
+		height = border.top  + server.height () + border.bottom;
 
 		x = left + width  * (rKeys[i].dx + 1) / 2;
 		y = top  + height * (rKeys[i].dy + 1) / 2;
@@ -801,16 +801,16 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 
 		if (mask & ResizeRightMask)
 			pointerAdjustX = server.x () + server.width () +
-					 w->input ().right - xRoot;
+					 w->border ().right - xRoot;
 		else if (mask & ResizeLeftMask)
-			pointerAdjustX = server.x () - w->input ().left -
+			pointerAdjustX = server.x () - w->border ().left -
 					 xRoot;
 
 		if (mask & ResizeDownMask)
 			pointerAdjustY = server.y () + server.height () +
-					 w->input ().bottom - yRoot;
+					 w->border ().bottom - yRoot;
 		else if (mask & ResizeUpMask)
-			pointerAdjustY = server.y () - w->input ().top - yRoot;
+			pointerAdjustY = server.y () - w->border ().top - yRoot;
 
 		screen->warpPointer (pointerAdjustX, pointerAdjustY);
 
@@ -847,25 +847,25 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 		if (mask == ResizeLeftMask)
 		{
 		    if (xRoot == 0 &&
-			geometry.x - w->input ().left > grabWindowWorkArea->left ())
+			geometry.x - w->border ().left > grabWindowWorkArea->left ())
 			pointerDx += abs (yRoot - lastPointerY) * -1;
 		}
 		else if (mask == ResizeRightMask)
 		{
 		    if (xRoot == screen->width () -1 &&
-			geometry.x + geometry.width + w->input ().right < grabWindowWorkArea->right ())
+			geometry.x + geometry.width + w->border ().right < grabWindowWorkArea->right ())
 			pointerDx += abs (yRoot - lastPointerY);
 		}
 		if (mask == ResizeUpMask)
 		{
 		    if (yRoot == 0 &&
-			geometry.y - w->input ().top > grabWindowWorkArea->top ())
+			geometry.y - w->border ().top > grabWindowWorkArea->top ())
 			pointerDy += abs (xRoot - lastPointerX) * -1;
 		}
 		else if (mask == ResizeDownMask)
 		{
 		    if (yRoot == screen->height () -1 &&
-			geometry.y + geometry.height + w->input ().bottom < grabWindowWorkArea->bottom ())
+			geometry.y + geometry.height + w->border ().bottom < grabWindowWorkArea->bottom ())
 			pointerDx += abs (yRoot - lastPointerY);
 		}
 	    }
@@ -910,14 +910,14 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    if (mask & ResizeUpMask)
 	    {
 		int decorTop = savedGeometry.y + savedGeometry.height -
-		    (che + w->input ().top);
+		    (che + w->border ().top);
 
 		if (grabWindowWorkArea->y () > decorTop)
 		    che -= grabWindowWorkArea->y () - decorTop;
 	    }
 	    if (mask & ResizeDownMask)
 	    {
-		int decorBottom = savedGeometry.y + che + w->input ().bottom;
+		int decorBottom = savedGeometry.y + che + w->border ().bottom;
 
 		if (decorBottom >
 		    grabWindowWorkArea->y () + grabWindowWorkArea->height ())
@@ -927,14 +927,14 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    if (mask & ResizeLeftMask)
 	    {
 		int decorLeft = savedGeometry.x + savedGeometry.width -
-		    (cwi + w->input ().left);
+		    (cwi + w->border ().left);
 
 		if (grabWindowWorkArea->x () > decorLeft)
 		    cwi -= grabWindowWorkArea->x () - decorLeft;
 	    }
 	    if (mask & ResizeRightMask)
 	    {
-		int decorRight = savedGeometry.x + cwi + w->input ().right;
+		int decorRight = savedGeometry.x + cwi + w->border ().right;
 
 		if (decorRight >
 		    grabWindowWorkArea->x () + grabWindowWorkArea->width ())
@@ -947,36 +947,36 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	he = che;
 
 	/* compute rect. for window + borders */
-	wWidth  = wi + w->input ().left + w->input ().right;
-	wHeight = he + w->input ().top + w->input ().bottom;
+	wWidth  = wi + w->border ().left + w->border ().right;
+	wHeight = he + w->border ().top + w->border ().bottom;
 
 	if (centered)
 	{
 	    if (mask & ResizeLeftMask)
 		wX = geometry.x + geometry.width -
-		     (wi + w->input ().left);
+		     (wi + w->border ().left);
 	    else
-		wX = geometry.x - w->input ().left;
+		wX = geometry.x - w->border ().left;
 
 	    if (mask & ResizeUpMask)
 		wY = geometry.y + geometry.height -
-		     (he + w->input ().top);
+		     (he + w->border ().top);
 	    else
-		wY = geometry.y - w->input ().top;
+		wY = geometry.y - w->border ().top;
 	}
 	else
 	{
 	    if (mask & ResizeLeftMask)
 		wX = savedGeometry.x + savedGeometry.width -
-		     (wi + w->input ().left);
+		     (wi + w->border ().left);
 	    else
-		wX = savedGeometry.x - w->input ().left;
+		wX = savedGeometry.x - w->border ().left;
 
 	    if (mask & ResizeUpMask)
 		wY = savedGeometry.y + savedGeometry.height -
-		     (he + w->input ().top);
+		     (he + w->border ().top);
 	    else
-		wY = savedGeometry.y - w->input ().top;
+		wY = savedGeometry.y - w->border ().top;
 	}
 
 	/* Check if resized edge(s) are near output work-area boundaries */
@@ -1047,12 +1047,12 @@ ResizeScreen::handleMotionEvent (int xRoot, int yRoot)
 	    /* rect. for a minimal height window + borders
 	       (used for the constraining in X axis) */
 	    int minimalInputHeight = minHeight +
-				     w->input ().top + w->input ().bottom;
+				     w->border ().top + w->border ().bottom;
 
 	    /* small hot-spot square (on window's corner or edge) that is to be
 	       constrained to the combined output work-area region */
 	    int x, y;
-	    int width = w->input ().top; /* square size = title bar height */
+	    int width = w->border ().top; /* square size = title bar height */
 	    int height = width;
 	    bool status; /* whether or not hot-spot is in the region */
 
@@ -1592,8 +1592,8 @@ ResizeWindow::glPaint (const GLWindowPaintAttrib &attrib,
 	x = window->geometry (). x ();
 	y = window->geometry (). y ();
 
-	xOrigin = x - window->input ().left;
-	yOrigin = y - window->input ().top;
+	xOrigin = x - window->border ().left;
+	yOrigin = y - window->border ().top;
 
 	wTransform.translate (xOrigin, yOrigin, 0.0f);
 	wTransform.scale (xScale, yScale, 1.0f);

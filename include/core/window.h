@@ -325,7 +325,11 @@ class CompWindow :
 	int serverHeight () const;
 	const CompSize serverSize () const;
 
-	/* includes decorations */
+	/* effective decoration extents */
+	CompRect borderRect () const;
+	CompRect serverBorderRect () const;
+
+	/* frame window geometry */
 	CompRect inputRect () const;
 	CompRect serverInputRect () const;
 
@@ -474,8 +478,8 @@ class CompWindow :
 
 	bool shaded ();
 
+	CompWindowExtents & border () const;
 	CompWindowExtents & input () const;
-
 	CompWindowExtents & output () const;
 
 	XSizeHints & sizeHints () const;

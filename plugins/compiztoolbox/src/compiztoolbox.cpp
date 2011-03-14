@@ -431,8 +431,8 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	width  = width1;
 	height = height1;
 
-	ww = window->inputRect ().width ();
-	wh = window->inputRect ().height ();
+	ww = window->borderRect ().width ();
+	wh = window->borderRect ().height ();
 
 	if (ww > width)
 	    sAttrib.xScale = width / ww;
@@ -455,9 +455,9 @@ BaseSwitchWindow::paintThumb (const GLWindowPaintAttrib &attrib,
 	updateIconPos (wx, wy, x, y, width, height);
 
 	sAttrib.xTranslate = wx - g.x () +
-			     window->input ().left * sAttrib.xScale;
+			     window->border ().left * sAttrib.xScale;
 	sAttrib.yTranslate = wy - g.y () +
-			     window->input ().top  * sAttrib.yScale;
+			     window->border ().top  * sAttrib.yScale;
 
 	GLFragment::Attrib fragment (sAttrib);
 
