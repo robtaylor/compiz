@@ -62,7 +62,7 @@ CompRect::CompRect (const XRectangle xr)
     mRegion.extents.y2 = xr.y + xr.height;
 }
 
-const Region
+Region
 CompRect::region () const
 {
     return const_cast<const Region> (&mRegion);
