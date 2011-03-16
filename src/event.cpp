@@ -1105,6 +1105,7 @@ CompScreen::handleEvent (XEvent *event)
 		if (cw->priv->id == event->xdestroywindow.window)
 		{
 		    priv->createdWindows.remove (cw);
+		    delete cw;
 		    break;
 		}
 	    }
@@ -1228,19 +1229,44 @@ CompScreen::handleEvent (XEvent *event)
 		delete cw;
 	    }
 	}
-	else if (w && !(event->xreparent.parent == w->priv->wrapper ||
-		 event->xreparent.parent == priv->root))
+	else if (!(event->xreparent.parent == priv->root))
 	{
+	    bool remove = false;
+
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive
 	       grabs. */
-	    XSelectInput (priv->dpy, w->id (), NoEventMask);
-	    XShapeSelectInput (priv->dpy, w->id (), NoEventMask);
-	    XUngrabButton (priv->dpy, AnyButton, AnyModifier, w->id ());
 
-	    w->moveInputFocusToOtherWindow ();
+	    if (w)
+	    {
+		if (!event->xreparent.parent == w->priv->wrapper)
+		{
+		    w->moveInputFocusToOtherWindow ();
 
-	    w->destroy ();
+		    w->destroy ();
+		    remove = true;
+		}
+	    }
+	    else
+	    {
+		foreach (CoreWindow *cw, screen->priv->createdWindows)
+		{
+		    if (cw->priv->id == event->xreparent.parent)
+		    {
+			screen->priv->createdWindows.remove (cw);
+			delete cw;
+			remove = true;
+			break;
+		    }
+		}
+	    }
+
+	    if (remove)
+	    {
+		XSelectInput (priv->dpy, w->id (), NoEventMask);
+		XShapeSelectInput (priv->dpy, w->id (), NoEventMask);
+		XUngrabButton (priv->dpy, AnyButton, AnyModifier, w->id ());
+	    }
 	}
 	break;
     case CirculateNotify:
