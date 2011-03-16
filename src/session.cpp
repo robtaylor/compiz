@@ -286,6 +286,8 @@ CompSession::init (char *prevClientId)
 	    connected = true;
 	    if (prevClientId)
 		smPrevClientId = strdup (prevClientId);
+	    setRestartStyle (smcConnection, SmRestartImmediately);
+	    
 	}
     }
 }
