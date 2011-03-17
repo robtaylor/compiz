@@ -20,7 +20,7 @@
 	    <option name="shadow_radius" type="float">
 		<_short>Shadow Radius</_short>
 		<_long>Drop shadow radius</_long>
-		<default>8.0</default>
+		<default>15.0</default>
 		<min>0.1</min>
 		<max>18.0</max>
 		<precision>0.1</precision>
@@ -47,13 +47,14 @@
 	    <option name="shadow_y_offset" type="int">
 		<_short>Shadow Offset Y</_short>
 		<_long>Drop shadow Y offset</_long>
-		<default>1</default>
+		<default>5</default>
 		<min>-16</min>
 		<max>16</max>
 	    </option>
 	    <option name="command" type="string">
 		<_short>Command</_short>
 		<_long>Decorator command line that is executed if no decorator is already running</_long>
+		<default>/usr/bin/compiz-decorator</default>
 	    </option>
 	    <option name="mipmap" type="bool">
 		<_short>Mipmap</_short>

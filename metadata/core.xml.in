@@ -138,7 +138,7 @@
 			<option name="focus_prevention_match" type="match">
 			<_short>Focus Prevention Windows</_short>
 			<_long>Focus prevention windows</_long>
-			<default>any</default>
+			<default>!(class=Polkit-gnome-authentication-agent-1)</default>
 			</option>
 		</group>
 		<group>
@@ -244,14 +244,14 @@
 			<option name="hsize" type="int">
 			<_short>Horizontal Virtual Size</_short>
 			<_long>Screen size multiplier for horizontal virtual size</_long>
-			<default>4</default>
+			<default>2</default>
 			<min>1</min>
 			<max>32</max>
 			</option>
 			<option name="vsize" type="int">
 			<_short>Vertical Virtual Size</_short>
 			<_long>Screen size multiplier for vertical virtual size</_long>
-			<default>1</default>
+			<default>2</default>
 			<min>1</min>
 			<max>32</max>
 			</option>
