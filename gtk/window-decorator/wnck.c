@@ -613,6 +613,8 @@ window_opened (WnckScreen *screen,
     Window       window;
     gulong       xid;
     unsigned int i, j;
+    
+    g_return_if_fail (WNCK_IS_WINDOW (win));
 
     static event_callback callback[3][3] = {
 	{ top_left_event,    top_event,    top_right_event    },
@@ -675,6 +677,7 @@ void
 window_closed (WnckScreen *screen,
 	       WnckWindow *win)
 {
+    g_return_if_fail (WNCK_IS_WINDOW (win));
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
     if (d)

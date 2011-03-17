@@ -713,11 +713,27 @@ window_closed (WnckScreen *screen,
 {
     Display *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
-    WnckWindow *parent = d->transient_parent;
 
-    if (parent)
+    if (d->transient_windows)
     {
-	decor_t *d_parent = g_object_get_data (G_OBJECT (parent), "decor");
+	GSList *iter = d->transient_windows;
+
+	while (iter)
+	{
+	    WnckWindow *win = (WnckWindow *) iter->data;
+	    decor_t    *d = g_object_get_data (G_OBJECT (win), "decor");
+
+	    d->transient_parent = NULL;
+
+	    iter = g_slist_next (iter);
+	}
+
+	g_slist_free (d->transient_windows);
+    }
+
+    if (d->transient_parent)
+    {
+	decor_t *d_parent = g_object_get_data (G_OBJECT (d->transient_parent), "decor");
 
 	d_parent->transient_windows = g_slist_remove (d_parent->transient_windows, win);
     }
