@@ -123,7 +123,7 @@
 	    <option name="mode" type="int">
 		<_short>Default Resize Mode</_short>
 		<_long>Default mode used for window resizing</_long>
-		<default>0</default>
+		<default>2</default>
 		<min>0</min>
 		<max>3</max>
 		<desc>
@@ -147,20 +147,20 @@
 		<_short>Border Color</_short>
 		<_long>Border color used for outline and rectangle resize modes</_long>
 		<default>
-		    <red>0x2f2f</red>
-		    <green>0x2f2f</green>
-		    <blue>0x4f4f</blue>
-		    <alpha>0x9f9f</alpha>
+		    <red>0xffff</red>
+		    <green>0xffff</green>
+		    <blue>0xffff</blue>
+		    <alpha>0x6464</alpha>
 		</default>
 	    </option>
 	    <option name="fill_color" type="color">
 		<_short>Fill Color</_short>
 		<_long>Fill color used for rectangle resize mode</_long>
 		<default>
-		    <red>0x2f2f</red>
-		    <green>0x2f2f</green>
-		    <blue>0x4f4f</blue>
-		    <alpha>0x4f4f</alpha>
+		    <red>0x0</red>
+		    <green>0x0</green>
+		    <blue>0x0</blue>
+		    <alpha>0x1e1e</alpha>
 		</default>
 	    </option>
 	    <option name="normal_match" type="match">

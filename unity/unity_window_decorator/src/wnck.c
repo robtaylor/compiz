@@ -1,78 +1,4 @@
-/*
- * Copyright © 2006 Novell, Inc.
- *
- * This library is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2 of the License, or (at your option) any later version.
- *
- * This library is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	 See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with this library; if not, write to the
- * Free Software Foundation, Inc., 59 Temple Place - Suite 330,
- * Boston, MA 02111-1307, USA.
- *
- * Author: David Reveman <davidr@novell.com>
- *
- * 2D Mode: Copyright © 2010 Sam Spilsbury <smspillaz@gmail.com>
- * Frames Management: Copright © 2011 Canonical Ltd.
- *        Authored By: Sam Spilsbury <sam.spilsbury@canonical.com>
- */
-
 #include "gtk-window-decorator.h"
-
-const gchar *
-get_frame_type (WnckWindow *win)
-{
-    WnckWindowType wnck_type = wnck_window_get_window_type (win);
-
-    switch (wnck_type)
-    {
-	case WNCK_WINDOW_NORMAL:
-	    return "normal";
-	case WNCK_WINDOW_DIALOG:
-	{
-	    Atom	  actual;
-	    int		  result, format;
-	    unsigned long n, left;
-	    unsigned char *data;
-	    unsigned int  state = 0;
-
-	    result = XGetWindowProperty (gdk_x11_get_default_xdisplay (), wnck_window_get_xid (win),
-					 net_wm_state_atom,
-					 0L, 1024L, FALSE, XA_ATOM, &actual, &format,
-					 &n, &left, &data);
-
-	    if (result == Success && data)
-	    {
-		Atom *a = (Atom *) data;
-
-		while (n--)
-		    if (*a++ == net_wm_state_modal_atom)
-		    {
-			XFree ((void *) data);
-			return "modal_dialog";
-		    }
-
-
-	    }
-
-	    return "dialog";
-	}
-	case WNCK_WINDOW_MENU:
-	    return "menu";
-	case WNCK_WINDOW_UTILITY:
-	    return "utility";
-	default:
-	    return "bare";
-    }
-
-    return "normal";
-}
 
 static void
 window_name_changed (WnckWindow *win)
@@ -152,33 +78,18 @@ window_actions_changed (WnckWindow *win)
 }
 
 void
-update_frames_border_extents (gpointer key,
-			      gpointer value,
-			      gpointer user_data)
-{
-    decor_frame_t *frame = (decor_frame_t *) value;
-
-    (*theme_update_border_extents) (frame);
-}
-
-void
 decorations_changed (WnckScreen *screen)
 {
     GdkDisplay *gdkdisplay;
     GdkScreen  *gdkscreen;
     GList      *windows;
-    Window     select;
+    Window select;
 
     gdkdisplay = gdk_display_get_default ();
     gdkscreen  = gdk_display_get_default_screen (gdkdisplay);
 
-    gwd_frames_foreach (set_frames_scales, (gpointer) settings->font);
-
     update_titlebar_font ();
-    gwd_process_frames (update_frames_border_extents,
-			window_type_frames,
-			WINDOW_TYPE_FRAMES_NUM,
-			NULL);
+    (*theme_update_border_extents) (text_height);
     update_shadow ();
 
     update_default_decorations (gdkscreen);
@@ -218,6 +129,7 @@ decorations_changed (WnckScreen *screen)
 	/* force size update */
 	d->context = NULL;
 	d->width = d->height = 0;
+	switcher_width = switcher_height = 0;
 
 	update_switcher_window (d->prop_xid, select);
     }
@@ -298,7 +210,6 @@ add_frame_window (WnckWindow *win,
 
     d->active = wnck_window_is_active (win);
     d->win = win;
-    d->frame = gwd_get_decor_frame (get_frame_type (win));
     d->last_pos_entered = NULL;
 
     attr.event_mask = ButtonPressMask | EnterWindowMask |
@@ -531,17 +442,6 @@ remove_frame_window (WnckWindow *win)
 	d->decor_window = NULL;
     }
 
-    if (d->frame)
-    {
-	gwd_decor_frame_unref (d->frame);
-	d->frame = NULL;
-    }
-
-    gdk_error_trap_push ();
-    XDeleteProperty (xdisplay, wnck_window_get_xid (win), win_decor_atom);
-    gdk_display_sync (gdk_display_get_default ());
-    gdk_error_trap_pop ();
-
     d->width  = 0;
     d->height = 0;
 
@@ -589,7 +489,66 @@ active_window_changed (WnckScreen *screen)
 	if (d && d->pixmap)
 	{
 	    d->active = wnck_window_is_active (win);
-	    queue_decor_draw (d);
+
+	    if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
+	    {
+		if (!d->frame_window)
+		{
+		    if (d->active)
+		    {
+			d->context = &max_window_active_context;
+			d->shadow  = max_border_active_shadow;
+		    }
+		    else
+		    {
+			d->context = &max_window_inactive_context;
+			d->shadow  = max_border_inactive_shadow;
+		    }
+		}
+		else
+		{
+		    d->shadow  = max_border_no_shadow;
+		}
+	    }
+	    else
+	    {
+		if (!d->frame_window)
+		{
+		    if (d->active)
+		    {
+			d->context = &window_active_context;
+			d->shadow  = border_active_shadow;
+		    }
+		    else
+		    {
+			d->context = &window_inactive_context;
+			d->shadow  = border_inactive_shadow;
+		    }
+		}
+		else
+		{
+		    d->shadow  = border_no_shadow;
+		}
+	    }
+
+	    /* We need to update the decoration size here
+	     * since the shadow size might have changed and
+	     * in that case the decoration will be redrawn,
+	     * however if the shadow size doesn't change
+	     * then we need to redraw the decoration anyways
+	     * since the image would have changed */
+	    if (!update_window_decoration_size (d->win))
+		queue_decor_draw (d);
+
+	    /* Also update any parents of this window
+	     * since they won't get a notification here
+	     */
+	    if (d->transient_parent)
+	    {
+		decor_t *d_parent = g_object_get_data (d->transient_parent, "decor");
+		queue_decor_draw (d_parent);
+	    }
+
 	}
     }
 
@@ -600,12 +559,70 @@ active_window_changed (WnckScreen *screen)
 	if (d && d->pixmap)
 	{
 	    d->active = wnck_window_is_active (win);
-	    queue_decor_draw (d);
+
+	    if ((d->state & META_MAXIMIZED) == META_MAXIMIZED)
+	    {
+		if (!d->frame_window)
+		{
+		    if (d->active)
+		    {
+			d->context = &max_window_active_context;
+			d->shadow  = max_border_active_shadow;
+		    }
+		    else
+		    {
+			d->context = &max_window_inactive_context;
+			d->shadow  = max_border_inactive_shadow;
+		    }
+		}
+		else
+		{
+		    d->shadow  = max_border_no_shadow;
+		}
+	    }
+	    else
+	    {
+		if (!d->frame_window)
+		{
+		    if (d->active)
+		    {
+			d->context = &window_active_context;
+			d->shadow  = border_active_shadow;
+		    }
+		    else
+		    {
+			d->context = &window_inactive_context;
+			d->shadow  = border_inactive_shadow;
+		    }
+		}
+		else
+		{
+		    d->shadow  = border_no_shadow;
+		}
+	    }
+
+	    /* We need to update the decoration size here
+	     * since the shadow size might have changed and
+	     * in that case the decoration will be redrawn,
+	     * however if the shadow size doesn't change
+	     * then we need to redraw the decoration anyways
+	     * since the image would have changed */
+	    if (!update_window_decoration_size (d->win))
+		queue_decor_draw (d);
+
+	    /* Also update any parents of this window
+	     * since they won't get a notification here
+	     */
+	    if (d->transient_parent)
+	    {
+		decor_t *d_parent = g_object_get_data (d->transient_parent, "decor");
+		queue_decor_draw (d_parent);
+	    }
 	}
     }
 }
 
-void
+static void
 window_opened (WnckScreen *screen,
 	       WnckWindow *win)
 {
@@ -613,8 +630,6 @@ window_opened (WnckScreen *screen,
     Window       window;
     gulong       xid;
     unsigned int i, j;
-    
-    g_return_if_fail (WNCK_IS_WINDOW (win));
 
     static event_callback callback[3][3] = {
 	{ top_left_event,    top_event,    top_right_event    },
@@ -656,6 +671,7 @@ window_opened (WnckScreen *screen,
     d->cr = NULL;
     d->buffer_pixmap = NULL;
     d->picture = None;
+    d->transient_windows = NULL;
 
     connect_window (win);
 
@@ -671,21 +687,67 @@ window_opened (WnckScreen *screen,
     {
 	add_frame_window (win, window, TRUE);
     }
+
+    if (wnck_window_get_window_type (win) == WNCK_WINDOW_DIALOG)
+    {
+	Window parent;
+
+	if (get_window_prop (xid, XA_WM_TRANSIENT_FOR, &parent))
+	{
+	    WnckWindow *p = wnck_window_get (parent);
+	    decor_t *d = g_object_get_data (G_OBJECT (p), "decor");
+	    decor_t *d_transient = g_object_get_data (G_OBJECT (win), "decor");
+
+	    if (d)
+	    {
+		d->transient_windows = g_slist_append (d->transient_windows, win);
+		d_transient->transient_parent = p;
+	    }
+	}
+    }
 }
 
-void
+static void
 window_closed (WnckScreen *screen,
 	       WnckWindow *win)
 {
-    g_return_if_fail (WNCK_IS_WINDOW (win));
+    Display *xdisplay = GDK_DISPLAY_XDISPLAY (gdk_display_get_default ());
     decor_t *d = g_object_get_data (G_OBJECT (win), "decor");
 
-    if (d)
+    if (d->transient_windows)
     {
-	remove_frame_window (win);
-	g_object_set_data (G_OBJECT (win), "decor", NULL);
-	g_free (d);
+	GSList *iter = d->transient_windows;
+
+	while (iter)
+	{
+	    WnckWindow *win = (WnckWindow *) iter->data;
+	    decor_t    *d = g_object_get_data (G_OBJECT (win), "decor");
+
+	    d->transient_parent = NULL;
+
+	    iter = g_slist_next (iter);
+	}
+
+	g_slist_free (d->transient_windows);
     }
+
+    if (d->transient_parent)
+    {
+	decor_t *d_parent = g_object_get_data (G_OBJECT (d->transient_parent), "decor");
+
+	d_parent->transient_windows = g_slist_remove (d_parent->transient_windows, win);
+    }
+
+    remove_frame_window (win);
+
+    g_object_set_data (G_OBJECT (win), "decor", NULL);
+
+    gdk_error_trap_push ();
+    XDeleteProperty (xdisplay, wnck_window_get_xid (win), win_decor_atom);
+    gdk_display_sync (gdk_display_get_default ());
+    gdk_error_trap_pop ();
+
+    g_free (d);
 }
 
 void

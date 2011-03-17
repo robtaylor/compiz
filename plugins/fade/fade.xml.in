@@ -9,6 +9,7 @@
 	    </requirement>
 	    <relation type="after">
 		<plugin>decor</plugin>
+		<plugin>staticswitcher</plugin>
 	    </relation>
 	    <relation type="before">
 		<plugin>cube</plugin>
@@ -49,7 +50,7 @@
 	    <option name="window_match" type="match">
 		<_short>Fade windows</_short>
 		<_long>Windows that should be fading</_long>
-		<default>any</default>
+                <default>any &amp; !(title=notify-osd)</default>
 	    </option>
 	    <option name="visual_bell" type="bool">
 		<_short>Visual Bell</_short>

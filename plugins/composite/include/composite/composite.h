@@ -221,6 +221,8 @@ class CompositeScreen :
 		      getWindowPaintList);
 
 	friend class PrivateCompositeDisplay;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	PrivateCompositeScreen *priv;
@@ -406,6 +408,8 @@ class CompositeWindow :
 
 	friend class PrivateCompositeWindow;
 	friend class CompositeScreen;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	PrivateCompositeWindow *priv;

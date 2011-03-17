@@ -18,14 +18,14 @@
 			<option name="spacing" type="int">
 				<_short>Spacing</_short>
 				<_long>Space between windows</_long>
-				<default>10</default>
+				<default>68</default>
 				<min>0</min>
 				<max>250</max>
 			</option>
 			<option name="speed" type="float">
 				<_short>Speed</_short>
 				<_long>Scale speed</_long>
-				<default>1.5</default>
+				<default>2.4</default>
 				<min>0.1</min>
 				<max>50</max>
 				<precision>0.1</precision>
@@ -33,7 +33,7 @@
 			<option name="timestep" type="float">
 				<_short>Timestep</_short>
 				<_long>Scale timestep</_long>
-				<default>1.2</default>
+				<default>0.1</default>
 				<min>0.1</min>
 				<max>50</max>
 				<precision>0.1</precision>
@@ -46,7 +46,7 @@
 			<option name="opacity" type="int">
 				<_short>Opacity</_short>
 				<_long>Amount of opacity in percent</_long>
-				<default>75</default>
+				<default>100</default>
 				<min>0</min>
 				<max>100</max>
 			</option>
@@ -55,7 +55,7 @@
 				<_long>Overlay an icon on windows once they are scaled</_long>
 				<min>0</min>
 				<max>2</max>
-				<default>1</default>
+				<default>0</default>
 				<desc>
 					<value>0</value>
 					<_name>None</_name>
@@ -105,7 +105,7 @@
 			<option name="key_bindings_toggle" type="bool">
 			    <_short>Key Bindings Toggle Scale Mode</_short>
 			    <_long>Key bindings toggle scale mode instead of enabling it when pressed and disabling it when released.</_long>
-			    <default>false</default>
+			    <default>true</default>
 			</option>
 			<option name="button_bindings_toggle" type="bool">
 			    <_short>Button Bindings Toggle Scale Mode</_short>
@@ -115,9 +115,6 @@
 			<option name="initiate_edge" type="edge">
 				<_short>Initiate Window Picker</_short>
 				<_long>Layout and start transforming windows</_long>
-				<default>
-				<edge name="TopRight"/>
-				</default>
 				<allowed edgednd="true"/>
 			</option>
 			<option name="initiate_key" type="key">
@@ -141,6 +138,7 @@
 			<option name="initiate_all_key" type="key">
 				<_short>Initiate Window Picker For All Windows</_short>
 				<_long>Layout and start transforming all windows</_long>
+				<default>&lt;Super&gt;w</default>
 			</option>
 			<option name="initiate_group_edge" type="edge">
 				<_short>Initiate Window Picker For Window Group</_short>

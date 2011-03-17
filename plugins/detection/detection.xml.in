@@ -1,0 +1,28 @@
+<compiz>
+    <plugin name="detection" useBcop="true">
+    <_short>Detection</_short>
+    <_long>Do a bit more clever hardware etc detection</_long>
+    <deps>
+	<relation type="before">
+	    <plugin>composite</plugin>
+	    <plugin>opengl</plugin>
+	</relation>
+	<relation type="after">
+	    <plugin>bailer</plugin>
+	</relation>
+    </deps>
+    <category>Utility</category>
+    <options>
+	<option name="detect_bad_pci" type="bool">
+	    <_short>Detect known bad PCI ids</_short>
+	    <_long>Fallback when known bad PCI ids are detected</_long>
+	    <default>true</default>
+	</option>
+	<option name="detect_bad_drivers" type="bool">
+	    <_short>Detect known bad drivers</_short>
+	    <_long>Fallback when known bad drivers are detected</_long>
+	    <default>true</default>
+	</option>
+    </options>
+    </plugin>
+</compiz>

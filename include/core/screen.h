@@ -409,11 +409,13 @@ class CompScreen :
 	friend class CompTimeoutSource;
 	friend class CompManager;
 	friend class CompWatchFd;
+	friend class SpewScreen;
+	friend class SpewWindow;
 
     private:
 	PrivateScreen *priv;
 
-    public :
+    public:
 
 	static bool showDesktop (CompAction         *action,
 				 CompAction::State  state,

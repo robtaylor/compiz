@@ -1,0 +1,82 @@
+<compiz>
+    <plugin name="bailer" useBcop="true">
+    <_short>Bailer</_short>
+    <_long>Take decisive action if something is affecting the experience</_long>
+    <category>Utility</category>
+    <deps>
+        <relation type="before">
+            <plugin>composite</plugin>
+            <plugin>opengl</plugin>
+        </relation>
+    </deps>
+	<options>
+	    <option name="fatal_fallback_mode" type="int">
+		<_short>Fatal fallback mode</_short>
+		<_long>How best to handle a fatal fallback</_long>
+		<min>0</min>
+		<max>3</max>
+		<default>2</default>
+		<desc>
+		    <value>0</value>
+		    <_name>No action</_name>
+		</desc>
+		<desc>
+		    <value>1</value>
+		    <_name>Reduced functionality mode</_name>
+		</desc>
+		<desc>
+		    <value>2</value>
+		    <_name>Detect session fallback</_name>
+		</desc>
+		<desc>
+		    <value>3</value>
+		    <_name>Execute custom fallback</_name>
+		</desc>
+	    </option>
+	    <option name="custom_fallback_window_manager" type="string">
+		<_short>Custom fallback window manager command</_short>
+		<_long>Command to execute when selecting to do a custom fallback</_long>
+	    </option>
+	    <option name="custom_alternative_shell" type="string">
+		<_short>Custom alternative shell command</_short>
+		<_long>If compiz is providing a shell and it can't load, an alternative shell will be launched. This is to override the alternative shell detection</_long>
+	    </option>
+	    <option name="poor_performance_fallback" type="int">
+		<_short>Poor performance fallback</_short>
+		<_long>What do do when plugins indicate that performance is reading poor levels</_long>
+		<desc>
+		    <value>0</value>
+		    <_name>No action</_name>
+		</desc>
+		<desc>
+		    <value>1</value>
+		    <_name>Launch fatal fallback</_name>
+		</desc>
+		<desc>
+		    <value>2</value>
+		    <_name>Unload a custom list of plugins</_name>
+		</desc>
+		<desc>
+		    <value>3</value>
+		    <_name>Reduced functionality mode</_name>
+		</desc>
+		<min>0</min>
+		<max>2</max>
+		<default>0</default>
+	    </option>
+	    <option name="bad_performance_threshold" type="int">
+		<_short>Bad performance threshold</_short>
+		<_long>How much bad performance to tolerate before taking decisive action</_long>
+		<min>0</min>
+		<max>300</max>
+		<default>50</default>
+	    </option>
+	    <option name="bad_plugins" type="list">
+		<_short>Bad Plugins</_short>
+		<_long>Plugins to unload in case the session is being impacted</_long>
+		<default></default>
+		<type>string</type>
+	    </option>
+	</options>
+    </plugin>
+</compiz>

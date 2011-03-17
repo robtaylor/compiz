@@ -170,6 +170,10 @@ CompManager::parseArguments (int argc, char **argv)
 	}
     }
 
+    /* add in default plugins if none are given */
+    if (plugins.size () == 0)
+	plugins.push_back ("ccp");
+
     initialPlugins = plugins;
 
     return true;
@@ -226,7 +230,16 @@ CompManager::init ()
 	return false;
 
     if (!disableSm)
+    {
+	if (clientId == NULL)
+	{
+	    char *desktop_autostart_id = getenv ("DESKTOP_AUTOSTART_ID");
+	    if (desktop_autostart_id != NULL)
+		clientId = strdup (desktop_autostart_id);
+	    unsetenv ("DESKTOP_AUTOSTART_ID");
+	}
 	CompSession::init (clientId);
+    }
 
     return true;
 }
