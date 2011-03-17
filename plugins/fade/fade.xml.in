@@ -9,6 +9,7 @@
 	    </requirement>
 	    <relation type="after">
 		<plugin>decor</plugin>
+		<plugin>staticswitcher</plugin>
 	    </relation>
 	    <relation type="before">
 		<plugin>cube</plugin>
