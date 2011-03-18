@@ -1200,8 +1200,8 @@ CompScreen::handleEvent (XEvent *event)
 		    priv->setWmState (WithdrawnState, w->id ());
 
 		w->priv->placed     = false;
-		w->priv->managed    = false;
 		w->priv->unmanaging = w->priv->managed;
+		w->priv->managed    = false;
 	    }
 
 	    w->unmap ();
