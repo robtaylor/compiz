@@ -1889,14 +1889,14 @@ CompScreen::handleEvent (XEvent *event)
 
 		    if (event->xfocus.window == priv->root)
 		    {
+			priv->activeWindow = None;
+
 			if (event->xfocus.detail == NotifyDetailNone ||
 			    (event->xfocus.mode == NotifyNormal &&
 			     event->xfocus.detail == NotifyInferior))
 			{
 			    screen->focusDefaultWindow ();
 			}
-
-			priv->activeWindow = None;
 		    }
 
 		    if (priv->nextActiveWindow == event->xfocus.window)
