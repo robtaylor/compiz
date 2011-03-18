@@ -1880,6 +1880,23 @@ CompScreen::handleEvent (XEvent *event)
 		    if (priv->nextActiveWindow == event->xfocus.window)
 			priv->nextActiveWindow = None;
 	        }
+		else if (event->xfocus.window == priv->root)
+		{
+		    /* Don't ever let the focus go to the root
+		     * window except in grab cases
+		     *
+		     * FIXME: There might be a case where we have to
+		     * handle root windows of other screens here, but
+		     * the other window managers should handle that
+		     */
+
+		    if (event->xfocus.detail == NotifyDetailNone ||
+			(event->xfocus.mode == NotifyNormal &&
+			 event->xfocus.detail == NotifyInferior))
+		    {
+			screen->focusDefaultWindow ();
+		    }
+		}
 	    }
 	    else
 		priv->grabbed = true;
