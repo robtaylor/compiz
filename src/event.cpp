@@ -1201,7 +1201,7 @@ CompScreen::handleEvent (XEvent *event)
 
 		w->priv->placed     = false;
 		w->priv->managed    = false;
-		w->priv->unmanaging = true;
+		w->priv->unmanaging = w->priv->managed;
 	    }
 
 	    w->unmap ();
