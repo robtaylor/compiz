@@ -1235,7 +1235,7 @@ CompScreen::handleEvent (XEvent *event)
 	    Window   xid = None;
 	    Window   root_return;
 	    unsigned int ui;
-	    int		 x, y, i;
+	    int		 x, y;
 
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive
