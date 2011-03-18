@@ -1454,7 +1454,7 @@ CompScreen::handleEvent (XEvent *event)
     case ClientMessage:
 	if (event->xclient.message_type == Atoms::winActive)
 	{
-	    w = findWindow (event->xclient.window);
+	    w = findTopLevelWindow (event->xclient.window);
 	    if (w)
 	    {
 		/* use focus stealing prevention if request came
