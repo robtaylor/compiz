@@ -160,6 +160,7 @@ class CompOption {
 	 */
 	class Class {
 	    public:
+		virtual ~Class() {};
 		virtual Vector & getOptions () = 0;
 
 		virtual CompOption * getOption (const CompString &name);

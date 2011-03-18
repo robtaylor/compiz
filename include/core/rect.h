@@ -64,7 +64,7 @@ class CompRect {
 	/**
 	 * Returns an X region handle for the CompRect
 	 */
-	const Region region () const;
+	Region region () const;
 
 	void setGeometry (int x, int y,
 			  int width, int height);
