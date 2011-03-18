@@ -1231,7 +1231,11 @@ CompScreen::handleEvent (XEvent *event)
 	}
 	else if (!(event->xreparent.parent == priv->root))
 	{
-	    bool remove = false;
+	    bool     remove = false;
+	    Window   xid = None;
+	    Window   root_return;
+	    unsigned int ui;
+	    int		 x, y, i;
 
 	    /* This is the only case where a window is removed but not
 	       destroyed. We must remove our event mask and all passive
@@ -1239,10 +1243,22 @@ CompScreen::handleEvent (XEvent *event)
 
 	    if (w)
 	    {
-		if (!event->xreparent.parent == w->priv->wrapper)
+		if (event->xreparent.parent != w->priv->wrapper)
 		{
 		    w->moveInputFocusToOtherWindow ();
 
+		    /* In the case where someone else reparented one of
+		     * our windows we are going to get the UnmapNotify first
+		     * which means that this will start reparenting the
+		     * window into the root window and interrupt
+		     * the client's request to reparent into another
+		     * window, we should handle this case */
+		    if (!w->priv->frame)
+		    {
+			xid = w->priv->id;
+			XGetGeometry (screen->dpy (), xid, &root_return,
+				      &x, &y, &ui, &ui, &ui, &ui);
+		    }
 		    w->destroy ();
 		    remove = true;
 		}
@@ -1266,6 +1282,11 @@ CompScreen::handleEvent (XEvent *event)
 		XSelectInput (priv->dpy, w->id (), NoEventMask);
 		XShapeSelectInput (priv->dpy, w->id (), NoEventMask);
 		XUngrabButton (priv->dpy, AnyButton, AnyModifier, w->id ());
+
+		/* Reparent the window back where it belongs */
+		if (xid)
+		    XReparentWindow (screen->dpy (), xid, event->xreparent.parent,
+				     x, y);
 	    }
 	}
 	break;
