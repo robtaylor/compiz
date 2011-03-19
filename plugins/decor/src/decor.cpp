@@ -1439,8 +1439,6 @@ DecorWindow::updateWindowRegions ()
 void
 DecorWindow::windowNotify (CompWindowNotify n)
 {
-    DECOR_SCREEN (screen);
-
     switch (n)
     {
 	case CompWindowNotifyMap:
