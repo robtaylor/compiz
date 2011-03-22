@@ -1876,8 +1876,11 @@ CompScreen::handleEvent (XEvent *event)
 
 		    state &= ~CompWindowStateDemandsAttentionMask;
 		    w->changeState (state);
+
+		    if (priv->nextActiveWindow == event->xfocus.window)
+			priv->nextActiveWindow = None;
 	        }
-		else
+		else if (event->xfocus.window == priv->root)
 		{
 		    /* Don't ever let the focus go to the root
 		     * window except in grab cases
@@ -1887,7 +1890,9 @@ CompScreen::handleEvent (XEvent *event)
 		     * the other window managers should handle that
 		     */
 
-		    if (event->xfocus.window == priv->root)
+		    if (event->xfocus.detail == NotifyDetailNone ||
+			(event->xfocus.mode == NotifyNormal &&
+			 event->xfocus.detail == NotifyInferior))
 		    {
 			priv->activeWindow = None;
 
@@ -1898,9 +1903,6 @@ CompScreen::handleEvent (XEvent *event)
 			    screen->focusDefaultWindow ();
 			}
 		    }
-
-		    if (priv->nextActiveWindow == event->xfocus.window)
-			priv->nextActiveWindow = None;
 		}
 	    }
 	    else

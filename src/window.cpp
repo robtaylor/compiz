@@ -2014,9 +2014,8 @@ CompWindow::moveInputFocusTo ()
 void
 CompWindow::moveInputFocusToOtherWindow ()
 {
-    if ((priv->id = screen->activeWindow () ||
-	 priv->id == screen->priv->nextActiveWindow) ||
-	 screen->activeWindow () == None)
+    if (priv->id == screen->activeWindow () ||
+	priv->id == screen->priv->nextActiveWindow)
     {
 	CompWindow *ancestor;
 
