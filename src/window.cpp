@@ -1365,6 +1365,17 @@ CompWindow::unmap ()
     windowNotify (CompWindowNotifyUnmap);
 }
 
+void
+PrivateWindow::withdraw ()
+{
+    if (!attrib.override_redirect)
+	screen->priv->setWmState (WithdrawnState, id);
+
+    placed     = false;
+    unmanaging = managed;
+    managed    = false;
+}
+
 bool
 PrivateWindow::restack (Window aboveId)
 {

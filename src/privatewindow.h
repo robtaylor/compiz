@@ -137,6 +137,8 @@ class PrivateWindow {
 
 	void show ();
 
+	void withdraw ();
+
 	bool handlePingTimeout (unsigned int lastPing);
 
 	void handlePing (int lastPing);

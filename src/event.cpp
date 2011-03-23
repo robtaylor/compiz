@@ -1122,7 +1122,7 @@ CompScreen::handleEvent (XEvent *event)
 	 * and then bypassing MapRequest because it *is* override-redirect
 	 * at XMapWindow time, so we need to catch this case and make
 	 * sure that windows are tracked here */
-	
+       
 	foreach (CoreWindow *cw, priv->createdWindows)
 	{
 	    if (cw->priv->id == event->xmap.window)
@@ -1184,30 +1184,40 @@ CompScreen::handleEvent (XEvent *event)
 	    }
 	    else /* X -> Withdrawn */
 	    {
-		/* Iconic -> Withdrawn */
+		/* Iconic -> Withdrawn:
+		 *
+		 * The window is already unmapped so we need to check the
+		 * synthetic UnmapNotify that comes and withdraw the window here */
 		if (w->state () & CompWindowStateHiddenMask)
 		{
 		    w->priv->minimized = false;
-
 		    w->changeState (w->state () & ~CompWindowStateHiddenMask);
 
 		    priv->updateClientList ();
+		    w->priv->withdraw ();
 		}
-		else /* Closing */
+		/* Closing:
+		 *
+		 * ICCCM Section 4.1.4 says that clients need to send
+		 * a synthetic UnmapNotify for every real unmap
+		 * in order to reflect the change in state, but
+		 * since we already withdraw the window on the real
+		 * UnmapNotify, no need to do it again on the synthetic
+		 * one. */
+		else if (!event->xunmap.send_event)
+		{
 		    w->windowNotify (CompWindowNotifyClose);
-
-		if (!w->overrideRedirect ())
-		    priv->setWmState (WithdrawnState, w->id ());
-
-		w->priv->placed     = false;
-		w->priv->unmanaging = w->priv->managed;
-		w->priv->managed    = false;
+		    w->priv->withdraw ();
+		}
 	    }
 
-	    w->unmap ();
+	    if (!event->xunmap.send_event)
+	    {
+		w->unmap ();
 
-	    if (!w->shaded () && !w->priv->pendingMaps)
-		w->moveInputFocusToOtherWindow ();
+		if (!w->shaded () && !w->priv->pendingMaps)
+		    w->moveInputFocusToOtherWindow ();
+	    }
 	}
 	break;
     case ReparentNotify:
