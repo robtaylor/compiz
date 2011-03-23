@@ -284,10 +284,13 @@ CompSession::init (char *prevClientId)
 	else
 	{
 	    connected = true;
+
 	    if (prevClientId)
 		smPrevClientId = strdup (prevClientId);
-	    setRestartStyle (smcConnection, SmRestartImmediately);
-	    
+
+            setCloneRestartCommands (smcConnection);
+            setRestartStyle (smcConnection, SmRestartImmediately);
+            setProgramInfo (smcConnection, getpid (), getuid ());
 	}
     }
 }
