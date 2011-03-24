@@ -201,6 +201,20 @@ CompManager::init ()
     if (!modHandler)
 	return false;
 
+    if (!disableSm)
+    {
+	if (!clientId)
+	{
+	    /* Try pick up the client id from the environment if not set on the commandline*/
+	    clientId = getenv("DESKTOP_AUTOSTART_ID");
+	}
+
+	/* Make sure DESKTOP_AUTOSTART_ID isn't set for any children we run */
+	unsetenv("DESKTOP_AUTOSTART_ID");
+
+	CompSession::init (clientId);
+    }
+
     if (!plugins.empty ())
     {
 	CompOption::Value::Vector list;
@@ -224,20 +238,6 @@ CompManager::init ()
 
     if (!screen->init (displayName))
 	return false;
-
-    if (!disableSm)
-    {
-	if (!clientId)
-	{
-	    /* Try pick up the client id from the environment if not set on the commandline*/
-	    clientId = getenv("DESKTOP_AUTOSTART_ID");
-	}
-
-	/* Make sure DESKTOP_AUTOSTART_ID isn't set for any children we run */
-	unsetenv("DESKTOP_AUTOSTART_ID");
-
-	CompSession::init (clientId);
-    }
 
     return true;
 }
